@@ -106,7 +106,7 @@ irq_handler:
 .equ gpio_gpfsel_4,            0x10
 .equ gpio_gpset_1,             0x20         @ 0b00100000
 .equ gpio_gpclr_1,             0x2C         @ 0b00101100
-.equ gpio47_bit,               0b1 << 15    @ 0x4000 Bit High for GPIO 47
+.equ gpio47_bit,               0b1 << 15    @ 0x8000 Bit High for GPIO 47
 
 .equ user_mode,                0x10         @ 0b00010000 User mode (not priviledged)
 .equ fiq_mode,                 0x11         @ 0b00010001 Fast Interrupt Request (FIQ) mode
