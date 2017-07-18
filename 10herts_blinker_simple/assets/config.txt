@@ -1,0 +1,25 @@
+# For more options and information see
+# http://rpf.io/configtxtreadme
+# Some settings may impact device functionality. See link above for details
+
+#Starts from SVC Mode, not HYP Mode that have original IVT address
+#If uncomment, '0' starts from 0x0000_8000, 1 starts from 0x0000_0000
+#kernel_old=0
+
+#0x8000
+#kernel_address=32768
+
+#CPU Clock Mhz, you may need to voltage up for overclock
+arm_freq=400
+
+#GPU(APB) Clock MHz, you may need to voltage up for overclock
+gpu_freq=160
+
+#SDRAM Clock Mhz, you may need to voltage up for overclock
+sdram_freq=200
+
+#GPU Memory Mbytes
+gpu_mem=256
+
+#0.025V Steps, 2 means app. 1.2 - 1.3125V + 0.05V (RasPi2)
+#over_voltage=2

@@ -4,6 +4,8 @@
 
 * [10Hz blinker on Hyp mode](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/10herts_blinker_hyp)
 
+* [10Hz blinker on Hyp mode (Simple Version)](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/10herts_blinker_simple)
+
 **INSTALL**
 
 * On Raspbian Command Line (Linux Bash)
@@ -31,8 +33,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **LINKS**
 
-* [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/downloads.html)
+* [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/)
 
-* [RasPi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
+* [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
 
 * [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/)
