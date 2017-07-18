@@ -1,12 +1,13 @@
 ##
-# GNUmakefile
+# Makefile
 # Author: Kenta Ishii
 # License: MIT
 # License URL: https://opensource.org/licenses/MIT
 ##
 
-# GNUmakefile will be searched faster than Makefile
-# Make sure to use tab in command line
+# This Makefile is tested by GNU Make in Raspbian Jessie
+
+# In GNU Make (gmake on BSD), GNUmakefile will be searched faster than Makefile
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
 COMP = arm-none-eabi
@@ -24,6 +25,7 @@ OBJ1 = 10herts_blinker_hyp
 # "$@" means the target and $^ means all of dependencies and $< is first one.
 # If you meets "make: `main' is up to date.", use "touch" command to renew.
 # "$?" means ones which are newer than the target.
+# Make sure to use tab in command line
 
 kernel.img: inter.elf
 	$(COPY) $< -O binary $@

@@ -43,9 +43,25 @@ _reset:
 	 * interrupts from Mailbox 3 on Privilege Level (PL) 1
          */
 
-	/* 
+	/**
 	 * PC on the instruction is not its real address. in ARM Instruction, PC - 8 is its real address
 	 * PC is two instructions forward, so in THUMB Instruction, PC -4 is its real address
+	 */
+
+	/**
+	 * cpsr's 0-4 bits are Processor Mode 0x10, 0b00000 is User Mode
+	 * cpsr's 5-7 bits are Thumb (T), FIQ (F), IRQ (I)
+	 * cpsr_c > 0-7 mmmmmtfi, cpsr_f > 24-31 j_qvcsn, cpsr_x 8-15, cpsr_s 16-23, cpsr_cxsf for all
+	 */
+
+	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
+	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
+	msr cpsr_c, r0
+	mov sp, #0x20000000                       @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
+
+	/**
+	 * In Hyp mode, changing processor modes by cpsr isn't functioned
+	 * because of its Privilege (in AArch64, Exception) Level
 	 */
 
 	/*mov r0, #0x08000*/
@@ -59,20 +75,26 @@ _reset:
                                          @ If you call `SMC`, you will jump to offset 0x08 of MVBAR
                                          @ Only Accessible in Privileged and Secure state
 
+	push {r0-r3,r12,lr}              @ Escape General Purpose Registors, SPSR, and ELR of Current Hyp Mode
+	mrs r0, elr_hyp                  @ mrs/msr accessible system registers can add postfix of modes
+	mrs r1, spsr_hyp
+	push {r0, r1}                    @ In push, Registers will be stored in sequencial manner
+                                         @ Lowest numberd register (Now on r0) is stored at lowest memory address
+                                         @ sp (r13) will be decremented one word (4 bytes) per one push
+                                         @ `STR r1, [sp, #-4]!` Pre-index, subtract four to sp forward
+                                         @ `STR r0, [sp, #-4]!` BTW, In AArch64, '#-16' (4 words)!
+
 	/* If you use `SVC` in Hype mode, This Call will be treated as `HVC`, then PC jumps to offset 0x08 of HVBAR */
 	svc #0
 	hvc #0
 
-	/* cpsr's 0-4 bits are Processor Mode 0x10, 0b00000 is User Mode */
-	/* cpsr's 5-7 bits are Thumb (T), FIQ (F), IRQ (I) */
-	/* cpsr_c > 0-7 mmmmmtfi, cpsr_f > 24-31 j_qvcsn, cpsr_x 8-15, cpsr_s 16-23, cpsr_cxsf for all */
-
-	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
-	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
-	msr cpsr_c, r0
-	mov sp, #0x20000000                       @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-
-	/* In Hyp mode, changing processor modes by cpsr is not functioned because of its exception level */
+	pop {r0, r1}                     @ Retrieve General Purpose Registors, SPSR and ELR of Current Hyp Mode
+                                         @ `LDR r0, [sp], #4` Post-index, add four to sp afterward
+                                         @ `LDR r1, [sp], #4` BTW, In AArch64, '#16' (4 words)!
+	msr elr_hyp, r0
+	msr spsr_hyp, r1
+	pop {r0-r3,r12,lr}               @ In pop, Registers will be stored in sequencial manner
+                                         @ Lowest numberd register (Now on r0) will store one word in lowest memory address
 
 	ldr r0, interrupt_base
 	mov r1, #1                                @ 1 to LSB for IRQ of ARM Timer

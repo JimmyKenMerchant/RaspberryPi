@@ -9,13 +9,13 @@
 #0x8000
 #kernel_address=32768
 
-#CPU Clock Mhz, if 1000, you need to voltage up (RasPi2)
+#CPU Clock Mhz, you may need to voltage up for overclock
 arm_freq=400
 
-#GPU(APB) Clock MHz, if 500, you need to voltage up (RasPi2)
+#GPU(APB) Clock MHz, you may need to voltage up for overclock
 gpu_freq=160
 
-#SDRAM Clock Mhz, if 500, you need to voltage up (RasPi2)
+#SDRAM Clock Mhz, you may need to voltage up for overclock
 sdram_freq=200
 
 #GPU Memory Mbytes
