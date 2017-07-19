@@ -35,6 +35,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 * [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/)
 
+* [PiFox](https://github.com/ICTeam28/PiFox)
+
 * [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
 
 * [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/)
