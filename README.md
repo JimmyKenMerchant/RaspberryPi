@@ -21,6 +21,20 @@ config.txt in assets folder is used with each kernel.img.
 You need to paste these config.txt and kernel.img to the root directory of your boot media (e.g. FAT32 formatted SD Card).
 You also need to get latest start.elf and bootcode.bin from RasPi Official Repository, and paste these to the root directory of your boot media.
 
+**Boot Process of Raspberry Pi (Including My Hypothesis)**
+
+1. Power on, then VideoCore runs the first boot code on EEPROM embedded in RasPi like a microcontroller.
+
+2. VideoCore searches the boot media, then loads bootcode.bin to the memory (L2?) and runs it.
+
+3. VideoCore activates ARM Processor and other peripherals including Main Memory. On this time, VideCore loads start.elf to Main Memory for ARM Processor? (accessible through Mailbox afterward).
+
+4. ARM Processor runs start.elf to initialize itself, and check config.txt and cmdline.txt.
+
+5. start.elf sets several configurations from config.txt and cmdline.txt. In default, several configurations, like the framebuffer and the physical memory, are recorded on ATAGs from Address 0x100.
+
+6. start.elf starts kernel.img.
+
 **LICENSE**
 
 Copyright 2017 Kenta Ishii
@@ -38,5 +52,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 * [PiFox](https://github.com/ICTeam28/PiFox)
 
 * [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
+
+* [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes): 6 words per Mailbox, I mean.
 
 * [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/)

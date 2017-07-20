@@ -71,11 +71,11 @@ _reset:
 	mcr p15, 4, r0, c12, c0, 0       @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
 	/*mov r0, #0x28000*/
-	/*mcr p15, 0, r0, c12, c0, 1*/   @ Change MVBAR (Secure Monitor state IVT)
+	/*mcr p15, 0, r0, c12, c0, 1*/   @ Change MVBAR (Secure Monitor mode IVT)
                                          @ If you call `SMC`, you will jump to offset 0x08 of MVBAR
                                          @ Only Accessible in Privileged and Secure state
 
-	push {r0-r3,r12,lr}              @ Escape General Purpose Registors, SPSR, and ELR of Current Hyp Mode
+	push {r0-r3,r12,lr}              @ Escape General Purpose Registers, SPSR, and ELR of Current Hyp Mode
 	mrs r0, elr_hyp                  @ mrs/msr accessible system registers can add postfix of modes
 	mrs r1, spsr_hyp
 	push {r0, r1}                    @ In push, Registers will be stored in sequencial manner
@@ -88,7 +88,7 @@ _reset:
 	svc #0
 	hvc #0
 
-	pop {r0, r1}                     @ Retrieve General Purpose Registors, SPSR and ELR of Current Hyp Mode
+	pop {r0, r1}                     @ Retrieve General Purpose Registers, SPSR and ELR of Current Hyp Mode
                                          @ `LDR r0, [sp], #4` Post-index, add four to sp afterward
                                          @ `LDR r1, [sp], #4` BTW, In AArch64, '#16' (4 words)!
 	msr elr_hyp, r0
