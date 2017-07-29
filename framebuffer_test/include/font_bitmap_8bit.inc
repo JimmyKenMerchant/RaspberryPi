@@ -1,0 +1,186 @@
+/**
+ * font_bitmap_8bit.inc
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
+ */
+
+_FONT_BITMAP8_0:
+	.byte 0b00000000
+	.byte 0b00111000
+	.byte 0b11001110
+	.byte 0b11010110
+	.byte 0b11010110
+	.byte 0b11010110
+	.byte 0b11100110
+	.byte 0b00111000
+
+_FONT_BITMAP8_1:
+	.byte 0b00000000
+	.byte 0b00011000
+	.byte 0b01111000
+	.byte 0b11011000
+	.byte 0b00011000
+	.byte 0b00011000
+	.byte 0b00011000
+	.byte 0b11111110
+
+_FONT_BITMAP8_2:
+	.byte 0b00000000
+	.byte 0b01111100
+	.byte 0b11000110
+	.byte 0b00001100
+	.byte 0b00011000
+	.byte 0b00110000
+	.byte 0b01100000
+	.byte 0b11111110
+
+_FONT_BITMAP8_3:
+	.byte 0b00000000
+	.byte 0b01111100
+	.byte 0b11000110
+	.byte 0b00000110
+	.byte 0b01111100
+	.byte 0b00000110
+	.byte 0b11000110
+	.byte 0b01111100
+
+_FONT_BITMAP8_4:
+	.byte 0b00000000
+	.byte 0b00000100
+	.byte 0b00001100
+	.byte 0b00011100
+	.byte 0b00110100	
+	.byte 0b01100100
+	.byte 0b11111110
+	.byte 0b00000100
+
+_FONT_BITMAP8_5:
+	.byte 0b00000000
+	.byte 0b11111110
+	.byte 0b11000000
+	.byte 0b11111100
+	.byte 0b00000110
+	.byte 0b00000110
+	.byte 0b00000110
+	.byte 0b11111100
+
+_FONT_BITMAP8_6:
+	.byte 0b00000000
+	.byte 0b00011100
+	.byte 0b00110000
+	.byte 0b01111100
+	.byte 0b11000110
+	.byte 0b11010110
+	.byte 0b11000110
+	.byte 0b01111100
+
+_FONT_BITMAP8_7:
+	.byte 0b00000000
+	.byte 0b11111110
+	.byte 0b00000110
+	.byte 0b00001100
+	.byte 0b00011000
+	.byte 0b00110000
+	.byte 0b01100000
+	.byte 0b11000000
+
+_FONT_BITMAP8_8:
+	.byte 0b00000000
+	.byte 0b01111100
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b00111000
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b01111100
+
+_FONT_BITMAP8_9:
+	.byte 0b00000000
+	.byte 0b01111100
+	.byte 0b11000110
+	.byte 0b11010110
+	.byte 0b11000110
+	.byte 0b01111100
+	.byte 0b00001100
+	.byte 0b00111000
+
+_FONT_BITMAP8_A:
+	.byte 0b00000000
+	.byte 0b00111000
+	.byte 0b01101100
+	.byte 0b01101100
+	.byte 0b11000110
+	.byte 0b11111110
+	.byte 0b11000110
+	.byte 0b11000110
+
+_FONT_BITMAP8_B:
+	.byte 0b00000000
+	.byte 0b11111100
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b11111100
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b11111100
+
+_FONT_BITMAP8_C:
+	.byte 0b00000000
+	.byte 0b01111100
+	.byte 0b11000110
+	.byte 0b11000000
+	.byte 0b11000000
+	.byte 0b11000000
+	.byte 0b11000110
+	.byte 0b01111100
+
+_FONT_BITMAP8_D:
+	.byte 0b00000000
+	.byte 0b11111100
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b11000110
+	.byte 0b11111100
+
+_FONT_BITMAP8_E:
+	.byte 0b00000000
+	.byte 0b11111110
+	.byte 0b11000000
+	.byte 0b11000000
+	.byte 0b11111110
+	.byte 0b11000000
+	.byte 0b11000000
+	.byte 0b11111110
+
+_FONT_BITMAP8_F:
+	.byte 0b00000000
+	.byte 0b11111110
+	.byte 0b11000000
+	.byte 0b11000000
+	.byte 0b11111110
+	.byte 0b11000000
+	.byte 0b11000000
+	.byte 0b11000000
+
+FONT_BITMAP8_0: .word _FONT_BITMAP8_0
+FONT_BITMAP8_1: .word _FONT_BITMAP8_1
+FONT_BITMAP8_2: .word _FONT_BITMAP8_2
+FONT_BITMAP8_3: .word _FONT_BITMAP8_3
+FONT_BITMAP8_4: .word _FONT_BITMAP8_4
+FONT_BITMAP8_5: .word _FONT_BITMAP8_5
+FONT_BITMAP8_6: .word _FONT_BITMAP8_6
+FONT_BITMAP8_7: .word _FONT_BITMAP8_7
+FONT_BITMAP8_8: .word _FONT_BITMAP8_8
+FONT_BITMAP8_9: .word _FONT_BITMAP8_9
+FONT_BITMAP8_A: .word _FONT_BITMAP8_A
+FONT_BITMAP8_B: .word _FONT_BITMAP8_B
+FONT_BITMAP8_C: .word _FONT_BITMAP8_C
+FONT_BITMAP8_D: .word _FONT_BITMAP8_D
+FONT_BITMAP8_E: .word _FONT_BITMAP8_E
+FONT_BITMAP8_F: .word _FONT_BITMAP8_F

@@ -11,6 +11,7 @@
 /**
  * Vector Interrupt Tables and These Functions
  */
+.code 32 @ `16` for Thumb Instructions, `64` for AArch64
 .section	.vector
 .globl _start
 _start:
@@ -21,7 +22,7 @@ _start:
 	ldr pc, _data_abort_addr               @ 0x10 Abort mode (Hyp mode in Hyp mode)
 	ldr pc, _hypervisor_addr               @ 0x14 Hyp mode by `HVC` from Non-secure state except Hyp mode
 	ldr pc, _irq_addr                      @ 0x18 IRQ mode (Hyp mode in Hyp mode)
-	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode)
+	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode), which banks r8-r12 specially
 _reset_addr:                 .word _reset
 _undefined_instruction_addr: .word _reset
 _supervisor_addr:            .word _reset
@@ -92,23 +93,53 @@ render:
 	cmp r0, #0
 	beq debug
 
-	ldr r1, color16_palemagenta
+	ldr r1, color16_blue
 	ldr r2, fb_size
 	cmp r2, #0
 	beq debug
 
 	render_loop1:
-		strh r1, [r0]                             @ Store half word
+		strh r1, [r0]                     @ Store half word
 		add r0, #2
 		add r2, #-2
 		cmp r2, #0
 		bgt render_loop1
 
-	push {r0-r2}                              @ Equals to stmfd (stack pointer full, decrement order)
-	bl irq_handler
-	pop {r0-r2} 
+	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
+	/*bl irq_handler*/
+	ldr r0, FONT_BITMAP8_A                    @ Character Pointer
+	mov r1, #80                               @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	bl pict_char_8by8
+	pop {r0-r10}
 
-	b render
+	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
+	ldr r0, FONT_BITMAP8_0                    @ Character Pointer
+	mov r1, #88                               @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	bl pict_char_8by8
+	pop {r0-r10}
+
+	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
+	ldr r0, FONT_BITMAP8_1                    @ Character Pointer
+	mov r1, #96                               @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	bl pict_char_8by8
+	pop {r0-r10} 
+
+	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
+	ldr r0, FONT_BITMAP8_2                    @ Character Pointer
+	mov r1, #104                              @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	bl pict_char_8by8
+	pop {r0-r10} 
+
+	render_loop:
+		b render_loop
 
 debug:
 	cpsie i                                   @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
@@ -116,9 +147,9 @@ debug:
 		b _reset_loop
 
 _irq:
-	push {r0-r3,r12,lr}                       @ Equals to stmfd (stack pointer full, decrement order)
+	push {r0-r12,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 	bl irq_handler
-	pop {r0-r3,r12,lr}                        @ Equals to ldmfd (stack pointer full, decrement order)
+	pop {r0-r12,lr}                           @ Equals to ldmfd (stack pointer full, decrement order)
 	subs pc, lr, #4                           @ Need of Correction Value #4 add "s" condition to sub opcode
                                                   @ To Back to Regular Mode and Retrieve CPSR from SPSR
 
@@ -135,6 +166,65 @@ irq_handler:
 	add r0, r0, r1
 	mov r1, #gpio47_bit
 	str r1, [r0]
+
+	mov pc, lr
+
+/**
+ * function pict_char_8by8
+ * picture a 8-bit-width-8-bit-height Character
+ *
+ * Arguments
+ * r0 unsigned integer: Character Pointer
+ * r1 unsigned integer: X Coordinate
+ * r2 unsigned integer: Y Coordinate
+ * r3 unsinged integer: Color (16-bit)
+ *
+ * Usage: r0-r10, r7 reusable
+ */
+pict_char_8by8:
+	mov r4, #8                                       @ Vertical Counter
+	ldr r5, fb_address
+	and r5, r5, #mailbox_armmask
+	ldr r6, fb_width
+	mov r7, #2                                       @ Length of a Pixel in Buffer (Bytes)
+
+	/* Set Location to Render the Character  */
+	mul r1, r1, r7                                   @ Horizontal Offset Bytes
+	add r5, r5, r1
+
+	mul r6, r6, r7                                   @ Frame Buffer Width (Bytes)
+	mul r2, r2, r6                                   @ Vertical Offset Bytes
+	add r5, r5, r2
+
+	pict_char_8by8_loop:
+		ldrb r8, [r0]                            @ Load Horizontal Byte
+		mov r9, #8                               @ Horizontal Counter
+
+		pict_char_8by8_loop_horizontal:
+			sub r9, #1                       @ For Bit Allocation (Horizontal Character Bit)
+			mov r10, #1
+			lsl r10, r10, r9                 @ Logical Shift Left to Make Bit Mask for Current Character Bit
+
+			and r10, r8, r10
+			cmp r10, #0
+			beq pict_char_8by8_loop_horizontal_common
+
+			/* The Picture Process */
+			strh r3, [r5]                    @ Store half word
+
+			pict_char_8by8_loop_horizontal_common:
+				add r5, #2               @ Frame Buffer Address Shift
+
+				cmp r9, #0
+				bgt pict_char_8by8_loop_horizontal
+
+		sub r5, #16                              @ Offset Clear of Frame Buffer
+		add r5, r6                               @ Horizontal Sync (Frame Buffer)
+		add r0, #1                               @ Horizontal Sync (Character Pointer)
+
+		sub r4, #1
+		cmp r4, #0
+		bgt pict_char_8by8_loop
 
 	mov pc, lr
 
@@ -193,69 +283,79 @@ gpio_toggle:       .byte 0b00100000         @ 0x20 (gpset_1)
 .balign 16
 mail_framebuffer:
 	.word mail_framebuffer_end - mail_framebuffer @ Size of this Mail
-	.word 0x00000000      @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 mail_contents:
-	.word 0x00048003      @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
-	.word 0x00000008      @ Value Buffer Size in Bytes
-	.word 0x00000000      @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 800            @ Value Buffer, Width in Pixels
-	.word 600             @ Value Buffer, Height in Pixels
-.balign 4
-	.word 0x00048004      @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
-	.word 0x00000008      @ Value Buffer Size in Bytes
-	.word 0x00000000      @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+fb_display_width:
 	.word 800               @ Value Buffer, Width in Pixels
-	.word 600               @ Value Buffer, Height in Pixels
+fb_display_height:
+	.word 640               @ Value Buffer, Height in Pixels
 .balign 4
-	.word 0x00048005      @ Tag Identifier, Set Depth
-	.word 0x00000004      @ Value Buffer Size in Bytes
-	.word 0x00000000      @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 16              @ Value Buffer, Bits per Pixel, 32 would be 32 RGBA
+	.word 0x00048004        @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+fb_width:
+	.word 800               @ Value Buffer, Width in Pixels
+fb_height:
+	.word 640               @ Value Buffer, Height in Pixels
 .balign 4
-	.word 0x00040001      @ Tag Identifier, Allocate Buffer
-	.word 0x00000008      @ Value Buffer Size in Bytes
-	.word 0x00000000      @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00048005        @ Tag Identifier, Set Depth
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 RGBA
+.balign 4
+	.word 0x00040001        @ Tag Identifier, Allocate Buffer
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 fb_address:
-	.word 0x00000000      @ Value Buffer, Alignment in Bytes (in Response, Frame Buffer Base Address in Bytes)
+	.word 0x00000000        @ Value Buffer, Alignment in Bytes (in Response, Frame Buffer Base Address in Bytes)
 fb_size:
-	.word 0x00000000      @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
+	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
 .balign 4
-	.word 0x00000000      @ End Tag
+	.word 0x00000000        @ End Tag
 mail_framebuffer_end:
 .balign 16
 
 mail_blankon:
 	.word mail_blankon_end - mail_blankon @ Size of this Mail
-	.word 0x00000000      @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00040002      @ Tag Identifier, Blank Screen
-	.word 0x00000004      @ Value Buffer Size in Bytes
-	.word 0x00000000      @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000001      @ Value Buffer, State (0 means off, 1 means on)
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00040002        @ Tag Identifier, Blank Screen
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000001        @ Value Buffer, State (0 means off, 1 means on)
 .balign 4
-	.word 0x00000000      @ End Tag
+	.word 0x00000000        @ End Tag
 mail_blankon_end:
 .balign 16
 
 mail_blankoff:
 	.word mail_blankoff_end - mail_blankoff @ Size of this Mail
-	.word 0x00000000      @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00040002      @ Tag Identifier, Blank Screen
-	.word 0x00000004      @ Value Buffer Size in Bytes
-	.word 0x00000000      @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000      @ Value Buffer, State (0 means off, 1 means on)
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00040002        @ Tag Identifier, Blank Screen
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ Value Buffer, State (0 means off, 1 means on)
 .balign 4
-	.word 0x00000000      @ End Tag
+	.word 0x00000000        @ End Tag
 mail_blankoff_end:
 .balign 16
 
 mail_framebuffer_addr:
-	.word mail_framebuffer @ Address of mail_framebuffer
+	.word mail_framebuffer  @ Address of mail_framebuffer
 mail_blankon_addr:
-	.word mail_blankon     @ Address of mail_blankon
+	.word mail_blankon      @ Address of mail_blankon
 mail_blankoff_addr:
-	.word mail_blankoff    @ Address of mail_blankoff
-color16_palemagenta:
-	.hword 0xAAAA
+	.word mail_blankoff     @ Address of mail_blankoff
+color16_blue:
+	.hword 0x001F
+.balign 4 @ Need of 4 bytes alignment to avoid data abort in `ldr`, OR use `ldrh` which can not use PC though...
+color16_yellow:
+	.hword 0xFFE0
+.balign 4
+
+.include "font_bitmap_8bit.inc" @ If you want binary, use `.file`
 .balign 4
 
 /* End of Line is Needed */

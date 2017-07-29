@@ -1,4 +1,4 @@
-# Framebuffer Test for Multi-core Raspberry Pi using IRQ (Simple Version)
+# Framebuffer Test for Multi-core Raspberry Pi
 
 **This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).**
 

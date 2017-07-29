@@ -6,6 +6,8 @@
 
 * [10Hz blinker on Hyp mode (Simple Version)](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/10herts_blinker_simple)
 
+* [Framebuffer Test](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/framebuffer_test)
+
 **INSTALL**
 
 * On Raspbian Command Line (Linux Bash)
@@ -20,6 +22,8 @@ make
 config.txt in assets folder is used with each kernel.img.
 You need to paste these config.txt and kernel.img to the root directory of your boot media (e.g. FAT32 formatted SD Card).
 You also need to get latest start.elf and bootcode.bin from RasPi Official Repository, and paste these to the root directory of your boot media.
+
+The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on ARMv7 Raspberry Pi.
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 
@@ -54,5 +58,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 * [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
 
 * [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes): 6 words per Mailbox, I mean.
+
+* [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
 
 * [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/)
