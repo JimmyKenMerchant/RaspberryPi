@@ -51,6 +51,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **LINKS**
 
+* [Official Documentation of RasPi](https://www.raspberrypi.org/documentation/hardware/raspberrypi/)
+
 * [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/)
 
 * [PiFox](https://github.com/ICTeam28/PiFox)

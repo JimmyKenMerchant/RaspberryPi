@@ -21,5 +21,8 @@ sdram_freq=200
 #GPU Memory Mbytes
 gpu_mem=256
 
+#Black Border (0) or Not (1)
+disable_overscan=1
+
 #0.025V Steps, 2 means app. 1.2 - 1.3125V + 0.05V (RasPi2)
 #over_voltage=2
