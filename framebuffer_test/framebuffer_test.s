@@ -115,7 +115,7 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_M                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_R                    @ Character Pointer
 	mov r1, #88                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -123,7 +123,7 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_COLON                @ Character Pointer
+	ldr r0, FONT_BITMAP8_M                    @ Character Pointer
 	mov r1, #96                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -131,15 +131,15 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_0                    @ Character Pointer
-	mov r1, #104                              @ X Coordinate
+	ldr r0, FONT_BITMAP8_COLON                @ Character Pointer
+	mov r1, #104                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_1                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_0                    @ Character Pointer
 	mov r1, #112                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -147,7 +147,7 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_2                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_1                    @ Character Pointer
 	mov r1, #120                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -155,7 +155,7 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_3                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_2                    @ Character Pointer
 	mov r1, #128                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -163,7 +163,7 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_4                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_3                    @ Character Pointer
 	mov r1, #136                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -171,7 +171,7 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_5                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_4                    @ Character Pointer
 	mov r1, #144                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
@@ -179,8 +179,16 @@ render:
 	pop {r0-r10}
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_6                    @ Character Pointer
+	ldr r0, FONT_BITMAP8_5                    @ Character Pointer
 	mov r1, #152                              @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	bl pict_char_8by8
+	pop {r0-r10}
+
+	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
+	ldr r0, FONT_BITMAP8_6                    @ Character Pointer
+	mov r1, #160                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_magenta                   @ Color (16-bit)
 	bl pict_char_8by8
@@ -188,7 +196,7 @@ render:
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_7                    @ Character Pointer
-	mov r1, #160                              @ X Coordinate
+	mov r1, #168                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
@@ -196,7 +204,7 @@ render:
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_8                    @ Character Pointer
-	mov r1, #168                              @ X Coordinate
+	mov r1, #176                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_magenta                   @ Color (16-bit)
 	bl pict_char_8by8
@@ -204,7 +212,7 @@ render:
 
 	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_9                    @ Character Pointer
-	mov r1, #176                              @ X Coordinate
+	mov r1, #184                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
@@ -242,109 +250,8 @@ irq_handler:
 	mov pc, lr
 
 /**
- * function pict_char_8by8
- * picture a 8-bit-width-8-bit-height Character
- *
- * Parameters
- * r0 unsigned integer: Character Pointer
- * r1 unsigned integer: X Coordinate
- * r2 unsigned integer: Y Coordinate
- * r3 unsinged integer: Color (16-bit)
- *
- * Usage: r0-r10, r8 reused
- */
-pict_char_8by8:
-	/* Auto (Local) Variables */
-	char_point .req r0 @ Parameter
-	x_coord    .req r1 @ Parameter
-	y_coord    .req r2 @ Parameter
-	color      .req r3 @ Parameter
-	i          .req r4
-	f_buffer   .req r5
-	width      .req r6
-	size       .req r7
-	length     .req r8
-	char_byte  .req r8
-	j          .req r9
-	bitmask    .req r10
-
-	mov i, #8                                         @ Vertical Counter
-	ldr f_buffer, fb_address
-	and f_buffer, f_buffer, #mailbox_armmask
-	ldr width, fb_width
-
-	ldr size, fb_size
-	add size, f_buffer, size
-	sub size, size, #2                                @ Maximum of Framebuffer Address (Offset - 2 Bytes)
-
-	mov length, #2                                    @ Length of a Pixel in Framebuffer (Bytes)
-
-	/* Set Location to Render the Character  */
-	mul x_coord, x_coord, length                      @ Horizontal Offset Bytes
-	add f_buffer, f_buffer, x_coord
-
-	mul width, width, length                          @ Framebuffer Width (Bytes)
-	mul y_coord, y_coord, width                       @ Vertical Offset Bytes
-	add f_buffer, f_buffer, y_coord
-
-	.unreq length
-	char_byte .req r8                                 @ Naming Change
-
-	pict_char_8by8_loop:
-		ldrb char_byte, [char_point]              @ Load Horizontal Byte
-		mov j, #8                                 @ Horizontal Counter
-
-		pict_char_8by8_loop_horizontal:
-			sub j, j, #1                      @ For Bit Allocation (Horizontal Character Bit)
-			mov bitmask, #1
-			lsl bitmask, bitmask, j           @ Logical Shift Left to Make Bit Mask for Current Character Bit
-
-			and bitmask, char_byte, bitmask
-			cmp bitmask, #0
-			beq pict_char_8by8_loop_horizontal_common
-
-			/* The Picture Process */
-			strh color, [f_buffer]                    @ Store half word
-
-			pict_char_8by8_loop_horizontal_common:
-				add f_buffer, f_buffer, #2        @ Framebuffer Address Shift
-
-				cmp f_buffer, size                @ Check Overflow of Framebuffer Memory
-				bgt pict_char_8by8_common
-
-				cmp j, #0
-				bgt pict_char_8by8_loop_horizontal
-
-		add char_point, char_point, #1                    @ Horizontal Sync (Character Pointer)
-
-		sub f_buffer, f_buffer, #16                       @ Offset Clear of Framebuffer
-		add f_buffer, f_buffer, width                     @ Horizontal Sync (Framebuffer)
-
-		cmp f_buffer, size                                @ Check Overflow of Framebuffer Memory
-		bgt pict_char_8by8_common
-
-		sub i, i, #1
-		cmp i, #0
-		bgt pict_char_8by8_loop
-
-	pict_char_8by8_common:
-		mov pc, lr
-
-.unreq char_point
-.unreq x_coord
-.unreq y_coord
-.unreq color
-.unreq i
-.unreq f_buffer
-.unreq width
-.unreq size
-.unreq char_byte
-.unreq j
-.unreq bitmask
-
-/**
- * Alias: Does Not Affect Memory in Program
- * Left Shifted 1 byte or regular 1 byte
+ * Aliases: Does Not Affect Memory in Program
+ * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
  */
 .equ interrupt_enable_basic,   0x18
 .equ armtimer_load,            0x00
@@ -472,7 +379,7 @@ color16_magenta:
 	.hword 0xF81F
 .balign 4
 
-.include "font_bitmap_8bit.inc" @ If you want binary, use `.file`
+.include "print_char.inc"       @ If you want binary, use `.file`
 .balign 4
 
 /* End of Line is Needed */

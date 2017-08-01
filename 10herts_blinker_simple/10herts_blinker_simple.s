@@ -92,8 +92,8 @@ irq_handler:
 	mov pc, lr
 
 /**
- * Alias: Does Not Affect Memory in Program
- * Left Shifted 1 byte or regular 1 byte
+ * Aliases: Does Not Affect Memory in Program
+ * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
  */
 .equ interrupt_enable_basic,   0x18
 .equ armtimer_load,            0x00
