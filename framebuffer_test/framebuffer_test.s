@@ -105,118 +105,67 @@ render:
 		cmp r2, #0
 		bgt render_loop1
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	/*bl irq_handler*/
 	ldr r0, FONT_BITMAP8_A                    @ Character Pointer
 	mov r1, #80                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_R                    @ Character Pointer
 	mov r1, #88                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_M                    @ Character Pointer
 	mov r1, #96                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_COLON                @ Character Pointer
-	mov r1, #104                               @ X Coordinate
+	mov r1, #104                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_0                    @ Character Pointer
 	mov r1, #112                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_1                    @ Character Pointer
 	mov r1, #120                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_2                    @ Character Pointer
 	mov r1, #128                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_3                    @ Character Pointer
 	mov r1, #136                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
 	ldr r0, FONT_BITMAP8_4                    @ Character Pointer
 	mov r1, #144                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
-	pop {r0-r10}
 
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_5                    @ Character Pointer
-	mov r1, #152                              @ X Coordinate
-	mov r2, #80                               @ Y Coordinate
+	mov r0, #0x0000FE00                       @ Registor to show numbers
+	mov r1, #80                               @ X Coordinate
+	mov r2, #88                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
-	bl pict_char_8by8
-	pop {r0-r10}
-
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_6                    @ Character Pointer
-	mov r1, #160                              @ X Coordinate
-	mov r2, #80                               @ Y Coordinate
-	ldr r3, color16_magenta                   @ Color (16-bit)
-	bl pict_char_8by8
-	pop {r0-r10}
-
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_7                    @ Character Pointer
-	mov r1, #168                              @ X Coordinate
-	mov r2, #80                               @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
-	bl pict_char_8by8
-	pop {r0-r10}
-
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_8                    @ Character Pointer
-	mov r1, #176                              @ X Coordinate
-	mov r2, #80                               @ Y Coordinate
-	ldr r3, color16_magenta                   @ Color (16-bit)
-	bl pict_char_8by8
-	pop {r0-r10}
-
-	push {r0-r10}                             @ Equals to stmfd (stack pointer full, decrement order)
-	ldr r0, FONT_BITMAP8_9                    @ Character Pointer
-	mov r1, #184                              @ X Coordinate
-	mov r2, #80                               @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
-	bl pict_char_8by8
-	pop {r0-r10}
+	mov r4, #6                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4}
+	bl print_number_8by8
 
 	render_loop2:
 		b render_loop2
