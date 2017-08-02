@@ -105,6 +105,8 @@ render:
 		cmp r2, #0
 		bgt render_loop1
 
+	push {r0-r3}
+
 	ldr r0, FONT_BITMAP8_A                    @ Character Pointer
 	mov r1, #80                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
@@ -159,13 +161,16 @@ render:
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
 
-	mov r0, #0x0000FE00                       @ Registor to show numbers
+	ldr r0, fb_size                           @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
-	mov r2, #88                               @ Y Coordinate
+	mov r2, #96                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
-	mov r4, #6                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
 	push {r4}
 	bl print_number_8by8
+	add sp, sp, #4                            @ Increment SP because of push {4}
+
+	pop {r0-r3}
 
 	render_loop2:
 		b render_loop2
@@ -328,7 +333,7 @@ color16_magenta:
 	.hword 0xF81F
 .balign 4
 
-.include "print_char.inc"       @ If you want binary, use `.file`
+.include "print_char.s"       @ If you want binary, use `.file`
 .balign 4
 
 /* End of Line is Needed */

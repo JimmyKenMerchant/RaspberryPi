@@ -15,7 +15,7 @@
  * print raw numbers in a registor
  *
  * Parameters
- * r0 unsigned integer: Registor to show numbers
+ * r0 unsigned integer: Register to show numbers
  * r1 unsigned integer: X Coordinate
  * r2 unsigned integer: Y Coordinate
  * r3 unsinged integer: Color (16-bit)
@@ -27,11 +27,11 @@
  */
 print_number_8by8:
 	/* Auto (Local) Variables, but just aliases */
-	numbers        .req r0 @ Parameter, Registor for Argument and Result, Scratch Register
-	x_coord        .req r1 @ Parameter, Registor for Argument and Result, Scratch Register
-	y_coord        .req r2 @ Parameter, Registor for Argument, Scratch Register
-	color          .req r3 @ Parameter, Registor for Argument, Scratch Register
-	digits         .req r4 @ Parameter, have to push in ARM C lang Regulation
+	numbers        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord        .req r2 @ Parameter, Register for Argument, Scratch Register
+	color          .req r3 @ Parameter, Register for Argument, Scratch Register
+	digits         .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	width          .req r5
 	mul_number     .req r6
 	i              .req r7
@@ -39,10 +39,10 @@ print_number_8by8:
 	shift          .req r9
 	array_num_base .req r10
 
-	push {r4-r11}   @ Callee-saved Registers, r12 is Intra-procedure Call Scratch Register (ip)
-			@ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #32
+	add sp, sp, #28                                  @ r4-r10 offset 28 bytes
 	pop {digits}                                     @ Get Fourth Argument
 	sub sp, sp, #32                                  @ Retrieve SP
 
@@ -90,8 +90,12 @@ print_number_8by8:
 		mov r0, #1                                        @ Return with Error
 
 	print_number_8by8_common:
-		pop {r4-r11}    @ Callee-saved Registers, r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		/*pop {r3}*/    @ To Prevent Stack Pointer Increment after Return Because of the 5th Parameter
+                                @ BUT, this increment is in charge of CALLER, not CALLEE on C Lang Regulation (gcc -O2 option)
+
 		mov pc, lr
 
 .unreq numbers
@@ -123,10 +127,10 @@ print_number_8by8:
  */
 pict_char_8by8:
 	/* Auto (Local) Variables, but just aliases */
-	char_point .req r0 @ Parameter, Registor for Argument and Result, Scratch Register
-	x_coord    .req r1 @ Parameter, Registor for Argument and Result, Scratch Register
-	y_coord    .req r2 @ Parameter, Registor for Argument, Scratch Register
-	color      .req r3 @ Parameter, Registor for Argument, Scratch Register
+	char_point .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord    .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord    .req r2 @ Parameter, Register for Argument, Scratch Register
+	color      .req r3 @ Parameter, Register for Argument, Scratch Register
 	i          .req r4
 	f_buffer   .req r5
 	width      .req r6
@@ -135,7 +139,7 @@ pict_char_8by8:
 	j          .req r9
 	bitmask    .req r10
 
-	push {r4-r11}   @ Callee-saved Registers, r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			@ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov i, #0                                         @ Vertical Counter
@@ -207,7 +211,7 @@ pict_char_8by8:
 		mov r0, #1                                        @ Return with Error
 
 	pict_char_8by8_common:
-		pop {r4-r11}    @ Callee-saved Registers, r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
@@ -223,4 +227,4 @@ pict_char_8by8:
 .unreq j
 .unreq bitmask
 
-.include "font_bitmap_8bit.inc"
+.include "font_bitmap_8bit.s"

@@ -53,6 +53,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 * [Official Documentation of RasPi](https://www.raspberrypi.org/documentation/hardware/raspberrypi/)
 
+* [Official RasPi Usage](https://www.raspberrypi.org/documentation/usage/)
+
 * [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/)
 
 * [PiFox](https://github.com/ICTeam28/PiFox)
@@ -62,5 +64,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 * [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes): 6 words per Mailbox, I mean.
 
 * [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
+
+* [ARM Information Center](http://infocenter.arm.com/)
 
 * [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/)
