@@ -170,6 +170,31 @@ render:
 	bl print_number_8by8
 	add sp, sp, #4                            @ Increment SP because of push {4}
 
+	ldr r0, first_lower                      @ Lower Bits of First Number
+	ldr r1, first_upper                      @ Upper Bits of First Number
+	ldr r2, second_lower                     @ Lower Bits of Second Number
+	ldr r3, second_upper                     @ Upper Bits of Second Number
+	bl decimal_adder64
+
+	mov r5, r1                                @ Move Upper Number of Return Number
+                                                  @ Register to show numbers | Lower Number Already on r0
+	mov r1, #144                              @ X Coordinate
+	mov r2, #104                              @ Y Coordinate
+	ldr r3, color16_magenta                   @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4                            @ Increment SP because of push {4}
+
+	mov r0, r5                                @ Register to show numbers
+	mov r1, #80                               @ X Coordinate
+	mov r2, #104                              @ Y Coordinate
+	ldr r3, color16_magenta                   @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4                            @ Increment SP because of push {4}
+
 	pop {r0-r3}
 
 	render_loop2:
@@ -331,6 +356,15 @@ color16_yellow:
 .balign 4
 color16_magenta:
 	.hword 0xF81F
+.balign 4
+first_lower:
+	.word 0x87654321
+first_upper:
+	.word 0x00094321
+second_lower:
+	.word 0x87654321
+second_upper:
+	.word 0x00094321
 .balign 4
 
 .include "print_char.s"       @ If you want binary, use `.file`

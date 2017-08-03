@@ -8,6 +8,161 @@
  * This Program is intended to be used in GNU Assembler with AArch32/ ARMv7-A.
  */
 
+.globl decimal_adder64
+
+/**
+ * function decimal_adder64
+ * print raw numbers in a registor
+ *
+ * Parameters
+ * r0 unsigned integer: Lower Bits of First Number
+ * r1 unsigned integer: Upper Bits of First Number
+ * r2 unsigned integer: Lower Bits of Second Number
+ * r3 unsinged integer: Upper Bits of Second Number
+ *
+ * Usage: r0-r11
+ * return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
+ * error: This function could not calculate because of digit-overflow.
+ */
+decimal_adder64:
+	/* Auto (Local) Variables, but just aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4 @ Duplication of lower_1
+	dup_upper_1    .req r5 @ Duplication of upper_1
+	mul_number     .req r6
+	i              .req r7
+	shift          .req r8
+	mask_1         .req r9
+	mask_2         .req r10
+	carry_flag     .req r11
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	mov dup_lower_1, lower_1
+	mov dup_upper_1, upper_1
+	mov lower_1, #0
+	mov upper_1, #0
+	mov carry_flag, #0
+
+	mov i, #0
+	mov mul_number, #4
+
+	decimal_adder64_loop:
+		mov mask_1, #0xf                            @ 0b1111
+		mov mask_2, #0xf
+
+		mul shift, i, mul_number
+
+		cmp i, #8
+		bge decimal_adder64_loop_uppernumber
+
+		/* Lower Number */
+		lsl mask_1, mask_1, shift
+		lsl mask_2, mask_2, shift
+
+		and mask_1, dup_lower_1, mask_1
+		and mask_2, lower_2, mask_2
+
+		b decimal_adder64_loop_adder
+
+		/* Upper Number */
+		decimal_adder64_loop_uppernumber:
+
+			sub shift, shift, #32
+
+			lsl mask_1, mask_1, shift
+			lsl mask_2, mask_2, shift
+
+			and mask_1, dup_upper_1, mask_1
+			and mask_2, upper_2, mask_2
+
+		decimal_adder64_loop_adder:
+		
+			lsr mask_1, mask_1, shift
+			lsr mask_2, mask_2, shift
+
+			add mask_1, mask_1, mask_2
+			add mask_1, mask_1, carry_flag
+
+			cmp mask_1, #0x10
+			bge decimal_adder64_loop_adder_hexacarry
+
+			cmp mask_1, #0x0A
+			bge decimal_adder64_loop_adder_decicarry
+
+			mov carry_flag, #0                      @ Clear Carry
+
+			b decimal_adder64_loop_common	
+
+			decimal_adder64_loop_adder_hexacarry:
+
+				sub mask_1, #0x10
+				add mask_1, #0x06 
+				mov carry_flag, #1              @ Set Carry
+
+				b decimal_adder64_loop_common
+
+			decimal_adder64_loop_adder_decicarry:
+
+				sub mask_1, #0x0A
+				mov carry_flag, #1              @ Set Carry
+
+		decimal_adder64_loop_common:
+			lsl mask_1, mask_1, shift
+
+			cmp i, #8
+			bge decimal_adder64_loop_common_uppernumber
+
+			/* Lower Number */
+			add lower_1, lower_1, mask_1
+
+			b decimal_adder64_loop_common_common
+
+			/* Upper Number */
+			decimal_adder64_loop_common_uppernumber:
+
+				add upper_1, upper_1, mask_1
+
+			decimal_adder64_loop_common_common:
+
+				add i, i, #1
+				cmp i, #16
+				blt decimal_adder64_loop
+
+				cmp carry_flag, #1
+				beq decimal_adder64_error
+
+	decimal_adder64_success:
+		b decimal_adder64_common
+
+	decimal_adder64_error:
+		mov r0, #0                                        @ Return with Error
+		mov r1, #0
+
+	decimal_adder64_common:
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		mov pc, lr
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
+.unreq mul_number
+.unreq i
+.unreq shift
+.unreq mask_1
+.unreq mask_2
+.unreq carry_flag
+
+
 .globl print_number_8by8
 
 /**
