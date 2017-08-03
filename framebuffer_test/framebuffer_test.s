@@ -161,6 +161,12 @@ render:
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
 
+	ldr r0, FONT_BITMAP8_5                    @ Character Pointer
+	mov r1, #152                              @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	bl pict_char_8by8
+
 	ldr r0, fb_size                           @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
 	mov r2, #96                               @ Y Coordinate
@@ -170,11 +176,8 @@ render:
 	bl print_number_8by8
 	add sp, sp, #4                            @ Increment SP because of push {4}
 
-	ldr r0, first_lower                      @ Lower Bits of First Number
-	ldr r1, first_upper                      @ Upper Bits of First Number
-	ldr r2, second_lower                     @ Lower Bits of Second Number
-	ldr r3, second_upper                     @ Upper Bits of Second Number
-	bl decimal_adder64
+	ldr r0, fb_size
+	bl hexa_to_deci32
 
 	mov r5, r1                                @ Move Upper Number of Return Number
                                                   @ Register to show numbers | Lower Number Already on r0
@@ -189,6 +192,31 @@ render:
 	mov r0, r5                                @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
 	mov r2, #104                              @ Y Coordinate
+	ldr r3, color16_magenta                   @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4  
+
+	ldr r0, first_lower                       @ Lower Bits of First Number, needed between 0-9 in all digits
+	ldr r1, first_upper                       @ Upper Bits of First Number, needed between 0-9 in all digits
+	ldr r2, second_lower                      @ Lower Bits of Second Number, needed between 0-9 in all digits
+	ldr r3, second_upper                      @ Upper Bits of Second Number, needed between 0-9 in all digits
+	bl decimal_adder64
+
+	mov r5, r1                                @ Move Upper Number of Return Number
+                                                  @ Register to show numbers | Lower Number Already on r0
+	mov r1, #144                              @ X Coordinate
+	mov r2, #112                              @ Y Coordinate
+	ldr r3, color16_magenta                   @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4                            @ Increment SP because of push {4}
+
+	mov r0, r5                                @ Register to show numbers
+	mov r1, #80                               @ X Coordinate
+	mov r2, #112                              @ Y Coordinate
 	ldr r3, color16_magenta                   @ Color (16-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
 	push {r4}
