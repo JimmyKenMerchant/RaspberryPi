@@ -18,8 +18,8 @@
  * r0 unsigned integer: Register to Be Converted
  *
  * Usage: r0-r11, r0 reused
- * return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
- * error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
+ * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
+ * Error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
  */
 hexa_to_deci32:
 	/* Auto (Local) Variables, but just aliases */
@@ -148,8 +148,8 @@ power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  * r3 unsinged integer: Upper Bits of Second Number, needed between 0-9 in all digits
  *
  * Usage: r0-r11
- * return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
- * error: This function could not calculate because of digit-overflow.
+ * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
+ * Error: This function could not calculate because of digit-overflow.
  */
 decimal_adder64:
 	/* Auto (Local) Variables, but just aliases */

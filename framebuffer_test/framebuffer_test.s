@@ -88,13 +88,13 @@ _reset:
 	bne debug
 
 render:
-	ldr r0, fb_address
+	ldr r0, FB_ADDRESS
 	and r0, r0, #mailbox_armmask
 	cmp r0, #0
 	beq debug
 
 	ldr r1, color16_blue
-	ldr r2, fb_size
+	ldr r2, FB_SIZE
 	cmp r2, #0
 	beq debug
 
@@ -170,39 +170,29 @@ render:
 	ldr r0, FONT_BITMAP8_9                    @ Character Pointer
 	mov r1, #160                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
-	ldr r3, color16_scarlet                    @ Color (16-bit)
+	ldr r3, color16_scarlet                   @ Color (16-bit)
 	bl pict_char_8by8
 
-	ldr r0, fb_size                           @ Register to show numbers
+	ldr r0, FB_SIZE                           @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
 	mov r2, #96                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
 	push {r4}
 	bl print_number_8by8
-	add sp, sp, #4                            @ Increment SP because of push {4}
+	add sp, sp, #4                            @ Increment SP because of push {r4}
 
-	ldr r0, fb_size
+	ldr r0, FB_SIZE
 	bl hexa_to_deci32
 
-	mov r5, r1                                @ Move Upper Number of Return Number
-                                                  @ Register to show numbers | Lower Number Already on r0
-	mov r1, #144                              @ X Coordinate
-	mov r2, #104                              @ Y Coordinate
-	ldr r3, color16_magenta                   @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4                            @ Increment SP because of push {4}
-
-	mov r0, r5                                @ Register to show numbers
-	mov r1, #80                               @ X Coordinate
-	mov r2, #104                              @ Y Coordinate
-	ldr r3, color16_magenta                   @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4  
+                                                  @ r0 (Lower Half) and r1 (Upper Half) are already stored
+	mov r2, #80                               @ X Coordinate
+	mov r3, #104                              @ Y Coordinate
+	ldr r4, color16_magenta                   @ Color (16-bit)
+	mov r5, #10                               @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4,r5}
+	bl double_print_number_8by8
+	add sp, sp, #8                            @ Increment SP because of push {r4, r5}
 
 	ldr r0, first_lower                       @ Lower Bits of First Number, needed between 0-9 in all digits
 	ldr r1, first_upper                       @ Upper Bits of First Number, needed between 0-9 in all digits
@@ -210,24 +200,14 @@ render:
 	ldr r3, second_upper                      @ Upper Bits of Second Number, needed between 0-9 in all digits
 	bl decimal_adder64
 
-	mov r5, r1                                @ Move Upper Number of Return Number
-                                                  @ Register to show numbers | Lower Number Already on r0
-	mov r1, #144                              @ X Coordinate
-	mov r2, #112                              @ Y Coordinate
-	ldr r3, color16_magenta                   @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4                            @ Increment SP because of push {4}
-
-	mov r0, r5                                @ Register to show numbers
-	mov r1, #80                               @ X Coordinate
-	mov r2, #112                              @ Y Coordinate
-	ldr r3, color16_magenta                   @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4                            @ Increment SP because of push {4}
+                                                  @ r0 (Lower Half) and r1 (Upper Half) are already stored
+	mov r2, #80                               @ X Coordinate
+	mov r3, #112                              @ Y Coordinate
+	ldr r4, color16_skyblue                   @ Color (16-bit)
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	push {r4,r5}
+	bl double_print_number_8by8
+	add sp, sp, #8                            @ Increment SP because of push {r4, r5}
 
 	pop {r0-r3}
 
@@ -322,17 +302,17 @@ mail_contents:
 	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-fb_display_width:
+FB_DISPLAY_WIDTH:
 	.word 800               @ Value Buffer, Width in Pixels
-fb_display_height:
+FB_DISPLAY_HEIGHT:
 	.word 640               @ Value Buffer, Height in Pixels
 .balign 4
 	.word 0x00048004        @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-fb_width:
+FB_WIDTH:
 	.word 800               @ Value Buffer, Width in Pixels
-fb_height:
+FB_HEIGHT:
 	.word 640               @ Value Buffer, Height in Pixels
 .balign 4
 	.word 0x00048005        @ Tag Identifier, Set Depth
@@ -343,9 +323,9 @@ fb_height:
 	.word 0x00040001        @ Tag Identifier, Allocate Buffer
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-fb_address:
+FB_ADDRESS:
 	.word 0x00000000        @ Value Buffer, Alignment in Bytes (in Response, Frame Buffer Base Address in Bytes)
-fb_size:
+FB_SIZE:
 	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
 .balign 4
 	.word 0x00000000        @ End Tag

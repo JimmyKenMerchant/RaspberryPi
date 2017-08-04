@@ -8,6 +8,100 @@
  * This Program is intended to be used in GNU Assembler with AArch32/ ARMv7-A.
  */
 
+.globl double_print_number_8by8
+
+/**
+ * function double_print_number_8by8
+ * print raw numbers in two registors
+ *
+ * Parameters
+ * r0 unsigned integer: Lower Half of the Number
+ * r1 unsigned integer: Upper Half of the Number
+ * r2 unsigned integer: X Coordinate
+ * r3 unsigned integer: Y Coordinate
+ * r4 unsinged integer: Color (16-bit), Need of PUSH/POP
+ * r5 unsigned integer: Number of Digits, 16 Digits Maximum, Need of PUSH/POP
+ *
+ * Usage: r0-r7
+ * Return: 0 as sucess, 1 as error
+ * Error: When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ */
+double_print_number_8by8:
+	/* Auto (Local) Variables, but just aliases */
+	numbers_lower     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	numbers_upper     .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord           .req r3 @ Parameter, Register for Argument, Scratch Register
+	color             .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	digits            .req r5 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	width             .req r6
+	mul_number        .req r7
+
+	push {r4-r7} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+
+	add sp, sp, #16                                  @ r4-r10 offset 28 bytes
+	pop {color,digits}                               @ Get Fourth Argument
+	sub sp, sp, #24                                  @ Retrieve SP
+
+	mov mul_number, #8
+
+	double_print_number_8by8_loop:
+		cmp digits, #8
+		ble double_print_number_8by8_loop_lower
+
+			sub digits, digits, #8
+
+			push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)
+			mov r0, numbers_upper	
+			mov r1, x_coord
+			mov r2, y_coord
+			mov r3, color
+			push {digits}
+			bl print_number_8by8
+			add sp, sp, #4
+			cmp r0, #0                         @ Compare Return 0 or 1
+			pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
+			bne double_print_number_8by8_error
+
+			mul width, digits, mul_number
+			add x_coord, x_coord, width
+			mov digits, #8
+
+		double_print_number_8by8_loop_lower:
+
+			push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)	
+			mov r1, x_coord
+			mov r2, y_coord
+			mov r3, color
+			push {digits}
+			bl print_number_8by8
+			add sp, sp, #4
+			cmp r0, #0                         @ Compare Return 0 or 1
+			pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
+			bne double_print_number_8by8_error
+
+	double_print_number_8by8_success:
+		mov r0, #0                                 @ Return with Success
+		b double_print_number_8by8_common
+
+	double_print_number_8by8_error:
+		mov r0, #1                                 @ Return with Error
+
+	double_print_number_8by8_common:
+		pop {r4-r9} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)r
+
+		mov pc, lr
+
+.unreq numbers_lower
+.unreq numbers_upper
+.unreq x_coord
+.unreq y_coord
+.unreq color
+.unreq digits
+.unreq width
+.unreq mul_number
+
+
 .globl print_number_8by8
 
 /**
@@ -19,11 +113,11 @@
  * r1 unsigned integer: X Coordinate
  * r2 unsigned integer: Y Coordinate
  * r3 unsinged integer: Color (16-bit)
- * r4 unsigned integer: Number of Digits, 8 Digits Maximum, Need of PUSH
+ * r4 unsigned integer: Number of Digits, 8 Digits Maximum, Need of PUSH/POP
  *
  * Usage: r0-r10
- * return: 0 as sucess, 1 as error
- * error: When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Return: 0 as sucess, 1 as error
+ * Error: When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  */
 print_number_8by8:
 	/* Auto (Local) Variables, but just aliases */
@@ -123,8 +217,9 @@ print_number_8by8:
  * r3 unsinged integer: Color (16-bit)
  *
  * Usage: r0-r10, r8 reused
- * return: 0 as sucess, 1 as error
- * error: When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Return: 0 as sucess, 1 as error
+ * Error: When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Global Enviromental Variables: FB_ADDRESS, FB_WIDTH, FB_SIZE
  */
 pict_char_8by8:
 	/* Auto (Local) Variables, but just aliases */
@@ -144,11 +239,11 @@ pict_char_8by8:
 			@ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov i, #0                                         @ Vertical Counter
-	ldr f_buffer, fb_address
+	ldr f_buffer, FB_ADDRESS
 	and f_buffer, f_buffer, #mailbox_armmask
-	ldr width, fb_width
+	ldr width, FB_WIDTH
 
-	ldr size, fb_size
+	ldr size, FB_SIZE
 	add size, f_buffer, size
 	sub size, size, #2                                @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 
