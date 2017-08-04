@@ -167,6 +167,12 @@ render:
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	bl pict_char_8by8
 
+	ldr r0, FONT_BITMAP8_9                    @ Character Pointer
+	mov r1, #160                              @ X Coordinate
+	mov r2, #80                               @ Y Coordinate
+	ldr r3, color16_scarlet                    @ Color (16-bit)
+	bl pict_char_8by8
+
 	ldr r0, fb_size                           @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
 	mov r2, #96                               @ Y Coordinate
@@ -376,14 +382,6 @@ mail_blankon_addr:
 	.word mail_blankon      @ Address of mail_blankon
 mail_blankoff_addr:
 	.word mail_blankoff     @ Address of mail_blankoff
-color16_blue:
-	.hword 0x001F
-.balign 4 @ Need of 4 bytes alignment to avoid data abort in `ldr`, OR use `ldrh` which can not use PC though...
-color16_yellow:
-	.hword 0xFFE0
-.balign 4
-color16_magenta:
-	.hword 0xF81F
 .balign 4
 first_lower:
 	.word 0x87654321
@@ -394,8 +392,21 @@ second_lower:
 second_upper:
 	.word 0x00094321
 .balign 4
+_string_hello:
+	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+.balign 4
+string_hello:
+	.word _string_hello
+float_example:
+	.float 3.3
+double_example:
+	.double 3.3
 
-.include "print_char.s"       @ If you want binary, use `.file`
+.include "print_char32.s" @ If you want binary, use `.file`
+.balign 4
+.include "math32.s"
+.balign 4
+.include "color_palettes32_16bit.s"
 .balign 4
 
 /* End of Line is Needed */
