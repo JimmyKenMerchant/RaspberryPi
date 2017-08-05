@@ -452,5 +452,3 @@ pict_char_8by8:
 .unreq char_byte
 .unreq j
 .unreq bitmask
-
-.include "font_bitmap32_8bit.s"

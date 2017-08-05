@@ -1,5 +1,5 @@
 /**
- * framebuffer_test.s
+ * alohaboot.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -8,12 +8,14 @@
  * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
+.globl _start
+.globl alohamain
+
 /**
  * Vector Interrupt Tables and These Functions
  */
 .code 32 @ `16` for Thumb Instructions, `64` for AArch64
 .section	.vector
-.globl _start
 _start:
 	ldr pc, _reset_addr                    @ 0x00 reset
 	ldr pc, _undefined_instruction_addr    @ 0x04 Undifined mode (Hyp mode in Hyp mode)
@@ -239,8 +241,9 @@ render:
 
 	pop {r0-r3}
 
-	render_loop2:
-		b render_loop2
+	push {r0-r3}
+
+	bl alohamain
 
 debug:
 	cpsie i                                   @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
@@ -410,11 +413,7 @@ float_example:
 double_example:
 	.double 3.3
 
-.include "print_char32.s" @ If you want binary, use `.file`
-.balign 4
-.include "math32.s"
-.balign 4
-.include "color_palettes32_16bit.s"
+.include "system.s" @ If you want binary, use `.file`
 .balign 4
 
 /* End of Line is Needed */
