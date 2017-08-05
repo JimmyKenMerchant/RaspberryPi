@@ -87,9 +87,19 @@ _reset:
 	cmp r1, #0x80000000
 	bne debug
 
+	ldr r0, FB_ADDRESS
+	cmp r0, #0
+	beq debug
+	and r0, r0, #mailbox_armmask             @ Change FB_ADDRESS VideoCore's to ARM's
+	str r0, FB_ADDRESS                       @ Store ARM7s FB_ADDRESS
+
+	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
+                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
+                                                 @ to ensure to fetch data from cache/ memory
+                                                 @ These are useful in multi-core/ threads usage, etc.
 render:
 	ldr r0, FB_ADDRESS
-	and r0, r0, #mailbox_armmask
 	cmp r0, #0
 	beq debug
 
@@ -177,7 +187,7 @@ render:
 	mov r1, #80                               @ X Coordinate
 	mov r2, #96                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4}
 	bl print_number_8by8
 	add sp, sp, #4                            @ Increment SP because of push {r4}
@@ -189,7 +199,7 @@ render:
 	mov r2, #80                               @ X Coordinate
 	mov r3, #104                              @ Y Coordinate
 	ldr r4, color16_magenta                   @ Color (16-bit)
-	mov r5, #10                               @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	mov r5, #10                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4,r5}
 	bl double_print_number_8by8
 	add sp, sp, #8                            @ Increment SP because of push {r4, r5}
@@ -204,10 +214,28 @@ render:
 	mov r2, #80                               @ X Coordinate
 	mov r3, #112                              @ Y Coordinate
 	ldr r4, color16_skyblue                   @ Color (16-bit)
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4,r5}
 	bl double_print_number_8by8
 	add sp, sp, #8                            @ Increment SP because of push {r4, r5}
+
+	ldr r0, string_hello                      @ Pointer of Array of String
+	mov r1, #80                               @ X Coordinate
+	mov r2, #120                              @ Y Coordinate
+	ldr r3, color16_white                     @ Color (16-bit)
+	mov r4, #30                               @ Length of Characters, Need of PUSH/POP
+	push {r4}
+	bl print_string_ascii_8by8
+	add sp, sp, #4                            @ Increment SP because of push {r4}
+
+	mov r0, r1                                @ Register to show numbers
+	mov r1, #80                               @ X Coordinate
+	mov r2, #144                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4  
 
 	pop {r0-r3}
 

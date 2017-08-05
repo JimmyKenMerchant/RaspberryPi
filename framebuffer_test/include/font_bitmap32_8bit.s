@@ -410,11 +410,11 @@ _FONT_BITMAP8_NUMBER:
 
 _FONT_BITMAP8_DOLLAR:
 	.byte 0b00000000
+	.byte 0b00101000
 	.byte 0b01111100
 	.byte 0b10101010
-	.byte 0b10101000
-	.byte 0b01111100
-	.byte 0b00101010
+	.byte 0b01111000
+	.byte 0b00101100
 	.byte 0b10101010
 	.byte 0b01111100
 
@@ -467,7 +467,6 @@ _FONT_BITMAP8_RIGHTPARENTHESIS:
 	.byte 0b00001000
 	.byte 0b00010000
 	.byte 0b00100000
-
 
 _FONT_BITMAP8_ASTERISK:
 	.byte 0b00000000
@@ -709,6 +708,266 @@ _FONT_BITMAP8_DEL:
 	.byte 0b11111111
 	.byte 0b11111111
 
+_FONT_BITMAP8_a:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b00000010
+	.byte 0b00111110
+	.byte 0b01000010
+	.byte 0b01000110
+	.byte 0b00111010
+
+_FONT_BITMAP8_b:
+	.byte 0b00000000
+	.byte 0b01000000
+	.byte 0b01000000
+	.byte 0b01000000
+	.byte 0b01111100
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b01111100
+
+_FONT_BITMAP8_c:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b01000000
+	.byte 0b01000000
+	.byte 0b00111100
+
+_FONT_BITMAP8_d:
+	.byte 0b00000000
+	.byte 0b00000010
+	.byte 0b00000010
+	.byte 0b00000010
+	.byte 0b00111110
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b00111110
+
+_FONT_BITMAP8_e:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b01000010
+	.byte 0b01111110
+	.byte 0b01000000
+	.byte 0b00111100
+
+_FONT_BITMAP8_f:
+	.byte 0b00000000
+	.byte 0b00001100
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b01111100
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00010000
+
+_FONT_BITMAP8_g:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111010
+	.byte 0b01000110
+	.byte 0b01000010
+	.byte 0b00111110
+	.byte 0b00000010
+	.byte 0b00111100
+
+_FONT_BITMAP8_h:
+	.byte 0b00000000
+	.byte 0b01000000
+	.byte 0b01000000
+	.byte 0b01000000
+	.byte 0b01111100
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b01000010
+
+_FONT_BITMAP8_i:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00010000
+	.byte 0b00000000
+	.byte 0b00110000
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00111000
+
+_FONT_BITMAP8_j:
+	.byte 0b00000000
+	.byte 0b00001000
+	.byte 0b00000000
+	.byte 0b00011000
+	.byte 0b00001000
+	.byte 0b00001000
+	.byte 0b01001000
+	.byte 0b00110000
+
+_FONT_BITMAP8_k:
+	.byte 0b00000000
+	.byte 0b01000000
+	.byte 0b01000000
+	.byte 0b01000100
+	.byte 0b01001000
+	.byte 0b01010000
+	.byte 0b01101000
+	.byte 0b01000100
+
+_FONT_BITMAP8_l:
+	.byte 0b00000000
+	.byte 0b00110000
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00111000
+
+_FONT_BITMAP8_m:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01101100
+	.byte 0b10010010
+	.byte 0b10010010
+	.byte 0b10010010
+
+_FONT_BITMAP8_n:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01011100
+	.byte 0b01100010
+	.byte 0b01000010
+	.byte 0b01000010
+
+_FONT_BITMAP8_o:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b00111100
+
+_FONT_BITMAP8_p:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b01111100
+	.byte 0b01000000
+	.byte 0b01000000
+
+_FONT_BITMAP8_q:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b00111110
+	.byte 0b00000010
+	.byte 0b00000010
+
+_FONT_BITMAP8_r:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01011100
+	.byte 0b01100000
+	.byte 0b01000000
+	.byte 0b01000000
+
+_FONT_BITMAP8_s:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111100
+	.byte 0b01000010
+	.byte 0b00110000
+	.byte 0b00001100
+	.byte 0b01000010
+	.byte 0b00111100
+
+_FONT_BITMAP8_t:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00010000
+	.byte 0b01111100
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00010000
+	.byte 0b00001100
+
+_FONT_BITMAP8_u:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b01000110
+	.byte 0b00111010
+
+_FONT_BITMAP8_v:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01000100
+	.byte 0b00101000
+	.byte 0b00101000
+	.byte 0b00010000
+
+_FONT_BITMAP8_w:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b10010010
+	.byte 0b01010100
+	.byte 0b01010100
+	.byte 0b00101000
+
+_FONT_BITMAP8_x:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01000100
+	.byte 0b00101000
+	.byte 0b00010000
+	.byte 0b00101000
+	.byte 0b01000100
+
+_FONT_BITMAP8_y:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01000100
+	.byte 0b00101000
+	.byte 0b00010000
+	.byte 0b00100000
+	.byte 0b01000000
+
+_FONT_BITMAP8_z:
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b01111100
+	.byte 0b00001000
+	.byte 0b00010000
+	.byte 0b00100000
+	.byte 0b01111100
+
 /* Original Array for Display Raw Numbers of Register */
 
 FONT_BITMAP8_0:                 .word _FONT_BITMAP8_0
@@ -781,6 +1040,32 @@ FONT_BITMAP8_VERTICALBAR:       .word _FONT_BITMAP8_VERTICALBAR
 FONT_BITMAP8_RIGHTCURLYBRACKET: .word _FONT_BITMAP8_RIGHTCURLYBRACKET
 FONT_BITMAP8_TILDE:             .word _FONT_BITMAP8_TILDE
 FONT_BITMAP8_DEL:               .word _FONT_BITMAP8_DEL
+FONT_BITMAP8_a:                 .word _FONT_BITMAP8_a
+FONT_BITMAP8_b:                 .word _FONT_BITMAP8_b
+FONT_BITMAP8_c:                 .word _FONT_BITMAP8_c
+FONT_BITMAP8_d:                 .word _FONT_BITMAP8_d
+FONT_BITMAP8_e:                 .word _FONT_BITMAP8_e
+FONT_BITMAP8_f:                 .word _FONT_BITMAP8_f
+FONT_BITMAP8_g:                 .word _FONT_BITMAP8_g
+FONT_BITMAP8_h:                 .word _FONT_BITMAP8_h
+FONT_BITMAP8_i:                 .word _FONT_BITMAP8_i
+FONT_BITMAP8_j:                 .word _FONT_BITMAP8_j
+FONT_BITMAP8_k:                 .word _FONT_BITMAP8_k
+FONT_BITMAP8_l:                 .word _FONT_BITMAP8_l
+FONT_BITMAP8_m:                 .word _FONT_BITMAP8_m
+FONT_BITMAP8_n:                 .word _FONT_BITMAP8_n
+FONT_BITMAP8_o:                 .word _FONT_BITMAP8_o
+FONT_BITMAP8_p:                 .word _FONT_BITMAP8_p
+FONT_BITMAP8_q:                 .word _FONT_BITMAP8_q
+FONT_BITMAP8_r:                 .word _FONT_BITMAP8_r
+FONT_BITMAP8_s:                 .word _FONT_BITMAP8_s
+FONT_BITMAP8_t:                 .word _FONT_BITMAP8_t
+FONT_BITMAP8_u:                 .word _FONT_BITMAP8_u
+FONT_BITMAP8_v:                 .word _FONT_BITMAP8_v
+FONT_BITMAP8_w:                 .word _FONT_BITMAP8_w
+FONT_BITMAP8_x:                 .word _FONT_BITMAP8_x
+FONT_BITMAP8_y:                 .word _FONT_BITMAP8_y
+FONT_BITMAP8_z:                 .word _FONT_BITMAP8_z
 
 /* Initial Address of Original Array */
 
@@ -884,32 +1169,32 @@ ASCII_FONT_BITMAP8_RIGHTSQUREBRACKET: .word _FONT_BITMAP8_RIGHTSQUREBRACKET
 ASCII_FONT_BITMAP8_CARET:             .word _FONT_BITMAP8_CARET
 ASCII_FONT_BITMAP8_UNDERSCORE:        .word _FONT_BITMAP8_UNDERSCORE
 ASCII_FONT_BITMAP8_GRAVEACCENT:       .word _FONT_BITMAP8_GRAVEACCENT
-ASCII_FONT_BITMAP8_a:                 .word _FONT_BITMAP8_A
-ASCII_FONT_BITMAP8_b:                 .word _FONT_BITMAP8_B
-ASCII_FONT_BITMAP8_c:                 .word _FONT_BITMAP8_C
-ASCII_FONT_BITMAP8_d:                 .word _FONT_BITMAP8_D
-ASCII_FONT_BITMAP8_e:                 .word _FONT_BITMAP8_E
-ASCII_FONT_BITMAP8_f:                 .word _FONT_BITMAP8_F
-ASCII_FONT_BITMAP8_g:                 .word _FONT_BITMAP8_G
-ASCII_FONT_BITMAP8_h:                 .word _FONT_BITMAP8_H
-ASCII_FONT_BITMAP8_i:                 .word _FONT_BITMAP8_I
-ASCII_FONT_BITMAP8_j:                 .word _FONT_BITMAP8_J
-ASCII_FONT_BITMAP8_k:                 .word _FONT_BITMAP8_K
-ASCII_FONT_BITMAP8_l:                 .word _FONT_BITMAP8_L
-ASCII_FONT_BITMAP8_m:                 .word _FONT_BITMAP8_M
-ASCII_FONT_BITMAP8_n:                 .word _FONT_BITMAP8_N
-ASCII_FONT_BITMAP8_o:                 .word _FONT_BITMAP8_O
-ASCII_FONT_BITMAP8_p:                 .word _FONT_BITMAP8_P
-ASCII_FONT_BITMAP8_q:                 .word _FONT_BITMAP8_Q
-ASCII_FONT_BITMAP8_r:                 .word _FONT_BITMAP8_R
-ASCII_FONT_BITMAP8_s:                 .word _FONT_BITMAP8_S
-ASCII_FONT_BITMAP8_t:                 .word _FONT_BITMAP8_T
-ASCII_FONT_BITMAP8_u:                 .word _FONT_BITMAP8_U
-ASCII_FONT_BITMAP8_v:                 .word _FONT_BITMAP8_V
-ASCII_FONT_BITMAP8_w:                 .word _FONT_BITMAP8_W
-ASCII_FONT_BITMAP8_x:                 .word _FONT_BITMAP8_X
-ASCII_FONT_BITMAP8_y:                 .word _FONT_BITMAP8_Y
-ASCII_FONT_BITMAP8_z:                 .word _FONT_BITMAP8_Z
+ASCII_FONT_BITMAP8_a:                 .word _FONT_BITMAP8_a
+ASCII_FONT_BITMAP8_b:                 .word _FONT_BITMAP8_b
+ASCII_FONT_BITMAP8_c:                 .word _FONT_BITMAP8_c
+ASCII_FONT_BITMAP8_d:                 .word _FONT_BITMAP8_d
+ASCII_FONT_BITMAP8_e:                 .word _FONT_BITMAP8_e
+ASCII_FONT_BITMAP8_f:                 .word _FONT_BITMAP8_f
+ASCII_FONT_BITMAP8_g:                 .word _FONT_BITMAP8_g
+ASCII_FONT_BITMAP8_h:                 .word _FONT_BITMAP8_h
+ASCII_FONT_BITMAP8_i:                 .word _FONT_BITMAP8_i
+ASCII_FONT_BITMAP8_j:                 .word _FONT_BITMAP8_j
+ASCII_FONT_BITMAP8_k:                 .word _FONT_BITMAP8_k
+ASCII_FONT_BITMAP8_l:                 .word _FONT_BITMAP8_l
+ASCII_FONT_BITMAP8_m:                 .word _FONT_BITMAP8_m
+ASCII_FONT_BITMAP8_n:                 .word _FONT_BITMAP8_n
+ASCII_FONT_BITMAP8_o:                 .word _FONT_BITMAP8_o
+ASCII_FONT_BITMAP8_p:                 .word _FONT_BITMAP8_p
+ASCII_FONT_BITMAP8_q:                 .word _FONT_BITMAP8_q
+ASCII_FONT_BITMAP8_r:                 .word _FONT_BITMAP8_r
+ASCII_FONT_BITMAP8_s:                 .word _FONT_BITMAP8_s
+ASCII_FONT_BITMAP8_t:                 .word _FONT_BITMAP8_t
+ASCII_FONT_BITMAP8_u:                 .word _FONT_BITMAP8_u
+ASCII_FONT_BITMAP8_v:                 .word _FONT_BITMAP8_v
+ASCII_FONT_BITMAP8_w:                 .word _FONT_BITMAP8_w
+ASCII_FONT_BITMAP8_x:                 .word _FONT_BITMAP8_x
+ASCII_FONT_BITMAP8_y:                 .word _FONT_BITMAP8_y
+ASCII_FONT_BITMAP8_z:                 .word _FONT_BITMAP8_z
 ASCII_FONT_BITMAP8_LEFTCURLYBRACKET:  .word _FONT_BITMAP8_LEFTCURLYBRACKET
 ASCII_FONT_BITMAP8_VERTICALBAR:       .word _FONT_BITMAP8_VERTICALBAR
 ASCII_FONT_BITMAP8_RIGHTCURLYBRACKET: .word _FONT_BITMAP8_RIGHTCURLYBRACKET
