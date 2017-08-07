@@ -5,8 +5,44 @@
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT
  *
- * This Program is intended to be used in GNU Assembler with AArch32/ ARMv7-A.
  */
+
+/**
+ * function strlen_ascii
+ * Count 1-Byte Words of String
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ *
+ * Usage: r0-r2
+ * Return: r0 (Number of Words) Maximum of 4,294,967,295 words
+ */
+.globl strlen_ascii
+strlen_ascii:
+	/* Auto (Local) Variables, but just aliases */
+	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_byte       .req r1
+	length            .req r2
+
+	mov length, #0
+
+	strlen_ascii_loop:
+		ldrb string_byte, [string_point]          @ Load Character Byte
+		cmp string_byte, #0                       @ NULL Character (End of String) Checker
+		beq strlen_ascii_common                   @ Break Loop if Null Character
+
+		add string_point, string_point, #1
+		add length, length, #1
+		b strlen_ascii_loop
+
+	strlen_ascii_common:
+		mov r0, length
+		mov pc, lr
+
+.unreq string_point
+.unreq string_byte
+.unreq length
+
 
 /**
  * function print_string_ascii_8by8
@@ -16,7 +52,7 @@
  * r0: Pointer of Array of String
  * r1: X Coordinate
  * r2: Y Coordinate
- * r3: Color (16-bit)
+ * r3: Color (16-bit or 32-bit)
  * r4: Length of Characters, Need of PUSH/POP
  *
  * Usage: r0-r7
@@ -101,7 +137,7 @@ print_string_ascii_8by8:
 
 	print_string_ascii_8by8_common:
 		ldr r1, [sp, #-24]
-		pop {r4-r10} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)r
+		pop {r4-r10} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 		mov pc, lr
 
@@ -120,14 +156,14 @@ print_string_ascii_8by8:
 
 /**
  * function double_print_number_8by8
- * Print Raw Numbers in Two Registers
+ * Print Hexadecimal Bases Numbers in 64-bit (16 Digits)
  *
  * Parameters
  * r0: Lower Half of the Number
  * r1: Upper Half of the Number
  * r2: X Coordinate
  * r3: Y Coordinate
- * r4: Color (16-bit), Need of PUSH/POP
+ * r4: Color (16-bit or 32-bit), Need of PUSH/POP
  * r5: length of Digits, 16 Digits Maximum, Need of PUSH/POP
  *
  * Usage: r0-r7
@@ -216,18 +252,15 @@ double_print_number_8by8:
 .unreq width
 .unreq mul_number
 
-
-.globl print_number_8by8
-
 /**
  * function print_number_8by8
- * Print Raw Numbers in a Register
+ * Print Hexadecimal Bases Numbers in 32-bit (8 Digits)
  *
  * Parameters
  * r0: Register to show numbers
  * r1: X Coordinate
  * r2: Y Coordinate
- * r3: Color (16-bit)
+ * r3: Color (16-bit or 32-bit)
  * r4: length of Digits, 8 Digits Maximum, Need of PUSH/POP
  *
  * Usage: r0-r10
@@ -235,6 +268,7 @@ double_print_number_8by8:
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
+.globl print_number_8by8
 print_number_8by8:
 	/* Auto (Local) Variables, but just aliases */
 	number        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
@@ -324,8 +358,6 @@ print_number_8by8:
 .unreq array_num_base
 
 
-.globl pict_char_8by8
-
 /**
  * function pict_char_8by8
  * Picture a 8-bit-width-8-bit-height Character
@@ -334,14 +366,15 @@ print_number_8by8:
  * r0: Pointer of Character
  * r1: X Coordinate
  * r2: Y Coordinate
- * r3: Color (16-bit)
+ * r3: Color (16-bit or 32-bit)
  *
- * Usage: r0-r10, r8 reused
+ * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE
+ * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
  */
+.globl pict_char_8by8
 pict_char_8by8:
 	/* Auto (Local) Variables, but just aliases */
 	char_point .req r0 @ Parameter, Register for Argument and Result, Scratch Register
@@ -351,15 +384,18 @@ pict_char_8by8:
 	i          .req r4
 	f_buffer   .req r5 @ Pointer of Framebuffer
 	width      .req r6
-	size       .req r7
-	length     .req r8
-	j          .req r9
-	bitmask    .req r10
+	depth      .req r7
+	size       .req r8
+	char_byte  .req r9
+	j          .req r10
+	bitmask    .req r11
+	length     .req r12
 
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			@ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov i, #0                                         @ Vertical Counter
+	mov length, #0                                    @ 16-Bit/ 32-Bit Color
 
 	ldr f_buffer, FB_ADDRESS
 	cmp f_buffer, #0
@@ -369,13 +405,20 @@ pict_char_8by8:
 	cmp width, #0
 	beq pict_char_8by8_error2
 
+	ldr depth, FB_DEPTH
+	cmp depth, #0
+	beq pict_char_8by8_error2
+
+	cmp depth, #16
+	moveq length, #2                                  @ Length of a Pixel in Framebuffer (Bytes)
+	cmp depth, #32
+	moveq length, #4                                  @ Length of a Pixel in Framebuffer (Bytes)
+
 	ldr size, FB_SIZE
 	cmp size, #0
 	beq pict_char_8by8_error2
 	add size, f_buffer, size
-	sub size, size, #2                                @ Maximum of Framebuffer Address (Offset - 2 Bytes)
-
-	mov length, #2                                    @ Length of a Pixel in Framebuffer (Bytes)
+	sub size, size, length                            @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 
 	/* Set Location to Render the Character */
 	mul x_coord, x_coord, length                      @ Horizontal Offset Bytes
@@ -384,9 +427,6 @@ pict_char_8by8:
 	mul width, width, length                          @ Framebuffer Width (Bytes)
 	mul y_coord, y_coord, width                       @ Vertical Offset Bytes
 	add f_buffer, f_buffer, y_coord
-
-	.unreq length
-	char_byte .req r8                                 @ Naming Change
 
 	pict_char_8by8_loop:
 		cmp f_buffer, size                        @ Check Overflow of Framebuffer Memory
@@ -405,10 +445,13 @@ pict_char_8by8:
 			beq pict_char_8by8_loop_horizontal_common
 
 			/* The Picture Process */
-			strh color, [f_buffer]                    @ Store half word
+			cmp depth, #16
+			streqh color, [f_buffer]                  @ Store half word
+			cmp depth, #32
+			streq color, [f_buffer]                   @ Store word
 
 			pict_char_8by8_loop_horizontal_common:
-				add f_buffer, f_buffer, #2        @ Framebuffer Address Shift
+				add f_buffer, f_buffer, length    @ Framebuffer Address Shift
 
 				cmp f_buffer, size                @ Check Overflow of Framebuffer Memory
 				bgt pict_char_8by8_error1
@@ -416,15 +459,23 @@ pict_char_8by8:
 				cmp j, #0
 				bgt pict_char_8by8_loop_horizontal
 
-		add i, i, #1
-		cmp i, #8
-		addlt char_point, char_point, #1                  @ Horizontal Sync (Character Pointer)
-		sublt f_buffer, f_buffer, #16                     @ Offset Clear of Framebuffer
-		addlt f_buffer, f_buffer, width                   @ Horizontal Sync (Framebuffer)
-		blt pict_char_8by8_loop
+		pict_char_8by8_loop_common:
+			add i, i, #1
+			cmp i, #8
 
-		mov r0, #0                                        @ Return with Success
-		b pict_char_8by8_common
+			movge r0, #0                                    @ Return with Success
+			bge pict_char_8by8_common
+
+			add char_point, char_point, #1                  @ Horizontal Sync (Character Pointer)
+
+			cmp depth, #16
+			subeq f_buffer, f_buffer, #16                   @ Offset Clear of Framebuffer
+			cmp depth, #32
+			subeq f_buffer, f_buffer, #32                   @ Offset Clear of Framebuffer
+
+			add f_buffer, f_buffer, width                   @ Horizontal Sync (Framebuffer)
+
+			b pict_char_8by8_loop
 
 	pict_char_8by8_error1:
 		mov r0, #1                                        @ Return with Error 1
@@ -435,7 +486,7 @@ pict_char_8by8:
 
 	pict_char_8by8_common:
 		mov r1, f_buffer
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
@@ -446,7 +497,9 @@ pict_char_8by8:
 .unreq i
 .unreq f_buffer
 .unreq width
+.unreq depth
 .unreq size
 .unreq char_byte
 .unreq j
 .unreq bitmask
+.unreq length

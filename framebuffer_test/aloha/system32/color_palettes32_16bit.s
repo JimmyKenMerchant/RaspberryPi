@@ -5,7 +5,6 @@
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT
  *
- * This Program is intended to be used in GNU Assembler with AArch32/ ARMv7-A.
  */
 
 color16_red:         .hword 0xF800 @ 0xFF0000

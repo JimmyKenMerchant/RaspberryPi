@@ -13,19 +13,29 @@
 void user_start()
 {
 
-	unsigned char string[] = "ALOHA!\nHello, World Everyone!\0";
+	uchar8 string[] = "ALOHA!\nHello, World Everyone!\0";
 	uint32 x_coord = 80;
 	uint32 y_coord = 200;
 	uint32 color = 0x0000ffff;
-	uint32 length = 30; // string length - 1 (Null)
+	uint32 length = strlen_ascii( string ); // string length - 1 (Null)
+
+	print_number_8by8( length, x_coord, y_coord, color, 8 );
+
+	y_coord = 216;
 
 	uint64 number = print_string_ascii_8by8( string, x_coord, y_coord, color, length );
 
-	x_coord = 80;
-	y_coord = 216;
-	length = 16;
+	y_coord = 232;
 
-	double_print_number_8by8( number, x_coord, y_coord, color, length );
+	double_print_number_8by8( number, x_coord, y_coord, color, 16 );
+
+	y_coord = 240;
+
+	print_number_8by8( FB_DEPTH, x_coord, y_coord, color, 8 );
+
+	y_coord = 248;
+
+	print_number_8by8( FB_SIZE, x_coord, y_coord, color, 8 );
 
 	while(1) {
 		no_op();

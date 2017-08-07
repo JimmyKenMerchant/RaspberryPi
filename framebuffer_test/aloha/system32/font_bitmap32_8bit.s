@@ -5,7 +5,6 @@
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT
  *
- * This Program is intended to be used in GNU Assembler with AArch32/ ARMv7-A.
  */
 
 _FONT_BITMAP8_0:
@@ -711,7 +710,7 @@ _FONT_BITMAP8_DEL:
 _FONT_BITMAP8_a:
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00111100
+	.byte 0b01111100
 	.byte 0b00000010
 	.byte 0b00111110
 	.byte 0b01000010
@@ -732,11 +731,11 @@ _FONT_BITMAP8_c:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00111100
+	.byte 0b00111110
 	.byte 0b01000000
 	.byte 0b01000000
 	.byte 0b01000000
-	.byte 0b00111100
+	.byte 0b00111110
 
 _FONT_BITMAP8_d:
 	.byte 0b00000000
@@ -756,14 +755,14 @@ _FONT_BITMAP8_e:
 	.byte 0b01000010
 	.byte 0b01111110
 	.byte 0b01000000
-	.byte 0b00111100
+	.byte 0b00111110
 
 _FONT_BITMAP8_f:
 	.byte 0b00000000
 	.byte 0b00001100
 	.byte 0b00010000
-	.byte 0b00010000
 	.byte 0b01111100
+	.byte 0b00010000
 	.byte 0b00010000
 	.byte 0b00010000
 	.byte 0b00010000
@@ -776,7 +775,7 @@ _FONT_BITMAP8_g:
 	.byte 0b01000010
 	.byte 0b00111110
 	.byte 0b00000010
-	.byte 0b00111100
+	.byte 0b01111100
 
 _FONT_BITMAP8_h:
 	.byte 0b00000000
@@ -891,12 +890,12 @@ _FONT_BITMAP8_r:
 _FONT_BITMAP8_s:
 	.byte 0b00000000
 	.byte 0b00000000
+	.byte 0b00000000
+	.byte 0b00111110
+	.byte 0b01000000
 	.byte 0b00111100
-	.byte 0b01000010
-	.byte 0b00110000
-	.byte 0b00001100
-	.byte 0b01000010
-	.byte 0b00111100
+	.byte 0b00000010
+	.byte 0b01111100
 
 _FONT_BITMAP8_t:
 	.byte 0b00000000
@@ -922,11 +921,11 @@ _FONT_BITMAP8_v:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b10000010
-	.byte 0b10000010
-	.byte 0b01000100
-	.byte 0b00101000
-	.byte 0b00010000
+	.byte 0b01000010
+	.byte 0b01000010
+	.byte 0b00100100
+	.byte 0b00100100
+	.byte 0b00011000
 
 _FONT_BITMAP8_w:
 	.byte 0b00000000

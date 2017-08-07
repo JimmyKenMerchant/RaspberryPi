@@ -5,10 +5,7 @@
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT
  *
- * This Program is intended to be used in GNU Assembler with AArch32/ ARMv7-A.
  */
-
-.globl hexa_to_deci32
 
 /**
  * function hexa_to_deci32
@@ -21,6 +18,7 @@
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
  * Error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
  */
+.globl hexa_to_deci32
 hexa_to_deci32:
 	/* Auto (Local) Variables, but just aliases */
 	hexa           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
@@ -135,8 +133,6 @@ power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 .unreq bitmask
 
 
-.globl decimal_adder64
-
 /**
  * function decimal_adder64
  * Addition with Decimal Bases (0-9)
@@ -151,6 +147,7 @@ power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
  * Error: This function could not calculate because of digit-overflow.
  */
+.globl decimal_adder64
 decimal_adder64:
 	/* Auto (Local) Variables, but just aliases */
 	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register

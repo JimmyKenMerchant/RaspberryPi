@@ -16,8 +16,8 @@ SECTIONS {
 	.vector : {
 		*(.vector)
 
-		/* Assign Size, 65,536 bytes */
-		. = 0x1000;
+		/* Add size, 65,536 bytes to the end of .vector as HEAP */
+		. += 0x1000;
 	}
 
 	.text : {
