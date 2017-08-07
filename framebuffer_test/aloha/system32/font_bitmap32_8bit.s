@@ -322,20 +322,20 @@ _FONT_BITMAP8_V:
 	.byte 0b00000000
 	.byte 0b10000010
 	.byte 0b10000010
+	.byte 0b10000010
+	.byte 0b10000010
 	.byte 0b01000100
-	.byte 0b01000100
-	.byte 0b00101000
 	.byte 0b00101000
 	.byte 0b00010000
 
 _FONT_BITMAP8_W:
 	.byte 0b00000000
-	.byte 0b10000010
-	.byte 0b10000010
-	.byte 0b01010100
-	.byte 0b01010100
-	.byte 0b01010100
-	.byte 0b01101100
+	.byte 0b10010010
+	.byte 0b10010010
+	.byte 0b10010010
+	.byte 0b10010010
+	.byte 0b10101010
+	.byte 0b01000100
 	.byte 0b01000100
 
 _FONT_BITMAP8_X:
@@ -732,8 +732,8 @@ _FONT_BITMAP8_c:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
 	.byte 0b00111100
+	.byte 0b01000000
 	.byte 0b01000000
 	.byte 0b01000000
 	.byte 0b00111100
@@ -832,8 +832,8 @@ _FONT_BITMAP8_m:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
 	.byte 0b01101100
+	.byte 0b10010010
 	.byte 0b10010010
 	.byte 0b10010010
 	.byte 0b10010010
@@ -842,9 +842,9 @@ _FONT_BITMAP8_n:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
 	.byte 0b01011100
 	.byte 0b01100010
+	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b01000010
 
@@ -852,8 +852,8 @@ _FONT_BITMAP8_o:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
 	.byte 0b00111100
+	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b00111100
@@ -882,9 +882,9 @@ _FONT_BITMAP8_r:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
 	.byte 0b01011100
 	.byte 0b01100000
+	.byte 0b01000000
 	.byte 0b01000000
 	.byte 0b01000000
 
@@ -912,7 +912,7 @@ _FONT_BITMAP8_u:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
+	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b01000110
@@ -922,9 +922,9 @@ _FONT_BITMAP8_v:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
+	.byte 0b10000010
+	.byte 0b10000010
 	.byte 0b01000100
-	.byte 0b00101000
 	.byte 0b00101000
 	.byte 0b00010000
 
@@ -932,7 +932,7 @@ _FONT_BITMAP8_w:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00000000
+	.byte 0b10010010
 	.byte 0b10010010
 	.byte 0b01010100
 	.byte 0b01010100

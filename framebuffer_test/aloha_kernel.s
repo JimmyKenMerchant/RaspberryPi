@@ -1,5 +1,5 @@
 /**
- * alohaboot.s
+ * aloha_kernel.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -9,7 +9,7 @@
  */
 
 .globl _start
-.globl alohamain
+.globl user_start
 
 /**
  * Vector Interrupt Tables and These Functions
@@ -243,7 +243,7 @@ render:
 
 	push {r0-r3}
 
-	bl alohamain
+	bl user_start
 
 debug:
 	cpsie i                                   @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
@@ -413,7 +413,7 @@ float_example:
 double_example:
 	.double 3.3
 
-.include "system.s" @ If you want binary, use `.file`
+.include "system32/system32.s" @ If you want binary, use `.file`
 .balign 4
 
 /* End of Line is Needed */

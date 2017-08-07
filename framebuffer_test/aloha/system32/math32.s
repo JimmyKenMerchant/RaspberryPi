@@ -15,7 +15,7 @@
  * Convert Hexadecimal Bases (0-f) to Decimal Bases (0-9) of a Register
  *
  * Parameters
- * r0 unsigned integer: Register to Be Converted
+ * r0: Register to Be Converted
  *
  * Usage: r0-r11, r0 reused
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
@@ -31,7 +31,7 @@ hexa_to_deci32:
 	mul_number     .req r5
 	i              .req r6
 	shift          .req r7
-	mask           .req r8
+	bitmask        .req r8
 
 	push {r4-r8}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -49,11 +49,11 @@ hexa_to_deci32:
 	mov mul_number, #4
 
 	hexa_to_deci32_loop:
-		mov mask, #0xf                            @ 0b1111
+		mov bitmask, #0xf                         @ 0b1111
 		mul shift, i, mul_number
-		lsl mask, mask, shift                     @ Make Mask
-		and mask, dup_hexa, mask
-		lsr mask, mask, shift                     @ Make One Digit Number
+		lsl bitmask, bitmask, shift               @ Make bitmask
+		and bitmask, dup_hexa, bitmask
+		lsr bitmask, bitmask, shift               @ Make One Digit Number
 
 		cmp i, #0
 		ldreq power_lower, power_0                @ 16^0
@@ -89,14 +89,14 @@ hexa_to_deci32:
 
 		hexa_to_deci32_loop_loop:
 
-			cmp mask, #0
+			cmp bitmask, #0
 			ble hexa_to_deci32_loop_common
 
 			push {lr}
 			bl decimal_adder64
 			pop {lr}
 
-			sub mask, mask, #1
+			sub bitmask, bitmask, #1
 
 			b hexa_to_deci32_loop_loop
 
@@ -132,7 +132,7 @@ power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 .unreq mul_number
 .unreq i
 .unreq shift
-.unreq mask
+.unreq bitmask
 
 
 .globl decimal_adder64
@@ -142,10 +142,10 @@ power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  * Addition with Decimal Bases (0-9)
  *
  * Parameters
- * r0 unsigned integer: Lower Bits of First Number, needed between 0-9 in all digits
- * r1 unsigned integer: Upper Bits of First Number, needed between 0-9 in all digits
- * r2 unsigned integer: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3 unsinged integer: Upper Bits of Second Number, needed between 0-9 in all digits
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
  *
  * Usage: r0-r11
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
@@ -162,8 +162,8 @@ decimal_adder64:
 	mul_number     .req r6
 	i              .req r7
 	shift          .req r8
-	mask_1         .req r9
-	mask_2         .req r10
+	bitmask_1      .req r9
+	bitmask_2      .req r10
 	carry_flag     .req r11
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
@@ -179,8 +179,8 @@ decimal_adder64:
 	mov mul_number, #4
 
 	decimal_adder64_loop:
-		mov mask_1, #0xf                            @ 0b1111
-		mov mask_2, #0xf
+		mov bitmask_1, #0xf                            @ 0b1111
+		mov bitmask_2, #0xf
 
 		mul shift, i, mul_number
 
@@ -188,11 +188,11 @@ decimal_adder64:
 		bge decimal_adder64_loop_uppernumber
 
 		/* Lower Number */
-		lsl mask_1, mask_1, shift
-		lsl mask_2, mask_2, shift
+		lsl bitmask_1, bitmask_1, shift
+		lsl bitmask_2, bitmask_2, shift
 
-		and mask_1, dup_lower_1, mask_1
-		and mask_2, lower_2, mask_2
+		and bitmask_1, dup_lower_1, bitmask_1
+		and bitmask_2, lower_2, bitmask_2
 
 		b decimal_adder64_loop_adder
 
@@ -201,24 +201,24 @@ decimal_adder64:
 
 			sub shift, shift, #32
 
-			lsl mask_1, mask_1, shift
-			lsl mask_2, mask_2, shift
+			lsl bitmask_1, bitmask_1, shift
+			lsl bitmask_2, bitmask_2, shift
 
-			and mask_1, dup_upper_1, mask_1
-			and mask_2, upper_2, mask_2
+			and bitmask_1, dup_upper_1, bitmask_1
+			and bitmask_2, upper_2, bitmask_2
 
 		decimal_adder64_loop_adder:
 		
-			lsr mask_1, mask_1, shift
-			lsr mask_2, mask_2, shift
+			lsr bitmask_1, bitmask_1, shift
+			lsr bitmask_2, bitmask_2, shift
 
-			add mask_1, mask_1, mask_2
-			add mask_1, mask_1, carry_flag
+			add bitmask_1, bitmask_1, bitmask_2
+			add bitmask_1, bitmask_1, carry_flag
 
-			cmp mask_1, #0x10
+			cmp bitmask_1, #0x10
 			bge decimal_adder64_loop_adder_hexacarry
 
-			cmp mask_1, #0x0A
+			cmp bitmask_1, #0x0A
 			bge decimal_adder64_loop_adder_decicarry
 
 			mov carry_flag, #0                      @ Clear Carry
@@ -227,32 +227,32 @@ decimal_adder64:
 
 			decimal_adder64_loop_adder_hexacarry:
 
-				sub mask_1, #0x10
-				add mask_1, #0x06 
+				sub bitmask_1, #0x10
+				add bitmask_1, #0x06 
 				mov carry_flag, #1              @ Set Carry
 
 				b decimal_adder64_loop_common
 
 			decimal_adder64_loop_adder_decicarry:
 
-				sub mask_1, #0x0A
+				sub bitmask_1, #0x0A
 				mov carry_flag, #1              @ Set Carry
 
 		decimal_adder64_loop_common:
-			lsl mask_1, mask_1, shift
+			lsl bitmask_1, bitmask_1, shift
 
 			cmp i, #8
 			bge decimal_adder64_loop_common_uppernumber
 
 			/* Lower Number */
-			add lower_1, lower_1, mask_1
+			add lower_1, lower_1, bitmask_1
 
 			b decimal_adder64_loop_common_common
 
 			/* Upper Number */
 			decimal_adder64_loop_common_uppernumber:
 
-				add upper_1, upper_1, mask_1
+				add upper_1, upper_1, bitmask_1
 
 			decimal_adder64_loop_common_common:
 
@@ -267,7 +267,7 @@ decimal_adder64:
 		b decimal_adder64_common
 
 	decimal_adder64_error:
-		mov r0, #0                                        @ Return with Error
+		mov r0, #0                                      @ Return with Error
 		mov r1, #0
 
 	decimal_adder64_common:
@@ -285,6 +285,6 @@ decimal_adder64:
 .unreq mul_number
 .unreq i
 .unreq shift
-.unreq mask_1
-.unreq mask_2
+.unreq bitmask_1
+.unreq bitmask_2
 .unreq carry_flag

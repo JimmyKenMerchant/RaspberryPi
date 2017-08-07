@@ -20,9 +20,9 @@ COPY = $(COMP)-objcopy
 DUMP = $(COMP)-objdump
 
 LDSCRIPT = linker_script.ld
-OBJ1 = alohaboot
-OBJ2 = alohamain
-HEADER = alohastd.h
+OBJ1 = aloha_kernel
+OBJ2 = aloha_user
+HEADER = include/stdio.h include/aloha/system32.h 
 
 # "$@" means the target and $^ means all of dependencies and $< is first one.
 # If you meets "make: `main' is up to date.", use "touch" command to renew.
@@ -37,11 +37,11 @@ kernel.img: inter.elf
 inter.elf: $(OBJ1).o $(OBJ2).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
-$(OBJ2).o: $(OBJ2).c
+$(OBJ2).o: $(OBJ2).c $(HEADER)
 	$(CC) $< -I include/ -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
 
 $(OBJ1).o: $(OBJ1).s
-	$(AS) $< -I system/ -o $@ $(TARGET)
+	$(AS) $< -I aloha/ -o $@ $(TARGET)
 
 .PHONY: clean
 clean:
