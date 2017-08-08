@@ -86,6 +86,11 @@ render:
 	ldr r0, color16_navyblue
 	bl clear_color
 
+	mov r0, #20
+	mov r1, #0                               @ X Coordinate
+	mov r2, #0                               @ Y Coordinate
+	ldr r3, color16_blue                      @ Color (16-bit)
+	bl clear_color_8by8
 
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate

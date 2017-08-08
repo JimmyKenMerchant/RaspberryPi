@@ -17,19 +17,20 @@
  * Usage: r0-r11, r0 reused
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
  * Error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
+ * External Variable(s): math32_power_0-6, math32_power_7_lower, math32_power_7_upper
  */
 .globl hexa_to_deci32
 hexa_to_deci32:
 	/* Auto (Local) Variables, but just aliases */
-	hexa           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	deci_upper     .req r1
-	power_lower    .req r2
-	power_upper    .req r3
-	dup_hexa       .req r4
-	mul_number     .req r5
-	i              .req r6
-	shift          .req r7
-	bitmask        .req r8
+	hexa               .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	deci_upper         .req r1
+	math32_power_lower .req r2
+	math32_power_upper .req r3
+	dup_hexa           .req r4
+	mul_number         .req r5
+	i                  .req r6
+	shift              .req r7
+	bitmask            .req r8
 
 	push {r4-r8}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -41,7 +42,7 @@ hexa_to_deci32:
 
 	mov deci_lower, #0
 	mov deci_upper, #0
-	mov power_upper, #0
+	mov math32_power_upper, #0
 
 	mov i, #0
 	mov mul_number, #4
@@ -54,36 +55,36 @@ hexa_to_deci32:
 		lsr bitmask, bitmask, shift               @ Make One Digit Number
 
 		cmp i, #0
-		ldreq power_lower, power_0                @ 16^0
+		ldreq math32_power_lower, math32_power_0                @ 16^0
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #1
-		ldreq power_lower, power_1                @ 16^1
+		ldreq math32_power_lower, math32_power_1                @ 16^1
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #2
-		ldreq power_lower, power_2                @ 16^2
+		ldreq math32_power_lower, math32_power_2                @ 16^2
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #3
-		ldreq power_lower, power_3                @ 16^3
+		ldreq math32_power_lower, math32_power_3                @ 16^3
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #4
-		ldreq power_lower, power_4                @ 16^4
+		ldreq math32_power_lower, math32_power_4                @ 16^4
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #5
-		ldreq power_lower, power_5                @ 16^5
+		ldreq math32_power_lower, math32_power_5                @ 16^5
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #6
-		ldreq power_lower, power_6                @ 16^6
+		ldreq math32_power_lower, math32_power_6                @ 16^6
 		beq hexa_to_deci32_loop_loop
 
 		cmp i, #7
-		ldreq power_lower, power_7_lower          @ 16^7 Lower Bits
-		ldreq power_upper, power_7_upper          @ 16^7 Upper Bits
+		ldreq math32_power_lower, math32_power_7_lower          @ 16^7 Lower Bits
+		ldreq math32_power_upper, math32_power_7_upper          @ 16^7 Upper Bits
 
 		hexa_to_deci32_loop_loop:
 
@@ -110,22 +111,23 @@ hexa_to_deci32:
 
 		mov pc, lr
 
+/* Variables */
 .balign 4
-power_0:       .word 0x00000001 @ 16^0
-power_1:       .word 0x00000016 @ 16^1
-power_2:       .word 0x00000256 @ 16^2
-power_3:       .word 0x00004096 @ 16^3
-power_4:       .word 0x00065536 @ 16^4
-power_5:       .word 0x01048576 @ 16^5
-power_6:       .word 0x16777216 @ 16^6
-power_7_lower: .word 0x68435456 @ 16^7 Lower Bits
-power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
+math32_power_0:       .word 0x00000001 @ 16^0
+math32_power_1:       .word 0x00000016 @ 16^1
+math32_power_2:       .word 0x00000256 @ 16^2
+math32_power_3:       .word 0x00004096 @ 16^3
+math32_power_4:       .word 0x00065536 @ 16^4
+math32_power_5:       .word 0x01048576 @ 16^5
+math32_power_6:       .word 0x16777216 @ 16^6
+math32_power_7_lower: .word 0x68435456 @ 16^7 Lower Bits
+math32_power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 .balign 4
 
 .unreq deci_lower
 .unreq deci_upper
-.unreq power_lower
-.unreq power_upper
+.unreq math32_power_lower
+.unreq math32_power_upper
 .unreq dup_hexa
 .unreq mul_number
 .unreq i

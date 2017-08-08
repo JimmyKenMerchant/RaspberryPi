@@ -13,29 +13,27 @@
 void user_start()
 {
 
-	uchar8 string[] = "ALOHA!\nHello, World Everyone!\0";
-	uint32 x_coord = 80;
-	uint32 y_coord = 200;
+	uchar8 string[] = "ALOHA!\nHello World, Everyone!\0";
+	FB_X_CARET = 80;
+	FB_Y_CARET = 200;
+	uint64 print_return;
 	uint32 color = 0x0000ffff;
 	uint32 length = strlen_ascii( string ); // string length - 1 (Null)
 
-	print_number_8by8( length, x_coord, y_coord, color, 8 );
+	print_return = print_number_8by8( length, FB_X_CARET, FB_Y_CARET, color, 8 );
+	set_caret_8by8( print_return );
 
-	y_coord = 216;
+	print_return = print_string_ascii_8by8( string, FB_X_CARET, FB_Y_CARET, color, length );
+	set_caret_8by8( print_return );
 
-	uint64 number = print_string_ascii_8by8( string, x_coord, y_coord, color, length );
+	print_return = double_print_number_8by8( print_return, FB_X_CARET, FB_Y_CARET, color, 16 );
+	set_caret_8by8( print_return );
 
-	y_coord = 232;
+	print_return = print_number_8by8( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 );
+	set_caret_8by8( print_return );
 
-	double_print_number_8by8( number, x_coord, y_coord, color, 16 );
-
-	y_coord = 240;
-
-	print_number_8by8( FB_DEPTH, x_coord, y_coord, color, 8 );
-
-	y_coord = 248;
-
-	print_number_8by8( FB_SIZE, x_coord, y_coord, color, 8 );
+	print_return = print_number_8by8( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8 );
+	set_caret_8by8( print_return );
 
 	while(1) {
 		no_op();

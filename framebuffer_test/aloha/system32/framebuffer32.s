@@ -94,7 +94,7 @@ get_framebuffer:
  * Parameters
  * r0: Color (16-bit or 32-bit)
  *
- * Usage: r0-r11
+ * Usage: r0-r4
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB_ADDRESS, FB_SIZE, FB_DEPTH
@@ -106,6 +106,8 @@ clear_color:
 	size              .req r2
 	depth             .req r3
 	length            .req r4
+
+	push {r4}
 
 	ldr fb_buffer, FB_ADDRESS
 	cmp fb_buffer, #0
@@ -141,6 +143,7 @@ clear_color:
 		mov r0, #1                        @ Return with Error
 
 	clear_color_common:
+		pop {r4}
 		mov pc, lr
 
 .unreq color
