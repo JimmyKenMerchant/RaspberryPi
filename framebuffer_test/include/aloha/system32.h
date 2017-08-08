@@ -43,7 +43,7 @@ extern void no_op();
  *
  * Return: Number of Characters Which Were Not Drawn
  */
-extern uint32 set_caret_8by8
+extern uint32 set_caret
 (
 	uint64 return_print
 );

@@ -11,8 +11,8 @@
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
 COMP = arm-none-eabi
-# Available fpu info from Features in /proc/cpuinfo of Raspbian
-TARGET = -march=armv7-a -mfpu=neon
+# Available fpu info from Features in /proc/cpuinfo of Raspbian 
+TARGET = -mcpu=cortex-a7 -mfpu=neon
 CC = $(COMP)-gcc
 AS = $(COMP)-as
 LINKER = $(COMP)-ld

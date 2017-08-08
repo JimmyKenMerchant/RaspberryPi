@@ -11,7 +11,25 @@
  * Aliases: Does Not Affect Memory in Program
  * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
  */
-.equ interrupt_enable_basic,   0x18
+.equ systemtimer_control_status,         0x00
+.equ systemtimer_counter_lower_32_bits,  0x04
+.equ systemtimer_counter_higher_32_bits, 0x08
+.equ systemtimer_compare_0,              0x0C
+.equ systemtimer_compare_1,              0x10
+.equ systemtimer_compare_2,              0x14
+.equ systemtimer_compare_3,              0x18
+
+.equ interrupt_irq_basic_pending,  0x00
+.equ interrupt_irq_pending_1,      0x04
+.equ interrupt_irq_pending_2,      0x08
+.equ interrupt_fiq_control,        0x0C
+.equ interrupt_enable_irqs_1,      0x10
+.equ interrupt_enable_irqs_2,      0x14
+.equ interrupt_enable_basic_irqs,  0x18
+.equ interrupt_disable_irqs_1,     0x1C
+.equ interrupt_disable_irqs_2,     0x20
+.equ interrupt_disable_basic_irqs, 0x24
+
 .equ armtimer_load,            0x00
 .equ armtimer_control,         0x08
 .equ armtimer_clear,           0x0C
@@ -53,6 +71,7 @@
  */
 .balign 4
 peripherals_base:   .word 0x3F000000
+systemtimer_base:   .word 0x00003000
 interrupt_base:     .word 0x0000B200
 armtimer_base:      .word 0x0000B400
 mailbox_base:       .word 0x0000B880

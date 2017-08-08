@@ -31,24 +31,43 @@ _supervisor_addr:            .word _reset
 _prefetch_abort_addr:        .word _reset
 _data_abort_addr:            .word _reset
 _hypervisor_addr:            .word _reset
-_irq_addr:                   .word _irq
-_fiq_addr:                   .word _reset
+_irq_addr:                   .word _reset
+_fiq_addr:                   .word _fiq
 
 _reset:
 	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
 	msr cpsr_c, r0
-	mov sp, #0x20000000                       @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
+	mov sp, #0x8000                           @ Stack Pointer to 0x8000
+                                                  @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
 
-	mov r0, #0x08000
+	/*
+	 * To Handle HYP mode well, you need to know all interrupts are treated in HYP mode
+	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
+	 * To remember original ELR and SPSR on the time when start.elf commands HYP with, store these in the stack FIRST. 
+	 */
+	mrs r0, elr_hyp                           @ mrs/msr accessible system registers can add postfix of modes
+	mrs r1, spsr_hyp
+	push {r0, r1}                             @ spsr_hyp in 0x7FFC, elr_hyp in 0x7FF8
+
+	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
 	ldr r0, peripherals_base
 	ldr r1, interrupt_base
 	add r0, r0, r1
 
-	mov r1, #1                                @ 1 to LSB for IRQ of ARM Timer
-	str r1, [r0, #interrupt_enable_basic]
+	mov r1, #0xFF000000
+	add r1, r1, #0x00FF0000
+	add r1, r1, #0x0000FF00
+	add r1, r1, #0x000000FF
+
+	str r1, [r0, #interrupt_disable_irqs_1]   @ Make Sure Disable All IRQs
+	str r1, [r0, #interrupt_disable_irqs_2]
+	str r1, [r0, #interrupt_disable_basic_irqs]
+
+	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
+	str r1, [r0, #interrupt_fiq_control]
 
 	ldr r0, peripherals_base
 	ldr r1, armtimer_base
@@ -76,26 +95,26 @@ _reset:
 	str r1, [r0, #gpio_gpfsel_4]
 
 	/* Framebuffer Obtain */
-	push {r0-r3}
+	push {r0-r3,lr}
 	bl get_framebuffer
-	pop {r0-r3}
+	pop {r0-r3,lr}
 
 render:
-	push {r0-r5}
+	push {r0-r5,lr}
 
 	ldr r0, color16_navyblue
 	bl clear_color
 
-	mov r0, #20
-	mov r1, #0                               @ X Coordinate
-	mov r2, #0                               @ Y Coordinate
-	ldr r3, color16_blue                      @ Color (16-bit)
+	mov r0, #20                               @ Length of Blocks, Left to Right
+	mov r1, #0                                @ X Coordinate
+	mov r2, #0                                @ Y Coordinate
+	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
 	bl clear_color_8by8
 
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
-	ldr r3, color16_green                     @ Color (16-bit)
+	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
 	mov r4, #14                               @ Length of Characters, Need of PUSH/POP
 	push {r4}
 	bl print_string_ascii_8by8
@@ -105,7 +124,7 @@ render:
 	ldr r0, string_number                     @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #88                               @ Y Coordinate
-	ldr r3, color16_red                       @ Color (16-bit)
+	ldr r3, color16_red                       @ Color (16-bit or 32-bit)
 	mov r4, #10                               @ Length of Characters, Need of PUSH/POP
 	push {r4}
 	bl print_string_ascii_8by8
@@ -115,7 +134,7 @@ render:
 	ldr r0, FB_SIZE                           @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
 	mov r2, #96                               @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4}
 	bl print_number_8by8
@@ -128,7 +147,7 @@ render:
                                                   @ r0 (Lower Half) and r1 (Upper Half) are already stored
 	mov r2, #80                               @ X Coordinate
 	mov r3, #104                              @ Y Coordinate
-	ldr r4, color16_magenta                   @ Color (16-bit)
+	ldr r4, color16_magenta                   @ Color (16-bit or 32-bit)
 	mov r5, #10                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4,r5}
 	bl double_print_number_8by8
@@ -144,7 +163,7 @@ render:
                                                   @ r0 (Lower Half) and r1 (Upper Half) are already stored
 	mov r2, #80                               @ X Coordinate
 	mov r3, #112                              @ Y Coordinate
-	ldr r4, color16_skyblue                   @ Color (16-bit)
+	ldr r4, color16_skyblue                   @ Color (16-bit or 32-bit)
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4,r5}
 	bl double_print_number_8by8
@@ -154,7 +173,7 @@ render:
 	ldr r0, string_hello                      @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #120                              @ Y Coordinate
-	ldr r3, color16_white                     @ Color (16-bit)
+	ldr r3, color16_white                     @ Color (16-bit or 32-bit)
 	mov r4, #23                               @ Length of Characters, Need of PUSH/POP
 	push {r4}
 	bl print_string_ascii_8by8
@@ -163,29 +182,34 @@ render:
 	mov r0, r1                                @ Register to show numbers
 	mov r1, #80                               @ X Coordinate
 	mov r2, #144                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4}
 	bl print_number_8by8
 	add sp, sp, #4  
 
-	pop {r0-r5}
+	pop {r0-r5,lr}
 
+	cpsie f
+
+	push {r0-r3,lr}
 	bl user_start
+	pop {r0-r3,lr}
 
 debug:
-	cpsie i                                   @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
+	cpsie f                                  @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
 	debug_loop1:
 		b debug_loop1
 
-_irq:
-	push {r0-r12,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
-	bl irq_handler
-	pop {r0-r12,lr}                           @ Equals to ldmfd (stack pointer full, decrement order)
-	subs pc, lr, #4                           @ Need of Correction Value #4 add "s" condition to sub opcode
-                                                  @ To Back to Regular Mode and Retrieve CPSR from SPSR
+_fiq:
+	cpsid f
+	push {r0-r7,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+	bl fiq_handler
+	pop {r0-r7,lr}                           @ Equals to ldmfd (stack pointer full, decrement order)
+	cpsie f
+	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
-irq_handler:
+fiq_handler:
 	ldr r0, peripherals_base
 	ldr r1, armtimer_base
 	add r0, r0, r1
@@ -204,6 +228,54 @@ irq_handler:
 	add r0, r0, r1
 	mov r1, #gpio47_bit
 	str r1, [r0]
+
+	ldr r0, timer_sub
+	ldr r1, timer_main
+
+	add r0, r0, #1
+	cmp r0, #10
+	addge r1, #1
+	movge r0, #0
+
+	str r0, timer_sub
+	str r1, timer_main
+
+	push {r0-r3,lr}
+	mov r0, #8                                @ Length of Blocks, Left to Right
+	mov r1, #80                               @ X Coordinate
+	mov r2, #400                              @ Y Coordinate
+	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
+	bl clear_color_8by8
+	pop {r0-r3,lr}
+
+	push {r0-r4,lr}
+	mov r1, #80                               @ X Coordinate
+	mov r2, #400                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4
+	pop {r0-r4,lr}
+
+	push {r0-r3,lr}
+	mov r0, #8                                @ Length of Blocks, Left to Right
+	mov r1, #80                               @ X Coordinate
+	mov r2, #408                              @ Y Coordinate
+	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
+	bl clear_color_8by8
+	pop {r0-r3,lr}
+
+	push {r0-r4,lr}
+	mov r0, r1
+	mov r1, #80                               @ X Coordinate
+	mov r2, #408                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4
+	pop {r0-r4,lr}
 
 	mov pc, lr
 
@@ -240,6 +312,10 @@ float_example:
 	.float 3.3
 double_example:
 	.double 3.3
+timer_main:
+	.word 0x00000000
+timer_sub:
+	.word 0x00000000
 
 .include "system32/system32.s" @ If you want binary, use `.file`
 .balign 4

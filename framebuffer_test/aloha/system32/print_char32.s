@@ -14,7 +14,7 @@ FB_X_CARET: .word 0x00000000
 FB_Y_CARET: .word 0x00000000
 
 /**
- * function set_caret_8by8
+ * function set_caret
  * Set Caret Position from Return Vlue of `print_*` functions
  *
  * Parameters
@@ -25,8 +25,8 @@ FB_Y_CARET: .word 0x00000000
  * Return: r0 (Number of Characters Which Were Not Drawn)
  * Global Enviromental Variable(s): FB_X_CARET, FB_Y_CARET, FB_WIDTH
  */
-.globl set_caret_8by8
-set_caret_8by8:
+.globl set_caret
+set_caret:
 	/* Auto (Local) Variables, but just aliases */
 	chars             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	xy_coord          .req r1 @ Parameter, Register for Argument and Result, Scratch Register
@@ -45,15 +45,15 @@ set_caret_8by8:
 	lsr y_coord, y_coord, #16
 
 	cmp x_coord, width
-	blt set_caret_8by8_common
+	blt set_caret_common
 
-	set_caret_8by8_loop:
+	set_caret_loop:
 		sub x_coord, width
 		add y_coord, #1 
 		cmp x_coord, width
-		bge set_caret_8by8_loop
+		bge set_caret_loop
 		
-	set_caret_8by8_common:
+	set_caret_common:
 		str x_coord, FB_X_CARET
 		str y_coord, FB_Y_CARET
 		pop {r4} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)

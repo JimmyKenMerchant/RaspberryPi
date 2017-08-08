@@ -21,19 +21,19 @@ void user_start()
 	uint32 length = strlen_ascii( string ); // string length - 1 (Null)
 
 	print_return = print_number_8by8( length, FB_X_CARET, FB_Y_CARET, color, 8 );
-	set_caret_8by8( print_return );
+	set_caret( print_return );
 
 	print_return = print_string_ascii_8by8( string, FB_X_CARET, FB_Y_CARET, color, length );
-	set_caret_8by8( print_return );
+	set_caret( print_return );
 
 	print_return = double_print_number_8by8( print_return, FB_X_CARET, FB_Y_CARET, color, 16 );
-	set_caret_8by8( print_return );
+	set_caret( print_return );
 
 	print_return = print_number_8by8( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 );
-	set_caret_8by8( print_return );
+	set_caret( print_return );
 
 	print_return = print_number_8by8( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8 );
-	set_caret_8by8( print_return );
+	set_caret( print_return );
 
 	while(1) {
 		no_op();
