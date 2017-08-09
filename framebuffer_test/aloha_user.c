@@ -13,27 +13,30 @@
 void user_start()
 {
 
-	uchar8 string[] = "ALOHA!\nHello World, Everyone!\0";
-	FB_X_CARET = 80;
+	uchar8 string[] = "ALOHA!\n\tHello World, Everyone!\0";
+	uchar8 string2[] = "\nABCDEFGHIJKLMNOPQSTUVWXYZ\t\t\t\tabcdefghijklmnopqrstuvwxyz\0";
+	uchar8 string3[] = "\t$@^~ABCDEFGHIJKLMNOPQSTUVWXYZ\t\t\t\tabcdefghijklmnopqrstuvwxyz\0";
+	uchar8 newline[] = "\n\0";
+	FB_X_CARET = 0;
 	FB_Y_CARET = 200;
-	uint64 print_return;
 	uint32 color = 0x0000ffff;
-	uint32 length = strlen_ascii( string ); // string length - 1 (Null)
 
-	print_return = print_number_8by8( length, FB_X_CARET, FB_Y_CARET, color, 8 );
-	set_caret( print_return );
+	set_caret( print_number_8by8( strlen_ascii( string ), FB_X_CARET, FB_Y_CARET, color, 8 ) );
 
-	print_return = print_string_ascii_8by8( string, FB_X_CARET, FB_Y_CARET, color, length );
-	set_caret( print_return );
+	set_caret( print_string_ascii_8by8( string, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string ) ) );
 
-	print_return = double_print_number_8by8( print_return, FB_X_CARET, FB_Y_CARET, color, 16 );
-	set_caret( print_return );
+	set_caret( print_string_ascii_8by8( string2, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string2 ) ) );
 
-	print_return = print_number_8by8( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 );
-	set_caret( print_return );
+	set_caret( print_string_ascii_8by8( string3, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string3 ) ) );
 
-	print_return = print_number_8by8( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8 );
-	set_caret( print_return );
+	set_caret( print_string_ascii_8by8( newline, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( newline ) ) );
+
+	set_caret( print_number_8by8( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 ) );
+
+	set_caret( print_string_ascii_8by8( newline, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( newline ) ) );
+
+	set_caret( print_number_8by8( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8 ) );
+
 
 	while(1) {
 		no_op();

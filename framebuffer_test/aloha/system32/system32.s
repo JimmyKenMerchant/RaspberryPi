@@ -77,6 +77,23 @@ armtimer_base:      .word 0x0000B400
 mailbox_base:       .word 0x0000B880
 gpio_base:          .word 0x00200000
 
+
+/**
+ * Includes Enviromental Variables
+ * Make sure to reach Address of Variables by [PC, #immediate], othewise, Compiler can't recognaize Labels of Variables
+ */
+.balign 4
+.include "system32/framebuffer32.s"
+.balign 4
+.include "system32/color_palettes32_16bit.s"
+.balign 4
+.include "system32/print_char32.s"
+.balign 4
+.include "system32/font_bitmap32_8bit.s"
+.balign 4
+.include "system32/math32.s"
+.balign 4
+
 /**
  * function no_op
  * Do Nothing
@@ -187,18 +204,6 @@ load_8:
 	ldrb r1, [r0]
 	mov r0, r1
 	mov pc, lr
-
-.balign 4
-.include "system32/print_char32.s"
-.balign 4
-.include "system32/font_bitmap32_8bit.s"
-.balign 4
-.include "system32/math32.s"
-.balign 4
-.include "system32/color_palettes32_16bit.s"
-.balign 4
-.include "system32/framebuffer32.s"
-.balign 4
 
 .globl HEAP
 HEAP: .byte 0x00

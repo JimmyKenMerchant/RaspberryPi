@@ -152,10 +152,16 @@ clear_color:
 .unreq depth
 .unreq length
 
+/* Indicates Caret Position to Use in Printing Characters */
+.balign 4
+.globl FB_X_CARET
+.globl FB_Y_CARET
+FB_X_CARET: .word 0x00000000
+FB_Y_CARET: .word 0x00000000
 
 /* Frame Buffer Physical */
 
-.balign 16
+.balign 16                      @ Need of 16 bytes align
 .globl FB_DISPLAY_WIDTH
 .globl FB_DISPLAY_HEIGHT
 .globl FB_WIDTH

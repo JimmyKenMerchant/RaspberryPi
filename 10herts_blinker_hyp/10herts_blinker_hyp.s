@@ -10,18 +10,22 @@
 
 /**
  * Vector Interrupt Tables and These Functions
+ *
+ * Mon mode banks SP, LR, SPSR and its unique IVT, MBAR.
+ * Hyp mode banks SP, SPSR, ELR, but LR is shared with User and System mode.
+ * BUT REMEBER, in HYP mode, banking registers is INVALID because of no mode change.
  */
 .section	.vector
 .globl _start
 _start:
 	ldr pc, _reset_addr                    @ 0x00 reset
-	ldr pc, _undefined_instruction_addr    @ 0x04 Undifined mode (Hyp mode in Hyp mode)
-	ldr pc, _supervisor_addr               @ 0x08 Supervisor mode by `SVC`, If `HVC` from Hyp mode, Hyp mode
-	ldr pc, _prefetch_abort_addr           @ 0x0C Abort mode (Hyp mode in Hyp mode)
-	ldr pc, _data_abort_addr               @ 0x10 Abort mode (Hyp mode in Hyp mode)
-	ldr pc, _hypervisor_addr               @ 0x14 Hyp mode by `HVC` from Non-secure state except Hyp mode
-	ldr pc, _irq_addr                      @ 0x18 IRQ mode (Hyp mode in Hyp mode)
-	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode)
+	ldr pc, _undefined_instruction_addr    @ 0x04 Undifined mode (Hyp mode in Hyp mode), (Banks SP, LR, SPSR)
+	ldr pc, _supervisor_addr               @ 0x08 Supervisor mode by `SVC`, If `HVC` from Hyp mode, Hyp mode, (SP, LR, SPSR)
+	ldr pc, _prefetch_abort_addr           @ 0x0C Abort mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
+	ldr pc, _data_abort_addr               @ 0x10 Abort mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
+	ldr pc, _hypervisor_addr               @ 0x14 Hyp mode by `HVC` from Non-secure state except Hyp mode, (SP, SPSR, ELR)
+	ldr pc, _irq_addr                      @ 0x18 IRQ mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
+	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
 _reset_addr:                 .word _reset
 _undefined_instruction_addr: .word _reset
 _supervisor_addr:            .word _supervisor @ Use for Software Interrupts
@@ -54,10 +58,22 @@ _reset:
 	 * cpsr_c > 0-7 mmmmmtfi, cpsr_f > 24-31 j_qvcsn, cpsr_x 8-15, cpsr_s 16-23, cpsr_cxsf for all
 	 */
 
+	/*
+	 * To Handle HYP mode well, you need to know all interrupts are treated in HYP mode
+	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
+	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
+	 */
+	mov ip, sp                                @ ip is r12
+	mov sp, #0x8000                           @ Stack Pointer to 0x8000
+                                                  @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
+	push {r0-r12,lr}
+	mrs r0, elr_hyp                           @ mrs/msr accessible system registers can add postfix of modes
+	mrs r1, spsr_hyp
+	push {r0, r1}
+
 	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
 	msr cpsr_c, r0
-	mov sp, #0x20000000                       @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
 
 	/**
 	 * In Hyp mode, changing processor modes by cpsr isn't functioned
@@ -75,7 +91,7 @@ _reset:
                                          @ If you call `SMC`, you will jump to offset 0x08 of MVBAR
                                          @ Only Accessible in Privileged and Secure state
 
-	push {r0-r3,r12,lr}              @ Escape General Purpose Registers, SPSR, and ELR of Current Hyp Mode
+	push {r0-r12,lr}                 @ Escape General Purpose Registers, SPSR, and ELR of Current Hyp Mode
 	mrs r0, elr_hyp                  @ mrs/msr accessible system registers can add postfix of modes
 	mrs r1, spsr_hyp
 	push {r0, r1}                    @ In push, Registers will be stored in sequencial manner
@@ -93,7 +109,7 @@ _reset:
                                          @ `LDR r1, [sp], #4` BTW, In AArch64, '#16' (4 words)!
 	msr elr_hyp, r0
 	msr spsr_hyp, r1
-	pop {r0-r3,r12,lr}               @ In pop, Registers will be stored in sequencial manner
+	pop {r0-r12,lr}                  @ In pop, Registers will be stored in sequencial manner
                                          @ Lowest numberd register (Now on r0) will store one word in lowest memory address
 
 	ldr r0, interrupt_base
@@ -139,8 +155,9 @@ _irq:
 	push {r2,r3,r12,lr}                       @ Equals to stmfd (stack pointer full, decrement order)
 	bl irq_handler
 	pop {r2,r3,r12,lr}                        @ Equals to ldmfd (stack pointer full, decrement order)
-	subs pc, lr, #4                           @ Need of Correction Value #4 add "s" condition to sub opcode
-                                                  @ To Back to Regular Mode and Retrieve CPSR from SPSR
+	/*subs pc, lr, #4*/                           @ Need of Correction Value #4 add "s" condition to sub opcode
+                                                      @ To Back to Regular Mode and Retrieve CPSR from SPSR
+	eret                                      @ Because of HYP mode you need to call `ERET` even in FIQ or IRQ
 
 irq_handler:
 	mrs r2, cpsr                              @ Get cpsr

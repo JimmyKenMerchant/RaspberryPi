@@ -4,8 +4,6 @@
 
 * [10Hz blinker on Hyp mode](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/10herts_blinker_hyp)
 
-* [10Hz blinker on Hyp mode (Simple Version)](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/10herts_blinker_simple)
-
 * [Framebuffer Test](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/framebuffer_test)
 
 **INSTALL**

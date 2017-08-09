@@ -7,11 +7,14 @@
  *
  */
 
-/* Variables */
-.globl FB_X_CARET
-.globl FB_Y_CARET
-FB_X_CARET: .word 0x00000000
-FB_Y_CARET: .word 0x00000000
+/**
+ * In some cases, I use `lsl Rd, Rm, #1` (Logical Shift Left) as Multiply Rm by Immediate #2,
+ * and `lsl Rd, Rm, #2` as Multiply Rm by Immediate #4,
+ * and `lsl Rd, Rm, #3` as Multiply Rm by Immediate #8 for the efficiency of CPU
+ *
+ * If you want to divide the number by a power of 2 (2^n), use lsr (Logical Shift Right)
+ *
+ */
 
 /**
  * function set_caret
@@ -77,7 +80,7 @@ set_caret:
  * r2: Y Coordinate
  * r3: Color (16-bit or 32-bit)
  *
- * Usage: r0-r6
+ * Usage: r0-r5
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  * Global Enviromental Variable(s): ASCII_FONT_BITMAP8_DEL, FB_WIDTH
@@ -90,14 +93,11 @@ clear_color_8by8:
 	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
 	color             .req r3 @ Parameter, Register for Argument and Result, Scratch Register
 	char_point        .req r4
-	mul_number        .req r5
-	width             .req r6
+	width             .req r5
 
-	push {r4-r6} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r5} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 	ldr char_point, ASCII_FONT_BITMAP8_DEL
-
-	mov mul_number, #4
 
 	ldr width, FB_WIDTH
 
@@ -114,9 +114,16 @@ clear_color_8by8:
 
 		add x_coord, x_coord, #8
 
-		sub length, length, #1
-		cmp length, #0
-		bgt clear_color_8by8_loop
+		cmp x_coord, width
+		blt clear_color_8by8_loop_common
+
+		mov x_coord, #0
+		add y_coord, y_coord, #8
+
+		clear_color_8by8_loop_common:
+			sub length, length, #1
+			cmp length, #0
+			bgt clear_color_8by8_loop
 
 	clear_color_8by8_success:
 		mov r0, #0                                 @ Return with Success
@@ -128,7 +135,7 @@ clear_color_8by8:
 	clear_color_8by8_common:
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
-		pop {r4-r6} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r5} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 		mov pc, lr
 
@@ -137,7 +144,6 @@ clear_color_8by8:
 .unreq y_coord
 .unreq color
 .unreq char_point
-.unreq mul_number
 .unreq width
 
 
@@ -203,9 +209,9 @@ print_string_ascii_8by8:
 	color             .req r3 @ Parameter, Register for Argument and Result, Scratch Register
 	length            .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	string_byte       .req r5
-	mul_number        .req r6
-	ascii_table_base  .req r7
-	width             .req r8
+	ascii_table_base  .req r6
+	width             .req r7
+	tab_length        .req r8
 
 	push {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
@@ -213,20 +219,24 @@ print_string_ascii_8by8:
 	pop {length}                                     @ Get Fourth Argument
 	sub sp, sp, #24                                  @ Retrieve SP
 
-	mov mul_number, #4
 	ldr ascii_table_base, ARRAY_ASCII_FONT_BITMAP8
 
 	ldr width, FB_WIDTH
+
+	mov tab_length, #4
 
 	print_string_ascii_8by8_loop:
 		ldrb string_byte, [string_point]          @ Load Character Byte
 		cmp string_byte, #0                       @ NULL Character (End of String) Checker
 		beq print_string_ascii_8by8_success       @ Break Loop if Null Character
 
+		cmp string_byte, #0x09
+		beq print_string_ascii_8by8_loop_tab
+
 		cmp string_byte, #0x0A
 		beq print_string_ascii_8by8_loop_linefeed
 
-		mul string_byte, string_byte, mul_number
+		lsl string_byte, string_byte, #2          @ Substitute of Multiplication by #4 (mul)
 
 		push {r0-r3,lr}                           @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [ascii_table_base, string_byte]   @ Character Pointer
@@ -244,6 +254,16 @@ print_string_ascii_8by8:
 		print_string_ascii_8by8_loop_linefeed:
 			mov x_coord, #0
 			add y_coord, y_coord, #8
+			b print_string_ascii_8by8_loop_common
+
+		print_string_ascii_8by8_loop_tab:
+			add x_coord, x_coord, #8
+			cmp x_coord, width
+			movge x_coord, #0
+			addge y_coord, y_coord, #8
+			sub tab_length, tab_length, #1
+			cmp tab_length, #0
+			bgt print_string_ascii_8by8_loop_tab
 
 		print_string_ascii_8by8_loop_common:
 			add string_point, string_point, #1
@@ -271,9 +291,9 @@ print_string_ascii_8by8:
 .unreq color
 .unreq length
 .unreq string_byte
-.unreq mul_number
 .unreq ascii_table_base
 .unreq width
+.unreq tab_length
 
 
 /**
@@ -301,23 +321,23 @@ double_print_number_8by8:
 	y_coord           .req r3 @ Parameter, Register for Argument, Scratch Register
 	color             .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	length            .req r5 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	width             .req r6
-	mul_number        .req r7
-	length_lower      .req r8
+	length_lower      .req r6
+	xy_coord          .req r7
 
-	push {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r7} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	add sp, sp, #20                                  @ r4-r8 offset 20 bytes
+	add sp, sp, #16                                  @ r4-r7 offset 16 bytes
 	pop {color,length}                               @ Get Fourth Argument
-	sub sp, sp, #28                                  @ Retrieve SP
+	sub sp, sp, #24                                  @ Retrieve SP
 
-	mov mul_number, #8
 	mov length_lower, #0
 
 	double_print_number_8by8_loop:
 		cmp length, #8
 		subgt length_lower, length, #8
 		movgt length, #8
+
+		/* Print Upper Half */
 
 		push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)
 		mov r0, number_upper	
@@ -337,25 +357,30 @@ double_print_number_8by8:
 		cmp length_lower, #0
 		ble double_print_number_8by8_success
 
-		mul width, length, mul_number
-		add x_coord, x_coord, width
+		/* Print Lower Half */
+
+		ldr xy_coord, [sp, #-24]
+		mov x_coord, xy_coord
+		lsr x_coord, x_coord, #16
+		mov y_coord, xy_coord
+		lsl y_coord, y_coord, #16
+		lsr y_coord, y_coord, #16
+
 		mov length, length_lower
 
-		double_print_number_8by8_loop_lower:
-
-			push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)	
-			mov r1, x_coord
-			mov r2, y_coord
-			mov r3, color
-			push {length}
-			bl print_number_8by8
-			add sp, sp, #4
-			push {r1}
-			add sp, sp, #4
-			cmp r0, #0                         @ Compare Return 0 or 1
-			movne length, r0
-			pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
-			bne double_print_number_8by8_error
+		push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)	
+		mov r1, x_coord
+		mov r2, y_coord
+		mov r3, color
+		push {length}
+		bl print_number_8by8
+		add sp, sp, #4
+		push {r1}
+		add sp, sp, #4
+		cmp r0, #0                         @ Compare Return 0 or 1
+		movne length, r0
+		pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
+		bne double_print_number_8by8_error
 
 	double_print_number_8by8_success:
 		mov r0, #0                                 @ Return with Success
@@ -366,7 +391,7 @@ double_print_number_8by8:
 
 	double_print_number_8by8_common:
 		ldr r1, [sp, #-24]
-		pop {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r7} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 		mov pc, lr
 
@@ -376,9 +401,8 @@ double_print_number_8by8:
 .unreq y_coord
 .unreq color
 .unreq length
-.unreq width
-.unreq mul_number
 .unreq length_lower
+.unreq xy_coord
 
 
 /**
@@ -392,7 +416,7 @@ double_print_number_8by8:
  * r3: Color (16-bit or 32-bit)
  * r4: length of Digits, 8 Digits Maximum, Left to Right, Need of PUSH/POP
  *
- * Usage: r0-r10
+ * Usage: r0-r9
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
@@ -405,33 +429,33 @@ print_number_8by8:
 	color          .req r3 @ Parameter, Register for Argument, Scratch Register
 	length         .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	width          .req r5
-	mul_number     .req r6
-	i              .req r7
-	bitmask        .req r8
-	shift          .req r9
-	array_num_base .req r10
+	i              .req r6
+	bitmask        .req r7
+	shift          .req r8
+	array_num_base .req r9
 
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r9}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #28                                  @ r4-r10 offset 28 bytes
+	add sp, sp, #24                                  @ r4-r9 offset 24 bytes
 	pop {length}                                     @ Get Fourth Argument
-	sub sp, sp, #32                                  @ Retrieve SP
+	sub sp, sp, #28                                  @ Retrieve SP
 
 	ldr array_num_base, ARRAY_FONT_BITMAP8
 
-	mov mul_number, #4
+	ldr width, FB_WIDTH
+
 	mov i, #8
 
 	print_number_8by8_loop:
 		sub i, i, #1
 
 		mov bitmask, #0xF                        @ 0b1111
-		mul shift, i, mul_number
+		lsl shift, i, #2                         @ Substitute of Multiplication by #4 (mul)
 		lsl bitmask, bitmask, shift              @ Make bitmask
 		and bitmask, number, bitmask
 		lsr bitmask, bitmask, shift              @ Make One Digit Number
-		mul bitmask, bitmask, mul_number
+		lsl bitmask, bitmask, #2                 @ Substitute of Multiplication by #4 (mul)
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [array_num_base, bitmask]        @ Character Pointer
@@ -444,12 +468,20 @@ print_number_8by8:
 
 		add x_coord, #8
 
-		sub length, length, #1
-		cmp length, #0
-		bgt print_number_8by8_loop
+		cmp x_coord, width
+		blt print_number_8by8_loop_common
 
-		cmp i, #0
-		blt print_number_8by8_loop
+		print_number_8by8_loop_linefeed:
+			mov x_coord, #0
+			add y_coord, y_coord, #8
+
+		print_number_8by8_loop_common:
+			sub length, length, #1
+			cmp length, #0
+			ble print_number_8by8_success
+
+			cmp i, #0
+			bgt print_number_8by8_loop
 
 	print_number_8by8_success:
 		mov r0, #0                               @ Return with Success
@@ -461,7 +493,7 @@ print_number_8by8:
 	print_number_8by8_common:
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r9}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 		/*pop {r3}*/    @ To Prevent Stack Pointer Increment after Return Because of the 5th Parameter
@@ -475,7 +507,6 @@ print_number_8by8:
 .unreq color
 .unreq length
 .unreq width
-.unreq mul_number
 .unreq i
 .unreq bitmask
 .unreq shift

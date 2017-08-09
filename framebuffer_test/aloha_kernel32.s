@@ -13,18 +13,22 @@
 
 /**
  * Vector Interrupt Tables and These Functions
+ *
+ * Mon mode banks SP, LR, SPSR and its unique IVT, MBAR.
+ * Hyp mode banks SP, SPSR, ELR, but LR is shared with User and System mode.
+ * BUT REMEBER, in HYP mode, banking registers is INVALID because of no mode change.
  */
-.code 32 @ `16` for Thumb Instructions, `64` for AArch64
 .section	.vector
+.globl _start
 _start:
 	ldr pc, _reset_addr                    @ 0x00 reset
-	ldr pc, _undefined_instruction_addr    @ 0x04 Undifined mode (Hyp mode in Hyp mode)
-	ldr pc, _supervisor_addr               @ 0x08 Supervisor mode by `SVC`, If `HVC` from Hyp mode, Hyp mode
-	ldr pc, _prefetch_abort_addr           @ 0x0C Abort mode (Hyp mode in Hyp mode)
-	ldr pc, _data_abort_addr               @ 0x10 Abort mode (Hyp mode in Hyp mode)
-	ldr pc, _hypervisor_addr               @ 0x14 Hyp mode by `HVC` from Non-secure state except Hyp mode
-	ldr pc, _irq_addr                      @ 0x18 IRQ mode (Hyp mode in Hyp mode)
-	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode), which banks r8-r12 specially
+	ldr pc, _undefined_instruction_addr    @ 0x04 Undifined mode (Hyp mode in Hyp mode), (Banks SP, LR, SPSR)
+	ldr pc, _supervisor_addr               @ 0x08 Supervisor mode by `SVC`, If `HVC` from Hyp mode, Hyp mode, (SP, LR, SPSR)
+	ldr pc, _prefetch_abort_addr           @ 0x0C Abort mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
+	ldr pc, _data_abort_addr               @ 0x10 Abort mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
+	ldr pc, _hypervisor_addr               @ 0x14 Hyp mode by `HVC` from Non-secure state except Hyp mode, (SP, SPSR, ELR)
+	ldr pc, _irq_addr                      @ 0x18 IRQ mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
+	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
 _reset_addr:                 .word _reset
 _undefined_instruction_addr: .word _reset
 _supervisor_addr:            .word _reset
@@ -35,20 +39,23 @@ _irq_addr:                   .word _reset
 _fiq_addr:                   .word _fiq
 
 _reset:
-	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
-	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
-	msr cpsr_c, r0
-	mov sp, #0x8000                           @ Stack Pointer to 0x8000
-                                                  @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-
 	/*
 	 * To Handle HYP mode well, you need to know all interrupts are treated in HYP mode
 	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
-	 * To remember original ELR and SPSR on the time when start.elf commands HYP with, store these in the stack FIRST. 
+	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
 	 */
+	mov ip, sp                                @ ip is r12
+	mov sp, #0x8000                           @ Stack Pointer to 0x8000
+                                                  @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
+
+	push {r0-r12,lr}
 	mrs r0, elr_hyp                           @ mrs/msr accessible system registers can add postfix of modes
 	mrs r1, spsr_hyp
-	push {r0, r1}                             @ spsr_hyp in 0x7FFC, elr_hyp in 0x7FF8
+	push {r0, r1}
+
+	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
+	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
+	msr cpsr_c, r0
 
 	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
@@ -135,7 +142,7 @@ render:
 	mov r1, #80                               @ X Coordinate
 	mov r2, #96                               @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r4, #6                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	push {r4}
 	bl print_number_8by8
 	add sp, sp, #4                            @ Increment SP because of push {r4}
@@ -202,11 +209,22 @@ debug:
 		b debug_loop1
 
 _fiq:
-	cpsid f
-	push {r0-r7,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+
+	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
+	mrs r0, elr_hyp                          @ mrs/msr accessible system registers can add postfix of modes
+	mrs r1, spsr_hyp
+	push {r0, r1}
+
 	bl fiq_handler
-	pop {r0-r7,lr}                           @ Equals to ldmfd (stack pointer full, decrement order)
-	cpsie f
+
+	pop {r0, r1}
+	msr elr_hyp, r0
+	msr spsr_hyp, r1
+	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
+
+
+	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
 	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
 fiq_handler:
@@ -229,11 +247,35 @@ fiq_handler:
 	mov r1, #gpio47_bit
 	str r1, [r0]
 
+	push {r0-r3,lr}
+	mov r0, #8                                @ Length of Blocks, Left to Right
+	mov r1, #80                               @ X Coordinate
+	mov r2, #392                              @ Y Coordinate
+	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
+	bl clear_color_8by8
+	pop {r0-r3,lr}
+
+	ldr r0, peripherals_base
+	ldr r1, systemtimer_base
+	add r0, r0, r1
+
+	ldr r0, [r0, #systemtimer_counter_lower_32_bits]
+
+	push {r0-r4,lr}
+	mov r1, #80                               @ X Coordinate
+	mov r2, #392                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit)
+	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	push {r4}
+	bl print_number_8by8
+	add sp, sp, #4
+	pop {r0-r4,lr}
+
 	ldr r0, timer_sub
 	ldr r1, timer_main
 
 	add r0, r0, #1
-	cmp r0, #10
+	cmp r0, #16
 	addge r1, #1
 	movge r0, #0
 
