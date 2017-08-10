@@ -8,8 +8,8 @@
  * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
-.globl _start
 .globl user_start
+
 
 /**
  * Vector Interrupt Tables and These Functions
@@ -107,105 +107,37 @@ _reset:
 	pop {r0-r3,lr}
 
 render:
-	push {r0-r5,lr}
+	push {r0-r7,lr}
 
 	ldr r0, color16_navyblue
 	bl clear_color
-
-	mov r0, #20                               @ Length of Blocks, Left to Right
-	mov r1, #0                                @ X Coordinate
-	mov r2, #0                                @ Y Coordinate
-	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	bl clear_color_8by8
-
-	ldr r0, FONT_BITMAP8_0
-	mov r1, #0
-	mov r2, #0
-	ldr r3, color16_red
-	mov r4, #8
-	mov r5, #8
-	push {r4, r5}
-	bl pict_char
-	add sp, sp, #8
 
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
 	mov r4, #14                               @ Length of Characters, Need of PUSH/POP
-	push {r4}
-	bl print_string_ascii_8by8
-	add sp, sp, #4                            @ Increment SP because of push {r4}
+	mov r5, #8
+	mov r6, #12
+	ldr r7, FONT_MONO_12PX_ASCII
+	push {r4-r7}
+	bl print_string
+	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
 
 
 	ldr r0, string_number                     @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #88                               @ Y Coordinate
 	ldr r3, color16_red                       @ Color (16-bit or 32-bit)
-	mov r4, #10                               @ Length of Characters, Need of PUSH/POP
-	push {r4}
-	bl print_string_ascii_8by8
-	add sp, sp, #4                            @ Increment SP because of push {r4}
+	mov r4, #10
+	mov r5, #8
+	mov r6, #12
+	ldr r7, FONT_MONO_12PX_ASCII
+	push {r4-r7}
+	bl print_string
+	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
 
-
-	ldr r0, FB_SIZE                           @ Register to show numbers
-	mov r1, #80                               @ X Coordinate
-	mov r2, #96                               @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	mov r4, #6                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4                            @ Increment SP because of push {r4}
-
-
-	ldr r0, FB_SIZE
-	bl hexa_to_deci32
-
-                                                  @ r0 (Lower Half) and r1 (Upper Half) are already stored
-	mov r2, #80                               @ X Coordinate
-	mov r3, #104                              @ Y Coordinate
-	ldr r4, color16_magenta                   @ Color (16-bit or 32-bit)
-	mov r5, #10                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4,r5}
-	bl double_print_number_8by8
-	add sp, sp, #8                            @ Increment SP because of push {r4, r5}
-
-
-	ldr r0, first_lower                       @ Lower Bits of First Number, needed between 0-9 in all digits
-	ldr r1, first_upper                       @ Upper Bits of First Number, needed between 0-9 in all digits
-	ldr r2, second_lower                      @ Lower Bits of Second Number, needed between 0-9 in all digits
-	ldr r3, second_upper                      @ Upper Bits of Second Number, needed between 0-9 in all digits
-	bl decimal_adder64
-
-                                                  @ r0 (Lower Half) and r1 (Upper Half) are already stored
-	mov r2, #80                               @ X Coordinate
-	mov r3, #112                              @ Y Coordinate
-	ldr r4, color16_skyblue                   @ Color (16-bit or 32-bit)
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4,r5}
-	bl double_print_number_8by8
-	add sp, sp, #8                            @ Increment SP because of push {r4, r5}
-
-
-	ldr r0, string_hello                      @ Pointer of Array of String
-	mov r1, #80                               @ X Coordinate
-	mov r2, #120                              @ Y Coordinate
-	ldr r3, color16_white                     @ Color (16-bit or 32-bit)
-	mov r4, #23                               @ Length of Characters, Need of PUSH/POP
-	push {r4}
-	bl print_string_ascii_8by8
-	add sp, sp, #4                            @ Increment SP because of push {r4}
-
-	mov r0, r1                                @ Register to show numbers
-	mov r1, #80                               @ X Coordinate
-	mov r2, #144                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4  
-
-	pop {r0-r5,lr}
+	pop {r0-r7,lr}
 
 	cpsie f
 
@@ -257,12 +189,17 @@ fiq_handler:
 	mov r1, #gpio47_bit
 	str r1, [r0]
 
+
 	push {r0-r3,lr}
-	mov r0, #8                                @ Length of Blocks, Left to Right
+	mov r0, #10                               @ Length of Blocks, Left to Right
 	mov r1, #80                               @ X Coordinate
 	mov r2, #392                              @ Y Coordinate
 	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	bl clear_color_8by8
+	mov r4, #8
+	mov r5, #12
+	push {r4-r5}
+	bl clear_color_block
+	add sp, sp, #8                           @ Increment SP because of push {r4-r6}
 	pop {r0-r3,lr}
 
 	ldr r0, peripherals_base
@@ -276,9 +213,12 @@ fiq_handler:
 	mov r2, #392                              @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4
+	mov r5, #8
+	mov r6, #12
+	ldr r7, FONT_MONO_12PX_NUMBER
+	push {r4-r7}
+	bl print_number
+	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
 	pop {r0-r4,lr}
 
 	ldr r0, timer_sub
@@ -297,7 +237,11 @@ fiq_handler:
 	mov r1, #80                               @ X Coordinate
 	mov r2, #400                              @ Y Coordinate
 	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	bl clear_color_8by8
+	mov r4, #8
+	mov r5, #12
+	push {r4-r5}
+	bl clear_color_block
+	add sp, sp, #8
 	pop {r0-r3,lr}
 
 	push {r0-r4,lr}
@@ -305,9 +249,12 @@ fiq_handler:
 	mov r2, #400                              @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4
+	mov r5, #8
+	mov r6, #12
+	ldr r7, FONT_MONO_12PX_NUMBER
+	push {r4-r7}
+	bl print_number
+	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
 	pop {r0-r4,lr}
 
 	push {r0-r3,lr}
@@ -315,7 +262,11 @@ fiq_handler:
 	mov r1, #80                               @ X Coordinate
 	mov r2, #408                              @ Y Coordinate
 	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	bl clear_color_8by8
+	mov r4, #8
+	mov r5, #12
+	push {r4-r5}
+	bl clear_color_block
+	add sp, sp, #8 
 	pop {r0-r3,lr}
 
 	push {r0-r4,lr}
@@ -324,9 +275,12 @@ fiq_handler:
 	mov r2, #408                              @ Y Coordinate
 	ldr r3, color16_yellow                    @ Color (16-bit)
 	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	push {r4}
-	bl print_number_8by8
-	add sp, sp, #4
+	mov r5, #8
+	mov r6, #12
+	ldr r7, FONT_MONO_12PX_NUMBER
+	push {r4-r7}
+	bl print_number
+	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
 	pop {r0-r4,lr}
 
 	mov pc, lr
@@ -368,6 +322,7 @@ timer_main:
 	.word 0x00000000
 timer_sub:
 	.word 0x00000000
+.balign 4
 
 .include "system32/system32.s" @ If you want binary, use `.file`
 .balign 4

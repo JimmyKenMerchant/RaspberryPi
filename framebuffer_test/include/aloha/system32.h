@@ -33,6 +33,8 @@ extern uint32 FB_WIDTH;
 extern uint32 FB_HEIGHT;
 extern uint32 FB_X_CARET;
 extern uint32 FB_Y_CARET;
+extern uint32* FONT_MONO_12PX_NUMBER;
+extern uint32* FONT_MONO_12PX_ASCII;
 
 void user_start();
 
@@ -53,24 +55,27 @@ extern uint32 set_caret
  *
  * Return: Number of Words Maximum of 4,294,967,295 words
  */
-extern uint32 strlen_ascii
+extern uint32 strlen
 (
 	uchar8* string
 );
 
 /**
- * Print String with ASCII Table
+ * rint String with 1 Byte Character
  *
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
-extern uint64 print_string_ascii_8by8
+extern uint64 print_string
 (
 	uchar8* string,
 	uint32 x_coord,
 	uint32 y_coord,
 	uint32 color,
-	uint32 length
+	uint32 length,
+	uint32 font_width,
+	uint32 font_height,
+	uint32* font_base
 );
 
 /**
@@ -79,13 +84,16 @@ extern uint64 print_string_ascii_8by8
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
-extern uint64 double_print_number_8by8
+extern uint64 double_print_number
 (
 	uint64 number,
 	uint32 x_coord,
 	uint32 y_coord,
 	uint32 color,
-	uint32 length
+	uint32 length,
+	uint32 font_width,
+	uint32 font_height,
+	uint32* font_base
 );
 
 /**
@@ -94,11 +102,14 @@ extern uint64 double_print_number_8by8
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
-extern uint64 print_number_8by8
+extern uint64 print_number
 (
 	uint32 number,
 	uint32 x_coord,
 	uint32 y_coord,
 	uint32 color,
-	uint32 length
+	uint32 length,
+	uint32 font_width,
+	uint32 font_height,
+	uint32* font_base
 );

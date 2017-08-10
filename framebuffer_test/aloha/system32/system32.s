@@ -69,6 +69,12 @@
 /**
  * Variables
  */
+.globl peripherals_base
+.globl systemtimer_base
+.globl interrupt_base
+.globl armtimer_base
+.globl mailbox_base
+.globl gpio_base
 .balign 4
 peripherals_base:   .word 0x3F000000
 systemtimer_base:   .word 0x00003000
@@ -80,7 +86,11 @@ gpio_base:          .word 0x00200000
 
 /**
  * Includes Enviromental Variables
- * Make sure to reach Address of Variables by [PC, #immediate], othewise, Compiler can't recognaize Labels of Variables
+ * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
+ * othewise, Compiler can't recognaize Labels of Variables.
+ * This Immediate Can't be Over #4095 (0xFFF)
+ * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
+ * These are useful if you use `extern` in C lang file, or 'globl' in other ASM file.
  */
 .balign 4
 .include "system32/framebuffer32.s"
@@ -89,7 +99,7 @@ gpio_base:          .word 0x00200000
 .balign 4
 .include "system32/print_char32.s"
 .balign 4
-.include "system32/font_bitmap32_12px.s"
+.include "system32/font_mono_12px.s"
 .balign 4
 .include "system32/math32.s"
 .balign 4

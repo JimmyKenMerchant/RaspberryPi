@@ -6,7 +6,22 @@
  * License URL: https://opensource.org/licenses/MIT
  *
  */
-
+.globl color16_red
+.globl color16_green
+.globl color16_blue
+.globl color16_yellow
+.globl color16_magenta
+.globl color16_cyan
+.globl color16_pink
+.globl color16_lime
+.globl color16_skyblue
+.globl color16_lightyellow
+.globl color16_scarlet
+.globl color16_navyblue
+.globl color16_white
+.globl color16_lightgray
+.globl color16_gray
+.globl color16_black
 color16_red:         .hword 0xF800 @ 0xFF0000
 .balign 4 @ Need of 4 bytes alignment to avoid data abort in `ldr`, OR use `ldrh` which can not use PC though...
 color16_green:       .hword 0x07E0 @ 0x00FF00

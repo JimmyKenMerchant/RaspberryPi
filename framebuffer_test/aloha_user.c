@@ -20,24 +20,26 @@ void user_start()
 	FB_X_CARET = 0;
 	FB_Y_CARET = 200;
 	uint32 color = 0x0000ffff;
+	uint32* font_number = FONT_MONO_12PX_NUMBER;
+	uint32* font_ascii = FONT_MONO_12PX_ASCII;
 
-	set_caret( print_number_8by8( strlen_ascii( string ), FB_X_CARET, FB_Y_CARET, color, 8 ) );
+	set_caret( print_number( strlen( string ), FB_X_CARET, FB_Y_CARET, color, 8, 8, 12, font_number ) );
 
-	set_caret( print_string_ascii_8by8( newline, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( newline ) ) );
+	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, strlen( newline ), 8, 12, font_ascii ) );
 
-	set_caret( print_string_ascii_8by8( string, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string ) ) );
+	set_caret( print_string( string, FB_X_CARET, FB_Y_CARET, color, strlen( string ), 8, 12, font_ascii ) );
 
-	set_caret( print_string_ascii_8by8( string2, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string2 ) ) );
+	set_caret( print_string( string2, FB_X_CARET, FB_Y_CARET, color, strlen( string2 ), 8, 12, font_ascii ) );
 
-	set_caret( print_string_ascii_8by8( string3, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string3 ) ) );
+	set_caret( print_string( string3, FB_X_CARET, FB_Y_CARET, color, strlen( string3 ), 8, 12, font_ascii ) );
 
-	set_caret( print_string_ascii_8by8( newline, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( newline ) ) );
+	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, strlen( newline ), 8, 12, font_ascii ) );
 
-	set_caret( print_number_8by8( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 ) );
+	set_caret( print_number( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 , 8, 12, font_number ) );
 
-	set_caret( print_string_ascii_8by8( newline, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( newline ) ) );
+	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, strlen( newline ), 8, 12, font_ascii ) );
 
-	set_caret( print_number_8by8( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8 ) );
+	set_caret( print_number( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8, 8, 12, font_number ) );
 
 
 	while(1) {
