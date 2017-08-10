@@ -89,7 +89,7 @@ gpio_base:          .word 0x00200000
 .balign 4
 .include "system32/print_char32.s"
 .balign 4
-.include "system32/font_bitmap32_8bit.s"
+.include "system32/font_bitmap32_12px.s"
 .balign 4
 .include "system32/math32.s"
 .balign 4

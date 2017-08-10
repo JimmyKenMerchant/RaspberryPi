@@ -23,6 +23,8 @@ void user_start()
 
 	set_caret( print_number_8by8( strlen_ascii( string ), FB_X_CARET, FB_Y_CARET, color, 8 ) );
 
+	set_caret( print_string_ascii_8by8( newline, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( newline ) ) );
+
 	set_caret( print_string_ascii_8by8( string, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string ) ) );
 
 	set_caret( print_string_ascii_8by8( string2, FB_X_CARET, FB_Y_CARET, color, strlen_ascii( string2 ) ) );

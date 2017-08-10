@@ -118,6 +118,16 @@ render:
 	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
 	bl clear_color_8by8
 
+	ldr r0, FONT_BITMAP8_0
+	mov r1, #0
+	mov r2, #0
+	ldr r3, color16_red
+	mov r4, #8
+	mov r5, #8
+	push {r4, r5}
+	bl pict_char
+	add sp, sp, #8
+
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate

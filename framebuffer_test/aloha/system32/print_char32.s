@@ -105,7 +105,12 @@ clear_color_8by8:
 
 		push {r0-r3,lr}                           @ Equals to stmfd (stack pointer full, decrement order)
 		mov r0, char_point                        @ Character Pointer
-		bl pict_char_8by8
+		mov ip, #8                                @ Character Height in Pixels (r5)
+		push {ip}                                 @ Push with Reversed Order Because of Stack
+		mov ip, #8                                @ Character Width in Pixels (r4)
+		push {ip}                                 @ Push with Reversed Order Because of Stack
+		bl pict_char
+		add sp, sp, #8
 		push {r1}
 		add sp, sp, #4
 		cmp r0, #0                                @ Compare Return 0 or 1
@@ -240,7 +245,12 @@ print_string_ascii_8by8:
 
 		push {r0-r3,lr}                           @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [ascii_table_base, string_byte]   @ Character Pointer
-		bl pict_char_8by8
+		mov ip, #8                                @ Character Height in Pixels (r5)
+		push {ip}                                 @ Push with Reversed Order Because of Stack
+		mov ip, #8                                @ Character Width in Pixels (r4)
+		push {ip}                                 @ Push with Reversed Order Because of Stack
+		bl pict_char
+		add sp, sp, #8
 		push {r1}
 		add sp, sp, #4
 		cmp r0, #0                                @ Compare Return 0 or 1
@@ -459,7 +469,12 @@ print_number_8by8:
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [array_num_base, bitmask]        @ Character Pointer
-		bl pict_char_8by8
+		mov ip, #8                               @ Character Height in Pixels (r5)
+		push {ip}                                @ Push with Reversed Order Because of Stack
+		mov ip, #8                               @ Character Width in Pixels (r4)
+		push {ip}                                @ Push with Reversed Order Because of Stack
+		bl pict_char
+		add sp, sp, #8
 		push {r1}
 		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0 or 1
@@ -514,142 +529,158 @@ print_number_8by8:
 
 
 /**
- * function pict_char_8by8
- * Picture a 8-bit-width-8-bit-height Character
+ * function pict_char
+ * Picture a Character
  *
  * Parameters
  * r0: Pointer of Character
  * r1: X Coordinate
  * r2: Y Coordinate
  * r3: Color (16-bit or 32-bit)
+ * r4: Character Width in Pixels
+ * r5: Character Height in Pixels
  *
- * Usage: r0-r11
+ * Usage: r0-r12
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
  */
-.globl pict_char_8by8
-pict_char_8by8:
+.globl pict_char
+pict_char:
 	/* Auto (Local) Variables, but just aliases */
-	char_point .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord    .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord    .req r2 @ Parameter, Register for Argument, Scratch Register
-	color      .req r3 @ Parameter, Register for Argument, Scratch Register
-	i          .req r4
-	f_buffer   .req r5 @ Pointer of Framebuffer
-	width      .req r6
-	depth      .req r7
-	size       .req r8
-	char_byte  .req r9
-	j          .req r10
-	bitmask    .req r11
-	length     .req r12
+	char_point  .req r0  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
+	color       .req r3  @ Parameter, Register for Argument, Scratch Register
+	char_width  .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
+	char_height .req r5  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
+	f_buffer    .req r6  @ Pointer of Framebuffer
+	width       .req r7
+	depth       .req r8
+	size        .req r9
+	char_byte   .req r10
+	j           .req r11 @ Use for Horizontal Counter
+	bitmask     .req r12
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			@ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	mov i, #0                                         @ Vertical Counter
-	mov length, #0                                    @ 16-Bit/ 32-Bit Color
+	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
+	pop {char_width,char_height}                     @ Get Fourth and Fifth Argument
+	sub sp, sp, #40                                  @ Retrieve SP
 
 	ldr f_buffer, FB_ADDRESS
 	cmp f_buffer, #0
-	beq pict_char_8by8_error2
+	beq pict_char_error2
 
 	ldr width, FB_WIDTH
 	cmp width, #0
-	beq pict_char_8by8_error2
+	beq pict_char_error2
 
 	ldr depth, FB_DEPTH
 	cmp depth, #0
-	beq pict_char_8by8_error2
-
-	cmp depth, #16
-	moveq length, #2                                  @ Length of a Pixel in Framebuffer (Bytes)
+	beq pict_char_error2
 	cmp depth, #32
-	moveq length, #4                                  @ Length of a Pixel in Framebuffer (Bytes)
+	cmpne depth, #16
+	bne pict_char_error2
 
 	ldr size, FB_SIZE
 	cmp size, #0
-	beq pict_char_8by8_error2
+	beq pict_char_error2
 	add size, f_buffer, size
-	sub size, size, length                            @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+
+	cmp depth, #16
+	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+	cmp depth, #32
+	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
 
 	/* Set Location to Render the Character */
-	mul x_coord, x_coord, length                      @ Horizontal Offset Bytes
-	add f_buffer, f_buffer, x_coord
 
-	mul width, width, length                          @ Framebuffer Width (Bytes)
-	mul y_coord, y_coord, width                       @ Vertical Offset Bytes
+	cmp depth, #16
+	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
+
+	cmp depth, #16
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
 	add f_buffer, f_buffer, y_coord
 
-	pict_char_8by8_loop:
-		cmp f_buffer, size                        @ Check Overflow of Framebuffer Memory
-		bgt pict_char_8by8_error1
+	pict_char_loop:
+		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
+		bgt pict_char_error1
 
-		ldrb char_byte, [char_point]              @ Load Horizontal Byte
-		mov j, #8                                 @ Horizontal Counter
+		ldrb char_byte, [char_point]                 @ Load Horizontal Byte
+		mov j, char_height                           @ Horizontal Counter
 
-		pict_char_8by8_loop_horizontal:
-			sub j, j, #1                      @ For Bit Allocation (Horizontal Character Bit)
+		pict_char_loop_horizontal:
+			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
 			mov bitmask, #1
-			lsl bitmask, bitmask, j           @ Logical Shift Left to Make Bit Mask for Current Character Bit
+			lsl bitmask, bitmask, j                  @ Logical Shift Left to Make Bit Mask for Current Character Bit
 
 			and bitmask, char_byte, bitmask
 			cmp bitmask, #0
-			beq pict_char_8by8_loop_horizontal_common
+			beq pict_char_loop_horizontal_common
 
 			/* The Picture Process */
 			cmp depth, #16
-			streqh color, [f_buffer]                  @ Store half word
+			streqh color, [f_buffer]                 @ Store half word
 			cmp depth, #32
-			streq color, [f_buffer]                   @ Store word
+			streq color, [f_buffer]                  @ Store word
 
-			pict_char_8by8_loop_horizontal_common:
-				add f_buffer, f_buffer, length    @ Framebuffer Address Shift
+			pict_char_loop_horizontal_common:
+				cmp depth, #16
+				addeq f_buffer, f_buffer, #2         @ Framebuffer Address Shift
+				cmp depth, #32
+				addeq f_buffer, f_buffer, #4         @ Framebuffer Address Shift
 
-				cmp f_buffer, size                @ Check Overflow of Framebuffer Memory
-				bgt pict_char_8by8_error1
+				cmp f_buffer, size                   @ Check Overflow of Framebuffer Memory
+				bgt pict_char_error1
 
-				cmp j, #0
-				bgt pict_char_8by8_loop_horizontal
+				cmp j, #0                            @ Horizontal Counter, Check
+				bgt pict_char_loop_horizontal
 
-		pict_char_8by8_loop_common:
-			add i, i, #1
-			cmp i, #8
+		pict_char_loop_common:
+			sub char_width, char_width, #1
+			cmp char_width, #0                       @ Vertical Counter, Check
 
-			movge r0, #0                                    @ Return with Success
-			bge pict_char_8by8_common
+			movle r0, #0                             @ Return with Success
+			ble pict_char_common
 
-			add char_point, char_point, #1                  @ Horizontal Sync (Character Pointer)
+			add char_point, char_point, #1           @ Horizontal Sync (Character Pointer)
 
 			cmp depth, #16
-			subeq f_buffer, f_buffer, #16                   @ Offset Clear of Framebuffer
+			subeq f_buffer, f_buffer, #16            @ Offset Clear of Framebuffer
 			cmp depth, #32
-			subeq f_buffer, f_buffer, #32                   @ Offset Clear of Framebuffer
+			subeq f_buffer, f_buffer, #32            @ Offset Clear of Framebuffer
 
-			add f_buffer, f_buffer, width                   @ Horizontal Sync (Framebuffer)
+			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
 
-			b pict_char_8by8_loop
+			b pict_char_loop
 
-	pict_char_8by8_error1:
-		mov r0, #1                                        @ Return with Error 1
-		b pict_char_8by8_common
+	pict_char_error1:
+		mov r0, #1                                   @ Return with Error 1
+		b pict_char_common
 
-	pict_char_8by8_error2:
-		mov r0, #2                                        @ Return with Error 2
+	pict_char_error2:
+		mov r0, #2                                   @ Return with Error 2
 
-	pict_char_8by8_common:
+	pict_char_common:
 		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
 .unreq char_point
 .unreq x_coord
 .unreq y_coord
 .unreq color
-.unreq i
+.unreq char_width
+.unreq char_height
 .unreq f_buffer
 .unreq width
 .unreq depth
@@ -657,4 +688,4 @@ pict_char_8by8:
 .unreq char_byte
 .unreq j
 .unreq bitmask
-.unreq length
+
