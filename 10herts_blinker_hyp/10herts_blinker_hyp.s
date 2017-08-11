@@ -120,8 +120,8 @@ _reset:
 	mov r1, #0x63                             @ Decimal 99 to divide 160Mz by 100 to 1.6Mhz
 	str r1, [r0, #armtimer_predivider]
 
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 10000, 16 bits counter on default
-	add r1, r1, #0x10                         @ 0x10 Low 1 Byte of decimal 10000, 16 bits counter on default
+	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
+	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
 	str r1, [r0, #armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes

@@ -1089,8 +1089,8 @@ _FONT_MONO_12PX_g:
 	.byte 0b01000010
 	.byte 0b00111110
 	.byte 0b00000010
-	.byte 0b00000010
-	.byte 0b01111100
+	.byte 0b01000010
+	.byte 0b00111100
 	.byte 0b00000000
 
 _FONT_MONO_12PX_h:
@@ -1167,8 +1167,8 @@ _FONT_MONO_12PX_m:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b01101100
-	.byte 0b10010010
+	.byte 0b10101100
+	.byte 0b11010010
 	.byte 0b10010010
 	.byte 0b10010010
 	.byte 0b10010010
@@ -1209,8 +1209,8 @@ _FONT_MONO_12PX_p:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00111100
-	.byte 0b01000010
+	.byte 0b01011100
+	.byte 0b01100010
 	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b01111100
@@ -1223,8 +1223,8 @@ _FONT_MONO_12PX_q:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-	.byte 0b00111100
-	.byte 0b01000010
+	.byte 0b00111010
+	.byte 0b01000110
 	.byte 0b01000010
 	.byte 0b01000010
 	.byte 0b00111110
@@ -1308,10 +1308,10 @@ _FONT_MONO_12PX_w:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b10010010
-	.byte 0b10010010
-	.byte 0b01010100
-	.byte 0b01010100
-	.byte 0b00101000
+	.byte 0b10101010
+	.byte 0b10101010
+	.byte 0b10101010
+	.byte 0b01000100
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000

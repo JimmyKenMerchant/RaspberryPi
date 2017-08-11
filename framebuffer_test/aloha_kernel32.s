@@ -10,7 +10,6 @@
 
 .globl user_start
 
-
 /**
  * Vector Interrupt Tables and These Functions
  *
@@ -83,8 +82,8 @@ _reset:
 	mov r1, #0x63                             @ Decimal 99 to divide 160Mz by 100 to 1.6Mhz
 	str r1, [r0, #armtimer_predivider]
 
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 10000, 16 bits counter on default
-	add r1, r1, #0x10                         @ 0x10 Low 1 Byte of decimal 10000, 16 bits counter on default
+	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
+	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
 	str r1, [r0, #armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes
@@ -116,26 +115,42 @@ render:
 	mov r1, #80                               @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
-	mov r4, #14                               @ Length of Characters, Need of PUSH/POP
-	mov r5, #8
-	mov r6, #12
-	ldr r7, FONT_MONO_12PX_ASCII
-	push {r4-r7}
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #14                               @ Length of Characters, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_ASCII
+	push {r4-r8}
 	bl print_string
-	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 
 	ldr r0, string_number                     @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #88                               @ Y Coordinate
 	ldr r3, color16_red                       @ Color (16-bit or 32-bit)
-	mov r4, #10
-	mov r5, #8
-	mov r6, #12
-	ldr r7, FONT_MONO_12PX_ASCII
-	push {r4-r7}
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #10
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_ASCII
+	push {r4-r8}
 	bl print_string
-	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+
+
+	ldr r0, string_test                       @ Pointer of Array of String
+	mov r1, #80                               @ X Coordinate
+	mov r2, #360                              @ Y Coordinate
+	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
+	ldr r4, color16_red                       @ Background Color (16-bit or 32-bit)
+	mov r5, #73                               @ Length of Characters, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_ASCII
+	push {r4-r8}
+	bl print_string
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	pop {r0-r7,lr}
 
@@ -190,98 +205,70 @@ fiq_handler:
 	str r1, [r0]
 
 
-	push {r0-r3,lr}
-	mov r0, #10                               @ Length of Blocks, Left to Right
-	mov r1, #80                               @ X Coordinate
-	mov r2, #392                              @ Y Coordinate
-	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	mov r4, #8
-	mov r5, #12
-	push {r4-r5}
-	bl clear_color_block
-	add sp, sp, #8                           @ Increment SP because of push {r4-r6}
-	pop {r0-r3,lr}
-
 	ldr r0, peripherals_base
 	ldr r1, systemtimer_base
 	add r0, r0, r1
 
 	ldr r0, [r0, #systemtimer_counter_lower_32_bits]
+	ldr r1, sys_timer_previous
+	sub r2, r0, r1
+	str r0, sys_timer_previous
 
-	push {r0-r4,lr}
-	mov r1, #80                               @ X Coordinate
-	mov r2, #392                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r5, #8
-	mov r6, #12
-	ldr r7, FONT_MONO_12PX_NUMBER
-	push {r4-r7}
-	bl print_number
-	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
-	pop {r0-r4,lr}
+	push {r0-r9,lr}
+	mov r0, r2
+	bl hexa_to_deci32
+	mov r2, #80                               @ X Coordinate
+	mov r3, #392                              @ Y Coordinate
+	ldr r4, color16_yellow                    @ Color (16-bit or 32-bit)
+	ldr r5, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r6, #16                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r7, #8
+	mov r8, #12
+	ldr r9, FONT_MONO_12PX_NUMBER
+	push {r4-r9}
+	bl double_print_number
+	add sp, sp, #24                           @ Increment SP because of push {r4-r7}
+	pop {r0-r9,lr}
 
 	ldr r0, timer_sub
 	ldr r1, timer_main
 
 	add r0, r0, #1
-	cmp r0, #16
+	cmp r0, #10
 	addge r1, #1
 	movge r0, #0
 
 	str r0, timer_sub
 	str r1, timer_main
 
-	push {r0-r3,lr}
-	mov r0, #8                                @ Length of Blocks, Left to Right
+	push {r0-r8,lr}
 	mov r1, #80                               @ X Coordinate
 	mov r2, #400                              @ Y Coordinate
-	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	mov r4, #8
-	mov r5, #12
-	push {r4-r5}
-	bl clear_color_block
-	add sp, sp, #8
-	pop {r0-r3,lr}
-
-	push {r0-r4,lr}
-	mov r1, #80                               @ X Coordinate
-	mov r2, #400                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r5, #8
-	mov r6, #12
-	ldr r7, FONT_MONO_12PX_NUMBER
-	push {r4-r7}
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_NUMBER
+	push {r4-r8}
 	bl print_number
-	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
-	pop {r0-r4,lr}
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+	pop {r0-r8,lr}
 
-	push {r0-r3,lr}
-	mov r0, #8                                @ Length of Blocks, Left to Right
-	mov r1, #80                               @ X Coordinate
-	mov r2, #408                              @ Y Coordinate
-	ldr r3, color16_blue                      @ Color (16-bit or 32-bit)
-	mov r4, #8
-	mov r5, #12
-	push {r4-r5}
-	bl clear_color_block
-	add sp, sp, #8 
-	pop {r0-r3,lr}
-
-	push {r0-r4,lr}
+	push {r0-r8,lr}
 	mov r0, r1
 	mov r1, #80                               @ X Coordinate
 	mov r2, #408                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit)
-	mov r4, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r5, #8
-	mov r6, #12
-	ldr r7, FONT_MONO_12PX_NUMBER
-	push {r4-r7}
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_NUMBER
+	push {r4-r8}
 	bl print_number
-	add sp, sp, #16                           @ Increment SP because of push {r4-r7}
-	pop {r0-r4,lr}
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+	pop {r0-r8,lr}
 
 	mov pc, lr
 
@@ -314,6 +301,12 @@ _string_hello:
 .balign 4
 string_hello:
 	.word _string_hello
+_string_test:
+	.ascii "Sytem Timer Interval\n\t100K? 100K by 10 Equals 1M!\n\tSystem Timer is 1M Hz!\0"
+.balign 4
+string_test:
+	.word _string_test
+
 float_example:
 	.float 3.3
 double_example:
@@ -321,6 +314,8 @@ double_example:
 timer_main:
 	.word 0x00000000
 timer_sub:
+	.word 0x00000000
+sys_timer_previous:
 	.word 0x00000000
 .balign 4
 

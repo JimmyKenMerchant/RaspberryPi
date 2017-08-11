@@ -20,26 +20,25 @@ void user_start()
 	FB_X_CARET = 0;
 	FB_Y_CARET = 200;
 	uint32 color = 0x0000ffff;
-	uint32* font_number = FONT_MONO_12PX_NUMBER;
-	uint32* font_ascii = FONT_MONO_12PX_ASCII;
+	uint32 back_color =0x00000000;
 
-	set_caret( print_number( strlen( string ), FB_X_CARET, FB_Y_CARET, color, 8, 8, 12, font_number ) );
+	set_caret( print_number( strlen( string ), FB_X_CARET, FB_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
-	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, strlen( newline ), 8, 12, font_ascii ) );
+	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	set_caret( print_string( string, FB_X_CARET, FB_Y_CARET, color, strlen( string ), 8, 12, font_ascii ) );
+	set_caret( print_string( string, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	set_caret( print_string( string2, FB_X_CARET, FB_Y_CARET, color, strlen( string2 ), 8, 12, font_ascii ) );
+	set_caret( print_string( string2, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	set_caret( print_string( string3, FB_X_CARET, FB_Y_CARET, color, strlen( string3 ), 8, 12, font_ascii ) );
+	set_caret( print_string( string3, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, strlen( newline ), 8, 12, font_ascii ) );
+	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	set_caret( print_number( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, 8 , 8, 12, font_number ) );
+	set_caret( print_number( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER ) );
 
-	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, strlen( newline ), 8, 12, font_ascii ) );
+	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	set_caret( print_number( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, 8, 8, 12, font_number ) );
+	set_caret( print_number( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
 
 	while(1) {

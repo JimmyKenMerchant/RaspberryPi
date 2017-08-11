@@ -87,10 +87,10 @@ gpio_base:          .word 0x00200000
 /**
  * Includes Enviromental Variables
  * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
- * othewise, Compiler can't recognaize Labels of Variables.
- * This Immediate Can't be Over #4095 (0xFFF)
+ * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
+ * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
  * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
- * These are useful if you use `extern` in C lang file, or 'globl' in other ASM file.
+ * These are useful if you use `extern` in C lang file.
  */
 .balign 4
 .include "system32/framebuffer32.s"
