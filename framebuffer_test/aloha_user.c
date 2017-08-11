@@ -40,6 +40,7 @@ void user_start()
 
 	set_caret( print_number( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
+	draw_image( COLOR16_SAMPLE_IMAGE, 300, 300, 8, 12);
 
 	while(1) {
 		no_op();

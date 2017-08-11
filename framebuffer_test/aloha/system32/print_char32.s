@@ -154,6 +154,8 @@ print_string:
 	mov tab_length, #4
 
 	print_string_loop:
+		cmp length, #0                           @ `for (; length > 0; length--)`
+		ble print_string_success
 
 		ldrb string_byte, [string_point]         @ Load Character Byte
 		cmp string_byte, #0                      @ NULL Character (End of String) Checker
@@ -206,19 +208,22 @@ print_string:
 			b print_string_loop_common
 
 		print_string_loop_tab:
+			cmp tab_length, #0               @ `for (; tab_length > 0; tab_length--)`
+			ble print_string_loop_common
+
 			add x_coord, x_coord, char_width
+
 			cmp x_coord, width
 			movge x_coord, #0
 			addge y_coord, y_coord, char_height
+
 			sub tab_length, tab_length, #1
-			cmp tab_length, #0
-			bgt print_string_loop_tab
+			b print_string_loop_tab
 
 		print_string_loop_common:
 			add string_point, string_point, #1
 			sub length, length, #1
-			cmp length, #0
-			bgt print_string_loop
+			b print_string_loop
 
 	print_string_success:
 		mov r0, #0                                 @ Return with Success
@@ -591,6 +596,10 @@ pict_char:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
 		bgt pict_char_error1
 
+		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
+		movle r0, #0                                 @ Return with Success
+		ble pict_char_common
+
 		ldrb char_byte, [char_point]                 @ Load Horizontal Byte
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
@@ -625,10 +634,6 @@ pict_char:
 
 		pict_char_loop_common:
 			sub char_height, char_height, #1
-			cmp char_height, #0                      @ Vertical Counter, Check
-
-			movle r0, #0                             @ Return with Success
-			ble pict_char_common
 
 			add char_point, char_point, #1           @ Horizontal Sync (Character Pointer)
 

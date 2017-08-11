@@ -23,8 +23,166 @@
 
 
 /**
+ * function draw_image
+ * Draw Image
+ *
+ * Parameters
+ * r0: Pointer of Image
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Character Width in Pixels
+ * r4: Character Height in Pixels
+ *
+ * Usage: r0-r11
+ * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
+ */
+.globl draw_image
+draw_image:
+	/* Auto (Local) Variables, but just aliases */
+	image_point .req r0  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
+	char_width  .req r3  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
+	char_height .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
+	f_buffer    .req r5  @ Pointer of Framebuffer
+	width       .req r6
+	depth       .req r7
+	size        .req r8
+	color       .req r9
+	j           .req r10 @ Use for Horizontal Counter
+	bitmask     .req r11
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
+	pop {char_height}                                @ Get Fifth and Sixth Arguments
+	sub sp, sp, #36                                  @ Retrieve SP
+
+	ldr f_buffer, FB_ADDRESS
+	cmp f_buffer, #0
+	beq draw_image_error2
+
+	ldr width, FB_WIDTH
+	cmp width, #0
+	beq draw_image_error2
+
+	ldr depth, FB_DEPTH
+	cmp depth, #0
+	beq draw_image_error2
+	cmp depth, #32
+	cmpne depth, #16
+	bne draw_image_error2
+
+	ldr size, FB_SIZE
+	cmp size, #0
+	beq draw_image_error2
+	add size, f_buffer, size
+
+	cmp depth, #16
+	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+	cmp depth, #32
+	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
+
+	/* Set Location to Render the Character */
+
+	cmp depth, #16
+	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
+
+	cmp depth, #16
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	add f_buffer, f_buffer, y_coord
+
+	draw_image_loop:
+		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
+		bgt draw_image_error1
+
+		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
+		movle r0, #0                                 @ Return with Success
+		ble draw_image_common
+
+		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
+
+		draw_image_loop_horizontal:
+			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
+			cmp j, #0                                @ Horizontal Counter, Check
+			blt draw_image_loop_common
+
+			cmp depth, #16
+			ldreqh color, [image_point]              @ Load half word
+			cmp depth, #32
+			ldreq color, [image_point]               @ Load word
+
+			/* The Picture Process */
+			cmp depth, #16
+			streqh color, [f_buffer]                 @ Store half word
+			cmp depth, #32
+			streq color, [f_buffer]                  @ Store word
+
+			draw_image_loop_horizontal_common:
+				cmp depth, #16
+				addeq f_buffer, f_buffer, #2         @ Framebuffer Address Shift
+				addeq image_point, image_point, #2   @ Image Pointer Shift
+				cmp depth, #32
+				addeq f_buffer, f_buffer, #4         @ Framebuffer Address Shift
+				addeq image_point, image_point, #4   @ Image Pointer Shift
+
+				cmp f_buffer, size                   @ Check Overflow of Framebuffer Memory
+				bgt draw_image_error1
+
+				b draw_image_loop_horizontal
+
+		draw_image_loop_common:
+			sub char_height, char_height, #1
+
+			cmp depth, #16
+			subeq f_buffer, f_buffer, #16            @ Offset Clear of Framebuffer
+			cmp depth, #32
+			subeq f_buffer, f_buffer, #32            @ Offset Clear of Framebuffer
+
+			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
+
+			b draw_image_loop
+
+	draw_image_error1:
+		mov r0, #1                                   @ Return with Error 1
+		b draw_image_common
+
+	draw_image_error2:
+		mov r0, #2                                   @ Return with Error 2
+
+	draw_image_common:
+		mov r1, f_buffer
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq image_point
+.unreq x_coord
+.unreq y_coord
+.unreq char_width
+.unreq char_height
+.unreq f_buffer
+.unreq width
+.unreq depth
+.unreq size
+.unreq color
+.unreq j
+.unreq bitmask
+
+
+/**
  * function clear_color_block
- * Picture a Character
+ * Clear Block by Color
  *
  * Parameters
  * r0: X Coordinate
@@ -105,6 +263,10 @@ clear_color_block:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
 		bgt clear_color_block_error1
 
+		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
+		movle r0, #0                                 @ Return with Success
+		ble clear_color_block_common
+
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
 		clear_color_block_loop_horizontal:
@@ -131,10 +293,6 @@ clear_color_block:
 
 		clear_color_block_loop_common:
 			sub char_height, char_height, #1
-			cmp char_height, #0                      @ Vertical Counter, Check
-
-			movle r0, #0                             @ Return with Success
-			ble clear_color_block_common
 
 			cmp depth, #16
 			subeq f_buffer, f_buffer, #16            @ Offset Clear of Framebuffer
