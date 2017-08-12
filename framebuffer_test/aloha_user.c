@@ -43,6 +43,7 @@ void user_start()
 	draw_image( COLOR16_SAMPLE_IMAGE, 300, 300, 8, 12);
 
 	while(1) {
-		no_op();
+		system32_no_op();
+		system32_sleep(1000);
 	}
 }

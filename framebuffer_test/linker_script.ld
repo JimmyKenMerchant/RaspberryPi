@@ -13,11 +13,18 @@ SECTIONS {
 
 	/* Assign Address */
 	. = 0x8000;
-	.vector : {
-		*(.vector)
+	.vector32 : {
+		aloha_kernel32.o(.vector)
 
 		/* Add size, 65,536 bytes to the end of .vector as HEAP */
-		. += 0x1000;
+		. += 0x10000;
+	}
+
+	.renderbuffer32 : {
+		aloha_kernel32.o(.renderbuffer)
+
+		/* Reserve size, 16,777,216 bytes */
+		. = 0x1000000;
 	}
 
 	.text : {
@@ -26,6 +33,10 @@ SECTIONS {
 
 	.data : {
 		*(.data)
+	}
+
+	.rodata : {
+		*(.rodata)
 	}
 
 	.bss : {

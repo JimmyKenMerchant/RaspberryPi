@@ -319,6 +319,9 @@ sys_timer_previous:
 	.word 0x00000000
 .balign 4
 
+ADDR_HEAP: .word HEAP
+.balign 4
+
 .include "system32/system32.s" @ If you want binary, use `.file`
 .balign 4
 

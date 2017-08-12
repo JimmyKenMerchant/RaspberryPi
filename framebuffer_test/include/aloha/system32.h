@@ -40,7 +40,9 @@ extern uint32* COLOR16_SAMPLE_IMAGE;
 
 void user_start();
 
-extern void no_op();
+extern void system32_no_op();
+
+extern void system32_sleep( uint32 u_seconds );
 
 /**
  * Set Caret Position from Return Vlue of `print_*` functions

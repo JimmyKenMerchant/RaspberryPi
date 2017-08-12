@@ -85,6 +85,35 @@ gpio_base:          .word 0x00200000
 
 
 /**
+ * function system32_sleep
+ * Sleep in Micro Seconds
+ *
+ * Parameters
+ * r0: Micro Seconds to Sleep
+ *
+ * Usage: r0-r2
+ */
+.globl system32_sleep
+system32_sleep:
+	ldr r1, peripherals_base
+	ldr r2, systemtimer_base
+	add r1, r1, r2
+	ldr r2, [r1, #systemtimer_counter_lower_32_bits]
+	ldr r3, [r1, #systemtimer_counter_higher_32_bits]
+	adds r2, r0                            @ Add with Changing Status Flags
+	adc r3, #0                             @ Add with Carry Flag
+
+	system32_sleep_loop:
+		ldr r4, [r1, #systemtimer_counter_lower_32_bits]
+		ldr r5, [r1, #systemtimer_counter_higher_32_bits]
+		cmp r3, r5                     @ Similar to `SUBS`, Compare Higher 32 Bits
+		cmpeq r2, r4                   @ Compare Lower 32 Bits if the Same on Higher 32 Bits
+		bgt system32_sleep_loop
+
+	mov pc, lr
+
+
+/**
  * Includes Enviromental Variables
  * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
  * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
@@ -105,17 +134,17 @@ gpio_base:          .word 0x00200000
 .balign 4
 
 /**
- * function no_op
+ * function system32_no_op
  * Do Nothing
  */
-.globl no_op
-no_op:
+.globl system32_no_op
+system32_no_op:
 	mov r0, r0
 	mov pc, lr
 
 
 /**
- * function store_32
+ * function system32_store_32
  * Store 32-Bit Data to Main Memory
  *
  * Parameters
@@ -125,14 +154,14 @@ no_op:
  * Usage: r0-r1
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  */
-.globl store_32
-store_32:
+.globl system32_store_32
+system32_store_32:
 	str r1, [r0]
 	mov pc, lr
 
 
 /**
- * function store_16
+ * function system32_store_16
  * Store 16-Bit Data to Main Memory
  *
  * Parameters
@@ -142,14 +171,14 @@ store_32:
  * Usage: r0-r1
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  */
-.globl store_16
-store_16:
+.globl system32_store_16
+system32_store_16:
 	strh r1, [r0]
 	mov pc, lr
 
 
 /**
- * function store_8
+ * function system32_store_8
  * Store 8-Bit Data to Main Memory
  *
  * Parameters
@@ -159,14 +188,14 @@ store_16:
  * Usage: r0-r1
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  */
-.globl store_8
-store_8:
+.globl system32_store_8
+system32_store_8:
 	strb r1, [r0]
 	mov pc, lr
 
 
 /**
- * function load_32
+ * function system32_load_32
  * Load 32-Bit Data from Main Memory
  *
  * Parameters
@@ -175,15 +204,15 @@ store_8:
  * Usage: r0-r1
  * Return: r0 (Data from Main Memory)
  */
-.globl load_32
-load_32:
+.globl system32_load_32
+system32_load_32:
 	ldr r1, [r0]
 	mov r0, r1
 	mov pc, lr
 
 
 /**
- * function load_16
+ * function system32_load_16
  * Load 16-Bit Data from Main Memory
  *
  * Parameters
@@ -192,15 +221,15 @@ load_32:
  * Usage: r0-r1
  * Return: r0 (Data from Main Memory)
  */
-.globl load_16
-load_16:
+.globl system32_load_16
+system32_load_16:
 	ldrh r1, [r0]
 	mov r0, r1
 	mov pc, lr
 
 
 /**
- * function load_8
+ * function system32_load_8
  * Load 8-Bit Data from Main Memory
  *
  * Parameters
@@ -209,11 +238,15 @@ load_16:
  * Usage: r0-r1
  * Return: r0 (Data from Main Memory)
  */
-.globl load_8
-load_8:
+.globl system32_load_8
+system32_load_8:
 	ldrb r1, [r0]
 	mov r0, r1
 	mov pc, lr
 
 .globl HEAP
 HEAP: .byte 0x00
+
+.section renderbuffer
+.globl RENDERBUFFER
+RENDERBUFFER: .byte 0x00
