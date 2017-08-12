@@ -90,17 +90,23 @@ draw_image:
 	/* Set Location to Render the Character */
 
 	cmp depth, #16
-	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
-	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
-
-	cmp depth, #16
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
 	add f_buffer, f_buffer, y_coord
+	
+	.unreq y_coord
+	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
+
+	mov width_check, f_buffer
+	add width_check, width
+
+	cmp depth, #16
+	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
 
 	draw_image_loop:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
@@ -136,20 +142,27 @@ draw_image:
 				addeq f_buffer, f_buffer, #4         @ Framebuffer Address Shift
 				addeq image_point, image_point, #4   @ Image Pointer Shift
 
-				cmp f_buffer, size                   @ Check Overflow of Framebuffer Memory
-				bgt draw_image_error1
+				cmp f_buffer, width_check            @ Check Overflow of Width
+				blt draw_image_loop_horizontal
 
-				b draw_image_loop_horizontal
+				cmp depth, #16
+				lsleq j, j, #1                       @ substitution of Multiplication by 2
+				cmp depth, #32
+				lsleq j, j, #2                       @ substitution of Multiplication by 4
+				add f_buffer, f_buffer, j            @ Framebuffer Offset
 
 		draw_image_loop_common:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
-			subeq f_buffer, f_buffer, #16            @ Offset Clear of Framebuffer
+			lsleq j, char_width, #1                  @ substitution of Multiplication by 2
 			cmp depth, #32
-			subeq f_buffer, f_buffer, #32            @ Offset Clear of Framebuffer
+			lsleq j, char_width, #2                  @ substitution of Multiplication by 4
+			sub f_buffer, f_buffer, j                @ Offset Clear of Framebuffer
 
 			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
+
+			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
 
 			b draw_image_loop
 
@@ -168,7 +181,7 @@ draw_image:
 
 .unreq image_point
 .unreq x_coord
-.unreq y_coord
+.unreq width_check
 .unreq char_width
 .unreq char_height
 .unreq f_buffer
@@ -247,17 +260,23 @@ clear_color_block:
 	/* Set Location to Render the Character */
 
 	cmp depth, #16
-	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
-	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
-
-	cmp depth, #16
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
 	add f_buffer, f_buffer, y_coord
+	
+	.unreq y_coord
+	width_check .req r1                              @ Store the Limitation of Width on this Y Coordinate
+
+	mov width_check, f_buffer
+	add width_check, width
+
+	cmp depth, #16
+	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
 
 	clear_color_block_loop:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
@@ -282,24 +301,31 @@ clear_color_block:
 
 			clear_color_block_loop_horizontal_common:
 				cmp depth, #16
-				addeq f_buffer, f_buffer, #2         @ Framebuffer Address Shift
+				addeq f_buffer, f_buffer, #2          @ Framebuffer Address Shift
 				cmp depth, #32
-				addeq f_buffer, f_buffer, #4         @ Framebuffer Address Shift
+				addeq f_buffer, f_buffer, #4          @ Framebuffer Address Shift
 
-				cmp f_buffer, size                   @ Check Overflow of Framebuffer Memory
-				bgt clear_color_block_error1
+				cmp f_buffer, width_check             @ Check Overflow of Width
+				blt clear_color_block_loop_horizontal
 
-				b clear_color_block_loop_horizontal
+				cmp depth, #16
+				lsleq j, j, #1                        @ substitution of Multiplication by 2
+				cmp depth, #32
+				lsleq j, j, #2                        @ substitution of Multiplication by 4
+				add f_buffer, f_buffer, j             @ Framebuffer Offset
 
 		clear_color_block_loop_common:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
-			subeq f_buffer, f_buffer, #16            @ Offset Clear of Framebuffer
+			lsleq j, char_width, #1                  @ substitution of Multiplication by 2
 			cmp depth, #32
-			subeq f_buffer, f_buffer, #32            @ Offset Clear of Framebuffer
+			lsleq j, char_width, #2                  @ substitution of Multiplication by 4
+			sub f_buffer, f_buffer, j                @ Offset Clear of Framebuffer
 
 			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
+
+			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
 
 			b clear_color_block_loop
 
@@ -317,7 +343,7 @@ clear_color_block:
 		mov pc, lr
 
 .unreq x_coord
-.unreq y_coord
+.unreq width_check
 .unreq color
 .unreq char_width
 .unreq char_height

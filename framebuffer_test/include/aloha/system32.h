@@ -31,8 +31,8 @@ extern uint32 FB_SIZE;
 extern uint32 FB_DEPTH;
 extern uint32 FB_WIDTH;
 extern uint32 FB_HEIGHT;
-extern uint32 FB_X_CARET;
-extern uint32 FB_Y_CARET;
+extern int32 FB_X_CARET;
+extern int32 FB_Y_CARET;
 extern uint32* FONT_MONO_12PX_NUMBER;
 extern uint32* FONT_MONO_12PX_ASCII;
 
@@ -73,13 +73,13 @@ extern uint32 strlen
 extern uint64 print_string
 (
 	uchar8* string,
-	uint32 x_coord,
-	uint32 y_coord,
+	int32 x_coord,
+	int32 y_coord,
 	uint32 color,
 	uint32 back_color,
 	uint32 length,
-	uint32 font_width,
-	uint32 font_height,
+	uint32 width,
+	uint32 height,
 	uint32* font_base
 );
 
@@ -92,13 +92,13 @@ extern uint64 print_string
 extern uint64 double_print_number
 (
 	uint64 number,
-	uint32 x_coord,
-	uint32 y_coord,
+	int32 x_coord,
+	int32 y_coord,
 	uint32 color,
 	uint32 back_color,
 	uint32 length,
-	uint32 font_width,
-	uint32 font_height,
+	uint32 width,
+	uint32 height,
 	uint32* font_base
 );
 
@@ -111,13 +111,13 @@ extern uint64 double_print_number
 extern uint64 print_number
 (
 	uint32 number,
-	uint32 x_coord,
-	uint32 y_coord,
+	int32 x_coord,
+	int32 y_coord,
 	uint32 color,
 	uint32 back_color,
 	uint32 length,
-	uint32 font_width,
-	uint32 font_height,
+	uint32 width,
+	uint32 height,
 	uint32* font_base
 );
 
@@ -131,8 +131,24 @@ extern uint64 print_number
 extern uint64 draw_image
 (
 	uint32* image_point,
-	uint32 x_coord,
-	uint32 y_coord,
-	uint32 image_width,
-	uint32 image_height
+	int32 x_coord,
+	int32 y_coord,
+	uint32 width,
+	uint32 height
+);
+
+/**
+ * Clear Block by Color
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ */
+extern uint64 clear_color_block
+(
+	int32 x_coord,
+	int32 y_coord,
+	uint32 color,
+	uint32 width,
+	uint32 height
 );

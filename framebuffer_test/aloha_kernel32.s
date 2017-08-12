@@ -112,7 +112,7 @@ render:
 	bl clear_color
 
 	ldr r0, string_arm                        @ Pointer of Array of String
-	mov r1, #80                               @ X Coordinate
+	mov r1, #796                              @ X Coordinate
 	mov r2, #80                               @ Y Coordinate
 	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
 	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)

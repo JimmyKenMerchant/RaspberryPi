@@ -42,6 +42,8 @@ void user_start()
 
 	draw_image( COLOR16_SAMPLE_IMAGE, 300, 300, 8, 12);
 
+	clear_color_block( 700, 100, 0x0000FFFF, 600, 50 );
+
 	while(1) {
 		system32_no_op();
 		system32_sleep(1000);
