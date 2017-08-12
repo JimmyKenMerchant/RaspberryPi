@@ -108,11 +108,27 @@ draw_image:
 	mov width_check, f_buffer
 	add width_check, width
 
+	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
+	blt draw_image_xminus
+
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
 	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
+	mov x_coord, #0                                  @ X Minus Offset Bytes
+	b draw_image_loop
+
+	draw_image_xminus:
+		add char_width, char_width, x_coord      @ Subtract x_coord Value from char_width
+
+		mvn x_coord, x_coord                     @ Logical Not to Convert Minus to Plus
+		add x_coord, x_coord, #1                 @ Add 1 to Convert Minus to Plus
+
+		cmp depth, #16
+		lsleq x_coord, x_coord, #1               @ X Minus Offset Bytes, substitution of Multiplication by 2 (No Minus)
+		cmp depth, #32
+		lsleq x_coord, x_coord, #2               @ X Minus Offset Bytes, substitution of Multiplication by 2 (No Minus)
 
 	draw_image_loop:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
@@ -121,6 +137,8 @@ draw_image:
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
 		movle r0, #0                                 @ Return with Success
 		ble draw_image_common
+
+		add image_point, image_point, x_coord        @ Add X Minus Offset Bytes
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
@@ -277,6 +295,10 @@ clear_color_block:
 
 	mov width_check, f_buffer
 	add width_check, width
+
+	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
+	addlt char_width, char_width, x_coord            @ Subtract x_coord Value from char_width
+	blt clear_color_block_loop
 
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2

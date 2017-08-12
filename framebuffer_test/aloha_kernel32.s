@@ -63,10 +63,8 @@ _reset:
 	ldr r1, interrupt_base
 	add r0, r0, r1
 
-	mov r1, #0xFF000000
-	add r1, r1, #0x00FF0000
-	add r1, r1, #0x0000FF00
-	add r1, r1, #0x000000FF
+	mov r1, #0x00000000
+	mvn r1, r1                                @ Whole Inverter
 
 	str r1, [r0, #interrupt_disable_irqs_1]   @ Make Sure Disable All IRQs
 	str r1, [r0, #interrupt_disable_irqs_2]
@@ -112,8 +110,8 @@ render:
 	bl clear_color
 
 	ldr r0, string_arm                        @ Pointer of Array of String
-	mov r1, #10                               @ X Coordinate
-	mov r2, #-4                               @ Y Coordinate
+	mov r1, #-4                               @ X Coordinate
+	mov r2, #-2                               @ Y Coordinate
 	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
 	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
 	mov r5, #14                               @ Length of Characters, Need of PUSH/POP

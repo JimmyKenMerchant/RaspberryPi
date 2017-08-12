@@ -42,7 +42,11 @@ void user_start()
 
 	draw_image( COLOR16_SAMPLE_IMAGE, 300, -4, 8, 12);
 
+	draw_image( COLOR16_SAMPLE_IMAGE, -4, 500, 8, 12);
+
 	draw_image( COLOR16_SAMPLE_IMAGE, 300, 632, 8, 12);
+
+	clear_color_block( -300, 600, 0x0000FFFF, 600, 50 );
 
 	clear_color_block( 700, -25, 0x0000FFFF, 600, 50 );
 

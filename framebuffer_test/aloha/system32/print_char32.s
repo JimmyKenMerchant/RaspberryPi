@@ -593,6 +593,10 @@ pict_char:
 	mov width_check, f_buffer
 	add width_check, width
 
+	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
+	addlt char_width, char_width, x_coord            @ Subtract x_coord Value from char_width
+	blt pict_char_loop
+	
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
