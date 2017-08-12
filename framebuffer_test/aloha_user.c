@@ -40,9 +40,13 @@ void user_start()
 
 	set_caret( print_number( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
-	draw_image( COLOR16_SAMPLE_IMAGE, 300, 300, 8, 12);
+	draw_image( COLOR16_SAMPLE_IMAGE, 300, -4, 8, 12);
 
-	clear_color_block( 700, 100, 0x0000FFFF, 600, 50 );
+	draw_image( COLOR16_SAMPLE_IMAGE, 300, 632, 8, 12);
+
+	clear_color_block( 700, -25, 0x0000FFFF, 600, 50 );
+
+	clear_color_block( 700, 620, 0x0000FFFF, 50, 100 );
 
 	while(1) {
 		system32_no_op();

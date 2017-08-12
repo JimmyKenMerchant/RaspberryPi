@@ -574,17 +574,18 @@ pict_char:
 
 	cmp depth, #16
 	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	/* Set Location to Render the Character */
 
-	cmp depth, #16
-	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
-	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
-	add f_buffer, f_buffer, y_coord
+	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
+	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
+	sublt char_point, char_point, y_coord            @ Add y_coord Value to char_point
+	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	addge f_buffer, f_buffer, y_coord
 	
 	.unreq y_coord
 	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate

@@ -52,7 +52,7 @@ draw_image:
 	depth       .req r7
 	size        .req r8
 	color       .req r9
-	j           .req r10 @ Use for Horizontal Counter
+	temp        .req r10
 	bitmask     .req r11
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
@@ -84,18 +84,24 @@ draw_image:
 
 	cmp depth, #16
 	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
+	lsleq temp, char_width, #1                       @ Character Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+	lsleq temp, char_width, #2                       @ Character Vertical Offset Bytes, substitution of Multiplication by 2
 
 	/* Set Location to Render the Character */
 
-	cmp depth, #16
-	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
-	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
-	add f_buffer, f_buffer, y_coord
+	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
+	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
+	mullt y_coord, temp, y_coord                     @ Multiply Number of Bytes in a Row
+	sublt image_point, image_point, y_coord          @ Add y_coord Value to char_point
+	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	addge f_buffer, f_buffer, y_coord
 	
+	.unreq temp
+	j .req r10                                       @ Use for Horizontal Counter
 	.unreq y_coord
 	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
 
@@ -254,18 +260,18 @@ clear_color_block:
 
 	cmp depth, #16
 	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	/* Set Location to Render the Character */
 
-	cmp depth, #16
-	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
-	mul y_coord, width, y_coord                      @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
-	add f_buffer, f_buffer, y_coord
-	
+	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
+	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
+	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	addge f_buffer, f_buffer, y_coord
+
 	.unreq y_coord
 	width_check .req r1                              @ Store the Limitation of Width on this Y Coordinate
 
