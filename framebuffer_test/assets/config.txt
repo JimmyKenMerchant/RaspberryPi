@@ -10,13 +10,13 @@
 #kernel_address=32768
 
 #CPU Clock Mhz, you may need to voltage up for overclock
-arm_freq=400
+arm_freq=800
 
 #GPU(APB) Clock MHz, you may need to voltage up for overclock
-gpu_freq=160
+gpu_freq=240
 
 #SDRAM Clock Mhz, you may need to voltage up for overclock
-sdram_freq=200
+sdram_freq=240
 
 #GPU Memory Mbytes
 gpu_mem=256
@@ -26,3 +26,12 @@ disable_overscan=1
 
 #0.025V Steps, 2 means app. 1.2 - 1.3125V + 0.05V (RasPi2)
 #over_voltage=2
+
+#0 means Auto Detect from EDID, 1 means CEA Table, 2 means DMT Table
+hdmi_group=0
+
+#Number depends on CEA or DMT Table
+#hdmi_mode=1
+
+#Signal IRQ for Interrupt Service Routine from VideoCore for Vertical Sync
+fake_vsync_isr=1

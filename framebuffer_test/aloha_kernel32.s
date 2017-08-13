@@ -77,7 +77,7 @@ _reset:
 	ldr r1, armtimer_base
 	add r0, r0, r1
 
-	mov r1, #0x63                             @ Decimal 99 to divide 160Mz by 100 to 1.6Mhz
+	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz
 	str r1, [r0, #armtimer_predivider]
 
 	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
@@ -102,6 +102,31 @@ _reset:
 	push {r0-r3,lr}
 	bl fb32_get
 	pop {r0-r3,lr}
+
+	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
+	
+	/*
+         * 20-21 Bits for CP 10, 22-23 Bits for CP 11
+         * Each 0b01 is for Enable in Previlege Mode
+         * Each 0b11 is for Enable in Previlege and User Mode
+         */
+	mov r0, #0b0101
+	lsl r0, r0, #20
+
+	MCR p15, 0, r0, c1, c0, 2
+
+	isb                                       @ Must Need When You Renew CPACR
+
+	mov r0, #0x40000000                       @ Enable NEON/VFP
+	vmsr fpexc, r0
+
+	ldr r0, addr_float
+	vld1.32 {d0,d1}, [r0]                     @ Load float_example1 and float_example2 (8 bytes aligned)
+	vadd.f32 d2, d0, d1                       @ Add as Single Presicion Floating Point (dn is 64-bit, qn is 1238-bit)
+	vcvt.s32.f32 d3, d2                       @ Floating Point to Singed Integer (U32 for Unsigned Integer)
+                                                  @ Floating Point to Integer Uses Round Towards Zero
+                                                  @ Integer to Floating/Fixed Point Uses Round to Nearest
+	vst1.32 {d2,d3}, [r0]                     @ Store Result to float_example1, float_example2 as Integer
 
 render:
 	push {r0-r8,lr}
@@ -139,7 +164,7 @@ render:
 
 	ldr r0, string_test                       @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
-	mov r2, #360                              @ Y Coordinate
+	mov r2, #320                              @ Y Coordinate
 	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
 	ldr r4, color16_red                       @ Background Color (16-bit or 32-bit)
 	mov r5, #73                               @ Length of Characters, Need of PUSH/POP
@@ -148,6 +173,32 @@ render:
 	ldr r8, FONT_MONO_12PX_ASCII
 	push {r4-r8}
 	bl print_string
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+
+	ldr r0, float_example1                    @ Pointer of Array of String
+	mov r1, #300                              @ X Coordinate
+	mov r2, #320                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_NUMBER
+	push {r4-r8}
+	bl print_number
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+
+	ldr r0, float_example2                    @ Pointer of Array of String
+	mov r1, #300                              @ X Coordinate
+	mov r2, #332                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_NUMBER
+	push {r4-r8}
+	bl print_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	pop {r0-r8,lr}
@@ -304,9 +355,13 @@ _string_test:
 .balign 4
 string_test:
 	.word _string_test
-
-float_example:
-	.float 3.3
+addr_float: .word float_example1
+float_example1:
+	.float 4.4
+	.word 0x00
+float_example2:
+	.float 7.7
+	.word 0x00
 double_example:
 	.double 3.3
 timer_main:
