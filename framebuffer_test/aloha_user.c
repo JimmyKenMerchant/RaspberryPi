@@ -20,40 +20,62 @@ void user_start()
 	FB_X_CARET = 0;
 	FB_Y_CARET = 200;
 	uint32 color = 0x0000ffff;
+	uint32 color_move = 0x00000000;
 	uint32 back_color =0x00000000;
 
 	set_caret( print_number( strlen( string ), FB_X_CARET, FB_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
+	system32_sleep( 1000000 );
 
 	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
+	system32_sleep( 1000000 );
+
 	set_caret( print_string( string, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
+	system32_sleep( 1000000 );
+
 	set_caret( print_string( string2, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	system32_sleep( 1000000 );
 
 	set_caret( print_string( string3, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
+	system32_sleep( 1000000 );
+
 	set_caret( print_number( FB_DEPTH, FB_X_CARET, FB_Y_CARET, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER ) );
+
+	system32_sleep( 1000000 );
 
 	set_caret( print_string( newline, FB_X_CARET, FB_Y_CARET, color, back_color, strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
+	system32_sleep( 1000000 );
+
 	set_caret( print_number( FB_SIZE, FB_X_CARET, FB_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
-	draw_image( COLOR16_SAMPLE_IMAGE, 300, -4, 8, 12);
+	system32_sleep( 1000000 );
 
-	draw_image( COLOR16_SAMPLE_IMAGE, -4, 500, 8, 12);
+	fb32_draw_image( COLOR16_SAMPLE_IMAGE, 300, -4, 8, 12, 0, 0);
 
-	draw_image( COLOR16_SAMPLE_IMAGE, 300, 632, 8, 12);
+	fb32_draw_image( COLOR16_SAMPLE_IMAGE, -4, 500, 8, 12, 0, 0);
 
-	clear_color_block( -300, 600, 0x0000FFFF, 600, 50 );
+	fb32_draw_image( COLOR16_SAMPLE_IMAGE, 300, 632, 8, 12, 0, 0);
 
-	clear_color_block( 700, -25, 0x0000FFFF, 600, 50 );
+	fb32_draw_image( COLOR16_SAMPLE_IMAGE, 400, 400, 8, 12, 5, 8);
 
-	clear_color_block( 700, 620, 0x0000FFFF, 50, 100 );
+	fb32_clear_color_block( 0x0000FFFF, -300, 600, 600, 50 );
+
+	fb32_clear_color_block( 0x0000FFFF, 700, -25, 600, 50 );
+
+	fb32_clear_color_block( 0x0000FFFF, 700, 620, 50, 100 );
 
 	while(1) {
-		system32_no_op();
-		system32_sleep(1000);
+		//fb32_copy( RENDER_BUFFER );
+		fb32_clear_color( color_move );
+		color_move++;
+		print_number( FB_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER );
+		//fb32_draw_image( RENDER_BUFFER, 0, 0, FB_WIDTH, FB_HEIGHT, 0, 10 );
+		system32_sleep( 1000000 );
 	}
 }

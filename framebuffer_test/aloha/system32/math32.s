@@ -8,7 +8,7 @@
  */
 
 /**
- * function hexa_to_deci32
+ * function math32_hexa_to_deci32
  * Convert Hexadecimal Bases (0-f) to Decimal Bases (0-9) of a Register
  *
  * Parameters
@@ -19,8 +19,8 @@
  * Error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
  * External Variable(s): math32_power_0-6, math32_power_7_lower, math32_power_7_upper
  */
-.globl hexa_to_deci32
-hexa_to_deci32:
+.globl math32_hexa_to_deci32
+math32_hexa_to_deci32:
 	/* Auto (Local) Variables, but just aliases */
 	hexa               .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	deci_upper         .req r1
@@ -47,7 +47,7 @@ hexa_to_deci32:
 	mov i, #0
 	mov mul_number, #4
 
-	hexa_to_deci32_loop:
+	math32_hexa_to_deci32_loop:
 		mov bitmask, #0xf                         @ 0b1111
 		mul shift, i, mul_number
 		lsl bitmask, bitmask, shift               @ Make bitmask
@@ -56,56 +56,56 @@ hexa_to_deci32:
 
 		cmp i, #0
 		ldreq math32_power_lower, math32_power_0                @ 16^0
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #1
 		ldreq math32_power_lower, math32_power_1                @ 16^1
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #2
 		ldreq math32_power_lower, math32_power_2                @ 16^2
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #3
 		ldreq math32_power_lower, math32_power_3                @ 16^3
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #4
 		ldreq math32_power_lower, math32_power_4                @ 16^4
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #5
 		ldreq math32_power_lower, math32_power_5                @ 16^5
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #6
 		ldreq math32_power_lower, math32_power_6                @ 16^6
-		beq hexa_to_deci32_loop_loop
+		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #7
 		ldreq math32_power_lower, math32_power_7_lower          @ 16^7 Lower Bits
 		ldreq math32_power_upper, math32_power_7_upper          @ 16^7 Upper Bits
 
-		hexa_to_deci32_loop_loop:
+		math32_hexa_to_deci32_loop_loop:
 
 			cmp bitmask, #0
-			ble hexa_to_deci32_loop_common
+			ble math32_hexa_to_deci32_loop_common
 
 			push {lr}
-			bl decimal_adder64
+			bl math32_decimal_adder64
 			pop {lr}
 
 			sub bitmask, bitmask, #1
 
-			b hexa_to_deci32_loop_loop
+			b math32_hexa_to_deci32_loop_loop
 
-		hexa_to_deci32_loop_common:
+		math32_hexa_to_deci32_loop_common:
 
 			add i, i, #1
 			cmp i, #8
-			blt hexa_to_deci32_loop
+			blt math32_hexa_to_deci32_loop
 
-	hexa_to_deci32_common:
+	math32_hexa_to_deci32_common:
 		pop {r4-r8}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
@@ -136,7 +136,7 @@ math32_power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 
 
 /**
- * function decimal_adder64
+ * function math32_decimal_adder64
  * Addition with Decimal Bases (0-9)
  *
  * Parameters
@@ -149,8 +149,8 @@ math32_power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
  * Error: This function could not calculate because of digit-overflow.
  */
-.globl decimal_adder64
-decimal_adder64:
+.globl math32_decimal_adder64
+math32_decimal_adder64:
 	/* Auto (Local) Variables, but just aliases */
 	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
@@ -177,14 +177,14 @@ decimal_adder64:
 	mov i, #0
 	mov mul_number, #4
 
-	decimal_adder64_loop:
+	math32_decimal_adder64_loop:
 		mov bitmask_1, #0xf                            @ 0b1111
 		mov bitmask_2, #0xf
 
 		mul shift, i, mul_number
 
 		cmp i, #8
-		bge decimal_adder64_loop_uppernumber
+		bge math32_decimal_adder64_loop_uppernumber
 
 		/* Lower Number */
 		lsl bitmask_1, bitmask_1, shift
@@ -193,10 +193,10 @@ decimal_adder64:
 		and bitmask_1, dup_lower_1, bitmask_1
 		and bitmask_2, lower_2, bitmask_2
 
-		b decimal_adder64_loop_adder
+		b math32_decimal_adder64_loop_adder
 
 		/* Upper Number */
-		decimal_adder64_loop_uppernumber:
+		math32_decimal_adder64_loop_uppernumber:
 
 			sub shift, shift, #32
 
@@ -206,7 +206,7 @@ decimal_adder64:
 			and bitmask_1, dup_upper_1, bitmask_1
 			and bitmask_2, upper_2, bitmask_2
 
-		decimal_adder64_loop_adder:
+		math32_decimal_adder64_loop_adder:
 		
 			lsr bitmask_1, bitmask_1, shift
 			lsr bitmask_2, bitmask_2, shift
@@ -215,61 +215,61 @@ decimal_adder64:
 			add bitmask_1, bitmask_1, carry_flag
 
 			cmp bitmask_1, #0x10
-			bge decimal_adder64_loop_adder_hexacarry
+			bge math32_decimal_adder64_loop_adder_hexacarry
 
 			cmp bitmask_1, #0x0A
-			bge decimal_adder64_loop_adder_decicarry
+			bge math32_decimal_adder64_loop_adder_decicarry
 
 			mov carry_flag, #0                      @ Clear Carry
 
-			b decimal_adder64_loop_common	
+			b math32_decimal_adder64_loop_common	
 
-			decimal_adder64_loop_adder_hexacarry:
+			math32_decimal_adder64_loop_adder_hexacarry:
 
 				sub bitmask_1, #0x10
 				add bitmask_1, #0x06 
 				mov carry_flag, #1              @ Set Carry
 
-				b decimal_adder64_loop_common
+				b math32_decimal_adder64_loop_common
 
-			decimal_adder64_loop_adder_decicarry:
+			math32_decimal_adder64_loop_adder_decicarry:
 
 				sub bitmask_1, #0x0A
 				mov carry_flag, #1              @ Set Carry
 
-		decimal_adder64_loop_common:
+		math32_decimal_adder64_loop_common:
 			lsl bitmask_1, bitmask_1, shift
 
 			cmp i, #8
-			bge decimal_adder64_loop_common_uppernumber
+			bge math32_decimal_adder64_loop_common_uppernumber
 
 			/* Lower Number */
 			add lower_1, lower_1, bitmask_1
 
-			b decimal_adder64_loop_common_common
+			b math32_decimal_adder64_loop_common_common
 
 			/* Upper Number */
-			decimal_adder64_loop_common_uppernumber:
+			math32_decimal_adder64_loop_common_uppernumber:
 
 				add upper_1, upper_1, bitmask_1
 
-			decimal_adder64_loop_common_common:
+			math32_decimal_adder64_loop_common_common:
 
 				add i, i, #1
 				cmp i, #16
-				blt decimal_adder64_loop
+				blt math32_decimal_adder64_loop
 
 				cmp carry_flag, #1
-				beq decimal_adder64_error
+				beq math32_decimal_adder64_error
 
-	decimal_adder64_success:
-		b decimal_adder64_common
+	math32_decimal_adder64_success:
+		b math32_decimal_adder64_common
 
-	decimal_adder64_error:
+	math32_decimal_adder64_error:
 		mov r0, #0                                      @ Return with Error
 		mov r1, #0
 
-	decimal_adder64_common:
+	math32_decimal_adder64_common:
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 

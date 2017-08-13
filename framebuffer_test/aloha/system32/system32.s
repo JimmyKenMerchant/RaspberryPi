@@ -91,10 +91,11 @@ gpio_base:          .word 0x00200000
  * Parameters
  * r0: Micro Seconds to Sleep
  *
- * Usage: r0-r2
+ * Usage: r0-r5
  */
 .globl system32_sleep
 system32_sleep:
+	push {r4-r5}
 	ldr r1, peripherals_base
 	ldr r2, systemtimer_base
 	add r1, r1, r2
@@ -110,6 +111,7 @@ system32_sleep:
 		cmpeq r2, r4                   @ Compare Lower 32 Bits if the Same on Higher 32 Bits
 		bgt system32_sleep_loop
 
+	pop {r4-r5}
 	mov pc, lr
 
 
@@ -245,8 +247,11 @@ system32_load_8:
 	mov pc, lr
 
 .globl HEAP
-HEAP: .byte 0x00
+HEAP: .word _HEAP
+.globl RENDER_BUFFER
+RENDER_BUFFER: .word _RENDER_BUFFER
 
-.section renderbuffer
-.globl RENDERBUFFER
-RENDERBUFFER: .byte 0x00
+_HEAP: 
+.fill 65536, 1, 0x00
+_RENDER_BUFFER:
+.fill 1, 1, 0x00

@@ -100,14 +100,14 @@ _reset:
 
 	/* Framebuffer Obtain */
 	push {r0-r3,lr}
-	bl get_framebuffer
+	bl fb32_get
 	pop {r0-r3,lr}
 
 render:
-	push {r0-r7,lr}
+	push {r0-r8,lr}
 
 	ldr r0, color16_navyblue
-	bl clear_color
+	bl fb32_clear_color
 
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #-4                               @ X Coordinate
@@ -150,7 +150,7 @@ render:
 	bl print_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
-	pop {r0-r7,lr}
+	pop {r0-r8,lr}
 
 	cpsie f
 
@@ -169,11 +169,11 @@ _fiq:
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
 	mrs r0, elr_hyp                          @ mrs/msr accessible system registers can add postfix of modes
 	mrs r1, spsr_hyp
-	push {r0, r1}
+	push {r0-r1}
 
 	bl fiq_handler
 
-	pop {r0, r1}
+	pop {r0-r1}
 	msr elr_hyp, r0
 	msr spsr_hyp, r1
 	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
@@ -214,7 +214,7 @@ fiq_handler:
 
 	push {r0-r9,lr}
 	mov r0, r2
-	bl hexa_to_deci32
+	bl math32_hexa_to_deci32
 	mov r2, #80                               @ X Coordinate
 	mov r3, #392                              @ Y Coordinate
 	ldr r4, color16_yellow                    @ Color (16-bit or 32-bit)

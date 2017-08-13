@@ -170,12 +170,10 @@ print_string:
 		/* Clear the Block by Color */
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
-		mov r0, x_coord
-		mov r1, y_coord
-		mov r2, back_color
+		mov r0, back_color
 		mov r3, char_width
 		push {char_height} 
-		bl clear_color_block
+		bl fb32_clear_color_block
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
@@ -429,12 +427,10 @@ print_number:
 		/* Clear the Block by Color */
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
-		mov r0, x_coord
-		mov r1, y_coord
-		mov r2, back_color
+		mov r0, back_color
 		mov r3, char_width
 		push {char_height} 
-		bl clear_color_block
+		bl fb32_clear_color_block
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4

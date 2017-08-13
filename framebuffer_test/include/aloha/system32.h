@@ -35,6 +35,8 @@ extern int32 FB_X_CARET;
 extern int32 FB_Y_CARET;
 extern uint32* FONT_MONO_12PX_NUMBER;
 extern uint32* FONT_MONO_12PX_ASCII;
+extern uint32* HEAP;
+extern uint32* RENDER_BUFFER;
 
 extern uint32* COLOR16_SAMPLE_IMAGE;
 
@@ -43,6 +45,7 @@ void user_start();
 extern void system32_no_op();
 
 extern void system32_sleep( uint32 u_seconds );
+
 
 /**
  * Set Caret Position from Return Vlue of `print_*` functions
@@ -54,6 +57,7 @@ extern uint32 set_caret
 	uint64 return_print
 );
 
+
 /**
  * Count 1-Byte Words of String
  *
@@ -63,6 +67,7 @@ extern uint32 strlen
 (
 	uchar8* string
 );
+
 
 /**
  * rint String with 1 Byte Character
@@ -83,6 +88,7 @@ extern uint64 print_string
 	uint32* font_base
 );
 
+
 /**
  * Print Hexadecimal Bases Numbers in 64-bit (16 Digits)
  *
@@ -101,6 +107,7 @@ extern uint64 double_print_number
 	uint32 height,
 	uint32* font_base
 );
+
 
 /**
  * Print Hexadecimal Bases Numbers in 32-bit (8 Digits)
@@ -121,6 +128,19 @@ extern uint64 print_number
 	uint32* font_base
 );
 
+
+/**
+ * Copy Framebuffer to Renderbuffer
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When Framebuffer is not Defined
+ */
+extern uint32 fb32_copy
+(
+	uint32* render_buffer_point
+);
+
+
 /**
  * Draw Image
  *
@@ -128,14 +148,17 @@ extern uint64 print_number
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
-extern uint64 draw_image
+extern uint64 fb32_draw_image
 (
 	uint32* image_point,
 	int32 x_coord,
 	int32 y_coord,
 	uint32 width,
-	uint32 height
+	uint32 height,
+	uint32 x_offset,
+	uint32 y_offset
 );
+
 
 /**
  * Clear Block by Color
@@ -144,11 +167,23 @@ extern uint64 draw_image
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
-extern uint64 clear_color_block
+extern uint64 fb32_clear_color_block
 (
+	uint32 color,
 	int32 x_coord,
 	int32 y_coord,
-	uint32 color,
 	uint32 width,
 	uint32 height
+);
+
+
+/**
+ * Fill Out Framebuffer by Color
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When Framebuffer is not Defined
+ */
+extern uint64 fb32_clear_color
+(
+	uint32 color
 );

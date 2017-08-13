@@ -21,9 +21,79 @@
 .equ mailbox0_config,          0x1C
 .equ mailbox0_write,           0x20
 
+/**
+ * function fb32_copy
+ * Copy Framebuffer to Renderbuffer
+ *
+ * Parameters
+ * r0: Pointer of Renderbuffer
+ *
+ * Usage: r0-r5
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error(1): When Framebuffer is not Defined
+ * Global Enviromental Variable(s): FB_ADDRESS, FB_SIZE, FB_DEPTH
+ */
+.globl fb32_copy
+fb32_copy:
+	render_buffer     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	fb_buffer         .req r1
+	size              .req r2
+	depth             .req r3
+	length            .req r4
+	color             .req r5
+
+	push {r4-r5}
+
+	ldr fb_buffer, FB_ADDRESS
+	cmp fb_buffer, #0
+	beq fb32_copy_error
+
+	ldr size, FB_SIZE
+	cmp size, #0
+	beq fb32_copy_error
+
+	ldr depth, FB_DEPTH
+	cmp depth, #0
+	beq fb32_copy_error
+
+	cmp depth, #16
+	moveq length, #2
+	cmp depth, #32
+	moveq length, #4
+
+	fb32_copy_loop:
+		cmp depth, #16
+		ldreqh color, [fb_buffer]                @ Store half word
+		streqh color, [render_buffer]            @ Store half word
+		cmp depth, #32
+		ldreq color, [fb_buffer]                 @ Store word
+		streq color, [render_buffer]             @ Store word
+		add fb_buffer, fb_buffer, length
+		add render_buffer, render_buffer, length
+		sub size, size, length
+		cmp size, #0
+		bgt fb32_copy_loop
+
+		mov r0, #0                               @ Return with Success
+		b fb32_copy_common
+
+	fb32_copy_error:
+		mov r0, #1                               @ Return with Error
+
+	fb32_copy_common:
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq render_buffer
+.unreq fb_buffer
+.unreq size
+.unreq depth
+.unreq length
+.unreq color
+
 
 /**
- * function draw_image
+ * function fb32_draw_image
  * Draw Image
  *
  * Parameters
@@ -32,6 +102,8 @@
  * r2: Y Coordinate
  * r3: Character Width in Pixels
  * r4: Character Height in Pixels
+ * (Callee ip, Caller r5): X Offset
+ * (Callee ip, Caller r6): Y Offset
  *
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
@@ -39,21 +111,21 @@
  * Error(2): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
  */
-.globl draw_image
-draw_image:
+.globl fb32_draw_image
+fb32_draw_image:
 	/* Auto (Local) Variables, but just aliases */
-	image_point .req r0  @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
-	char_width  .req r3  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
-	char_height .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
-	f_buffer    .req r5  @ Pointer of Framebuffer
-	width       .req r6
-	depth       .req r7
-	size        .req r8
-	color       .req r9
-	temp        .req r10
-	bitmask     .req r11
+	image_point      .req r0  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord          .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord          .req r2  @ Parameter, Register for Argument, Scratch Register
+	char_width       .req r3  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
+	char_height      .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
+	f_buffer         .req r5  @ Pointer of Framebuffer
+	width            .req r6
+	depth            .req r7
+	size             .req r8
+	color            .req r9
+	char_width_bytes .req r10
+	bitmask          .req r11
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -64,43 +136,49 @@ draw_image:
 
 	ldr f_buffer, FB_ADDRESS
 	cmp f_buffer, #0
-	beq draw_image_error2
+	beq fb32_draw_image_error2
 
 	ldr width, FB_WIDTH
 	cmp width, #0
-	beq draw_image_error2
+	beq fb32_draw_image_error2
 
 	ldr depth, FB_DEPTH
 	cmp depth, #0
-	beq draw_image_error2
+	beq fb32_draw_image_error2
 	cmp depth, #32
 	cmpne depth, #16
-	bne draw_image_error2
+	bne fb32_draw_image_error2
 
 	ldr size, FB_SIZE
 	cmp size, #0
-	beq draw_image_error2
+	beq fb32_draw_image_error2
 	add size, f_buffer, size
 
 	cmp depth, #16
 	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
-	lsleq temp, char_width, #1                       @ Character Vertical Offset Bytes, substitution of Multiplication by 2
+	lsleq char_width_bytes, char_width, #1           @ Character Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
-	lsleq temp, char_width, #2                       @ Character Vertical Offset Bytes, substitution of Multiplication by 2
+	lsleq char_width_bytes, char_width, #2           @ Character Vertical Offset Bytes, substitution of Multiplication by 2
 
 	/* Set Location to Render the Character */
 
 	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
 	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
-	mullt y_coord, temp, y_coord                     @ Multiply Number of Bytes in a Row
+	mullt y_coord, char_width_bytes, y_coord         @ Multiply Number of Bytes in a Row
 	sublt image_point, image_point, y_coord          @ Add y_coord Value to char_point
 	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
 	addge f_buffer, f_buffer, y_coord
+
+	ldr ip, [sp, #40]                                @ Y Offset
+	cmp ip, #0
+	subgt char_height, char_height, ip               @ Subtract Y Offset (ip) value from char_height
+	mulgt ip, char_width_bytes, ip
+	addgt image_point, image_point, ip
 	
-	.unreq temp
+	.unreq char_width_bytes
 	j .req r10                                       @ Use for Horizontal Counter
 	.unreq y_coord
 	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
@@ -109,43 +187,62 @@ draw_image:
 	add width_check, width
 
 	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
-	blt draw_image_xminus
+	blt fb32_draw_image_xminus
 
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
 	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
 	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
-	mov x_coord, #0                                  @ X Minus Offset Bytes
-	b draw_image_loop
 
-	draw_image_xminus:
+	x_offset_char .req r1
+
+	mov x_offset_char, #0                            @ X Minus Offset Bytes
+	b fb32_draw_image_xoffset
+
+	fb32_draw_image_xminus:
 		add char_width, char_width, x_coord      @ Subtract x_coord Value from char_width
 
-		mvn x_coord, x_coord                     @ Logical Not to Convert Minus to Plus
-		add x_coord, x_coord, #1                 @ Add 1 to Convert Minus to Plus
+		.unreq x_coord
+
+		mvn x_offset_char, x_offset_char         @ Logical Not to Convert Minus to Plus
+		add x_offset_char, x_offset_char, #1     @ Add 1 to Convert Minus to Plus
 
 		cmp depth, #16
-		lsleq x_coord, x_coord, #1               @ X Minus Offset Bytes, substitution of Multiplication by 2 (No Minus)
+		lsleq x_offset_char, x_offset_char, #1   @ X Minus Coord Bytes, substitution of Multiplication by 2 (No Minus)
 		cmp depth, #32
-		lsleq x_coord, x_coord, #2               @ X Minus Offset Bytes, substitution of Multiplication by 2 (No Minus)
+		lsleq x_offset_char, x_offset_char, #2   @ X Minus Coord Bytes, substitution of Multiplication by 2 (No Minus)
 
-	draw_image_loop:
+	fb32_draw_image_xoffset:
+		ldr ip, [sp, #36]                        @ X Offset
+		cmp ip, #0
+		ble fb32_draw_image_loop
+
+		sub char_width, char_width, ip           @ Subtract X Offset (ip) value from char_width
+
+		cmp depth, #16
+		lsleq ip, ip, #1                         @ X Offset Bytes, substitution of Multiplication by 2 (No Minus)
+		cmp depth, #32
+		lsleq ip, ip, #2                         @ X Offset Bytes, substitution of Multiplication by 4 (No Minus)
+
+		add x_offset_char, x_offset_char, ip
+
+	fb32_draw_image_loop:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt draw_image_error1
+		bgt fb32_draw_image_error1
 
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
 		movle r0, #0                                 @ Return with Success
-		ble draw_image_common
+		ble fb32_draw_image_common
 
-		add image_point, image_point, x_coord        @ Add X Minus Offset Bytes
+		add image_point, image_point, x_offset_char  @ Add X Offset Bytes
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
-		draw_image_loop_horizontal:
+		fb32_draw_image_loop_horizontal:
 			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
 			cmp j, #0                                @ Horizontal Counter, Check
-			blt draw_image_loop_common
+			blt fb32_draw_image_loop_common
 
 			cmp depth, #16
 			ldreqh color, [image_point]              @ Load half word
@@ -158,7 +255,7 @@ draw_image:
 			cmp depth, #32
 			streq color, [f_buffer]                  @ Store word
 
-			draw_image_loop_horizontal_common:
+			fb32_draw_image_loop_horizontal_common:
 				cmp depth, #16
 				addeq f_buffer, f_buffer, #2         @ Framebuffer Address Shift
 				addeq image_point, image_point, #2   @ Image Pointer Shift
@@ -167,7 +264,7 @@ draw_image:
 				addeq image_point, image_point, #4   @ Image Pointer Shift
 
 				cmp f_buffer, width_check            @ Check Overflow of Width
-				blt draw_image_loop_horizontal
+				blt fb32_draw_image_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                       @ substitution of Multiplication by 2
@@ -175,7 +272,7 @@ draw_image:
 				lsleq j, j, #2                       @ substitution of Multiplication by 4
 				add f_buffer, f_buffer, j            @ Framebuffer Offset
 
-		draw_image_loop_common:
+		fb32_draw_image_loop_common:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
@@ -188,23 +285,23 @@ draw_image:
 
 			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
 
-			b draw_image_loop
+			b fb32_draw_image_loop
 
-	draw_image_error1:
+	fb32_draw_image_error1:
 		mov r0, #1                                   @ Return with Error 1
-		b draw_image_common
+		b fb32_draw_image_common
 
-	draw_image_error2:
+	fb32_draw_image_error2:
 		mov r0, #2                                   @ Return with Error 2
 
-	draw_image_common:
+	fb32_draw_image_common:
 		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
 .unreq image_point
-.unreq x_coord
+.unreq x_offset_char
 .unreq width_check
 .unreq char_width
 .unreq char_height
@@ -218,13 +315,13 @@ draw_image:
 
 
 /**
- * function clear_color_block
+ * function fb32_clear_color_block
  * Clear Block by Color
  *
  * Parameters
- * r0: X Coordinate
- * r1: Y Coordinate
- * r2: Color (16-bit or 32-bit)
+ * r0: Color (16-bit or 32-bit)
+ * r1: X Coordinate
+ * r2: Y Coordinate
  * r3: Character Width in Pixels
  * r4: Character Height in Pixels
  *
@@ -234,12 +331,12 @@ draw_image:
  * Error(2): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
  */
-.globl clear_color_block
-clear_color_block:
+.globl fb32_clear_color_block
+fb32_clear_color_block:
 	/* Auto (Local) Variables, but just aliases */
-	x_coord     .req r0  @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord     .req r1  @ Parameter, Register for Argument, Scratch Register
-	color       .req r2  @ Parameter, Register for Argument, Scratch Register
+	color       .req r0  @ Parameter, Register for Argument, Scratch Register
+	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
 	char_width  .req r3  @ Parameter, Register for Argument, Scratch Register
 	char_height .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
 	f_buffer    .req r5  @ Pointer of Framebuffer
@@ -258,22 +355,22 @@ clear_color_block:
 
 	ldr f_buffer, FB_ADDRESS
 	cmp f_buffer, #0
-	beq clear_color_block_error2
+	beq fb32_clear_color_block_error2
 
 	ldr width, FB_WIDTH
 	cmp width, #0
-	beq clear_color_block_error2
+	beq fb32_clear_color_block_error2
 
 	ldr depth, FB_DEPTH
 	cmp depth, #0
-	beq clear_color_block_error2
+	beq fb32_clear_color_block_error2
 	cmp depth, #32
 	cmpne depth, #16
-	bne clear_color_block_error2
+	bne fb32_clear_color_block_error2
 
 	ldr size, FB_SIZE
 	cmp size, #0
-	beq clear_color_block_error2
+	beq fb32_clear_color_block_error2
 	add size, f_buffer, size
 
 	cmp depth, #16
@@ -291,14 +388,14 @@ clear_color_block:
 	addge f_buffer, f_buffer, y_coord
 
 	.unreq y_coord
-	width_check .req r1                              @ Store the Limitation of Width on this Y Coordinate
+	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
 
 	mov width_check, f_buffer
 	add width_check, width
 
 	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
 	addlt char_width, char_width, x_coord            @ Subtract x_coord Value from char_width
-	blt clear_color_block_loop
+	blt fb32_clear_color_block_loop
 
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
@@ -306,20 +403,20 @@ clear_color_block:
 	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
 	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
 
-	clear_color_block_loop:
+	fb32_clear_color_block_loop:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt clear_color_block_error1
+		bgt fb32_clear_color_block_error1
 
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
 		movle r0, #0                                 @ Return with Success
-		ble clear_color_block_common
+		ble fb32_clear_color_block_common
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
-		clear_color_block_loop_horizontal:
+		fb32_clear_color_block_loop_horizontal:
 			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
 			cmp j, #0                                @ Horizontal Counter, Check
-			blt clear_color_block_loop_common
+			blt fb32_clear_color_block_loop_common
 
 			/* The Picture Process */
 			cmp depth, #16
@@ -327,14 +424,14 @@ clear_color_block:
 			cmp depth, #32
 			streq color, [f_buffer]                  @ Store word
 
-			clear_color_block_loop_horizontal_common:
+			fb32_clear_color_block_loop_horizontal_common:
 				cmp depth, #16
 				addeq f_buffer, f_buffer, #2          @ Framebuffer Address Shift
 				cmp depth, #32
 				addeq f_buffer, f_buffer, #4          @ Framebuffer Address Shift
 
 				cmp f_buffer, width_check             @ Check Overflow of Width
-				blt clear_color_block_loop_horizontal
+				blt fb32_clear_color_block_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                        @ substitution of Multiplication by 2
@@ -342,7 +439,7 @@ clear_color_block:
 				lsleq j, j, #2                        @ substitution of Multiplication by 4
 				add f_buffer, f_buffer, j             @ Framebuffer Offset
 
-		clear_color_block_loop_common:
+		fb32_clear_color_block_loop_common:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
@@ -355,24 +452,24 @@ clear_color_block:
 
 			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
 
-			b clear_color_block_loop
+			b fb32_clear_color_block_loop
 
-	clear_color_block_error1:
+	fb32_clear_color_block_error1:
 		mov r0, #1                                   @ Return with Error 1
-		b clear_color_block_common
+		b fb32_clear_color_block_common
 
-	clear_color_block_error2:
+	fb32_clear_color_block_error2:
 		mov r0, #2                                   @ Return with Error 2
 
-	clear_color_block_common:
+	fb32_clear_color_block_common:
 		mov r1, f_buffer
 		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
+.unreq color
 .unreq x_coord
 .unreq width_check
-.unreq color
 .unreq char_width
 .unreq char_height
 .unreq f_buffer
@@ -384,7 +481,73 @@ clear_color_block:
 
 
 /**
- * function get_framebuffer
+ * function fb32_clear_color
+ * Fill Out Framebuffer by Color
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ *
+ * Usage: r0-r4
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error(1): When Framebuffer is not Defined
+ * Global Enviromental Variable(s): FB_ADDRESS, FB_SIZE, FB_DEPTH
+ */
+.globl fb32_clear_color
+fb32_clear_color:
+	color             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	fb_buffer         .req r1
+	size              .req r2
+	depth             .req r3
+	length            .req r4
+
+	push {r4}
+
+	ldr fb_buffer, FB_ADDRESS
+	cmp fb_buffer, #0
+	beq fb32_clear_color_error
+
+	ldr size, FB_SIZE
+	cmp size, #0
+	beq fb32_clear_color_error
+
+	ldr depth, FB_DEPTH
+	cmp depth, #0
+	beq fb32_clear_color_error
+
+	cmp depth, #16
+	moveq length, #2
+	cmp depth, #32
+	moveq length, #4
+
+	fb32_clear_color_loop:
+		cmp depth, #16
+		streqh color, [fb_buffer]         @ Store half word
+		cmp depth, #32
+		streq color, [fb_buffer]          @ Store word
+		add fb_buffer, fb_buffer, length
+		sub size, size, length
+		cmp size, #0
+		bgt fb32_clear_color_loop
+
+		mov r0, #0                        @ Return with Success
+		b fb32_clear_color_common
+
+	fb32_clear_color_error:
+		mov r0, #1                        @ Return with Error
+
+	fb32_clear_color_common:
+		pop {r4}
+		mov pc, lr
+
+.unreq color
+.unreq fb_buffer
+.unreq size
+.unreq depth
+.unreq length
+
+
+/**
+ * function fb32_get
  * Get Framebuffer
  *
  * Usage: r0-r1
@@ -393,8 +556,8 @@ clear_color_block:
  * Global Enviromental Variable(s): FB_ADDRESS
  * External Variable(s): peripherals_base, mailbox_base, mail_framebuffer_addr
  */
-.globl get_framebuffer
-get_framebuffer:
+.globl fb32_get
+fb32_get:
 	memorymap_base    .req r0
 	temp              .req r1
 
@@ -402,28 +565,28 @@ get_framebuffer:
 	ldr temp, mailbox_base
 	add memorymap_base, memorymap_base, temp
 
-	get_framebuffer_waitforwrite:
+	fb32_get_waitforwrite:
 		ldr temp, [memorymap_base, #mailbox0_status]
 		cmp temp, #0x80000000
-		beq get_framebuffer_waitforwrite
+		beq fb32_get_waitforwrite
 
 	ldr temp, mail_framebuffer_addr
 	add temp, temp, #mailbox_gpuoffset|mailbox_channel8
 	str temp, [memorymap_base, #mailbox0_write]
 
-	get_framebuffer_waitforread:
+	fb32_get_waitforread:
 		ldr temp, [memorymap_base, #mailbox0_status]
 		cmp temp, #0x40000000
-		beq get_framebuffer_waitforread
+		beq fb32_get_waitforread
 
 	ldr memorymap_base, mail_framebuffer_addr
 	ldr temp, [memorymap_base, #mail_confirm]
 	cmp temp, #0x80000000
-	bne get_framebuffer_error
+	bne fb32_get_error
 
 	ldr memorymap_base, FB_ADDRESS
 	cmp memorymap_base, #0
-	beq get_framebuffer_error
+	beq fb32_get_error
 
 	and memorymap_base, memorymap_base, #mailbox_armmask             @ Change FB_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB_ADDRESS                                   @ Store ARM7s FB_ADDRESS
@@ -436,82 +599,17 @@ get_framebuffer:
 
 	mov r0, #0                               @ Return with Success
 
-	b get_framebuffer_common
+	b fb32_get_common
 
-	get_framebuffer_error:
+	fb32_get_error:
 		mov r0, #1                       @ Return with Error
 
-	get_framebuffer_common:
+	fb32_get_common:
 		mov pc, lr
 
 .unreq memorymap_base
 .unreq temp
 
-
-/**
- * function clear_color
- * Fill Out Framebuffer by Color
- *
- * Parameters
- * r0: Color (16-bit or 32-bit)
- *
- * Usage: r0-r4
- * Return: r0 (0 as sucess, 1 as error)
- * Error(1): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_SIZE, FB_DEPTH
- */
-.globl clear_color
-clear_color:
-	color             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	fb_buffer         .req r1
-	size              .req r2
-	depth             .req r3
-	length            .req r4
-
-	push {r4}
-
-	ldr fb_buffer, FB_ADDRESS
-	cmp fb_buffer, #0
-	beq clear_color_error
-
-	ldr size, FB_SIZE
-	cmp size, #0
-	beq clear_color_error
-
-	ldr depth, FB_DEPTH
-	cmp depth, #0
-	beq clear_color_error
-
-	cmp depth, #16
-	moveq length, #2
-	cmp depth, #32
-	moveq length, #4
-
-	clear_color_loop:
-		cmp depth, #16
-		streqh color, [fb_buffer]         @ Store half word
-		cmp depth, #32
-		streq color, [fb_buffer]          @ Store word
-		add fb_buffer, fb_buffer, length
-		sub size, size, length
-		cmp size, #0
-		bgt clear_color_loop
-
-		mov r0, #0                        @ Return with Success
-		b clear_color_common
-
-	clear_color_error:
-		mov r0, #1                        @ Return with Error
-
-	clear_color_common:
-		pop {r4}
-		mov pc, lr
-
-.unreq color
-.unreq fb_buffer
-.unreq size
-.unreq depth
-.unreq length
 
 /* Indicates Caret Position to Use in Printing Characters */
 .balign 4
