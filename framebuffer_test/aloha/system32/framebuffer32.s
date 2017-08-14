@@ -31,7 +31,7 @@
  * Usage: r0-r5
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_SIZE, FB_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_copy
 fb32_copy:
@@ -44,15 +44,15 @@ fb32_copy:
 
 	push {r4-r5}
 
-	ldr fb_buffer, FB_ADDRESS
+	ldr fb_buffer, FB32_ADDRESS
 	cmp fb_buffer, #0
 	beq fb32_copy_error
 
-	ldr size, FB_SIZE
+	ldr size, FB32_SIZE
 	cmp size, #0
 	beq fb32_copy_error
 
-	ldr depth, FB_DEPTH
+	ldr depth, FB32_DEPTH
 	cmp depth, #0
 	beq fb32_copy_error
 
@@ -102,14 +102,16 @@ fb32_copy:
  * r2: Y Coordinate
  * r3: Character Width in Pixels
  * r4: Character Height in Pixels
- * (Callee ip, Caller r5): X Offset
- * (Callee ip, Caller r6): Y Offset
+ * (Callee ip, Caller r5): X Offset (Upper Left Position X)
+ * (Callee ip, Caller r6): Y Offset (Upper Left Position Y)
+ * (Callee ip, Caller r7): X Crop (Lower Right Position X)
+ * (Callee ip, Caller r8): Y Crop (Lower Right Position Y)
  *
- * Usage: r0-r11
+ * Usage: r0-r12
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_draw_image
 fb32_draw_image:
@@ -126,6 +128,7 @@ fb32_draw_image:
 	color            .req r9
 	char_width_bytes .req r10
 	bitmask          .req r11
+	x_crop_char      .req r12 @ ip is Alias of r12, This Function Uses r12 as ip Too. x_crop_char Uses After Usage as ip
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -134,22 +137,22 @@ fb32_draw_image:
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
 	sub sp, sp, #36                                  @ Retrieve SP
 
-	ldr f_buffer, FB_ADDRESS
+	ldr f_buffer, FB32_ADDRESS
 	cmp f_buffer, #0
 	beq fb32_draw_image_error2
 
-	ldr width, FB_WIDTH
+	ldr width, FB32_WIDTH
 	cmp width, #0
 	beq fb32_draw_image_error2
 
-	ldr depth, FB_DEPTH
+	ldr depth, FB32_DEPTH
 	cmp depth, #0
 	beq fb32_draw_image_error2
 	cmp depth, #32
 	cmpne depth, #16
 	bne fb32_draw_image_error2
 
-	ldr size, FB_SIZE
+	ldr size, FB32_SIZE
 	cmp size, #0
 	beq fb32_draw_image_error2
 	add size, f_buffer, size
@@ -177,6 +180,10 @@ fb32_draw_image:
 	subgt char_height, char_height, ip               @ Subtract Y Offset (ip) value from char_height
 	mulgt ip, char_width_bytes, ip
 	addgt image_point, image_point, ip
+
+	ldr ip, [sp, #48]                                @ Y Crop
+	cmp ip, #0
+	subgt char_height, char_height, ip               @ Subtract Y Crop (ip) value from char_height
 	
 	.unreq char_width_bytes
 	j .req r10                                       @ Use for Horizontal Counter
@@ -216,7 +223,7 @@ fb32_draw_image:
 	fb32_draw_image_xoffset:
 		ldr ip, [sp, #36]                        @ X Offset
 		cmp ip, #0
-		ble fb32_draw_image_loop
+		ble fb32_draw_image_xcrop
 
 		sub char_width, char_width, ip           @ Subtract X Offset (ip) value from char_width
 
@@ -226,6 +233,19 @@ fb32_draw_image:
 		lsleq ip, ip, #2                         @ X Offset Bytes, substitution of Multiplication by 4 (No Minus)
 
 		add x_offset_char, x_offset_char, ip
+
+	fb32_draw_image_xcrop:
+		ldr ip, [sp, #44]                        @ X Crop
+		cmp ip, #0
+		movle x_crop_char, #0
+		ble fb32_draw_image_loop
+
+		sub char_width, char_width, ip           @ Subtract X Crop (ip) value from char_width
+
+		cmp depth, #16
+		lsleq x_crop_char, ip, #1                @ X Crop Bytes, substitution of Multiplication by 2 (No Minus)
+		cmp depth, #32
+		lsleq x_crop_char, ip, #2                @ X Crop Bytes, substitution of Multiplication by 4 (No Minus)
 
 	fb32_draw_image_loop:
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
@@ -276,14 +296,16 @@ fb32_draw_image:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
-			lsleq j, char_width, #1                  @ substitution of Multiplication by 2
+			lsleq j, char_width, #1                   @ substitution of Multiplication by 2
 			cmp depth, #32
-			lsleq j, char_width, #2                  @ substitution of Multiplication by 4
-			sub f_buffer, f_buffer, j                @ Offset Clear of Framebuffer
+			lsleq j, char_width, #2                   @ substitution of Multiplication by 4
+			sub f_buffer, f_buffer, j                 @ Offset Clear of Framebuffer
 
-			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
+			add f_buffer, f_buffer, width             @ Horizontal Sync (Framebuffer)
 
-			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
+			add width_check, width_check, width       @ Store the Limitation of Width on the Next Y Coordinate
+
+			add image_point, image_point, x_crop_char @ Add X Crop Bytes
 
 			b fb32_draw_image_loop
 
@@ -312,6 +334,7 @@ fb32_draw_image:
 .unreq color
 .unreq j
 .unreq bitmask
+.unreq x_crop_char
 
 
 /**
@@ -329,7 +352,7 @@ fb32_draw_image:
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_clear_color_block
 fb32_clear_color_block:
@@ -353,22 +376,22 @@ fb32_clear_color_block:
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
 	sub sp, sp, #32                                  @ Retrieve SP
 
-	ldr f_buffer, FB_ADDRESS
+	ldr f_buffer, FB32_ADDRESS
 	cmp f_buffer, #0
 	beq fb32_clear_color_block_error2
 
-	ldr width, FB_WIDTH
+	ldr width, FB32_WIDTH
 	cmp width, #0
 	beq fb32_clear_color_block_error2
 
-	ldr depth, FB_DEPTH
+	ldr depth, FB32_DEPTH
 	cmp depth, #0
 	beq fb32_clear_color_block_error2
 	cmp depth, #32
 	cmpne depth, #16
 	bne fb32_clear_color_block_error2
 
-	ldr size, FB_SIZE
+	ldr size, FB32_SIZE
 	cmp size, #0
 	beq fb32_clear_color_block_error2
 	add size, f_buffer, size
@@ -490,7 +513,7 @@ fb32_clear_color_block:
  * Usage: r0-r4
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_SIZE, FB_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_clear_color
 fb32_clear_color:
@@ -502,15 +525,15 @@ fb32_clear_color:
 
 	push {r4}
 
-	ldr fb_buffer, FB_ADDRESS
+	ldr fb_buffer, FB32_ADDRESS
 	cmp fb_buffer, #0
 	beq fb32_clear_color_error
 
-	ldr size, FB_SIZE
+	ldr size, FB32_SIZE
 	cmp size, #0
 	beq fb32_clear_color_error
 
-	ldr depth, FB_DEPTH
+	ldr depth, FB32_DEPTH
 	cmp depth, #0
 	beq fb32_clear_color_error
 
@@ -553,16 +576,16 @@ fb32_clear_color:
  * Usage: r0-r1
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS
- * External Variable(s): peripherals_base, mailbox_base, mail_framebuffer_addr
+ * Global Enviromental Variable(s): FB32_ADDRESS
+ * External Variable(s): MAILBOX_BASE, mail_framebuffer_addr
  */
 .globl fb32_get
 fb32_get:
 	memorymap_base    .req r0
 	temp              .req r1
 
-	ldr memorymap_base, peripherals_base
-	ldr temp, mailbox_base
+	mov memorymap_base, #peripherals_base
+	ldr temp, MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
 
 	fb32_get_waitforwrite:
@@ -584,12 +607,12 @@ fb32_get:
 	cmp temp, #0x80000000
 	bne fb32_get_error
 
-	ldr memorymap_base, FB_ADDRESS
+	ldr memorymap_base, FB32_ADDRESS
 	cmp memorymap_base, #0
 	beq fb32_get_error
 
-	and memorymap_base, memorymap_base, #mailbox_armmask             @ Change FB_ADDRESS VideoCore's to ARM's
-	str memorymap_base, FB_ADDRESS                                   @ Store ARM7s FB_ADDRESS
+	and memorymap_base, memorymap_base, #mailbox_armmask             @ Change FB32_ADDRESS VideoCore's to ARM's
+	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
 
 	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
                                                  @ `DSB` Data Synchronization Barrier, completes all instructions before
@@ -613,21 +636,23 @@ fb32_get:
 
 /* Indicates Caret Position to Use in Printing Characters */
 .balign 4
-.globl FB_X_CARET
-.globl FB_Y_CARET
-FB_X_CARET: .word 0x00000000
-FB_Y_CARET: .word 0x00000000
+.globl FB32_X_CARET
+.globl FB32_Y_CARET
+FB32_X_CARET: .word 0x00000000
+FB32_Y_CARET: .word 0x00000000
 
 /* Frame Buffer Physical */
 
 .balign 16                      @ Need of 16 bytes align
-.globl FB_DISPLAY_WIDTH
-.globl FB_DISPLAY_HEIGHT
-.globl FB_WIDTH
-.globl FB_HEIGHT
-.globl FB_DEPTH
-.globl FB_ADDRESS
-.globl FB_SIZE
+.globl FB32_DISPLAY_WIDTH
+.globl FB32_DISPLAY_HEIGHT
+.globl FB32_WIDTH
+.globl FB32_HEIGHT
+.globl FB32_DEPTH
+.globl FB32_PIXELORDER
+.globl FB32_ALPHAMODE
+.globl FB32_ADDRESS
+.globl FB32_SIZE
 mail_framebuffer:
 	.word mail_framebuffer_end - mail_framebuffer @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
@@ -635,31 +660,43 @@ mail_contents:
 	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB_DISPLAY_WIDTH:
+FB32_DISPLAY_WIDTH:
 	.word 800               @ Value Buffer, Width in Pixels
-FB_DISPLAY_HEIGHT:
+FB32_DISPLAY_HEIGHT:
 	.word 640               @ Value Buffer, Height in Pixels
 .balign 4
 	.word 0x00048004        @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB_WIDTH:
+FB32_WIDTH:
 	.word 800               @ Value Buffer, Width in Pixels
-FB_HEIGHT:
+FB32_HEIGHT:
 	.word 640               @ Value Buffer, Height in Pixels
 .balign 4
 	.word 0x00048005        @ Tag Identifier, Set Depth
 	.word 0x00000004        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB_DEPTH:
+FB32_DEPTH:
 	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 RGBA
+.balign 4
+	.word 0x00048006        @ Tag Identifier, Set Pixel Order
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_PIXELORDER:
+	.word 0x01              @ 0x00 is BGR, 0x01 is RGB
+.balign 4
+	.word 0x00048007        @ Tag Identifier, Set Alpha Mode
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_ALPHAMODE:
+	.word 0x00              @ 0x00 is Enabled(0:Fully Opaque<exist>), 0x01 is Reversed(0:Fully Transparent), 0x02 is Ignored
 .balign 4
 	.word 0x00040001        @ Tag Identifier, Allocate Buffer
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB_ADDRESS:
+FB32_ADDRESS:
 	.word 0x00000000        @ Value Buffer, Alignment in Bytes (in Response, Frame Buffer Base Address in Bytes)
-FB_SIZE:
+FB32_SIZE:
 	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
 .balign 4
 	.word 0x00000000        @ End Tag
@@ -688,6 +725,20 @@ mail_blankoff:
 .balign 4
 	.word 0x00000000        @ End Tag
 mail_blankoff_end:
+.balign 16
+
+mail_getedid:                   @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
+	.word mail_getedid_end - mail_getedid @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00030020        @ Tag Identifier, get EDID
+	.word 0x00000136        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ EDID Block Number Requested/ Responded
+	.word 0x00000000        @ Status
+.fill 128, 1, 0x00              @ 128 * 1 byte EDID Block
+.balign 4
+	.word 0x00000000        @ End Tag
+mail_getedid_end:
 .balign 16
 
 mail_framebuffer_addr:

@@ -26,7 +26,7 @@
  *
  * Usage: r0-r4
  * Return: r0 (Number of Characters Which Were Not Drawn)
- * Global Enviromental Variable(s): FB_X_CARET, FB_Y_CARET, FB_WIDTH
+ * Global Enviromental Variable(s): FB32_X_CARET, FB32_Y_CARET, FB32_WIDTH
  */
 .globl set_caret
 set_caret:
@@ -39,7 +39,7 @@ set_caret:
 
 	push {r4} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	ldr width, FB_WIDTH
+	ldr width, FB32_WIDTH
 
 	mov x_coord, xy_coord
 	lsr x_coord, x_coord, #16
@@ -57,8 +57,8 @@ set_caret:
 		bge set_caret_loop
 		
 	set_caret_common:
-		str x_coord, FB_X_CARET
-		str y_coord, FB_Y_CARET
+		str x_coord, FB32_X_CARET
+		str y_coord, FB32_Y_CARET
 		pop {r4} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 		mov pc, lr
@@ -125,7 +125,7 @@ strlen:
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
- * Global Enviromental Variable(s): ARRAY_ASCII_FONT_BITMAP8, FB_WIDTH
+ * Global Enviromental Variable(s): ARRAY_ASCII_FONT_BITMAP8, FB32_WIDTH
  */
 .globl print_string
 print_string:
@@ -149,7 +149,7 @@ print_string:
 	pop {back_color,length,char_width,char_height,font_ascii_base} @ Get Fifth to Eighth Arguments
 	sub sp, sp, #52                                                @ Retrieve SP
 
-	ldr width, FB_WIDTH
+	ldr width, FB32_WIDTH
 
 	mov tab_length, #4
 
@@ -415,7 +415,7 @@ print_number:
 	pop {back_color,length,char_width,char_height,font_num_base} @ Get Fifth to Eighth Arguments
 	sub sp, sp, #52                                              @ Retrieve SP
 
-	ldr width, FB_WIDTH
+	ldr width, FB32_WIDTH
 
 	mov i, #8                                       @ `for ( int i = 8; i >= 0; --i )`
 
@@ -522,7 +522,7 @@ print_number:
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB_ADDRESS, FB_WIDTH, FB_SIZE, FB_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
 .globl pict_char
 pict_char:
@@ -548,22 +548,22 @@ pict_char:
 	pop {char_width,char_height}                     @ Get Fifth and Sixth Arguments
 	sub sp, sp, #40                                  @ Retrieve SP
 
-	ldr f_buffer, FB_ADDRESS
+	ldr f_buffer, FB32_ADDRESS
 	cmp f_buffer, #0
 	beq pict_char_error2
 
-	ldr width, FB_WIDTH
+	ldr width, FB32_WIDTH
 	cmp width, #0
 	beq pict_char_error2
 
-	ldr depth, FB_DEPTH
+	ldr depth, FB32_DEPTH
 	cmp depth, #0
 	beq pict_char_error2
 	cmp depth, #32
 	cmpne depth, #16
 	bne pict_char_error2
 
-	ldr size, FB_SIZE
+	ldr size, FB32_SIZE
 	cmp size, #0
 	beq pict_char_error2
 	add size, f_buffer, size

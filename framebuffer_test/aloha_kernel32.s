@@ -59,8 +59,8 @@ _reset:
 	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
-	ldr r0, peripherals_base
-	ldr r1, interrupt_base
+	mov r0, #peripherals_base
+	ldr r1, INTERRUPT_BASE
 	add r0, r0, r1
 
 	mov r1, #0x00000000
@@ -73,11 +73,11 @@ _reset:
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #interrupt_fiq_control]
 
-	ldr r0, peripherals_base
-	ldr r1, armtimer_base
+	mov r0, #peripherals_base
+	ldr r1, ARMTIMER_BASE
 	add r0, r0, r1
 
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz
+	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #armtimer_predivider]
 
 	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
@@ -91,8 +91,8 @@ _reset:
 
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
-	ldr r0, peripherals_base
-	ldr r1, gpio_base
+	mov r0, #peripherals_base
+	ldr r1, GPIO_BASE
 	add r0, r0, r1
 
 	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
@@ -122,11 +122,19 @@ _reset:
 
 	ldr r0, addr_float
 	vld1.32 {d0,d1}, [r0]                     @ Load float_example1 and float_example2 (8 bytes aligned)
-	vadd.f32 d2, d0, d1                       @ Add as Single Presicion Floating Point (dn is 64-bit, qn is 1238-bit)
+	vadd.f32 d2, d0, d1                       @ Add as Single Presicion Floating Point (d0-31 is 64-bit, q0-15 is 1238-bit)
 	vcvt.s32.f32 d3, d2                       @ Floating Point to Singed Integer (U32 for Unsigned Integer)
-                                                  @ Floating Point to Integer Uses Round Towards Zero
-                                                  @ Integer to Floating/Fixed Point Uses Round to Nearest
+                                                  @ Floating Point to Integer Uses Round Towards Zero in NEON Instructions
+                                                  @ Integer to Floating/Fixed Point Uses Round to Nearest in NEON Instructions
 	vst1.32 {d2,d3}, [r0]                     @ Store Result to float_example1, float_example2 as Integer
+
+	ldr r0, float_example3
+	ldr r1, float_example1
+	vmov d0, r0, r1                           @ VFP Instructions (s0-31 is 32 bit), d0 Lower Bits from r0, Upper Bits from r1
+	vadd.f32 s0, s0, s1                       @ d0[0] Lower Bits Equals s0, d0[1] Upper Bits Equals s1
+	vcvtr.u32.f32 s0, s0                      @ In VFP Instructions, You Can Convert with Rounding Mode
+	vmov r0, s0
+	str r0, float_example3
 
 render:
 	push {r0-r8,lr}
@@ -201,6 +209,19 @@ render:
 	bl print_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
+	ldr r0, float_example3                    @ Pointer of Array of String
+	mov r1, #300                              @ X Coordinate
+	mov r2, #344                              @ Y Coordinate
+	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
+	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, FONT_MONO_12PX_NUMBER
+	push {r4-r8}
+	bl print_number
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+
 	pop {r0-r8,lr}
 
 	cpsie f
@@ -234,15 +255,15 @@ _fiq:
 	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
 fiq_handler:
-	ldr r0, peripherals_base
-	ldr r1, armtimer_base
+	mov r0, #peripherals_base
+	ldr r1, ARMTIMER_BASE
 	add r0, r0, r1
 
 	mov r1, #0
 	str r1, [r0, #armtimer_clear]             @ any write to clear/ acknowledge
 
-	ldr r0, peripherals_base
-	ldr r1, gpio_base
+	mov r0, #peripherals_base
+	ldr r1, GPIO_BASE
 	add r0, r0, r1
 
 	ldr r1, gpio_toggle
@@ -254,8 +275,8 @@ fiq_handler:
 	str r1, [r0]
 
 
-	ldr r0, peripherals_base
-	ldr r1, systemtimer_base
+	mov r0, #peripherals_base
+	ldr r1, SYSTEMTIMER_BASE
 	add r0, r0, r1
 
 	ldr r0, [r0, #systemtimer_counter_lower_32_bits]
@@ -360,7 +381,10 @@ float_example1:
 	.float 4.4
 	.word 0x00
 float_example2:
-	.float 7.7
+	.float 7.8
+	.word 0x00
+float_example3:
+	.float 3.3
 	.word 0x00
 double_example:
 	.double 3.3

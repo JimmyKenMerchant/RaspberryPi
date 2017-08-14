@@ -11,6 +11,11 @@
  * Aliases: Does Not Affect Memory in Program
  * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
  */
+
+/* BCM2836 and BCM2837 Peripheral Base */
+/* If BCM 2835, Peripheral Base is 0x20000000 */
+.equ peripherals_base, 0x3F000000
+
 .equ systemtimer_control_status,         0x00
 .equ systemtimer_counter_lower_32_bits,  0x04
 .equ systemtimer_counter_higher_32_bits, 0x08
@@ -69,19 +74,17 @@
 /**
  * Variables
  */
-.globl peripherals_base
-.globl systemtimer_base
-.globl interrupt_base
-.globl armtimer_base
-.globl mailbox_base
-.globl gpio_base
+.globl SYSTEMTIMER_BASE
+.globl INTERRUPT_BASE
+.globl ARMTIMER_BASE
+.globl MAILBOX_BASE
+.globl GPIO_BASE
 .balign 4
-peripherals_base:   .word 0x3F000000
-systemtimer_base:   .word 0x00003000
-interrupt_base:     .word 0x0000B200
-armtimer_base:      .word 0x0000B400
-mailbox_base:       .word 0x0000B880
-gpio_base:          .word 0x00200000
+SYSTEMTIMER_BASE:   .word 0x00003000
+INTERRUPT_BASE:     .word 0x0000B200
+ARMTIMER_BASE:      .word 0x0000B400
+MAILBOX_BASE:       .word 0x0000B880
+GPIO_BASE:          .word 0x00200000
 
 
 /**
@@ -96,8 +99,8 @@ gpio_base:          .word 0x00200000
 .globl system32_sleep
 system32_sleep:
 	push {r4-r5}
-	ldr r1, peripherals_base
-	ldr r2, systemtimer_base
+	mov r1, #peripherals_base
+	ldr r2, SYSTEMTIMER_BASE
 	add r1, r1, r2
 	ldr r2, [r1, #systemtimer_counter_lower_32_bits]
 	ldr r3, [r1, #systemtimer_counter_higher_32_bits]

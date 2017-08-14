@@ -10,13 +10,13 @@
 #kernel_address=32768
 
 #CPU Clock Mhz, you may need to voltage up for overclock
-arm_freq=800
+arm_freq=900
 
 #GPU(APB) Clock MHz, you may need to voltage up for overclock
 gpu_freq=240
 
 #SDRAM Clock Mhz, you may need to voltage up for overclock
-sdram_freq=240
+sdram_freq=250
 
 #GPU Memory Mbytes
 gpu_mem=256
@@ -25,6 +25,8 @@ gpu_mem=256
 disable_overscan=1
 
 #0.025V Steps, 2 means app. 1.2 - 1.3125V + 0.05V (RasPi2)
+#CPU 1000Mhz, GPU 500Mhz, SDRAM 500Mhz Need 2 (Raspi2)
+#CPU 900Mhz, GPU 250Mhz, SDRAM 450Mhz Need 0 (Raspi2)
 #over_voltage=2
 
 #0 means Auto Detect from EDID, 1 means CEA Table, 2 means DMT Table

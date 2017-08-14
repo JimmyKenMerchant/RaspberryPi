@@ -24,15 +24,17 @@
 #define float32 float
 #define float64 double
 
-extern uint32 FB_ADDRESS;
-extern uint32 FB_DISPLAY_WIDTH;
-extern uint32 FB_DISPLAY_HEIGHT;
-extern uint32 FB_SIZE;
-extern uint32 FB_DEPTH;
-extern uint32 FB_WIDTH;
-extern uint32 FB_HEIGHT;
-extern int32 FB_X_CARET;
-extern int32 FB_Y_CARET;
+extern uint32 FB32_ADDRESS;
+extern uint32 FB32_DISPLAY_WIDTH;
+extern uint32 FB32_DISPLAY_HEIGHT;
+extern uint32 FB32_SIZE;
+extern uint32 FB32_DEPTH;
+extern uint32 FB32_PIXELORDER;
+extern uint32 FB32_ALPHAMODE;
+extern uint32 FB32_WIDTH;
+extern uint32 FB32_HEIGHT;
+extern int32 FB32_X_CARET;
+extern int32 FB32_Y_CARET;
 extern uint32* FONT_MONO_12PX_NUMBER;
 extern uint32* FONT_MONO_12PX_ASCII;
 extern uint32* HEAP;
@@ -156,7 +158,9 @@ extern uint64 fb32_draw_image
 	uint32 width,
 	uint32 height,
 	uint32 x_offset,
-	uint32 y_offset
+	uint32 y_offset,
+	uint32 x_crop,
+	uint32 y_crop
 );
 
 
