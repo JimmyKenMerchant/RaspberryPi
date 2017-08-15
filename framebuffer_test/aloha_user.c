@@ -70,6 +70,16 @@ void user_start()
 
 	fb32_clear_color_block( 0x0000FFFF, 700, 620, 50, 100 );
 
+	system32_sleep( 1000000 );
+
+	fb32_draw_line( 0x0000FFFF, 0, 0, 300, 300, 1, 1 );
+
+	fb32_draw_line( 0x0000FFFF, 0, 0, 300, 100, 1, 1 );
+
+	fb32_draw_line( 0x0000FFFF, 300, 0, 0, 300, 1, 1 );
+
+	system32_sleep( 9000000 );
+
 	while(1) {
 		fb32_copy( RENDER_BUFFER );
 		fb32_clear_color( color_move );

@@ -24,6 +24,10 @@
 #define float32 float
 #define float64 double
 
+/**
+ * system32/color_pallette.s
+ */
+
 extern uint32 FB32_ADDRESS;
 extern uint32 FB32_DISPLAY_WIDTH;
 extern uint32 FB32_DISPLAY_HEIGHT;
@@ -40,14 +44,63 @@ extern uint32* FONT_MONO_12PX_ASCII;
 extern uint32* HEAP;
 extern uint32* RENDER_BUFFER;
 
+extern uint16 COLOR16_RED;
+extern uint16 COLOR16_GREEN;
+extern uint16 COLOR16_BLUE;
+extern uint16 COLOR16_YELLOW;
+extern uint16 COLOR16_MAGENTA;
+extern uint16 COLOR16_CYAN;
+extern uint16 COLOR16_PINK;
+extern uint16 COLOR16_LIME;
+extern uint16 COLOR16_SKYBLUE;
+extern uint16 COLOR16_LIGHTYELLOW;
+extern uint16 COLOR16_SCARLET;
+extern uint16 COLOR16_DARKGREEN;
+extern uint16 COLOR16_NAVYBLUE;
+extern uint16 COLOR16_WHITE;
+extern uint16 COLOR16_LIGHTGRAY;
+extern uint16 COLOR16_GRAY;
+extern uint16 COLOR16_BLACK;
 extern uint32* COLOR16_SAMPLE_IMAGE;
 
+extern uint32 COLOR32_RED;
+extern uint32 COLOR32_GREEN;
+extern uint32 COLOR32_BLUE;
+extern uint32 COLOR32_YELLOW;
+extern uint32 COLOR32_MAGENTA;
+extern uint32 COLOR32_CYAN;
+extern uint32 COLOR32_PINK;
+extern uint32 COLOR32_LIME;
+extern uint32 COLOR32_SKYBLUE;
+extern uint32 COLOR32_LIGHTYELLOW;
+extern uint32 COLOR32_SCARLET;
+extern uint32 COLOR32_DARKGREEN;
+extern uint32 COLOR32_NAVYBLUE;
+extern uint32 COLOR32_WHITE;
+extern uint32 COLOR32_LIGHTGRAY;
+extern uint32 COLOR32_GRAY;
+extern uint32 COLOR32_BLACK;
+
+
+/**
+ * Unique Difinition
+ */
+
 void user_start();
+
+
+/**
+ * system32/system32
+ */
 
 extern void system32_no_op();
 
 extern void system32_sleep( uint32 u_seconds );
 
+
+/**
+ * system32/print_char32.s
+ */
 
 /**
  * Set Caret Position from Return Vlue of `print_*` functions
@@ -129,6 +182,32 @@ extern uint64 print_number
 	uint32 height,
 	uint32* font_base
 );
+
+
+/**
+ * system32/frame_buffer32.s
+ */
+
+
+/**
+ * Draw Line
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Number of Y Length Which Were Not Drawn
+ */
+
+extern uint64 fb32_draw_line
+(
+	uint32 color,
+	int32 x_coord_1,
+	int32 y_coord_1,
+	int32 x_coord_2,
+	int32 y_coord_2,
+	uint32 width,
+	uint32 height
+);
+
 
 
 /**

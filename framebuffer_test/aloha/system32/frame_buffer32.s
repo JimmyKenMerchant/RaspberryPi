@@ -1,5 +1,5 @@
 /**
- * framebuffer32.s
+ * frame_buffer32.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -20,6 +20,191 @@
 .equ mailbox0_config,          0x1C
 .equ mailbox0_write,           0x20
 .equ fb_armmask,               0x3FFFFFFF
+
+
+/**
+ * function fb32_draw_line
+ * Draw Line
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ * r1: X Coordinate1, Start Line from This Coordinate If It's Less than X Coordinate2, If Not, End Point of Line
+ * r2: Y Coordinate1, Start Line from This Coordinate If It's Less than X Coordinate2, If Not, End Point of Line
+ * r3: X Coordinate2, Start Line from This Coordinate If It's Less than X Coordinate1, If Not, End Point of Line
+ * r4: Y Coordinate2, Start Line from This Coordinate If It's Less than X Coordinate1, If Not, End Point of Line
+ * r5: Point Width in Pixels
+ * r6: Point Height in Pixels
+ *
+ * Usage: r0-r11
+ * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Number of Points Which Were Not Drawn
+ */
+.globl fb32_draw_line
+fb32_draw_line:
+	/* Auto (Local) Variables, but just aliases */
+	color            .req r0   @ Parameter, Register for Argument, Scratch Register
+	x_coord_1        .req r1   @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord_1        .req r2   @ Parameter, Register for Argument, Scratch Register
+	x_coord_2        .req r3   @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord_2        .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_width       .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_height      .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	x_current        .req r7
+	y_current        .req r8
+	x_diff           .req r9   @ Counter
+	i                .req r10
+	dup_char_height  .req r11
+	x_direction      .req r12  @ 1 is to Upper Right (X Increment), -1 is to Upper Left (X Decrement)
+
+	/* VFP/NEON Registers */
+	vfp_xy_coord_1   .req d0
+	vfp_y_coord_1    .req s0 @ Lower 32 Bits of d0
+	vfp_x_coord_1    .req s1 @ Upper 32 Bits of d0
+	vfp_xy_coord_2   .req d1
+	vfp_y_coord_2    .req s2
+	vfp_x_coord_2    .req s3
+	vfp_xy_coord_3   .req d2
+	vfp_y_coord_3    .req s4
+	vfp_x_coord_3    .req s5
+	vfp_char_height  .req s6
+	vfp_y_per_x      .req s7 @ Uses to Determine char_width
+	vfp_y_start      .req s8
+	vfp_y_current    .req s9
+	vfp_i            .req s10
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
+	pop {y_coord_2,char_width,char_height}           @ Get Fifth to Seventh Arguments
+	sub sp, sp, #44                                  @ Retrieve SP
+
+	vpush {s0-s11}
+
+	mov dup_char_height, char_height                 @ Use on the Last Point
+	cmp x_coord_1, x_coord_2
+	bge fb32_draw_line_coordge
+	blt fb32_draw_line_coordlt
+	fb32_draw_line_coordge:
+		sub x_diff, x_coord_1, x_coord_2
+		cmp y_coord_1, y_coord_2
+		movge x_current, x_coord_2
+		movge y_current, y_coord_2
+		movge x_direction, #1
+		movlt x_current, x_coord_1
+		movlt y_current, y_coord_1
+		movlt x_direction, #-1
+		b fb32_draw_line_coord
+
+	fb32_draw_line_coordlt:
+		sub x_diff, x_coord_2, x_coord_1
+		cmp y_coord_1, y_coord_2
+		movge x_current, x_coord_2
+		movge y_current, y_coord_2
+		movge x_direction, #-1
+		movlt x_current, x_coord_1
+		movlt y_current, y_coord_1
+		movlt x_direction, #1
+
+	fb32_draw_line_coord:
+
+		vmov vfp_xy_coord_1, y_coord_1, x_coord_1     @ Lower Bits from y_coord_n, Upper Bits x_coord_n
+		vcvt.f32.s32 vfp_xy_coord_1, vfp_xy_coord_1   @ *NEON*Convert Signed Integer to Single Precision Floating Point
+		vmov vfp_xy_coord_2, y_coord_2, x_coord_2     @ Lower Bits from y_coord_n, Upper Bits x_coord_n
+		vcvt.f32.s32 vfp_xy_coord_2, vfp_xy_coord_2   @ *NEON*Convert Signed Integer to Single Precision Floating Point
+		vsub.f32 vfp_xy_coord_3, vfp_xy_coord_1, vfp_xy_coord_2 @ *NEON*Subtract Each 32-Bit Lane as Single Precision Float
+		vcmp.f32 vfp_x_coord_3, #0
+		vmoveq vfp_x_coord_3, #1.0                    @ If difference of X is Zero, Add One to Hide
+		vdiv.f32 vfp_y_per_x, vfp_y_coord_3, vfp_x_coord_3
+		vabs.f32 vfp_y_per_x, vfp_y_per_x
+		vcmp.f32 vfp_x_coord_1, vfp_x_coord_2
+		vmovge vfp_y_start, vfp_y_coord_2
+		vmovlt vfp_y_start, vfp_y_coord_1
+                 
+		vmov vfp_char_height, char_height
+		vcvt.f32.s32 vfp_char_height, vfp_char_height
+		vadd.f32 vfp_char_height, vfp_char_height, vfp_y_per_x
+		vcvtr.s32.f32 vfp_char_height, vfp_char_height
+		vmov char_height, vfp_char_height
+
+		cmp char_height, #1
+		subgt char_height, char_height, #1                          @ To Adjust 1 Pixel of Height
+
+		mov i, #0
+
+	fb32_draw_line_loop:
+		cmp i, x_diff
+		moveq char_height, dup_char_height       @ To hide Height Overflow on End Point (Except Original char_height)
+		bgt fb32_draw_line_common
+
+		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		mov r1, x_current
+		mov r2, y_current
+		mov r3, char_width
+		push {char_height} 
+		bl fb32_clear_color_block
+		add sp, sp, #4
+		push {r1}
+		add sp, sp, #4
+		cmp r0, #0                               @ Compare Return 0 or 1
+		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		bne fb32_draw_line_error
+
+		add x_current, x_current, x_direction
+
+		add i, i, #1
+
+		vmov vfp_i, i
+		vcvt.f32.s32 vfp_i, vfp_i
+		vmov vfp_y_current, vfp_y_start
+		vmla.f32 vfp_y_current, vfp_y_per_x, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
+		vcvtr.s32.f32 vfp_y_current, vfp_y_current    @ In VFP Instructions, You Can Convert with Rounding Mode
+		vmov y_current, vfp_y_current
+
+		b fb32_draw_line_loop
+
+	fb32_draw_line_error:
+		sub i, i, #1                                  @ Adjust for Not Completed Point
+		sub x_diff, x_diff, i
+		mov r0, x_diff
+
+	fb32_draw_line_common:
+		vpop {s0-s11}
+		lsl x_current, x_current, #16
+		add r1, x_current, y_current
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq color
+.unreq x_coord_1
+.unreq y_coord_1
+.unreq x_coord_2
+.unreq y_coord_2
+.unreq char_width
+.unreq char_height
+.unreq x_current
+.unreq y_current
+.unreq x_diff
+.unreq i
+.unreq dup_char_height
+.unreq x_direction
+.unreq vfp_xy_coord_1
+.unreq vfp_y_coord_1
+.unreq vfp_x_coord_1
+.unreq vfp_xy_coord_2
+.unreq vfp_y_coord_2
+.unreq vfp_x_coord_2
+.unreq vfp_xy_coord_3
+.unreq vfp_y_coord_3
+.unreq vfp_x_coord_3
+.unreq vfp_char_height
+.unreq vfp_y_per_x
+.unreq vfp_y_start
+.unreq vfp_y_current
+.unreq vfp_i
+
 
 /**
  * function fb32_copy

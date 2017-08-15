@@ -127,15 +127,15 @@ system32_sleep:
  * These are useful if you use `extern` in C lang file.
  */
 .balign 4
-.include "system32/framebuffer32.s"
+.include "system32/frame_buffer32.s"
 .balign 4
 .include "system32/mail32.s"
 .balign 4
 .include "system32/color_palette.s"
 .balign 4
-.include "system32/print_char32.s"
-.balign 4
 .include "system32/font_mono_12px.s"
+.balign 4
+.include "system32/print_char32.s"
 .balign 4
 .include "system32/math32.s"
 .balign 4
