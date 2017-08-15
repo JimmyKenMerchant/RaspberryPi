@@ -35,14 +35,8 @@
 .equ interrupt_disable_irqs_2,     0x20
 .equ interrupt_disable_basic_irqs, 0x24
 
-.equ armtimer_load,            0x00
-.equ armtimer_control,         0x08
-.equ armtimer_clear,           0x0C
-.equ armtimer_predivider,      0x1C
-
-.equ mail_confirm,             0x04
+.equ mailbox_confirm,          0x04
 .equ mailbox_gpuoffset,        0x40000000
-.equ mailbox_armmask,          0x3FFFFFFF
 .equ mailbox_channel8,         0x08
 .equ mailbox0_read,            0x00
 .equ mailbox0_poll,            0x10
@@ -50,6 +44,12 @@
 .equ mailbox0_status,          0x18         @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
 .equ mailbox0_config,          0x1C
 .equ mailbox0_write,           0x20
+.equ fb_armmask,               0x3FFFFFFF
+
+.equ armtimer_load,            0x00
+.equ armtimer_control,         0x08
+.equ armtimer_clear,           0x0C
+.equ armtimer_predivider,      0x1C
 
 .equ gpio_gpfsel_4,            0x10
 .equ gpio_gpset_1,             0x20         @ 0b00100000
@@ -129,7 +129,9 @@ system32_sleep:
 .balign 4
 .include "system32/framebuffer32.s"
 .balign 4
-.include "system32/color_palettes32_16bit.s"
+.include "system32/mail32.s"
+.balign 4
+.include "system32/color_palette.s"
 .balign 4
 .include "system32/print_char32.s"
 .balign 4

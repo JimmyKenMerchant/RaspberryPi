@@ -139,14 +139,14 @@ _reset:
 render:
 	push {r0-r8,lr}
 
-	ldr r0, color16_navyblue
+	ldr r0, COLOR16_NAVYBLUE
 	bl fb32_clear_color
 
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #-4                               @ X Coordinate
 	mov r2, #-2                               @ Y Coordinate
-	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_GREEN                     @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #14                               @ Length of Characters, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
@@ -159,8 +159,8 @@ render:
 	ldr r0, string_number                     @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #88                               @ Y Coordinate
-	ldr r3, color16_red                       @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_RED                       @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #10
 	mov r6, #8
 	mov r7, #12
@@ -173,8 +173,8 @@ render:
 	ldr r0, string_test                       @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #320                              @ Y Coordinate
-	ldr r3, color16_green                     @ Color (16-bit or 32-bit)
-	ldr r4, color16_red                       @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_GREEN                     @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_RED                       @ Background Color (16-bit or 32-bit)
 	mov r5, #73                               @ Length of Characters, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
@@ -186,8 +186,8 @@ render:
 	ldr r0, float_example1                    @ Pointer of Array of String
 	mov r1, #300                              @ X Coordinate
 	mov r2, #320                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_YELLOW                    @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
@@ -199,8 +199,8 @@ render:
 	ldr r0, float_example2                    @ Pointer of Array of String
 	mov r1, #300                              @ X Coordinate
 	mov r2, #332                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_YELLOW                    @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
@@ -212,8 +212,8 @@ render:
 	ldr r0, float_example3                    @ Pointer of Array of String
 	mov r1, #300                              @ X Coordinate
 	mov r2, #344                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_YELLOW                    @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
@@ -289,8 +289,8 @@ fiq_handler:
 	bl math32_hexa_to_deci32
 	mov r2, #80                               @ X Coordinate
 	mov r3, #392                              @ Y Coordinate
-	ldr r4, color16_yellow                    @ Color (16-bit or 32-bit)
-	ldr r5, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r4, COLOR16_YELLOW                    @ Color (16-bit or 32-bit)
+	ldr r5, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r6, #16                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r7, #8
 	mov r8, #12
@@ -314,8 +314,8 @@ fiq_handler:
 	push {r0-r8,lr}
 	mov r1, #80                               @ X Coordinate
 	mov r2, #400                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_YELLOW                    @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
@@ -329,8 +329,8 @@ fiq_handler:
 	mov r0, r1
 	mov r1, #80                               @ X Coordinate
 	mov r2, #408                              @ Y Coordinate
-	ldr r3, color16_yellow                    @ Color (16-bit or 32-bit)
-	ldr r4, color16_blue                      @ Background Color (16-bit or 32-bit)
+	ldr r3, COLOR16_YELLOW                    @ Color (16-bit or 32-bit)
+	ldr r4, COLOR16_BLUE                      @ Background Color (16-bit or 32-bit)
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12

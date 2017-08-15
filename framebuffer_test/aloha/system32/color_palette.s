@@ -1,0 +1,115 @@
+/**
+ * color_palette.s
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+.globl COLOR16_RED
+.globl COLOR16_GREEN
+.globl COLOR16_BLUE
+.globl COLOR16_YELLOW
+.globl COLOR16_MAGENTA
+.globl COLOR16_CYAN
+.globl COLOR16_PINK
+.globl COLOR16_LIME
+.globl COLOR16_SKYBLUE
+.globl COLOR16_LIGHTYELLOW
+.globl COLOR16_SCARLET
+.globl COLOR16_DARKGREEN
+.globl COLOR16_NAVYBLUE
+.globl COLOR16_WHITE
+.globl COLOR16_LIGHTGRAY
+.globl COLOR16_GRAY
+.globl COLOR16_BLACK
+.globl COLOR16_SAMPLE_IMAGE
+COLOR16_SAMPLE_IMAGE: .word _COLOR16_SAMPLE_IMAGE
+
+/* Order of R 5bits, G 6bits, R 5 Bits */
+
+COLOR16_RED:         .hword 0xF800 @ 0xFF0000
+.balign 4 @ Need of 4 bytes alignment to avoid data abort in `ldr`, OR use `ldrh` which can not use PC though...
+COLOR16_GREEN:       .hword 0x07E0 @ 0x00FF00
+.balign 4
+COLOR16_BLUE:        .hword 0x001F @ 0x0000FF
+.balign 4
+COLOR16_YELLOW:      .hword 0xFFE0 @ 0xFFFF00
+.balign 4
+COLOR16_MAGENTA:     .hword 0xF81F @ 0xFF00FF
+.balign 4
+COLOR16_CYAN:        .hword 0x07FF @ 0x00FFFF
+.balign 4
+COLOR16_PINK:        .hword 0xFE19 @ 0xFFC0CB
+.balign 4
+COLOR16_LIME:        .hword 0xBFE0 @ 0xBFFF00
+.balign 4
+COLOR16_SKYBLUE:     .hword 0x867D @ 0x87CEEB
+.balign 4
+COLOR16_LIGHTYELLOW: .hword 0xFFFC @ 0xFFFFE0
+.balign 4
+COLOR16_SCARLET:     .hword 0xF920 @ 0xFF2400
+.balign 4
+COLOR16_DARKGREEN:   .hword 0x0320 @ 0x006400
+.balign 4
+COLOR16_NAVYBLUE:    .hword 0x0010 @ 0x000080
+.balign 4
+COLOR16_WHITE:       .hword 0xFFFF
+.balign 4
+COLOR16_LIGHTGRAY:   .hword 0xD69A @ 0xD3D3D3
+.balign 4
+COLOR16_GRAY:        .hword 0x8410 @ 0x808080
+.balign 4
+COLOR16_BLACK:       .hword 0x0000
+.balign 4
+_COLOR16_SAMPLE_IMAGE:
+.hword 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800 @ 8 X 12 pixels
+.hword 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800
+.hword 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800
+.hword 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800, 0xF800
+.hword 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0
+.hword 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0
+.hword 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0
+.hword 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0, 0x07E0
+.hword 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F
+.hword 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F
+.hword 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F
+.hword 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F, 0x001F
+
+.globl COLOR32_RED
+.globl COLOR32_GREEN
+.globl COLOR32_BLUE
+.globl COLOR32_YELLOW
+.globl COLOR32_MAGENTA
+.globl COLOR32_CYAN
+.globl COLOR32_PINK
+.globl COLOR32_LIME
+.globl COLOR32_SKYBLUE
+.globl COLOR32_LIGHTYELLOW
+.globl COLOR32_SCARLET
+.globl COLOR32_DARKGREEN
+.globl COLOR32_NAVYBLUE
+.globl COLOR32_WHITE
+.globl COLOR32_LIGHTGRAY
+.globl COLOR32_GRAY
+.globl COLOR32_BLACK
+
+/* Order of RGBA */
+
+COLOR32_RED:         .word 0xFF0000FF
+COLOR32_GREEN:       .word 0x00FF00FF
+COLOR32_BLUE:        .word 0x0000FFFF
+COLOR32_YELLOW:      .word 0xFFFF00FF
+COLOR32_MAGENTA:     .word 0xFF00FFFF
+COLOR32_CYAN:        .word 0x00FFFFFF
+COLOR32_PINK:        .word 0xFFC0CBFF
+COLOR32_LIME:        .word 0xBFFF00FF
+COLOR32_SKYBLUE:     .word 0x87CEEBFF
+COLOR32_LIGHTYELLOW: .word 0xFFFFE0FF
+COLOR32_SCARLET:     .word 0xFF2400FF
+COLOR32_DARKGREEN:   .word 0x006400FF
+COLOR32_NAVYBLUE:    .word 0x000080FF
+COLOR32_WHITE:       .word 0xFFFFFFFF
+COLOR32_LIGHTGRAY:   .word 0xD3D3D3FF
+COLOR32_GRAY:        .word 0x808080FF
+COLOR32_BLACK:       .word 0x000000FF

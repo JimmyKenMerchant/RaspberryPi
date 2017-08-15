@@ -10,9 +10,8 @@
 /**
  * Aliases
  */
-.equ mail_confirm,             0x04
+.equ mailbox_confirm,          0x04
 .equ mailbox_gpuoffset,        0x40000000
-.equ mailbox_armmask,          0x3FFFFFFF
 .equ mailbox_channel8,         0x08
 .equ mailbox0_read,            0x00
 .equ mailbox0_poll,            0x10
@@ -20,6 +19,7 @@
 .equ mailbox0_status,          0x18         @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
 .equ mailbox0_config,          0x1C
 .equ mailbox0_write,           0x20
+.equ fb_armmask,               0x3FFFFFFF
 
 /**
  * function fb32_copy
@@ -577,7 +577,7 @@ fb32_clear_color:
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS
- * External Variable(s): MAILBOX_BASE, mail_framebuffer_addr
+ * External Variable(s): MAILBOX_BASE, mail32_framebuffer_addr
  */
 .globl fb32_get
 fb32_get:
@@ -593,7 +593,7 @@ fb32_get:
 		cmp temp, #0x80000000
 		beq fb32_get_waitforwrite
 
-	ldr temp, mail_framebuffer_addr
+	ldr temp, mail32_framebuffer_addr
 	add temp, temp, #mailbox_gpuoffset|mailbox_channel8
 	str temp, [memorymap_base, #mailbox0_write]
 
@@ -602,8 +602,8 @@ fb32_get:
 		cmp temp, #0x40000000
 		beq fb32_get_waitforread
 
-	ldr memorymap_base, mail_framebuffer_addr
-	ldr temp, [memorymap_base, #mail_confirm]
+	ldr memorymap_base, mail32_framebuffer_addr
+	ldr temp, [memorymap_base, #mailbox_confirm]
 	cmp temp, #0x80000000
 	bne fb32_get_error
 
@@ -611,7 +611,7 @@ fb32_get:
 	cmp memorymap_base, #0
 	beq fb32_get_error
 
-	and memorymap_base, memorymap_base, #mailbox_armmask             @ Change FB32_ADDRESS VideoCore's to ARM's
+	and memorymap_base, memorymap_base, #fb_armmask                  @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
 
 	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
@@ -653,10 +653,10 @@ FB32_Y_CARET: .word 0x00000000
 .globl FB32_ALPHAMODE
 .globl FB32_ADDRESS
 .globl FB32_SIZE
-mail_framebuffer:
-	.word mail_framebuffer_end - mail_framebuffer @ Size of this Mail
+mail32_framebuffer:
+	.word mail32_framebuffer_end - mail32_framebuffer @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-mail_contents:
+mail32_contents:
 	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
@@ -700,11 +700,11 @@ FB32_SIZE:
 	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
 .balign 4
 	.word 0x00000000        @ End Tag
-mail_framebuffer_end:
+mail32_framebuffer_end:
 .balign 16
 
-mail_blankon:
-	.word mail_blankon_end - mail_blankon @ Size of this Mail
+mail32_blankon:
+	.word mail32_blankon_end - mail32_blankon @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
@@ -712,11 +712,11 @@ mail_blankon:
 	.word 0x00000001        @ Value Buffer, State (0 means off, 1 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
-mail_blankon_end:
+mail32_blankon_end:
 .balign 16
 
-mail_blankoff:
-	.word mail_blankoff_end - mail_blankoff @ Size of this Mail
+mail32_blankoff:
+	.word mail32_blankoff_end - mail32_blankoff @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
@@ -724,11 +724,11 @@ mail_blankoff:
 	.word 0x00000000        @ Value Buffer, State (0 means off, 1 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
-mail_blankoff_end:
+mail32_blankoff_end:
 .balign 16
 
-mail_getedid:                   @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
-	.word mail_getedid_end - mail_getedid @ Size of this Mail
+mail32_getedid:                   @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
+	.word mail32_getedid_end - mail32_getedid @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00030020        @ Tag Identifier, get EDID
 	.word 0x00000136        @ Value Buffer Size in Bytes
@@ -738,13 +738,13 @@ mail_getedid:                   @ get EDID (Extended Display Identification Data
 .fill 128, 1, 0x00              @ 128 * 1 byte EDID Block
 .balign 4
 	.word 0x00000000        @ End Tag
-mail_getedid_end:
+mail32_getedid_end:
 .balign 16
 
-mail_framebuffer_addr:
-	.word mail_framebuffer  @ Address of mail_framebuffer
-mail_blankon_addr:
-	.word mail_blankon      @ Address of mail_blankon
-mail_blankoff_addr:
-	.word mail_blankoff     @ Address of mail_blankoff
+mail32_framebuffer_addr:
+	.word mail32_framebuffer  @ Address of mail32_framebuffer
+mail32_blankon_addr:
+	.word mail32_blankon      @ Address of mail32_blankon
+mail32_blankoff_addr:
+	.word mail32_blankoff     @ Address of mail32_blankoff
 .balign 4
