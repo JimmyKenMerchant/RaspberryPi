@@ -13,6 +13,11 @@
 
 #endif
 
+
+/**
+ * Unique Difinition
+ */
+
 #define uchar8 unsigned char
 #define uint16 unsigned short int
 #define uint32 unsigned long int
@@ -24,25 +29,20 @@
 #define float32 float
 #define float64 double
 
+void user_start();
+
+
+/**
+ * system32/font_mono_12px.s
+ */
+
+extern uint32* FONT_MONO_12PX_NUMBER;
+extern uint32* FONT_MONO_12PX_ASCII;
+
+
 /**
  * system32/color.s
  */
-
-extern uint32 FB32_ADDRESS;
-extern uint32 FB32_DISPLAY_WIDTH;
-extern uint32 FB32_DISPLAY_HEIGHT;
-extern uint32 FB32_SIZE;
-extern uint32 FB32_DEPTH;
-extern uint32 FB32_PIXELORDER;
-extern uint32 FB32_ALPHAMODE;
-extern uint32 FB32_WIDTH;
-extern uint32 FB32_HEIGHT;
-extern int32 FB32_X_CARET;
-extern int32 FB32_Y_CARET;
-extern uint32* FONT_MONO_12PX_NUMBER;
-extern uint32* FONT_MONO_12PX_ASCII;
-extern uint32* HEAP;
-extern uint32* RENDER_BUFFER;
 
 extern uint16 COLOR16_RED;
 extern uint16 COLOR16_GREEN;
@@ -83,15 +83,11 @@ extern uint32 COLOR32_BLACK;
 
 
 /**
- * Unique Difinition
- */
-
-void user_start();
-
-
-/**
  * system32/system32
  */
+
+extern uint32* SYSTEM32_HEAP;
+extern uint32* SYSTEM32_RENDER_BUFFER;
 
 extern void system32_no_op();
 
@@ -188,6 +184,17 @@ extern uint64 print32_number
  * system32/fb32.s
  */
 
+extern uint32 FB32_ADDRESS;
+extern uint32 FB32_DISPLAY_WIDTH;
+extern uint32 FB32_DISPLAY_HEIGHT;
+extern uint32 FB32_SIZE;
+extern uint32 FB32_DEPTH;
+extern uint32 FB32_PIXELORDER;
+extern uint32 FB32_ALPHAMODE;
+extern uint32 FB32_WIDTH;
+extern uint32 FB32_HEIGHT;
+extern int32 FB32_X_CARET;
+extern int32 FB32_Y_CARET;
 
 /**
  * Draw Line

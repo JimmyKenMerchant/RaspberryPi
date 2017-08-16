@@ -1,5 +1,5 @@
 /**
- * frame_buffer32.s
+ * fb32.s
  *
  * Author: Kenta Ishii
  * License: MIT

@@ -90,11 +90,11 @@ void user_start()
 	system32_sleep( 9000000 );
 
 	while(1) {
-		fb32_copy( RENDER_BUFFER );
+		fb32_copy( SYSTEM32_RENDER_BUFFER );
 		fb32_clear_color( color_move );
 		color_move++;
 		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER );
-		fb32_draw_image( RENDER_BUFFER, 0, 0, FB32_WIDTH, FB32_HEIGHT, 0, 10, 10, 0 );
+		fb32_draw_image( SYSTEM32_RENDER_BUFFER, 0, 0, FB32_WIDTH, FB32_HEIGHT, 0, 10, 10, 0 );
 		system32_sleep( 1000000 );
 	}
 }
