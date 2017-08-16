@@ -33,6 +33,14 @@ void user_start();
 
 
 /**
+ * system32/data.s
+ */
+
+extern uint32* DATA_COLOR32_SAMPLE_IMAGE0;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
+
+
+/**
  * system32/font_mono_12px.s
  */
 
@@ -88,6 +96,20 @@ extern uint32 COLOR32_BLACK;
 
 extern uint32* SYSTEM32_HEAP;
 extern uint32* SYSTEM32_RENDER_BUFFER;
+
+
+/**
+ * Convert Endianness
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error: Align Bytes is not 2/4
+ */
+extern uint32 system32_convert_endianness
+(
+	uint32* data,
+	uint32 size,
+	uint32 align_bytes
+);
 
 extern void system32_no_op();
 
@@ -195,6 +217,18 @@ extern uint32 FB32_WIDTH;
 extern uint32 FB32_HEIGHT;
 extern int32 FB32_X_CARET;
 extern int32 FB32_Y_CARET;
+
+
+/**
+ * Convert 32-bit Depth Color RBGA to ARGB
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 fb32_rgba_to_argb
+(
+	uint32* data,
+	uint32 size
+);
 
 /**
  * Draw Line

@@ -1,0 +1,16 @@
+/**
+ * data.s
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+.globl DATA_COLOR32_SAMPLE_IMAGE0
+.globl DATA_COLOR32_SAMPLE_IMAGE0_SIZE
+DATA_COLOR32_SAMPLE_IMAGE0: .word _DATA_COLOR32_SAMPLE_IMAGE0
+DATA_COLOR32_SAMPLE_IMAGE0_SIZE: .word _DATA_COLOR32_SAMPLE_IMAGE0_END - _DATA_COLOR32_SAMPLE_IMAGE0
+_DATA_COLOR32_SAMPLE_IMAGE0:
+.incbin "aloha/system32/data/bugufo.bin"
+_DATA_COLOR32_SAMPLE_IMAGE0_END:

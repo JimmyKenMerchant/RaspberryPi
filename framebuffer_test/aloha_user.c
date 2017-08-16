@@ -19,9 +19,9 @@ void user_start()
 	uchar8 newline[] = "\n\0";
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
-	uint32 color = 0x0000ffff;
-	uint32 color_move = 0x00000000;
-	uint32 back_color =0x00000000;
+	uint32 color = COLOR32_WHITE;
+	uint32 color_move = COLOR32_BLACK;
+	uint32 back_color = COLOR32_BLACK;
 
 	print32_set_caret( print32_number( print32_strlen( string ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
@@ -57,35 +57,38 @@ void user_start()
 
 	system32_sleep( 1000000 );
 
-	fb32_draw_image( COLOR16_SAMPLE_IMAGE, 300, -4, 8, 12, 0, 0, 0, 0 );
+	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 
-	fb32_draw_image( COLOR16_SAMPLE_IMAGE, -4, 500, 8, 12, 0, 0, 0, 0 );
+	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 
-	fb32_draw_image( COLOR16_SAMPLE_IMAGE, 300, 632, 8, 12, 0, 0, 0, 0 );
+	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 500, 500, 64, 64, 0, 0, 0, 0 );
 
-	fb32_draw_image( COLOR16_SAMPLE_IMAGE, 400, 400, 8, 12, 5, 8, 0, 0 );
+	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, -4, 500, 8, 12, 0, 0, 0, 0 );
 
-	fb32_clear_color_block( 0x0000FFFF, -300, 600, 600, 50 );
+	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, 300, 632, 8, 12, 0, 0, 0, 0 );
 
-	fb32_clear_color_block( 0x0000FFFF, 700, -25, 600, 50 );
+	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, 400, 400, 8, 12, 5, 8, 0, 0 );
 
-	fb32_clear_color_block( 0x0000FFFF, 700, 620, 50, 100 );
+	fb32_clear_color_block( COLOR32_WHITE, -300, 600, 600, 50 );
+
+	fb32_clear_color_block( COLOR32_WHITE, 700, -25, 600, 50 );
+
+	fb32_clear_color_block( COLOR32_WHITE, 700, 620, 50, 100 );
 
 	system32_sleep( 1000000 );
 
-	fb32_draw_line( COLOR16_WHITE, 0, 0, 300, 600, 2, 2 );
+	fb32_draw_line( COLOR32_WHITE, 0, 0, 300, 600, 2, 2 );
 
-	fb32_draw_line( COLOR16_RED, 300, 100, 0, 0, 4, 4 );
+	fb32_draw_line( COLOR32_RED, 300, 100, 0, 0, 4, 4 );
 
-	fb32_draw_line( COLOR16_GREEN, 400, 0, 0, 400, 5, 5 );
+	fb32_draw_line( COLOR32_GREEN, 400, 0, 0, 400, 5, 5 );
 
-	fb32_draw_line( COLOR16_BLUE, 0, 300, 300, 0, 3, 3 );
+	fb32_draw_line( COLOR32_BLUE, 0, 300, 300, 0, 3, 3 );
 
 
+	fb32_draw_line( COLOR32_CYAN, 100, 0, 100, 300, 4, 4 );
 
-	fb32_draw_line( COLOR16_CYAN, 100, 0, 100, 300, 4, 4 );
-
-	fb32_draw_line( COLOR16_MAGENTA, 0, 400, 400, 400, 10, 10 );
+	fb32_draw_line( COLOR32_MAGENTA, 0, 400, 400, 400, 10, 10 );
 
 	system32_sleep( 9000000 );
 

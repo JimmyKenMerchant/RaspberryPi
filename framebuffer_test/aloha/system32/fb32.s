@@ -23,6 +23,48 @@
 
 
 /**
+ * function fb32_rgba_to_argb
+ * Convert 32-bit Depth Color RBGA to ARGB
+ *
+ * Parameters
+ * r0: Pointer of Data to Convert Endianness
+ * r1: Size of Data 
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as sucess)
+ */
+.globl fb32_rgba_to_argb
+fb32_rgba_to_argb:
+	/* Auto (Local) Variables, but just aliases */
+	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	swap            .req r2
+
+	add size, size, data_point
+
+	fb32_rgba_to_argb_loop:
+		cmp data_point, size
+		bge fb32_rgba_to_argb_success
+
+		ldr swap, [data_point]
+		ror swap, #8                    @ Rotate Right 8 Bits
+		str swap, [data_point]
+		add data_point, data_point, #4
+
+		b fb32_rgba_to_argb_loop
+
+	fb32_rgba_to_argb_success:
+		mov r0, #0
+
+	fb32_rgba_to_argb_common:
+		mov pc, lr
+
+.unreq data_point
+.unreq size
+.unreq swap
+
+
+/**
  * function fb32_draw_line
  * Draw Line
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
@@ -780,6 +822,8 @@ fb32_get:
 	memorymap_base    .req r0
 	temp              .req r1
 
+	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+
 	mov memorymap_base, #peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
@@ -873,7 +917,7 @@ FB32_HEIGHT:
 	.word 0x00000004        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 FB32_DEPTH:
-	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 RGBA
+	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 ARGB
 .balign 4
 	.word 0x00048006        @ Tag Identifier, Set Pixel Order
 	.word 0x00000004        @ Value Buffer Size in Bytes
@@ -881,7 +925,7 @@ FB32_DEPTH:
 FB32_PIXELORDER:
 	.word 0x01              @ 0x00 is BGR, 0x01 is RGB
 .balign 4
-	.word 0x00048007        @ Tag Identifier, Set Alpha Mode
+	.word 0x00048007        @ Tag Identifier, Set Alpha Mode (This Value is just for INNER of VideoCore, NOT CPU SIDE)
 	.word 0x00000004        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 FB32_ALPHAMODE:

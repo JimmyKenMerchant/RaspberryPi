@@ -7,6 +7,7 @@
  *
  */
 
+
 /**
  * Aliases: Does Not Affect Memory in Program
  * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
@@ -71,6 +72,7 @@
 .equ irq_disable,              0x80         @ 0b10000000
 .equ abort_disable,            0x100        @ 0b100000000
 
+
 /**
  * Variables
  */
@@ -85,6 +87,100 @@ SYSTEM32_INTERRUPT_BASE:     .word 0x0000B200
 SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
 SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
 SYSTEM32_GPIO_BASE:          .word 0x00200000
+
+
+/**
+ * function system32_convert_endianness
+ * Convert Endianness
+ *
+ * Parameters
+ * r0: Pointer of Data to Convert Endianness
+ * r1: Size of Data
+ * r2: Align Bytes to Be Convert Endianness (2/4) 
+ *
+ * Usage: r0-r7
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error: Align Bytes is not 2/4
+ */
+.globl system32_convert_endianness
+system32_convert_endianness:
+	/* Auto (Local) Variables, but just aliases */
+	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	align_bytes     .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	swap_1          .req r3
+	swap_2          .req r4
+	convert_result  .req r5
+	i               .req r6
+	j               .req r7
+
+	push {r4-r7}
+
+	cmp align_bytes, #4
+	cmpne align_bytes, #2
+	bne system32_convert_endianness_error
+
+	add size, size, data_point
+
+	system32_convert_endianness_loop:
+		cmp data_point, size
+		bge system32_convert_endianness_success
+
+		cmp align_bytes, #4
+		ldreq swap_1, [data_point]
+		cmp align_bytes, #2
+		ldreqh swap_1, [data_point]
+
+		mov convert_result, #0
+
+		mov i, #0
+		cmp align_bytes, #4
+		moveq j, #24
+		cmp align_bytes, #2
+		moveq j, #8
+
+		system32_convert_endianness_loop_byte:
+			cmp j, #0
+			blt system32_convert_endianness_loop_byte_common
+
+			lsr swap_2, swap_1, i
+			and swap_2, swap_2, #0xFF
+			lsl swap_2, swap_2, j
+			add convert_result, convert_result, swap_2
+			add i, i, #8
+			sub j, j, #8
+
+			b system32_convert_endianness_loop_byte
+
+			system32_convert_endianness_loop_byte_common:
+				cmp align_bytes, #4
+				streq convert_result, [data_point]
+				addeq data_point, data_point, #4
+				cmp align_bytes, #2
+				streqh convert_result, [data_point]
+				addeq data_point, data_point, #2
+
+				b system32_convert_endianness_loop
+
+	system32_convert_endianness_error:
+		mov r0, #1
+		b system32_convert_endianness_common
+
+	system32_convert_endianness_success:
+		mov r0, #0
+
+	system32_convert_endianness_common:
+		pop {r4-r7}
+		mov pc, lr
+
+.unreq data_point
+.unreq size
+.unreq align_bytes
+.unreq swap_1
+.unreq swap_2
+.unreq convert_result
+.unreq i
+.unreq j
 
 
 /**
@@ -138,6 +234,8 @@ system32_sleep:
 .include "system32/print32.s"
 .balign 4
 .include "system32/math32.s"
+.balign 4
+.include "system32/data.s"
 .balign 4
 
 /**
