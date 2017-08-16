@@ -74,17 +74,17 @@
 /**
  * Variables
  */
-.globl SYSTEMTIMER_BASE
-.globl INTERRUPT_BASE
-.globl ARMTIMER_BASE
-.globl MAILBOX_BASE
-.globl GPIO_BASE
+.globl SYSTEM32_SYSTEMTIMER_BASE
+.globl SYSTEM32_INTERRUPT_BASE
+.globl SYSTEM32_ARMTIMER_BASE
+.globl SYSTEM32_MAILBOX_BASE
+.globl SYSTEM32_GPIO_BASE
 .balign 4
-SYSTEMTIMER_BASE:   .word 0x00003000
-INTERRUPT_BASE:     .word 0x0000B200
-ARMTIMER_BASE:      .word 0x0000B400
-MAILBOX_BASE:       .word 0x0000B880
-GPIO_BASE:          .word 0x00200000
+SYSTEM32_SYSTEMTIMER_BASE:   .word 0x00003000
+SYSTEM32_INTERRUPT_BASE:     .word 0x0000B200
+SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
+SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
+SYSTEM32_GPIO_BASE:          .word 0x00200000
 
 
 /**
@@ -100,7 +100,7 @@ GPIO_BASE:          .word 0x00200000
 system32_sleep:
 	push {r4-r5}
 	mov r1, #peripherals_base
-	ldr r2, SYSTEMTIMER_BASE
+	ldr r2, SYSTEM32_SYSTEMTIMER_BASE
 	add r1, r1, r2
 	ldr r2, [r1, #systemtimer_counter_lower_32_bits]
 	ldr r3, [r1, #systemtimer_counter_higher_32_bits]
@@ -127,15 +127,15 @@ system32_sleep:
  * These are useful if you use `extern` in C lang file.
  */
 .balign 4
-.include "system32/frame_buffer32.s"
+.include "system32/fb32.s"
 .balign 4
 .include "system32/mail32.s"
 .balign 4
-.include "system32/color_palette.s"
+.include "system32/color.s"
 .balign 4
 .include "system32/font_mono_12px.s"
 .balign 4
-.include "system32/print_char32.s"
+.include "system32/print32.s"
 .balign 4
 .include "system32/math32.s"
 .balign 4

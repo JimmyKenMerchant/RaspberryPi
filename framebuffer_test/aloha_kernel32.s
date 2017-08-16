@@ -60,7 +60,7 @@ _reset:
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
 	mov r0, #peripherals_base
-	ldr r1, INTERRUPT_BASE
+	ldr r1, SYSTEM32_INTERRUPT_BASE
 	add r0, r0, r1
 
 	mov r1, #0x00000000
@@ -74,7 +74,7 @@ _reset:
 	str r1, [r0, #interrupt_fiq_control]
 
 	mov r0, #peripherals_base
-	ldr r1, ARMTIMER_BASE
+	ldr r1, SYSTEM32_ARMTIMER_BASE
 	add r0, r0, r1
 
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
@@ -92,7 +92,7 @@ _reset:
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
 	mov r0, #peripherals_base
-	ldr r1, GPIO_BASE
+	ldr r1, SYSTEM32_GPIO_BASE
 	add r0, r0, r1
 
 	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
@@ -152,7 +152,7 @@ render:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_ASCII
 	push {r4-r8}
-	bl print_string
+	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 
@@ -166,7 +166,7 @@ render:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_ASCII
 	push {r4-r8}
-	bl print_string
+	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 
@@ -180,7 +180,7 @@ render:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_ASCII
 	push {r4-r8}
-	bl print_string
+	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	ldr r0, float_example1                    @ Pointer of Array of String
@@ -193,7 +193,7 @@ render:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_NUMBER
 	push {r4-r8}
-	bl print_number
+	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	ldr r0, float_example2                    @ Pointer of Array of String
@@ -206,7 +206,7 @@ render:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_NUMBER
 	push {r4-r8}
-	bl print_number
+	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	ldr r0, float_example3                    @ Pointer of Array of String
@@ -219,7 +219,7 @@ render:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_NUMBER
 	push {r4-r8}
-	bl print_number
+	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	pop {r0-r8,lr}
@@ -256,14 +256,14 @@ _fiq:
 
 fiq_handler:
 	mov r0, #peripherals_base
-	ldr r1, ARMTIMER_BASE
+	ldr r1, SYSTEM32_ARMTIMER_BASE
 	add r0, r0, r1
 
 	mov r1, #0
 	str r1, [r0, #armtimer_clear]             @ any write to clear/ acknowledge
 
 	mov r0, #peripherals_base
-	ldr r1, GPIO_BASE
+	ldr r1, SYSTEM32_GPIO_BASE
 	add r0, r0, r1
 
 	ldr r1, gpio_toggle
@@ -276,7 +276,7 @@ fiq_handler:
 
 
 	mov r0, #peripherals_base
-	ldr r1, SYSTEMTIMER_BASE
+	ldr r1, SYSTEM32_SYSTEMTIMER_BASE
 	add r0, r0, r1
 
 	ldr r0, [r0, #systemtimer_counter_lower_32_bits]
@@ -296,7 +296,7 @@ fiq_handler:
 	mov r8, #12
 	ldr r9, FONT_MONO_12PX_NUMBER
 	push {r4-r9}
-	bl double_print_number
+	bl print32_number_double
 	add sp, sp, #24                           @ Increment SP because of push {r4-r7}
 	pop {r0-r9,lr}
 
@@ -321,7 +321,7 @@ fiq_handler:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_NUMBER
 	push {r4-r8}
-	bl print_number
+	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 	pop {r0-r8,lr}
 
@@ -336,7 +336,7 @@ fiq_handler:
 	mov r7, #12
 	ldr r8, FONT_MONO_12PX_NUMBER
 	push {r4-r8}
-	bl print_number
+	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 	pop {r0-r8,lr}
 

@@ -13,6 +13,7 @@
 arm_freq=900
 
 #GPU(APB) Clock MHz, you may need to voltage up for overclock
+#In RasPi2(BCM2836), Maximum Clock of Arm Peripheral Bus (APB) seems to be 250Mhz, even setting 500Mhz on GPU
 gpu_freq=240
 
 #SDRAM Clock Mhz, you may need to voltage up for overclock

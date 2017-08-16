@@ -29,12 +29,12 @@
  *
  * Parameters
  * r0: Color (16-bit or 32-bit)
- * r1: X Coordinate1, Start Line from This Coordinate If It's Less than X Coordinate2, If Not, End Point of Line
- * r2: Y Coordinate1, Start Line from This Coordinate If It's Less than X Coordinate2, If Not, End Point of Line
- * r3: X Coordinate2, Start Line from This Coordinate If It's Less than X Coordinate1, If Not, End Point of Line
- * r4: Y Coordinate2, Start Line from This Coordinate If It's Less than X Coordinate1, If Not, End Point of Line
- * r5: Point Width in Pixels
- * r6: Point Height in Pixels
+ * r1: X Coordinate1
+ * r2: Y Coordinate1
+ * r3: X Coordinate2
+ * r4: Y Coordinate2
+ * r5: Point Width in Pixels, Origin is Upper Left Corner
+ * r6: Point Height in Pixels, Origin is Upper Left Corner
  *
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
@@ -53,15 +53,14 @@ fb32_draw_line:
 	x_current        .req r7
 	y_current        .req r8
 	x_diff           .req r9   @ Counter
-	i                .req r10
-	dup_char_height  .req r11
-	x_direction      .req r12  @ 1 is to Upper Right (X Increment), -1 is to Upper Left (X Decrement)
+	dup_char_height  .req r10
+	x_direction      .req r11  @ 1 is to Lower Right (X Increment), -1 is to Lower Left (X Decrement)
 
 	/* VFP/NEON Registers */
-	vfp_xy_coord_1   .req d0
+	vfp_xy_coord_1   .req d0 @ q0[0]
 	vfp_y_coord_1    .req s0 @ Lower 32 Bits of d0
 	vfp_x_coord_1    .req s1 @ Upper 32 Bits of d0
-	vfp_xy_coord_2   .req d1
+	vfp_xy_coord_2   .req d1 @ q0[1]
 	vfp_y_coord_2    .req s2
 	vfp_x_coord_2    .req s3
 	vfp_xy_coord_3   .req d2
@@ -72,6 +71,7 @@ fb32_draw_line:
 	vfp_y_start      .req s8
 	vfp_y_current    .req s9
 	vfp_i            .req s10
+	vfp_one          .req s11
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -83,61 +83,69 @@ fb32_draw_line:
 	vpush {s0-s11}
 
 	mov dup_char_height, char_height                 @ Use on the Last Point
+
 	cmp x_coord_1, x_coord_2
 	bge fb32_draw_line_coordge
 	blt fb32_draw_line_coordlt
-	fb32_draw_line_coordge:
+
+	fb32_draw_line_coordge:                          @ `If ( x_coord_1 >= x_coord_2 )`
 		sub x_diff, x_coord_1, x_coord_2
 		cmp y_coord_1, y_coord_2
-		movge x_current, x_coord_2
-		movge y_current, y_coord_2
-		movge x_direction, #1
-		movlt x_current, x_coord_1
-		movlt y_current, y_coord_1
-		movlt x_direction, #-1
+
+		movge x_current, x_coord_2               @ `If ( y_coord_1 >= y_coord_2 )`
+		movge y_current, y_coord_2               @ Get Y Start Point
+		movge x_direction, #1                    @ Draw to Lower Right
+
+		movlt x_current, x_coord_1               @ `If ( y_coord_1 < y_coord_2 )`
+		movlt y_current, y_coord_1               @ Get Y Start Point
+		movlt x_direction, #-1                   @ Draw to Lower Left
 		b fb32_draw_line_coord
 
-	fb32_draw_line_coordlt:
+	fb32_draw_line_coordlt:                          @ `If ( x_coord_1 < x_coord_2 )`
 		sub x_diff, x_coord_2, x_coord_1
 		cmp y_coord_1, y_coord_2
-		movge x_current, x_coord_2
-		movge y_current, y_coord_2
-		movge x_direction, #-1
-		movlt x_current, x_coord_1
-		movlt y_current, y_coord_1
-		movlt x_direction, #1
+
+		movge x_current, x_coord_2               @ `If ( y_coord_1 >= y_coord_2 )`
+		movge y_current, y_coord_2               @ Get Y Start Point
+		movge x_direction, #-1                   @ Draw to Lower Left
+
+		movlt x_current, x_coord_1               @ `If ( y_coord_1 < y_coord_2 )`
+		movlt y_current, y_coord_1               @ Get Y Start Point
+		movlt x_direction, #1                    @ Draw to Lower Right
 
 	fb32_draw_line_coord:
+		vmov vfp_xy_coord_1, y_coord_1, x_coord_1     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[0]
+		vmov vfp_xy_coord_2, y_coord_2, x_coord_2     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[1]
+		vcvt.f32.s32 q0, q0                           @ *NEON*Convert Signed Integer to Single Precision Floating Point
 
-		vmov vfp_xy_coord_1, y_coord_1, x_coord_1     @ Lower Bits from y_coord_n, Upper Bits x_coord_n
-		vcvt.f32.s32 vfp_xy_coord_1, vfp_xy_coord_1   @ *NEON*Convert Signed Integer to Single Precision Floating Point
-		vmov vfp_xy_coord_2, y_coord_2, x_coord_2     @ Lower Bits from y_coord_n, Upper Bits x_coord_n
-		vcvt.f32.s32 vfp_xy_coord_2, vfp_xy_coord_2   @ *NEON*Convert Signed Integer to Single Precision Floating Point
-		vsub.f32 vfp_xy_coord_3, vfp_xy_coord_1, vfp_xy_coord_2 @ *NEON*Subtract Each 32-Bit Lane as Single Precision Float
+		/* *NEON*Subtract Each 32-Bit Lane as Single Precision */
+		vsub.f32 vfp_xy_coord_3, vfp_xy_coord_1, vfp_xy_coord_2
+
 		vcmp.f32 vfp_x_coord_3, #0
 		vmoveq vfp_x_coord_3, #1.0                    @ If difference of X is Zero, Add One to Hide
 		vdiv.f32 vfp_y_per_x, vfp_y_coord_3, vfp_x_coord_3
-		vabs.f32 vfp_y_per_x, vfp_y_per_x
-		vcmp.f32 vfp_x_coord_1, vfp_x_coord_2
-		vmovge vfp_y_start, vfp_y_coord_2
-		vmovlt vfp_y_start, vfp_y_coord_1
-                 
+		vabs.f32 vfp_y_per_x, vfp_y_per_x             @ Calculate Absolute Value of Y Length per One X Pixel
+
+		vcmp.f32 vfp_y_coord_1, vfp_y_coord_2
+		vmovge vfp_y_start, vfp_y_coord_2             @ Get Y Start Point to Calculate in VFP
+		vmovlt vfp_y_start, vfp_y_coord_1             @ Get Y Start Point to Calculate in VFP
+
+		/* Add Character Height to Calculated Value to Draw */
 		vmov vfp_char_height, char_height
 		vcvt.f32.s32 vfp_char_height, vfp_char_height
 		vadd.f32 vfp_char_height, vfp_char_height, vfp_y_per_x
 		vcvtr.s32.f32 vfp_char_height, vfp_char_height
 		vmov char_height, vfp_char_height
 
-		cmp char_height, #1
-		subgt char_height, char_height, #1                          @ To Adjust 1 Pixel of Height
+		.unreq x_coord_1
+		i .req r1
 
 		mov i, #0
+		vmov vfp_i, i
+		vcvt.f32.s32 vfp_i, vfp_i
+		vmov vfp_one, #1.0                             @ Floating Point Constant (Immediate)
 
 	fb32_draw_line_loop:
-		cmp i, x_diff
-		moveq char_height, dup_char_height       @ To hide Height Overflow on End Point (Except Original char_height)
-		bgt fb32_draw_line_common
-
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
 		mov r2, y_current
@@ -154,9 +162,12 @@ fb32_draw_line:
 		add x_current, x_current, x_direction
 
 		add i, i, #1
+		vadd.f32 vfp_i, vfp_i, vfp_one
 
-		vmov vfp_i, i
-		vcvt.f32.s32 vfp_i, vfp_i
+		cmp i, x_diff
+		bgt fb32_draw_line_common
+		moveq char_height, dup_char_height       @ To hide Height Overflow on End Point (Except Original char_height)
+
 		vmov vfp_y_current, vfp_y_start
 		vmla.f32 vfp_y_current, vfp_y_per_x, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
 		vcvtr.s32.f32 vfp_y_current, vfp_y_current    @ In VFP Instructions, You Can Convert with Rounding Mode
@@ -178,7 +189,7 @@ fb32_draw_line:
 		mov pc, lr
 
 .unreq color
-.unreq x_coord_1
+.unreq i
 .unreq y_coord_1
 .unreq x_coord_2
 .unreq y_coord_2
@@ -187,7 +198,6 @@ fb32_draw_line:
 .unreq x_current
 .unreq y_current
 .unreq x_diff
-.unreq i
 .unreq dup_char_height
 .unreq x_direction
 .unreq vfp_xy_coord_1
@@ -204,6 +214,7 @@ fb32_draw_line:
 .unreq vfp_y_start
 .unreq vfp_y_current
 .unreq vfp_i
+.unreq vfp_one
 
 
 /**
@@ -762,7 +773,7 @@ fb32_clear_color:
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS
- * External Variable(s): MAILBOX_BASE, mail32_framebuffer_addr
+ * External Variable(s): SYSTEM32_MAILBOX_BASE, mail32_framebuffer_addr
  */
 .globl fb32_get
 fb32_get:
@@ -770,7 +781,7 @@ fb32_get:
 	temp              .req r1
 
 	mov memorymap_base, #peripherals_base
-	ldr temp, MAILBOX_BASE
+	ldr temp, SYSTEM32_MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
 
 	fb32_get_waitforwrite:

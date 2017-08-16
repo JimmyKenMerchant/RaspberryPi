@@ -1,5 +1,5 @@
 /**
- * color_palette.s
+ * color.s
  *
  * Author: Kenta Ishii
  * License: MIT

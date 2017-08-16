@@ -25,7 +25,7 @@
 #define float64 double
 
 /**
- * system32/color_pallette.s
+ * system32/color.s
  */
 
 extern uint32 FB32_ADDRESS;
@@ -99,7 +99,7 @@ extern void system32_sleep( uint32 u_seconds );
 
 
 /**
- * system32/print_char32.s
+ * system32/print32.s
  */
 
 /**
@@ -107,7 +107,7 @@ extern void system32_sleep( uint32 u_seconds );
  *
  * Return: Number of Characters Which Were Not Drawn
  */
-extern uint32 set_caret
+extern uint32 print32_set_caret
 (
 	uint64 return_print
 );
@@ -118,7 +118,7 @@ extern uint32 set_caret
  *
  * Return: Number of Words Maximum of 4,294,967,295 words
  */
-extern uint32 strlen
+extern uint32 print32_strlen
 (
 	uchar8* string
 );
@@ -130,7 +130,7 @@ extern uint32 strlen
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
-extern uint64 print_string
+extern uint64 print32_string
 (
 	uchar8* string,
 	int32 x_coord,
@@ -150,7 +150,7 @@ extern uint64 print_string
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
-extern uint64 double_print_number
+extern uint64 print32_number_double
 (
 	uint64 number,
 	int32 x_coord,
@@ -170,7 +170,7 @@ extern uint64 double_print_number
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
-extern uint64 print_number
+extern uint64 print32_number
 (
 	uint32 number,
 	int32 x_coord,
@@ -185,7 +185,7 @@ extern uint64 print_number
 
 
 /**
- * system32/frame_buffer32.s
+ * system32/fb32.s
  */
 
 
