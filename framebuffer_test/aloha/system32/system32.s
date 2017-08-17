@@ -7,7 +7,6 @@
  *
  */
 
-
 /**
  * Aliases: Does Not Affect Memory in Program
  * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
@@ -231,6 +230,7 @@ system32_sleep:
 .balign 4
 .include "system32/font_mono_12px.s"
 .balign 4
+/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"
 .balign 4
 .include "system32/math32.s"

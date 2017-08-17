@@ -15,11 +15,15 @@ SECTIONS {
 	. = 0x8000;
 	.vector32 : {
 		aloha_kernel32.o(.vector)
-
+		. = 0x2000;
+	}
+	. = 0xA000;
+	.text : {
+		system32.o(.text)
 		/* Add size, 16,777,216 bytes to the end of .vector */
 		. += 0x1000000;
-	}
-	.text : {
+
+		/* Remaining Other than system32.o */
 		*(.text)
 	}
 

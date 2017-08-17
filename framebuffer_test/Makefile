@@ -21,7 +21,8 @@ DUMP = $(COMP)-objdump
 
 LDSCRIPT = linker_script.ld
 OBJ1 = aloha_kernel32
-OBJ2 = aloha_user
+OBJ2 = system32
+OBJ3 = aloha_user
 HEADER = include/stdio.h include/aloha/system32.h 
 
 # "$@" means the target and $^ means all of dependencies and $< is first one.
@@ -34,15 +35,18 @@ kernel.img: inter.elf
 	$(COPY) $< -O ihex kernel.hex
 	$(DUMP) -D $< > inter.list
 
-inter.elf: $(OBJ1).o $(OBJ2).o
+inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
-$(OBJ2).o: $(OBJ2).c $(HEADER)
+$(OBJ3).o: $(OBJ3).c $(HEADER)
 	$(CC) $< -I include/ -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
+
+# Make OBJ2, system32.o
+include aloha/system32/system32.mk
 
 $(OBJ1).o: $(OBJ1).s
 	$(AS) $< -I aloha/ -o $@ $(TARGET)
 
 .PHONY: clean
 clean:
-	rm $(OBJ1).o $(OBJ2).o inter.elf inter.map inter.list kernel.img kernel.hex
+	rm *.o inter.elf inter.map inter.list kernel.img kernel.hex

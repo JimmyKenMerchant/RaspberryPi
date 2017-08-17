@@ -8,8 +8,6 @@
  * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
-.globl user_start
-
 /**
  * Vector Interrupt Tables and These Functions
  *
@@ -60,7 +58,8 @@ _reset:
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
 	mov r0, #peripherals_base
-	ldr r1, SYSTEM32_INTERRUPT_BASE
+	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
+	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #0x00000000
@@ -74,7 +73,8 @@ _reset:
 	str r1, [r0, #interrupt_fiq_control]
 
 	mov r0, #peripherals_base
-	ldr r1, SYSTEM32_ARMTIMER_BASE
+	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
+	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
@@ -92,16 +92,19 @@ _reset:
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
 	mov r0, #peripherals_base
-	ldr r1, SYSTEM32_GPIO_BASE
+	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
+	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
 	str r1, [r0, #gpio_gpfsel_4]
 
 	mov r0, #32
-	str r0, FB32_DEPTH
+	ldr r1, ADDR32_FB32_DEPTH
+	str r0, [r1]
 	mov r0, #0
-	str r0, FB32_ALPHAMODE
+	ldr r1, ADDR32_FB32_ALPHAMODE
+	str r0, [r1]
 
 	/* Framebuffer Obtain */
 	push {r0-r3,lr}
@@ -143,19 +146,23 @@ _reset:
 
 render:
 	push {r0-r8,lr}
-
-	ldr r0, COLOR32_NAVYBLUE
+	
+	ldr r0, ADDR32_COLOR32_NAVYBLUE
+	ldr r0, [r0]
 	bl fb32_clear_color
 
 	ldr r0, string_arm                        @ Pointer of Array of String
 	mov r1, #-4                               @ X Coordinate
 	mov r2, #-2                               @ Y Coordinate
-	ldr r3, COLOR32_GREEN                     @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #14                               @ Length of Characters, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_ASCII
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -164,12 +171,15 @@ render:
 	ldr r0, string_number                     @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #88                               @ Y Coordinate
-	ldr r3, COLOR32_RED                       @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_RED                @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #10
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_ASCII
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -178,12 +188,15 @@ render:
 	ldr r0, string_test                       @ Pointer of Array of String
 	mov r1, #80                               @ X Coordinate
 	mov r2, #320                              @ Y Coordinate
-	ldr r3, COLOR32_GREEN                     @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_RED                       @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_RED                @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #73                               @ Length of Characters, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_ASCII
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -191,12 +204,15 @@ render:
 	ldr r0, float_example1                    @ Pointer of Array of String
 	mov r1, #300                              @ X Coordinate
 	mov r2, #320                              @ Y Coordinate
-	ldr r3, COLOR32_YELLOW                    @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -204,12 +220,15 @@ render:
 	ldr r0, float_example2                    @ Pointer of Array of String
 	mov r1, #300                              @ X Coordinate
 	mov r2, #332                              @ Y Coordinate
-	ldr r3, COLOR32_YELLOW                    @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -217,12 +236,15 @@ render:
 	ldr r0, float_example3                    @ Pointer of Array of String
 	mov r1, #300                              @ X Coordinate
 	mov r2, #344                              @ Y Coordinate
-	ldr r3, COLOR32_YELLOW                    @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -261,14 +283,16 @@ _fiq:
 
 fiq_handler:
 	mov r0, #peripherals_base
-	ldr r1, SYSTEM32_ARMTIMER_BASE
+	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
+	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #0
 	str r1, [r0, #armtimer_clear]             @ any write to clear/ acknowledge
 
 	mov r0, #peripherals_base
-	ldr r1, SYSTEM32_GPIO_BASE
+	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
+	ldr r1, [r1]
 	add r0, r0, r1
 
 	ldr r1, gpio_toggle
@@ -281,7 +305,8 @@ fiq_handler:
 
 
 	mov r0, #peripherals_base
-	ldr r1, SYSTEM32_SYSTEMTIMER_BASE
+	ldr r1, ADDR32_SYSTEM32_SYSTEMTIMER_BASE
+	ldr r1, [r1]
 	add r0, r0, r1
 
 	ldr r0, [r0, #systemtimer_counter_lower_32_bits]
@@ -294,12 +319,15 @@ fiq_handler:
 	bl math32_hexa_to_deci32
 	mov r2, #80                               @ X Coordinate
 	mov r3, #392                              @ Y Coordinate
-	ldr r4, COLOR32_YELLOW                    @ Color (16-bit or 32-bit)
-	ldr r5, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r4, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r4, [r4]
+	ldr r5, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r5, [r5]
 	mov r6, #16                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r7, #8
 	mov r8, #12
-	ldr r9, FONT_MONO_12PX_NUMBER
+	ldr r9, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r9, [r9]
 	push {r4-r9}
 	bl print32_number_double
 	add sp, sp, #24                           @ Increment SP because of push {r4-r7}
@@ -319,12 +347,15 @@ fiq_handler:
 	push {r0-r8,lr}
 	mov r1, #80                               @ X Coordinate
 	mov r2, #400                              @ Y Coordinate
-	ldr r3, COLOR32_YELLOW                    @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -334,12 +365,15 @@ fiq_handler:
 	mov r0, r1
 	mov r1, #80                               @ X Coordinate
 	mov r2, #408                              @ Y Coordinate
-	ldr r3, COLOR32_YELLOW                    @ Color (16-bit or 32-bit)
-	ldr r4, COLOR32_BLUE                      @ Background Color (16-bit or 32-bit)
+	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
@@ -401,10 +435,7 @@ sys_timer_previous:
 	.word 0x00000000
 .balign 4
 
-ADDR_SYSTEM32_HEAP: .word SYSTEM32_HEAP
-.balign 4
-
-.include "system32/system32.s" @ If you want binary, use `.file`
+.include "addr32.s" @ If you want binary, use `.file`
 .balign 4
 
 /* End of Line is Needed */

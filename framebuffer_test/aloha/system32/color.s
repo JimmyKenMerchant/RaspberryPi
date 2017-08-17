@@ -6,6 +6,7 @@
  * License URL: https://opensource.org/licenses/MIT
  *
  */
+
 .globl COLOR16_RED
 .globl COLOR16_GREEN
 .globl COLOR16_BLUE
