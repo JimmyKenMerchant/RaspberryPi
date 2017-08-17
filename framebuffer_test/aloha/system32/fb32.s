@@ -7,20 +7,6 @@
  *
  */
 
-/**
- * Aliases
- */
-.equ mailbox_confirm,          0x04
-.equ mailbox_gpuoffset,        0x40000000
-.equ mailbox_channel8,         0x08
-.equ mailbox0_read,            0x00
-.equ mailbox0_poll,            0x10
-.equ mailbox0_sender,          0x14
-.equ mailbox0_status,          0x18         @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-.equ mailbox0_config,          0x1C
-.equ mailbox0_write,           0x20
-.equ fb_armmask,               0x3FFFFFFF
-
 
 /**
  * function fb32_rgba_to_argb
@@ -815,34 +801,22 @@ fb32_clear_color:
  * Return: r0 (0 as sucess, 1 as error)
  * Error(1): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS
- * External Variable(s): SYSTEM32_MAILBOX_BASE, mail32_framebuffer_addr
+ * External Variable(s): fb32_mail_framebuffer_addr
  */
 .globl fb32_get
 fb32_get:
 	memorymap_base    .req r0
 	temp              .req r1
 
-	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-
-	mov memorymap_base, #peripherals_base
-	ldr temp, SYSTEM32_MAILBOX_BASE
-	add memorymap_base, memorymap_base, temp
-
-	fb32_get_waitforwrite:
-		ldr temp, [memorymap_base, #mailbox0_status]
-		cmp temp, #0x80000000
-		beq fb32_get_waitforwrite
-
-	ldr temp, mail32_framebuffer_addr
+	ldr temp, fb32_mail_framebuffer_addr
 	add temp, temp, #mailbox_gpuoffset|mailbox_channel8
-	str temp, [memorymap_base, #mailbox0_write]
+	push {r0-r3,lr}
+	mov r0, temp
+	mov r1, #0
+	bl system32_mailbox_send
+	pop {r0-r3,lr}
 
-	fb32_get_waitforread:
-		ldr temp, [memorymap_base, #mailbox0_status]
-		cmp temp, #0x40000000
-		beq fb32_get_waitforread
-
-	ldr memorymap_base, mail32_framebuffer_addr
+	ldr memorymap_base, fb32_mail_framebuffer_addr
 	ldr temp, [memorymap_base, #mailbox_confirm]
 	cmp temp, #0x80000000
 	bne fb32_get_error
@@ -853,12 +827,6 @@ fb32_get:
 
 	and memorymap_base, memorymap_base, #fb_armmask                  @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
-
-	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
-                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
-                                                 @ to ensure to fetch data from cache/ memory
-                                                 @ These are useful in multi-core/ threads usage, etc.
 
 	mov r0, #0                               @ Return with Success
 
@@ -893,10 +861,10 @@ FB32_Y_CARET: .word 0x00000000
 .globl FB32_ALPHAMODE
 .globl FB32_ADDRESS
 .globl FB32_SIZE
-mail32_framebuffer:
-	.word mail32_framebuffer_end - mail32_framebuffer @ Size of this Mail
+fb32_mail_framebuffer:
+	.word fb32_mail_framebuffer_end - fb32_mail_framebuffer @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-mail32_contents:
+fb32_mail_contents:
 	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
@@ -940,11 +908,11 @@ FB32_SIZE:
 	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
 .balign 4
 	.word 0x00000000        @ End Tag
-mail32_framebuffer_end:
+fb32_mail_framebuffer_end:
 .balign 16
 
-mail32_blankon:
-	.word mail32_blankon_end - mail32_blankon @ Size of this Mail
+fb32_mail_blankon:
+	.word fb32_mail_blankon_end - fb32_mail_blankon @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
@@ -952,11 +920,11 @@ mail32_blankon:
 	.word 0x00000001        @ Value Buffer, State (0 means off, 1 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
-mail32_blankon_end:
+fb32_mail_blankon_end:
 .balign 16
 
-mail32_blankoff:
-	.word mail32_blankoff_end - mail32_blankoff @ Size of this Mail
+fb32_mail_blankoff:
+	.word fb32_mail_blankoff_end - fb32_mail_blankoff @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
@@ -964,11 +932,11 @@ mail32_blankoff:
 	.word 0x00000000        @ Value Buffer, State (0 means off, 1 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
-mail32_blankoff_end:
+fb32_mail_blankoff_end:
 .balign 16
 
-mail32_getedid:                   @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
-	.word mail32_getedid_end - mail32_getedid @ Size of this Mail
+fb32_mail_getedid:                   @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
+	.word fb32_mail_getedid_end - fb32_mail_getedid @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00030020        @ Tag Identifier, get EDID
 	.word 0x00000136        @ Value Buffer Size in Bytes
@@ -978,13 +946,13 @@ mail32_getedid:                   @ get EDID (Extended Display Identification Da
 .fill 128, 1, 0x00              @ 128 * 1 byte EDID Block
 .balign 4
 	.word 0x00000000        @ End Tag
-mail32_getedid_end:
+fb32_mail_getedid_end:
 .balign 16
 
-mail32_framebuffer_addr:
-	.word mail32_framebuffer  @ Address of mail32_framebuffer
-mail32_blankon_addr:
-	.word mail32_blankon      @ Address of mail32_blankon
-mail32_blankoff_addr:
-	.word mail32_blankoff     @ Address of mail32_blankoff
+fb32_mail_framebuffer_addr:
+	.word fb32_mail_framebuffer  @ Address of fb32_mail_framebuffer
+fb32_mail_blankon_addr:
+	.word fb32_mail_blankon      @ Address of fb32_mail_blankon
+fb32_mail_blankoff_addr:
+	.word fb32_mail_blankoff     @ Address of fb32_mail_blankoff
 .balign 4

@@ -435,7 +435,7 @@ sys_timer_previous:
 	.word 0x00000000
 .balign 4
 
-.include "addr32.s" @ If you want binary, use `.file`
+.include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4
 
 /* End of Line is Needed */

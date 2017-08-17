@@ -37,6 +37,13 @@
 
 .equ mailbox_confirm,          0x04
 .equ mailbox_gpuoffset,        0x40000000
+.equ mailbox_channel1,         0x01
+.equ mailbox_channel2,         0x02
+.equ mailbox_channel3,         0x03
+.equ mailbox_channel4,         0x04
+.equ mailbox_channel5,         0x05
+.equ mailbox_channel6,         0x06
+.equ mailbox_channel7,         0x07
 .equ mailbox_channel8,         0x08
 .equ mailbox0_read,            0x00
 .equ mailbox0_poll,            0x10
@@ -86,6 +93,153 @@ SYSTEM32_INTERRUPT_BASE:     .word 0x0000B200
 SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
 SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
 SYSTEM32_GPIO_BASE:          .word 0x00200000
+
+
+/**
+ * function system32_mailbox_read
+ * Read Mail from GPU/ Other Cores
+ *
+ * Parameters
+ * r0: Number of Mailbox, 0-3
+ *
+ * Usage: r0-r4
+ * Return: r0 Reply Content, r1 (0 as sucess, 1 as error), 
+ * Error: Number of Mailbox does not exist
+ */
+.globl system32_mailbox_read
+system32_mailbox_read:
+	/* Auto (Local) Variables, but just aliases */
+	mailbox_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	memorymap_base  .req r1
+	temp            .req r2
+	status          .req r3
+	read            .req r4
+
+	push {r4}
+
+	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+
+	cmp mailbox_number, #0
+	moveq read, #mailbox0_read
+	moveq status, #mailbox0_status
+	bne system32_mailbox_read_error
+
+	mov memorymap_base, #peripherals_base
+	ldr temp, SYSTEM32_MAILBOX_BASE
+	add memorymap_base, memorymap_base, temp
+
+	system32_mailbox_read_waitforread:
+		ldr temp, [memorymap_base, status]
+		cmp temp, #0x40000000
+		beq system32_mailbox_read_waitforread
+
+	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
+                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
+                                                 @ to ensure to fetch data from cache/ memory
+                                                 @ These are useful in multi-core/ threads usage, etc.
+
+	ldr r0, [memorymap_base, read]
+
+	b system32_mailbox_read_success
+
+	system32_mailbox_read_error:
+		mov r0, #0
+		mov r1, #1
+		b system32_mailbox_read_common
+
+	system32_mailbox_read_success:
+		mov r1, #0
+
+	system32_mailbox_read_common:
+		pop {r4}
+		mov pc, lr
+
+.unreq mailbox_number
+.unreq memorymap_base
+.unreq temp
+.unreq status
+.unreq read
+
+
+/**
+ * function system32_mailbox_send
+ * Send Mail to GPU/ Other Cores
+ *
+ * Parameters
+ * r0: Content of Mail to Send
+ * r1: Number of Mailbox, 0-3
+ *
+ * Usage: r0-r6
+ * Return: r0 Reply Content, r1 (0 as sucess, 1 as error)
+ * Error: Number of Mailbox does not exist
+ */
+.globl system32_mailbox_send
+system32_mailbox_send:
+	/* Auto (Local) Variables, but just aliases */
+	mail_content    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	mailbox_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	memorymap_base  .req r2
+	temp            .req r3
+	status          .req r4
+	write           .req r5
+	read            .req r6
+
+	push {r4-r6}
+
+	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+
+	cmp mailbox_number, #0
+	moveq read, #mailbox0_read
+	moveq status, #mailbox0_status
+	moveq write, #mailbox0_write
+	bne system32_mailbox_send_error
+
+	mov memorymap_base, #peripherals_base
+	ldr temp, SYSTEM32_MAILBOX_BASE
+	add memorymap_base, memorymap_base, temp
+
+	system32_mailbox_send_waitforwrite:
+		ldr temp, [memorymap_base, status]
+		cmp temp, #0x80000000
+		beq system32_mailbox_send_waitforwrite
+
+	str mail_content, [memorymap_base, write]
+
+	system32_mailbox_send_waitforread:
+		ldr temp, [memorymap_base, status]
+		cmp temp, #0x40000000
+		beq system32_mailbox_send_waitforread
+
+	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
+                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
+                                                 @ to ensure to fetch data from cache/ memory
+                                                 @ These are useful in multi-core/ threads usage, etc.
+
+	ldr r0, [memorymap_base, read]
+
+	b system32_mailbox_send_success
+
+	system32_mailbox_send_error:
+		mov r0, #0
+		mov r1, #1
+		b system32_mailbox_send_common
+
+	system32_mailbox_send_success:
+		mov r1, #0
+
+	system32_mailbox_send_common:
+		pop {r4-r6}
+		mov pc, lr
+
+.unreq mail_content
+.unreq mailbox_number
+.unreq memorymap_base
+.unreq temp
+.unreq status
+.unreq write
+.unreq read
 
 
 /**
@@ -214,31 +368,6 @@ system32_sleep:
 
 
 /**
- * Includes Enviromental Variables
- * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
- * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
- * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
- * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
- * These are useful if you use `extern` in C lang file.
- */
-.balign 4
-.include "system32/fb32.s"
-.balign 4
-.include "system32/mail32.s"
-.balign 4
-.include "system32/color.s"
-.balign 4
-.include "system32/font_mono_12px.s"
-.balign 4
-/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
-.include "system32/print32.s"
-.balign 4
-.include "system32/math32.s"
-.balign 4
-.include "system32/data.s"
-.balign 4
-
-/**
  * function system32_no_op
  * Do Nothing
  */
@@ -348,6 +477,31 @@ system32_load_8:
 	ldrb r1, [r0]
 	mov r0, r1
 	mov pc, lr
+
+
+/**
+ * Includes Enviromental Variables
+ * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
+ * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
+ * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
+ * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
+ * These are useful if you use `extern` in C lang file.
+ */
+.balign 4
+.include "system32/fb32.s"
+.balign 4
+/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
+.include "system32/print32.s"
+.balign 4
+.include "system32/math32.s"
+.balign 4
+.include "system32/font_mono_12px.s"
+.balign 4
+.include "system32/color.s"
+.balign 4
+.include "system32/data.s"
+.balign 4
+
 
 .globl SYSTEM32_HEAP
 SYSTEM32_HEAP: .word _SYSTEM32_HEAP

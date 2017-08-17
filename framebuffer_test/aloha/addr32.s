@@ -1,5 +1,5 @@
 /**
- * addr.s
+ * addr32.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -154,6 +154,14 @@ ADDR32_FB32_SIZE:           .word FB32_SIZE
 
 
 /**
+ * system32/math32.s
+ */
+
+.globl math32_hexa_to_deci32
+.globl math32_decimal_adder64
+
+
+/**
  * system32/font_mono_12px.s
  */
 
@@ -241,3 +249,14 @@ ADDR32_COLOR32_WHITE:        .word COLOR32_WHITE
 ADDR32_COLOR32_LIGHTGRAY:    .word COLOR32_LIGHTGRAY
 ADDR32_COLOR32_GRAY:         .word COLOR32_GRAY
 ADDR32_COLOR32_BLACK:        .word COLOR32_BLACK
+
+
+/**
+ * system32/data32.s
+ */
+
+.globl DATA_COLOR32_SAMPLE_IMAGE0
+.globl DATA_COLOR32_SAMPLE_IMAGE0_SIZE
+
+ADDR32_DATA_COLOR32_SAMPLE_IMAGE0:      .word DATA_COLOR32_SAMPLE_IMAGE0
+ADDR32_DATA_COLOR32_SAMPLE_IMAGE0_SIZE: .word DATA_COLOR32_SAMPLE_IMAGE0_SIZE

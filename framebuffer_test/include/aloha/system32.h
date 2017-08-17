@@ -14,9 +14,9 @@
 #endif
 
 
-/**
+/********************************
  * Unique Difinition
- */
+ ********************************/
 
 #define uchar8 unsigned char
 #define uint16 unsigned short int
@@ -32,71 +32,12 @@
 void user_start();
 
 
-/**
- * system32/data.s
- */
-
-extern uint32* DATA_COLOR32_SAMPLE_IMAGE0;
-extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
-
-
-/**
- * system32/font_mono_12px.s
- */
-
-extern uint32* FONT_MONO_12PX_NUMBER;
-extern uint32* FONT_MONO_12PX_ASCII;
-
-
-/**
- * system32/color.s
- */
-
-extern uint16 COLOR16_RED;
-extern uint16 COLOR16_GREEN;
-extern uint16 COLOR16_BLUE;
-extern uint16 COLOR16_YELLOW;
-extern uint16 COLOR16_MAGENTA;
-extern uint16 COLOR16_CYAN;
-extern uint16 COLOR16_PINK;
-extern uint16 COLOR16_LIME;
-extern uint16 COLOR16_SKYBLUE;
-extern uint16 COLOR16_LIGHTYELLOW;
-extern uint16 COLOR16_SCARLET;
-extern uint16 COLOR16_DARKGREEN;
-extern uint16 COLOR16_NAVYBLUE;
-extern uint16 COLOR16_WHITE;
-extern uint16 COLOR16_LIGHTGRAY;
-extern uint16 COLOR16_GRAY;
-extern uint16 COLOR16_BLACK;
-extern uint32* COLOR16_SAMPLE_IMAGE;
-
-extern uint32 COLOR32_RED;
-extern uint32 COLOR32_GREEN;
-extern uint32 COLOR32_BLUE;
-extern uint32 COLOR32_YELLOW;
-extern uint32 COLOR32_MAGENTA;
-extern uint32 COLOR32_CYAN;
-extern uint32 COLOR32_PINK;
-extern uint32 COLOR32_LIME;
-extern uint32 COLOR32_SKYBLUE;
-extern uint32 COLOR32_LIGHTYELLOW;
-extern uint32 COLOR32_SCARLET;
-extern uint32 COLOR32_DARKGREEN;
-extern uint32 COLOR32_NAVYBLUE;
-extern uint32 COLOR32_WHITE;
-extern uint32 COLOR32_LIGHTGRAY;
-extern uint32 COLOR32_GRAY;
-extern uint32 COLOR32_BLACK;
-
-
-/**
- * system32/system32
- */
+/********************************
+ * system32/system32.s
+ ********************************/
 
 extern uint32* SYSTEM32_HEAP;
 extern uint32* SYSTEM32_RENDER_BUFFER;
-
 
 /**
  * Convert Endianness
@@ -116,9 +57,120 @@ extern void system32_no_op();
 extern void system32_sleep( uint32 u_seconds );
 
 
+/********************************
+ * system32/fb32.s
+ ********************************/
+
+extern uint32 FB32_ADDRESS;
+extern uint32 FB32_DISPLAY_WIDTH;
+extern uint32 FB32_DISPLAY_HEIGHT;
+extern uint32 FB32_SIZE;
+extern uint32 FB32_DEPTH;
+extern uint32 FB32_PIXELORDER;
+extern uint32 FB32_ALPHAMODE;
+extern uint32 FB32_WIDTH;
+extern uint32 FB32_HEIGHT;
+extern int32 FB32_X_CARET;
+extern int32 FB32_Y_CARET;
+
+
 /**
- * system32/print32.s
+ * Convert 32-bit Depth Color RBGA to ARGB
+ *
+ * Return: 0 as sucess
  */
+extern uint32 fb32_rgba_to_argb
+(
+	uint32* data,
+	uint32 size
+);
+
+
+/**
+ * Draw Line
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Number of Y Length Which Were Not Drawn
+ */
+
+extern uint64 fb32_draw_line
+(
+	uint32 color,
+	int32 x_coord_1,
+	int32 y_coord_1,
+	int32 x_coord_2,
+	int32 y_coord_2,
+	uint32 width,
+	uint32 height
+);
+
+
+/**
+ * Copy Framebuffer to Renderbuffer
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When Framebuffer is not Defined
+ */
+extern uint32 fb32_copy
+(
+	uint32* render_buffer_point
+);
+
+
+/**
+ * Draw Image
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ */
+extern uint64 fb32_draw_image
+(
+	uint32* image_point,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 width,
+	uint32 height,
+	uint32 x_offset,
+	uint32 y_offset,
+	uint32 x_crop,
+	uint32 y_crop
+);
+
+
+/**
+ * Clear Block by Color
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ */
+extern uint64 fb32_clear_color_block
+(
+	uint32 color,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 width,
+	uint32 height
+);
+
+
+/**
+ * Fill Out Framebuffer by Color
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When Framebuffer is not Defined
+ */
+extern uint64 fb32_clear_color
+(
+	uint32 color
+);
+
+
+/********************************
+ * system32/print32.s
+ ********************************/
 
 /**
  * Set Caret Position from Return Vlue of `print_*` functions
@@ -202,112 +254,59 @@ extern uint64 print32_number
 );
 
 
-/**
- * system32/fb32.s
- */
+/********************************
+ * system32/font_mono_12px.s
+ ********************************/
 
-extern uint32 FB32_ADDRESS;
-extern uint32 FB32_DISPLAY_WIDTH;
-extern uint32 FB32_DISPLAY_HEIGHT;
-extern uint32 FB32_SIZE;
-extern uint32 FB32_DEPTH;
-extern uint32 FB32_PIXELORDER;
-extern uint32 FB32_ALPHAMODE;
-extern uint32 FB32_WIDTH;
-extern uint32 FB32_HEIGHT;
-extern int32 FB32_X_CARET;
-extern int32 FB32_Y_CARET;
+extern uint32* FONT_MONO_12PX_NUMBER;
+extern uint32* FONT_MONO_12PX_ASCII;
 
 
 /**
- * Convert 32-bit Depth Color RBGA to ARGB
- *
- * Return: 0 as sucess
- */
-extern uint32 fb32_rgba_to_argb
-(
-	uint32* data,
-	uint32 size
-);
-
-/**
- * Draw Line
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- *
- * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Number of Y Length Which Were Not Drawn
+ * system32/color.s
  */
 
-extern uint64 fb32_draw_line
-(
-	uint32 color,
-	int32 x_coord_1,
-	int32 y_coord_1,
-	int32 x_coord_2,
-	int32 y_coord_2,
-	uint32 width,
-	uint32 height
-);
+extern uint16 COLOR16_RED;
+extern uint16 COLOR16_GREEN;
+extern uint16 COLOR16_BLUE;
+extern uint16 COLOR16_YELLOW;
+extern uint16 COLOR16_MAGENTA;
+extern uint16 COLOR16_CYAN;
+extern uint16 COLOR16_PINK;
+extern uint16 COLOR16_LIME;
+extern uint16 COLOR16_SKYBLUE;
+extern uint16 COLOR16_LIGHTYELLOW;
+extern uint16 COLOR16_SCARLET;
+extern uint16 COLOR16_DARKGREEN;
+extern uint16 COLOR16_NAVYBLUE;
+extern uint16 COLOR16_WHITE;
+extern uint16 COLOR16_LIGHTGRAY;
+extern uint16 COLOR16_GRAY;
+extern uint16 COLOR16_BLACK;
+extern uint32* COLOR16_SAMPLE_IMAGE;
+
+extern uint32 COLOR32_RED;
+extern uint32 COLOR32_GREEN;
+extern uint32 COLOR32_BLUE;
+extern uint32 COLOR32_YELLOW;
+extern uint32 COLOR32_MAGENTA;
+extern uint32 COLOR32_CYAN;
+extern uint32 COLOR32_PINK;
+extern uint32 COLOR32_LIME;
+extern uint32 COLOR32_SKYBLUE;
+extern uint32 COLOR32_LIGHTYELLOW;
+extern uint32 COLOR32_SCARLET;
+extern uint32 COLOR32_DARKGREEN;
+extern uint32 COLOR32_NAVYBLUE;
+extern uint32 COLOR32_WHITE;
+extern uint32 COLOR32_LIGHTGRAY;
+extern uint32 COLOR32_GRAY;
+extern uint32 COLOR32_BLACK;
 
 
+/********************************
+ * system32/data.s
+ ********************************/
 
-/**
- * Copy Framebuffer to Renderbuffer
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): When Framebuffer is not Defined
- */
-extern uint32 fb32_copy
-(
-	uint32* render_buffer_point
-);
-
-
-/**
- * Draw Image
- *
- * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Framebuffer is not Defined
- */
-extern uint64 fb32_draw_image
-(
-	uint32* image_point,
-	int32 x_coord,
-	int32 y_coord,
-	uint32 width,
-	uint32 height,
-	uint32 x_offset,
-	uint32 y_offset,
-	uint32 x_crop,
-	uint32 y_crop
-);
-
-
-/**
- * Clear Block by Color
- *
- * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Framebuffer is not Defined
- */
-extern uint64 fb32_clear_color_block
-(
-	uint32 color,
-	int32 x_coord,
-	int32 y_coord,
-	uint32 width,
-	uint32 height
-);
-
-
-/**
- * Fill Out Framebuffer by Color
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): When Framebuffer is not Defined
- */
-extern uint64 fb32_clear_color
-(
-	uint32 color
-);
+extern uint32* DATA_COLOR32_SAMPLE_IMAGE0;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
