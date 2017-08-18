@@ -51,13 +51,13 @@ _reset:
 	push {r0, r1}
 
 	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
-	mov r0, #hyp_mode|fiq_disable|irq_disable @ 0xDA
+	mov r0, #equ32_hyp_mode|equ32_fiq_disable|equ32_irq_disable @ 0xDA
 	msr cpsr_c, r0
 
 	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
-	mov r0, #peripherals_base
+	mov r0, #equ32_bcm2836_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -65,39 +65,39 @@ _reset:
 	mov r1, #0x00000000
 	mvn r1, r1                                @ Whole Inverter
 
-	str r1, [r0, #interrupt_disable_irqs_1]   @ Make Sure Disable All IRQs
-	str r1, [r0, #interrupt_disable_irqs_2]
-	str r1, [r0, #interrupt_disable_basic_irqs]
+	str r1, [r0, #equ32_interrupt_disable_irqs_1]     @ Make Sure Disable All IRQs
+	str r1, [r0, #equ32_interrupt_disable_irqs_2]
+	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
-	str r1, [r0, #interrupt_fiq_control]
+	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	mov r0, #peripherals_base
+	mov r0, #equ32_bcm2836_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
-	str r1, [r0, #armtimer_predivider]
+	str r1, [r0, #equ32_armtimer_predivider]
 
 	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
 	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
-	str r1, [r0, #armtimer_load]
+	str r1, [r0, #equ32_armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes
 	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 100K
 	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
-	str r1, [r0, #armtimer_control]
+	str r1, [r0, #equ32_armtimer_control]
 
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
-	mov r0, #peripherals_base
+	mov r0, #equ32_bcm2836_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
-	str r1, [r0, #gpio_gpfsel_4]
+	str r1, [r0, #equ32_gpio_gpfsel_4]
 
 	mov r0, #32
 	ldr r1, ADDR32_FB32_DEPTH
@@ -282,15 +282,15 @@ _fiq:
 	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
 fiq_handler:
-	mov r0, #peripherals_base
+	mov r0, #equ32_bcm2836_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
 
 	mov r1, #0
-	str r1, [r0, #armtimer_clear]             @ any write to clear/ acknowledge
+	str r1, [r0, #equ32_armtimer_clear]             @ any write to clear/ acknowledge
 
-	mov r0, #peripherals_base
+	mov r0, #equ32_bcm2836_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -300,16 +300,16 @@ fiq_handler:
 	str r1, gpio_toggle
 
 	add r0, r0, r1
-	mov r1, #gpio47_bit
+	mov r1, #equ32_gpio47_bit
 	str r1, [r0]
 
 
-	mov r0, #peripherals_base
+	mov r0, #equ32_bcm2836_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_SYSTEMTIMER_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
 
-	ldr r0, [r0, #systemtimer_counter_lower_32_bits]
+	ldr r0, [r0, #equ32_systemtimer_counter_lower_32_bits]
 	ldr r1, sys_timer_previous
 	sub r2, r0, r1
 	str r0, sys_timer_previous
@@ -435,7 +435,7 @@ sys_timer_previous:
 	.word 0x00000000
 .balign 4
 
-.include "addr32.s" @ If you want binary, use `.incbin`
+.include "addr32.inc" @ If you want binary, use `.incbin`
 .balign 4
 
 /* End of Line is Needed */

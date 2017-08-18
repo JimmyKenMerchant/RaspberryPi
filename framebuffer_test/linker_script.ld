@@ -18,12 +18,13 @@ SECTIONS {
 		. = 0x2000;
 	}
 	. = 0xA000;
-	.text : {
-		system32.o(.text)
+	.system32 : {
+		system32.o(.system)
 		/* Add size, 16,777,216 bytes to the end of .vector */
 		. += 0x1000000;
+	}
 
-		/* Remaining Other than system32.o */
+	.text : {
 		*(.text)
 	}
 

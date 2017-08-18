@@ -809,15 +809,17 @@ fb32_get:
 	temp              .req r1
 
 	ldr temp, fb32_mail_framebuffer_addr
-	add temp, temp, #mailbox_gpuoffset|mailbox_channel8
+	add temp, temp, #equ32_mailbox_gpuoffset|equ32_mailbox_channel8
 	push {r0-r3,lr}
 	mov r0, temp
 	mov r1, #0
 	bl system32_mailbox_send
+	mov r0, #0
+	bl system32_mailbox_read
 	pop {r0-r3,lr}
 
 	ldr memorymap_base, fb32_mail_framebuffer_addr
-	ldr temp, [memorymap_base, #mailbox_confirm]
+	ldr temp, [memorymap_base, #equ32_mailbox_gpuconfirm]
 	cmp temp, #0x80000000
 	bne fb32_get_error
 
@@ -825,7 +827,7 @@ fb32_get:
 	cmp memorymap_base, #0
 	beq fb32_get_error
 
-	and memorymap_base, memorymap_base, #fb_armmask                  @ Change FB32_ADDRESS VideoCore's to ARM's
+	and memorymap_base, memorymap_base, #equ32_fb_armmask                  @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
 
 	mov r0, #0                               @ Return with Success

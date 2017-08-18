@@ -88,11 +88,17 @@ void user_start()
 
 	fb32_draw_line( COLOR32_CYAN, 100, 0, 100, 300, 4, 4 );
 
-	fb32_draw_line( COLOR32_MAGENTA, 0, 400, 400, 400, 20, 20 );
+	fb32_draw_line( COLOR32_LIME, 0, 400, 400, 400, 20, 20 );
 
 	system32_sleep( 9000000 );
 
+	//uint32* temp; // No Content
+	//temp = 0x00; // Address Assign
+	//uint32 data = 0x01;
+	//system32_store_32(temp, data);
+	
 	while(1) {
+
 		fb32_copy( SYSTEM32_RENDER_BUFFER );
 		color_move++;
 		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER );

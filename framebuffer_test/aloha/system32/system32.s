@@ -7,77 +7,32 @@
  *
  */
 
+.section	.system
+
+.include "equ32.inc"
+
 /**
- * Aliases: Does Not Affect Memory in Program
- * Left rotated 1 byte (even order) in Immediate Operand of ARM instructions
+ * These Asm Files includes Enviromental Variables.
+ * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
+ * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
+ * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
+ * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
+ * These are useful if you use `extern` in C lang file.
  */
-
-/* BCM2836 and BCM2837 Peripheral Base */
-/* If BCM 2835, Peripheral Base is 0x20000000 */
-.equ peripherals_base, 0x3F000000
-
-.equ systemtimer_control_status,         0x00
-.equ systemtimer_counter_lower_32_bits,  0x04
-.equ systemtimer_counter_higher_32_bits, 0x08
-.equ systemtimer_compare_0,              0x0C
-.equ systemtimer_compare_1,              0x10
-.equ systemtimer_compare_2,              0x14
-.equ systemtimer_compare_3,              0x18
-
-.equ interrupt_irq_basic_pending,  0x00
-.equ interrupt_irq_pending_1,      0x04
-.equ interrupt_irq_pending_2,      0x08
-.equ interrupt_fiq_control,        0x0C
-.equ interrupt_enable_irqs_1,      0x10
-.equ interrupt_enable_irqs_2,      0x14
-.equ interrupt_enable_basic_irqs,  0x18
-.equ interrupt_disable_irqs_1,     0x1C
-.equ interrupt_disable_irqs_2,     0x20
-.equ interrupt_disable_basic_irqs, 0x24
-
-.equ mailbox_confirm,          0x04
-.equ mailbox_gpuoffset,        0x40000000
-.equ mailbox_channel1,         0x01
-.equ mailbox_channel2,         0x02
-.equ mailbox_channel3,         0x03
-.equ mailbox_channel4,         0x04
-.equ mailbox_channel5,         0x05
-.equ mailbox_channel6,         0x06
-.equ mailbox_channel7,         0x07
-.equ mailbox_channel8,         0x08
-.equ mailbox0_read,            0x00
-.equ mailbox0_poll,            0x10
-.equ mailbox0_sender,          0x14
-.equ mailbox0_status,          0x18         @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-.equ mailbox0_config,          0x1C
-.equ mailbox0_write,           0x20
-.equ fb_armmask,               0x3FFFFFFF
-
-.equ armtimer_load,            0x00
-.equ armtimer_control,         0x08
-.equ armtimer_clear,           0x0C
-.equ armtimer_predivider,      0x1C
-
-.equ gpio_gpfsel_4,            0x10
-.equ gpio_gpset_1,             0x20         @ 0b00100000
-.equ gpio_gpclr_1,             0x2C         @ 0b00101100
-.equ gpio47_bit,               0b1 << 15    @ 0x8000 Bit High for GPIO 47
-
-.equ user_mode,                0x10         @ 0b00010000 User mode (not priviledged)
-.equ fiq_mode,                 0x11         @ 0b00010001 Fast Interrupt Request (FIQ) mode
-.equ irq_mode,                 0x12         @ 0b00010010 Interrupt Request (IRQ) mode
-.equ svc_mode,                 0x13         @ 0b00010011 Supervisor mode
-.equ mon_mode,                 0x16         @ 0b00010110 Secure Monitor mode
-.equ abt_mode,                 0x17         @ 0b00010111 Abort mode for prefetch and data abort exception
-.equ hyp_mode,                 0x1A         @ 0b00011010 Hypervisor mode
-.equ und_mode,                 0x1B         @ 0b00011011 Undefined mode for undefined instruction exception
-.equ sys_mode,                 0x1F         @ 0b00011111 System mode
-
-.equ thumb_bit,                0x20         @ 0b00100000
-.equ fiq_disable,              0x40         @ 0b01000000
-.equ irq_disable,              0x80         @ 0b10000000
-.equ abort_disable,            0x100        @ 0b100000000
-
+.balign 4
+.include "system32/fb32.s"
+.balign 4
+/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
+.include "system32/print32.s"
+.balign 4
+.include "system32/math32.s"
+.balign 4
+.include "system32/font_mono_12px.s"
+.balign 4
+.include "system32/color.s"
+.balign 4
+.include "system32/data.s"
+.balign 4
 
 /**
  * Variables
@@ -96,8 +51,58 @@ SYSTEM32_GPIO_BASE:          .word 0x00200000
 
 
 /**
+ * function system32_call_core
+ * Call 1-3 Cores
+ * This function is depends on RasPi's original start.elf
+ *
+ * Parameters
+ * r0: Program Address to Start Core
+ * r1: Number of Core
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as sucess, 1 as error), 
+ * Error: Number of Core does not exist or assigned Core0
+ */
+.globl system32_call_core
+system32_call_core:
+	/* Auto (Local) Variables, but just aliases */
+	addr_start   .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	temp         .req r2
+
+	cmp core_number, #3                      @ 1 <= mailbox_number <= 3
+	bgt system32_call_core_error
+	cmp core_number, #1
+	blt system32_call_core_error
+
+	mov temp, #equ32_cores_mailbox_offset
+	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
+
+	add core_number, core_number, #equ32_cores_mailbox3_writeset
+	add core_number, core_number, #equ32_bcm2836_cores_base
+
+	str addr_start, [core_number]
+
+	b system32_call_core_success
+
+	system32_call_core_error:
+		mov r0, #1
+		b system32_call_core_common
+
+	system32_call_core_success:
+		mov r0, #0
+
+	system32_call_core_common:
+		mov pc, lr
+
+.unreq addr_start
+.unreq core_number
+.unreq temp
+
+
+/**
  * function system32_mailbox_read
- * Read Mail from GPU/ Other Cores
+ * Wait and Read Mail from GPU/ Other Cores
  *
  * Parameters
  * r0: Number of Mailbox, 0-3
@@ -117,20 +122,27 @@ system32_mailbox_read:
 
 	push {r4}
 
-	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-
+	cmp mailbox_number, #3                   @ 0 <= mailbox_number <= 3
+	bgt system32_mailbox_read_error
 	cmp mailbox_number, #0
-	moveq read, #mailbox0_read
-	moveq status, #mailbox0_status
-	bne system32_mailbox_read_error
+	blt system32_mailbox_read_error
 
-	mov memorymap_base, #peripherals_base
+	mov temp, #equ32_mailbox_offset
+	mul mailbox_number, temp, mailbox_number @ Multiply Mailbox Offset to mailbox_number
+
+	mov status, mailbox_number
+	mov read, mailbox_number
+
+	add status, #equ32_mailbox_status
+	add read, #equ32_mailbox_read
+
+	mov memorymap_base, #equ32_bcm2836_peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
 
 	system32_mailbox_read_waitforread:
 		ldr temp, [memorymap_base, status]
-		cmp temp, #0x40000000
+		cmp temp, #0x40000000                  @ Wait for Empty Flag is Cleared
 		beq system32_mailbox_read_waitforread
 
 	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
@@ -164,13 +176,13 @@ system32_mailbox_read:
 
 /**
  * function system32_mailbox_send
- * Send Mail to GPU/ Other Cores
+ * Wait and Send Mail to GPU/ Other Cores
  *
  * Parameters
  * r0: Content of Mail to Send
  * r1: Number of Mailbox, 0-3
  *
- * Usage: r0-r6
+ * Usage: r0-r5
  * Return: r0 Reply Content, r1 (0 as sucess, 1 as error)
  * Error: Number of Mailbox does not exist
  */
@@ -183,41 +195,35 @@ system32_mailbox_send:
 	temp            .req r3
 	status          .req r4
 	write           .req r5
-	read            .req r6
 
-	push {r4-r6}
+	push {r4-r5}
 
-	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-
+	cmp mailbox_number, #3                   @ 0 <= mailbox_number <= 3
+	bgt system32_mailbox_send_error
 	cmp mailbox_number, #0
-	moveq read, #mailbox0_read
-	moveq status, #mailbox0_status
-	moveq write, #mailbox0_write
-	bne system32_mailbox_send_error
+	blt system32_mailbox_send_error
 
-	mov memorymap_base, #peripherals_base
+	mov temp, #equ32_mailbox_offset
+	mul mailbox_number, temp, mailbox_number @ Multiply Mailbox Offset to mailbox_number
+
+	mov status, mailbox_number
+	mov write, mailbox_number
+
+	add status, #equ32_mailbox_status
+	add write, #equ32_mailbox_write
+
+	mov memorymap_base, #equ32_bcm2836_peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
 
 	system32_mailbox_send_waitforwrite:
 		ldr temp, [memorymap_base, status]
-		cmp temp, #0x80000000
+		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
 		beq system32_mailbox_send_waitforwrite
 
-	str mail_content, [memorymap_base, write]
-
-	system32_mailbox_send_waitforread:
-		ldr temp, [memorymap_base, status]
-		cmp temp, #0x40000000
-		beq system32_mailbox_send_waitforread
-
 	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
-                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
-                                                 @ to ensure to fetch data from cache/ memory
-                                                 @ These are useful in multi-core/ threads usage, etc.
 
-	ldr r0, [memorymap_base, read]
+	str mail_content, [memorymap_base, write]
 
 	b system32_mailbox_send_success
 
@@ -230,7 +236,7 @@ system32_mailbox_send:
 		mov r1, #0
 
 	system32_mailbox_send_common:
-		pop {r4-r6}
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq mail_content
@@ -239,7 +245,6 @@ system32_mailbox_send:
 .unreq temp
 .unreq status
 .unreq write
-.unreq read
 
 
 /**
@@ -348,17 +353,17 @@ system32_convert_endianness:
 .globl system32_sleep
 system32_sleep:
 	push {r4-r5}
-	mov r1, #peripherals_base
+	mov r1, #equ32_bcm2836_peripherals_base
 	ldr r2, SYSTEM32_SYSTEMTIMER_BASE
 	add r1, r1, r2
-	ldr r2, [r1, #systemtimer_counter_lower_32_bits]
-	ldr r3, [r1, #systemtimer_counter_higher_32_bits]
+	ldr r2, [r1, #equ32_systemtimer_counter_lower_32_bits]
+	ldr r3, [r1, #equ32_systemtimer_counter_higher_32_bits]
 	adds r2, r0                            @ Add with Changing Status Flags
 	adc r3, #0                             @ Add with Carry Flag
 
 	system32_sleep_loop:
-		ldr r4, [r1, #systemtimer_counter_lower_32_bits]
-		ldr r5, [r1, #systemtimer_counter_higher_32_bits]
+		ldr r4, [r1, #equ32_systemtimer_counter_lower_32_bits]
+		ldr r5, [r1, #equ32_systemtimer_counter_higher_32_bits]
 		cmp r3, r5                     @ Similar to `SUBS`, Compare Higher 32 Bits
 		cmpeq r2, r4                   @ Compare Lower 32 Bits if the Same on Higher 32 Bits
 		bgt system32_sleep_loop
@@ -440,8 +445,7 @@ system32_store_8:
  */
 .globl system32_load_32
 system32_load_32:
-	ldr r1, [r0]
-	mov r0, r1
+	ldr r0, [r0]
 	mov pc, lr
 
 
@@ -457,8 +461,7 @@ system32_load_32:
  */
 .globl system32_load_16
 system32_load_16:
-	ldrh r1, [r0]
-	mov r0, r1
+	ldrh r0, [r0]
 	mov pc, lr
 
 
@@ -474,33 +477,8 @@ system32_load_16:
  */
 .globl system32_load_8
 system32_load_8:
-	ldrb r1, [r0]
-	mov r0, r1
+	ldrb r0, [r0]
 	mov pc, lr
-
-
-/**
- * Includes Enviromental Variables
- * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
- * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
- * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
- * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
- * These are useful if you use `extern` in C lang file.
- */
-.balign 4
-.include "system32/fb32.s"
-.balign 4
-/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
-.include "system32/print32.s"
-.balign 4
-.include "system32/math32.s"
-.balign 4
-.include "system32/font_mono_12px.s"
-.balign 4
-.include "system32/color.s"
-.balign 4
-.include "system32/data.s"
-.balign 4
 
 
 .globl SYSTEM32_HEAP
