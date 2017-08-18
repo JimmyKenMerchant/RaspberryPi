@@ -7,13 +7,13 @@
  *
  */
 
-.include "equ32.inc"
+.include "system32/equ32.s"
 
 /**
  * include/aloha/system32.h
  */
 
-.globl user_start
+.globl _user_start
 
 
 /**

@@ -14,7 +14,7 @@ SECTIONS {
 	/* Assign Address */
 	. = 0x8000;
 	.vector32 : {
-		aloha_kernel32.o(.vector)
+		aloha_vector32.o(.vector)
 		. = 0x2000;
 	}
 	. = 0xA000;

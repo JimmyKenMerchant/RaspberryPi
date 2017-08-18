@@ -10,7 +10,7 @@
 
 #include "aloha/system32.h"
 
-void user_start()
+void _user_start()
 {
 
 	uchar8 string[] = "ALOHA!\n\tHello World, Everyone!\0";
@@ -88,7 +88,7 @@ void user_start()
 
 	fb32_draw_line( COLOR32_CYAN, 100, 0, 100, 300, 4, 4 );
 
-	fb32_draw_line( COLOR32_LIME, 0, 400, 400, 400, 20, 20 );
+	fb32_draw_line( COLOR32_RED, 0, 400, 400, 400, 20, 20 );
 
 	system32_sleep( 9000000 );
 

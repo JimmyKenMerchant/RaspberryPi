@@ -20,7 +20,7 @@ COPY = $(COMP)-objcopy
 DUMP = $(COMP)-objdump
 
 LDSCRIPT = linker_script.ld
-OBJ1 = aloha_kernel32
+OBJ1 = aloha_vector32
 OBJ2 = system32
 OBJ3 = aloha_user
 HEADER = include/stdio.h include/aloha/system32.h 

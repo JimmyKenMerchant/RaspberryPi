@@ -67,6 +67,7 @@ fb32_rgba_to_argb:
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Points Which Were Not Drawn
+ * Global Enviromental Variable(s): FB32_WIDTH, FB32_HEIGHT
  */
 .globl fb32_draw_line
 fb32_draw_line:
@@ -166,14 +167,30 @@ fb32_draw_line:
 		vmov char_height, vfp_char_height
 
 		.unreq x_coord_1
-		i .req r1
+		.unreq y_coord_1
+		.unreq x_coord_2
+		i      .req r1
+		width  .req r2
+		height .req r3
 
 		mov i, #0
 		vmov vfp_i, i
 		vcvt.f32.s32 vfp_i, vfp_i
 		vmov vfp_one, #1.0                             @ Floating Point Constant (Immediate)
 
+		ldr width, FB32_WIDTH
+		ldr height, FB32_HEIGHT
+
 	fb32_draw_line_loop:
+		cmp x_current, #0
+		blt fb32_draw_line_loop_common
+		cmp y_current, #0
+		blt fb32_draw_line_loop_common
+		cmp x_current, width
+		bgt fb32_draw_line_loop_common
+		cmp y_current, height
+		bgt fb32_draw_line_loop_common
+
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
 		mov r2, y_current
@@ -187,21 +204,23 @@ fb32_draw_line:
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne fb32_draw_line_error
 
-		add x_current, x_current, x_direction
+		fb32_draw_line_loop_common:
 
-		add i, i, #1
-		vadd.f32 vfp_i, vfp_i, vfp_one
+			add x_current, x_current, x_direction
 
-		cmp i, x_diff
-		bgt fb32_draw_line_common
-		moveq char_height, dup_char_height       @ To hide Height Overflow on End Point (Except Original char_height)
+			add i, i, #1
+			vadd.f32 vfp_i, vfp_i, vfp_one
 
-		vmov vfp_y_current, vfp_y_start
-		vmla.f32 vfp_y_current, vfp_y_per_x, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
-		vcvtr.s32.f32 vfp_y_current, vfp_y_current    @ In VFP Instructions, You Can Convert with Rounding Mode
-		vmov y_current, vfp_y_current
+			cmp i, x_diff
+			bgt fb32_draw_line_common
+			moveq char_height, dup_char_height            @ To hide Height Overflow on End Point (Except Original char_height)
 
-		b fb32_draw_line_loop
+			vmov vfp_y_current, vfp_y_start
+			vmla.f32 vfp_y_current, vfp_y_per_x, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
+			vcvtr.s32.f32 vfp_y_current, vfp_y_current    @ In VFP Instructions, You Can Convert with Rounding Mode
+			vmov y_current, vfp_y_current
+
+			b fb32_draw_line_loop
 
 	fb32_draw_line_error:
 		sub i, i, #1                                  @ Adjust for Not Completed Point
@@ -218,8 +237,8 @@ fb32_draw_line:
 
 .unreq color
 .unreq i
-.unreq y_coord_1
-.unreq x_coord_2
+.unreq width
+.unreq height
 .unreq y_coord_2
 .unreq char_width
 .unreq char_height
@@ -319,6 +338,7 @@ fb32_copy:
 /**
  * function fb32_draw_image
  * Draw Image
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable in 32 Bit Depth
  *
  * Parameters
  * r0: Pointer of Image
@@ -353,6 +373,14 @@ fb32_draw_image:
 	char_width_bytes .req r10
 	bitmask          .req r11
 	x_crop_char      .req r12 @ ip is Alias of r12, This Function Uses r12 as ip Too. x_crop_char Uses After Usage as ip
+
+	/* VFP/NEON Registers */
+	vfp_src          .req q0
+	vfp_src_lower    .req d0 @ q0[0]
+	vfp_src_upper    .req d1 @ q0[1]
+	vfp_dst          .req q1
+	vfp_dst_lower    .req d2 @ q1[0]
+	vfp_dst_upper    .req d3 @ q1[1]
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -484,20 +512,35 @@ fb32_draw_image:
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
 		fb32_draw_image_loop_horizontal:
-			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
-			cmp j, #0                                @ Horizontal Counter, Check
+			sub j, j, #1                                 @ For Bit Allocation (Horizontal Character Bit)
+			cmp j, #0                                    @ Horizontal Counter, Check
 			blt fb32_draw_image_loop_common
 
+			/* The Picture Process of Depth 16 Bits */
 			cmp depth, #16
-			ldreqh color, [image_point]              @ Load half word
-			cmp depth, #32
-			ldreq color, [image_point]               @ Load word
+			bne fb32_draw_image_loop_horizontal_depth32
+			ldrh color, [image_point]                    @ Load half word
+			strh color, [f_buffer]                       @ Store half word
+			b fb32_draw_image_loop_horizontal_common
 
-			/* The Picture Process */
-			cmp depth, #16
-			streqh color, [f_buffer]                 @ Store half word
-			cmp depth, #32
-			streq color, [f_buffer]                  @ Store word
+			fb32_draw_image_loop_horizontal_depth32:
+				/* The Picture Process of Depth 32 Bits */
+				ldr color, [image_point]                     @ Load word
+
+				mvn depth, #0x01000000                       @ 0xFEFFFFFF (0xFF000000 - 1)
+				cmp color, depth                             @ If Alpha is Fully Opaque
+				bhi fb32_draw_image_loop_horizontal_depth32_common @ Unsigned Higher
+
+				mvn depth, #0xFF000000                       @ 0x00FFFFFF (0x01000000 - 1)
+				cmp color, depth                             @ If Alpha is Fully Transparent
+				movls depth, #32
+				bls fb32_draw_image_loop_horizontal_common   @ Unsigned Less or Same
+
+				/* Alpha Blending */
+
+				fb32_draw_image_loop_horizontal_depth32_common:
+					str color, [f_buffer]                    @ Store word
+					mov depth, #32
 
 			fb32_draw_image_loop_horizontal_common:
 				cmp depth, #16
@@ -559,6 +602,12 @@ fb32_draw_image:
 .unreq j
 .unreq bitmask
 .unreq x_crop_char
+.unreq vfp_src
+.unreq vfp_src_lower
+.unreq vfp_src_upper
+.unreq vfp_dst
+.unreq vfp_dst_lower
+.unreq vfp_dst_upper
 
 
 /**

@@ -9,7 +9,7 @@
 
 .section	.system
 
-.include "equ32.inc"
+.include "system32/equ32.s"
 
 /**
  * These Asm Files includes Enviromental Variables.
@@ -356,14 +356,14 @@ system32_sleep:
 	mov r1, #equ32_bcm2836_peripherals_base
 	ldr r2, SYSTEM32_SYSTEMTIMER_BASE
 	add r1, r1, r2
-	ldr r2, [r1, #equ32_systemtimer_counter_lower_32_bits]
-	ldr r3, [r1, #equ32_systemtimer_counter_higher_32_bits]
+	ldr r2, [r1, #equ32_systemtimer_counter_lower]  @ Get Lower 32 Bits
+	ldr r3, [r1, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
 	adds r2, r0                            @ Add with Changing Status Flags
 	adc r3, #0                             @ Add with Carry Flag
 
 	system32_sleep_loop:
-		ldr r4, [r1, #equ32_systemtimer_counter_lower_32_bits]
-		ldr r5, [r1, #equ32_systemtimer_counter_higher_32_bits]
+		ldr r4, [r1, #equ32_systemtimer_counter_lower]
+		ldr r5, [r1, #equ32_systemtimer_counter_higher]
 		cmp r3, r5                     @ Similar to `SUBS`, Compare Higher 32 Bits
 		cmpeq r2, r4                   @ Compare Lower 32 Bits if the Same on Higher 32 Bits
 		bgt system32_sleep_loop

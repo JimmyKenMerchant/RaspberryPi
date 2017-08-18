@@ -65,8 +65,8 @@ _reset:
 	mov r1, #0x00000000
 	mvn r1, r1                                @ Whole Inverter
 
-	str r1, [r0, #equ32_interrupt_disable_irqs_1]     @ Make Sure Disable All IRQs
-	str r1, [r0, #equ32_interrupt_disable_irqs_2]
+	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All IRQs
+	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
@@ -97,7 +97,7 @@ _reset:
 	add r0, r0, r1
 
 	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
-	str r1, [r0, #equ32_gpio_gpfsel_4]
+	str r1, [r0, #equ32_gpio_gpfsel4]
 
 	mov r0, #32
 	ldr r1, ADDR32_FB32_DEPTH
@@ -254,7 +254,7 @@ render:
 	cpsie f
 
 	push {r0-r3,lr}
-	bl user_start
+	bl _user_start
 	pop {r0-r3,lr}
 
 debug:
@@ -300,7 +300,7 @@ fiq_handler:
 	str r1, gpio_toggle
 
 	add r0, r0, r1
-	mov r1, #equ32_gpio47_bit
+	mov r1, #equ32_gpio47
 	str r1, [r0]
 
 
@@ -309,7 +309,7 @@ fiq_handler:
 	ldr r1, [r1]
 	add r0, r0, r1
 
-	ldr r0, [r0, #equ32_systemtimer_counter_lower_32_bits]
+	ldr r0, [r0, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
 	ldr r1, sys_timer_previous
 	sub r2, r0, r1
 	str r0, sys_timer_previous
@@ -435,7 +435,7 @@ sys_timer_previous:
 	.word 0x00000000
 .balign 4
 
-.include "addr32.inc" @ If you want binary, use `.incbin`
+.include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4
 
 /* End of Line is Needed */
