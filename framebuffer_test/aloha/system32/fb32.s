@@ -412,6 +412,8 @@ fb32_draw_image:
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
 	sub sp, sp, #36                                  @ Retrieve SP
 
+	vpush {s0-s16}                                   @ 4 Bytes x 17, 68 Bytes Slide of SP, Know for ip and Stack Usage
+
 	ldr f_buffer, FB32_ADDRESS
 	cmp f_buffer, #0
 	beq fb32_draw_image_error2
@@ -450,13 +452,13 @@ fb32_draw_image:
 	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
 	addge f_buffer, f_buffer, y_coord
 
-	ldr ip, [sp, #40]                                @ Y Offset
+	ldr ip, [sp, #108]                               @ Load Y Offset Arm 40 Bytes + VFP 68 Bytes Away from Current SP
 	cmp ip, #0
 	subgt char_height, char_height, ip               @ Subtract Y Offset (ip) value from char_height
 	mulgt ip, char_width_bytes, ip
 	addgt image_point, image_point, ip
 
-	ldr ip, [sp, #48]                                @ Y Crop
+	ldr ip, [sp, #116]                               @ Load Y Crop, Arm 48 Bytes + VFP 68 Bytes Away from Current SP
 	cmp ip, #0
 	subgt char_height, char_height, ip               @ Subtract Y Crop (ip) value from char_height
 	
@@ -496,7 +498,7 @@ fb32_draw_image:
 		lsleq x_offset_char, x_offset_char, #2   @ X Minus Coord Bytes, substitution of Multiplication by 2 (No Minus)
 
 	fb32_draw_image_xoffset:
-		ldr ip, [sp, #36]                        @ X Offset
+		ldr ip, [sp, #104]                       @ Load X Offset, Arm 36 Bytes + VFP 68 Bytes Away From Current SP
 		cmp ip, #0
 		ble fb32_draw_image_xcrop
 
@@ -510,7 +512,7 @@ fb32_draw_image:
 		add x_offset_char, x_offset_char, ip
 
 	fb32_draw_image_xcrop:
-		ldr ip, [sp, #44]                        @ X Crop
+		ldr ip, [sp, #112]                       @ Load X Crop, Arm 44 Bytes + VFP 68 Bytes Away From Current SP
 		cmp ip, #0
 		movle x_crop_char, #0
 		ble fb32_draw_image_loop
@@ -556,8 +558,111 @@ fb32_draw_image:
 				cmp color, #0x01000000                             @ If Alpha is Fully Transparent
 				blo fb32_draw_image_loop_horizontal_common         @ Unsigned Less (Lower)
 
-				/* Alpha Blending */
-				mov depth, #32
+				/** 
+				 * Alpha Blending
+				 * Porter-Duff Src-over
+				 *
+				 * OUT_Alpha = SRC_Alpha + (DST_Alpha x (1 - SRC_Alpha))
+				 * OUT_RGB = ((SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha)))) Div by OUT_Alpha
+				 * If OUT_Alpha = 0,  OUT_RGB = 0
+				 */
+
+				/* SRC */
+				and depth, color, #0xFF
+				vmov vfp_src_blue, depth                           @ Blue of SRC
+				and depth, color, #0xFF00
+				lsr depth, depth, #8
+				vmov vfp_src_green, depth                          @ Green of SRC
+				and depth, color, #0xFF0000
+				lsr depth, depth, #16
+				vmov vfp_src_red, depth                            @ Red of SRC
+				and depth, color, #0xFF000000
+				lsr depth, depth, #24
+				vmov vfp_src_alpha, depth                          @ Alpha of SRC
+				vcvt.f32.u32 vfp_src, vfp_src                      @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+
+				/* DST */
+				ldr color, [f_buffer]
+
+				and depth, color, #0xFF
+				vmov vfp_dst_blue, depth                           @ Blue of DST
+				and depth, color, #0xFF00
+				lsr depth, depth, #8
+				vmov vfp_dst_green, depth                          @ Green of DST
+				and depth, color, #0xFF0000
+				lsr depth, depth, #16
+				vmov vfp_dst_red, depth                            @ Red of DST
+				and depth, color, #0xFF000000
+				lsr depth, depth, #24
+				vmov vfp_dst_alpha, depth                          @ Alpha of DST
+				vcvt.f32.u32 vfp_dst, vfp_dst                      @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+
+				/* Clean Color Register */
+				mov color, #0
+
+				/* Sanitize OUT_ARGB */
+				mov depth, #0
+				vdup.32 vfp_out, depth
+				vcvt.f32.u32 vfp_out, vfp_out
+
+				/* Alpha divider to Range within 0.0-1.0 */
+				mov depth, #255
+				vmov vfp_divider, depth
+				vcvt.f32.u32 vfp_divider, vfp_divider
+				vdiv.f32 vfp_src_alpha, vfp_src_alpha, vfp_divider
+				vdiv.f32 vfp_dst_alpha, vfp_dst_alpha, vfp_divider
+
+				/* DST_Alpha x (1 - SRC_Alpha) to vfp_cal_a */
+				vmov vfp_cal_a, #1.0 
+				vsub.f32 vfp_cal_b, vfp_cal_a, vfp_src_alpha
+				vmul.f32 vfp_cal_a, vfp_dst_alpha, vfp_cal_b
+
+				/* OUT_Alpha, SRC_Alpha + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha))) to vfp_out_alpha */
+				vadd.f32 vfp_out_alpha, vfp_src_alpha, vfp_cal_a
+
+				/* Compare OUT_Alpha to Zero */
+				vcmp.f32 vfp_out_alpha, #0
+				vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV Flags (APSR)
+				beq fb32_draw_image_loop_horizontal_depth32_alphablend
+
+				/* DST_RGB x (DST_Alpha x (1 - SRC_Alpha)) to vfp_dst */
+				vdup.f32 vfp_cal, vfp_cal_lower[0]                @ NEON Side Name of vfp_cal_a
+				vmul.f32 vfp_dst, vfp_dst, vfp_cal                @ *NEON*
+
+				/* SRC_RGB x SRC_Alpha to vfp_src */
+				vdup.f32 vfp_cal, vfp_src_upper[1]                @ NEON Side Name of vfp_src_alpha
+				vmul.f32 vfp_src, vfp_src, vfp_cal                @ *NEON*
+
+				/* (SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha))) to vfp_dst */
+				vadd.f32 vfp_dst, vfp_dst, vfp_src                @ *NEON*
+
+				/* OUT_RGB, ((SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha)))) Div by OUT_Alpha to vfp_out */
+				vmov vfp_src_alpha, vfp_out_alpha                 @ Store to Retrieve
+				vmov vfp_cal_a, #1.0
+				vmov vfp_cal_b, vfp_out_alpha
+				vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_cal_b
+				vdup.f32 vfp_cal, vfp_cal_lower[0]                @ NEON Side Name of vfp_cal_a
+				vmul.f32 vfp_out, vfp_dst, vfp_cal
+
+				/* Retrieve OUT_Alpha to Range within 0 to 255 */
+				vmov vfp_out_alpha, vfp_src_alpha
+				vmul.f32 vfp_out_alpha, vfp_out_alpha, vfp_divider
+
+				fb32_draw_image_loop_horizontal_depth32_alphablend:
+					vcvtr.u32.f32 vfp_out, vfp_out            @ *NEON*Convert Single Precision Floating Point to Unsinged Integer
+					vmov depth, vfp_out_blue
+					add color, color, depth
+					vmov depth, vfp_out_green
+					lsl depth, depth, #8
+					add color, color, depth
+					vmov depth, vfp_out_red
+					lsl depth, depth, #16
+					add color, color, depth
+					vmov depth, vfp_out_alpha
+					lsl depth, depth, #24
+					add color, color, depth
+
+					mov depth, #32
 
 				fb32_draw_image_loop_horizontal_depth32_common:
 					str color, [f_buffer]                    @ Store word
@@ -604,6 +709,7 @@ fb32_draw_image:
 		mov r0, #2                                   @ Return with Error 2
 
 	fb32_draw_image_common:
+		vpop {s0-s16}
 		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
