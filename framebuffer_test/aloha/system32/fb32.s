@@ -552,20 +552,21 @@ fb32_draw_image:
 				/* The Picture Process of Depth 32 Bits */
 				ldr color, [image_point]                     @ Load word
 
-				cmp color, #0xFF000000                             @ If Alpha is Fully Opaque
-				bhs fb32_draw_image_loop_horizontal_depth32_common @ Unsigned Higher or Same
-
-				cmp color, #0x01000000                             @ If Alpha is Fully Transparent
-				blo fb32_draw_image_loop_horizontal_common         @ Unsigned Less (Lower)
-
 				/** 
 				 * Alpha Blending
-				 * Porter-Duff Src-over
+				 * SRC Over DST, Using Porter-Duff (1984)
 				 *
 				 * OUT_Alpha = SRC_Alpha + (DST_Alpha x (1 - SRC_Alpha))
 				 * OUT_RGB = ((SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha)))) Div by OUT_Alpha
-				 * If OUT_Alpha = 0,  OUT_RGB = 0
+				 * If DST_Alpha = 1, OUT_Alpha = 1
+				 * If OUT_Alpha = 0, OUT_RGB = 0
 				 */
+
+				cmp color, #0xFF000000                             @ If SRC_Alpha is Fully Opaque
+				bhs fb32_draw_image_loop_horizontal_depth32_common @ Unsigned Higher or Same
+
+				cmp color, #0x01000000                             @ If SRC_Alpha is Fully Transparent
+				blo fb32_draw_image_loop_horizontal_common         @ Unsigned Less (Lower)
 
 				/* SRC */
 				and depth, color, #0xFF
@@ -613,43 +614,45 @@ fb32_draw_image:
 				vdiv.f32 vfp_dst_alpha, vfp_dst_alpha, vfp_divider
 
 				/* DST_Alpha x (1 - SRC_Alpha) to vfp_cal_a */
-				vmov vfp_cal_a, #1.0 
+				vmov vfp_cal_a, #1.0
+				vcmp.f32 vfp_dst_alpha, vfp_cal_a
+				vmoveq vfp_out_alpha, vfp_dst_alpha                     @ If DST_Alpha Is 1.0, OUT_Alpha Becomes 1.0
 				vsub.f32 vfp_cal_b, vfp_cal_a, vfp_src_alpha
 				vmul.f32 vfp_cal_a, vfp_dst_alpha, vfp_cal_b
 
 				/* OUT_Alpha, SRC_Alpha + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha))) to vfp_out_alpha */
-				vadd.f32 vfp_out_alpha, vfp_src_alpha, vfp_cal_a
+				vaddne.f32 vfp_out_alpha, vfp_src_alpha, vfp_cal_a      @ If DST_Alpha is not 0.0
 
 				/* Compare OUT_Alpha to Zero */
 				vcmp.f32 vfp_out_alpha, #0
-				vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV Flags (APSR)
-				beq fb32_draw_image_loop_horizontal_depth32_alphablend
+				vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV Flags (APSR)
+				beq fb32_draw_image_loop_horizontal_depth32_alphablend  @ If OUT_Alpha is 0.0, OUT_ARGB Becomes all 0.0
 
 				/* DST_RGB x (DST_Alpha x (1 - SRC_Alpha)) to vfp_dst */
-				vdup.f32 vfp_cal, vfp_cal_lower[0]                @ NEON Side Name of vfp_cal_a
-				vmul.f32 vfp_dst, vfp_dst, vfp_cal                @ *NEON*
+				vdup.f32 vfp_cal, vfp_cal_lower[0]                      @ NEON Side Name of vfp_cal_a
+				vmul.f32 vfp_dst, vfp_dst, vfp_cal                      @ *NEON*
 
 				/* SRC_RGB x SRC_Alpha to vfp_src */
-				vdup.f32 vfp_cal, vfp_src_upper[1]                @ NEON Side Name of vfp_src_alpha
-				vmul.f32 vfp_src, vfp_src, vfp_cal                @ *NEON*
+				vdup.f32 vfp_cal, vfp_src_upper[1]                      @ NEON Side Name of vfp_src_alpha
+				vmul.f32 vfp_src, vfp_src, vfp_cal                      @ *NEON*
 
 				/* (SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha))) to vfp_dst */
-				vadd.f32 vfp_dst, vfp_dst, vfp_src                @ *NEON*
+				vadd.f32 vfp_dst, vfp_dst, vfp_src                      @ *NEON*
 
 				/* OUT_RGB, ((SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha)))) Div by OUT_Alpha to vfp_out */
-				vmov vfp_src_alpha, vfp_out_alpha                 @ Store to Retrieve
+				vmov vfp_src_alpha, vfp_out_alpha                       @ Store to Retrieve
 				vmov vfp_cal_a, #1.0
 				vmov vfp_cal_b, vfp_out_alpha
 				vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_cal_b
-				vdup.f32 vfp_cal, vfp_cal_lower[0]                @ NEON Side Name of vfp_cal_a
-				vmul.f32 vfp_out, vfp_dst, vfp_cal
+				vdup.f32 vfp_cal, vfp_cal_lower[0]                      @ NEON Side Name of vfp_cal_a
+				vmul.f32 vfp_out, vfp_dst, vfp_cal                      @ *NEON*
 
 				/* Retrieve OUT_Alpha to Range within 0 to 255 */
 				vmov vfp_out_alpha, vfp_src_alpha
 				vmul.f32 vfp_out_alpha, vfp_out_alpha, vfp_divider
 
 				fb32_draw_image_loop_horizontal_depth32_alphablend:
-					vcvtr.u32.f32 vfp_out, vfp_out            @ *NEON*Convert Single Precision Floating Point to Unsinged Integer
+					vcvtr.u32.f32 vfp_out, vfp_out                      @ *NEON* Convert Single Precision Floating Point to Unsinged Integer
 					vmov depth, vfp_out_blue
 					add color, color, depth
 					vmov depth, vfp_out_green

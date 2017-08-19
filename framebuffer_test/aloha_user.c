@@ -67,7 +67,7 @@ void _user_start()
 
 	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 
-	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 600, 600, 64, 64, 0, 0, 0, 0 );
+	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 600, 500, 64, 64, 0, 0, 0, 0 );
 
 	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, -4, 500, 8, 12, 0, 0, 0, 0 );
 
@@ -94,7 +94,7 @@ void _user_start()
 
 	fb32_draw_line( COLOR32_CYAN, 100, 0, 100, 300, 4, 4 );
 
-	fb32_draw_line( COLOR32_WHITE, 0, 400, 400, 400, 20, 20 );
+	fb32_draw_line( COLOR32_BLUE, 0, 400, 400, 400, 20, 20 );
 
 	system32_sleep( 9000000 );
 

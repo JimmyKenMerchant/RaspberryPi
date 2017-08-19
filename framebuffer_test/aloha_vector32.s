@@ -49,6 +49,8 @@ _reset:
 	mrs r0, elr_hyp                           @ mrs/msr accessible system registers can add postfix of modes
 	mrs r1, spsr_hyp
 	push {r0, r1}
+	mrc p15, 4, r0, c12, c0, 0
+	push {r0}                                 @ Push Last HVBAR Address to Retrieve
 
 	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #equ32_hyp_mode|equ32_fiq_disable|equ32_irq_disable @ 0xDA
@@ -257,6 +259,16 @@ render:
 	bl _user_start
 	pop {r0-r3,lr}
 
+	pop {r0}                                  @ Return Process from Current Hyp Mode
+	mcr p15, 4, r0, c12, c0, 0                @ Retrieve HVBAR Address
+	pop {r0,r1}
+	msr elr_hyp, r0
+	msr spsr_hyp, r1
+	pop {r0-r12,lr}
+	mov sp, ip                                @ ip is r12
+
+	eret
+
 debug:
 	cpsie f                                  @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
 	debug_loop1:
@@ -268,11 +280,11 @@ _fiq:
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
 	mrs r0, elr_hyp                          @ mrs/msr accessible system registers can add postfix of modes
 	mrs r1, spsr_hyp
-	push {r0-r1}
+	push {r0,r1}
 
 	bl fiq_handler
 
-	pop {r0-r1}
+	pop {r0,r1}
 	msr elr_hyp, r0
 	msr spsr_hyp, r1
 	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
