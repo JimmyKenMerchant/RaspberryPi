@@ -79,7 +79,7 @@ system32_call_core:
 	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
 
 	add core_number, core_number, #equ32_cores_mailbox3_writeset
-	add core_number, core_number, #equ32_bcm2836_cores_base
+	add core_number, core_number, #equ32_cores_base
 
 	str addr_start, [core_number]
 
@@ -136,7 +136,7 @@ system32_mailbox_read:
 	add status, #equ32_mailbox_status
 	add read, #equ32_mailbox_read
 
-	mov memorymap_base, #equ32_bcm2836_peripherals_base
+	mov memorymap_base, #equ32_peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
 
@@ -212,7 +212,7 @@ system32_mailbox_send:
 	add status, #equ32_mailbox_status
 	add write, #equ32_mailbox_write
 
-	mov memorymap_base, #equ32_bcm2836_peripherals_base
+	mov memorymap_base, #equ32_peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
 	add memorymap_base, memorymap_base, temp
 
@@ -353,7 +353,7 @@ system32_convert_endianness:
 .globl system32_sleep
 system32_sleep:
 	push {r4-r5}
-	mov r1, #equ32_bcm2836_peripherals_base
+	mov r1, #equ32_peripherals_base
 	ldr r2, SYSTEM32_SYSTEMTIMER_BASE
 	add r1, r1, r2
 	ldr r2, [r1, #equ32_systemtimer_counter_lower]  @ Get Lower 32 Bits

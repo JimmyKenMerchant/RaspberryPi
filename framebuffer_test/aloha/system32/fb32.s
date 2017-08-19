@@ -187,9 +187,9 @@ fb32_draw_line:
 		cmp y_current, #0
 		blt fb32_draw_line_loop_common
 		cmp x_current, width
-		bgt fb32_draw_line_loop_common
+		bge fb32_draw_line_loop_common
 		cmp y_current, height
-		bgt fb32_draw_line_loop_common
+		bge fb32_draw_line_loop_common
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
@@ -527,20 +527,17 @@ fb32_draw_image:
 				/* The Picture Process of Depth 32 Bits */
 				ldr color, [image_point]                     @ Load word
 
-				mvn depth, #0x01000000                       @ 0xFEFFFFFF (0xFF000000 - 1)
-				cmp color, depth                             @ If Alpha is Fully Opaque
-				bhi fb32_draw_image_loop_horizontal_depth32_common @ Unsigned Higher
+				cmp color, #0xFF000000                             @ If Alpha is Fully Opaque
+				bhs fb32_draw_image_loop_horizontal_depth32_common @ Unsigned Higher or Same
 
-				mvn depth, #0xFF000000                       @ 0x00FFFFFF (0x01000000 - 1)
-				cmp color, depth                             @ If Alpha is Fully Transparent
-				movls depth, #32
-				bls fb32_draw_image_loop_horizontal_common   @ Unsigned Less or Same
+				cmp color, #0x01000000                             @ If Alpha is Fully Transparent
+				blo fb32_draw_image_loop_horizontal_common         @ Unsigned Less (Lower)
 
 				/* Alpha Blending */
+				mov depth, #32
 
 				fb32_draw_image_loop_horizontal_depth32_common:
 					str color, [f_buffer]                    @ Store word
-					mov depth, #32
 
 			fb32_draw_image_loop_horizontal_common:
 				cmp depth, #16
@@ -876,7 +873,7 @@ fb32_get:
 	cmp memorymap_base, #0
 	beq fb32_get_error
 
-	and memorymap_base, memorymap_base, #equ32_fb_armmask                  @ Change FB32_ADDRESS VideoCore's to ARM's
+	and memorymap_base, memorymap_base, #equ32_fb_armmask            @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
 
 	mov r0, #0                               @ Return with Success

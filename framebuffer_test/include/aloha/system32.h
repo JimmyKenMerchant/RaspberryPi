@@ -38,11 +38,8 @@ void _user_start();
 
 /* BCM2836 and BCM2837 Peripheral Base */
 /* If BCM 2835, Peripheral Base is 0x20000000 */
-#define equ32_bcm2835_peripherals_base    0x20000000
-#define equ32_bcm2836_peripherals_base    0x3F000000
-#define equ32_bcm2837_peripherals_base    0x3F000000
-#define equ32_bcm2836_cores_base    0x40000000
-#define equ32_bcm2837_cores_base    0x40000000
+#define equ32_peripherals_base    0x3F000000
+#define equ32_cores_base          0x40000000
 
 #define equ32_cores_mailbox_offset        0x10 // Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
 #define equ32_cores_mailbox0_writeset     0x80

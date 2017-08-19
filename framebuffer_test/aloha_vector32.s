@@ -57,7 +57,7 @@ _reset:
 	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
-	mov r0, #equ32_bcm2836_peripherals_base
+	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -72,7 +72,7 @@ _reset:
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	mov r0, #equ32_bcm2836_peripherals_base
+	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -91,7 +91,7 @@ _reset:
 
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
-	mov r0, #equ32_bcm2836_peripherals_base
+	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -282,7 +282,7 @@ _fiq:
 	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
 fiq_handler:
-	mov r0, #equ32_bcm2836_peripherals_base
+	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -290,7 +290,7 @@ fiq_handler:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]             @ any write to clear/ acknowledge
 
-	mov r0, #equ32_bcm2836_peripherals_base
+	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
@@ -304,7 +304,7 @@ fiq_handler:
 	str r1, [r0]
 
 
-	mov r0, #equ32_bcm2836_peripherals_base
+	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_SYSTEMTIMER_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
