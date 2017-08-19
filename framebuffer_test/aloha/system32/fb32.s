@@ -338,7 +338,7 @@ fb32_copy:
 /**
  * function fb32_draw_image
  * Draw Image
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable in 32 Bit Depth
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Parameters
  * r0: Pointer of Image
@@ -375,12 +375,35 @@ fb32_draw_image:
 	x_crop_char      .req r12 @ ip is Alias of r12, This Function Uses r12 as ip Too. x_crop_char Uses After Usage as ip
 
 	/* VFP/NEON Registers */
-	vfp_src          .req q0
-	vfp_src_lower    .req d0 @ q0[0]
-	vfp_src_upper    .req d1 @ q0[1]
-	vfp_dst          .req q1
-	vfp_dst_lower    .req d2 @ q1[0]
-	vfp_dst_upper    .req d3 @ q1[1]
+	vfp_src         .req q0
+	vfp_src_lower   .req d0
+	vfp_src_upper   .req d1
+	vfp_src_blue    .req s0
+	vfp_src_green   .req s1
+	vfp_src_red     .req s2
+	vfp_src_alpha   .req s3
+	vfp_dst         .req q1
+	vfp_dst_lower   .req d2
+	vfp_dst_upper   .req d3
+	vfp_dst_blue    .req s4
+	vfp_dst_green   .req s5
+	vfp_dst_red     .req s6
+	vfp_dst_alpha   .req s7
+	vfp_cal         .req q2
+	vfp_cal_lower   .req d4
+	vfp_cal_upper   .req d5
+	vfp_cal_a       .req s8
+	vfp_cal_b       .req s9
+	vfp_cal_c       .req s10
+	vfp_cal_d       .req s11
+	vfp_out         .req q3
+	vfp_out_lower   .req d6
+	vfp_out_upper   .req d7
+	vfp_out_blue    .req s12
+	vfp_out_green   .req s13
+	vfp_out_red     .req s14
+	vfp_out_alpha   .req s15
+	vfp_divider     .req s16
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -602,9 +625,32 @@ fb32_draw_image:
 .unreq vfp_src
 .unreq vfp_src_lower
 .unreq vfp_src_upper
+.unreq vfp_src_blue
+.unreq vfp_src_green
+.unreq vfp_src_red
+.unreq vfp_src_alpha
 .unreq vfp_dst
 .unreq vfp_dst_lower
 .unreq vfp_dst_upper
+.unreq vfp_dst_blue
+.unreq vfp_dst_green
+.unreq vfp_dst_red
+.unreq vfp_dst_alpha
+.unreq vfp_cal
+.unreq vfp_cal_lower
+.unreq vfp_cal_upper
+.unreq vfp_cal_a
+.unreq vfp_cal_b
+.unreq vfp_cal_c
+.unreq vfp_cal_d
+.unreq vfp_out
+.unreq vfp_out_lower
+.unreq vfp_out_upper
+.unreq vfp_out_blue
+.unreq vfp_out_green
+.unreq vfp_out_red
+.unreq vfp_out_alpha
+.unreq vfp_divider
 
 
 /**
