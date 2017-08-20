@@ -230,17 +230,17 @@ extern void system32_no_op();
 
 extern void system32_sleep( uint32 u_seconds );
 
-extern void system32_store_32( uint32* address, int32 data);
+extern void system32_store_32( int32* address, int32 data);
 
-extern void system32_store_16( uint32* address, int16 data);
+extern void system32_store_16( int16* address, int16 data);
 
-extern void system32_store_8( uint32* address, char8 data);
+extern void system32_store_8( char8* address, char8 data);
 
-extern int32 system32_load_32( uint32* address );
+extern int32 system32_load_32( int32* address );
 
-extern int16 system32_load_16( uint32* address );
+extern int16 system32_load_16( int16* address );
 
-extern char8 system32_load_8( uint32* address );
+extern char8 system32_load_8( char8* address );
 
 
 
@@ -274,11 +274,28 @@ extern uint32 fb32_rgba_to_argb
 
 
 /**
+ * Draw Circle Filled with Color
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
+ */
+extern uint64 fb32_draw_circle
+(
+	uint32 color,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 x_radian,
+	uint32 y_radian
+);
+
+
+/**
  * Draw Line
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
- * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Number of Y Length Which Were Not Drawn
+ * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
  */
 
 extern uint64 fb32_draw_line

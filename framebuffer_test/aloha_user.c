@@ -67,7 +67,7 @@ void _user_start()
 
 	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 
-	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 600, 500, 64, 64, 0, 0, 0, 0 );
+	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 
 	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, -4, 500, 8, 12, 0, 0, 0, 0 );
 
@@ -96,11 +96,13 @@ void _user_start()
 
 	fb32_draw_line( COLOR32_BLUE, 0, 400, 400, 400, 20, 20 );
 
+	fb32_draw_circle( COLOR32_LIME, 300, 300, 100, 200 );
+
 	system32_sleep( 9000000 );
 
-	//uint32* temp; // No Content
+	//int32* temp; // No Content
 	//temp = 0x00; // Address Assign
-	//uint32 data = 0x01;
+	//int32 data = 0x01;
 	//system32_store_32(temp, data);
 	
 	while(1) {

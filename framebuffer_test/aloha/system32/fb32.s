@@ -51,6 +51,197 @@ fb32_rgba_to_argb:
 
 
 /**
+ * function fb32_draw_circle
+ * Draw Circle Filled with Color
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ * r1: X Coordinate of Center
+ * r2: Y Coordinate of Center
+ * r3: X Radian
+ * r4: Y Radian
+ *
+ * Usage: r0-r11
+ * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
+ * Global Enviromental Variable(s): FB32_WIDTH, FB32_HEIGHT
+ */
+.globl fb32_draw_circle
+fb32_draw_circle:
+	/* Auto (Local) Variables, but just aliases */
+	color            .req r0   @ Parameter, Register for Argument, Scratch Register
+	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
+	x_radian         .req r3   @ Parameter, Register for Argument and Result, Scratch Register
+	y_radian         .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_width       .req r5
+	char_height      .req r6
+	x_current        .req r7
+	y_current        .req r8
+	y_max            .req r9
+	width            .req r10
+	height           .req r11
+
+	/* VFP/NEON Registers */
+	vfp_xy_coord     .req d0 @ q0[0]
+	vfp_y_coord      .req s0 @ Lower 32 Bits of d0
+	vfp_x_coord      .req s1 @ Upper 32 Bits of d0
+	vfp_xy_radian    .req d1 @ q0[1]
+	vfp_y_radian     .req s2
+	vfp_x_radian     .req s3
+	vfp_cal_ab       .req d2
+	vfp_cal_a        .req s4
+	vfp_cal_b        .req s5
+	vfp_cal_c        .req s6
+	vfp_x_start      .req s7
+	vfp_ratio_radian .req s8
+	vfp_radian       .req s9
+	vfp_tri_height   .req s10
+	vfp_one          .req s11
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	add sp, sp, #32                                   @ r4-r11 offset 32 bytes
+	pop {y_radian}                                    @ Get Fifth
+	sub sp, sp, #36                                   @ Retrieve SP
+
+	vpush {s0-s11}
+
+	sub y_current, y_coord, y_radian                  @ First Y Coordinate to Draw
+	mov char_height, #1
+
+	add y_max, y_coord, y_radian                      @ As Counter
+	sub y_max, y_max, #1                              @ Have Minus One
+
+	ldr width, FB32_WIDTH
+	ldr height, FB32_HEIGHT
+
+	vmov vfp_xy_coord, y_coord, x_coord               @ Lower Bits from y_coord, Upper Bits x_coord, q0[0]
+	vmov vfp_xy_radian, y_radian, x_radian            @ Lower Bits from y_radian, Upper Bits x_radian, q0[1]
+	vcvt.f32.s32 vfp_xy_coord, vfp_xy_coord           @ *NEON*Convert Signed Integer to Single Precision Floating Point
+	vcvt.f32.u32  vfp_xy_radian, vfp_xy_radian        @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+
+	vmov vfp_x_start, vfp_x_coord
+
+	vmov vfp_radian, vfp_y_radian
+	vmov vfp_tri_height, vfp_y_radian
+
+	vmov vfp_one, #1.0                                @ Floating Point Constant (Immediate)
+
+	vsub.f32 vfp_cal_a, vfp_x_radian, vfp_y_radian
+	vdiv.f32 vfp_ratio_radian, vfp_cal_a, vfp_y_radian
+	vcmp.f32 vfp_ratio_radian, #0
+	vmrs apsr_nzcv, fpscr
+	beq fb32_draw_circle_loop
+
+	/* vfp_ratio_radian Process More */
+
+	fb32_draw_circle_loop:
+		/* Pythagorean theorem C^2 = A^2 + B^2  */
+		vmul.f32 vfp_cal_c, vfp_radian, vfp_radian          @ C^2, Hypotenuse
+		vmul.f32 vfp_cal_b, vfp_tri_height, vfp_tri_height  @ B^2, Leg, (Height)
+		vsub.f32 vfp_cal_a, vfp_cal_c, vfp_cal_b            @ A^2, Leg, (Width)
+		vsqrt.f32 vfp_cal_a, vfp_cal_a                      @ A
+		
+		vsub.f32 vfp_cal_b, vfp_x_start, vfp_cal_a          @ X Current Coordinate
+		vadd.f32 vfp_cal_c, vfp_x_start, vfp_cal_a          @ X End Point
+		vsub.f32 vfp_cal_a, vfp_cal_c, vfp_cal_b            @ Character Width
+		vcmp.f32 vfp_cal_a, #0
+		vmoveq vfp_cal_a, #1.0
+		vcvtr.s32.f32 vfp_cal_ab, vfp_cal_ab
+
+		vmov char_width, vfp_cal_a
+		vmov x_current, vfp_cal_b
+
+		cmp x_current, #0
+		bge fb32_draw_circle_loop_jump
+
+		adds char_width, char_width, x_current              @ X Current is Minus Singed, Same as `SUBLTS`
+		ble fb32_draw_circle_loop_common
+		movgt x_current, #0
+
+		fb32_draw_circle_loop_jump:
+
+			cmp y_current, #0
+			blt fb32_draw_circle_loop_common
+			cmp x_current, width
+			bge fb32_draw_circle_loop_common
+			cmp y_current, height
+			bge fb32_draw_circle_loop_common
+
+			push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
+			mov r1, x_current
+			mov r2, y_current
+			mov r3, char_width
+			push {char_height} 
+			bl fb32_clear_color_block
+			add sp, sp, #4
+			push {r1}
+			add sp, sp, #4
+			cmp r0, #0                                          @ Compare Return 0 or 1
+			pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
+			bne fb32_draw_circle_error
+
+			fb32_draw_circle_loop_common:
+
+				cmp y_current,  y_max                               @ Already, y_max Has Been Minus One Before Loop
+				bge fb32_draw_circle_success
+
+				add y_current, y_current, #1
+
+				vsub.f32 vfp_tri_height, vfp_tri_height, vfp_one
+
+				/* vfp_radian Process Here */
+
+				b fb32_draw_circle_loop
+
+	fb32_draw_circle_error:
+		mov r0, #1
+		b fb32_draw_circle_common
+
+	fb32_draw_circle_success:
+		mov r0, #0
+
+	fb32_draw_circle_common:
+		vpop {s0-s11}
+		lsl x_current, x_current, #16
+		add r1, x_current, y_current
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq color
+.unreq x_coord
+.unreq y_coord
+.unreq x_radian
+.unreq y_radian
+.unreq char_width
+.unreq char_height
+.unreq x_current
+.unreq y_current
+.unreq y_max
+.unreq width
+.unreq height
+.unreq vfp_xy_coord
+.unreq vfp_y_coord
+.unreq vfp_x_coord
+.unreq vfp_xy_radian
+.unreq vfp_y_radian
+.unreq vfp_x_radian
+.unreq vfp_cal_ab
+.unreq vfp_cal_a
+.unreq vfp_cal_b
+.unreq vfp_cal_c
+.unreq vfp_x_start
+.unreq vfp_ratio_radian
+.unreq vfp_radian
+.unreq vfp_tri_height
+.unreq vfp_one
+
+
+/**
  * function fb32_draw_line
  * Draw Line
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
@@ -65,8 +256,8 @@ fb32_rgba_to_argb:
  * r6: Point Height in Pixels, Origin is Upper Left Corner
  *
  * Usage: r0-r11
- * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Number of Points Which Were Not Drawn
+ * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
  * Global Enviromental Variable(s): FB32_WIDTH, FB32_HEIGHT
  */
 .globl fb32_draw_line
@@ -205,27 +396,28 @@ fb32_draw_line:
 		bne fb32_draw_line_error
 
 		fb32_draw_line_loop_common:
+			add i, i, #1
+			cmp i, x_diff
+			bgt fb32_draw_line_success
+			moveq char_height, dup_char_height            @ To hide Height Overflow on End Point (Except Original char_height)
 
 			add x_current, x_current, x_direction
 
-			add i, i, #1
 			vadd.f32 vfp_i, vfp_i, vfp_one
-
-			cmp i, x_diff
-			bgt fb32_draw_line_common
-			moveq char_height, dup_char_height            @ To hide Height Overflow on End Point (Except Original char_height)
-
 			vmov vfp_y_current, vfp_y_start
 			vmla.f32 vfp_y_current, vfp_y_per_x, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
 			vcvtr.s32.f32 vfp_y_current, vfp_y_current    @ In VFP Instructions, You Can Convert with Rounding Mode
+
 			vmov y_current, vfp_y_current
 
 			b fb32_draw_line_loop
 
 	fb32_draw_line_error:
-		sub i, i, #1                                  @ Adjust for Not Completed Point
-		sub x_diff, x_diff, i
-		mov r0, x_diff
+		mov r0, #1
+		b fb32_draw_line_common
+
+	fb32_draw_line_success:
+		mov r0, #0
 
 	fb32_draw_line_common:
 		vpop {s0-s11}
@@ -1138,7 +1330,7 @@ fb32_mail_blankoff:
 fb32_mail_blankoff_end:
 .balign 16
 
-fb32_mail_getedid:                   @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
+fb32_mail_getedid:          @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
 	.word fb32_mail_getedid_end - fb32_mail_getedid @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00030020        @ Tag Identifier, get EDID
@@ -1146,7 +1338,7 @@ fb32_mail_getedid:                   @ get EDID (Extended Display Identification
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 	.word 0x00000000        @ EDID Block Number Requested/ Responded
 	.word 0x00000000        @ Status
-.fill 128, 1, 0x00              @ 128 * 1 byte EDID Block
+.fill 128, 1, 0x00          @ 128 * 1 byte EDID Block
 .balign 4
 	.word 0x00000000        @ End Tag
 fb32_mail_getedid_end:
@@ -1158,4 +1350,7 @@ fb32_mail_blankon_addr:
 	.word fb32_mail_blankon      @ Address of fb32_mail_blankon
 fb32_mail_blankoff_addr:
 	.word fb32_mail_blankoff     @ Address of fb32_mail_blankoff
+fb32_mail_getedid_addr:
+	.word fb32_mail_getedid      @ Address of fb32_mail_getedid
 .balign 4
+
