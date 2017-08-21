@@ -96,7 +96,7 @@ void _user_start()
 
 	fb32_draw_line( COLOR32_BLUE, 0, 400, 400, 400, 20, 20 );
 
-	fb32_draw_circle( COLOR32_LIME, 300, 300, 100, 200 );
+	fb32_draw_circle( COLOR32_LIME, 300, 300, 150, 200 );
 
 	system32_sleep( 9000000 );
 

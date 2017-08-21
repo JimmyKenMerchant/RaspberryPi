@@ -95,7 +95,7 @@ fb32_draw_circle:
 	vfp_cal_b        .req s5
 	vfp_cal_c        .req s6
 	vfp_x_start      .req s7
-	vfp_ratio_radian .req s8
+	vfp_diff_radian  .req s8
 	vfp_radian       .req s9
 	vfp_tri_height   .req s10
 	vfp_one          .req s11
@@ -123,6 +123,9 @@ fb32_draw_circle:
 	vcvt.f32.s32 vfp_xy_coord, vfp_xy_coord           @ *NEON*Convert Signed Integer to Single Precision Floating Point
 	vcvt.f32.u32  vfp_xy_radian, vfp_xy_radian        @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
 
+	.unreq y_coord
+	x_diff .req r2
+
 	vmov vfp_x_start, vfp_x_coord
 
 	vmov vfp_radian, vfp_y_radian
@@ -130,13 +133,15 @@ fb32_draw_circle:
 
 	vmov vfp_one, #1.0                                @ Floating Point Constant (Immediate)
 
-	vsub.f32 vfp_cal_a, vfp_x_radian, vfp_y_radian
-	vdiv.f32 vfp_ratio_radian, vfp_cal_a, vfp_y_radian
-	vcmp.f32 vfp_ratio_radian, #0
-	vmrs apsr_nzcv, fpscr
+	cmp x_radian, y_radian
 	beq fb32_draw_circle_loop
 
-	/* vfp_ratio_radian Process More */
+	vsub.f32 vfp_diff_radian, vfp_y_radian, vfp_x_radian
+
+	/**
+	 * The difference of Ellipse's radian seems Like a parabola, so It can make an approximation formula by X = Y^2. It show as a line on X axis.
+	 * Besides, the difference of position in Free Fall of Physics show as a line on Y axis, and its proportion show as Y = X^2
+	 */
 
 	fb32_draw_circle_loop:
 		/* Pythagorean theorem C^2 = A^2 + B^2  */
@@ -146,14 +151,15 @@ fb32_draw_circle:
 		vsqrt.f32 vfp_cal_a, vfp_cal_a                      @ A
 		
 		vsub.f32 vfp_cal_b, vfp_x_start, vfp_cal_a          @ X Current Coordinate
-		vadd.f32 vfp_cal_c, vfp_x_start, vfp_cal_a          @ X End Point
-		vsub.f32 vfp_cal_a, vfp_cal_c, vfp_cal_b            @ Character Width
-		vcmp.f32 vfp_cal_a, #0
-		vmoveq vfp_cal_a, #1.0
-		vcvtr.s32.f32 vfp_cal_ab, vfp_cal_ab
+		vcvtr.s32.f32 vfp_cal_b, vfp_cal_b
 
-		vmov char_width, vfp_cal_a
 		vmov x_current, vfp_cal_b
+
+		sub x_diff, x_coord, x_current
+		lsl char_width, x_diff, #1                          @ Substitute of Multiplication by 2
+
+		cmp char_width, #0
+		moveq char_width, #1
 
 		cmp x_current, #0
 		bge fb32_draw_circle_loop_jump
@@ -193,9 +199,21 @@ fb32_draw_circle:
 
 				vsub.f32 vfp_tri_height, vfp_tri_height, vfp_one
 
-				/* vfp_radian Process Here */
+				cmp x_radian, y_radian
+				beq fb32_draw_circle_loop_common_jump
 
-				b fb32_draw_circle_loop
+				/* Add Difference to vfp_x_radian in Case of Ellipse */
+
+				vmov vfp_cal_a, vfp_tri_height
+				vabs.f32 vfp_cal_a, vfp_cal_a
+				vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radian                @ Compress Range Within 0.0-1.0
+				vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ Two Power
+				vmul.f32 vfp_cal_a, vfp_diff_radian, vfp_cal_a
+				vadd.f32 vfp_radian, vfp_x_radian, vfp_cal_a
+
+				fb32_draw_circle_loop_common_jump:
+
+					b fb32_draw_circle_loop
 
 	fb32_draw_circle_error:
 		mov r0, #1
@@ -214,7 +232,7 @@ fb32_draw_circle:
 
 .unreq color
 .unreq x_coord
-.unreq y_coord
+.unreq x_diff
 .unreq x_radian
 .unreq y_radian
 .unreq char_width
@@ -235,7 +253,7 @@ fb32_draw_circle:
 .unreq vfp_cal_b
 .unreq vfp_cal_c
 .unreq vfp_x_start
-.unreq vfp_ratio_radian
+.unreq vfp_diff_radian
 .unreq vfp_radian
 .unreq vfp_tri_height
 .unreq vfp_one
