@@ -62,10 +62,9 @@ fb32_rgba_to_argb:
  * r3: X Radian
  * r4: Y Radian
  *
- * Usage: r0-r11
+ * Usage: r0-r9
  * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
- * Global Enviromental Variable(s): FB32_WIDTH, FB32_HEIGHT
  */
 .globl fb32_draw_circle
 fb32_draw_circle:
@@ -80,8 +79,6 @@ fb32_draw_circle:
 	x_current        .req r7
 	y_current        .req r8
 	y_max            .req r9
-	width            .req r10
-	height           .req r11
 
 	/* VFP/NEON Registers */
 	vfp_xy_coord     .req d0 @ q0[0]
@@ -100,12 +97,12 @@ fb32_draw_circle:
 	vfp_tri_height   .req s10
 	vfp_one          .req s11
 
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r9}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #32                                   @ r4-r11 offset 32 bytes
+	add sp, sp, #24                                   @ r4-r9 offset 24 bytes
 	pop {y_radian}                                    @ Get Fifth
-	sub sp, sp, #36                                   @ Retrieve SP
+	sub sp, sp, #28                                   @ Retrieve SP
 
 	vpush {s0-s11}
 
@@ -114,9 +111,6 @@ fb32_draw_circle:
 
 	add y_max, y_coord, y_radian                      @ As Counter
 	sub y_max, y_max, #1                              @ Have Minus One
-
-	ldr width, FB32_WIDTH
-	ldr height, FB32_HEIGHT
 
 	vmov vfp_xy_coord, y_coord, x_coord               @ Lower Bits from y_coord, Upper Bits x_coord, q0[0]
 	vmov vfp_xy_radian, y_radian, x_radian            @ Lower Bits from y_radian, Upper Bits x_radian, q0[1]
@@ -161,59 +155,41 @@ fb32_draw_circle:
 		cmp char_width, #0
 		moveq char_width, #1
 
-		cmp x_current, #0
-		bge fb32_draw_circle_loop_jump
+		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
+		mov r1, x_current
+		mov r2, y_current
+		mov r3, char_width
+		push {char_height} 
+		bl fb32_clear_color_block
+		add sp, sp, #4
+		push {r1}
+		add sp, sp, #4
+		cmp r0, #0                                          @ Compare Return 0 or 1
+		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
+		bne fb32_draw_circle_error
 
-		adds char_width, char_width, x_current              @ X Current is Minus Singed, Same as `SUBLTS`
-		ble fb32_draw_circle_loop_common
-		movgt x_current, #0
+		cmp y_current,  y_max                               @ Already, y_max Has Been Minus One Before Loop
+		bge fb32_draw_circle_success
+
+		add y_current, y_current, #1
+
+		vsub.f32 vfp_tri_height, vfp_tri_height, vfp_one
+
+		cmp x_radian, y_radian
+		beq fb32_draw_circle_loop_jump
+
+		/* Add Difference to vfp_x_radian in Case of Ellipse */
+
+		vmov vfp_cal_a, vfp_tri_height
+		vabs.f32 vfp_cal_a, vfp_cal_a
+		vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radian                @ Compress Range Within 0.0-1.0
+		vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ Two Power
+		vmul.f32 vfp_cal_a, vfp_diff_radian, vfp_cal_a
+		vadd.f32 vfp_radian, vfp_x_radian, vfp_cal_a
 
 		fb32_draw_circle_loop_jump:
 
-			cmp y_current, #0
-			blt fb32_draw_circle_loop_common
-			cmp x_current, width
-			bge fb32_draw_circle_loop_common
-			cmp y_current, height
-			bge fb32_draw_circle_loop_common
-
-			push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
-			mov r1, x_current
-			mov r2, y_current
-			mov r3, char_width
-			push {char_height} 
-			bl fb32_clear_color_block
-			add sp, sp, #4
-			push {r1}
-			add sp, sp, #4
-			cmp r0, #0                                          @ Compare Return 0 or 1
-			pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
-			bne fb32_draw_circle_error
-
-			fb32_draw_circle_loop_common:
-
-				cmp y_current,  y_max                               @ Already, y_max Has Been Minus One Before Loop
-				bge fb32_draw_circle_success
-
-				add y_current, y_current, #1
-
-				vsub.f32 vfp_tri_height, vfp_tri_height, vfp_one
-
-				cmp x_radian, y_radian
-				beq fb32_draw_circle_loop_common_jump
-
-				/* Add Difference to vfp_x_radian in Case of Ellipse */
-
-				vmov vfp_cal_a, vfp_tri_height
-				vabs.f32 vfp_cal_a, vfp_cal_a
-				vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radian                @ Compress Range Within 0.0-1.0
-				vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ Two Power
-				vmul.f32 vfp_cal_a, vfp_diff_radian, vfp_cal_a
-				vadd.f32 vfp_radian, vfp_x_radian, vfp_cal_a
-
-				fb32_draw_circle_loop_common_jump:
-
-					b fb32_draw_circle_loop
+			b fb32_draw_circle_loop
 
 	fb32_draw_circle_error:
 		mov r0, #1
@@ -226,7 +202,7 @@ fb32_draw_circle:
 		vpop {s0-s11}
 		lsl x_current, x_current, #16
 		add r1, x_current, y_current
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r9}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
@@ -240,8 +216,6 @@ fb32_draw_circle:
 .unreq x_current
 .unreq y_current
 .unreq y_max
-.unreq width
-.unreq height
 .unreq vfp_xy_coord
 .unreq vfp_y_coord
 .unreq vfp_x_coord
@@ -276,7 +250,6 @@ fb32_draw_circle:
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
- * Global Enviromental Variable(s): FB32_WIDTH, FB32_HEIGHT
  */
 .globl fb32_draw_line
 fb32_draw_line:
@@ -376,29 +349,14 @@ fb32_draw_line:
 		vmov char_height, vfp_char_height
 
 		.unreq x_coord_1
-		.unreq y_coord_1
-		.unreq x_coord_2
 		i      .req r1
-		width  .req r2
-		height .req r3
 
 		mov i, #0
 		vmov vfp_i, i
 		vcvt.f32.s32 vfp_i, vfp_i
 		vmov vfp_one, #1.0                             @ Floating Point Constant (Immediate)
 
-		ldr width, FB32_WIDTH
-		ldr height, FB32_HEIGHT
-
 	fb32_draw_line_loop:
-		cmp x_current, #0
-		blt fb32_draw_line_loop_common
-		cmp y_current, #0
-		blt fb32_draw_line_loop_common
-		cmp x_current, width
-		bge fb32_draw_line_loop_common
-		cmp y_current, height
-		bge fb32_draw_line_loop_common
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
@@ -447,8 +405,8 @@ fb32_draw_line:
 
 .unreq color
 .unreq i
-.unreq width
-.unreq height
+.unreq y_coord_1
+.unreq x_coord_2
 .unreq y_coord_2
 .unreq char_width
 .unreq char_height

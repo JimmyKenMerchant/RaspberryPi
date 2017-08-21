@@ -98,6 +98,8 @@ void _user_start()
 
 	fb32_draw_circle( COLOR32_LIME, 300, 300, 150, 200 );
 
+	fb32_draw_circle( COLOR32_BLUE, -100, 400, 200, 150 );
+
 	system32_sleep( 9000000 );
 
 	//int32* temp; // No Content
