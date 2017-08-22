@@ -211,7 +211,6 @@ void _user_start();
 
 
 extern uint32* SYSTEM32_HEAP;
-extern uint32* SYSTEM32_RENDER_BUFFER;
 
 /**
  * Convert Endianness
@@ -247,6 +246,22 @@ extern char8 system32_load_8( char8* address );
 /********************************
  * system32/fb32.s
  ********************************/
+
+extern uint32* FB32_FRAMEBUFFER;
+extern uint32 FB32_FRAMEBUFFER_WIDTH;
+extern uint32 FB32_FRAMEBUFFER_HEIGHT;
+extern uint32* FB32_RENDERBUFFER0;
+extern uint32 FB32_RENDERBUFFER0_WIDTH;
+extern uint32 FB32_RENDERBUFFER0_HEIGHT;
+extern uint32* FB32_RENDERBUFFER1;
+extern uint32 FB32_RENDERBUFFER1_WIDTH;
+extern uint32 FB32_RENDERBUFFER1_HEIGHT;
+extern uint32* FB32_RENDERBUFFER2;
+extern uint32 FB32_RENDERBUFFER2_WIDTH;
+extern uint32 FB32_RENDERBUFFER2_HEIGHT;
+extern uint32* FB32_RENDERBUFFER3;
+extern uint32 FB32_RENDERBUFFER3_WIDTH;
+extern uint32 FB32_RENDERBUFFER3_HEIGHT;
 
 extern uint32 FB32_ADDRESS;
 extern uint32 FB32_DISPLAY_WIDTH;

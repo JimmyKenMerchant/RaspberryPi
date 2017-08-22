@@ -23,7 +23,6 @@ SECTIONS {
 		/* Add size, 16,777,216 bytes to the end of .vector */
 		. += 0x1000000;
 	}
-
 	.text : {
 		*(.text)
 	}

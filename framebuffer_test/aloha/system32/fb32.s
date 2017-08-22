@@ -7,7 +7,6 @@
  *
  */
 
-
 /**
  * function fb32_rgba_to_argb
  * Convert 32-bit Depth Color RBGA to ARGB
@@ -1199,6 +1198,14 @@ fb32_get:
 	and memorymap_base, memorymap_base, #equ32_fb_armmask            @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
 
+	str memorymap_base, FB32_FRAMEBUFFER
+
+	ldr memorymap_base, FB32_WIDTH
+	str memorymap_base, FB32_FRAMEBUFFER_WIDTH
+
+	ldr memorymap_base, FB32_HEIGHT
+	str memorymap_base, FB32_FRAMEBUFFER_HEIGHT
+
 	mov r0, #0                               @ Return with Success
 
 	b fb32_get_common
@@ -1211,6 +1218,44 @@ fb32_get:
 
 .unreq memorymap_base
 .unreq temp
+
+
+/* Buffers */
+
+.globl FB32_FRAMEBUFFER
+.globl FB32_FRAMEBUFFER_WIDTH
+.globl FB32_FRAMEBUFFER_HEIGHT
+FB32_FRAMEBUFFER:        .word 0x00
+FB32_FRAMEBUFFER_WIDTH:  .word 0x00
+FB32_FRAMEBUFFER_HEIGHT: .word 0x00
+
+.globl FB32_RENDERBUFFER0
+.globl FB32_RENDERBUFFER0_WIDTH
+.globl FB32_RENDERBUFFER0_HEIGHT
+FB32_RENDERBUFFER0:        .word _SYSTEM32_FB32_RENDERBUFFER0
+FB32_RENDERBUFFER0_WIDTH:  .word 0x00
+FB32_RENDERBUFFER0_HEIGHT: .word 0x00
+
+.globl FB32_RENDERBUFFER1
+.globl FB32_RENDERBUFFER1_WIDTH
+.globl FB32_RENDERBUFFER1_HEIGHT
+FB32_RENDERBUFFER1:        .word _SYSTEM32_FB32_RENDERBUFFER1
+FB32_RENDERBUFFER1_WIDTH:  .word 0x00
+FB32_RENDERBUFFER1_HEIGHT: .word 0x00
+
+.globl FB32_RENDERBUFFER2
+.globl FB32_RENDERBUFFER2_WIDTH
+.globl FB32_RENDERBUFFER2_HEIGHT
+FB32_RENDERBUFFER2:        .word _SYSTEM32_FB32_RENDERBUFFER2
+FB32_RENDERBUFFER2_WIDTH:  .word 0x00
+FB32_RENDERBUFFER2_HEIGHT: .word 0x00
+
+.globl FB32_RENDERBUFFER3
+.globl FB32_RENDERBUFFER3_WIDTH
+.globl FB32_RENDERBUFFER3_HEIGHT
+FB32_RENDERBUFFER3:        .word _SYSTEM32_FB32_RENDERBUFFER3
+FB32_RENDERBUFFER3_WIDTH:  .word 0x00
+FB32_RENDERBUFFER3_HEIGHT: .word 0x00
 
 
 /* Indicates Caret Position to Use in Printing Characters */

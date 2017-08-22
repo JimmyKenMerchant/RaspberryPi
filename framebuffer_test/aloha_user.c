@@ -98,7 +98,7 @@ void _user_start()
 
 	fb32_draw_circle( COLOR32_LIME, 300, 300, 150, 200 );
 
-	fb32_draw_circle( COLOR32_BLUE, -100, 400, 200, 150 );
+	fb32_draw_circle( COLOR32_GREEN, -100, 500, 200, 175 );
 
 	system32_sleep( 9000000 );
 
@@ -109,10 +109,10 @@ void _user_start()
 	
 	while(1) {
 
-		fb32_copy( SYSTEM32_RENDER_BUFFER );
+		fb32_copy( FB32_RENDERBUFFER0 );
 		color_move++;
 		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER );
-		fb32_draw_image( SYSTEM32_RENDER_BUFFER, 0, 0, FB32_WIDTH, FB32_HEIGHT, 0, 10, 10, 0 );
+		fb32_draw_image( FB32_RENDERBUFFER0, 0, 0, FB32_WIDTH, FB32_HEIGHT, 0, 10, 10, 0 );
 		system32_sleep( 2000000 );
 	}
 }
