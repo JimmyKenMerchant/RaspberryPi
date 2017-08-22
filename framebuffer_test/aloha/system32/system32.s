@@ -12,29 +12,6 @@
 .include "system32/equ32.s"
 
 /**
- * These Asm Files includes Enviromental Variables.
- * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
- * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
- * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
- * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
- * These are useful if you use `extern` in C lang file.
- */
-.balign 4
-.include "system32/fb32.s"
-.balign 4
-/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
-.include "system32/print32.s"
-.balign 4
-.include "system32/math32.s"
-.balign 4
-.include "system32/font_mono_12px.s"
-.balign 4
-.include "system32/color.s"
-.balign 4
-.include "system32/data.s"
-.balign 4
-
-/**
  * Variables
  */
 .globl SYSTEM32_SYSTEMTIMER_BASE
@@ -482,6 +459,29 @@ system32_load_8:
 
 .globl SYSTEM32_HEAP
 SYSTEM32_HEAP: .word _SYSTEM32_HEAP
+
+/**
+ * These Asm Files includes Enviromental Variables.
+ * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
+ * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
+ * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
+ * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
+ * These are useful if you use `extern` in C lang file.
+ */
+.balign 4
+.include "system32/fb32.s"
+.balign 4
+/* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
+.include "system32/print32.s"
+.balign 4
+.include "system32/math32.s"
+.balign 4
+.include "system32/font_mono_12px.s"
+.balign 4
+.include "system32/color.s"
+.balign 4
+.include "system32/data.s"
+.balign 4
 
 .section .bss
 

@@ -7,6 +7,221 @@
  *
  */
 
+
+/**
+ * function fb32_mask_image
+ * Make Masked Image to Mask
+ * Caution! This Function is Used in 32-bit Depth Color
+ *
+ * Parameters
+ * r0: Pointer of Buffer based of Mask
+ * r1: Pointer of Buffer of Mask
+ * r2: X Coordinate of Mask
+ * r3: Y Coordinate of Mask
+ *
+ * Usage: r0-r11
+ * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Mask)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ */
+.globl fb32_mask_image
+fb32_mask_image:
+	/* Auto (Local) Variables, but just aliases */
+	buffer_base .req r0  @ Parameter, Register for Argument, Scratch Register
+	buffer_mask .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord     .req r2  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r3  @ Parameter, Register for Argument, Scratch Register
+	base_addr   .req r4  @ Pointer of Base
+	width       .req r5
+	depth       .req r6
+	size        .req r7
+	mask_addr   .req r8  @ Pointer of Mask
+	mask_width  .req r9
+	mask_height .req r10
+	j           .req r11  @ Use for Horizontal Counter
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	ldr base_addr, [buffer_base]
+	cmp base_addr, #0
+	beq fb32_mask_image_error2
+
+	ldr width, [buffer_base, #4]
+	cmp width, #0
+	beq fb32_mask_image_error2
+
+	ldr depth, [buffer_base, #16]
+	cmp depth, #32
+	bne fb32_mask_image_error2
+	ldr depth, [buffer_mask, #16]
+	cmp depth, #32
+	bne fb32_mask_image_error2
+
+	ldr size, [buffer_base, #12]
+	cmp size, #0
+	beq fb32_mask_image_error2
+	add size, base_addr, size
+
+	sub size, size, #4                             @ Maximum of Buffer Address (Offset - 4 bytes)
+	lsl width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+
+	ldr mask_addr, [buffer_mask]
+	cmp mask_addr, #0
+	beq fb32_mask_image_error2
+
+	ldr mask_width, [buffer_mask, #4]
+	cmp mask_width, #0
+	beq fb32_mask_image_error2
+
+	ldr mask_height, [buffer_mask, #8]
+	cmp mask_width, #0
+	beq fb32_mask_image_error2
+
+	/* Set Location of Mask */
+
+	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
+	addlt mask_height, mask_height, y_coord          @ Subtract y_coord Value from char_height
+	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	addge base_addr, base_addr, y_coord
+
+	.unreq y_coord
+	width_check .req r3                              @ Store the Limitation of Width on this Y Coordinate
+
+	mov width_check, base_addr
+	add width_check, width
+
+	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
+	addlt mask_width, mask_width, x_coord            @ Subtract x_coord Value from char_width
+	blt fb32_mask_image_loop
+
+	lsl x_coord, x_coord, #2                         @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	add base_addr, base_addr, x_coord                @ Horizontal Offset Bytes
+
+	.unreq x_coord
+	color .req r2
+
+	fb32_mask_image_loop:
+		cmp base_addr, size                          @ Check Overflow of Buffer Memory
+		bgt fb32_mask_image_error1
+
+		cmp mask_height, #0                          @ Vertical Counter `(; mask_height > 0; mask_height--)`
+		movle r0, #0                                 @ Return with Success
+		ble fb32_mask_image_common
+
+		mov j, mask_width                            @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
+
+		fb32_mask_image_loop_horizontal:
+			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
+			cmp j, #0                                @ Horizontal Counter, Check
+			blt fb32_mask_image_loop_common
+
+			/* Mask Process */
+			ldr color, [mask_addr]
+			cmp color, #0
+			beq fb32_mask_image_loop_horizontal_common @ If All Zero (Fully Transparent Black), Do Nothing
+
+			ldr color, [base_addr]                      @ Get Color of Base
+			str color, [mask_addr]                      @ Store Color of Base to Mask
+
+			fb32_mask_image_loop_horizontal_common:
+				add base_addr, base_addr, #4           @ Buffer Address Shift
+				add mask_addr, mask_addr, #4           @ Buffer Address Shift
+
+				cmp base_addr, width_check             @ Check Overflow of Width
+				blt fb32_mask_image_loop_horizontal
+
+				lsl j, j, #2                           @ substitution of Multiplication by 4
+				add base_addr, base_addr, j            @ Framebuffer Offset
+				add mask_addr, mask_addr, j
+
+		fb32_mask_image_loop_common:
+			sub mask_height, mask_height, #1
+
+			lsl j, mask_width, #2                      @ substitution of Multiplication by 4
+			sub base_addr, base_addr, j                @ Offset Clear of Framebuffer
+
+			add base_addr, base_addr, width            @ Horizontal Sync (Framebuffer)
+
+			add width_check, width_check, width        @ Store the Limitation of Width on the Next Y Coordinate
+
+			b fb32_mask_image_loop
+
+	fb32_mask_image_error1:
+		mov r0, #1                                   @ Return with Error 1
+		b fb32_mask_image_common
+
+	fb32_mask_image_error2:
+		mov r0, #2                                   @ Return with Error 2
+
+	fb32_mask_image_common:
+		mov r1, mask_addr
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq buffer_base
+.unreq buffer_mask
+.unreq color
+.unreq width_check
+.unreq base_addr
+.unreq width
+.unreq depth
+.unreq size
+.unreq mask_addr
+.unreq mask_width
+.unreq mask_height
+.unreq j
+
+
+/**
+ * function fb32_change_alpha_argb
+ * Change Value of Alpha Channel in ARGB Data
+ * Caution! This Function is Used in 32-bit Depth Color
+ *
+ * Parameters
+ * r0: Pointer of Data to Change Value of Alpha
+ * r1: Size of Data 
+ * r2: Value of Alpha, 0-7 bits
+ *
+ * Usage: r0-r3
+ * Return: r0 (0 as sucess)
+ */
+.globl fb32_change_alpha_argb
+fb32_change_alpha_argb:
+	/* Auto (Local) Variables, but just aliases */
+	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	value_alpha     .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	swap            .req r3
+
+	add size, size, data_point
+	lsl value_alpha, value_alpha, #24
+
+	fb32_change_alpha_argb_loop:
+		cmp data_point, size
+		bge fb32_change_alpha_argb_success
+
+		ldr swap, [data_point]
+		bic swap, swap, #0xFF000000
+		add swap, swap, value_alpha
+		str swap, [data_point]
+		add data_point, data_point, #4
+
+		b fb32_change_alpha_argb_loop
+
+	fb32_change_alpha_argb_success:
+		mov r0, #0
+
+	fb32_change_alpha_argb_common:
+		mov pc, lr
+
+.unreq data_point
+.unreq size
+.unreq value_alpha
+.unreq swap
+
+
 /**
  * function fb32_rgba_to_argb
  * Convert 32-bit Depth Color RBGA to ARGB
@@ -433,38 +648,59 @@ fb32_draw_line:
 
 /**
  * function fb32_copy
- * Copy Framebuffer to Renderbuffer
+ * Copy Buffer to Buffer
  *
  * Parameters
- * r0: Pointer of Renderbuffer
+ * r0: Pointer of Buffer IN
+ * r1: Pointer of Buffer OUT
  *
- * Usage: r0-r5
+ * Usage: r0-r9
  * Return: r0 (0 as sucess, 1 as error)
- * Error(1): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB32_ADDRESS, FB32_SIZE, FB32_DEPTH
+ * Error(1): Buffer In is not Defined
  */
 .globl fb32_copy
 fb32_copy:
-	render_buffer     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	fb_buffer         .req r1
-	size              .req r2
-	depth             .req r3
-	length            .req r4
-	color             .req r5
+	buffer_in         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	buffer_out        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	buffer_in_addr    .req r2
+	buffer_out_addr   .req r3
+	width             .req r4
+	height            .req r5
+	size              .req r6
+	depth             .req r7
+	length            .req r8
+	color             .req r9
 
-	push {r4-r5}
+	push {r4-r9}
 
-	ldr fb_buffer, FB32_ADDRESS
-	cmp fb_buffer, #0
+	ldr buffer_in_addr, [buffer_in]
+	cmp buffer_in_addr, #0
 	beq fb32_copy_error
 
-	ldr size, FB32_SIZE
+	ldr width, [buffer_in, #4]
+	cmp width, #0
+	beq fb32_copy_error
+
+	ldr height, [buffer_in, #8]
+	cmp height, #0
+	beq fb32_copy_error
+
+	ldr size, [buffer_in, #12]
 	cmp size, #0
 	beq fb32_copy_error
 
-	ldr depth, FB32_DEPTH
+	ldr depth, [buffer_in, #16]
 	cmp depth, #0
 	beq fb32_copy_error
+
+	ldr buffer_out_addr, [buffer_out]
+	cmp buffer_out_addr, #0
+	beq fb32_copy_error
+
+	str width, [buffer_out, #4]
+	str height, [buffer_out, #8]
+	str size, [buffer_out, #12]
+	str depth, [buffer_out, #16]
 
 	cmp depth, #16
 	moveq length, #2
@@ -473,13 +709,13 @@ fb32_copy:
 
 	fb32_copy_loop:
 		cmp depth, #16
-		ldreqh color, [fb_buffer]                @ Store half word
-		streqh color, [render_buffer]            @ Store half word
+		ldreqh color, [buffer_in_addr]        @ Store half word
+		streqh color, [buffer_out_addr]       @ Store half word
 		cmp depth, #32
-		ldreq color, [fb_buffer]                 @ Store word
-		streq color, [render_buffer]             @ Store word
-		add fb_buffer, fb_buffer, length
-		add render_buffer, render_buffer, length
+		ldreq color, [buffer_in_addr]         @ Store word
+		streq color, [buffer_out_addr]        @ Store word
+		add buffer_in_addr, buffer_in_addr, length
+		add buffer_out_addr, buffer_out_addr, length
 		sub size, size, length
 		cmp size, #0
 		bgt fb32_copy_loop
@@ -491,11 +727,15 @@ fb32_copy:
 		mov r0, #1                               @ Return with Error
 
 	fb32_copy_common:
-		pop {r4-r5}
+		pop {r4-r9}
 		mov pc, lr
 
-.unreq render_buffer
-.unreq fb_buffer
+.unreq buffer_in
+.unreq buffer_out
+.unreq buffer_in_addr
+.unreq buffer_out_addr
+.unreq width
+.unreq height
 .unreq size
 .unreq depth
 .unreq length
@@ -1162,6 +1402,72 @@ fb32_clear_color:
 
 
 /**
+ * function fb32_attach_buffer
+ * Attach Buffer to Draw on It
+ *
+ * Parameters
+ * r0: Pointer of Buffer to Attach
+ *
+ * Usage: r0-r5
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error(1): Buffer In is not Defined
+ */
+.globl fb32_attach_buffer
+fb32_attach_buffer:
+	buffer            .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	buffer_addr       .req r1
+	width             .req r2
+	height            .req r3
+	size              .req r4
+	depth             .req r5
+
+	push {r4,r5}
+
+	ldr buffer_addr, [buffer]
+	cmp buffer_addr, #0
+	beq fb32_attach_buffer_error
+
+	ldr width, [buffer, #4]
+	cmp width, #0
+	beq fb32_attach_buffer_error
+
+	ldr height, [buffer, #8]
+	cmp height, #0
+	beq fb32_attach_buffer_error
+
+	ldr size, [buffer, #12]
+	cmp size, #0
+	beq fb32_attach_buffer_error
+
+	ldr depth, [buffer, #16]
+	cmp depth, #0
+	beq fb32_attach_buffer_error
+
+	str buffer_addr, FB32_ADDRESS
+	str width, FB32_WIDTH
+	str height, FB32_HEIGHT
+	str size, FB32_SIZE
+	str depth, FB32_DEPTH
+
+	mov r0, #0                               @ Return with Success
+	b fb32_attach_buffer_common
+
+	fb32_attach_buffer_error:
+		mov r0, #1                       @ Return with Error
+
+	fb32_attach_buffer_common:
+		pop {r4, r5}
+		mov pc, lr
+
+.unreq buffer
+.unreq buffer_addr
+.unreq width
+.unreq height
+.unreq size
+.unreq depth
+
+
+/**
  * function fb32_get
  * Get Framebuffer
  *
@@ -1198,13 +1504,19 @@ fb32_get:
 	and memorymap_base, memorymap_base, #equ32_fb_armmask            @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
 
-	str memorymap_base, FB32_FRAMEBUFFER
+	str memorymap_base, FB32_FRAMEBUFFER_ADDR
 
 	ldr memorymap_base, FB32_WIDTH
 	str memorymap_base, FB32_FRAMEBUFFER_WIDTH
 
 	ldr memorymap_base, FB32_HEIGHT
 	str memorymap_base, FB32_FRAMEBUFFER_HEIGHT
+
+	ldr memorymap_base, FB32_SIZE
+	str memorymap_base, FB32_FRAMEBUFFER_SIZE
+
+	ldr memorymap_base, FB32_DEPTH
+	str memorymap_base, FB32_FRAMEBUFFER_DEPTH
 
 	mov r0, #0                               @ Return with Success
 
@@ -1223,39 +1535,44 @@ fb32_get:
 /* Buffers */
 
 .globl FB32_FRAMEBUFFER
-.globl FB32_FRAMEBUFFER_WIDTH
-.globl FB32_FRAMEBUFFER_HEIGHT
-FB32_FRAMEBUFFER:        .word 0x00
-FB32_FRAMEBUFFER_WIDTH:  .word 0x00
-FB32_FRAMEBUFFER_HEIGHT: .word 0x00
+FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
+FB32_FRAMEBUFFER_ADDR:     .word 0x00
+FB32_FRAMEBUFFER_WIDTH:    .word 0x00
+FB32_FRAMEBUFFER_HEIGHT:   .word 0x00
+FB32_FRAMEBUFFER_SIZE:     .word 0x00
+FB32_FRAMEBUFFER_DEPTH:    .word 0x00
 
 .globl FB32_RENDERBUFFER0
-.globl FB32_RENDERBUFFER0_WIDTH
-.globl FB32_RENDERBUFFER0_HEIGHT
-FB32_RENDERBUFFER0:        .word _SYSTEM32_FB32_RENDERBUFFER0
+FB32_RENDERBUFFER0:        .word FB32_RENDERBUFFER0_ADDR
+FB32_RENDERBUFFER0_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER0
 FB32_RENDERBUFFER0_WIDTH:  .word 0x00
 FB32_RENDERBUFFER0_HEIGHT: .word 0x00
+FB32_RENDERBUFFER0_SIZE:   .word 0x00
+FB32_RENDERBUFFER0_DEPTH:  .word 0x00
 
 .globl FB32_RENDERBUFFER1
-.globl FB32_RENDERBUFFER1_WIDTH
-.globl FB32_RENDERBUFFER1_HEIGHT
-FB32_RENDERBUFFER1:        .word _SYSTEM32_FB32_RENDERBUFFER1
+FB32_RENDERBUFFER1:        .word FB32_RENDERBUFFER1_ADDR
+FB32_RENDERBUFFER1_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER1
 FB32_RENDERBUFFER1_WIDTH:  .word 0x00
 FB32_RENDERBUFFER1_HEIGHT: .word 0x00
+FB32_RENDERBUFFER1_SIZE:   .word 0x00
+FB32_RENDERBUFFER1_DEPTH:  .word 0x00
 
 .globl FB32_RENDERBUFFER2
-.globl FB32_RENDERBUFFER2_WIDTH
-.globl FB32_RENDERBUFFER2_HEIGHT
-FB32_RENDERBUFFER2:        .word _SYSTEM32_FB32_RENDERBUFFER2
+FB32_RENDERBUFFER2:        .word FB32_RENDERBUFFER2_ADDR
+FB32_RENDERBUFFER2_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER2
 FB32_RENDERBUFFER2_WIDTH:  .word 0x00
 FB32_RENDERBUFFER2_HEIGHT: .word 0x00
+FB32_RENDERBUFFER2_SIZE:   .word 0x00
+FB32_RENDERBUFFER2_DEPTH:  .word 0x00
 
 .globl FB32_RENDERBUFFER3
-.globl FB32_RENDERBUFFER3_WIDTH
-.globl FB32_RENDERBUFFER3_HEIGHT
-FB32_RENDERBUFFER3:        .word _SYSTEM32_FB32_RENDERBUFFER3
+FB32_RENDERBUFFER3:        .word FB32_RENDERBUFFER3_ADDR
+FB32_RENDERBUFFER3_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER3
 FB32_RENDERBUFFER3_WIDTH:  .word 0x00
 FB32_RENDERBUFFER3_HEIGHT: .word 0x00
+FB32_RENDERBUFFER3_SIZE:   .word 0x00
+FB32_RENDERBUFFER3_DEPTH:  .word 0x00
 
 
 /* Indicates Caret Position to Use in Printing Characters */
@@ -1374,4 +1691,3 @@ fb32_mail_blankoff_addr:
 fb32_mail_getedid_addr:
 	.word fb32_mail_getedid      @ Address of fb32_mail_getedid
 .balign 4
-

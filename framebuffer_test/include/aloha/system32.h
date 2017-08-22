@@ -22,9 +22,9 @@
 #define uint16 unsigned short int
 #define uint32 unsigned long int
 #define uint64 unsigned long long int
-#define char8 char
+#define char8 char // Use as Pointer Too, Signed/Unsigned is Typically Unknown
 #define int16 short int
-#define int32 long int
+#define int32 long int // Use as Pointer Too, Signed/Unsigned is Typically Unknown
 #define int64 long long int
 #define float32 float
 #define float64 double
@@ -209,8 +209,7 @@ void _user_start();
 #define equ32_irq_disable      0x80  // 0b10000000
 #define equ32_abort_disable    0x100 // 0b100000000
 
-
-extern uint32* SYSTEM32_HEAP;
+extern int32* SYSTEM32_HEAP;
 
 /**
  * Convert Endianness
@@ -220,7 +219,7 @@ extern uint32* SYSTEM32_HEAP;
  */
 extern uint32 system32_convert_endianness
 (
-	uint32* data,
+	int32* data,
 	uint32 size,
 	uint32 align_bytes
 );
@@ -247,21 +246,11 @@ extern char8 system32_load_8( char8* address );
  * system32/fb32.s
  ********************************/
 
-extern uint32* FB32_FRAMEBUFFER;
-extern uint32 FB32_FRAMEBUFFER_WIDTH;
-extern uint32 FB32_FRAMEBUFFER_HEIGHT;
-extern uint32* FB32_RENDERBUFFER0;
-extern uint32 FB32_RENDERBUFFER0_WIDTH;
-extern uint32 FB32_RENDERBUFFER0_HEIGHT;
-extern uint32* FB32_RENDERBUFFER1;
-extern uint32 FB32_RENDERBUFFER1_WIDTH;
-extern uint32 FB32_RENDERBUFFER1_HEIGHT;
-extern uint32* FB32_RENDERBUFFER2;
-extern uint32 FB32_RENDERBUFFER2_WIDTH;
-extern uint32 FB32_RENDERBUFFER2_HEIGHT;
-extern uint32* FB32_RENDERBUFFER3;
-extern uint32 FB32_RENDERBUFFER3_WIDTH;
-extern uint32 FB32_RENDERBUFFER3_HEIGHT;
+extern int32* FB32_FRAMEBUFFER;
+extern int32* FB32_RENDERBUFFER0;
+extern int32* FB32_RENDERBUFFER1;
+extern int32* FB32_RENDERBUFFER2;
+extern int32* FB32_RENDERBUFFER3;
 
 extern uint32 FB32_ADDRESS;
 extern uint32 FB32_DISPLAY_WIDTH;
@@ -283,7 +272,7 @@ extern int32 FB32_Y_CARET;
  */
 extern uint32 fb32_rgba_to_argb
 (
-	uint32* data,
+	int32* data,
 	uint32 size
 );
 
@@ -329,11 +318,12 @@ extern uint64 fb32_draw_line
  * Copy Framebuffer to Renderbuffer
  *
  * Return: 0 as sucess, 1 as error
- * Error(1): When Framebuffer is not Defined
+ * Error(1): Buffer In is not Defined
  */
 extern uint32 fb32_copy
 (
-	uint32* render_buffer_point
+	int32* buffer_in,
+	int32* buffer_out
 );
 
 
@@ -346,7 +336,7 @@ extern uint32 fb32_copy
  */
 extern uint64 fb32_draw_image
 (
-	uint32* image_point,
+	int32* image_point,
 	int32 x_coord,
 	int32 y_coord,
 	uint32 width,
@@ -409,7 +399,7 @@ extern uint32 print32_set_caret
  */
 extern uint32 print32_strlen
 (
-	uchar8* string
+	char8* string
 );
 
 
@@ -421,7 +411,7 @@ extern uint32 print32_strlen
  */
 extern uint64 print32_string
 (
-	uchar8* string,
+	char8* string,
 	int32 x_coord,
 	int32 y_coord,
 	uint32 color,
@@ -429,7 +419,7 @@ extern uint64 print32_string
 	uint32 length,
 	uint32 width,
 	uint32 height,
-	uint32* font_base
+	int32* font_base
 );
 
 
@@ -449,7 +439,7 @@ extern uint64 print32_number_double
 	uint32 length,
 	uint32 width,
 	uint32 height,
-	uint32* font_base
+	int32* font_base
 );
 
 
@@ -469,7 +459,7 @@ extern uint64 print32_number
 	uint32 length,
 	uint32 width,
 	uint32 height,
-	uint32* font_base
+	int32* font_base
 );
 
 
@@ -477,8 +467,8 @@ extern uint64 print32_number
  * system32/font_mono_12px.s
  ********************************/
 
-extern uint32* FONT_MONO_12PX_NUMBER;
-extern uint32* FONT_MONO_12PX_ASCII;
+extern int32* FONT_MONO_12PX_NUMBER;
+extern int32* FONT_MONO_12PX_ASCII;
 
 
 /**
@@ -502,7 +492,7 @@ extern uint16 COLOR16_WHITE;
 extern uint16 COLOR16_LIGHTGRAY;
 extern uint16 COLOR16_GRAY;
 extern uint16 COLOR16_BLACK;
-extern uint32* COLOR16_SAMPLE_IMAGE;
+extern int32* COLOR16_SAMPLE_IMAGE;
 
 extern uint32 COLOR32_RED;
 extern uint32 COLOR32_GREEN;
@@ -527,7 +517,7 @@ extern uint32 COLOR32_BLACK;
  * system32/data.s
  ********************************/
 
-extern uint32* DATA_COLOR32_SAMPLE_IMAGE0;
+extern int32* DATA_COLOR32_SAMPLE_IMAGE0;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
-extern uint32* DATA_COLOR32_SAMPLE_IMAGE1;
+extern int32* DATA_COLOR32_SAMPLE_IMAGE1;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;
