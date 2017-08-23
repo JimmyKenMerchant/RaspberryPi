@@ -9,6 +9,208 @@
 
 
 /**
+ * function fb32_fill_color
+ * Fill by Color
+ *
+ * Parameters
+ * r0: Pointer of Buffer to Be Filled by Color
+ * r1: Color to Fill
+ *
+ * Usage: r0-r11
+ * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ */
+.globl fb32_fill_color
+fb32_fill_color:
+	/* Auto (Local) Variables, but just aliases */
+	buffer_base .req r0  @ Parameter, Register for Argument, Scratch Register
+	color       .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	base_addr   .req r2  @ Pointer of Base
+	width       .req r3
+	dup_width   .req r4
+	height      .req r5
+	depth       .req r6
+	size        .req r7
+	flag        .req r8
+	width_check .req r9
+	j           .req r10  @ Use for Horizontal Counter
+	color_pick  .req r11
+	addr_pick   .req r12
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	ldr base_addr, [buffer_base]
+	cmp base_addr, #0
+	beq fb32_fill_color_error2
+
+	ldr width, [buffer_base, #4]
+	cmp width, #0
+	beq fb32_fill_color_error2
+
+	mov dup_width, width
+
+	ldr height, [buffer_base, #8]
+	cmp height, #0
+	beq fb32_fill_color_error2
+
+	ldr size, [buffer_base, #12]
+	cmp size, #0
+	beq fb32_fill_color_error2
+	add size, base_addr, size
+
+	ldr depth, [buffer_base, #16]
+	cmp depth, #32
+	cmpne depth, #16
+	bne fb32_fill_color_error2
+
+	cmp depth, #16
+	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+
+	mov width_check, base_addr
+	add width_check, width
+
+	mov flag, #0
+
+	fb32_fill_color_loop:
+
+		cmp height, #0                               @ Vertical Counter `(; mask_height > 0; mask_height--)`
+		ble fb32_fill_color_success
+
+		cmp base_addr, size                          @ Check Overflow of Buffer Memory
+		bgt fb32_fill_color_error1
+
+		mov j, dup_width                             @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
+
+		fb32_fill_color_loop_horizontal:
+			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
+			cmp j, #0                                @ Horizontal Counter, Check
+			blt fb32_fill_color_loop_common
+
+			/* Pick Process */
+			cmp depth, #16
+			ldreqh color_pick, [base_addr]
+			cmp depth, #32
+			ldreq color_pick, [base_addr]
+
+			cmp flag, #0
+			beq fb32_fill_color_loop_horizontal_flag0
+			cmp flag, #1
+			beq fb32_fill_color_loop_horizontal_flag1
+			cmp flag, #2
+			beq fb32_fill_color_loop_horizontal_flag2
+			cmp flag, #3
+			beq fb32_fill_color_loop_horizontal_flag3
+
+			fb32_fill_color_loop_horizontal_flag0:             @ No Color First
+				cmp color_pick, #0
+				beq fb32_fill_color_loop_horizontal_common
+				movne flag, #1
+				b fb32_fill_color_loop_horizontal_common
+
+			fb32_fill_color_loop_horizontal_flag1:             @ Color First
+				cmp color_pick, #0
+				bne fb32_fill_color_loop_horizontal_common
+				moveq addr_pick, base_addr
+				moveq flag, #2
+				b fb32_fill_color_loop_horizontal_common
+
+			fb32_fill_color_loop_horizontal_flag2:             @ No Color Second to Fill by Color
+				cmp color_pick, #0
+				beq fb32_fill_color_loop_horizontal_common
+
+				fb32_fill_color_loop_horizontal_flag2_loop:
+
+					cmp depth, #16
+					streqh color, [addr_pick]
+					addeq addr_pick, addr_pick, #2
+					cmp depth, #32
+					streq color, [addr_pick]
+					addeq addr_pick, addr_pick, #4
+					cmp addr_pick, base_addr
+					blt fb32_fill_color_loop_horizontal_flag2_loop
+
+				movne flag, #3
+				b fb32_fill_color_loop_horizontal_common
+
+			fb32_fill_color_loop_horizontal_flag3:             @ Color Second
+				cmp color_pick, #0
+				bne fb32_fill_color_loop_horizontal_common
+				moveq flag, #0
+				b fb32_fill_color_loop_horizontal_common
+
+			fb32_fill_color_loop_horizontal_common:
+				cmp depth, #16
+				addeq base_addr, base_addr, #2          @ Buffer Address Shift
+				cmp depth, #32
+				addeq base_addr, base_addr, #4          @ Buffer Address Shift
+
+				cmp base_addr, width_check              @ Check Overflow of Width
+				blt fb32_fill_color_loop_horizontal
+
+				cmp depth, #16
+				lsleq j, j, #1                          @ substitution of Multiplication by 2
+				cmp depth, #32
+				lsleq j, j, #2                          @ substitution of Multiplication by 4
+
+				add base_addr, base_addr, j             @ Buffer Offset
+
+		fb32_fill_color_loop_common:
+			sub height, height, #1
+
+			cmp depth, #16
+			lsleq j, dup_width, #1                     @ substitution of Multiplication by 2
+			cmp depth, #32
+			lsleq j, dup_width, #2                     @ substitution of Multiplication by 4
+
+			sub base_addr, base_addr, j                @ Offset Clear of Buffer of Base
+
+			add base_addr, base_addr, width            @ Horizontal Sync (Buffer of Base)
+
+			add width_check, width_check, width        @ Store the Limitation of Width on the Next Y Coordinate
+
+			mov flag, #0
+
+			b fb32_fill_color_loop
+
+	fb32_fill_color_error1:
+		mov r0, #1                                   @ Return with Error 1
+		b fb32_fill_color_common
+
+	fb32_fill_color_error2:
+		mov r0, #2                                   @ Return with Error 2
+		b fb32_fill_color_common
+
+	fb32_fill_color_success:
+		mov r0, #0                                 @ Return with Success
+
+	fb32_fill_color_common:
+		mov r1, base_addr
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq buffer_base
+.unreq color
+.unreq base_addr
+.unreq width
+.unreq dup_width
+.unreq height
+.unreq depth
+.unreq size
+.unreq flag
+.unreq width_check
+.unreq j
+.unreq color_pick
+.unreq addr_pick
+
+
+/**
  * function fb32_mask_image
  * Make Masked Image to Mask
  * Caution! This Function is Used in 32-bit Depth Color
@@ -102,12 +304,12 @@ fb32_mask_image:
 	color .req r2
 
 	fb32_mask_image_loop:
-		cmp base_addr, size                          @ Check Overflow of Buffer Memory
-		bgt fb32_mask_image_error1
 
 		cmp mask_height, #0                          @ Vertical Counter `(; mask_height > 0; mask_height--)`
-		movle r0, #0                                 @ Return with Success
-		ble fb32_mask_image_common
+		ble fb32_mask_image_success
+
+		cmp base_addr, size                          @ Check Overflow of Buffer Memory
+		bgt fb32_mask_image_error1
 
 		mov j, mask_width                            @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
 
@@ -119,29 +321,29 @@ fb32_mask_image:
 			/* Mask Process */
 			ldr color, [mask_addr]
 			cmp color, #0
-			beq fb32_mask_image_loop_horizontal_common @ If All Zero (Fully Transparent Black), Do Nothing
+			beq fb32_mask_image_loop_horizontal_common  @ If All Zero (Fully Transparent Black), Do Nothing
 
 			ldr color, [base_addr]                      @ Get Color of Base
 			str color, [mask_addr]                      @ Store Color of Base to Mask
 
 			fb32_mask_image_loop_horizontal_common:
-				add base_addr, base_addr, #4           @ Buffer Address Shift
-				add mask_addr, mask_addr, #4           @ Buffer Address Shift
+				add base_addr, base_addr, #4            @ Buffer Address Shift
+				add mask_addr, mask_addr, #4            @ Buffer Address Shift
 
-				cmp base_addr, width_check             @ Check Overflow of Width
+				cmp base_addr, width_check              @ Check Overflow of Width
 				blt fb32_mask_image_loop_horizontal
 
-				lsl j, j, #2                           @ substitution of Multiplication by 4
-				add base_addr, base_addr, j            @ Framebuffer Offset
-				add mask_addr, mask_addr, j
+				lsl j, j, #2                            @ substitution of Multiplication by 4
+				add base_addr, base_addr, j             @ Buffer Offset
+				add mask_addr, mask_addr, j             @ Buffer Offset
 
 		fb32_mask_image_loop_common:
 			sub mask_height, mask_height, #1
 
 			lsl j, mask_width, #2                      @ substitution of Multiplication by 4
-			sub base_addr, base_addr, j                @ Offset Clear of Framebuffer
+			sub base_addr, base_addr, j                @ Offset Clear of Buffer of Base
 
-			add base_addr, base_addr, width            @ Horizontal Sync (Framebuffer)
+			add base_addr, base_addr, width            @ Horizontal Sync (Buffer of Base)
 
 			add width_check, width_check, width        @ Store the Limitation of Width on the Next Y Coordinate
 
@@ -153,6 +355,10 @@ fb32_mask_image:
 
 	fb32_mask_image_error2:
 		mov r0, #2                                   @ Return with Error 2
+		b fb32_mask_image_common
+
+	fb32_mask_image_success:
+		mov r0, #0                                   @ Return with Success
 
 	fb32_mask_image_common:
 		mov r1, mask_addr
@@ -477,9 +683,9 @@ fb32_draw_line:
 	char_height      .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	x_current        .req r7
 	y_current        .req r8
-	x_diff           .req r9   @ Counter
-	dup_char_height  .req r10
-	x_direction      .req r11  @ 1 is to Lower Right (X Increment), -1 is to Lower Left (X Decrement)
+	y_diff           .req r9   @ Counter
+	dup_char_width   .req r10
+	y_direction      .req r11  @ 1 is to Lower Right (Y Increment), -1 is to Upper Right (Y Decrement)
 
 	/* VFP/NEON Registers */
 	vfp_xy_coord_1   .req d0 @ q0[0]
@@ -491,10 +697,10 @@ fb32_draw_line:
 	vfp_xy_coord_3   .req d2
 	vfp_y_coord_3    .req s4
 	vfp_x_coord_3    .req s5
-	vfp_char_height  .req s6
-	vfp_y_per_x      .req s7 @ Uses to Determine char_width
-	vfp_y_start      .req s8
-	vfp_y_current    .req s9
+	vfp_char_width   .req s6
+	vfp_x_per_y      .req s7 @ Uses to Determine char_width
+	vfp_x_start      .req s8
+	vfp_x_current    .req s9
 	vfp_i            .req s10
 	vfp_one          .req s11
 
@@ -507,36 +713,36 @@ fb32_draw_line:
 
 	vpush {s0-s11}
 
-	mov dup_char_height, char_height                 @ Use on the Last Point
+	mov dup_char_width, char_width                 @ Use on the Last Point
 
-	cmp x_coord_1, x_coord_2
+	cmp y_coord_1, y_coord_2
 	bge fb32_draw_line_coordge
 	blt fb32_draw_line_coordlt
 
-	fb32_draw_line_coordge:                          @ `If ( x_coord_1 >= x_coord_2 )`
-		sub x_diff, x_coord_1, x_coord_2
-		cmp y_coord_1, y_coord_2
+	fb32_draw_line_coordge:                     @ `If ( y_coord_1 >= y_coord_2 )`
+		sub y_diff, y_coord_1, y_coord_2
+		cmp x_coord_1, x_coord_2
 
-		movge x_current, x_coord_2               @ `If ( y_coord_1 >= y_coord_2 )`
+		movge x_current, x_coord_2               @ `If ( x_coord_1 >= x_coord_2 )`, Get X Start Point
 		movge y_current, y_coord_2               @ Get Y Start Point
-		movge x_direction, #1                    @ Draw to Lower Right
+		movge y_direction, #1                    @ Draw to Lower Right
 
-		movlt x_current, x_coord_1               @ `If ( y_coord_1 < y_coord_2 )`
+		movlt x_current, x_coord_1               @ `If ( x_coord_1 < x_coord_2 )`, Get X Start Point
 		movlt y_current, y_coord_1               @ Get Y Start Point
-		movlt x_direction, #-1                   @ Draw to Lower Left
+		movlt y_direction, #-1                   @ Draw to Upper Right
 		b fb32_draw_line_coord
 
-	fb32_draw_line_coordlt:                          @ `If ( x_coord_1 < x_coord_2 )`
-		sub x_diff, x_coord_2, x_coord_1
-		cmp y_coord_1, y_coord_2
+	fb32_draw_line_coordlt:                      @ `If ( y_coord_1 < y_coord_2 )`
+		sub y_diff, y_coord_2, y_coord_1
+		cmp x_coord_1, x_coord_2
 
-		movge x_current, x_coord_2               @ `If ( y_coord_1 >= y_coord_2 )`
+		movge x_current, x_coord_2               @ `If ( x_coord_1 >= x_coord_2 )`, Get X Start Point
 		movge y_current, y_coord_2               @ Get Y Start Point
-		movge x_direction, #-1                   @ Draw to Lower Left
+		movge y_direction, #-1                   @ Draw to Upper Right
 
-		movlt x_current, x_coord_1               @ `If ( y_coord_1 < y_coord_2 )`
+		movlt x_current, x_coord_1               @ `If ( x_coord_1 < x_coord_2 )`, Get X Start Point
 		movlt y_current, y_coord_1               @ Get Y Start Point
-		movlt x_direction, #1                    @ Draw to Lower Right
+		movlt y_direction, #1                    @ Draw to Lower Right
 
 	fb32_draw_line_coord:
 		vmov vfp_xy_coord_1, y_coord_1, x_coord_1     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[0]
@@ -546,21 +752,26 @@ fb32_draw_line:
 		/* *NEON*Subtract Each 32-Bit Lane as Single Precision */
 		vsub.f32 vfp_xy_coord_3, vfp_xy_coord_1, vfp_xy_coord_2
 
-		vcmp.f32 vfp_x_coord_3, #0
-		vmoveq vfp_x_coord_3, #1.0                    @ If difference of X is Zero, Add One to Hide
-		vdiv.f32 vfp_y_per_x, vfp_y_coord_3, vfp_x_coord_3
-		vabs.f32 vfp_y_per_x, vfp_y_per_x             @ Calculate Absolute Value of Y Length per One X Pixel
+		vcmp.f32 vfp_y_coord_3, #0
+		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+		vmoveq vfp_x_per_y, vfp_x_coord_3             @ If difference of Y is Zero, Just X per Y is X Difference
+		vdivne.f32 vfp_x_per_y, vfp_x_coord_3, vfp_y_coord_3
+		vabs.f32 vfp_x_per_y, vfp_x_per_y             @ Calculate Absolute Value of X Width per One Y Pixel
 
-		vcmp.f32 vfp_y_coord_1, vfp_y_coord_2
-		vmovge vfp_y_start, vfp_y_coord_2             @ Get Y Start Point to Calculate in VFP
-		vmovlt vfp_y_start, vfp_y_coord_1             @ Get Y Start Point to Calculate in VFP
+		vcmp.f32 vfp_x_coord_1, vfp_x_coord_2
+		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovge vfp_x_start, vfp_x_coord_2             @ Get X Start Point to Calculate in VFP
+		vmovlt vfp_x_start, vfp_x_coord_1             @ Get X Start Point to Calculate in VFP
 
-		/* Add Character Height to Calculated Value to Draw */
-		vmov vfp_char_height, char_height
-		vcvt.f32.s32 vfp_char_height, vfp_char_height
-		vadd.f32 vfp_char_height, vfp_char_height, vfp_y_per_x
-		vcvtr.s32.f32 vfp_char_height, vfp_char_height
-		vmov char_height, vfp_char_height
+		/* Add Character Width to Calculated Value to Draw */
+		vmov vfp_char_width, char_width
+		vcvt.f32.s32 vfp_char_width, vfp_char_width
+		vadd.f32 vfp_char_width, vfp_char_width, vfp_x_per_y
+		vcvtr.s32.f32 vfp_char_width, vfp_char_width
+		vmov char_width, vfp_char_width
+
+		cmp char_width, #1
+		subgt char_width, char_width, #1
 
 		.unreq x_coord_1
 		i      .req r1
@@ -572,7 +783,7 @@ fb32_draw_line:
 
 	fb32_draw_line_loop:
 
-		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3,lr}                                @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
 		mov r2, y_current
 		mov r3, char_width
@@ -581,24 +792,24 @@ fb32_draw_line:
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                               @ Compare Return 0 or 1
-		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		cmp r0, #0                                     @ Compare Return 0 or 1
+		pop {r0-r3,lr}                                 @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne fb32_draw_line_error
 
 		fb32_draw_line_loop_common:
 			add i, i, #1
-			cmp i, x_diff
+			cmp i, y_diff
 			bgt fb32_draw_line_success
-			moveq char_height, dup_char_height            @ To hide Height Overflow on End Point (Except Original char_height)
+			moveq char_width, dup_char_width           @ To hide Width Overflow on End Point (Except Original char_width)
 
-			add x_current, x_current, x_direction
+			add y_current, y_current, y_direction
 
 			vadd.f32 vfp_i, vfp_i, vfp_one
-			vmov vfp_y_current, vfp_y_start
-			vmla.f32 vfp_y_current, vfp_y_per_x, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
-			vcvtr.s32.f32 vfp_y_current, vfp_y_current    @ In VFP Instructions, You Can Convert with Rounding Mode
+			vmov vfp_x_current, vfp_x_start
+			vmla.f32 vfp_x_current, vfp_x_per_y, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
+			vcvtr.s32.f32 vfp_x_current, vfp_x_current    @ In VFP Instructions, You Can Convert with Rounding Mode
 
-			vmov y_current, vfp_y_current
+			vmov x_current, vfp_x_current
 
 			b fb32_draw_line_loop
 
@@ -626,9 +837,9 @@ fb32_draw_line:
 .unreq char_height
 .unreq x_current
 .unreq y_current
-.unreq x_diff
-.unreq dup_char_height
-.unreq x_direction
+.unreq y_diff
+.unreq dup_char_width
+.unreq y_direction
 .unreq vfp_xy_coord_1
 .unreq vfp_y_coord_1
 .unreq vfp_x_coord_1
@@ -638,10 +849,10 @@ fb32_draw_line:
 .unreq vfp_xy_coord_3
 .unreq vfp_y_coord_3
 .unreq vfp_x_coord_3
-.unreq vfp_char_height
-.unreq vfp_y_per_x
-.unreq vfp_y_start
-.unreq vfp_y_current
+.unreq vfp_char_width
+.unreq vfp_x_per_y
+.unreq vfp_x_start
+.unreq vfp_x_current
 .unreq vfp_i
 .unreq vfp_one
 
@@ -932,12 +1143,12 @@ fb32_draw_image:
 		lsleq x_crop_char, ip, #2                @ X Crop Bytes, substitution of Multiplication by 4 (No Minus)
 
 	fb32_draw_image_loop:
-		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt fb32_draw_image_error1
 
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
-		movle r0, #0                                 @ Return with Success
-		ble fb32_draw_image_common
+		ble fb32_draw_image_success
+
+		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
+		bgt fb32_draw_image_error1
 
 		add image_point, image_point, x_offset_char  @ Add X Offset Bytes
 
@@ -1023,6 +1234,7 @@ fb32_draw_image:
 				/* DST_Alpha x (1 - SRC_Alpha) to vfp_cal_a */
 				vmov vfp_cal_a, #1.0
 				vcmp.f32 vfp_dst_alpha, vfp_cal_a
+				vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV
 				vmoveq vfp_out_alpha, vfp_dst_alpha                     @ If DST_Alpha Is 1.0, OUT_Alpha Becomes 1.0
 				vsub.f32 vfp_cal_b, vfp_cal_a, vfp_src_alpha
 				vmul.f32 vfp_cal_a, vfp_dst_alpha, vfp_cal_b
@@ -1117,6 +1329,10 @@ fb32_draw_image:
 
 	fb32_draw_image_error2:
 		mov r0, #2                                   @ Return with Error 2
+		b fb32_draw_image_common
+
+	fb32_draw_image_success:
+		mov r0, #0                                   @ Return with Success
 
 	fb32_draw_image_common:
 		vpop {s0-s16}
@@ -1180,11 +1396,13 @@ fb32_draw_image:
  * r3: Character Width in Pixels
  * r4: Character Height in Pixels
  *
- * Usage: r0-r10
+ * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * **fb32_clear_color is specially implemented to check if y_coord is over height to hide stopping to draw on higher functions.
+ * This height-check virtually prevents Error(1)**
  * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB_HEIGHT, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_clear_color_block
 fb32_clear_color_block:
@@ -1196,17 +1414,18 @@ fb32_clear_color_block:
 	char_height .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
 	f_buffer    .req r5  @ Pointer of Framebuffer
 	width       .req r6
-	depth       .req r7
-	size        .req r8
-	j           .req r9  @ Use for Horizontal Counter
-	bitmask     .req r10
+	height      .req r7
+	depth       .req r8
+	size        .req r9
+	j           .req r10  @ Use for Horizontal Counter
+	bitmask     .req r11
 
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #28                                  @ r4-r10 offset 28 bytes
+	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
-	sub sp, sp, #32                                  @ Retrieve SP
+	sub sp, sp, #36                                  @ Retrieve SP
 
 	ldr f_buffer, FB32_ADDRESS
 	cmp f_buffer, #0
@@ -1214,6 +1433,10 @@ fb32_clear_color_block:
 
 	ldr width, FB32_WIDTH
 	cmp width, #0
+	beq fb32_clear_color_block_error2
+
+	ldr height, FB32_HEIGHT
+	cmp height, #0
 	beq fb32_clear_color_block_error2
 
 	ldr depth, FB32_DEPTH
@@ -1237,6 +1460,11 @@ fb32_clear_color_block:
 
 	/* Set Location to Render the Character */
 
+	cmp y_coord, height                              @ If Value of y_coord is over Height of Framebuffer
+	subge height, y_coord, height
+	addge height, height, #1
+	subge char_height, height
+
 	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
 	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
 	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
@@ -1259,12 +1487,12 @@ fb32_clear_color_block:
 	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
 
 	fb32_clear_color_block_loop:
-		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt fb32_clear_color_block_error1
 
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
-		movle r0, #0                                 @ Return with Success
-		ble fb32_clear_color_block_common
+		ble fb32_clear_color_block_success
+
+		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
+		bgt fb32_clear_color_block_error1
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
@@ -1276,14 +1504,13 @@ fb32_clear_color_block:
 			/* The Picture Process */
 			cmp depth, #16
 			streqh color, [f_buffer]                 @ Store half word
+			addeq f_buffer, f_buffer, #2             @ Framebuffer Address Shift
+
 			cmp depth, #32
 			streq color, [f_buffer]                  @ Store word
+			addeq f_buffer, f_buffer, #4             @ Framebuffer Address Shift
 
 			fb32_clear_color_block_loop_horizontal_common:
-				cmp depth, #16
-				addeq f_buffer, f_buffer, #2          @ Framebuffer Address Shift
-				cmp depth, #32
-				addeq f_buffer, f_buffer, #4          @ Framebuffer Address Shift
 
 				cmp f_buffer, width_check             @ Check Overflow of Width
 				blt fb32_clear_color_block_loop_horizontal
@@ -1315,10 +1542,14 @@ fb32_clear_color_block:
 
 	fb32_clear_color_block_error2:
 		mov r0, #2                                   @ Return with Error 2
+		b fb32_clear_color_block_common
+
+	fb32_clear_color_block_success:
+		mov r0, #0                                   @ Return with Success
 
 	fb32_clear_color_block_common:
 		mov r1, f_buffer
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
@@ -1329,6 +1560,7 @@ fb32_clear_color_block:
 .unreq char_height
 .unreq f_buffer
 .unreq width
+.unreq height
 .unreq depth
 .unreq size
 .unreq j

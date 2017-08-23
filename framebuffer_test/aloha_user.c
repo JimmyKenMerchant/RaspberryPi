@@ -83,7 +83,7 @@ void _user_start()
 
 	system32_sleep( 1000000 );
 
-	fb32_draw_line( COLOR32_WHITE, 0, 0, 300, 600, 2, 2 );
+	fb32_draw_line( COLOR32_WHITE, 0, 0, 300, 600, 1, 1 );
 
 	fb32_draw_line( COLOR32_RED, 300, 100, 0, 0, 4, 4 );
 
@@ -94,11 +94,12 @@ void _user_start()
 
 	fb32_draw_line( COLOR32_CYAN, 100, 0, 100, 300, 4, 4 );
 
-	fb32_draw_line( COLOR32_BLUE, 0, 400, 400, 400, 20, 20 );
+	fb32_draw_line( COLOR32_RED, 0, 400, 300, 400, 20, 20 );
+	fb32_draw_line( COLOR32_RED, 0, 400, 300, 500, 20, 20 );
 
-	fb32_draw_circle( COLOR32_RED, 300, 300, 150, 200 );
+	//fb32_draw_circle( COLOR32_RED, 300, 300, 150, 200 );
 
-	fb32_draw_circle( COLOR32_SKYBLUE, -100, 500, 200, 175 );
+	//fb32_draw_circle( COLOR32_SKYBLUE, -100, 500, 200, 175 );
 
 	system32_sleep( 9000000 );
 
