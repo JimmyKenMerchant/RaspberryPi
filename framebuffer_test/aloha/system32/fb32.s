@@ -600,7 +600,7 @@ fb32_draw_circle:
 		vmov vfp_cal_a, vfp_tri_height
 		vabs.f32 vfp_cal_a, vfp_cal_a
 		vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radian                @ Compress Range Within 0.0-1.0
-		vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ Two Power
+		vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ The Second Power of vfp_cal_a
 		vmul.f32 vfp_cal_a, vfp_diff_radian, vfp_cal_a
 		vadd.f32 vfp_radian, vfp_x_radian, vfp_cal_a
 
@@ -1018,7 +1018,7 @@ fb32_draw_image:
 	vfp_out_green   .req s13
 	vfp_out_red     .req s14
 	vfp_out_alpha   .req s15
-	vfp_divider     .req s16
+	vfp_divisor     .req s16
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -1219,12 +1219,12 @@ fb32_draw_image:
 				vdup.32 vfp_out, depth
 				vcvt.f32.u32 vfp_out, vfp_out
 
-				/* Alpha divider to Range within 0.0-1.0 */
+				/* Alpha divisor to Range within 0.0-1.0 */
 				mov depth, #255
-				vmov vfp_divider, depth
-				vcvt.f32.u32 vfp_divider, vfp_divider
-				vdiv.f32 vfp_src_alpha, vfp_src_alpha, vfp_divider
-				vdiv.f32 vfp_dst_alpha, vfp_dst_alpha, vfp_divider
+				vmov vfp_divisor, depth
+				vcvt.f32.u32 vfp_divisor, vfp_divisor
+				vdiv.f32 vfp_src_alpha, vfp_src_alpha, vfp_divisor
+				vdiv.f32 vfp_dst_alpha, vfp_dst_alpha, vfp_divisor
 
 				/* DST_Alpha x (1 - SRC_Alpha) to vfp_cal_a */
 				vmov vfp_cal_a, #1.0
@@ -1263,7 +1263,7 @@ fb32_draw_image:
 
 				/* Retrieve OUT_Alpha to Range within 0 to 255 */
 				vmov vfp_out_alpha, vfp_src_alpha
-				vmul.f32 vfp_out_alpha, vfp_out_alpha, vfp_divider
+				vmul.f32 vfp_out_alpha, vfp_out_alpha, vfp_divisor
 
 				fb32_draw_image_loop_horizontal_depth32_alphablend:
 					vcvtr.u32.f32 vfp_out, vfp_out                      @ *NEON* Convert Single Precision Floating Point to Unsinged Integer
@@ -1377,7 +1377,7 @@ fb32_draw_image:
 .unreq vfp_out_green
 .unreq vfp_out_red
 .unreq vfp_out_alpha
-.unreq vfp_divider
+.unreq vfp_divisor
 
 
 /**

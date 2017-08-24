@@ -7,6 +7,254 @@
  *
  */
 
+.globl MATH32_PI32
+MATH32_PI32: .float 3.14159265358979323846264338327950288
+.balign 8
+
+.globl MATH32_PI_PER_DEGREE32
+MATH32_PI_PER_DEGREE32: .float 0.01745329252
+.balign 8
+
+
+/**
+ * function math32_degree_to_radian32
+ * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Degrees, Must Be Type of Signed Integer
+ *
+ * Usage: r0
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_degree_to_radian32
+math32_degree_to_radian32:
+	/* Auto (Local) Variables, but just aliases */
+	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP/NEON Registers */
+	vfp_degree     .req s0
+	vfp_radian     .req s1
+	vfp_pi_per_deg .req s2
+
+	vpush {s0-s2}
+
+	/**
+	 * Radian = degrees X (pi Div by 180)
+	 */
+	vmov vfp_degree, degree
+	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
+	vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
+	vmov r0, vfp_radian
+
+	math32_degree_to_radian32_common:
+		vpop {s0-s2}
+		mov pc, lr
+
+.unreq degree
+.unreq vfp_degree
+.unreq vfp_radian
+.unreq vfp_pi_per_deg
+
+
+/**
+ * function math32_sin32
+ * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Radian, Must Be Type of Single Precision Float
+ *
+ * Usage: r0
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_sin32
+math32_sin32:
+	/* Auto (Local) Variables, but just aliases */
+	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP/NEON Registers */
+	vfp_radian    .req s0
+	vfp_dividend  .req s1
+	vfp_divisor   .req s2
+	vfp_temp      .req s3
+	vfp_sum       .req s4
+
+	vpush {s0-s4}
+
+	/**
+	 * sinx = Sigma[0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
+	 */
+	vmov vfp_radian, radian                         @ n = 0
+	vmov vfp_sum, vfp_radian
+
+	vmov vfp_dividend, vfp_radian                   @ n = 1
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Third Power
+	vmov vfp_divisor, #6.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 2
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fifth Power
+	vmov vfp_temp, #20.0 
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 120.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 3
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
+	vmov vfp_temp, #21.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 2520.0
+	vmov vfp_temp, #2.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 5040.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov r0, vfp_sum
+
+	math32_sin32_common:
+		vpop {s0-s4}
+		mov pc, lr
+
+.unreq radian
+.unreq vfp_radian
+.unreq vfp_dividend
+.unreq vfp_divisor
+.unreq vfp_temp
+.unreq vfp_sum
+
+
+/**
+ * function math32_cos32
+ * Return cos(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Radian, Must Be Type of Single Precision Float
+ *
+ * Usage: r0
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_cos32
+math32_cos32:
+	/* Auto (Local) Variables, but just aliases */
+	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP/NEON Registers */
+	vfp_radian    .req s0
+	vfp_dividend  .req s1
+	vfp_divisor   .req s2
+	vfp_temp      .req s3
+	vfp_sum       .req s4
+
+	vpush {s0-s4}
+
+	/**
+	 * cosx = Sigma[0 to Infinity] (-1)^n X x^(2n) Div by (2n)!
+	 */
+	vmov vfp_radian, radian                         @ n = 0
+	vmov vfp_sum, vfp_radian
+
+	vmov vfp_dividend, vfp_radian                   @ n = 1
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Second Power
+	vmov vfp_divisor, #2.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 2
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fourth Power
+	vmov vfp_temp, #12.0 
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 24.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 3
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Sixth Power
+	vmov vfp_temp, #30.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 720.0 
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov r0, vfp_sum
+
+	math32_cos32_common:
+		vpop {s0-s4}
+		mov pc, lr
+
+.unreq radian
+.unreq vfp_radian
+.unreq vfp_dividend
+.unreq vfp_divisor
+.unreq vfp_temp
+.unreq vfp_sum
+
+
+/**
+ * function math32_float_to_string32
+ * Make String of Single Precision Float Value
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Float Value, Must Be Type of Single Precision Float
+ *
+ * Usage: r0
+ * Return: r0 (Pointer of String)
+ */
+.globl math32_float_to_string32
+math32_float_to_string32:
+	/* Auto (Local) Variables, but just aliases */
+	float         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	integer       .req r1
+	decimal       .req r2
+	heap          .req r3
+
+	/* VFP/NEON Registers */
+	vfp_float     .req s0
+	vfp_integer   .req s1
+	vfp_decimal   .req s2
+
+	vpush {s0-s2}
+
+	vmov vfp_float, float
+	vmov vfp_integer, float
+	vmov vfp_decimal, float
+	vcvt.s32.f32 vfp_integer, vfp_integer           @ Round Down
+	vmov integer, vfp_integer
+	vcvt.f32.s32 vfp_integer, vfp_integer
+	vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
+
+	/* Repeat of vfp_decimal X 10^8 and Cut it till catch Zero */
+
+	/* Caution! It's Half Way */
+
+	math32_float_to_string32_common:
+		vpop {s0-s2}
+		mov pc, lr
+
+.unreq float
+.unreq integer
+.unreq decimal
+.unreq heap
+.unreq vfp_float
+.unreq vfp_integer
+.unreq vfp_decimal
+
+
 /**
  * function math32_hexa_to_deci32
  * Convert Hexadecimal Bases (0-f) to Decimal Bases (0-9) of a Register

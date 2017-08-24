@@ -491,17 +491,17 @@ system32_malloc:
 
 	system32_malloc_loop:
 		cmp heap_start, heap_size
-		bge system32_malloc_error               @ Heap Space Overflow
+		bge system32_malloc_error               @ If Heap Space Overflow
 
 		ldr heap_bytes, [heap_start]
 		cmp heap_bytes, #0
-		beq system32_malloc_loop_sizecheck
+		beq system32_malloc_loop_sizecheck      @ If Bytes are Zero
 
 		add heap_start, heap_start, heap_bytes
 		add heap_start, heap_start, #4
-		b system32_malloc_loop
+		b system32_malloc_loop                  @ If Bytes are not Zero
 
-		/* Check Size is Enough or Not */
+		/* Whether Check Size is Enough or Not */
 
 		system32_malloc_loop_sizecheck:
 			mov check_start, heap_start
@@ -509,14 +509,20 @@ system32_malloc:
 
 			system32_malloc_loop_sizecheck_loop:
 				cmp check_start, check_size
-				bgt system32_malloc_success     @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
+				bgt system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
+
+				cmp check_start, heap_size
+				bge system32_malloc_error               @ If Heap Space Overflow
+
 				ldr heap_bytes, [check_start]
+
 				cmp heap_bytes, #0
 				addeq check_start, check_start, #4
-				beq system32_malloc_loop_sizecheck_loop
+				beq system32_malloc_loop_sizecheck_loop @ If Bytes are Zero
+
 				add heap_start, check_start, heap_bytes
 				add heap_start, heap_start, #4
-				b system32_malloc_loop
+				b system32_malloc_loop                  @ If Bytes are not Zero
 
 	system32_malloc_error:
 		mov r0, #0

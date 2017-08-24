@@ -36,5 +36,9 @@ hdmi_group=0
 #Number depends on CEA or DMT Table
 #hdmi_mode=1
 
-#Signal IRQ for Interrupt Service Routine from VideoCore for Vertical Sync
+#Signal IRQ for Interrupt Service Routine (ISR) from VideoCoreIV for Vertical Sync
+#Seems It's just FAKE, but in case of Strict Coding in Video, you may need of ISR.
+#I mean, VideoCoreIV has other strategies for Vertical Sync,
+#probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller.
+#Anyway, VideoCoreIV's capacity seems just for economy type display (small sized one), Broadcom may upgrade it though...
 fake_vsync_isr=1
