@@ -457,8 +457,134 @@ system32_load_8:
 	ldrb r0, [r0]
 	mov pc, lr
 
+
+/**
+ * function system32_malloc
+ * Get Memory Space from Heap (4 Bytes Align)
+ * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
+ * Argument, Size Means Number of Block which Has 4 Bytes
+ *
+ * Parameters
+ * r1: Size of Memory
+ *
+ * Usage: r0-r5
+ * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
+ */
+.globl system32_malloc
+system32_malloc:
+	/* Auto (Local) Variables, but just aliases */
+	size        .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
+	heap_start  .req r1
+	heap_size   .req r2
+	heap_bytes  .req r3
+	check_start .req r4
+	check_size  .req r5
+
+	push {r4,r5}
+
+	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
+
+	ldr heap_start, SYSTEM32_HEAP_ADDR
+	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
+
+	add heap_size, heap_start, heap_size
+
+	system32_malloc_loop:
+		cmp heap_start, heap_size
+		bge system32_malloc_error               @ Heap Space Overflow
+
+		ldr heap_bytes, [heap_start]
+		cmp heap_bytes, #0
+		beq system32_malloc_loop_sizecheck
+
+		add heap_start, heap_start, heap_bytes
+		add heap_start, heap_start, #4
+		b system32_malloc_loop
+
+		/* Check Size is Enough or Not */
+
+		system32_malloc_loop_sizecheck:
+			mov check_start, heap_start
+			add check_size, check_start, size
+
+			system32_malloc_loop_sizecheck_loop:
+				cmp check_start, check_size
+				bgt system32_malloc_success     @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
+				ldr heap_bytes, [check_start]
+				cmp heap_bytes, #0
+				addeq check_start, check_start, #4
+				beq system32_malloc_loop_sizecheck_loop
+				add heap_start, check_start, heap_bytes
+				add heap_start, heap_start, #4
+				b system32_malloc_loop
+
+	system32_malloc_error:
+		mov r0, #0
+		b system32_malloc_common
+
+	system32_malloc_success:
+		str size, [heap_start]                  @ Store Size (Bytes) on Start Address of Memory Minus 4 Bytes
+		mov r0, heap_start
+		add r0, r0, #4                          @ Slide for Start Address of Memory
+
+	system32_malloc_common:
+		pop {r4,r5}
+		mov pc, lr
+
+.unreq size
+.unreq heap_start
+.unreq heap_size
+.unreq heap_bytes
+.unreq check_start
+.unreq check_size
+
+
 .globl SYSTEM32_HEAP
-SYSTEM32_HEAP: .word _SYSTEM32_HEAP
+SYSTEM32_HEAP:        .word SYSTEM32_HEAP_ADDR
+SYSTEM32_HEAP_ADDR:   .word _SYSTEM32_HEAP
+SYSTEM32_HEAP_SIZE:   .word 16777216
+
+/**
+ * function system32_mfree
+ * Free Memory Space in Heap
+ * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
+ *
+ * Parameters
+ * r1: Pointer of Start Address of Memory Space
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as Success, 1 as Error)
+ */
+.globl system32_mfree
+system32_mfree:
+	/* Auto (Local) Variables, but just aliases */
+	heap_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	heap_size       .req r1
+	zero            .req r2
+
+	ldr heap_size, [heap_start, #-4]
+	add heap_size, heap_start, heap_size
+	sub heap_start, heap_start, #4
+
+	mov zero, #0
+
+	system32_mfree_loop:
+		cmp heap_start, heap_size
+		bge system32_mfree_common
+
+		str zero, [heap_start]
+		add heap_start, heap_start, #4
+
+		b system32_mfree_loop
+
+	system32_mfree_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq heap_start
+.unreq heap_size
+.unreq zero
+
 
 /**
  * These Asm Files includes Enviromental Variables.
@@ -480,8 +606,10 @@ SYSTEM32_HEAP: .word _SYSTEM32_HEAP
 .balign 4
 .include "system32/color.s"
 .balign 4
-.include "system32/data.s"
+.include "system32/data.s"            @ Having Section .data
 .balign 4
+
+.section .system
 
 .section .bss
 

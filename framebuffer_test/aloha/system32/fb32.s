@@ -16,10 +16,10 @@
  * r0: Pointer of Buffer to Be Filled by Color
  * r1: Color to Fill
  *
- * Usage: r0-r11
+ * Usage: r0-r12
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Framebuffer is not Defined
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
  */
 .globl fb32_fill_color
 fb32_fill_color:
@@ -34,7 +34,7 @@ fb32_fill_color:
 	size        .req r7
 	flag        .req r8
 	width_check .req r9
-	j           .req r10  @ Use for Horizontal Counter
+	j           .req r10 @ Use for Horizontal Counter
 	color_pick  .req r11
 	addr_pick   .req r12
 
@@ -66,10 +66,8 @@ fb32_fill_color:
 	bne fb32_fill_color_error2
 
 	cmp depth, #16
-	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
-	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	mov width_check, base_addr
@@ -83,7 +81,7 @@ fb32_fill_color:
 		ble fb32_fill_color_success
 
 		cmp base_addr, size                          @ Check Overflow of Buffer Memory
-		bgt fb32_fill_color_error1
+		bge fb32_fill_color_error1
 
 		mov j, dup_width                             @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
 
@@ -110,14 +108,14 @@ fb32_fill_color:
 			fb32_fill_color_loop_horizontal_flag0:             @ No Color First
 				cmp color_pick, #0
 				beq fb32_fill_color_loop_horizontal_common
-				movne flag, #1
+				mov flag, #1
 				b fb32_fill_color_loop_horizontal_common
 
 			fb32_fill_color_loop_horizontal_flag1:             @ Color First
 				cmp color_pick, #0
 				bne fb32_fill_color_loop_horizontal_common
-				moveq addr_pick, base_addr
-				moveq flag, #2
+				mov addr_pick, base_addr
+				mov flag, #2
 				b fb32_fill_color_loop_horizontal_common
 
 			fb32_fill_color_loop_horizontal_flag2:             @ No Color Second to Fill by Color
@@ -135,13 +133,13 @@ fb32_fill_color:
 					cmp addr_pick, base_addr
 					blt fb32_fill_color_loop_horizontal_flag2_loop
 
-				movne flag, #3
+				mov flag, #3
 				b fb32_fill_color_loop_horizontal_common
 
 			fb32_fill_color_loop_horizontal_flag3:             @ Color Second
 				cmp color_pick, #0
 				bne fb32_fill_color_loop_horizontal_common
-				moveq flag, #0
+				mov flag, #0
 				b fb32_fill_color_loop_horizontal_common
 
 			fb32_fill_color_loop_horizontal_common:
@@ -179,11 +177,11 @@ fb32_fill_color:
 			b fb32_fill_color_loop
 
 	fb32_fill_color_error1:
-		mov r0, #1                                   @ Return with Error 1
+		mov r0, #1                                 @ Return with Error 1
 		b fb32_fill_color_common
 
 	fb32_fill_color_error2:
-		mov r0, #2                                   @ Return with Error 2
+		mov r0, #2                                 @ Return with Error 2
 		b fb32_fill_color_common
 
 	fb32_fill_color_success:
@@ -223,8 +221,8 @@ fb32_fill_color:
  *
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Mask)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Framebuffer is not Defined
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
  */
 .globl fb32_mask_image
 fb32_mask_image:
@@ -265,7 +263,6 @@ fb32_mask_image:
 	beq fb32_mask_image_error2
 	add size, base_addr, size
 
-	sub size, size, #4                             @ Maximum of Buffer Address (Offset - 4 bytes)
 	lsl width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	ldr mask_addr, [buffer_mask]
@@ -309,7 +306,7 @@ fb32_mask_image:
 		ble fb32_mask_image_success
 
 		cmp base_addr, size                          @ Check Overflow of Buffer Memory
-		bgt fb32_mask_image_error1
+		bge fb32_mask_image_error1
 
 		mov j, mask_width                            @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
 
@@ -484,7 +481,7 @@ fb32_rgba_to_argb:
  *
  * Usage: r0-r9
  * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
  */
 .globl fb32_draw_circle
 fb32_draw_circle:
@@ -669,7 +666,7 @@ fb32_draw_circle:
  *
  * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
+ * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Buffer Overflow
  */
 .globl fb32_draw_line
 fb32_draw_line:
@@ -970,9 +967,9 @@ fb32_copy:
  * (Callee ip, Caller r8): Y Crop (Lower Right Position Y)
  *
  * Usage: r0-r12
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Framebuffer is not Defined
+ * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_draw_image
@@ -983,7 +980,7 @@ fb32_draw_image:
 	y_coord          .req r2  @ Parameter, Register for Argument, Scratch Register
 	char_width       .req r3  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
 	char_height      .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
-	f_buffer         .req r5  @ Pointer of Framebuffer
+	f_buffer         .req r5  @ Pointer of Buffer
 	width            .req r6
 	depth            .req r7
 	size             .req r8
@@ -1053,11 +1050,9 @@ fb32_draw_image:
 	add size, f_buffer, size
 
 	cmp depth, #16
-	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	lsleq char_width_bytes, char_width, #1           @ Character Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
-	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 	lsleq char_width_bytes, char_width, #2           @ Character Vertical Offset Bytes, substitution of Multiplication by 2
 
@@ -1147,8 +1142,8 @@ fb32_draw_image:
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
 		ble fb32_draw_image_success
 
-		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt fb32_draw_image_error1
+		cmp f_buffer, size                           @ Check Overflow of Buffer Memory
+		bge fb32_draw_image_error1
 
 		add image_point, image_point, x_offset_char  @ Add X Offset Bytes
 
@@ -1291,10 +1286,10 @@ fb32_draw_image:
 
 			fb32_draw_image_loop_horizontal_common:
 				cmp depth, #16
-				addeq f_buffer, f_buffer, #2         @ Framebuffer Address Shift
+				addeq f_buffer, f_buffer, #2         @ Buffer Address Shift
 				addeq image_point, image_point, #2   @ Image Pointer Shift
 				cmp depth, #32
-				addeq f_buffer, f_buffer, #4         @ Framebuffer Address Shift
+				addeq f_buffer, f_buffer, #4         @ Buffer Address Shift
 				addeq image_point, image_point, #4   @ Image Pointer Shift
 
 				cmp f_buffer, width_check            @ Check Overflow of Width
@@ -1304,7 +1299,7 @@ fb32_draw_image:
 				lsleq j, j, #1                       @ substitution of Multiplication by 2
 				cmp depth, #32
 				lsleq j, j, #2                       @ substitution of Multiplication by 4
-				add f_buffer, f_buffer, j            @ Framebuffer Offset
+				add f_buffer, f_buffer, j            @ Buffer Offset
 
 		fb32_draw_image_loop_common:
 			sub char_height, char_height, #1
@@ -1313,9 +1308,9 @@ fb32_draw_image:
 			lsleq j, char_width, #1                   @ substitution of Multiplication by 2
 			cmp depth, #32
 			lsleq j, char_width, #2                   @ substitution of Multiplication by 4
-			sub f_buffer, f_buffer, j                 @ Offset Clear of Framebuffer
+			sub f_buffer, f_buffer, j                 @ Offset Clear of Buffer
 
-			add f_buffer, f_buffer, width             @ Horizontal Sync (Framebuffer)
+			add f_buffer, f_buffer, width             @ Horizontal Sync (Buffer)
 
 			add width_check, width_check, width       @ Store the Limitation of Width on the Next Y Coordinate
 
@@ -1397,11 +1392,11 @@ fb32_draw_image:
  * r4: Character Height in Pixels
  *
  * Usage: r0-r11
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * **fb32_clear_color is specially implemented to check if y_coord is over height to hide stopping to draw on higher functions.
  * This height-check virtually prevents Error(1)**
- * Error(2): When Framebuffer is not Defined
+ * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB_HEIGHT, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_clear_color_block
@@ -1412,7 +1407,7 @@ fb32_clear_color_block:
 	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
 	char_width  .req r3  @ Parameter, Register for Argument, Scratch Register
 	char_height .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
-	f_buffer    .req r5  @ Pointer of Framebuffer
+	f_buffer    .req r5  @ Pointer of Buffer
 	width       .req r6
 	height      .req r7
 	depth       .req r8
@@ -1452,15 +1447,13 @@ fb32_clear_color_block:
 	add size, f_buffer, size
 
 	cmp depth, #16
-	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
-	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	/* Set Location to Render the Character */
 
-	cmp y_coord, height                              @ If Value of y_coord is over Height of Framebuffer
+	cmp y_coord, height                              @ If Value of y_coord is over Height of Buffer
 	subge height, y_coord, height
 	addge height, height, #1
 	subge char_height, height
@@ -1491,8 +1484,8 @@ fb32_clear_color_block:
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
 		ble fb32_clear_color_block_success
 
-		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt fb32_clear_color_block_error1
+		cmp f_buffer, size                           @ Check Overflow of Buffer Memory
+		bge fb32_clear_color_block_error1
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
@@ -1504,11 +1497,11 @@ fb32_clear_color_block:
 			/* The Picture Process */
 			cmp depth, #16
 			streqh color, [f_buffer]                 @ Store half word
-			addeq f_buffer, f_buffer, #2             @ Framebuffer Address Shift
+			addeq f_buffer, f_buffer, #2             @ Buffer Address Shift
 
 			cmp depth, #32
 			streq color, [f_buffer]                  @ Store word
-			addeq f_buffer, f_buffer, #4             @ Framebuffer Address Shift
+			addeq f_buffer, f_buffer, #4             @ Buffer Address Shift
 
 			fb32_clear_color_block_loop_horizontal_common:
 
@@ -1519,7 +1512,7 @@ fb32_clear_color_block:
 				lsleq j, j, #1                        @ substitution of Multiplication by 2
 				cmp depth, #32
 				lsleq j, j, #2                        @ substitution of Multiplication by 4
-				add f_buffer, f_buffer, j             @ Framebuffer Offset
+				add f_buffer, f_buffer, j             @ Buffer Offset
 
 		fb32_clear_color_block_loop_common:
 			sub char_height, char_height, #1
@@ -1528,9 +1521,9 @@ fb32_clear_color_block:
 			lsleq j, char_width, #1                  @ substitution of Multiplication by 2
 			cmp depth, #32
 			lsleq j, char_width, #2                  @ substitution of Multiplication by 4
-			sub f_buffer, f_buffer, j                @ Offset Clear of Framebuffer
+			sub f_buffer, f_buffer, j                @ Offset Clear of Buffer
 
-			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
+			add f_buffer, f_buffer, width            @ Horizontal Sync (Buffer)
 
 			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
 
@@ -1569,14 +1562,14 @@ fb32_clear_color_block:
 
 /**
  * function fb32_clear_color
- * Fill Out Framebuffer by Color
+ * Fill Out Buffer by Color
  *
  * Parameters
  * r0: Color (16-bit or 32-bit)
  *
  * Usage: r0-r4
  * Return: r0 (0 as sucess, 1 as error)
- * Error(1): When Framebuffer is not Defined
+ * Error(1): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_clear_color
@@ -1700,7 +1693,51 @@ fb32_attach_buffer:
 
 
 /**
- * function fb32_get
+ * function fb32_set_renderbuffer
+ * Set Renderbuffer
+ *
+ * Parameters
+ * r0: Pointer of Renderbuffer to Set
+ * r1: Width of BUffer
+ * r2: height of Buffer
+ * r3: depth of Buffer
+ *
+ * Usage: r0-r4
+ * Return: r0 (0 as sucess)
+ */
+.globl fb32_set_renderbuffer
+fb32_set_renderbuffer:
+	buffer    .req r0
+	width     .req r1
+	height    .req r2
+	depth     .req r3
+	size      .req r4
+
+	push {r4}
+
+	str width, [buffer, #4]
+
+	str height, [buffer, #8]
+
+	mul size, width, height
+
+	str size, [buffer, #12]
+
+	str depth, [buffer, #16]
+
+	fb32_set_renderbuffer_common:
+		pop {r4}
+		mov pc, lr
+
+.unreq buffer
+.unreq width
+.unreq height
+.unreq depth
+.unreq size
+
+
+/**
+ * function fb32_get_framebuffer
  * Get Framebuffer
  *
  * Usage: r0-r1
@@ -1709,8 +1746,8 @@ fb32_attach_buffer:
  * Global Enviromental Variable(s): FB32_ADDRESS
  * External Variable(s): fb32_mail_framebuffer_addr
  */
-.globl fb32_get
-fb32_get:
+.globl fb32_get_framebuffer
+fb32_get_framebuffer:
 	memorymap_base    .req r0
 	temp              .req r1
 
@@ -1727,11 +1764,11 @@ fb32_get:
 	ldr memorymap_base, fb32_mail_framebuffer_addr
 	ldr temp, [memorymap_base, #equ32_mailbox_gpuconfirm]
 	cmp temp, #0x80000000
-	bne fb32_get_error
+	bne fb32_get_framebuffer_error
 
 	ldr memorymap_base, FB32_ADDRESS
 	cmp memorymap_base, #0
-	beq fb32_get_error
+	beq fb32_get_framebuffer_error
 
 	and memorymap_base, memorymap_base, #equ32_fb_armmask            @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
@@ -1752,12 +1789,12 @@ fb32_get:
 
 	mov r0, #0                               @ Return with Success
 
-	b fb32_get_common
+	b fb32_get_framebuffer_common
 
-	fb32_get_error:
+	fb32_get_framebuffer_error:
 		mov r0, #1                       @ Return with Error
 
-	fb32_get_common:
+	fb32_get_framebuffer_common:
 		mov pc, lr
 
 .unreq memorymap_base

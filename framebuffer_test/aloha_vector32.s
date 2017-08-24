@@ -110,7 +110,7 @@ _reset:
 
 	/* Framebuffer Obtain */
 	push {r0-r3,lr}
-	bl fb32_get
+	bl fb32_get_framebuffer
 	pop {r0-r3,lr}
 
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */

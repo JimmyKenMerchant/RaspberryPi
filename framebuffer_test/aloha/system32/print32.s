@@ -80,10 +80,8 @@ print32_char:
 	add size, f_buffer, size
 
 	cmp depth, #16
-	subeq size, size, #2                             @ Maximum of Framebuffer Address (Offset - 2 Bytes)
 	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
 	cmp depth, #32
-	subeq size, size, #4                             @ Maximum of Framebuffer Address (Offset - 4 bytes)
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	/* Set Location to Render the Character */
@@ -116,7 +114,7 @@ print32_char:
 		ble print32_char_success
 
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bgt print32_char_error1
+		bge print32_char_error1
 
 		ldrb char_byte, [char_point]                 @ Load Horizontal Byte
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
