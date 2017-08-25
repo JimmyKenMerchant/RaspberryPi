@@ -8,17 +8,17 @@
  */
 
 .globl MATH32_PI32
-MATH32_PI32: .float 3.14159265358979323846264338327950288
+MATH32_PI32: .float 3.14159265358979
 .balign 8
 
 .globl MATH32_PI_PER_DEGREE32
-MATH32_PI_PER_DEGREE32: .float 0.01745329252
+MATH32_PI_PER_DEGREE32: .float 0.0174532925199433
 .balign 8
 
 
 /**
  * function math32_degree_to_radian32
- * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Return Radian from Degrees
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Parameters
@@ -59,7 +59,7 @@ math32_degree_to_radian32:
 
 /**
  * function math32_sin32
- * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Parameters
@@ -83,7 +83,8 @@ math32_sin32:
 	vpush {s0-s4}
 
 	/**
-	 * sinx = Sigma[0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
+	 * sinx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
+	 * For All x
 	 */
 	vmov vfp_radian, radian                         @ n = 0
 	vmov vfp_sum, vfp_radian
@@ -113,11 +114,27 @@ math32_sin32:
 	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
 	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
 	vmov vfp_temp, #21.0
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 2520.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp
 	vmov vfp_temp, #2.0
 	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 5040.0
 	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
 	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 4
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Nineth Power
+	vmov vfp_temp, #24.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp
+	vmov vfp_temp, #3.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 362880.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
 	vmov r0, vfp_sum
 
@@ -135,7 +152,7 @@ math32_sin32:
 
 /**
  * function math32_cos32
- * Return cos(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Return cos(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Parameters
@@ -159,7 +176,8 @@ math32_cos32:
 	vpush {s0-s4}
 
 	/**
-	 * cosx = Sigma[0 to Infinity] (-1)^n X x^(2n) Div by (2n)!
+	 * cosx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n) Div by (2n)!
+	 * For All x
 	 */
 	vmov vfp_radian, radian                         @ n = 0
 	vmov vfp_sum, vfp_radian
@@ -190,9 +208,122 @@ math32_cos32:
 	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
 	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
 
+	vmov vfp_dividend, vfp_radian                   @ n = 4
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Eighth Power
+	vmov vfp_temp, #2.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp
+	vmov vfp_temp, #28.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 40320.0 
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
 	vmov r0, vfp_sum
 
 	math32_cos32_common:
+		vpop {s0-s4}
+		mov pc, lr
+
+.unreq radian
+.unreq vfp_radian
+.unreq vfp_dividend
+.unreq vfp_divisor
+.unreq vfp_temp
+.unreq vfp_sum
+
+
+/**
+ * function math32_tan32
+ * Return tan(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 5 
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Radian, Must Be Type of Single Precision Float, Must be |Radian| < pi, -pi through pi
+ *
+ * Usage: r0
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_tan32
+math32_tan32:
+	/* Auto (Local) Variables, but just aliases */
+	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP/NEON Registers */
+	vfp_radian    .req s0
+	vfp_dividend  .req s1
+	vfp_divisor   .req s2
+	vfp_temp      .req s3
+	vfp_sum       .req s4
+
+	vpush {s0-s4}
+
+	/**
+	 * tanx = Sigma[n = 1 to Infinity] (B2n X (-4)^n X (1 - 4^n)) X x^(2n - 1) Div by (2n)!
+	 * for |x| < pi Div by 2, because Tangent is 180 degrees cycle unlike Sin and Cosin
+	 * B is Bernoulli Number
+	 */
+	vmov vfp_radian, radian                         @ n = 1
+	vmov vfp_sum, vfp_radian
+
+	vmov vfp_dividend, vfp_radian                   @ n = 2
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Third Power
+	vmov vfp_divisor, #3.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 3
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fifth Power
+	vmov vfp_temp, #2.0
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp   @ Multiplication by 2 
+	vmov vfp_temp, #5.0 
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 15.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 4
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
+	vmov vfp_temp, #17.0
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp   @ Multiplication by 17
+	vmov vfp_temp, #21.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 315.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov vfp_dividend, vfp_radian                   @ n = 5
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Ninth Power
+	vmov vfp_temp, #31.0
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp
+	vmov vfp_temp, #2.0
+	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp   @ Multiplication by 62 (31 by 2)
+	vmov vfp_temp, #9.0
+	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 2835.0
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+	vmov r0, vfp_sum
+
+	math32_tan32_common:
 		vpop {s0-s4}
 		mov pc, lr
 
@@ -253,6 +384,152 @@ math32_float_to_string32:
 .unreq vfp_float
 .unreq vfp_integer
 .unreq vfp_decimal
+
+
+/**
+ * function math32_uint32_to_string
+ * Make String of Unsigned Integer Value
+ *
+ * Parameters
+ * r0: Unsigned Integer Number
+ * r1: Maximum Length of Integer from Left Side
+ *
+ * Usage: r0-r7
+ * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
+ */
+.globl math32_uint32_to_string
+math32_uint32_to_string:
+	/* Auto (Local) Variables, but just aliases */
+	integer     .req r0
+	max_length  .req r1
+	temp        .req r2
+	mask        .req r3
+	heap        .req r4
+	heap_origin .req r5
+	heap_size   .req r6
+	count       .req r7
+
+	push {r4-r7}
+
+	push {r0-r3,lr}
+	bl math32_count_zero32
+	mov count, r0
+	pop {r0-r3,lr}
+
+	mov temp, count
+	mov count, #0
+
+	math32_uint32_to_string_arrangecount:
+		subs temp, temp, #4
+		addge count, #1
+		bge math32_uint32_to_string_arrangecount
+
+	mov temp, #8
+	sub count, temp, count
+	cmp count, max_length
+	movlt count, max_length
+
+	mov heap_size, #1                               @ 1 Size is 4 bytes in Heap
+	mov temp, count
+	add temp, temp, #1                              @ Add One for Null Character
+
+	math32_uint32_to_string_countsize:
+		subs temp, temp, #4
+		addgt heap_size, #1
+		bgt math32_uint32_to_string_countsize
+
+	push {r0-r3,lr}
+	mov r0, heap_size
+	bl system32_malloc
+	mov heap_origin, r0
+	pop {r0-r3,lr}
+
+	cmp heap_origin, #0
+	beq math32_uint32_to_string_error
+	mov heap, heap_origin
+
+	math32_uint32_to_string_loop:
+		sub count, count, #1
+		cmp count, #0
+		blt math32_uint32_to_string_loop_common
+		lsl count, #2                               @ Substitution of Multiplication by 4
+		mov mask, #0xF
+		lsl mask, count
+		and mask, integer, mask
+		lsr mask, count
+		cmp mask, #9
+		addle mask, mask, #0x30                     @ Ascii Table Number Offset
+		addgt mask, mask, #0x37                     @ Ascii Table Alphabet Offset - 9
+		strb mask, [heap]
+		add heap, heap, #1
+		lsr count, #2                               @ Substitution of Division by 4
+		b math32_uint32_to_string_loop
+
+		math32_uint32_to_string_loop_common:
+			mov mask, #0
+			strb mask, [heap]
+			b math32_uint32_to_string_success
+
+	math32_uint32_to_string_error:
+		mov r0, #0
+		b math32_uint32_to_string_common
+
+	math32_uint32_to_string_success:
+		mov r0, heap_origin
+
+	math32_uint32_to_string_common:
+		pop {r4-r7}
+		mov pc, lr
+
+.unreq integer
+.unreq max_length
+.unreq temp
+.unreq mask
+.unreq heap
+.unreq heap_origin
+.unreq heap_size
+.unreq count
+
+
+/**
+ * function math32_count_zero32
+ * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
+ *
+ * Parameters
+ * r0: Register to Count
+ *
+ * Usage: r0-r3
+ * Return: r0 (Count)
+ */
+.globl math32_count_zero32
+math32_count_zero32:
+	/* Auto (Local) Variables, but just aliases */
+	register      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	mask          .req r1
+	base          .req r2
+	count         .req r3
+
+	mov mask, #0x80000000              @ Most Siginificant Bit
+	mov count, #0
+
+	math32_count_zero32_loop:
+		cmp count, #32
+		beq math32_count_zero32_common @ If All Zero
+
+		and base, register, mask
+		teq base, mask                 @ Similar to EORS (Exclusive OR)
+		addne count, count, #1         @ No Zero flag (This Means The Bit is Zero)
+		lsrne mask, mask, #1
+		bne math32_count_zero32_loop   @ If the Bit is Zero
+
+	math32_count_zero32_common:
+		mov r0, count
+		mov pc, lr
+
+.unreq register
+.unreq mask
+.unreq base
+.unreq count
 
 
 /**

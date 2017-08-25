@@ -22,6 +22,8 @@ void _user_start()
 	uint32 color = COLOR32_WHITE;
 	uint32 color_move = COLOR32_BLACK;
 	uint32 back_color = COLOR32_BLACK;
+	uint32 number = 0x1234ABCD;
+	uint32 number2 = 0x056789EF;
 
 	print32_set_caret( print32_number( print32_strlen( string ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 
@@ -69,6 +71,22 @@ void _user_start()
 
 	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 
+	char8* num_string = math32_uint32_to_string( number, 8 );
+
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	print32_set_caret( print32_number( (uint32)num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
+
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	print32_set_caret( print32_string( num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	char8* num_string2 = math32_uint32_to_string( number2, 7 );
+
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	print32_set_caret( print32_string( num_string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
 	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, -4, 500, 8, 12, 0, 0, 0, 0 );
 
 	//fb32_draw_image( COLOR32_SAMPLE_IMAGE, 300, 632, 8, 12, 0, 0, 0, 0 );
@@ -97,9 +115,9 @@ void _user_start()
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 400, 20, 20 );
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 500, 20, 20 );
 
-	fb32_draw_circle( COLOR32_GREEN, 300, 300, 150, 200 );
+	//fb32_draw_circle( COLOR32_GREEN, 300, 300, 150, 200 );
 
-	fb32_draw_circle( COLOR32_WHITE, -100, 500, 200, 175 );
+	//fb32_draw_circle( COLOR32_WHITE, -100, 500, 200, 175 );
 
 	system32_sleep( 9000000 );
 

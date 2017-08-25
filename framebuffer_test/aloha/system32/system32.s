@@ -459,13 +459,52 @@ system32_load_8:
 
 
 /**
+ * function system32_clear_heap
+ * Clear (All Zero) in Heap
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as Success)
+ */
+.globl system32_clear_heap
+system32_clear_heap:
+	/* Auto (Local) Variables, but just aliases */
+	heap_start  .req r0
+	heap_size   .req r1
+	heap_bytes  .req r2
+
+	ldr heap_start, SYSTEM32_HEAP_ADDR
+	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
+
+	add heap_size, heap_start, heap_size
+
+	mov heap_bytes, #0
+
+	system32_clear_heap_loop:
+		cmp heap_start, heap_size
+		bge system32_clear_heap_common      @ If Heap Space Overflow
+
+		str heap_bytes, [heap_start]
+
+		add heap_start, heap_start, #4
+		b system32_clear_heap_loop          @ If Bytes are not Zero
+
+	system32_clear_heap_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq heap_start
+.unreq heap_size
+.unreq heap_bytes
+
+
+/**
  * function system32_malloc
  * Get Memory Space from Heap (4 Bytes Align)
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
  * Argument, Size Means Number of Block which Has 4 Bytes
  *
  * Parameters
- * r1: Size of Memory
+ * r0: Size of Memory
  *
  * Usage: r0-r5
  * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
@@ -508,11 +547,11 @@ system32_malloc:
 			add check_size, check_start, size
 
 			system32_malloc_loop_sizecheck_loop:
-				cmp check_start, check_size
-				bgt system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
-
 				cmp check_start, heap_size
 				bge system32_malloc_error               @ If Heap Space Overflow
+
+				cmp check_start, check_size
+				bgt system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
 
 				ldr heap_bytes, [check_start]
 
@@ -548,7 +587,7 @@ system32_malloc:
 .globl SYSTEM32_HEAP
 SYSTEM32_HEAP:        .word SYSTEM32_HEAP_ADDR
 SYSTEM32_HEAP_ADDR:   .word _SYSTEM32_HEAP
-SYSTEM32_HEAP_SIZE:   .word 16777216
+SYSTEM32_HEAP_SIZE:   .word _SYSTEM32_HEAP_END - _SYSTEM32_HEAP
 
 /**
  * function system32_mfree
@@ -633,3 +672,4 @@ _SYSTEM32_FB32_RENDERBUFFER3:
 
 _SYSTEM32_HEAP:
 .fill 16777216, 1, 0x00
+_SYSTEM32_HEAP_END:

@@ -59,6 +59,10 @@ _reset:
 	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
+	push {r0-r3}
+	bl system32_clear_heap
+	pop {r0-r3}
+
 	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
 	ldr r1, [r1]
@@ -109,9 +113,9 @@ _reset:
 	str r0, [r1]
 
 	/* Framebuffer Obtain */
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl fb32_get_framebuffer
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
@@ -147,7 +151,7 @@ _reset:
 	str r0, float_example3
 
 render:
-	push {r0-r8,lr}
+	push {r0-r8}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
 	ldr r0, [r0]
@@ -251,13 +255,13 @@ render:
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
-	pop {r0-r8,lr}
+	pop {r0-r8}
 
 	cpsie f
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl _user_start
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	pop {r0}                                  @ Return Process from Current Hyp Mode
 	mcr p15, 4, r0, c12, c0, 0                @ Retrieve HVBAR Address

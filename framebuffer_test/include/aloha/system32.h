@@ -464,6 +464,22 @@ extern uint64 print32_number
 
 
 /********************************
+ * system32/math32.s
+ ********************************/
+
+/**
+ * Make String of Unsigned Integer Value
+ *
+ * Return: Pointer of String
+ */
+
+extern char8* math32_uint32_to_string
+(
+	uint32 number,
+	uint32 max_length
+);
+
+/********************************
  * system32/font_mono_12px.s
  ********************************/
 

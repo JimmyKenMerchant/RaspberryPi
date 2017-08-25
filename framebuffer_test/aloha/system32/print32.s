@@ -202,6 +202,61 @@ print32_char:
 
 
 /**
+ * function print32_debug
+ * Print Number in Register for Debug Use
+ *
+ * Parameters
+ * r0: Register to Be Shown
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ *
+ * Usage: r0-r8
+ * Return: r0 (0 as sucess)
+ */
+.globl print32_debug
+print32_debug:
+	/* Auto (Local) Variables, but just aliases */
+	register          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	color             .req r3
+	color_back        .req r4
+	length            .req r5
+	char_width        .req r6
+	char_height       .req r7
+	font              .req r8
+
+	push {r4-r8,lr}
+	
+	mvn color, #0
+	mov color_back, #0
+	mov length, #8
+	mov char_width, #8
+	mov char_height, #12
+	ldr font, print32_debug_addr_font
+	ldr font, [font]
+	push {r4-r8}
+	bl print32_number
+	add sp, sp, #20
+
+	pop {r4-r8,lr}
+
+	mov pc, lr
+
+print32_debug_addr_font: .word FONT_MONO_12PX_NUMBER
+
+.unreq register
+.unreq x_coord
+.unreq y_coord
+.unreq color
+.unreq color_back
+.unreq length
+.unreq char_width
+.unreq char_height
+.unreq font
+
+
+/**
  * function print32_set_caret
  * Set Caret Position from Return Vlue of `print_*` functions
  *
