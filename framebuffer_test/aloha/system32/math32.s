@@ -387,42 +387,60 @@ math32_float_to_string32:
 
 
 /**
- * function math32_uint32_to_string
- * Make String of Unsigned Integer Value
+ * function math32_int32_to_string_hexa
+ * Make String of Integer Value by Hexadecimal System (Base 16)
  *
  * Parameters
- * r0: Unsigned Integer Number
+ * r0: Integer Number
  * r1: Maximum Length of Integer from Left Side
+ * r2: 0 unsigned, 1 signed
+ * r3: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0x`)
  *
- * Usage: r0-r7
+ * Usage: r0-r9
  * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
  */
-.globl math32_uint32_to_string
-math32_uint32_to_string:
+.globl math32_int32_to_string_hexa
+math32_int32_to_string_hexa:
 	/* Auto (Local) Variables, but just aliases */
 	integer     .req r0
 	max_length  .req r1
-	temp        .req r2
-	mask        .req r3
-	heap        .req r4
-	heap_origin .req r5
-	heap_size   .req r6
-	count       .req r7
+	signed      .req r2
+	base_mark  .req r3
+	temp        .req r4
+	mask        .req r5
+	heap        .req r6
+	heap_origin .req r7
+	heap_size   .req r8
+	count       .req r9
 
-	push {r4-r7}
+	push {r4-r9}
 
 	push {r0-r3,lr}
 	bl math32_count_zero32
 	mov count, r0
 	pop {r0-r3,lr}
 
-	mov temp, count
-	mov count, #0
+	cmp signed, #1
+	cmpeq count, #0                         @ Whether Top Bit is One or Zero
+	movne signed, #0                        @ If Count Is Not Zero, Signed Will Perform The Same as Unsigned
+	bne math32_int32_to_string_hexa_jumpunsigned
 
-	math32_uint32_to_string_arrangecount:
+		/* Process for Minus Signed */
+		mvn integer, integer                           @ All Inverter
+		add integer, #1                                @ Convert Value from Minus Signed Number to Plus Signed Number
+		push {r0-r3,lr}
+		bl math32_count_zero32
+		mov count, r0
+		pop {r0-r3,lr}
+
+	math32_int32_to_string_hexa_jumpunsigned:
+		mov temp, count
+		mov count, #0
+
+	math32_int32_to_string_hexa_arrangecount:
 		subs temp, temp, #4
 		addge count, #1
-		bge math32_uint32_to_string_arrangecount
+		bge math32_int32_to_string_hexa_arrangecount
 
 	mov temp, #8
 	sub count, temp, count
@@ -432,11 +450,15 @@ math32_uint32_to_string:
 	mov heap_size, #1                               @ 1 Size is 4 bytes in Heap
 	mov temp, count
 	add temp, temp, #1                              @ Add One for Null Character
+	cmp signed, #1
+	addeq temp, temp, #1                            @ Add One for Minus Character
+	cmp base_mark, #1
+	addeq temp, temp, #2                            @ Add Two for Bases Mark, `0x`
 
-	math32_uint32_to_string_countsize:
+	math32_int32_to_string_hexa_countsize:
 		subs temp, temp, #4
 		addgt heap_size, #1
-		bgt math32_uint32_to_string_countsize
+		bgt math32_int32_to_string_hexa_countsize
 
 	push {r0-r3,lr}
 	mov r0, heap_size
@@ -445,13 +467,29 @@ math32_uint32_to_string:
 	pop {r0-r3,lr}
 
 	cmp heap_origin, #0
-	beq math32_uint32_to_string_error
+	beq math32_int32_to_string_hexa_error
 	mov heap, heap_origin
 
-	math32_uint32_to_string_loop:
+	cmp signed, #1
+	bne math32_int32_to_string_hexa_basesmark       @ If Unsigned, Jump to Next
+	mov mask, #0x2D
+	strb mask, [heap]                               @ Store Minus Sign
+	add heap, heap, #1
+
+	math32_int32_to_string_hexa_basesmark:
+		cmp base_mark, #1
+		bne math32_int32_to_string_hexa_loop
+		mov mask, #0x30
+		strb mask, [heap]                       @ Store `0`
+		add heap, heap, #1
+		mov mask, #0x78
+		strb mask, [heap]                       @ Store `x`
+		add heap, heap, #1
+	
+	math32_int32_to_string_hexa_loop:
 		sub count, count, #1
 		cmp count, #0
-		blt math32_uint32_to_string_loop_common
+		blt math32_int32_to_string_hexa_loop_common
 		lsl count, #2                               @ Substitution of Multiplication by 4
 		mov mask, #0xF
 		lsl mask, count
@@ -463,26 +501,28 @@ math32_uint32_to_string:
 		strb mask, [heap]
 		add heap, heap, #1
 		lsr count, #2                               @ Substitution of Division by 4
-		b math32_uint32_to_string_loop
+		b math32_int32_to_string_hexa_loop
 
-		math32_uint32_to_string_loop_common:
+		math32_int32_to_string_hexa_loop_common:
 			mov mask, #0
 			strb mask, [heap]
-			b math32_uint32_to_string_success
+			b math32_int32_to_string_hexa_success
 
-	math32_uint32_to_string_error:
+	math32_int32_to_string_hexa_error:
 		mov r0, #0
-		b math32_uint32_to_string_common
+		b math32_int32_to_string_hexa_common
 
-	math32_uint32_to_string_success:
+	math32_int32_to_string_hexa_success:
 		mov r0, heap_origin
 
-	math32_uint32_to_string_common:
-		pop {r4-r7}
+	math32_int32_to_string_hexa_common:
+		pop {r4-r9}
 		mov pc, lr
 
 .unreq integer
 .unreq max_length
+.unreq signed
+.unreq base_mark
 .unreq temp
 .unreq mask
 .unreq heap

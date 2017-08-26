@@ -393,6 +393,18 @@ extern uint32 print32_set_caret
 
 
 /**
+ * Concatenation of Two Strings
+ *
+ * Return: Pointer of Concatenated String
+ */
+extern char8* print32_strcat
+(
+	char8* string1,
+	char8* string2
+);
+
+
+/**
  * Count 1-Byte Words of String
  *
  * Return: Number of Words Maximum of 4,294,967,295 words
@@ -424,7 +436,7 @@ extern uint64 print32_string
 
 
 /**
- * Print Hexadecimal Bases Numbers in 64-bit (16 Digits)
+ * Print Hexadecimal System (Base 16) Numbers in 64-bit (16 Digits)
  *
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
@@ -444,7 +456,7 @@ extern uint64 print32_number_double
 
 
 /**
- * Print Hexadecimal Bases Numbers in 32-bit (8 Digits)
+ * Print Hexadecimal System (Base 16) Numbers in 32-bit (8 Digits)
  *
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
@@ -468,15 +480,17 @@ extern uint64 print32_number
  ********************************/
 
 /**
- * Make String of Unsigned Integer Value
+ * Make String of Integer Value by Hexadecimal System (Base 16)
  *
  * Return: Pointer of String
  */
 
-extern char8* math32_uint32_to_string
+extern char8* math32_int32_to_string_hexa
 (
-	uint32 number,
-	uint32 max_length
+	int32 number,      // If You Use This for uint32, You Need to Cast It to int32 
+	uint32 max_length,
+	uint32 bool_signed,
+	uint32 bool_basemark
 );
 
 /********************************

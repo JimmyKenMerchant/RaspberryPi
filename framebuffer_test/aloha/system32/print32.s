@@ -258,7 +258,7 @@ print32_debug_addr_font: .word FONT_MONO_12PX_NUMBER
 
 /**
  * function print32_set_caret
- * Set Caret Position from Return Vlue of `print_*` functions
+ * Set Caret Position from Return Vlue of `print_number*` or `print_string*` functions
  *
  * Parameters
  * r0: Lower of Return
@@ -308,6 +308,103 @@ print32_set_caret:
 .unreq width
 .unreq x_coord
 .unreq y_coord
+
+
+/**
+ * function print32_strcat
+ * Concatenation of Two Strings
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Pointer of Array of String
+ *
+ * Usage: r0-r7
+ * Return: r0 (Pointer of Concatenated String)
+ */
+.globl print32_strcat
+print32_strcat:
+	/* Auto (Local) Variables, but just aliases */
+	string_point1     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_point2     .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	string_byte       .req r2
+	heap_size         .req r3
+	length1           .req r4
+	length2           .req r5
+	heap_origin       .req r6
+	heap              .req r7
+
+	push {r4-r7}
+
+	push {r0-r3,lr}
+	mov r0, string_point1
+	bl print32_strlen
+	mov length1, r0
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, string_point2
+	bl print32_strlen
+	mov length2, r0
+	pop {r0-r3,lr}
+
+	add length1, length1, length2
+	add length1, length1, #1                      @ Add One for Null Character
+	mov heap_size, #1
+
+	print32_strcat_countsize:
+		subs length1, length1, #4
+		addgt heap_size, #1
+		bgt print32_strcat_countsize
+
+	push {r0-r3,lr}
+	mov r0, heap_size
+	bl system32_malloc
+	mov heap_origin, r0
+	pop {r0-r3,lr}
+
+	cmp heap_origin, #0
+	beq print32_strcat_common
+	mov heap, heap_origin
+
+	print32_strcat_loop1:
+		ldrb string_byte, [string_point1]         @ Load Character Byte
+		cmp string_byte, #0                       @ NULL Character (End of String) Checker
+		beq print32_strcat_loop2                  @ Break Loop if Null Character
+
+		strb string_byte, [heap]                  @ Store Byte to New Pointer
+
+		add string_point1, string_point1, #1
+		add heap, heap, #1
+		b print32_strcat_loop1
+
+	print32_strcat_loop2:
+		ldrb string_byte, [string_point2]         @ Load Character Byte
+		cmp string_byte, #0                       @ NULL Character (End of String) Checker
+		beq print32_strcat_success                @ Break Loop if Null Character
+
+		strb string_byte, [heap]                  @ Store Byte to New Pointer
+
+		add string_point2, string_point2, #1
+		add heap, heap, #1
+		b print32_strcat_loop2
+
+	print32_strcat_success:
+		mov string_byte, #0
+		strb string_byte, [heap]                  @ Make Sure to Add Null Character to the End
+
+	print32_strcat_common:
+		mov r0, heap_origin
+		pop {r4-r7}
+		mov pc, lr
+
+.unreq string_point1
+.unreq string_point2
+.unreq string_byte
+.unreq heap_size
+.unreq length1
+.unreq length2
+.unreq heap_origin
+.unreq heap
 
 
 /**
@@ -493,7 +590,7 @@ print32_string:
 
 /**
  * function print32_number_double
- * Print Hexadecimal Bases Numbers in 64-bit (16 Digits)
+ * Print Hexadecimal System (Base 16) Numbers in 64-bit (16 Digits)
  *
  * Parameters
  * r0: Lower Half of the Number
@@ -614,7 +711,7 @@ print32_number_double:
 
 /**
  * function print32_number
- * Print Hexadecimal Bases Numbers in 32-bit (8 Digits)
+ * Print Hexadecimal System (Base 16) Numbers in 32-bit (8 Digits)
  *
  * Parameters
  * r0: Register to show numbers
