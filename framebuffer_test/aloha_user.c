@@ -22,7 +22,7 @@ void _user_start()
 	uint32 color = COLOR32_WHITE;
 	uint32 color_move = COLOR32_BLACK;
 	uint32 back_color = COLOR32_BLACK;
-	uint32 number = 0x1234ABCD;
+	uint32 number = 0x80000000;
 	int32 number2 = 0x056789EF;
 	int32 number3 = -0x056789EF;
 
@@ -50,13 +50,15 @@ void _user_start()
 	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 
-	char8* num_string = math32_int32_to_string_hexa( number, 8, 0, 1 );
+	char8* num_string = math32_int32_to_string_deci( number, 0, 1 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_number( (uint32)num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	char8* num_string3 = math32_int32_to_string_hexa( number3, 6, 1, 0 );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( (uint32)num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 

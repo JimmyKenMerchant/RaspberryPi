@@ -480,15 +480,26 @@ extern uint64 print32_number
  ********************************/
 
 /**
+ * Make String of Integer Value by Decimal System (Base 10)
+ *
+ * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
+ */
+extern char8* math32_int32_to_string_deci
+(
+	int32 number,      // If You Use This for uint32, You Need to Cast It to int32 
+	uint32 min_length,
+	uint32 bool_signed
+);
+
+/**
  * Make String of Integer Value by Hexadecimal System (Base 16)
  *
- * Return: Pointer of String
+ * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-
 extern char8* math32_int32_to_string_hexa
 (
 	int32 number,      // If You Use This for uint32, You Need to Cast It to int32 
-	uint32 max_length,
+	uint32 min_length,
 	uint32 bool_signed,
 	uint32 bool_basemark
 );

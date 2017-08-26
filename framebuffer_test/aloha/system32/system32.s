@@ -599,6 +599,7 @@ SYSTEM32_HEAP_SIZE:   .word _SYSTEM32_HEAP_END - _SYSTEM32_HEAP
  *
  * Usage: r0-r2
  * Return: r0 (0 as Success, 1 as Error)
+ * Error: Pointer of Start Address is Null (0)
  */
 .globl system32_mfree
 system32_mfree:
@@ -606,6 +607,9 @@ system32_mfree:
 	heap_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	heap_size       .req r1
 	zero            .req r2
+
+	cmp heap_start, #0
+	beq system32_mfree_error
 
 	ldr heap_size, [heap_start, #-4]
 	add heap_size, heap_start, heap_size
@@ -615,15 +619,21 @@ system32_mfree:
 
 	system32_mfree_loop:
 		cmp heap_start, heap_size
-		bge system32_mfree_common
+		bge system32_mfree_success
 
 		str zero, [heap_start]
 		add heap_start, heap_start, #4
 
 		b system32_mfree_loop
 
-	system32_mfree_common:
+	system32_mfree_error:
+		mov r0, #1
+		b system32_mfree_common
+
+	system32_mfree_success:
 		mov r0, #0
+
+	system32_mfree_common:
 		mov pc, lr
 
 .unreq heap_start

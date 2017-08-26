@@ -387,12 +387,285 @@ math32_float_to_string32:
 
 
 /**
+ * function math32_int32_to_string_deci
+ * Make String of Integer Value by Decimal System (Base 10)
+ *
+ * Parameters
+ * r0: Integer Number
+ * r1: Minimum Length of Digits from Left Side, Up to 16 Digits
+ * r2: 0 unsigned, 1 signed
+ *
+ * Usage: r0-r11
+ * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
+ */
+.globl math32_int32_to_string_deci
+math32_int32_to_string_deci:
+	/* Auto (Local) Variables, but just aliases */
+	integer       .req r0
+	min_length    .req r1
+	signed        .req r2
+	temp          .req r3
+	string_lower  .req r4
+	string_upper  .req r5
+	string_minus  .req r6
+	string_cmp    .req r7
+	count_lower   .req r8
+	count_upper   .req r9
+	integer_lower .req r10
+	integer_upper .req r11
+
+	push {r4-r11}
+
+	cmp min_length, #16
+	movgt min_length, #16
+
+	/* Sanitize Pointers */
+	mov string_lower, #0
+	mov string_upper, #0
+	mov string_minus, #0
+	mov string_cmp, #0
+
+	push {r0-r3,lr}
+	bl math32_count_zero32
+	mov count_lower, r0
+	pop {r0-r3,lr}
+
+	cmp signed, #1
+	cmpeq count_lower, #0                   @ Whether Top Bit is One or Zero
+	movne signed, #0                        @ If Count Is Not Zero, Signed Will Perform The Same as Unsigned
+	bne math32_int32_to_string_deci_jumpunsigned
+
+	/* Process for Minus Signed */
+	mvn integer, integer                    @ All Inverter
+	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
+
+	math32_int32_to_string_deci_jumpunsigned:
+		push {r0-r3,lr}
+		bl math32_hexa_to_deci32
+		mov integer_lower, r0
+		mov integer_upper, r1
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, integer_lower
+		bl math32_count_zero32
+		mov count_lower, r0
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, integer_upper
+		bl math32_count_zero32
+		mov count_upper, r0
+		pop {r0-r3,lr}
+
+		mov temp, count_lower
+		mov count_lower, #0
+
+	math32_int32_to_string_deci_countlower:
+		subs temp, temp, #4
+		addge count_lower, #1
+		bge math32_int32_to_string_deci_countlower
+
+	mov temp, #8
+	sub count_lower, temp, count_lower
+
+	mov temp, count_upper
+	mov count_upper, #0
+
+	math32_int32_to_string_deci_countupper:
+		subs temp, temp, #4
+		addge count_upper, #1
+		bge math32_int32_to_string_deci_countupper
+
+	mov temp, #8
+	sub count_upper, temp, count_upper
+
+	cmp count_lower, min_length
+	movlt count_lower, min_length                    @ Cutting off min_length Exists in math32_int32_to_string_hexa
+
+	cmp count_upper, #0
+	beq math32_int32_to_string_deci_lower            @ If Upper String Doesn't Exist
+
+	sub temp, min_length, #8
+	cmp count_upper, temp
+	movlt count_upper, temp
+
+	math32_int32_to_string_deci_upper:
+
+		push {r0-r3,lr}
+		mov r0, integer_upper
+		mov r1, count_upper
+		mov r2, #0
+		mov r3, #0
+		bl math32_int32_to_string_hexa
+		mov string_upper, r0
+		pop {r0-r3,lr}
+
+		cmp string_upper, #0
+		beq math32_int32_to_string_deci_error
+
+		mov count_lower, #8
+
+	math32_int32_to_string_deci_lower:
+
+		push {r0-r3,lr}
+		mov r0, integer_lower
+		mov r1, count_lower
+		mov r2, #0
+		mov r3, #0
+		bl math32_int32_to_string_hexa
+		mov string_lower, r0
+		pop {r0-r3,lr}
+
+		cmp string_lower, #0
+		beq math32_int32_to_string_deci_error
+
+	cmp signed, #1
+	bne math32_int32_to_string_deci_cat         @ If Unsigned, Jump to Next
+
+	push {r0-r3,lr}
+	mov r0, #1
+	bl system32_malloc
+	mov string_minus, r0
+	pop {r0-r3,lr}
+
+	cmp string_minus, #0
+	beq math32_int32_to_string_deci_error
+
+	mov temp, #0x2D
+	strb temp, [string_minus]                   @ Store Minus Sign
+
+	mov temp, #0x00
+	strb temp, [string_minus, #1]               @ Store Null Character
+
+	math32_int32_to_string_deci_cat:
+		cmp count_upper, #0
+		beq math32_int32_to_string_deci_cat_lower
+
+		cmp signed, #1
+		bne math32_int32_to_string_deci_cat_jump   @ If Unsigned, Jump to Next
+
+		push {r0-r3,lr}
+		mov r0, string_minus 
+		mov r1, string_upper
+		bl print32_strcat
+		mov string_cmp, r0
+		pop {r0-r3,lr}
+
+		cmp string_cmp, #0
+		beq math32_int32_to_string_deci_error
+
+		push {r0-r3,lr}
+		mov r0, string_minus 
+		bl system32_mfree
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, string_upper
+		bl system32_mfree
+		pop {r0-r3,lr}
+
+		mov string_upper, string_cmp
+
+		math32_int32_to_string_deci_cat_jump:
+
+			push {r0-r3,lr}
+			mov r0, string_upper
+			mov r1, string_lower
+			bl print32_strcat
+			mov string_cmp, r0
+			pop {r0-r3,lr}
+
+			cmp string_cmp, #0
+			beq math32_int32_to_string_deci_error
+
+			push {r0-r3,lr}
+			mov r0, string_upper 
+			bl system32_mfree
+			pop {r0-r3,lr}
+
+			push {r0-r3,lr}
+			mov r0, string_lower
+			bl system32_mfree
+			pop {r0-r3,lr}
+
+			b math32_int32_to_string_deci_success 
+
+		math32_int32_to_string_deci_cat_lower:
+			cmp signed, #1
+			movne string_cmp, string_lower
+			bne math32_int32_to_string_deci_success         @ If Unsigned, Jump to Next
+
+			push {r0-r3,lr}
+			mov r0, string_minus 
+			mov r1, string_lower
+			bl print32_strcat
+			mov string_cmp, r0
+			pop {r0-r3,lr}
+
+			cmp string_cmp, #0
+			beq math32_int32_to_string_deci_error
+
+			push {r0-r3,lr}
+			mov r0, string_minus 
+			bl system32_mfree
+			pop {r0-r3,lr}
+
+			push {r0-r3,lr}
+			mov r0, string_lower
+			bl system32_mfree
+			pop {r0-r3,lr}
+
+			b math32_int32_to_string_deci_success 
+
+	math32_int32_to_string_deci_error:
+		push {r0-r3,lr}
+		mov r0, string_lower
+		bl system32_mfree
+		pop {r0-r3,lr}
+		push {r0-r3,lr}
+		mov r0, string_upper
+		bl system32_mfree
+		pop {r0-r3,lr}
+		push {r0-r3,lr}
+		mov r0, string_minus 
+		bl system32_mfree
+		pop {r0-r3,lr}
+		push {r0-r3,lr}
+		mov r0, string_cmp 
+		bl system32_mfree
+		pop {r0-r3,lr}
+		mov r0, #0
+		b math32_int32_to_string_deci_common
+
+	math32_int32_to_string_deci_success:
+		mov r0, string_cmp
+
+	math32_int32_to_string_deci_common:
+		pop {r4-r11}
+		mov pc, lr
+
+.unreq integer
+.unreq min_length
+.unreq signed
+.unreq temp
+.unreq string_lower
+.unreq string_upper
+.unreq string_minus
+.unreq string_cmp
+.unreq count_lower
+.unreq count_upper
+.unreq integer_lower
+.unreq integer_upper
+
+
+/**
  * function math32_int32_to_string_hexa
  * Make String of Integer Value by Hexadecimal System (Base 16)
  *
  * Parameters
  * r0: Integer Number
- * r1: Maximum Length of Integer from Left Side
+ * r1: Minimum Length of Digits from Left Side, Up to 8 Digits
  * r2: 0 unsigned, 1 signed
  * r3: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0x`)
  *
@@ -403,9 +676,9 @@ math32_float_to_string32:
 math32_int32_to_string_hexa:
 	/* Auto (Local) Variables, but just aliases */
 	integer     .req r0
-	max_length  .req r1
+	min_length  .req r1
 	signed      .req r2
-	base_mark  .req r3
+	base_mark   .req r3
 	temp        .req r4
 	mask        .req r5
 	heap        .req r6
@@ -414,6 +687,9 @@ math32_int32_to_string_hexa:
 	count       .req r9
 
 	push {r4-r9}
+
+	cmp min_length, #8
+	movgt min_length, #8
 
 	push {r0-r3,lr}
 	bl math32_count_zero32
@@ -425,13 +701,13 @@ math32_int32_to_string_hexa:
 	movne signed, #0                        @ If Count Is Not Zero, Signed Will Perform The Same as Unsigned
 	bne math32_int32_to_string_hexa_jumpunsigned
 
-		/* Process for Minus Signed */
-		mvn integer, integer                           @ All Inverter
-		add integer, #1                                @ Convert Value from Minus Signed Number to Plus Signed Number
-		push {r0-r3,lr}
-		bl math32_count_zero32
-		mov count, r0
-		pop {r0-r3,lr}
+	/* Process for Minus Signed */
+	mvn integer, integer                    @ All Inverter
+	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
+	push {r0-r3,lr}
+	bl math32_count_zero32
+	mov count, r0
+	pop {r0-r3,lr}
 
 	math32_int32_to_string_hexa_jumpunsigned:
 		mov temp, count
@@ -444,8 +720,8 @@ math32_int32_to_string_hexa:
 
 	mov temp, #8
 	sub count, temp, count
-	cmp count, max_length
-	movlt count, max_length
+	cmp count, min_length
+	movlt count, min_length
 
 	mov heap_size, #1                               @ 1 Size is 4 bytes in Heap
 	mov temp, count
@@ -471,12 +747,12 @@ math32_int32_to_string_hexa:
 	mov heap, heap_origin
 
 	cmp signed, #1
-	bne math32_int32_to_string_hexa_basesmark       @ If Unsigned, Jump to Next
+	bne math32_int32_to_string_hexa_basemark        @ If Unsigned, Jump to Next
 	mov mask, #0x2D
 	strb mask, [heap]                               @ Store Minus Sign
 	add heap, heap, #1
 
-	math32_int32_to_string_hexa_basesmark:
+	math32_int32_to_string_hexa_basemark:
 		cmp base_mark, #1
 		bne math32_int32_to_string_hexa_loop
 		mov mask, #0x30
@@ -520,7 +796,7 @@ math32_int32_to_string_hexa:
 		mov pc, lr
 
 .unreq integer
-.unreq max_length
+.unreq min_length
 .unreq signed
 .unreq base_mark
 .unreq temp
@@ -579,26 +855,25 @@ math32_count_zero32:
  * Parameters
  * r0: Register to Be Converted
  *
- * Usage: r0-r11, r0 reused
+ * Usage: r0-r8, r0 reused
  * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
  * Error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
- * External Variable(s): math32_power_0-6, math32_power_7_lower, math32_power_7_upper
  */
 .globl math32_hexa_to_deci32
 math32_hexa_to_deci32:
 	/* Auto (Local) Variables, but just aliases */
-	hexa               .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	deci_upper         .req r1
-	math32_power_lower .req r2
-	math32_power_upper .req r3
-	dup_hexa           .req r4
-	mul_number         .req r5
-	i                  .req r6
-	shift              .req r7
-	bitmask            .req r8
+	hexa        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	deci_upper  .req r1
+	power_lower .req r2
+	power_upper .req r3
+	dup_hexa    .req r4
+	mul_number  .req r5
+	i           .req r6
+	shift       .req r7
+	bitmask     .req r8
 
 	push {r4-r8}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+                    @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov dup_hexa, hexa
 	
@@ -607,7 +882,7 @@ math32_hexa_to_deci32:
 
 	mov deci_lower, #0
 	mov deci_upper, #0
-	mov math32_power_upper, #0
+	mov power_upper, #0
 
 	mov i, #0
 	mov mul_number, #4
@@ -620,36 +895,36 @@ math32_hexa_to_deci32:
 		lsr bitmask, bitmask, shift               @ Make One Digit Number
 
 		cmp i, #0
-		ldreq math32_power_lower, math32_power_0                @ 16^0
+		ldreq power_lower, math32_hexa_to_deci32_0                @ 16^0
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #1
-		ldreq math32_power_lower, math32_power_1                @ 16^1
+		ldreq power_lower, math32_hexa_to_deci32_1                @ 16^1
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #2
-		ldreq math32_power_lower, math32_power_2                @ 16^2
+		ldreq power_lower, math32_hexa_to_deci32_2                @ 16^2
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #3
-		ldreq math32_power_lower, math32_power_3                @ 16^3
+		ldreq power_lower, math32_hexa_to_deci32_3                @ 16^3
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #4
-		ldreq math32_power_lower, math32_power_4                @ 16^4
+		ldreq power_lower, math32_hexa_to_deci32_4                @ 16^4
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #5
-		ldreq math32_power_lower, math32_power_5                @ 16^5
+		ldreq power_lower, math32_hexa_to_deci32_5                @ 16^5
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #6
-		ldreq math32_power_lower, math32_power_6                @ 16^6
+		ldreq power_lower, math32_hexa_to_deci32_6                @ 16^6
 		beq math32_hexa_to_deci32_loop_loop
 
 		cmp i, #7
-		ldreq math32_power_lower, math32_power_7_lower          @ 16^7 Lower Bits
-		ldreq math32_power_upper, math32_power_7_upper          @ 16^7 Upper Bits
+		ldreq power_lower, math32_hexa_to_deci32_7_lower          @ 16^7 Lower Bits
+		ldreq power_upper, math32_hexa_to_deci32_7_upper          @ 16^7 Upper Bits
 
 		math32_hexa_to_deci32_loop_loop:
 
@@ -678,21 +953,21 @@ math32_hexa_to_deci32:
 
 /* Variables */
 .balign 4
-math32_power_0:       .word 0x00000001 @ 16^0
-math32_power_1:       .word 0x00000016 @ 16^1
-math32_power_2:       .word 0x00000256 @ 16^2
-math32_power_3:       .word 0x00004096 @ 16^3
-math32_power_4:       .word 0x00065536 @ 16^4
-math32_power_5:       .word 0x01048576 @ 16^5
-math32_power_6:       .word 0x16777216 @ 16^6
-math32_power_7_lower: .word 0x68435456 @ 16^7 Lower Bits
-math32_power_7_upper: .word 0x00000002 @ 16^7 Upper Bits
+math32_hexa_to_deci32_0:       .word 0x00000001 @ 16^0
+math32_hexa_to_deci32_1:       .word 0x00000016 @ 16^1
+math32_hexa_to_deci32_2:       .word 0x00000256 @ 16^2
+math32_hexa_to_deci32_3:       .word 0x00004096 @ 16^3
+math32_hexa_to_deci32_4:       .word 0x00065536 @ 16^4
+math32_hexa_to_deci32_5:       .word 0x01048576 @ 16^5
+math32_hexa_to_deci32_6:       .word 0x16777216 @ 16^6
+math32_hexa_to_deci32_7_lower: .word 0x68435456 @ 16^7 Lower Bits
+math32_hexa_to_deci32_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 .balign 4
 
 .unreq deci_lower
 .unreq deci_upper
-.unreq math32_power_lower
-.unreq math32_power_upper
+.unreq power_lower
+.unreq power_upper
 .unreq dup_hexa
 .unreq mul_number
 .unreq i
