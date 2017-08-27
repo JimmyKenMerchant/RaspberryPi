@@ -342,48 +342,165 @@ math32_tan32:
  *
  * Parameters
  * r0: Float Value, Must Be Type of Single Precision Float
+ * r1: Minimam Length of Digits in Integer Places, 16 Digits Max
+ * r2: Maximam Length of Digits in Decimal Places
  *
- * Usage: r0
+ * Usage: r0-r9
  * Return: r0 (Pointer of String)
  */
 .globl math32_float_to_string32
 math32_float_to_string32:
 	/* Auto (Local) Variables, but just aliases */
-	float         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	integer       .req r1
-	decimal       .req r2
-	heap          .req r3
+	float          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	min_integer    .req r1
+	max_decimal    .req r2
+	temp           .req r3
+	integer        .req r4
+	decimal        .req r5
+	string_integer .req r6
+	string_decimal .req r7
+	string_temp    .req r8
+	string_cmp     .req r9
+	exponent       .req r10
+	minus          .req r11
 
 	/* VFP/NEON Registers */
-	vfp_float     .req s0
-	vfp_integer   .req s1
-	vfp_decimal   .req s2
+	vfp_float      .req s0
+	vfp_integer    .req s1
+	vfp_decimal    .req s2
+	vfp_temp       .req s3
 
-	vpush {s0-s2}
+	push {r4-r9}
+	vpush {s0-s3}
+
+	/* Sanitize Pointers */
+	mov string_integer, #0
+	mov string_decimal, #0
+	mov string_temp, #0
+	mov string_cmp, #0
 
 	vmov vfp_float, float
-	vmov vfp_integer, float
-	vmov vfp_decimal, float
-	vcvt.s32.f32 vfp_integer, vfp_integer           @ Round Down
-	vmov integer, vfp_integer
-	vcvt.f32.s32 vfp_integer, vfp_integer
-	vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
 
+	mov temp, #0
+	vmov vfp_temp, temp
+	vcmp.f32 vfp_float, vfp_temp
+	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+	movlt minus, #1
+	movge minus, #0
+
+	vabs.f32 vfp_float, vfp_float
+
+	vmov vfp_temp, #1.0
+	vcmp.f32 vfp_float, vfp_temp
+	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+	blt math32_float_to_string32_exponentminus
+
+	str temp, math32_float_to_string32_max
+	vmov vfp_temp, temp
+	vcmp.f32 vfp_float, vfp_temp
+	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+	bgt math32_float_to_string32_exponentplus
+
+	b math32_float_to_string32_integer
+
+	math32_float_to_string32_exponentminus:
+
+	math32_float_to_string32_exponentplus:
+
+	math32_float_to_string32_integer:
+
+		vmov vfp_integer, float                         @ Signed
+		vcvt.s32.f32 vfp_integer, vfp_integer           @ Round Down
+		vmov integer, vfp_integer
+
+		push {r0-r3,lr}
+		mov r0, integer
+		mov r2, #1
+		mov string_integer, r0
+		bl math32_int32_to_string_deci
+		pop {r0-r3,lr}
+
+		cmp string_integer, #0
+		beq math32_float_to_string32_error
+
+		push {r0-r3,lr}
+		mov r0, #1
+		bl system32_malloc
+		mov string_temp, r0
+		pop {r0-r3,lr}
+
+		cmp string_temp, #0
+		beq math32_float_to_string32_error
+
+		mov temp, #0x2E
+		strb temp, [string_temp]                   @ Store Period Sign
+		mov temp, #0x00
+		strb temp, [string_temp, #1]               @ Store Null Character
+
+		push {r0-r3,lr}
+		mov r0, string_integer
+		mov r1, string_temp
+		bl print32_strcat
+		mov string_cmp, r0
+		pop {r0-r3,lr}
+
+		cmp string_cmp, #0
+		beq math32_float_to_string32_error
+
+		push {r0-r3,lr}
+		mov r0, string_integer 
+		bl system32_mfree
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, string_temp
+		bl system32_mfree
+		pop {r0-r3,lr}
+
+		mov string_integer, string_cmp
+
+		vcvt.f32.s32 vfp_integer, vfp_integer
+		vmov vfp_decimal, float
+		vabs.f32 vfp_integer, vfp_integer
+		vabs.f32 vfp_decimal, vfp_decimal
+		vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
+
+	math32_float_to_string32_decimal:
 	/* Repeat of vfp_decimal X 10^8 and Cut it till catch Zero */
-
 	/* Caution! It's Half Way */
 
+	math32_float_to_string32_exponent:
+
+	math32_float_to_string32_error:
+		mov r0, #0
+		b math32_float_to_string32_common
+
+	math32_float_to_string32_success:
+		mov r0, string_cmp
+
 	math32_float_to_string32_common:
-		vpop {s0-s2}
+		vpop {s0-s3}
+		pop {r4-r9}
 		mov pc, lr
 
+math32_float_to_string32_max: .float 999999999.0
+
 .unreq float
+.unreq min_integer
+.unreq max_decimal
+.unreq temp
 .unreq integer
 .unreq decimal
-.unreq heap
+.unreq string_integer
+.unreq string_decimal
+.unreq string_temp
+.unreq string_cmp
+.unreq exponent
+.unreq minus
 .unreq vfp_float
 .unreq vfp_integer
 .unreq vfp_decimal
+.unreq vfp_temp
 
 
 /**

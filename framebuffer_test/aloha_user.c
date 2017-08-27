@@ -26,7 +26,7 @@ void _user_start()
 	int32 number2 = 0x056789EF;
 	int32 number3 = -0x056789EF;
 
-	print32_set_caret( print32_number( print32_strlen( string ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
+	print32_set_caret( print32_number( print32_strlen( string ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	system32_sleep( 1000000 );
 
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -52,13 +52,13 @@ void _user_start()
 
 	char8* num_string = math32_int32_to_string_deci( number, 0, 1 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_number( (uint32)num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
+	print32_set_caret( print32_number( (uint32)num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	char8* num_string3 = math32_int32_to_string_hexa( number3, 6, 1, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_number( (uint32)num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_NUMBER ) );
+	print32_set_caret( print32_number( (uint32)num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
@@ -88,14 +88,14 @@ void _user_start()
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 400, 20, 20 );
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 500, 20, 20 );
 
-	//fb32_draw_circle( COLOR32_GREEN, 300, 300, 150, 200 );
-	//fb32_draw_circle( COLOR32_WHITE, -100, 500, 200, 175 );
+	fb32_draw_circle( COLOR32_BLUE, 300, 300, 150, 200 );
+	fb32_draw_circle( COLOR32_BLUE, -100, 500, 200, 175 );
 
 	system32_sleep( 9000000 );
 
 	int32* renderbuffer0 = (int32*)system32_load_32( FB32_RENDERBUFFER0 );
 
-	//print32_set_caret( print32_number( (uint32)renderbuffer0, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER ) );
+	//print32_set_caret( print32_number( (uint32)renderbuffer0, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	fb32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
 	uint32 renderbuffer0_width = system32_load_32(FB32_RENDERBUFFER0 + 1 ); // 4 bytes offset
@@ -104,7 +104,7 @@ void _user_start()
 	while(1) {
 		fb32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
 		color_move++;
-		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_NUMBER );
+		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII );
 		fb32_draw_image( renderbuffer0, 0, 0, renderbuffer0_width, renderbuffer0_height, 0, 10, 10, 0 );
 		system32_sleep( 2000000 );
 	}

@@ -508,7 +508,6 @@ extern char8* math32_int32_to_string_hexa
  * system32/font_mono_12px.s
  ********************************/
 
-extern int32* FONT_MONO_12PX_NUMBER;
 extern int32* FONT_MONO_12PX_ASCII;
 
 

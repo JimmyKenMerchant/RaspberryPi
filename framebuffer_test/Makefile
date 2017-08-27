@@ -29,7 +29,8 @@ HEADER = include/stdio.h include/aloha/system32.h
 # If you meets "make: `main' is up to date.", use "touch" command to renew.
 # "$?" means ones which are newer than the target.
 # Make sure to use tab in command line
-
+.PHONY: all
+all: kernel.img
 kernel.img: inter.elf
 	$(COPY) $< -O binary $@
 	$(COPY) $< -O ihex kernel.hex
@@ -46,6 +47,9 @@ include aloha/system32/system32.mk
 
 $(OBJ1).o: $(OBJ1).s
 	$(AS) $< -I aloha/ -o $@ $(TARGET)
+
+.PHONY: warn
+warn: all clean
 
 .PHONY: clean
 clean:

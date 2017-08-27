@@ -597,32 +597,43 @@ SYSTEM32_HEAP_SIZE:   .word _SYSTEM32_HEAP_END - _SYSTEM32_HEAP
  * Parameters
  * r1: Pointer of Start Address of Memory Space
  *
- * Usage: r0-r2
+ * Usage: r0-r4
  * Return: r0 (0 as Success, 1 as Error)
  * Error: Pointer of Start Address is Null (0)
  */
 .globl system32_mfree
 system32_mfree:
 	/* Auto (Local) Variables, but just aliases */
-	heap_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	heap_size       .req r1
-	zero            .req r2
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	block_size       .req r1
+	heap_start       .req r2
+	heap_size        .req r3
+	zero             .req r4
 
-	cmp heap_start, #0
+	push {r4}
+
+	cmp block_start, #0
 	beq system32_mfree_error
 
-	ldr heap_size, [heap_start, #-4]
+	ldr block_size, [block_start, #-4]
+	add block_size, block_start, block_size
+	sub block_start, block_start, #4
+
+	ldr heap_start, SYSTEM32_HEAP_ADDR
+	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 	add heap_size, heap_start, heap_size
-	sub heap_start, heap_start, #4
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bgt system32_mfree_error                    @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
 
 	mov zero, #0
 
 	system32_mfree_loop:
-		cmp heap_start, heap_size
+		cmp block_start, block_size
 		bge system32_mfree_success
 
-		str zero, [heap_start]
-		add heap_start, heap_start, #4
+		str zero, [block_start]
+		add block_start, block_start, #4
 
 		b system32_mfree_loop
 
@@ -634,11 +645,14 @@ system32_mfree:
 		mov r0, #0
 
 	system32_mfree_common:
+		pop {r4}
 		mov pc, lr
 
+.unreq block_start
+.unreq block_size
+.unreq zero
 .unreq heap_start
 .unreq heap_size
-.unreq zero
 
 
 /**

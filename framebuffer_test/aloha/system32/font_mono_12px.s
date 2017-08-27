@@ -11,10 +11,6 @@
 .globl FONT_MONO_12PX_ASCII
 FONT_MONO_12PX_ASCII:                   .word FONT_MONO_12PX_ASCII_NULL
 
-/* Initial Address of Number Array */
-.globl FONT_MONO_12PX_NUMBER
-FONT_MONO_12PX_NUMBER:                  .word FONT_MONO_12PX_NUMBER_0
-
 _FONT_MONO_12PX_0:
 	.byte 0b00000000
 	.byte 0b00111000
@@ -1358,45 +1354,6 @@ _FONT_MONO_12PX_z:
 	.byte 0b00000000
 	.byte 0b00000000
 	.byte 0b00000000
-
-/* Number Array for Display Raw Numbers of Register */
-
-FONT_MONO_12PX_NUMBER_0:                .word _FONT_MONO_12PX_0
-FONT_MONO_12PX_NUMBER_1:                .word _FONT_MONO_12PX_1
-FONT_MONO_12PX_NUMBER_2:                .word _FONT_MONO_12PX_2
-FONT_MONO_12PX_NUMBER_3:                .word _FONT_MONO_12PX_3
-FONT_MONO_12PX_NUMBER_4:                .word _FONT_MONO_12PX_4
-FONT_MONO_12PX_NUMBER_5:                .word _FONT_MONO_12PX_5
-FONT_MONO_12PX_NUMBER_6:                .word _FONT_MONO_12PX_6
-FONT_MONO_12PX_NUMBER_7:                .word _FONT_MONO_12PX_7
-FONT_MONO_12PX_NUMBER_8:                .word _FONT_MONO_12PX_8
-FONT_MONO_12PX_NUMBER_9:                .word _FONT_MONO_12PX_9
-FONT_MONO_12PX_NUMBER_A:                .word _FONT_MONO_12PX_A
-FONT_MONO_12PX_NUMBER_B:                .word _FONT_MONO_12PX_B
-FONT_MONO_12PX_NUMBER_C:                .word _FONT_MONO_12PX_C
-FONT_MONO_12PX_NUMBER_D:                .word _FONT_MONO_12PX_D
-FONT_MONO_12PX_NUMBER_E:                .word _FONT_MONO_12PX_E
-FONT_MONO_12PX_NUMBER_F:                .word _FONT_MONO_12PX_F
-FONT_MONO_12PX_NUMBER_G:                .word _FONT_MONO_12PX_G
-FONT_MONO_12PX_NUMBER_H:                .word _FONT_MONO_12PX_H
-FONT_MONO_12PX_NUMBER_I:                .word _FONT_MONO_12PX_I
-FONT_MONO_12PX_NUMBER_J:                .word _FONT_MONO_12PX_J
-FONT_MONO_12PX_NUMBER_K:                .word _FONT_MONO_12PX_K
-FONT_MONO_12PX_NUMBER_L:                .word _FONT_MONO_12PX_L
-FONT_MONO_12PX_NUMBER_M:                .word _FONT_MONO_12PX_M
-FONT_MONO_12PX_NUMBER_N:                .word _FONT_MONO_12PX_N
-FONT_MONO_12PX_NUMBER_O:                .word _FONT_MONO_12PX_O
-FONT_MONO_12PX_NUMBER_P:                .word _FONT_MONO_12PX_P
-FONT_MONO_12PX_NUMBER_Q:                .word _FONT_MONO_12PX_Q
-FONT_MONO_12PX_NUMBER_R:                .word _FONT_MONO_12PX_R
-FONT_MONO_12PX_NUMBER_S:                .word _FONT_MONO_12PX_S
-FONT_MONO_12PX_NUMBER_T:                .word _FONT_MONO_12PX_T
-FONT_MONO_12PX_NUMBER_U:                .word _FONT_MONO_12PX_U
-FONT_MONO_12PX_NUMBER_V:                .word _FONT_MONO_12PX_V
-FONT_MONO_12PX_NUMBER_W:                .word _FONT_MONO_12PX_W
-FONT_MONO_12PX_NUMBER_X:                .word _FONT_MONO_12PX_X
-FONT_MONO_12PX_NUMBER_Y:                .word _FONT_MONO_12PX_Y
-FONT_MONO_12PX_NUMBER_Z:                .word _FONT_MONO_12PX_Z
 
 /* ASCII Array for Display Raw Numbers of Register */
 

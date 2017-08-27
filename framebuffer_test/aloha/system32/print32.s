@@ -243,7 +243,7 @@ print32_debug:
 
 	mov pc, lr
 
-print32_debug_addr_font: .word FONT_MONO_12PX_NUMBER
+print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
 
 .unreq register
 .unreq x_coord
@@ -782,6 +782,9 @@ print32_number:
 		lsl bitmask, bitmask, shift              @ Make bitmask
 		and bitmask, number, bitmask
 		lsr bitmask, bitmask, shift              @ Make One Digit Number
+		cmp bitmask, #9
+		addle bitmask, bitmask, #0x30            @ Ascii Table Number Offset
+		addgt bitmask, bitmask, #0x37            @ Ascii Table Alphabet Offset - 9
 		lsl bitmask, bitmask, #2                 @ Substitute of Multiplication by #4 (mul)
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)

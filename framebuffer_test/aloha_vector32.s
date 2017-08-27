@@ -217,7 +217,7 @@ render:
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
@@ -233,7 +233,7 @@ render:
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
@@ -249,7 +249,7 @@ render:
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
@@ -342,7 +342,7 @@ fiq_handler:
 	mov r6, #16                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r7, #8
 	mov r8, #12
-	ldr r9, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r9, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r9, [r9]
 	push {r4-r9}
 	bl print32_number_double
@@ -370,7 +370,7 @@ fiq_handler:
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
@@ -388,7 +388,7 @@ fiq_handler:
 	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_NUMBER
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_number
