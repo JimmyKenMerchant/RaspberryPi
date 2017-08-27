@@ -480,6 +480,21 @@ extern uint64 print32_number
  ********************************/
 
 /**
+ * Make String of Single Precision Float Value
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
+ */
+extern char8* math32_float32_to_string
+(
+	float32 float_number,
+	uint32 min_integer,  // 16 Digits Max
+	uint32 max_decimal,
+	uint32 min_exponent  // 16 Digits Max
+);
+
+
+/**
  * Make String of Integer Value by Decimal System (Base 10)
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated

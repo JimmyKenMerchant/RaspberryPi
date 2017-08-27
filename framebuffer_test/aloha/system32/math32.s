@@ -336,7 +336,7 @@ math32_tan32:
 
 
 /**
- * function math32_float_to_string32
+ * function math32_float32_to_string
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
@@ -349,8 +349,8 @@ math32_tan32:
  * Usage: r0-r11
  * Return: r0 (Pointer of String)
  */
-.globl math32_float_to_string32
-math32_float_to_string32:
+.globl math32_float32_to_string
+math32_float32_to_string:
 	/* Auto (Local) Variables, but just aliases */
 	float          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	min_integer    .req r1
@@ -384,11 +384,10 @@ math32_float_to_string32:
 
 	vmov vfp_ten, #10.0
 
-	vmov vfp_float, float
+	/* Know Need of Exponent */
 
-	mov temp, #0
-	vmov vfp_temp, temp
-	vcmp.f32 vfp_float, vfp_temp
+	vmov vfp_float, float
+	vcmp.f32 vfp_float, #0
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 	movlt minus, #1
 	movge minus, #0
@@ -398,31 +397,46 @@ math32_float_to_string32:
 	vmov vfp_temp, #1.0
 	vcmp.f32 vfp_float, vfp_temp
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	blt math32_float_to_string32_exponentminus
+	blt math32_float32_to_string_exponentminus
 
-	str temp, math32_float_to_string32_max
+	mov temp, #0x3B
+	lsl temp, #8
+	add temp, #0x9A
+	lsl temp, #8
+	add temp, #0xCA
+	lsl temp, #8                                  @ Making Decimal 1,000,000,000
 	vmov vfp_temp, temp
+	vcvt.f32.u32 vfp_temp, vfp_temp
 	vcmp.f32 vfp_float, vfp_temp
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	bgt math32_float_to_string32_exponentplus
+	bge math32_float32_to_string_exponentplus
 
-	b math32_float_to_string32_integer
+	b math32_float32_to_string_integer
 
-	math32_float_to_string32_exponentminus:
+	math32_float32_to_string_exponentminus:
 		sub exponent, exponent, #1
 		vmul.f32 vfp_float, vfp_float, vfp_ten
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		blt math32_float_to_string32_exponentminus
+		blt math32_float32_to_string_exponentminus
 
-	math32_float_to_string32_exponentplus:
+		b math32_float32_to_string_convertfloat
+
+	math32_float32_to_string_exponentplus:
 		add exponent, exponent, #1
 		vdiv.f32 vfp_float, vfp_float, vfp_ten
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		bgt math32_float_to_string32_exponentminus
+		bge math32_float32_to_string_exponentplus
 
-	math32_float_to_string32_integer:
+	math32_float32_to_string_convertfloat:
+		cmp minus, #1
+		vnegeq.f32 vfp_float, vfp_float
+		vmov float, vfp_float
+
+	/* Integer Part */
+
+	math32_float32_to_string_integer:
 
 		vmov vfp_integer, float                       @ Signed
 		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
@@ -439,7 +453,7 @@ math32_float_to_string32:
 		temp2 .req r1
 
 		cmp string_integer, #0
-		beq math32_float_to_string32_error
+		beq math32_float32_to_string_error
 
 		push {r0-r3,lr}
 		mov r0, #1
@@ -448,7 +462,7 @@ math32_float_to_string32:
 		pop {r0-r3,lr}
 
 		cmp string_decimal, #0
-		beq math32_float_to_string32_error
+		beq math32_float32_to_string_error
 
 		mov temp, #0x2E
 		strb temp, [string_decimal]                   @ Store Period Sign
@@ -463,7 +477,7 @@ math32_float_to_string32:
 		pop {r0-r3,lr}
 
 		cmp string_cmp, #0
-		beq math32_float_to_string32_error
+		beq math32_float32_to_string_error
 
 		push {r0-r3,lr}
 		mov r0, string_integer 
@@ -479,27 +493,29 @@ math32_float_to_string32:
 
 		vcvt.f32.s32 vfp_integer, vfp_integer
 		vmov vfp_decimal, float
-		vabs.f32 vfp_integer, vfp_integer
-		vabs.f32 vfp_decimal, vfp_decimal
+		vabs.f32 vfp_integer, vfp_integer               @ Make Absolute Value
+		vabs.f32 vfp_decimal, vfp_decimal               @ Make Absolute Value
 		vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
 
-	math32_float_to_string32_decimal:
+	/* Decimal Part */
+
+	math32_float32_to_string_decimal:
+		/* Repeat of vfp_decimal X 10^8 and Cut it till catch Zero */
 		cmp max_decimal, #0
-		ble math32_float_to_string32_exponent
+		ble math32_float32_to_string_exponent
 		mov temp, #8
 
-		math32_float_to_string32_decimal_loop:
+		math32_float32_to_string_decimal_loop:
 			cmp temp, #0
-			ble math32_float_to_string32_decimal_loop_common
+			ble math32_float32_to_string_decimal_common
 			cmp max_decimal, #0
-			ble math32_float_to_string32_decimal_loop_common
+			ble math32_float32_to_string_decimal_common
 			vmul.f32 vfp_decimal, vfp_decimal, vfp_ten
 			sub temp, temp, #1
 			sub max_decimal, max_decimal, #1
-			b math32_float_to_string32_decimal_loop
+			b math32_float32_to_string_decimal_loop
 
-		math32_float_to_string32_decimal_loop_common:
-			/* Repeat of vfp_decimal X 10^8 and Cut it till catch Zero */
+		math32_float32_to_string_decimal_common:
 			mov temp2, #8
 			sub temp, temp2, temp
 
@@ -525,7 +541,7 @@ math32_float_to_string32:
 			pop {r0-r3,lr}
 
 			cmp string_cmp, #0
-			beq math32_float_to_string32_error
+			beq math32_float32_to_string_error
 
 			push {r0-r3,lr}
 			mov r0, string_integer 
@@ -544,16 +560,18 @@ math32_float_to_string32:
 
 			vcmp.f32 vfp_decimal, #0
 			vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-			ble math32_float_to_string32_exponent
+			ble math32_float32_to_string_exponent
 
-			b math32_float_to_string32_decimal
+			b math32_float32_to_string_decimal
 
-	math32_float_to_string32_exponent:
+	/* Exponent Part */
+
+	math32_float32_to_string_exponent:
 		cmp exponent, #0
-		beq math32_float_to_string32_success
+		beq math32_float32_to_string_success
 
 		push {r0-r3,lr}
-		mov r0, #2
+		mov r0, #1
 		bl system32_malloc
 		mov string_decimal, r0
 		pop {r0-r3,lr}
@@ -564,6 +582,8 @@ math32_float_to_string32:
 		movgt temp, #0x2B
 		movlt temp, #0x2D
 		strb temp, [string_decimal, #1]                  @ Store `+` or `-`
+		mov temp, #0x00
+		strb temp, [string_decimal, #2]                  @ Store Null Character
 
 		push {r0-r3,lr}
 		mov r0, string_integer
@@ -573,7 +593,7 @@ math32_float_to_string32:
 		pop {r0-r3,lr}
 
 		cmp string_cmp, #0
-		beq math32_float_to_string32_error
+		beq math32_float32_to_string_error
 
 		push {r0-r3,lr}
 		mov r0, string_integer 
@@ -587,9 +607,9 @@ math32_float_to_string32:
 
 		mov string_integer, string_cmp
 
-		mov temp, exponent
-		mul exponent, exponent, exponent
-		udiv exponent, exponent, temp                    @ Absolute Value without VFP (From ARMv7 Virtualization Extensions)
+		cmp exponent, #0
+		mvnlt exponent, exponent              @ If Minus, Make Absolute Value
+		addlt exponent, #1
 
 		push {r0-r3,lr}
 		mov r0, exponent
@@ -607,7 +627,7 @@ math32_float_to_string32:
 		pop {r0-r3,lr}
 
 		cmp string_cmp, #0
-		beq math32_float_to_string32_error
+		beq math32_float32_to_string_error
 
 		push {r0-r3,lr}
 		mov r0, string_integer 
@@ -621,19 +641,19 @@ math32_float_to_string32:
 
 		mov string_integer, string_cmp
 
-	math32_float_to_string32_error:
-		mov r0, #0
-		b math32_float_to_string32_common
+		b math32_float32_to_string_success
 
-	math32_float_to_string32_success:
+	math32_float32_to_string_error:
+		mov r0, #0
+		b math32_float32_to_string_common
+
+	math32_float32_to_string_success:
 		mov r0, string_integer
 
-	math32_float_to_string32_common:
+	math32_float32_to_string_common:
 		vpop {s0-s4}
 		pop {r4-r11}
 		mov pc, lr
-
-math32_float_to_string32_max: .float 999999999.0
 
 .unreq float
 .unreq temp2
