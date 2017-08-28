@@ -239,7 +239,7 @@ math32_cos32:
 
 /**
  * function math32_tan32
- * Return tan(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 5 
+ * Return tan(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 5
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Parameters
@@ -339,11 +339,13 @@ math32_tan32:
  * function math32_float32_to_string
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
+ * If Float Value is less than 1.0, String Will Be Shown With Exponent.
  *
  * Parameters
  * r0: Float Value, Must Be Type of Single Precision Float
  * r1: Minimam Length of Digits in Integer Places, 16 Digits Max
- * r2: Maximam Length of Digits in Decimal Places
+ * r2: Maximam Length of Digits in Decimal Places, Default 8 Digits
  * r3: Minimam Length of Digits in Exponent Places, 16 Digits Max
  *
  * Usage: r0-r11
@@ -640,10 +642,24 @@ math32_float32_to_string:
 		pop {r0-r3,lr}
 
 		mov string_integer, string_cmp
-
 		b math32_float32_to_string_success
 
 	math32_float32_to_string_error:
+		push {r0-r3,lr}
+		mov r0, string_integer 
+		bl system32_mfree
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, string_decimal
+		bl system32_mfree
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, string_cmp
+		bl system32_mfree
+		pop {r0-r3,lr}
+
 		mov r0, #0
 		b math32_float32_to_string_common
 
@@ -754,32 +770,31 @@ math32_int32_to_string_deci:
 		addge count_lower, #1
 		bge math32_int32_to_string_deci_countlower
 
-	mov temp, #8
-	sub count_lower, temp, count_lower
+		mov temp, #8
+		sub count_lower, temp, count_lower
 
-	mov temp, count_upper
-	mov count_upper, #0
+		mov temp, count_upper
+		mov count_upper, #0
 
 	math32_int32_to_string_deci_countupper:
 		subs temp, temp, #4
 		addge count_upper, #1
 		bge math32_int32_to_string_deci_countupper
 
-	mov temp, #8
-	sub count_upper, temp, count_upper
+		mov temp, #8
+		sub count_upper, temp, count_upper
 
-	cmp count_lower, min_length
-	movlt count_lower, min_length                    @ Cutting off min_length Exists in math32_int32_to_string_hexa
+		cmp count_lower, min_length
+		movlt count_lower, min_length                    @ Cutting off min_length Exists in math32_int32_to_string_hexa
 
-	cmp count_upper, #0
-	beq math32_int32_to_string_deci_lower            @ If Upper String Doesn't Exist
+		cmp count_upper, #0
+		beq math32_int32_to_string_deci_lower            @ If Upper String Doesn't Exist
 
-	sub temp, min_length, #8
-	cmp count_upper, temp
-	movlt count_upper, temp
+		sub temp, min_length, #8
+		cmp count_upper, temp
+		movlt count_upper, temp
 
 	math32_int32_to_string_deci_upper:
-
 		push {r0-r3,lr}
 		mov r0, integer_upper
 		mov r1, count_upper
@@ -795,7 +810,6 @@ math32_int32_to_string_deci:
 		mov count_lower, #8
 
 	math32_int32_to_string_deci_lower:
-
 		push {r0-r3,lr}
 		mov r0, integer_lower
 		mov r1, count_lower
@@ -808,23 +822,23 @@ math32_int32_to_string_deci:
 		cmp string_lower, #0
 		beq math32_int32_to_string_deci_error
 
-	cmp signed, #1
-	bne math32_int32_to_string_deci_cat         @ If Unsigned, Jump to Next
+		cmp signed, #1
+		bne math32_int32_to_string_deci_cat         @ If Unsigned, Jump to Next
 
-	push {r0-r3,lr}
-	mov r0, #1
-	bl system32_malloc
-	mov string_minus, r0
-	pop {r0-r3,lr}
+		push {r0-r3,lr}
+		mov r0, #1
+		bl system32_malloc
+		mov string_minus, r0
+		pop {r0-r3,lr}
 
-	cmp string_minus, #0
-	beq math32_int32_to_string_deci_error
+		cmp string_minus, #0
+		beq math32_int32_to_string_deci_error
 
-	mov temp, #0x2D
-	strb temp, [string_minus]                   @ Store Minus Sign
+		mov temp, #0x2D
+		strb temp, [string_minus]                   @ Store Minus Sign
 
-	mov temp, #0x00
-	strb temp, [string_minus, #1]               @ Store Null Character
+		mov temp, #0x00
+		strb temp, [string_minus, #1]               @ Store Null Character
 
 	math32_int32_to_string_deci_cat:
 		cmp count_upper, #0
@@ -856,7 +870,6 @@ math32_int32_to_string_deci:
 		mov string_upper, string_cmp
 
 		math32_int32_to_string_deci_cat_jump:
-
 			push {r0-r3,lr}
 			mov r0, string_upper
 			mov r1, string_lower
@@ -923,6 +936,7 @@ math32_int32_to_string_deci:
 		mov r0, string_cmp 
 		bl system32_mfree
 		pop {r0-r3,lr}
+
 		mov r0, #0
 		b math32_int32_to_string_deci_common
 
@@ -1006,39 +1020,39 @@ math32_int32_to_string_hexa:
 		addge count, #1
 		bge math32_int32_to_string_hexa_arrangecount
 
-	mov temp, #8
-	sub count, temp, count
-	cmp count, min_length
-	movlt count, min_length
+		mov temp, #8
+		sub count, temp, count
+		cmp count, min_length
+		movlt count, min_length
 
-	mov heap_size, #1                               @ 1 Size is 4 bytes in Heap
-	mov temp, count
-	add temp, temp, #1                              @ Add One for Null Character
-	cmp signed, #1
-	addeq temp, temp, #1                            @ Add One for Minus Character
-	cmp base_mark, #1
-	addeq temp, temp, #2                            @ Add Two for Bases Mark, `0x`
+		mov heap_size, #1                               @ 1 Size is 4 bytes in Heap
+		mov temp, count
+		add temp, temp, #1                              @ Add One for Null Character
+		cmp signed, #1
+		addeq temp, temp, #1                            @ Add One for Minus Character
+		cmp base_mark, #1
+		addeq temp, temp, #2                            @ Add Two for Bases Mark, `0x`
 
 	math32_int32_to_string_hexa_countsize:
 		subs temp, temp, #4
 		addgt heap_size, #1
 		bgt math32_int32_to_string_hexa_countsize
 
-	push {r0-r3,lr}
-	mov r0, heap_size
-	bl system32_malloc
-	mov heap_origin, r0
-	pop {r0-r3,lr}
+		push {r0-r3,lr}
+		mov r0, heap_size
+		bl system32_malloc
+		mov heap_origin, r0
+		pop {r0-r3,lr}
 
-	cmp heap_origin, #0
-	beq math32_int32_to_string_hexa_error
-	mov heap, heap_origin
+		cmp heap_origin, #0
+		beq math32_int32_to_string_hexa_error
+		mov heap, heap_origin
 
-	cmp signed, #1
-	bne math32_int32_to_string_hexa_basemark        @ If Unsigned, Jump to Next
-	mov mask, #0x2D
-	strb mask, [heap]                               @ Store Minus Sign
-	add heap, heap, #1
+		cmp signed, #1
+		bne math32_int32_to_string_hexa_basemark        @ If Unsigned, Jump to Next
+		mov mask, #0x2D
+		strb mask, [heap]                               @ Store Minus Sign
+		add heap, heap, #1
 
 	math32_int32_to_string_hexa_basemark:
 		cmp base_mark, #1
@@ -1065,6 +1079,7 @@ math32_int32_to_string_hexa:
 		strb mask, [heap]
 		add heap, heap, #1
 		lsr count, #2                               @ Substitution of Division by 4
+
 		b math32_int32_to_string_hexa_loop
 
 		math32_int32_to_string_hexa_loop_common:

@@ -241,7 +241,6 @@ extern int16 system32_load_16( int16* address );
 extern char8 system32_load_8( char8* address );
 
 
-
 /********************************
  * system32/fb32.s
  ********************************/
@@ -263,6 +262,50 @@ extern uint32 FB32_WIDTH;
 extern uint32 FB32_HEIGHT;
 extern int32 FB32_X_CARET;
 extern int32 FB32_Y_CARET;
+
+
+/**
+ * Fill by Color
+ *
+ * Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Base)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
+ */
+extern uint64 fb32_fill_color
+(
+	int32* buffer,
+	uint32 color
+);
+
+
+/**
+ * Make Masked Image to Mask
+ *
+ * Return: Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Mask)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
+ */
+extern uint64 fb32_mask_image
+(
+	int32* buffer_base,
+	int32* buffer_mask,
+	int32 x_coord,      // Mask
+	int32 y_coord       // Mask
+);
+
+
+/**
+ * Change Value of Alpha Channel in ARGB Data
+ * Caution! This Function is Used in 32-bit Depth Color
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 fb32_change_alpha_argb
+(
+	int32* data,
+	uint32 size,
+	uint32 alpha // 0-7 bits
+);
 
 
 /**
@@ -377,6 +420,41 @@ extern uint64 fb32_clear_color
 );
 
 
+/**
+ * Attach Buffer to Draw on It
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): Buffer In is not Defined
+ */
+extern uint32 fb32_attach_buffer
+(
+	int32* buffer
+);
+
+
+/**
+ * Set Renderbuffer
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 fb32_set_renderbuffer
+(
+	int32* buffer,
+	uint32 width,
+	uint32 height,
+	uint32 depth
+);
+
+
+/**
+ * Get Framebuffer
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When Framebuffer is not Defined
+ */
+extern uint32 fb32_get_framebuffer();
+
+
 /********************************
  * system32/print32.s
  ********************************/
@@ -480,8 +558,59 @@ extern uint64 print32_number
  ********************************/
 
 /**
+ * Return Radian from Degrees
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_degree_to_radian32
+(
+	int32 degree
+);
+
+
+/**
+ * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_sin32
+(
+	int32 radian
+);
+
+
+/**
+ * Return cos(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_cos32
+(
+	int32 radian
+);
+
+
+/**
+ * Return tan(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 5
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * Radian Must be |Radian| < pi, -pi through pi
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_tan32
+(
+	int32 radian
+);
+
+
+/**
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
+ * If Float Value is less than 1.0, String Will Be Shown With Exponent.
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
@@ -489,7 +618,7 @@ extern char8* math32_float32_to_string
 (
 	float32 float_number,
 	uint32 min_integer,  // 16 Digits Max
-	uint32 max_decimal,
+	uint32 max_decimal,  // Default 8 Digits
 	uint32 min_exponent  // 16 Digits Max
 );
 
@@ -506,6 +635,7 @@ extern char8* math32_int32_to_string_deci
 	uint32 bool_signed
 );
 
+
 /**
  * Make String of Integer Value by Hexadecimal System (Base 16)
  *
@@ -518,6 +648,7 @@ extern char8* math32_int32_to_string_hexa
 	uint32 bool_signed,
 	uint32 bool_basemark
 );
+
 
 /********************************
  * system32/font_mono_12px.s

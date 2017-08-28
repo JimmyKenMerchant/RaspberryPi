@@ -14,8 +14,6 @@ void _user_start()
 {
 
 	char8 string[] = "ALOHA!\n\tHello World, Everyone!\0";
-	char8 string2[] = "\nABCDEFGHIJKLMNOPQSTUVWXYZ\t\t\t\tabcdefghijklmnopqrstuvwxyz\0";
-	char8 string3[] = "\t$@^~ABCDEFGHIJKLMNOPQSTUVWXYZ\t\t\t\tabcdefghijklmnopqrstuvwxyz\0";
 	char8 newline[] = "\n\0";
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
@@ -29,24 +27,15 @@ void _user_start()
 	float32 float_number2 = 0.024;
 	float32 float_number3 = 100000000000000.024;
 
-	print32_set_caret( print32_number( print32_strlen( string ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	system32_sleep( 1000000 );
-
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	system32_sleep( 1000000 );
-
 	print32_set_caret( print32_string( string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	system32_sleep( 1000000 );
 
-	print32_set_caret( print32_string( string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	system32_sleep( 1000000 );
-
-	print32_set_caret( print32_string( string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	system32_sleep( 1000000 );
 
 	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
+	fb32_change_alpha_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x99 );
 	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 500, 500, 64, 64, 0, 0, 0, 0 );
 
 	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE, 4 );
@@ -61,7 +50,7 @@ void _user_start()
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( float_string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( float_string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* float_string3 = math32_float32_to_string( float_number3, 0, 10, 0 );
+	char8* float_string3 = math32_float32_to_string( float_number3, 0, 20, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( float_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( float_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
@@ -105,6 +94,15 @@ void _user_start()
 
 	fb32_draw_circle( COLOR32_BLUE, 300, 300, 150, 200 );
 	fb32_draw_circle( COLOR32_BLUE, -100, 500, 200, 175 );
+
+	fb32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
+	fb32_attach_buffer( FB32_RENDERBUFFER1 );
+	fb32_clear_color( 0x66FFFFFF );
+	fb32_attach_buffer( FB32_FRAMEBUFFER );
+	int32* renderbuffer1 = (int32*)system32_load_32( FB32_RENDERBUFFER1 );
+	uint32 renderbuffer1_width = system32_load_32(FB32_RENDERBUFFER1 + 1 ); // 4 bytes offset
+	uint32 renderbuffer1_height = system32_load_32(FB32_RENDERBUFFER1+ 2 ); // 8 bytes offset
+	fb32_draw_image( renderbuffer1, 0, 0, renderbuffer1_width, renderbuffer1_height, 0, 0, 0, 0 );
 
 	system32_sleep( 9000000 );
 

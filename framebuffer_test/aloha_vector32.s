@@ -157,14 +157,14 @@ render:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
-	ldr r0, string_arm                        @ Pointer of Array of String
-	mov r1, #-4                               @ X Coordinate
-	mov r2, #-2                               @ Y Coordinate
+	ldr r0, string_hello                      @ Pointer of Array of String
+	mov r1, #0                                @ X Coordinate
+	mov r2, #0                                @ Y Coordinate
 	ldr r3, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
 	ldr r3, [r3]
 	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
 	ldr r4, [r4]
-	mov r5, #14                               @ Length of Characters, Need of PUSH/POP
+	mov r5, #100                              @ Length of Characters, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
 	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
@@ -172,87 +172,21 @@ render:
 	push {r4-r8}
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-
-
-	ldr r0, string_number                     @ Pointer of Array of String
-	mov r1, #80                               @ X Coordinate
-	mov r2, #88                               @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_RED                @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #10
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_string
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-
 
 	ldr r0, string_test                       @ Pointer of Array of String
-	mov r1, #80                               @ X Coordinate
-	mov r2, #320                              @ Y Coordinate
+	mov r1, #0                                @ X Coordinate
+	mov r2, #100                              @ Y Coordinate
 	ldr r3, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
 	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_RED                @ Background Color (16-bit or 32-bit)
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
 	ldr r4, [r4]
-	mov r5, #73                               @ Length of Characters, Need of PUSH/POP
+	mov r5, #100                              @ Length of Characters, Need of PUSH/POP
 	mov r6, #8
 	mov r7, #12
 	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
 	ldr r8, [r8]
 	push {r4-r8}
 	bl print32_string
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-
-	ldr r0, float_example1                    @ Pointer of Array of String
-	mov r1, #300                              @ X Coordinate
-	mov r2, #320                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_number
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-
-	ldr r0, float_example2                    @ Pointer of Array of String
-	mov r1, #300                              @ X Coordinate
-	mov r2, #332                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_number
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-
-	ldr r0, float_example3                    @ Pointer of Array of String
-	mov r1, #300                              @ X Coordinate
-	mov r2, #344                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	pop {r0-r8}
@@ -334,7 +268,7 @@ fiq_handler:
 	mov r0, r2
 	bl math32_hexa_to_deci32
 	mov r2, #80                               @ X Coordinate
-	mov r3, #392                              @ Y Coordinate
+	mov r3, #388                              @ Y Coordinate
 	ldr r4, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
 	ldr r4, [r4]
 	ldr r5, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
@@ -380,7 +314,7 @@ fiq_handler:
 	push {r0-r8,lr}
 	mov r0, r1
 	mov r1, #80                               @ X Coordinate
-	mov r2, #408                              @ Y Coordinate
+	mov r2, #412                              @ Y Coordinate
 	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
 	ldr r3, [r3]
 	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
@@ -403,24 +337,6 @@ fiq_handler:
 .balign 4
 gpio_toggle:       .byte 0b00100000         @ 0x20 (gpset_1)
 .balign 4
-first_lower:
-	.word 0x87654321
-first_upper:
-	.word 0x00094321
-second_lower:
-	.word 0x87654321
-second_upper:
-	.word 0x00094321
-_string_arm:
-	.ascii "ARMv7/AArch32:" @ Add Null Escape Character on The End
-.balign 4
-string_arm:
-	.word _string_arm
-_string_number:
-	.ascii "0123456789" @ Add Null Escape Character on The End
-.balign 4
-string_number:
-	.word _string_number
 _string_hello:
 	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
