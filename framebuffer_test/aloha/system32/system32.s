@@ -472,6 +472,8 @@ system32_clear_heap:
 	heap_size   .req r1
 	heap_bytes  .req r2
 
+	dmb                                         @ Ensure Coherence of Cache and Memory
+
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
@@ -489,6 +491,8 @@ system32_clear_heap:
 		b system32_clear_heap_loop          @ If Bytes are not Zero
 
 	system32_clear_heap_common:
+		dsb                                 @ Ensure Completion of Instructions Before
+		isb                                 @ Flush Data in Pipeline to Cache
 		mov r0, #0
 		mov pc, lr
 
@@ -520,6 +524,8 @@ system32_malloc:
 	check_size  .req r5
 
 	push {r4,r5}
+
+	dmb                                         @ Ensure Coherence of Cache and Memory
 
 	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
 
@@ -573,6 +579,8 @@ system32_malloc:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	system32_malloc_common:
+		dsb                                     @ Ensure Completion of Instructions Before
+		isb                                     @ Flush Data in Pipeline to Cache
 		pop {r4,r5}
 		mov pc, lr
 
@@ -612,6 +620,8 @@ system32_mfree:
 
 	push {r4}
 
+	dmb                                         @ Ensure Coherence of Cache and Memory
+
 	cmp block_start, #0
 	beq system32_mfree_error
 
@@ -645,6 +655,8 @@ system32_mfree:
 		mov r0, #0
 
 	system32_mfree_common:
+		dsb                                     @ Ensure Completion of Instructions Before
+		isb                                     @ Flush Data in Pipeline to Cache
 		pop {r4}
 		mov pc, lr
 
@@ -683,15 +695,6 @@ system32_mfree:
 .section .bss
 
 _SYSTEM32_FB32_RENDERBUFFER0:
-.fill 16777216, 1, 0x00
-
-_SYSTEM32_FB32_RENDERBUFFER1:
-.fill 16777216, 1, 0x00
-
-_SYSTEM32_FB32_RENDERBUFFER2:
-.fill 16777216, 1, 0x00
-
-_SYSTEM32_FB32_RENDERBUFFER3:
 .fill 16777216, 1, 0x00
 
 _SYSTEM32_HEAP:

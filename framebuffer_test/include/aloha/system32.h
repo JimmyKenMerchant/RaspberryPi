@@ -273,8 +273,7 @@ extern int32 FB32_Y_CARET;
  */
 extern uint64 fb32_fill_color
 (
-	int32* buffer,
-	uint32 color
+	int32* buffer
 );
 
 

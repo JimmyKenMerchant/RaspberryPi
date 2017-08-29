@@ -14,9 +14,8 @@
  *
  * Parameters
  * r0: Pointer of Buffer to Be Filled by Color
- * r1: Color to Fill
  *
- * Usage: r0-r12
+ * Usage: r0-r10
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
@@ -25,20 +24,18 @@
 fb32_fill_color:
 	/* Auto (Local) Variables, but just aliases */
 	buffer_base .req r0  @ Parameter, Register for Argument, Scratch Register
-	color       .req r1  @ Parameter, Register for Argument and Result, Scratch Register
-	base_addr   .req r2  @ Pointer of Base
+	base_addr   .req r1  @ Pointer of Base
+	color       .req r2
 	width       .req r3
-	dup_width   .req r4
-	height      .req r5
-	depth       .req r6
-	size        .req r7
-	flag        .req r8
-	width_check .req r9
-	j           .req r10 @ Use for Horizontal Counter
-	color_pick  .req r11
-	addr_pick   .req r12
+	height      .req r4
+	depth       .req r5
+	size        .req r6
+	flag        .req r7
+	j           .req r8 @ Use for Horizontal Counter
+	color_pick  .req r9
+	addr_pick   .req r10
 
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	ldr base_addr, [buffer_base]
@@ -48,8 +45,6 @@ fb32_fill_color:
 	ldr width, [buffer_base, #4]
 	cmp width, #0
 	beq fb32_fill_color_error2
-
-	mov dup_width, width
 
 	ldr height, [buffer_base, #8]
 	cmp height, #0
@@ -65,14 +60,6 @@ fb32_fill_color:
 	cmpne depth, #16
 	bne fb32_fill_color_error2
 
-	cmp depth, #16
-	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
-
-	mov width_check, base_addr
-	add width_check, width
-
 	mov flag, #0
 
 	fb32_fill_color_loop:
@@ -83,7 +70,7 @@ fb32_fill_color:
 		cmp base_addr, size                          @ Check Overflow of Buffer Memory
 		bge fb32_fill_color_error1
 
-		mov j, dup_width                             @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
+		mov j, width                                 @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
 
 		fb32_fill_color_loop_horizontal:
 			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
@@ -108,11 +95,13 @@ fb32_fill_color:
 			fb32_fill_color_loop_horizontal_flag0:             @ No Color First
 				cmp color_pick, #0
 				beq fb32_fill_color_loop_horizontal_common
+				mov color, color_pick
 				mov flag, #1
 				b fb32_fill_color_loop_horizontal_common
 
 			fb32_fill_color_loop_horizontal_flag1:             @ Color First
 				cmp color_pick, #0
+				movne color, color_pick
 				bne fb32_fill_color_loop_horizontal_common
 				mov addr_pick, base_addr
 				mov flag, #2
@@ -121,6 +110,8 @@ fb32_fill_color:
 			fb32_fill_color_loop_horizontal_flag2:             @ No Color Second to Fill by Color
 				cmp color_pick, #0
 				beq fb32_fill_color_loop_horizontal_common
+				cmp color, color_pick
+				bne fb32_fill_color_loop_horizontal_common
 
 				fb32_fill_color_loop_horizontal_flag2_loop:
 
@@ -133,14 +124,16 @@ fb32_fill_color:
 					cmp addr_pick, base_addr
 					blt fb32_fill_color_loop_horizontal_flag2_loop
 
-				mov flag, #3
-				b fb32_fill_color_loop_horizontal_common
+					mov flag, #3
+					b fb32_fill_color_loop_horizontal_common
 
 			fb32_fill_color_loop_horizontal_flag3:             @ Color Second
+				cmp color, color_pick
+				beq fb32_fill_color_loop_horizontal_common @ If Same Color to Fill
 				cmp color_pick, #0
-				bne fb32_fill_color_loop_horizontal_common
-				mov flag, #0
-				b fb32_fill_color_loop_horizontal_common
+				moveq flag, #0                             @ If No Color
+				movne color, color_pick
+				movne flag, #1                             @ If Other Color
 
 			fb32_fill_color_loop_horizontal_common:
 				cmp depth, #16
@@ -148,29 +141,10 @@ fb32_fill_color:
 				cmp depth, #32
 				addeq base_addr, base_addr, #4          @ Buffer Address Shift
 
-				cmp base_addr, width_check              @ Check Overflow of Width
-				blt fb32_fill_color_loop_horizontal
-
-				cmp depth, #16
-				lsleq j, j, #1                          @ substitution of Multiplication by 2
-				cmp depth, #32
-				lsleq j, j, #2                          @ substitution of Multiplication by 4
-
-				add base_addr, base_addr, j             @ Buffer Offset
+				b fb32_fill_color_loop_horizontal
 
 		fb32_fill_color_loop_common:
 			sub height, height, #1
-
-			cmp depth, #16
-			lsleq j, dup_width, #1                     @ substitution of Multiplication by 2
-			cmp depth, #32
-			lsleq j, dup_width, #2                     @ substitution of Multiplication by 4
-
-			sub base_addr, base_addr, j                @ Offset Clear of Buffer of Base
-
-			add base_addr, base_addr, width            @ Horizontal Sync (Buffer of Base)
-
-			add width_check, width_check, width        @ Store the Limitation of Width on the Next Y Coordinate
 
 			mov flag, #0
 
@@ -189,20 +163,18 @@ fb32_fill_color:
 
 	fb32_fill_color_common:
 		mov r1, base_addr
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
 .unreq buffer_base
-.unreq color
 .unreq base_addr
+.unreq color
 .unreq width
-.unreq dup_width
 .unreq height
 .unreq depth
 .unreq size
 .unreq flag
-.unreq width_check
 .unreq j
 .unreq color_pick
 .unreq addr_pick
@@ -317,8 +289,11 @@ fb32_mask_image:
 
 			/* Mask Process */
 			ldr color, [mask_addr]
-			cmp color, #0
-			beq fb32_mask_image_loop_horizontal_common  @ If All Zero (Fully Transparent Black), Do Nothing
+			cmp color, #0xFF000000
+
+			moveq color, #0                             @ If Black
+			streq color, [mask_addr]
+			beq fb32_mask_image_loop_horizontal_common
 
 			ldr color, [base_addr]                      @ Get Color of Base
 			str color, [mask_addr]                      @ Store Color of Base to Mask
@@ -1418,6 +1393,8 @@ fb32_clear_color_block:
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
+	dmb                                              @ Ensure Coherence of Cache and Memory
+
 	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
 	sub sp, sp, #36                                  @ Retrieve SP
@@ -1541,6 +1518,8 @@ fb32_clear_color_block:
 		mov r0, #0                                   @ Return with Success
 
 	fb32_clear_color_block_common:
+		dsb                                          @ Ensure Completion of Instructions Before
+		isb                                          @ Flush Data in Pipeline to Cache
 		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
@@ -1582,6 +1561,8 @@ fb32_clear_color:
 
 	push {r4}
 
+	dmb                                         @ Ensure Coherence of Cache and Memory
+
 	ldr fb_buffer, FB32_ADDRESS
 	cmp fb_buffer, #0
 	beq fb32_clear_color_error
@@ -1616,6 +1597,8 @@ fb32_clear_color:
 		mov r0, #1                        @ Return with Error
 
 	fb32_clear_color_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb                              @ Flush Data in Pipeline to Cache
 		pop {r4}
 		mov pc, lr
 
@@ -1647,6 +1630,8 @@ fb32_attach_buffer:
 	depth             .req r5
 
 	push {r4,r5}
+
+	dmb                                         @ Ensure Coherence of Cache and Memory
 
 	ldr buffer_addr, [buffer]
 	cmp buffer_addr, #0
@@ -1681,6 +1666,8 @@ fb32_attach_buffer:
 		mov r0, #1                       @ Return with Error
 
 	fb32_attach_buffer_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb                              @ Flush Data in Pipeline to Cache
 		pop {r4, r5}
 		mov pc, lr
 
@@ -1702,8 +1689,9 @@ fb32_attach_buffer:
  * r2: height of Buffer
  * r3: depth of Buffer
  *
- * Usage: r0-r4
- * Return: r0 (0 as sucess)
+ * Usage: r0-r5
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error: Memory Space for Buffer Can't Be Allocated
  */
 .globl fb32_set_renderbuffer
 fb32_set_renderbuffer:
@@ -1712,21 +1700,49 @@ fb32_set_renderbuffer:
 	height    .req r2
 	depth     .req r3
 	size      .req r4
+	addr      .req r5
 
-	push {r4}
-
-	str width, [buffer, #4]
-
-	str height, [buffer, #8]
+	push {r4-r5}
 
 	mul size, width, height
 
-	str size, [buffer, #12]
+	cmp depth, #16
+	lsreq addr, size, #1                 @ Division of Multiplication by 2, i.e., Half Block (2 Bytes) per Pixel For Heap
+	addeq addr, addr, #1                 @ To Hide Overflow by Division
+	lsleq size, size, #1                 @ Multiplication of Multiplication by 2 (2 Bytes per Pixel)
 
+	cmp depth, #32
+	moveq addr, size                     @ One Block (4 Bytes) per Pixel for Heap
+	lsleq size, size, #2                 @ Multiplication of Multiplication by 4 (4 Bytes per Pixel)
+
+	push {r0-r3,lr}
+	mov r0, addr
+	bl system32_malloc
+	mov addr, r0
+	pop {r0-r3,lr}
+
+	cmp addr, #0
+	beq fb32_set_renderbuffer_error
+
+	str addr, [buffer]
+	str width, [buffer, #4]
+	str height, [buffer, #8]
+	str size, [buffer, #12]
 	str depth, [buffer, #16]
+	
+	b fb32_set_renderbuffer_success
+
+	fb32_set_renderbuffer_error:
+		mov r0, #1
+		b fb32_set_renderbuffer_common
+
+	fb32_set_renderbuffer_success:
+		mov r0, #0
 
 	fb32_set_renderbuffer_common:
-		pop {r4}
+		dsb                              @ Ensure Completion of Instructions Before
+		isb                              @ Flush Data in Pipeline to Cache
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq buffer
@@ -1734,6 +1750,7 @@ fb32_set_renderbuffer:
 .unreq height
 .unreq depth
 .unreq size
+.unreq addr
 
 
 /**
@@ -1795,6 +1812,8 @@ fb32_get_framebuffer:
 		mov r0, #1                       @ Return with Error
 
 	fb32_get_framebuffer_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb                              @ Flush Data in Pipeline to Cache
 		mov pc, lr
 
 .unreq memorymap_base
@@ -1821,7 +1840,7 @@ FB32_RENDERBUFFER0_DEPTH:  .word 0x00
 
 .globl FB32_RENDERBUFFER1
 FB32_RENDERBUFFER1:        .word FB32_RENDERBUFFER1_ADDR
-FB32_RENDERBUFFER1_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER1
+FB32_RENDERBUFFER1_ADDR:   .word 0x00
 FB32_RENDERBUFFER1_WIDTH:  .word 0x00
 FB32_RENDERBUFFER1_HEIGHT: .word 0x00
 FB32_RENDERBUFFER1_SIZE:   .word 0x00
@@ -1829,7 +1848,7 @@ FB32_RENDERBUFFER1_DEPTH:  .word 0x00
 
 .globl FB32_RENDERBUFFER2
 FB32_RENDERBUFFER2:        .word FB32_RENDERBUFFER2_ADDR
-FB32_RENDERBUFFER2_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER2
+FB32_RENDERBUFFER2_ADDR:   .word 0x00
 FB32_RENDERBUFFER2_WIDTH:  .word 0x00
 FB32_RENDERBUFFER2_HEIGHT: .word 0x00
 FB32_RENDERBUFFER2_SIZE:   .word 0x00
@@ -1837,7 +1856,7 @@ FB32_RENDERBUFFER2_DEPTH:  .word 0x00
 
 .globl FB32_RENDERBUFFER3
 FB32_RENDERBUFFER3:        .word FB32_RENDERBUFFER3_ADDR
-FB32_RENDERBUFFER3_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER3
+FB32_RENDERBUFFER3_ADDR:   .word 0x00
 FB32_RENDERBUFFER3_WIDTH:  .word 0x00
 FB32_RENDERBUFFER3_HEIGHT: .word 0x00
 FB32_RENDERBUFFER3_SIZE:   .word 0x00

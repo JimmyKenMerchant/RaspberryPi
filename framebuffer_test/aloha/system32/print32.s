@@ -229,7 +229,7 @@ print32_debug:
 	push {r4-r8,lr}
 	
 	mvn color, #0
-	mov color_back, #0
+	mov color_back, #0xFF000000
 	mov length, #8
 	mov char_width, #8
 	mov char_height, #12

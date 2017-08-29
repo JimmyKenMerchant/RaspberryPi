@@ -96,13 +96,38 @@ void _user_start()
 	fb32_draw_circle( COLOR32_BLUE, -100, 500, 200, 175 );
 
 	fb32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
-	fb32_attach_buffer( FB32_RENDERBUFFER1 );
-	fb32_clear_color( 0x66FFFFFF );
-	fb32_attach_buffer( FB32_FRAMEBUFFER );
 	int32* renderbuffer1 = (int32*)system32_load_32( FB32_RENDERBUFFER1 );
 	uint32 renderbuffer1_width = system32_load_32(FB32_RENDERBUFFER1 + 1 ); // 4 bytes offset
-	uint32 renderbuffer1_height = system32_load_32(FB32_RENDERBUFFER1+ 2 ); // 8 bytes offset
-	fb32_draw_image( renderbuffer1, 0, 0, renderbuffer1_width, renderbuffer1_height, 0, 0, 0, 0 );
+	uint32 renderbuffer1_height = system32_load_32(FB32_RENDERBUFFER1 + 2 ); // 8 bytes offset
+
+	fb32_set_renderbuffer( FB32_RENDERBUFFER2, 300, 300, 32 );
+	int32* renderbuffer2 = (int32*)system32_load_32( FB32_RENDERBUFFER2 );
+	uint32 renderbuffer2_width = system32_load_32(FB32_RENDERBUFFER2 + 1 ); // 4 bytes offset
+	uint32 renderbuffer2_height = system32_load_32(FB32_RENDERBUFFER2 + 2 ); // 8 bytes offset
+
+	fb32_attach_buffer( FB32_RENDERBUFFER1 );
+	fb32_clear_color( 0x66FFFFFF );
+
+	fb32_attach_buffer( FB32_RENDERBUFFER2 );
+	fb32_clear_color( COLOR32_BLACK );
+	fb32_draw_circle( COLOR32_WHITE, 150, 150, 100, 100 );
+	fb32_draw_circle( COLOR32_BLACK, 150, 150, 50, 50 );
+
+	fb32_mask_image( FB32_RENDERBUFFER1, FB32_RENDERBUFFER2, 0, 0 );
+
+	fb32_attach_buffer( FB32_RENDERBUFFER1 );
+	fb32_clear_color( 0x00000000 );
+
+	fb32_draw_line( COLOR32_CYAN, 20, 20, 100, 100, 1, 1 );
+	fb32_draw_line( COLOR32_CYAN, 20, 20, 20, 100, 1, 1 );
+	fb32_draw_line( COLOR32_CYAN, 20, 100, 100, 100, 1, 1 );
+	fb32_fill_color( FB32_RENDERBUFFER1 );
+
+	fb32_attach_buffer( FB32_FRAMEBUFFER );
+
+	fb32_draw_image( renderbuffer1, 100, 100, renderbuffer1_width, renderbuffer1_height, 0, 0, 0, 0 );
+
+	fb32_draw_image( renderbuffer2, 100, 100, renderbuffer2_width, renderbuffer2_height, 0, 0, 0, 0 );
 
 	system32_sleep( 9000000 );
 
