@@ -736,8 +736,8 @@ fb32_draw_line:
 		vcvtr.s32.f32 vfp_char_width, vfp_char_width
 		vmov char_width, vfp_char_width
 
-		cmp char_width, #0
-		moveq char_width, #1
+		/*cmp char_width, #0*/
+		/*moveq char_width, #1*/
 
 		.unreq x_coord_1
 		i      .req r1

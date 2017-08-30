@@ -29,8 +29,7 @@ SYSTEM32_GPIO_BASE:          .word 0x00200000
 
 /**
  * function system32_call_core
- * Call 1-3 Cores
- * This function is depends on RasPi's original start.elf
+ * Call 0-3 Cores
  *
  * Parameters
  * r0: Program Address to Start Core
@@ -47,9 +46,9 @@ system32_call_core:
 	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	temp         .req r2
 
-	cmp core_number, #3                      @ 1 <= mailbox_number <= 3
+	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
 	bgt system32_call_core_error
-	cmp core_number, #1
+	cmp core_number, #0
 	blt system32_call_core_error
 
 	mov temp, #equ32_cores_mailbox_offset
@@ -74,6 +73,72 @@ system32_call_core:
 
 .unreq addr_start
 .unreq core_number
+.unreq temp
+
+
+/**
+ * function system32_receive_core
+ * Wait to Receive Message and Execute Program in 0-3 Cores
+ *
+ * Parameters
+ * r1: Number of Core
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as sucess, 1 as error), 
+ * Error: Number of Core does not exist or assigned Core0
+ */
+.globl system32_receive_core
+system32_receive_core:
+	/* Auto (Local) Variables, but just aliases */
+	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	addr_start   .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	temp         .req r2
+
+	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
+	bgt system32_call_core_error
+	cmp core_number, #0
+	blt system32_call_core_error
+
+	mov temp, #equ32_cores_mailbox_offset
+	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
+
+	add core_number, core_number, #equ32_cores_mailbox3_readclear
+	add core_number, core_number, #equ32_cores_base
+
+	mvn temp, #0
+	str temp, [core_number]                  @ Write High to Reset
+
+	dsb
+	isb
+	dmb
+
+	system32_receive_core_loop:
+		ldr addr_start, [core_number]
+		cmp addr_start, #0
+		beq system32_receive_core_loop
+
+		str temp, [core_number]          @ Write High to Reset
+
+		dsb
+		isb
+		dmb
+
+		hvc #0
+
+		b system32_receive_core_success
+
+	system32_receive_core_error:
+		mov r0, #1
+		b system32_call_core_common
+
+	system32_receive_core_success:
+		mov r0, #0
+
+	system32_receive_core_common:
+		mov pc, lr
+
+.unreq core_number
+.unreq addr_start
 .unreq temp
 
 

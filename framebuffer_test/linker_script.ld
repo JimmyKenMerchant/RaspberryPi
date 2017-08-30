@@ -12,9 +12,24 @@
 SECTIONS {
 
 	/* Assign Address */
+	. = 0x0000;
+	.el01_vector32 : {
+		aloha_vector32.o(.el01_vector)
+		. = 0x1000;
+	}
+	. = 0x1000;
+	.el2_vector32 : {
+		aloha_vector32.o(.el2_vector)
+		. = 0x1000;
+	}
+	. = 0x2000;
+	.el3_vector32 : {
+		aloha_vector32.o(.el3_vector)
+		. = 0x1000;
+	}
 	. = 0x8000;
-	.vector32 : {
-		aloha_vector32.o(.vector)
+	.aloha_vector32 : {
+		aloha_vector32.o(.aloha_vector)
 		. = 0x2000;
 	}
 	. = 0xA000;

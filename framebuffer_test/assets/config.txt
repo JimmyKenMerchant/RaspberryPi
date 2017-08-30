@@ -4,10 +4,14 @@
 
 #Starts from SVC Mode, not HYP Mode that have original IVT address
 #If uncomment, '0' starts from 0x0000_8000, 1 starts from 0x0000_0000
-#kernel_old=0
+kernel_old=1
+
+#If uncomment, ATAGS at address 0x100 is disabled
+disable_commandline_tags=1
 
 #0x8000
 #kernel_address=32768
+kernel_address=0
 
 #CPU Clock Mhz, you may need to voltage up for overclock
 arm_freq=900
@@ -29,6 +33,9 @@ disable_overscan=1
 #CPU 1000Mhz, GPU 500Mhz, SDRAM 500Mhz Need 2 (Raspi2)
 #CPU 900Mhz, GPU 250Mhz, SDRAM 450Mhz Need 0 (Raspi2)
 #over_voltage=2
+
+#1 is no sound, 2 is with soud if possible
+hdmi_drive=2
 
 #0 means Auto Detect from EDID, 1 means CEA Table, 2 means DMT Table
 hdmi_group=0

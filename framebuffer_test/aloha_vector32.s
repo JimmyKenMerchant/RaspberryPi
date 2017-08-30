@@ -8,6 +8,125 @@
  * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
+.section	.el01_vector
+.globl _start
+_start:
+/* VBAR (EL0 and EL1) */
+	ldr pc, _el01_reset_addr                    @ 0x00 reset
+	ldr pc, _el01_undefined_instruction_addr    @ 0x04 Undefined mode (Banks SP, LR, SPSR) `MOVS PC, LR`
+	ldr pc, _el01_supervisor_addr               @ 0x08 Supervisor mode by `SVC` (SP, LR, SPSR) `MOVS PC, LR`
+	ldr pc, _el01_prefetch_abort_addr           @ 0x0C Abort mode (SP, LR, SPSR) `SUBS PC, LR, #4`
+	ldr pc, _el01_data_abort_addr               @ 0x10 Abort mode (SP, LR, SPSR) `SUBS PC, LR, #8`
+	ldr pc, _el01_reserve_addr
+	ldr pc, _el01_irq_addr                      @ 0x18 IRQ mode (SP, LR, SPSR) `SUBS PC, LR, #4`
+	ldr pc, _el01_fiq_addr                      @ 0x1C FIQ mode (SP, LR, SPSR) `SUBS PC, LR, #4`
+_el01_reset_addr:                 .word _el01_reset
+_el01_undefined_instruction_addr: .word _el01_reset
+_el01_supervisor_addr:            .word _el01_svc
+_el01_prefetch_abort_addr:        .word _el01_reset
+_el01_data_abort_addr:            .word _el01_reset
+_el01_reserve_addr:               .word _el01_reset
+_el01_irq_addr:                   .word _el01_reset
+_el01_fiq_addr:                   .word _el01_reset
+
+/* From Secure State SVC mode (EL1 Secure state) */
+_el01_reset:
+	mov r0, #0x0
+	mcr p15, 0, r0, c12, c0, 0                    @ VBAR, IVT Base Vector Address
+	mov r0, #0x2000
+	mcr p15, 0, r0, c12, c0, 1                    @ MVBAR (Secure Monitor mode IVT)
+	smc #0
+	svc #0
+
+_el01_svc:
+	mrc  p15, 0, r0, c1, c0, 0                @ System Control Register (SCTLR)
+	orr r0, r0, #0b100                        @ Enable Data Cache
+	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
+	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
+
+	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
+
+	and r0, r0, #0b11
+	cmp r0, #0                                @ If Core is Zero
+	moveq r1, #0x8000
+	hvceq #0
+
+	_el01_svc_loop:
+		/*bl system32_receive_core*/
+		b _el01_svc_loop
+
+
+
+.section	.el2_vector
+/* HVBAR (EL2), It Will Be Changed for Virtual OS */
+	_el2_reserve0: .word 0x00
+	ldr pc, _el2_undefined_instruction_addr    @ 0x04
+	ldr pc, _el2_supervisor_addr               @ 0x08
+	ldr pc, _el2_prefetch_abort_addr           @ 0x0C
+	ldr pc, _el2_data_abort_addr               @ 0x10
+	ldr pc, _el2_hypervisor_addr               @ 0x14
+	ldr pc, _el2_irq_addr                      @ 0x18
+	ldr pc, _el2_fiq_addr                      @ 0x1C
+_el2_undefined_instruction_addr: .word _el2_hyp
+_el2_supervisor_addr:            .word _el2_hyp
+_el2_prefetch_abort_addr:        .word _el2_hyp
+_el2_data_abort_addr:            .word _el2_hyp
+_el2_hypervisor_addr:            .word _el2_hyp
+_el2_irq_addr:                   .word _el2_hyp
+_el2_fiq_addr:                   .word _el2_hyp
+
+_el2_hyp:
+
+blx r1
+
+eret
+
+.section	.el3_vector
+/*MVBAR (EL3) */
+	_el3_reserve0: .word 0x00
+	_el3_reserve1: .word 0x00
+	ldr pc, _el3_monitor_addr                  @ 0x08 Secure Monitor mode by `SMC` (MVBAR)
+	ldr pc, _el3_prefetch_abort_addr           @ 0x0C Abort mode (MVBAR), if Set on Secure Configuration Register (SCR)
+	ldr pc, _el3_data_abort_addr               @ 0x10 Abort mode (MVBAR), if Set on Secure Configuration Register (SCR)
+	_el3_reserve2: .word 0x00
+	ldr pc, _el3_irq_addr                      @ 0x18 IRQ mode (MVBAR), if Set on Secure Configuration Register (SCR)
+	ldr pc, _el3_fiq_addr                      @ 0x1C FIQ mode (MVBAR), if Set on Secure Configuration Register (SCR)
+_el3_monitor_addr:               .word _el3_mon
+_el3_prefetch_abort_addr:        .word _el3_mon
+_el3_data_abort_addr:            .word _el3_mon
+_el3_irq_addr:                   .word _el3_mon
+_el3_fiq_addr:                   .word _el3_mon
+
+_el3_mon:
+	/*mov r0, #0*/                                @ If You Want Invalidate/ Clean Entire One, Needed Zero
+	/*mcr p15, 0, r0, c7, c5, 0*/                 @ Invalidate Entire Instruction Cache and Branch Target Cache
+	/*isb*/
+	/*mcr p15, 0, r0, c7, c6, 0*/                 @ Invalidate Entire Data Cache
+	/*mcr p15, 0, r0, c7, c10, 0*/                @ Clean Entire Data Cache
+	/*mcr p15, 0, r0, c7, c14, 0*/                @ Clean and Invalidate Entire Data Cache      
+	/*mcr p15, 0, r0, c7, c10, 4*/                @ Data Synchronization Barrier
+	/*mcr p15, 0, r0, c7, c10, 5*/                @ Data Memory Barrier
+	/*isb*/
+
+	mrc  p15, 0, r0, c1, c0, 0                @ System Control Register (SCTLR)
+	orr r0, r0, #0b100                        @ Enable Data Cache
+	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
+	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
+
+	mov r0, #0b11
+	lsl r0, r0, #10                           @ Enable VFP and NEON Access in Non-secure mode
+	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
+
+	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
+	add r0, r0, #0x100                        @ HCE Bit (Hypervisor Call Enable)
+	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure mode, Secure Configuration Register (SCR)
+
+	mov r0, #0x1000
+	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
+
+	movs pc, lr                               @ Return to SVC Mode
+
+
 /**
  * Vector Interrupt Tables and These Functions
  *
@@ -15,27 +134,27 @@
  * Hyp mode banks SP, SPSR, ELR, but LR is shared with User and System mode.
  * BUT REMEBER, in HYP mode, banking registers is INVALID because of no mode change.
  */
-.section	.vector
-.globl _start
-_start:
-	ldr pc, _reset_addr                    @ 0x00 reset
-	ldr pc, _undefined_instruction_addr    @ 0x04 Undifined mode (Hyp mode in Hyp mode), (Banks SP, LR, SPSR)
-	ldr pc, _supervisor_addr               @ 0x08 Supervisor mode by `SVC`, If `HVC` from Hyp mode, Hyp mode, (SP, LR, SPSR)
-	ldr pc, _prefetch_abort_addr           @ 0x0C Abort mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
-	ldr pc, _data_abort_addr               @ 0x10 Abort mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
-	ldr pc, _hypervisor_addr               @ 0x14 Hyp mode by `HVC` from Non-secure state except Hyp mode, (SP, SPSR, ELR)
-	ldr pc, _irq_addr                      @ 0x18 IRQ mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
-	ldr pc, _fiq_addr                      @ 0x1C FIQ mode (Hyp mode in Hyp mode), (SP, LR, SPSR)
-_reset_addr:                 .word _reset
-_undefined_instruction_addr: .word _reset
-_supervisor_addr:            .word _reset
-_prefetch_abort_addr:        .word _reset
-_data_abort_addr:            .word _reset
-_hypervisor_addr:            .word _reset
-_irq_addr:                   .word _reset
-_fiq_addr:                   .word _fiq
+.section	.aloha_vector
+.globl _aloha_start
+_aloha_start:
+	ldr pc, _aloha_reset_addr                    @ 0x00 reset
+	ldr pc, _aloha_undefined_instruction_addr    @ 0x04 (Hyp mode in Hyp mode)
+	ldr pc, _aloha_supervisor_addr               @ 0x08 (Hyp mode in Hyp mode)
+	ldr pc, _aloha_prefetch_abort_addr           @ 0x0C (Hyp mode in Hyp mode)
+	ldr pc, _aloha_data_abort_addr               @ 0x10 (Hyp mode in Hyp mode)
+	ldr pc, _aloha_reserve_addr                  @ If you call `HVC` in Hyp Mode, It translates to `SVC`
+	ldr pc, _aloha_irq_addr                      @ 0x18 (Hyp mode in Hyp mode)
+	ldr pc, _aloha_fiq_addr                      @ 0x1C (Hyp mode in Hyp mode)
+_aloha_reset_addr:                 .word _aloha_reset
+_aloha_undefined_instruction_addr: .word _aloha_reset
+_aloha_supervisor_addr:            .word _aloha_reset
+_aloha_prefetch_abort_addr:        .word _aloha_reset
+_aloha_data_abort_addr:            .word _aloha_reset
+_aloha_reserve_addr:               .word _aloha_reset
+_aloha_irq_addr:                   .word _aloha_reset
+_aloha_fiq_addr:                   .word _aloha_fiq
 
-_reset:
+_aloha_reset:
 	/*
 	 * To Handle HYP mode well, you need to know all interrupts are treated in HYP mode
 	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
@@ -150,7 +269,7 @@ _reset:
 	vmov r0, s0
 	str r0, float_example3
 
-render:
+_aloha_render:
 	push {r0-r8}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
@@ -205,14 +324,14 @@ render:
 	pop {r0-r12,lr}
 	mov sp, ip                                @ ip is r12
 
-	eret
+	mov pc, lr
 
-debug:
+_aloha_debug:
 	cpsie f                                  @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
-	debug_loop1:
-		b debug_loop1
+	_aloha_debug_loop1:
+		b _aloha_debug_loop1
 
-_fiq:
+_aloha_fiq:
 	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
 
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
@@ -220,7 +339,7 @@ _fiq:
 	mrs r1, spsr_hyp
 	push {r0,r1}
 
-	bl fiq_handler
+	bl _aloha_fiq_handler
 
 	pop {r0,r1}
 	msr elr_hyp, r0
@@ -231,7 +350,7 @@ _fiq:
 	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
 	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
-fiq_handler:
+_aloha_fiq_handler:
 	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
 	ldr r1, [r1]
