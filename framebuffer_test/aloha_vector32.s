@@ -52,7 +52,7 @@ _el01_svc:
 	hvceq #0
 
 	_el01_svc_loop:
-		/*bl system32_receive_core*/
+		bl system32_receive_core
 		b _el01_svc_loop
 
 
@@ -67,13 +67,13 @@ _el01_svc:
 	ldr pc, _el2_hypervisor_addr               @ 0x14
 	ldr pc, _el2_irq_addr                      @ 0x18
 	ldr pc, _el2_fiq_addr                      @ 0x1C
-_el2_undefined_instruction_addr: .word _el2_hyp
-_el2_supervisor_addr:            .word _el2_hyp
-_el2_prefetch_abort_addr:        .word _el2_hyp
-_el2_data_abort_addr:            .word _el2_hyp
+_el2_undefined_instruction_addr: .word _el01_reset
+_el2_supervisor_addr:            .word _el01_reset
+_el2_prefetch_abort_addr:        .word _el01_reset
+_el2_data_abort_addr:            .word _el01_reset
 _el2_hypervisor_addr:            .word _el2_hyp
-_el2_irq_addr:                   .word _el2_hyp
-_el2_fiq_addr:                   .word _el2_hyp
+_el2_irq_addr:                   .word _el01_reset
+_el2_fiq_addr:                   .word _el01_reset
 
 _el2_hyp:
 
@@ -92,10 +92,10 @@ eret
 	ldr pc, _el3_irq_addr                      @ 0x18 IRQ mode (MVBAR), if Set on Secure Configuration Register (SCR)
 	ldr pc, _el3_fiq_addr                      @ 0x1C FIQ mode (MVBAR), if Set on Secure Configuration Register (SCR)
 _el3_monitor_addr:               .word _el3_mon
-_el3_prefetch_abort_addr:        .word _el3_mon
-_el3_data_abort_addr:            .word _el3_mon
-_el3_irq_addr:                   .word _el3_mon
-_el3_fiq_addr:                   .word _el3_mon
+_el3_prefetch_abort_addr:        .word _el01_reset
+_el3_data_abort_addr:            .word _el01_reset
+_el3_irq_addr:                   .word _el01_reset
+_el3_fiq_addr:                   .word _el01_reset
 
 _el3_mon:
 	/*mov r0, #0*/                                @ If You Want Invalidate/ Clean Entire One, Needed Zero
