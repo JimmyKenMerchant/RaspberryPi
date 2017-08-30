@@ -113,14 +113,14 @@ void _user_start()
 	fb32_draw_circle( COLOR32_WHITE, 150, 150, 100, 100 );
 	fb32_draw_circle( COLOR32_BLACK, 150, 150, 50, 50 );
 
-	fb32_mask_image( FB32_RENDERBUFFER1, FB32_RENDERBUFFER2, 0, 0 );
+	fb32_mask_image( FB32_RENDERBUFFER2, FB32_RENDERBUFFER1, 0, 0 );
 
 	fb32_attach_buffer( FB32_RENDERBUFFER1 );
 	fb32_clear_color( 0x00000000 );
 
-	fb32_draw_line( COLOR32_CYAN, 20, 20, 100, 100, 1, 1 );
-	fb32_draw_line( COLOR32_CYAN, 20, 20, 20, 100, 1, 1 );
-	fb32_draw_line( COLOR32_CYAN, 20, 100, 100, 100, 1, 1 );
+	fb32_draw_line( 0x9900FFFF, 20, 20, 100, 200, 1, 1 );
+	fb32_draw_line( 0x9900FFFF, 20, 20, 20, 100, 1, 1 );
+	fb32_draw_line( 0x9900FFFF, 20, 100, 100, 200, 1, 1 );
 	fb32_fill_color( FB32_RENDERBUFFER1 );
 
 	fb32_attach_buffer( FB32_FRAMEBUFFER );

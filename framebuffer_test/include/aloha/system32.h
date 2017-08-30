@@ -286,8 +286,8 @@ extern uint64 fb32_fill_color
  */
 extern uint64 fb32_mask_image
 (
-	int32* buffer_base,
 	int32* buffer_mask,
+	int32* buffer_base,
 	int32 x_coord,      // Mask
 	int32 y_coord       // Mask
 );

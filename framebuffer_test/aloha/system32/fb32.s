@@ -92,24 +92,21 @@ fb32_fill_color:
 			cmp flag, #3
 			beq fb32_fill_color_loop_horizontal_flag3
 
-			fb32_fill_color_loop_horizontal_flag0:             @ No Color First
+			fb32_fill_color_loop_horizontal_flag0:             @ When No Color, phi
 				cmp color_pick, #0
 				beq fb32_fill_color_loop_horizontal_common
 				mov color, color_pick
 				mov flag, #1
 				b fb32_fill_color_loop_horizontal_common
 
-			fb32_fill_color_loop_horizontal_flag1:             @ Color First
-				cmp color_pick, #0
-				movne color, color_pick
-				bne fb32_fill_color_loop_horizontal_common
+			fb32_fill_color_loop_horizontal_flag1:             @ When Left Side to Fill by Color
+				cmp color, color_pick
+				beq fb32_fill_color_loop_horizontal_common
 				mov addr_pick, base_addr
 				mov flag, #2
 				b fb32_fill_color_loop_horizontal_common
 
-			fb32_fill_color_loop_horizontal_flag2:             @ No Color Second to Fill by Color
-				cmp color_pick, #0
-				beq fb32_fill_color_loop_horizontal_common
+			fb32_fill_color_loop_horizontal_flag2:             @ When Space to Fill by Color
 				cmp color, color_pick
 				bne fb32_fill_color_loop_horizontal_common
 
@@ -127,7 +124,7 @@ fb32_fill_color:
 					mov flag, #3
 					b fb32_fill_color_loop_horizontal_common
 
-			fb32_fill_color_loop_horizontal_flag3:             @ Color Second
+			fb32_fill_color_loop_horizontal_flag3:             @ When Right Side to Fill by COlor
 				cmp color, color_pick
 				beq fb32_fill_color_loop_horizontal_common @ If Same Color to Fill
 				cmp color_pick, #0
@@ -186,8 +183,8 @@ fb32_fill_color:
  * Caution! This Function is Used in 32-bit Depth Color
  *
  * Parameters
- * r0: Pointer of Buffer based of Mask
- * r1: Pointer of Buffer of Mask
+ * r0: Pointer of Buffer of Mask
+ * r1: Pointer of Buffer based of Mask
  * r2: X Coordinate of Mask
  * r3: Y Coordinate of Mask
  *
@@ -199,15 +196,15 @@ fb32_fill_color:
 .globl fb32_mask_image
 fb32_mask_image:
 	/* Auto (Local) Variables, but just aliases */
-	buffer_base .req r0  @ Parameter, Register for Argument, Scratch Register
-	buffer_mask .req r1  @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord     .req r2  @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord     .req r3  @ Parameter, Register for Argument, Scratch Register
-	base_addr   .req r4  @ Pointer of Base
+	buffer_mask .req r0   @ Parameter, Register for Argument and Result, Scratch Register
+	buffer_base .req r1   @ Parameter, Register for Argument, Scratch Register
+	x_coord     .req r2   @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r3   @ Parameter, Register for Argument, Scratch Register
+	base_addr   .req r4   @ Pointer of Base
 	width       .req r5
 	depth       .req r6
 	size        .req r7
-	mask_addr   .req r8  @ Pointer of Mask
+	mask_addr   .req r8   @ Pointer of Mask
 	mask_width  .req r9
 	mask_height .req r10
 	j           .req r11  @ Use for Horizontal Counter
@@ -235,7 +232,7 @@ fb32_mask_image:
 	beq fb32_mask_image_error2
 	add size, base_addr, size
 
-	lsl width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+	lsl width, width, #2                             @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	ldr mask_addr, [buffer_mask]
 	cmp mask_addr, #0
@@ -338,8 +335,8 @@ fb32_mask_image:
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
-.unreq buffer_base
 .unreq buffer_mask
+.unreq buffer_base
 .unreq color
 .unreq width_check
 .unreq base_addr
@@ -490,7 +487,7 @@ fb32_draw_circle:
 	vfp_one          .req s11
 
 	push {r4-r9}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+                   @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	add sp, sp, #24                                   @ r4-r9 offset 24 bytes
 	pop {y_radian}                                    @ Get Fifth
@@ -543,9 +540,6 @@ fb32_draw_circle:
 
 		sub x_diff, x_coord, x_current
 		lsl char_width, x_diff, #1                          @ Substitute of Multiplication by 2
-
-		cmp char_width, #0
-		moveq char_width, #1
 
 		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
@@ -742,8 +736,8 @@ fb32_draw_line:
 		vcvtr.s32.f32 vfp_char_width, vfp_char_width
 		vmov char_width, vfp_char_width
 
-		cmp char_width, #1
-		subgt char_width, char_width, #1
+		cmp char_width, #0
+		moveq char_width, #1
 
 		.unreq x_coord_1
 		i      .req r1
