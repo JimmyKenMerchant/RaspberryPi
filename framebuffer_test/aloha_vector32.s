@@ -32,15 +32,15 @@ _el01_fiq_addr:                   .word _el01_reset
 /* From Secure State SVC mode (EL1 Secure state) */
 _el01_reset:
 	mov r0, #0x0
-	mcr p15, 0, r0, c12, c0, 0                    @ VBAR, IVT Base Vector Address
+	mcr p15, 0, r0, c12, c0, 0                    @ VBAR(User Mode, EL0, and Privileged Mode, EL1), IVT Base Vector Address
 	mov r0, #0x2000
-	mcr p15, 0, r0, c12, c0, 1                    @ MVBAR (Secure Monitor mode IVT)
+	mcr p15, 0, r0, c12, c0, 1                    @ MVBAR (Secure Monitor mode, EL3), IVT Base Vector Address
 	smc #0
 	svc #0
 
 _el01_svc:
 	mrc  p15, 0, r0, c1, c0, 0                @ System Control Register (SCTLR)
-	orr r0, r0, #0b100                        @ Enable Data Cache
+	/*orr r0, r0, #0b100*/                        @ Enable Data Cache
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 
@@ -51,9 +51,15 @@ _el01_svc:
 	moveq r1, #0x8000
 	hvceq #0
 
+	ldr r2, _el01_core_addr
+	strb r0, [r2, r0]
+
 	_el01_svc_loop:
 		bl system32_receive_core
 		b _el01_svc_loop
+
+_el01_core_addr:
+	.word core0
 
 
 
@@ -76,8 +82,26 @@ _el2_irq_addr:                   .word _el01_reset
 _el2_fiq_addr:                   .word _el01_reset
 
 _el2_hyp:
+	mov ip, #0x200                             @ Offset 0x100 Bytes per Core
+	mul ip, ip, r0
+	mov fp, #0x7000
+	sub fp, fp, ip
+	mov sp, fp
+	push {r0-r12,lr}
+	mrs r10, elr_hyp                           @ mrs/msr accessible system registers can add postfix of modes
+	mrs r11, spsr_hyp
+	push {r10,r11}
+	mrc p15, 4, r10, c12, c0, 0
+	push {r10}                                 @ Push Last HVBAR Address to Retrieve
 
-blx r1
+	blx r1
+
+	pop {r10}                                  @ Return Process from Current Hyp Mode
+	mcr p15, 4, r10, c12, c0, 0                @ Retrieve HVBAR Address
+	pop {r10,r11}
+	msr elr_hyp, r10
+	msr spsr_hyp, r11
+	pop {r0-r12,lr}
 
 eret
 
@@ -98,20 +122,26 @@ _el3_irq_addr:                   .word _el01_reset
 _el3_fiq_addr:                   .word _el01_reset
 
 _el3_mon:
-	/*mov r0, #0*/                                @ If You Want Invalidate/ Clean Entire One, Needed Zero
-	/*mcr p15, 0, r0, c7, c5, 0*/                 @ Invalidate Entire Instruction Cache and Branch Target Cache
-	/*isb*/
-	/*mcr p15, 0, r0, c7, c6, 0*/                 @ Invalidate Entire Data Cache
-	/*mcr p15, 0, r0, c7, c10, 0*/                @ Clean Entire Data Cache
-	/*mcr p15, 0, r0, c7, c14, 0*/                @ Clean and Invalidate Entire Data Cache      
-	/*mcr p15, 0, r0, c7, c10, 4*/                @ Data Synchronization Barrier
-	/*mcr p15, 0, r0, c7, c10, 5*/                @ Data Memory Barrier
-	/*isb*/
-
-	mrc  p15, 0, r0, c1, c0, 0                @ System Control Register (SCTLR)
+	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b100                        @ Enable Data Cache
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
+	isb
+
+	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
+	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
+                                                  @ And Enable [0]FW, Cache and TLB Maintenance Broadcast 
+	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
+	isb
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Branch Target Cache
+	isb
+	/*mcr p15, 0, r0, c7, c6, 0*/             @ Invalidate Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)
+	/*mcr p15, 0, r0, c7, c10, 0*/            @ Clean Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)
+	/*mcr p15, 0, r0, c7, c14, 0*/            @ Clean and Invalidate Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)   
+	/*mcr p15, 0, r0, c7, c10, 4*/            @ Data Synchronization Barrier (Deprecated in From ARMv7)
+	/*mcr p15, 0, r0, c7, c10, 5*/            @ Data Memory Barrier (Deprecated in From ARMv7)
 
 	mov r0, #0b11
 	lsl r0, r0, #10                           @ Enable VFP and NEON Access in Non-secure mode
@@ -122,7 +152,7 @@ _el3_mon:
 	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure mode, Secure Configuration Register (SCR)
 
 	mov r0, #0x1000
-	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
+	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
 
 	movs pc, lr                               @ Return to SVC Mode
 
@@ -160,16 +190,10 @@ _aloha_reset:
 	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
 	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
 	 */
-	mov ip, sp                                @ ip is r12
+	mov r0, sp                                @ Store Previous Stack Pointer
 	mov sp, #0x8000                           @ Stack Pointer to 0x8000
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-
-	push {r0-r12,lr}
-	mrs r0, elr_hyp                           @ mrs/msr accessible system registers can add postfix of modes
-	mrs r1, spsr_hyp
-	push {r0, r1}
-	mrc p15, 4, r0, c12, c0, 0
-	push {r0}                                 @ Push Last HVBAR Address to Retrieve
+	push {r0,lr}
 
 	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #equ32_hyp_mode|equ32_fiq_disable|equ32_irq_disable @ 0xDA
@@ -177,10 +201,6 @@ _aloha_reset:
 
 	mov r0, #0x8000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
-
-	push {r0-r3}
-	bl system32_clear_heap
-	pop {r0-r3}
 
 	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
@@ -236,6 +256,11 @@ _aloha_reset:
 	bl fb32_get_framebuffer
 	pop {r0-r3}
 
+	/* Clear Heap to All Zero */
+	push {r0-r3}
+	bl system32_clear_heap
+	pop {r0-r3}
+
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
 	/*
@@ -268,6 +293,18 @@ _aloha_reset:
 	vcvtr.u32.f32 s0, s0                      @ In VFP Instructions, You Can Convert with Rounding Mode
 	vmov r0, s0
 	str r0, float_example3
+
+	mov r0, #1
+	ldr r1, core123_handler
+	/*bl system32_call_core*/
+
+	mov r0, #2
+	ldr r1, core123_handler
+	/*bl system32_call_core*/
+
+	mov r0, #3
+	ldr r1, core123_handler
+	/*bl system32_call_core*/
 
 _aloha_render:
 	push {r0-r8}
@@ -308,6 +345,31 @@ _aloha_render:
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
+	dmb
+
+	ldrb r0, core0
+	ldrb r1, core1
+	ldrb r2, core2
+	ldrb r3, core3
+	add r0, r0, r1
+	add r0, r0, r2
+	add r0, r0, r3
+
+	mov r1, #0                                @ X Coordinate
+	mov r2, #124                              @ Y Coordinate
+	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r4, [r4]
+	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
+	mov r6, #8
+	mov r7, #12
+	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
+	ldr r8, [r8]
+	push {r4-r8}
+	bl print32_number
+	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+
 	pop {r0-r8}
 
 	cpsie f
@@ -316,14 +378,10 @@ _aloha_render:
 	bl _user_start
 	pop {r0-r3}
 
-	pop {r0}                                  @ Return Process from Current Hyp Mode
-	mcr p15, 4, r0, c12, c0, 0                @ Retrieve HVBAR Address
-	pop {r0,r1}
-	msr elr_hyp, r0
-	msr spsr_hyp, r1
-	pop {r0-r12,lr}
-	mov sp, ip                                @ ip is r12
-
+	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer and Link Register
+	ldr r0, [fp, #-4]                        @ Post-index, add four to fp afterward, Stack Pointer
+	ldr lr, [fp]                             @ Link Register
+	mov sp, r0
 	mov pc, lr
 
 _aloha_debug:
@@ -450,6 +508,16 @@ _aloha_fiq_handler:
 
 	mov pc, lr
 
+core123_handler: .word _core123_handler
+
+_core123_handler:
+	ldr r2, core_addr
+	strb r0, [r2, r0]
+	dsb
+	isb
+	dmb
+	mov pc, lr
+
 /**
  * Variables
  */
@@ -484,6 +552,16 @@ timer_sub:
 	.word 0x00000000
 sys_timer_previous:
 	.word 0x00000000
+core_addr:
+	.word core0
+core0:
+	.byte 0x00000000
+core1:
+	.byte 0x00000000
+core2:
+	.byte 0x00000000
+core3:
+	.byte 0x00000000
 .balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`

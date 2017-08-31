@@ -51,13 +51,18 @@
 .equ equ32_mailbox_channel6,   0x06
 .equ equ32_mailbox_channel7,   0x07
 .equ equ32_mailbox_channel8,   0x08
-.equ equ32_mailbox_read,       0x00
-.equ equ32_mailbox_poll,       0x10
-.equ equ32_mailbox_sender,     0x14
-.equ equ32_mailbox_status,     0x18 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-.equ equ32_mailbox_config,     0x1C
-.equ equ32_mailbox_write,      0x20
-.equ equ32_mailbox_offset,     0x20 @ 0-3 each maibox has 0x20 offset
+.equ equ32_mailbox0_read,      0x00 @ On Old System of Mailbox (from Single Core), Mailbox is only 0-1 accessible.
+.equ equ32_mailbox0_poll,      0x10 @ Because, 0-1 are alternatively connected, e.g., read/write Mapping.
+.equ equ32_mailbox0_sender,    0x14
+.equ equ32_mailbox0_status,    0x18 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+.equ equ32_mailbox0_config,    0x1C
+.equ equ32_mailbox0_write,     0x20 @ Mailbox 1 Read/ Mailbox 0 Write is the same address
+.equ equ32_mailbox1_read,      0x20
+.equ equ32_mailbox1_poll,      0x30
+.equ equ32_mailbox1_sender,    0x34
+.equ equ32_mailbox1_status,    0x38 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+.equ equ32_mailbox1_config,    0x3C
+.equ equ32_mailbox1_write,     0x00 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
 
 .equ equ32_mailbox_gpuconfirm,   0x04
 .equ equ32_mailbox_gpuoffset,    0x40000000

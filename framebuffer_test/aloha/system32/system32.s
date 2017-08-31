@@ -32,8 +32,8 @@ SYSTEM32_GPIO_BASE:          .word 0x00200000
  * Call 0-3 Cores
  *
  * Parameters
- * r0: Program Address to Start Core
- * r1: Number of Core
+ * r0: Number of Core
+ * r1: Program Address to Start Core
  *
  * Usage: r0-r2
  * Return: r0 (0 as sucess, 1 as error), 
@@ -41,54 +41,6 @@ SYSTEM32_GPIO_BASE:          .word 0x00200000
  */
 .globl system32_call_core
 system32_call_core:
-	/* Auto (Local) Variables, but just aliases */
-	addr_start   .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	temp         .req r2
-
-	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
-	bgt system32_call_core_error
-	cmp core_number, #0
-	blt system32_call_core_error
-
-	mov temp, #equ32_cores_mailbox_offset
-	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
-
-	add core_number, core_number, #equ32_cores_mailbox3_writeset
-	add core_number, core_number, #equ32_cores_base
-
-	str addr_start, [core_number]
-
-	b system32_call_core_success
-
-	system32_call_core_error:
-		mov r0, #1
-		b system32_call_core_common
-
-	system32_call_core_success:
-		mov r0, #0
-
-	system32_call_core_common:
-		mov pc, lr
-
-.unreq addr_start
-.unreq core_number
-.unreq temp
-
-
-/**
- * function system32_receive_core
- * Wait to Receive Message and Execute Program in 0-3 Cores
- *
- * Parameters
- * r1: Number of Core
- *
- * Usage: r0-r2
- * Return: r0 (0 as sucess, 1 as error), 
- * Error: Number of Core does not exist or assigned Core0
- */
-.globl system32_receive_core
-system32_receive_core:
 	/* Auto (Local) Variables, but just aliases */
 	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	addr_start   .req r1 @ Parameter, Register for Argument and Result, Scratch Register
@@ -102,22 +54,75 @@ system32_receive_core:
 	mov temp, #equ32_cores_mailbox_offset
 	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
 
-	add core_number, core_number, #equ32_cores_mailbox3_readclear
 	add core_number, core_number, #equ32_cores_base
 
 	mvn temp, #0
-	str temp, [core_number]                  @ Write High to Reset
+	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+
+	dsb
+	isb
+	dmb
+
+	str addr_start, [core_number, #equ32_cores_mailbox3_writeset]
+
+	b system32_call_core_success
+
+	system32_call_core_error:
+		mov r0, #1
+		b system32_call_core_common
+
+	system32_call_core_success:
+		mov r0, #0
+
+	system32_call_core_common:
+		mov pc, lr
+
+.unreq core_number
+.unreq addr_start
+.unreq temp
+
+
+/**
+ * function system32_receive_core
+ * Wait to Receive Message and Execute Program in 0-3 Cores
+ *
+ * Parameters
+ * r0: Number of Core
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as sucess, 1 as error), 
+ * Error: Number of Core does not exist or assigned Core0
+ */
+.globl system32_receive_core
+system32_receive_core:
+	/* Auto (Local) Variables, but just aliases */
+	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	addr_start   .req r1
+	temp         .req r2
+
+	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
+	bgt system32_call_core_error
+	cmp core_number, #0
+	blt system32_call_core_error
+
+	mov temp, #equ32_cores_mailbox_offset
+	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
+
+	add core_number, core_number, #equ32_cores_base
+
+	mvn temp, #0
+	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
 	dsb
 	isb
 	dmb
 
 	system32_receive_core_loop:
-		ldr addr_start, [core_number]
+		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
 		cmp addr_start, #0
 		beq system32_receive_core_loop
 
-		str temp, [core_number]          @ Write High to Reset
+		str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
 		dsb
 		isb
@@ -144,39 +149,22 @@ system32_receive_core:
 
 /**
  * function system32_mailbox_read
- * Wait and Read Mail from GPU/ Other Cores
+ * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
  *
- * Parameters
- * r0: Number of Mailbox, 0-3
- *
- * Usage: r0-r4
+ * Usage: r0-r3
  * Return: r0 Reply Content, r1 (0 as sucess, 1 as error), 
  * Error: Number of Mailbox does not exist
  */
 .globl system32_mailbox_read
 system32_mailbox_read:
 	/* Auto (Local) Variables, but just aliases */
-	mailbox_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base  .req r1
-	temp            .req r2
-	status          .req r3
-	read            .req r4
+	memorymap_base  .req r0
+	temp            .req r1
+	status          .req r2
+	read            .req r3
 
-	push {r4}
-
-	cmp mailbox_number, #3                   @ 0 <= mailbox_number <= 3
-	bgt system32_mailbox_read_error
-	cmp mailbox_number, #0
-	blt system32_mailbox_read_error
-
-	mov temp, #equ32_mailbox_offset
-	mul mailbox_number, temp, mailbox_number @ Multiply Mailbox Offset to mailbox_number
-
-	mov status, mailbox_number
-	mov read, mailbox_number
-
-	add status, #equ32_mailbox_status
-	add read, #equ32_mailbox_read
+	mov status, #equ32_mailbox0_status
+	mov read, #equ32_mailbox0_read
 
 	mov memorymap_base, #equ32_peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
@@ -206,10 +194,8 @@ system32_mailbox_read:
 		mov r1, #0
 
 	system32_mailbox_read_common:
-		pop {r4}
 		mov pc, lr
 
-.unreq mailbox_number
 .unreq memorymap_base
 .unreq temp
 .unreq status
@@ -218,41 +204,28 @@ system32_mailbox_read:
 
 /**
  * function system32_mailbox_send
- * Wait and Send Mail to GPU/ Other Cores
+ * Wait and Send Mail to VideoCore IV (Mailbox 0 on Old System Only)
  *
  * Parameters
  * r0: Content of Mail to Send
- * r1: Number of Mailbox, 0-3
  *
- * Usage: r0-r5
- * Return: r0 Reply Content, r1 (0 as sucess, 1 as error)
+ * Usage: r0-r4
+ * Return: r0 (0 as sucess, 1 as error)
  * Error: Number of Mailbox does not exist
  */
 .globl system32_mailbox_send
 system32_mailbox_send:
 	/* Auto (Local) Variables, but just aliases */
 	mail_content    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	mailbox_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base  .req r2
-	temp            .req r3
-	status          .req r4
-	write           .req r5
+	memorymap_base  .req r1
+	temp            .req r2
+	status          .req r3
+	write           .req r4
 
-	push {r4-r5}
+	push {r4}
 
-	cmp mailbox_number, #3                   @ 0 <= mailbox_number <= 3
-	bgt system32_mailbox_send_error
-	cmp mailbox_number, #0
-	blt system32_mailbox_send_error
-
-	mov temp, #equ32_mailbox_offset
-	mul mailbox_number, temp, mailbox_number @ Multiply Mailbox Offset to mailbox_number
-
-	mov status, mailbox_number
-	mov write, mailbox_number
-
-	add status, #equ32_mailbox_status
-	add write, #equ32_mailbox_write
+	mov status, #equ32_mailbox0_status
+	mov write, #equ32_mailbox0_write
 
 	mov memorymap_base, #equ32_peripherals_base
 	ldr temp, SYSTEM32_MAILBOX_BASE
@@ -263,26 +236,24 @@ system32_mailbox_send:
 		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
 		beq system32_mailbox_send_waitforwrite
 
-	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+	dmb                                            @ `DMB` Data Memory Barrier, completes all memory access before
 
 	str mail_content, [memorymap_base, write]
 
 	b system32_mailbox_send_success
 
 	system32_mailbox_send_error:
-		mov r0, #0
-		mov r1, #1
+		mov r0, #1
 		b system32_mailbox_send_common
 
 	system32_mailbox_send_success:
-		mov r1, #0
+		mov r0, #0
 
 	system32_mailbox_send_common:
-		pop {r4-r5}
+		pop {r4}
 		mov pc, lr
 
 .unreq mail_content
-.unreq mailbox_number
 .unreq memorymap_base
 .unreq temp
 .unreq status

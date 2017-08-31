@@ -79,13 +79,18 @@ void _user_start();
 #define equ32_mailbox_channel6    0x06
 #define equ32_mailbox_channel7    0x07
 #define equ32_mailbox_channel8    0x08
-#define equ32_mailbox_read        0x00
-#define equ32_mailbox_poll        0x10
-#define equ32_mailbox_sender      0x14
-#define equ32_mailbox_status      0x18 // MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-#define equ32_mailbox_config      0x1C
-#define equ32_mailbox_write       0x20
-#define equ32_mailbox_offset      0x20 // 0-3 each maibox has 0x20 offset
+#define equ32_mailbox0_read       0x00 @ On Old System of Mailbox (from Single Core), Mailbox is only 0-1 accessible.
+#define equ32_mailbox0_poll       0x10 @ Because, 0-1 are alternatively connected, e.g., read/write Mapping.
+#define equ32_mailbox0_sender     0x14
+#define equ32_mailbox0_status     0x18 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+#define equ32_mailbox0_config     0x1C
+#define equ32_mailbox0_write      0x20 @ Mailbox 1 Read/ Mailbox 0 Write is the same address
+#define equ32_mailbox1_read       0x20
+#define equ32_mailbox1_poll       0x30
+#define equ32_mailbox1_sender     0x34
+#define equ32_mailbox1_status     0x38 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+#define equ32_mailbox1_config     0x3C
+#define equ32_mailbox1_write      0x00 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
 
 #define equ32_mailbox_gpuconfirm    0x04
 #define equ32_mailbox_gpuoffset     0x40000000
@@ -288,8 +293,8 @@ extern uint64 fb32_mask_image
 (
 	int32* buffer_mask,
 	int32* buffer_base,
-	int32 x_coord,      // Mask
-	int32 y_coord       // Mask
+	int32 x_coord, // Mask
+	int32 y_coord // Mask
 );
 
 
