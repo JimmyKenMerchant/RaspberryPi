@@ -1766,9 +1766,7 @@ fb32_get_framebuffer:
 	add temp, temp, #equ32_mailbox_gpuoffset|equ32_mailbox_channel8
 	push {r0-r3,lr}
 	mov r0, temp
-	mov r1, #0
 	bl system32_mailbox_send
-	mov r0, #0
 	bl system32_mailbox_read
 	pop {r0-r3,lr}
 

@@ -26,6 +26,237 @@ SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
 SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
 SYSTEM32_GPIO_BASE:          .word 0x00200000
 
+/**
+ * function system32_cache_clean_inv_all
+ * Invalidate and Cache by the Physical Address
+ *
+ * Parameters
+ * r1: Cache Level, 1/2
+ *
+ * Usage: r4-r10
+ * Return: r0 (0 as Success)
+ */
+.globl system32_cache_clean_inv_all
+system32_cache_clean_inv_all:
+	/* Auto (Local) Variables, but just aliases */
+	level        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	set_bit      .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	temp         .req r2
+	bit_mask     .req r3
+	line_shift   .req r4
+	way_size     .req r5
+	way_size_dup .req r6
+	set_size     .req r7
+	cache_info   .req r8
+	setlevel     .req r9
+	waysetlevel  .req r10
+
+	push {r4-r10}
+
+	sub level, level, #1
+	lsl level, level, #1             @ Set Level Bit [3:1], 0b0 is Level 1
+
+	push {r0-r3,lr}
+	mov r0, level
+	bl system32_cache_info
+	mov cache_info, r0
+	pop {r0-r3,lr}
+
+	mov line_shift, cache_info
+	and line_shift, line_shift, #0b111       @ Mask for Line Size Bit[2:0]
+	add line_shift, line_shift, #4           @ Get Index Mask Shift (Offset #4)
+	
+	mov bit_mask, #0xFF
+	add bit_mask, bit_mask, #0x300
+	lsl bit_mask, bit_mask, #3
+	and bit_mask, cache_info, bit_mask
+	lsr way_size, bit_mask, #3               @ Get Way Size - 1 Bit[12:3]
+
+	mov bit_mask, #0xFF
+	add bit_mask, bit_mask, #0x7F00
+	lsl bit_mask, bit_mask, #13
+	and bit_mask, cache_info, bit_mask
+	lsr set_size, bit_mask, #13              @ Get Set Size - 1 Bit[27:13]
+
+	clz temp, way_size                       @ Determine Start Bit of Way, Changed by Leading Zeros
+
+	system32_cache_clean_inv_all_loop:
+		cmp set_size, #0
+		blt system32_cache_clean_inv_all_success
+		lsl set_bit, set_size, line_shift        @ Set Set Bit[*:4 + LineSize]
+		
+		add setlevel, set_bit, level
+		mov way_size_dup, way_size
+
+		system32_cache_clean_inv_all_loop_way:
+			cmp way_size_dup, #0
+			blt system32_cache_clean_inv_all_loop_common
+			lsl way_size_dup, way_size_dup, temp      @ Set Way Bit[31:*]
+			add waysetlevel, setlevel, way_size_dup
+			mcr p15, 0, waysetlevel, c7, c14, 2
+			sub way_size_dup, way_size_dup, #1
+			b system32_cache_clean_inv_all_loop_way
+
+		system32_cache_clean_inv_all_loop_common:
+			sub set_size, set_size, #1
+			b system32_cache_clean_inv_all_loop
+
+	system32_cache_clean_inv_all_success:
+		mov r0, #0 
+
+	system32_cache_clean_inv_all_common:
+		pop {r4-r10}
+		mov pc, lr
+
+.unreq level
+.unreq set_bit
+.unreq temp
+.unreq bit_mask
+.unreq line_shift
+.unreq way_size
+.unreq way_size_dup
+.unreq set_size
+.unreq cache_info
+.unreq setlevel
+.unreq waysetlevel
+
+/**
+ * function system32_cache_clean_inv
+ * Invalidate and Cache by the Physical Address
+ *
+ * Parameters
+ * r0: Physical Address to Be Cleand and Invalidated
+ * r1: Cache Level, 1/2
+ *
+ * Usage: r4-r9
+ * Return: r0 (0 as Success)
+ */
+.globl system32_cache_clean_inv
+system32_cache_clean_inv:
+	/* Auto (Local) Variables, but just aliases */
+	p_address   .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	level       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	temp        .req r2
+	bit_mask    .req r3
+	line_shift  .req r4
+	way_size    .req r5
+	set_size    .req r6
+	cache_info  .req r7
+	setlevel    .req r8
+	waysetlevel .req r9
+
+	push {r4-r9}
+
+	sub level, level, #1
+	lsl level, level, #1             @ Set Level Bit [3:1], 0b0 is Level 1
+
+	push {r0-r3,lr}
+	mov r0, level
+	bl system32_cache_info
+	mov cache_info, r0
+	pop {r0-r3,lr}
+
+	mov line_shift, cache_info
+	and line_shift, line_shift, #0b111       @ Mask for Line Size Bit[2:0]
+	add line_shift, line_shift, #4           @ Get Index Mask Shift (Offset #4)
+	
+	mov bit_mask, #0xFF
+	add bit_mask, bit_mask, #0x300
+	lsl bit_mask, bit_mask, #3
+	and bit_mask, cache_info, bit_mask
+	lsr way_size, bit_mask, #3               @ Get Way Size - 1 Bit[12:3]
+
+	mov bit_mask, #0xFF
+	add bit_mask, bit_mask, #0x7F00
+	lsl bit_mask, bit_mask, #13
+	and bit_mask, cache_info, bit_mask
+	lsr set_size, bit_mask, #13              @ Get Set Size - 1 Bit[27:13]
+
+	mov bit_mask, set_size
+	lsl bit_mask, bit_mask, line_shift
+	and p_address, p_address, bit_mask       @ Set Set Bit[*:4 + LineSize]
+	.unreq p_address
+	set_bit .req r0
+	
+	add setlevel, set_bit, level
+
+	clz temp, way_size                       @ Determine Start Bit of Way, Changed by Leading Zeros
+
+	system32_cache_clean_inv_loop:
+		cmp way_size, #0
+		blt system32_cache_clean_inv_success
+		lsl way_size, way_size, temp              @ Set Way Bit[31:*]
+		add waysetlevel, setlevel, way_size
+		mcr p15, 0, waysetlevel, c7, c14, 2
+		sub way_size, way_size, #1
+		b system32_cache_clean_inv_loop
+
+	system32_cache_clean_inv_success:
+		mov r0, #0 
+
+	system32_cache_clean_inv_common:
+		pop {r4-r9}
+		mov pc, lr
+
+.unreq set_bit
+.unreq level
+.unreq temp
+.unreq bit_mask
+.unreq line_shift
+.unreq way_size
+.unreq set_size
+.unreq cache_info
+.unreq setlevel
+.unreq waysetlevel
+
+
+/**
+ * function system32_cache_info
+ * Return Particular Cache Information
+ *
+ * Parameters
+ * r0: Content of Cache Size Slection Register (CSSELR) for CCSIDR
+ *
+ * Usage: r0
+ * Return: r0 (Value of CCSIDR)
+ */
+.globl system32_cache_info
+system32_cache_info:
+	/* Auto (Local) Variables, but just aliases */
+	ccselr       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/**
+	 * Cache Size Slection Register (CSSELR) for CCSIDR
+	 * Bit[0] is 0 (Data or Unified Cache)/ 1 (Instruction Cache)
+	 * Bit[3:1] is 0b000 (Level1)/ 0b001(Level2), Other Bits are Reserved
+	 */
+	mcr p15, 2, ccselr, c0, c0, 0 @ Cache Selector
+
+	.unreq ccselr
+	ccsidr .req r0
+
+	dsb
+	isb
+
+	/**
+	 * Cache Size ID Register (CCSIDR)
+	 * Bit[2:0] LineSize, (log2(Number of Words)) - 2, e.g., 0b001 is 8 words per line, 0b010 is 16 words per line
+	 * Bit[12:3] Associativity, Way - 1, e.g., 0b0000000001 is 2-ways, 0b0000000011 is 4-ways
+	 * Bit[27:13] Number of Sets -1, e.g., 0 is 1 set (Line per Way)
+	 * Bit[28] Write-Allocation(WA)
+	 * Bit[29] Read-Allocation(RA)
+	 * Bit[30] Write-Back
+	 * Bit[31] Write-Through
+	 *
+	 * Index of the set will be Determined by Bit[*:4 + LineSize] of the Address, the length is Number of Sets
+	 */
+	mrc p15, 1, ccsidr, c0, c0, 0 @ Cache Selector
+
+	system32_cache_info_common:
+		mov pc, lr
+
+.unreq ccsidr
+
 
 /**
  * function system32_call_core
@@ -59,9 +290,8 @@ system32_call_core:
 	mvn temp, #0
 	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
-	dsb
-	isb
-	dmb
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	str addr_start, [core_number, #equ32_cores_mailbox3_writeset]
 
@@ -113,9 +343,8 @@ system32_receive_core:
 	mvn temp, #0
 	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
-	dsb
-	isb
-	dmb
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	system32_receive_core_loop:
 		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
@@ -124,9 +353,8 @@ system32_receive_core:
 
 		str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
-		dsb
-		isb
-		dmb
+		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 		hvc #0
 
