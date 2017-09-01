@@ -40,14 +40,36 @@ _el01_reset:
 
 _el01_svc:
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
-
 	and r0, r0, #0b11
+
+	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
+	mul ip, ip, r0
+	mov fp, #0x5000
+	sub fp, fp, ip
+	mov sp, fp
+
 	cmp r0, #0                                @ If Core is Zero
 	moveq r1, #0x8000
 	hvceq #0
 
-	ldr r2, _el01_core_addr
-	strb r0, [r2, r0]
+	ldr r1, _el01_core_addr
+	add r1, r1, r0
+	strb r0, [r1]
+
+	dsb
+	isb
+
+	push {r0-r3,lr}
+	mov r0, r1
+	mov r1, #1
+	bl system32_cache_clean_inv
+	push {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, r1
+	mov r1, #2
+	bl system32_cache_clean_inv
+	push {r0-r3,lr}
 
 	_el01_svc_loop:
 		bl system32_receive_core
@@ -77,9 +99,9 @@ _el2_irq_addr:                   .word _el01_reset
 _el2_fiq_addr:                   .word _el01_reset
 
 _el2_hyp:
-	mov ip, #0x200                             @ Offset 0x100 Bytes per Core
+	mov ip, #0x200                             @ Offset 0x200 Bytes per Core
 	mul ip, ip, r0
-	mov fp, #0x7000
+	mov fp, #0x6000
 	sub fp, fp, ip
 	mov sp, fp
 	push {r0-r12,lr}
@@ -136,8 +158,8 @@ _el3_mon:
 	/*mcr p15, 0, r0, c7, c10, 4*/            @ Data Synchronization Barrier (Deprecated in From ARMv7)
 	/*mcr p15, 0, r0, c7, c10, 5*/            @ Data Memory Barrier (Deprecated in From ARMv7)
 
-	mov r0, #0b11
-	lsl r0, r0, #10                           @ Enable VFP and NEON Access in Non-secure mode
+	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
+	add r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18]
 	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
 
 	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
@@ -146,10 +168,16 @@ _el3_mon:
 
 	dsb
 
-	mrc  p15, 0, r0, c1, c0, 0                @ System Control Register (SCTLR)
+	/* Non-secure State Below */
+
+	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b100                        @ Enable Data Cache
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
+
+	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
+	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
+	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 
 	mov r0, #0x1000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
@@ -350,7 +378,12 @@ _aloha_render:
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
-	dmb
+	ldr r0, core_addr
+	mov r1, #1
+	bl system32_cache_clean_inv
+	ldr r0, core_addr
+	mov r1, #2
+	bl system32_cache_clean_inv
 
 	ldrb r0, core0
 	ldrb r1, core1
@@ -361,7 +394,7 @@ _aloha_render:
 	add r0, r0, r3
 
 	mov r1, #0                                @ X Coordinate
-	mov r2, #124                              @ Y Coordinate
+	mov r2, #136                              @ Y Coordinate
 	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
 	ldr r3, [r3]
 	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)

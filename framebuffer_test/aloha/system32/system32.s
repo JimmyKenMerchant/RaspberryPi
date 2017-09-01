@@ -28,13 +28,13 @@ SYSTEM32_GPIO_BASE:          .word 0x00200000
 
 /**
  * function system32_cache_clean_inv_all
- * Invalidate and Cache by the Physical Address
+ * Invalidate and Clean Entire Cache by Set/Way
  *
  * Parameters
  * r1: Cache Level, 1/2
  *
  * Usage: r4-r10
- * Return: r0 (0 as Success)
+ * Return: r0 (Last Value of Set/Way Format)
  */
 .globl system32_cache_clean_inv_all
 system32_cache_clean_inv_all:
@@ -54,7 +54,7 @@ system32_cache_clean_inv_all:
 	push {r4-r10}
 
 	sub level, level, #1
-	lsl level, level, #1             @ Set Level Bit [3:1], 0b0 is Level 1
+	lsl level, level, #1                     @ Set Level Bit [3:1], 0b0 is Level 1
 
 	push {r0-r3,lr}
 	mov r0, level
@@ -91,8 +91,8 @@ system32_cache_clean_inv_all:
 		system32_cache_clean_inv_all_loop_way:
 			cmp way_size_dup, #0
 			blt system32_cache_clean_inv_all_loop_common
-			lsl way_size_dup, way_size_dup, temp      @ Set Way Bit[31:*]
-			add waysetlevel, setlevel, way_size_dup
+			lsl bit_mask, way_size_dup, temp     @ Set Way Bit[31:*]
+			add waysetlevel, setlevel, bit_mask
 			mcr p15, 0, waysetlevel, c7, c14, 2
 			sub way_size_dup, way_size_dup, #1
 			b system32_cache_clean_inv_all_loop_way
@@ -102,9 +102,11 @@ system32_cache_clean_inv_all:
 			b system32_cache_clean_inv_all_loop
 
 	system32_cache_clean_inv_all_success:
-		mov r0, #0 
+		mov r0, waysetlevel 
 
 	system32_cache_clean_inv_all_common:
+		dsb
+		isb
 		pop {r4-r10}
 		mov pc, lr
 
@@ -120,16 +122,17 @@ system32_cache_clean_inv_all:
 .unreq setlevel
 .unreq waysetlevel
 
+
 /**
  * function system32_cache_clean_inv
- * Invalidate and Cache by the Physical Address
+ * Invalidate and Clean Cache by the Physical Address
  *
  * Parameters
  * r0: Physical Address to Be Cleand and Invalidated
  * r1: Cache Level, 1/2
  *
  * Usage: r4-r9
- * Return: r0 (0 as Success)
+ * Return: r0 (Last Value of Set/Way Format)
  */
 .globl system32_cache_clean_inv
 system32_cache_clean_inv:
@@ -148,7 +151,7 @@ system32_cache_clean_inv:
 	push {r4-r9}
 
 	sub level, level, #1
-	lsl level, level, #1             @ Set Level Bit [3:1], 0b0 is Level 1
+	lsl level, level, #1                     @ Set Level Bit [3:1], 0b0 is Level 1
 
 	push {r0-r3,lr}
 	mov r0, level
@@ -185,16 +188,18 @@ system32_cache_clean_inv:
 	system32_cache_clean_inv_loop:
 		cmp way_size, #0
 		blt system32_cache_clean_inv_success
-		lsl way_size, way_size, temp              @ Set Way Bit[31:*]
-		add waysetlevel, setlevel, way_size
+		lsl bit_mask, way_size, temp              @ Set Way Bit[31:*]
+		add waysetlevel, setlevel, bit_mask
 		mcr p15, 0, waysetlevel, c7, c14, 2
 		sub way_size, way_size, #1
 		b system32_cache_clean_inv_loop
 
 	system32_cache_clean_inv_success:
-		mov r0, #0 
+		mov r0, waysetlevel
 
 	system32_cache_clean_inv_common:
+		dsb
+		isb
 		pop {r4-r9}
 		mov pc, lr
 
