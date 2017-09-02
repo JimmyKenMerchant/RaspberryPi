@@ -49,7 +49,7 @@ SECTIONS {
 	.rodata : {
 		*(.rodata)
 	}
-
+	. = 0x10000000;
 	.bss : {
 		*(.bss)
 	}

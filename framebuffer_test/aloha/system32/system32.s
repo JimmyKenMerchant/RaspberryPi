@@ -125,7 +125,12 @@ system32_cache_clean_inv_all:
 
 /**
  * function system32_cache_clean_inv
- * Invalidate and Clean Cache by the Physical Address
+ * Invalidate and Clean Cache by Physical Address
+ * In Arm, Data Cache System is Controled with MMU, Virtual Address.
+ * Besides, Indexing Line Set by Address is Using Common Part Between Physical/Vitual.
+ * This Idea seems to Be Good, But, Bits of Line Set May Overflow to Part of Virtual Address,
+ * If Number of Sets is Large, or LineSize is Large.
+ * But in Official Document, Data Cache is described as "Physically Indexed, Physically Tagged". 
  *
  * Parameters
  * r0: Physical Address to Be Cleand and Invalidated
@@ -861,10 +866,196 @@ system32_malloc:
 .unreq check_size
 
 
+/**
+ * function system32_activate_va
+ * Activate Virtual Address
+ *
+ * Parameters
+ * r0: Number of Core
+ * r1: Non-secure Bit
+ *
+ * Usage: r0-r3
+ * Return: r0 (Vlue of TTBR0)
+ */
+.globl system32_activate_va
+system32_activate_va:
+	/* Auto (Local) Variables, but just aliases */
+	number_core .req r0
+	non_secure  .req r1
+	base_addr   .req r2
+	mul_number  .req r3
+
+	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
+	mov mul_number, #0x8000
+	mul number_core, number_core, mul_number        @ 0x8000, 32768 Bytes Offset
+	add base_addr, base_addr, number_core
+	mov mul_number, #0x4000
+	mul non_secure, non_secure, mul_number          @ 0x4000, 16384 Bytes Offset
+	add base_addr, base_addr, non_secure
+
+	.unreq number_core
+	temp .req r0
+
+	/* Invalidate TLB */
+	mov temp, #0
+	mcr p15, 0, temp, c8, c7, 0
+
+	/* Translation Table Base Control Register (TTBCR) */
+	mov temp, #0b000                                @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
+	mcr p15, 0, temp, c2, c0, 2
+
+	/* Translation Table Base Register 0 (TTBR0) */
+	orr base_addr, base_addr, #0x4A                 @ Sharable, External/Internal Both are Write Back/Write Allocate
+	mcr p15, 0, base_addr, c2, c0, 0
+	
+	/* Domain Access Control Register */
+	mov temp, #0b01
+	mcr p15, 0, temp, c3, c0, 0                     @ Only Domain 0 is Client
+
+	dsb
+	isb
+
+	system32_activate_va_success:
+		mov r0, base_addr
+
+	system32_activate_va_common:
+		dsb                                     @ Ensure Completion of Instructions Before
+		isb                                     @ Flush Data in Pipeline to Cache
+		mov pc, lr
+
+.unreq temp
+.unreq non_secure
+.unreq base_addr
+.unreq mul_number
+
+
+/**
+ * function system32_lineup_basic_va
+ * Line Up Basic The First Level Descriptor of Virtual Address, Secure/Non-Secure
+ *
+ * Parameters
+ * r0: Number of Core
+ *
+ * Usage: r0-r5
+ * Return: r0 (Last Address of Descriptor, Empty)
+ */
+.globl system32_lineup_basic_va
+system32_lineup_basic_va:
+	/* Auto (Local) Variables, but just aliases */
+	number_core .req r0
+	base_addr   .req r1
+	size        .req r2
+	offset_addr .req r3
+	descriptor  .req r4
+	addr        .req r5
+
+	push {r4,r5}
+
+	mov addr, #0x8000
+	mul number_core, number_core, addr              @ 0x8000, 32768 Bytes Offset
+	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
+	add base_addr, base_addr, number_core
+
+	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
+	lsl size, #2                                    @ Substitution of Multiplication by 4
+
+	/* Section, Non Global, Sharable, Executable, Domain 0, External/Internal Both are Write Back/Write Allocate */
+	mov descriptor, #0x0E                           @ Type(Section)[1:0], B[2], C[3], ExecuteNever(NX)[4], Domain[7:5]
+	add descriptor, #0x1C00                         @ Domain[8], Zero(by Implemeted)[9], AP[11:10], Tex[14:12], APX[15]
+	add descriptor, #0x10000                        @ Share[16], NonGlobal(nG)[17], Section/SuperSection[18], NonSecure[19]
+
+	mov offset_addr, #0
+
+	system32_lineup_basic_va_securememory:
+		add addr, base_addr, offset_addr
+		ldr descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		blt system32_lineup_basic_va_securememory
+
+	lsr size, offset_addr, #2
+	add size, size, #0x00F
+	add size, size, #0xC00                  @ Make 0xFFF
+	lsl size, #2
+
+	bic descriptor, #0x8                                     @ C[3] Clear for Device, B[2] Should be Set
+	bic descriptor, #0x1000                                  @ Tex[14:12] Clear for Device, Now, Bit[12] Only
+
+	system32_lineup_basic_va_securedevice:
+		add addr, base_addr, offset_addr
+		ldr descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		ble system32_lineup_basic_va_securedevice
+
+	/* Non-secure */
+
+	add base_addr, base_addr, #0x4000
+
+	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
+	lsl size, #2                                    @ Substitution of Multiplication by 4
+
+	/* Section, Non Global, Sharable, Executable, Domain 0, External/Internal Both are Write Back/Write Allocate */
+	mov descriptor, #0x0E                           @ Type(Section)[1:0], B[2], C[3], ExecuteNever(NX)[4], Domain[7:5]
+	add descriptor, #0x1C00                         @ Domain[8], Zero(by Implemeted)[9], AP[11:10], Tex[14:12], APX[15]
+	add descriptor, #0x10000                        @ Share[16], NonGlobal(nG)[17], Section/SuperSection[18], NonSecure[19]
+	add descriptor, #0x80000                        @ Non-secure(NS)[19]
+
+	mov offset_addr, #0
+
+	system32_lineup_basic_va_nonsecurememory:
+		add addr, base_addr, offset_addr
+		ldr descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		blt system32_lineup_basic_va_nonsecurememory
+
+	lsr size, offset_addr, #2
+	add size, size, #0x00F
+	add size, size, #0xC00                  @ Make 0xFFF
+	lsl size, #2
+
+	bic descriptor, #0x8                                     @ C[3] Clear for Device, B[2] Should be Set
+	bic descriptor, #0x1000                                  @ Tex[14:12] Clear for Device, Now, Bit[12] Only
+
+	system32_lineup_basic_va_nonsecuredevice:
+		add addr, base_addr, offset_addr
+		ldr descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		ble system32_lineup_basic_va_nonsecuredevice
+
+	system32_lineup_basic_va_success:
+		mov r0, addr
+
+	system32_lineup_basic_va_common:
+		dsb                                     @ Ensure Completion of Instructions Before
+		isb                                     @ Flush Data in Pipeline to Cache
+		pop {r4,r5}
+		mov pc, lr
+
+.unreq number_core
+.unreq base_addr
+.unreq size
+.unreq offset_addr
+.unreq descriptor
+.unreq addr
+
+
 .globl SYSTEM32_HEAP
 SYSTEM32_HEAP:        .word SYSTEM32_HEAP_ADDR
 SYSTEM32_HEAP_ADDR:   .word _SYSTEM32_HEAP
 SYSTEM32_HEAP_SIZE:   .word _SYSTEM32_HEAP_END - _SYSTEM32_HEAP
+
+.globl SYSTEM32_VADESCRIPTOR
+SYSTEM32_VADESCRIPTOR: .word SYSTEM32_VADESCRIPTOR_ADDR
+SYSTEM32_VADESCRIPTOR_ADDR: .word _SYSTEM32_VADESCRIPTOR
+SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCRIPTOR
+
 
 /**
  * function system32_mfree
@@ -969,3 +1160,7 @@ _SYSTEM32_FB32_RENDERBUFFER0:
 _SYSTEM32_HEAP:
 .fill 16777216, 1, 0x00
 _SYSTEM32_HEAP_END:
+
+_SYSTEM32_VADESCRIPTOR:
+.fill 32768, 1, 0x00
+_SYSTEM32_VADESCRIPTOR_END:
