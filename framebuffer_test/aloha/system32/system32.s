@@ -27,31 +27,33 @@ SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
 SYSTEM32_GPIO_BASE:          .word 0x00200000
 
 /**
- * function system32_cache_clean_inv_all
- * Invalidate and Clean Entire Cache by Set/Way
+ * function system32_cache_operation_all
+ * Cache Operation to All Cache
  *
  * Parameters
- * r1: Cache Level, 1/2
+ * r0: Cache Level, 1/2
+ * r1: Flag, 0(Invalidate)/1(Clean)/2(Clean and Invalidate)
  *
- * Usage: r4-r10
+ * Usage: r4-r11
  * Return: r0 (Last Value of Set/Way Format)
  */
-.globl system32_cache_clean_inv_all
-system32_cache_clean_inv_all:
+.globl system32_cache_operation_all
+system32_cache_operation_all:
 	/* Auto (Local) Variables, but just aliases */
 	level        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	set_bit      .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	temp         .req r2
-	bit_mask     .req r3
-	line_shift   .req r4
-	way_size     .req r5
-	way_size_dup .req r6
-	set_size     .req r7
-	cache_info   .req r8
-	setlevel     .req r9
-	waysetlevel  .req r10
+	flag         .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	set_bit      .req r2
+	temp         .req r3
+	bit_mask     .req r4
+	line_shift   .req r5
+	way_size     .req r6
+	way_size_dup .req r7
+	set_size     .req r8
+	cache_info   .req r9
+	setlevel     .req r10
+	waysetlevel  .req r11
 
-	push {r4-r10}
+	push {r4-r11}
 
 	sub level, level, #1
 	lsl level, level, #1                     @ Set Level Bit [3:1], 0b0 is Level 1
@@ -80,37 +82,43 @@ system32_cache_clean_inv_all:
 
 	clz temp, way_size                       @ Determine Start Bit of Way, Changed by Leading Zeros
 
-	system32_cache_clean_inv_all_loop:
+	system32_cache_operation_all_loop:
 		cmp set_size, #0
-		blt system32_cache_clean_inv_all_success
+		blt system32_cache_operation_all_success
 		lsl set_bit, set_size, line_shift        @ Set Set Bit[*:4 + LineSize]
 		
 		add setlevel, set_bit, level
 		mov way_size_dup, way_size
 
-		system32_cache_clean_inv_all_loop_way:
+		system32_cache_operation_all_loop_way:
 			cmp way_size_dup, #0
-			blt system32_cache_clean_inv_all_loop_common
-			lsl bit_mask, way_size_dup, temp     @ Set Way Bit[31:*]
+			blt system32_cache_operation_all_loop_common
+			lsl bit_mask, way_size_dup, temp         @ Set Way Bit[31:*]
 			add waysetlevel, setlevel, bit_mask
-			mcr p15, 0, waysetlevel, c7, c14, 2
+			cmp flag, #0
+			mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
+			cmp flag, #1
+			mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
+			cmp flag, #2
+			mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
 			sub way_size_dup, way_size_dup, #1
-			b system32_cache_clean_inv_all_loop_way
+			b system32_cache_operation_all_loop_way
 
-		system32_cache_clean_inv_all_loop_common:
+		system32_cache_operation_all_loop_common:
 			sub set_size, set_size, #1
-			b system32_cache_clean_inv_all_loop
+			b system32_cache_operation_all_loop
 
-	system32_cache_clean_inv_all_success:
+	system32_cache_operation_all_success:
 		mov r0, waysetlevel 
 
-	system32_cache_clean_inv_all_common:
+	system32_cache_operation_all_common:
 		dsb
 		isb
-		pop {r4-r10}
+		pop {r4-r11}
 		mov pc, lr
 
 .unreq level
+.unreq flag
 .unreq set_bit
 .unreq temp
 .unreq bit_mask
@@ -124,7 +132,7 @@ system32_cache_clean_inv_all:
 
 
 /**
- * function system32_cache_clean_inv
+ * function system32_cache_operation
  * Invalidate and Clean Cache by Physical Address
  * In Arm, Data Cache System is Controled with MMU, Virtual Address.
  * Besides, Indexing Line Set by Address is Using Common Part Between Physical/Vitual.
@@ -135,25 +143,27 @@ system32_cache_clean_inv_all:
  * Parameters
  * r0: Physical Address to Be Cleand and Invalidated
  * r1: Cache Level, 1/2
+ * r2: Flag, 0(Invalidate)/1(Clean)/2(Clean and Invalidate)
  *
  * Usage: r4-r9
  * Return: r0 (Last Value of Set/Way Format)
  */
-.globl system32_cache_clean_inv
-system32_cache_clean_inv:
+.globl system32_cache_operation
+system32_cache_operation:
 	/* Auto (Local) Variables, but just aliases */
 	p_address   .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	level       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	temp        .req r2
-	bit_mask    .req r3
-	line_shift  .req r4
-	way_size    .req r5
-	set_size    .req r6
-	cache_info  .req r7
-	setlevel    .req r8
-	waysetlevel .req r9
+	flag        .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	temp        .req r3
+	bit_mask    .req r4
+	line_shift  .req r5
+	way_size    .req r6
+	set_size    .req r7
+	cache_info  .req r8
+	setlevel    .req r9
+	waysetlevel .req r10
 
-	push {r4-r9}
+	push {r4-r10}
 
 	sub level, level, #1
 	lsl level, level, #1                     @ Set Level Bit [3:1], 0b0 is Level 1
@@ -190,26 +200,32 @@ system32_cache_clean_inv:
 
 	clz temp, way_size                       @ Determine Start Bit of Way, Changed by Leading Zeros
 
-	system32_cache_clean_inv_loop:
+	system32_cache_operation_loop:
 		cmp way_size, #0
-		blt system32_cache_clean_inv_success
-		lsl bit_mask, way_size, temp              @ Set Way Bit[31:*]
+		blt system32_cache_operation_success
+		lsl bit_mask, way_size, temp             @ Set Way Bit[31:*]
 		add waysetlevel, setlevel, bit_mask
-		mcr p15, 0, waysetlevel, c7, c14, 2
+		cmp flag, #0
+		mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
+		cmp flag, #1
+		mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
+		cmp flag, #2
+		mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
 		sub way_size, way_size, #1
-		b system32_cache_clean_inv_loop
+		b system32_cache_operation_loop
 
-	system32_cache_clean_inv_success:
+	system32_cache_operation_success:
 		mov r0, waysetlevel
 
-	system32_cache_clean_inv_common:
+	system32_cache_operation_common:
 		dsb
 		isb
-		pop {r4-r9}
+		pop {r4-r10}
 		mov pc, lr
 
 .unreq set_bit
 .unreq level
+.unreq flag
 .unreq temp
 .unreq bit_mask
 .unreq line_shift
@@ -871,8 +887,7 @@ system32_malloc:
  * Activate Virtual Address
  *
  * Parameters
- * r0: Number of Core
- * r1: Non-secure Bit
+ * r0: Non-secure Bit
  *
  * Usage: r0-r3
  * Return: r0 (Vlue of TTBR0)
@@ -880,10 +895,13 @@ system32_malloc:
 .globl system32_activate_va
 system32_activate_va:
 	/* Auto (Local) Variables, but just aliases */
-	number_core .req r0
-	non_secure  .req r1
+	non_secure  .req r0
+	number_core .req r1
 	base_addr   .req r2
 	mul_number  .req r3
+
+	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
+	and number_core, number_core, #0b11
 
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
 	mov mul_number, #0x8000
@@ -894,26 +912,23 @@ system32_activate_va:
 	add base_addr, base_addr, non_secure
 
 	.unreq number_core
-	temp .req r0
+	temp .req r1
 
 	/* Invalidate TLB */
 	mov temp, #0
 	mcr p15, 0, temp, c8, c7, 0
 
 	/* Translation Table Base Control Register (TTBCR) */
-	mov temp, #0b000                                @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
+	mov temp, #0                                    @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
 	mcr p15, 0, temp, c2, c0, 2
 
 	/* Translation Table Base Register 0 (TTBR0) */
-	orr base_addr, base_addr, #0x4A                 @ Sharable, External/Internal Both are Write Back/Write Allocate
+	orr base_addr, base_addr, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
 	mcr p15, 0, base_addr, c2, c0, 0
 	
 	/* Domain Access Control Register */
-	mov temp, #0b01
+	mov temp, #0xFF
 	mcr p15, 0, temp, c3, c0, 0                     @ Only Domain 0 is Client
-
-	dsb
-	isb
 
 	system32_activate_va_success:
 		mov r0, base_addr
@@ -923,8 +938,8 @@ system32_activate_va:
 		isb                                     @ Flush Data in Pipeline to Cache
 		mov pc, lr
 
-.unreq temp
 .unreq non_secure
+.unreq temp
 .unreq base_addr
 .unreq mul_number
 
@@ -933,11 +948,8 @@ system32_activate_va:
  * function system32_lineup_basic_va
  * Line Up Basic The First Level Descriptor of Virtual Address, Secure/Non-Secure
  *
- * Parameters
- * r0: Number of Core
- *
  * Usage: r0-r5
- * Return: r0 (Last Address of Descriptor, Empty)
+ * Return: r0 (Last Address of Descriptor, Empty), r1 (Last Descriptor)
  */
 .globl system32_lineup_basic_va
 system32_lineup_basic_va:
@@ -951,6 +963,9 @@ system32_lineup_basic_va:
 
 	push {r4,r5}
 
+	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
+	and number_core, number_core, #0b11
+
 	mov addr, #0x8000
 	mul number_core, number_core, addr              @ 0x8000, 32768 Bytes Offset
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
@@ -959,32 +974,32 @@ system32_lineup_basic_va:
 	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
-	/* Section, Non Global, Sharable, Executable, Domain 0, External/Internal Both are Write Back/Write Allocate */
-	mov descriptor, #0x0E                           @ Type(Section)[1:0], B[2], C[3], ExecuteNever(NX)[4], Domain[7:5]
-	add descriptor, #0x1C00                         @ Domain[8], Zero(by Implemeted)[9], AP[11:10], Tex[14:12], APX[15]
-	add descriptor, #0x10000                        @ Share[16], NonGlobal(nG)[17], Section/SuperSection[18], NonSecure[19]
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_none
+	orr descriptor, descriptor, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
 
 	mov offset_addr, #0
 
 	system32_lineup_basic_va_securememory:
 		add addr, base_addr, offset_addr
-		ldr descriptor, [addr]
+		str descriptor, [addr]
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
 		blt system32_lineup_basic_va_securememory
 
-	lsr size, offset_addr, #2
-	add size, size, #0x00F
-	add size, size, #0xC00                  @ Make 0xFFF
+	mov size, #0x00F
+	add size, size, #0xFF0                  @ Make 0xFFF
 	lsl size, #2
 
-	bic descriptor, #0x8                                     @ C[3] Clear for Device, B[2] Should be Set
-	bic descriptor, #0x1000                                  @ Tex[14:12] Clear for Device, Now, Bit[12] Only
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
+	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	add descriptor, descriptor, #0x3F000000
 
 	system32_lineup_basic_va_securedevice:
 		add addr, base_addr, offset_addr
-		ldr descriptor, [addr]
+		str descriptor, [addr]
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
@@ -997,33 +1012,34 @@ system32_lineup_basic_va:
 	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
-	/* Section, Non Global, Sharable, Executable, Domain 0, External/Internal Both are Write Back/Write Allocate */
-	mov descriptor, #0x0E                           @ Type(Section)[1:0], B[2], C[3], ExecuteNever(NX)[4], Domain[7:5]
-	add descriptor, #0x1C00                         @ Domain[8], Zero(by Implemeted)[9], AP[11:10], Tex[14:12], APX[15]
-	add descriptor, #0x10000                        @ Share[16], NonGlobal(nG)[17], Section/SuperSection[18], NonSecure[19]
-	add descriptor, #0x80000                        @ Non-secure(NS)[19]
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_none
+	orr descriptor, descriptor, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
 
 	mov offset_addr, #0
 
 	system32_lineup_basic_va_nonsecurememory:
 		add addr, base_addr, offset_addr
-		ldr descriptor, [addr]
+		str descriptor, [addr]
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
 		blt system32_lineup_basic_va_nonsecurememory
 
-	lsr size, offset_addr, #2
-	add size, size, #0x00F
-	add size, size, #0xC00                  @ Make 0xFFF
+	mov size, #0x00F
+	add size, size, #0xFF0                  @ Make 0xFFF
 	lsl size, #2
 
-	bic descriptor, #0x8                                     @ C[3] Clear for Device, B[2] Should be Set
-	bic descriptor, #0x1000                                  @ Tex[14:12] Clear for Device, Now, Bit[12] Only
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
+	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	add descriptor, descriptor, #0x3F000000
 
 	system32_lineup_basic_va_nonsecuredevice:
 		add addr, base_addr, offset_addr
-		ldr descriptor, [addr]
+		str descriptor, [addr]
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
@@ -1031,6 +1047,7 @@ system32_lineup_basic_va:
 
 	system32_lineup_basic_va_success:
 		mov r0, addr
+		mov r1, descriptor
 
 	system32_lineup_basic_va_common:
 		dsb                                     @ Ensure Completion of Instructions Before

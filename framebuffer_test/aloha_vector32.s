@@ -48,6 +48,46 @@ _el01_svc:
 	sub fp, fp, ip
 	mov sp, fp
 
+	push {r0-r3,lr}
+	mov r0, #1
+	bl system32_activate_va
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #1                                @ L1
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #2                                @ L2
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
+	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
+	orr r0, r0, #0b101                        @ Enable Data Cache[2] and MMU(EL0 and EL1)[0]
+	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
+	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
+
+	dsb
+	isb
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
+	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
+	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
+	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
+
+	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
+	and r0, r0, #0b11
+
 	cmp r0, #0                                @ If Core is Zero
 	moveq r1, #0x8000
 	hvceq #0
@@ -58,18 +98,6 @@ _el01_svc:
 
 	dsb
 	isb
-
-	push {r0-r3,lr}
-	mov r0, r1
-	mov r1, #1
-	bl system32_cache_clean_inv
-	push {r0-r3,lr}
-
-	push {r0-r3,lr}
-	mov r0, r1
-	mov r1, #2
-	bl system32_cache_clean_inv
-	push {r0-r3,lr}
 
 	_el01_svc_loop:
 		bl system32_receive_core
@@ -109,17 +137,36 @@ _el2_hyp:
 	mov sp, fp
 
 	push {r0-r3,lr}
-	mov r1, #1
+	mov r0, #1
 	bl system32_activate_va
 	pop {r0-r3,lr}
 
-	mov r0, #0x2500                           @ Outer Sharable, External/Internal Both are Write Back/Write Allocate
-        mcr p15, 4, r0, c2, c0, 2                 @ Hyp Translation Control Register (HTCR)
+	push {r0-r3,lr}
+	mov r0, #1                                @ L1
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
 
-	mrc p15, 4, r0, c1, c0, 0                 @ Hyp Systerm Control Registor (HSCTLR)
-	orr r0, r0, #0b100                        @ Data and Unified Cache Enable in Hyp mode Bit[2](C), MMU Enable Bit[0](M)
+	push {r0-r3,lr}
+	mov r0, #2                                @ L2
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
+	mov r0, #0b100                            @ Data and Unified Cache Enable in Hyp mode Bit[2](C), MMU Enable Bit[0](M)
 	orr r0, r0, #0b0001000000000000           @ Instruction Cache Enable in Hyp mode Bit[12](I) (EL2)
 	mcr p15, 4, r0, c1, c0, 0                 @ Hyp Systerm Control Registor (HSCTLR)
+
+	dsb
+	isb
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
@@ -174,23 +221,43 @@ _el3_mon:
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r1, #0
+	mov r0, #0
 	bl system32_activate_va
 	pop {r0-r3,lr}
 
+	push {r0-r3,lr}
+	mov r0, #1                                @ L1
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #2                                @ L2
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
-	orr r0, r0, #0b100                        @ Enable Data Cache[2] and (EL0 and EL1)MMU[0]
+	orr r0, r0, #0b101                        @ Enable Data Cache[2] and (EL0 and EL1)MMU[0]
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
+
+	dsb
+	isb
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And Enable [0]FW, Cache and TLB Maintenance Broadcast (From ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
 
-	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
-	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
-	isb
 	/*mcr p15, 0, r0, c7, c6, 0*/             @ Invalidate Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)
 	/*mcr p15, 0, r0, c7, c10, 0*/            @ Clean Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)
 	/*mcr p15, 0, r0, c7, c14, 0*/            @ Clean and Invalidate Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)   
@@ -208,20 +275,6 @@ _el3_mon:
 	dsb
 
 	/* Non-secure State Below */
-
-	push {r0-r3,lr}
-	mov r1, #1
-	bl system32_activate_va
-	pop {r0-r3,lr}
-
-	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
-	orr r0, r0, #0b100                        @ Enable Data Cache[2] and MMU(EL0 and EL1)[0]
-	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
-	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
-
-	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
-	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
-	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 
 	mov r0, #0x1000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
@@ -417,13 +470,6 @@ _aloha_render:
 	bl print32_string
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
-	ldr r0, core_addr
-	mov r1, #1
-	bl system32_cache_clean_inv
-	ldr r0, core_addr
-	mov r1, #2
-	bl system32_cache_clean_inv
-
 	ldrb r0, core0
 	ldrb r1, core1
 	ldrb r2, core2
@@ -431,6 +477,9 @@ _aloha_render:
 	add r0, r0, r1
 	add r0, r0, r2
 	add r0, r0, r3
+
+	/*bl system32_lineup_basic_va*/
+	/*mov r0, r1*/
 
 	mov r1, #0                                @ X Coordinate
 	mov r2, #136                              @ Y Coordinate
