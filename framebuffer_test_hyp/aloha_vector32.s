@@ -32,18 +32,19 @@ _el01_fiq_addr:                   .word _el01_reset
 /* From Secure State SVC mode (EL1 Secure state) */
 _el01_reset:
 	mov r0, #0x0
-	mcr p15, 0, r0, c12, c0, 0                @ VBAR(User Mode, EL0, and Privileged Mode, EL1), IVT Base Vector Address
+	mcr p15, 0, r0, c12, c0, 0                    @ VBAR(User Mode, EL0, and Privileged Mode, EL1), IVT Base Vector Address
 	mov r0, #0x2000
-	mcr p15, 0, r0, c12, c0, 1                @ MVBAR (Secure Monitor mode, EL3), IVT Base Vector Address
-
+	mcr p15, 0, r0, c12, c0, 1                    @ MVBAR (Secure Monitor mode, EL3), IVT Base Vector Address
 	smc #0
+	svc #0
 
+_el01_svc:
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
 	and r0, r0, #0b11
 
 	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
 	mul ip, ip, r0
-	mov fp, #0x4000
+	mov fp, #0x5000
 	sub fp, fp, ip
 	mov sp, fp
 
@@ -76,6 +77,10 @@ _el01_reset:
 	dsb
 	isb
 
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
 	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
@@ -84,29 +89,23 @@ _el01_reset:
 	and r0, r0, #0b11
 
 	cmp r0, #0                                @ If Core is Zero
-	moveq r0, #0x8000
-	svceq #0
+	moveq r1, #0x8000
+	hvceq #0
 
-	_el01_reset_loop:
+	ldr r1, _el01_core_addr
+	add r1, r1, r0
+	strb r0, [r1]
+
+	dsb
+	isb
+
+	_el01_svc_loop:
 		bl system32_receive_core
-		b _el01_reset_loop
+		b _el01_svc_loop
 
+_el01_core_addr:
+	.word core0
 
-_el01_svc:
-
-	push {r0-r12,lr}
-	mrs r10, spsr
-	mrc p15, 0, r11, c12, c0, 0               @ Last VBAR Address to Retrieve
-	push {r10,r11}
-                              
-	blx r0
-
-	pop {r10,r11}
-	msr spsr, r10
-	mcr p15, 0, r11, c12, c0, 0               @ Retrieve VBAR Address
-	pop {r0-r12,lr}
-
-	movs pc, lr
 
 
 .section	.el2_vector
@@ -128,6 +127,32 @@ _el2_irq_addr:                   .word _el01_reset
 _el2_fiq_addr:                   .word _el01_reset
 
 _el2_hyp:
+	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
+	and r0, r0, #0b11
+
+	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
+	mul ip, ip, r0
+	mov fp, #0x6000
+	sub fp, fp, ip
+	mov sp, fp
+
+	push {r0-r3,lr}
+	mov r0, #2
+	bl system32_activate_va
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #1                                @ L1
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #2                                @ L2
+	mov r1, #0
+	bl system32_cache_operation_all
+	pop {r0-r3,lr}
+
 	/**
 	 * Using Hyp mode (EL2) on System32 is stopped,
 	 * because MMU on Hyp mode may be in need of Long Descriptor Translation Table
@@ -142,7 +167,46 @@ _el2_hyp:
 	 * We should not rely on legacies... One day, we will not be able to understand the special technology of legacies. 
 	 */
 
-	eret
+	mov r0, #equ32_htcr_size0
+	orr r0, r0, #equ32_htcr_inner_none|equ32_htcr_outer_none|equ32_htcr_share_none
+	mcr p15, 4, r0, c2, c0, 2                 @ Hyp Translation Control Register (HTCR)
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
+	mov r0, #0b100                            @ Data and Unified Cache Enable in Hyp mode Bit[2](C), MMU Enable Bit[0](M)
+	orr r0, r0, #0b0001000000000000           @ Instruction Cache Enable in Hyp mode Bit[12](I) (EL2)
+	mcr p15, 4, r0, c1, c0, 0                 @ Hyp Systerm Control Registor (HSCTLR)
+
+	dsb
+	isb
+
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
+	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
+	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
+	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
+
+	push {r0-r12,lr}
+	mrs r10, elr_hyp                          @ mrs/msr accessible system registers can add postfix of modes
+	mrs r11, spsr_hyp
+	push {r10,r11}
+	mrc p15, 4, r10, c12, c0, 0
+	push {r10}                                @ Push Last HVBAR Address to Retrieve
+
+	blx r1
+
+	pop {r10}                                 @ Return Process from Current Hyp Mode
+	mcr p15, 4, r10, c12, c0, 0               @ Retrieve HVBAR Address
+	pop {r10,r11}
+	msr elr_hyp, r10
+	msr spsr_hyp, r11
+	pop {r0-r12,lr}
+
+eret
 
 .section	.el3_vector
 /*MVBAR (EL3) */
@@ -166,7 +230,7 @@ _el3_mon:
 
 	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
 	mul ip, ip, r0
-	mov fp, #0x6000
+	mov fp, #0x5000
 	sub fp, fp, ip
 	mov sp, fp
 
@@ -203,10 +267,20 @@ _el3_mon:
 	dsb
 	isb
 
+	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
+	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	isb
+
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And Enable [0]FW, Cache and TLB Maintenance Broadcast (From ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
+
+	/*mcr p15, 0, r0, c7, c6, 0*/             @ Invalidate Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)
+	/*mcr p15, 0, r0, c7, c10, 0*/            @ Clean Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)
+	/*mcr p15, 0, r0, c7, c14, 0*/            @ Clean and Invalidate Entire Data Cache (NOT ON ARMv7 Virtualization Extensions)   
+	/*mcr p15, 0, r0, c7, c10, 4*/            @ Data Synchronization Barrier (Deprecated in From ARMv7)
+	/*mcr p15, 0, r0, c7, c10, 5*/            @ Data Memory Barrier (Deprecated in From ARMv7)
 
 	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
 	add r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18]
@@ -264,20 +338,12 @@ _aloha_reset:
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
 	push {r0,lr}
 
-	/* SVC mode FIQ Disable and IRQ Disable, Current Mode */
-	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r0
-
-	mov r0, #equ32_fiq_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r0
-
-	mov sp, #0x7000
-
-	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
+	/* HYP mode FIQ Disable and IRQ Disable, Current Mode */
+	mov r0, #equ32_hyp_mode|equ32_fiq_disable|equ32_irq_disable @ 0xDA
 	msr cpsr_c, r0
 
 	mov r0, #0x8000
-	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
+	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR, IVT Base Vector Address of Hyp mode on NOW
 
 	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
@@ -341,14 +407,14 @@ _aloha_reset:
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
 	/*
-     * 20-21 Bits for CP 10, 22-23 Bits for CP 11
-     * Each 0b01 is for Enable in Previlege Mode
-     * Each 0b11 is for Enable in Previlege and User Mode
-     */
+         * 20-21 Bits for CP 10, 22-23 Bits for CP 11
+         * Each 0b01 is for Enable in Previlege Mode
+         * Each 0b11 is for Enable in Previlege and User Mode
+         */
 	mov r0, #0b0101
 	lsl r0, r0, #20
 
-	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
+	MCR p15, 0, r0, c1, c0, 2
 
 	isb                                       @ Must Need When You Renew CPACR
 
@@ -373,15 +439,15 @@ _aloha_reset:
 
 	mov r0, #1
 	ldr r1, core123_handler
-	bl system32_call_core
+	/*bl system32_call_core*/
 
 	mov r0, #2
 	ldr r1, core123_handler
-	bl system32_call_core
+	/*bl system32_call_core*/
 
 	mov r0, #3
 	ldr r1, core123_handler
-	bl system32_call_core
+	/*bl system32_call_core*/
 
 _aloha_render:
 	push {r0-r8}
@@ -471,18 +537,20 @@ _aloha_fiq:
 	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
 
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
-	mrs r0, spsr
-	push {r0}
+	mrs r0, elr_hyp                          @ mrs/msr accessible system registers can add postfix of modes
+	mrs r1, spsr_hyp
+	push {r0,r1}
 
 	bl _aloha_fiq_handler
 
-	pop {r0}
-	msr spsr, r0
+	pop {r0,r1}
+	msr elr_hyp, r0
+	msr spsr_hyp, r1
 	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
 
-	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
 
-	subs pc, lr, #4
+	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
+	eret                                     @ Because of HYP mode you need to call `ERET` even iin FIQ or IRQ
 
 _aloha_fiq_handler:
 	mov r0, #equ32_peripherals_base
@@ -587,13 +655,11 @@ _aloha_fiq_handler:
 core123_handler: .word _core123_handler
 
 _core123_handler:
-	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
-	and r0, r0, #0b11
-	ldr r1, core_addr
-	mul r2, r0, r0
-	strb r2, [r1, r0]
+	ldr r2, core_addr
+	strb r0, [r2, r0]
 	dsb
 	isb
+	dmb
 	mov pc, lr
 
 /**

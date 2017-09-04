@@ -382,9 +382,7 @@ system32_receive_core:
 		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-		mov r0, addr_start
-
-		svc #0
+		hvc #0
 
 		b system32_receive_core_success
 
@@ -889,7 +887,7 @@ system32_malloc:
  * Activate Virtual Address
  *
  * Parameters
- * r0: 0 is for Secure state, 1 is for Non-secure state, 2 is for Hyp mode (Reserved)
+ * r0: 0 is for Secure state, 1 is for Non-secure state, 2 is for Hyp mode
  *
  * Usage: r0-r3
  * Return: r0 (Vlue of TTBR0)
@@ -1047,7 +1045,45 @@ system32_lineup_basic_va:
 		cmp offset_addr, size
 		ble system32_lineup_basic_va_nonsecuredevice
 
-	/* Hyp mode, offset is 0x8000, Long Description Translation Table May Be Needed */
+	/* Hyp mode */
+
+	add base_addr, base_addr, #0x8000
+
+	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
+	lsl size, #2                                    @ Substitution of Multiplication by 4
+
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_none
+	orr descriptor, descriptor, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure|equ32_mmu_section_nonglobal
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
+
+	mov offset_addr, #0
+
+	system32_lineup_basic_va_hypmemory:
+		add addr, base_addr, offset_addr
+		str descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		blt system32_lineup_basic_va_hypmemory
+
+	mov size, #0x00F
+	add size, size, #0xFF0                  @ Make 0xFFF
+	lsl size, #2
+
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
+	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure|equ32_mmu_section_nonglobal
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	add descriptor, descriptor, #0x3F000000
+
+	system32_lineup_basic_va_hypdevice:
+		add addr, base_addr, offset_addr
+		str descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		ble system32_lineup_basic_va_hypdevice
 
 	system32_lineup_basic_va_success:
 		mov r0, addr
