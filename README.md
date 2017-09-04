@@ -1,10 +1,12 @@
 # Multi-core Raspberry Pi Baremetal Project
 
-**INDEX**
+**PURPOSE**
 
-* [10Hz blinker on Hyp mode](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/10herts_blinker_hyp)
+This project is aiming to make a conclusion of the system in Multi-core Raspberry Pi (BCM2836/BCM2837).
 
-* [Framebuffer Test](https://github.com/JimmyKenMerchant/RaspberryPi/tree/master/framebuffer_test)
+1. 32-bit system. 64-bit system is absolutely main stream, but 32-bit system has less memory usage than 64-bit system. This means 32-bit system is economical rather than 64-bit in view of cost, but not evolution which spends much money from banks.
+
+2. None-virtual.
 
 **INSTALL**
 
@@ -59,7 +61,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 * [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
 
-* [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes): 6 words per Mailbox, I mean.
+* [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes)
 
 * [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
 
