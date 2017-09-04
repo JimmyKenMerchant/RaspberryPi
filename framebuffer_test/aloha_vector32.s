@@ -137,7 +137,7 @@ _el2_hyp:
 	mov sp, fp
 
 	push {r0-r3,lr}
-	mov r0, #1
+	mov r0, #2
 	bl system32_activate_va
 	pop {r0-r3,lr}
 
@@ -152,6 +152,24 @@ _el2_hyp:
 	mov r1, #0
 	bl system32_cache_operation_all
 	pop {r0-r3,lr}
+
+	/**
+	 * Using Hyp mode (EL2) on System32 is stopped,
+	 * because MMU on Hyp mode may be in need of Long Descriptor Translation Table
+	 * With Address Space Identifier (ASID), and need of a test on Coretex-A53 (e.g. BCM2836).
+	 * So now folked for using Non-secure EL1 (SVC and other mode).
+	 * System32 aims to use in Non-virtual situation, besides, EL2 aims to use on Virtual CPU/OS.
+	 * Considering this view, System32 (Non-virtual OS) should be on Non-secure EL1.
+	 * If AArch32 is deprecated, I will be in need of Virtual CUP/OS on AArch64 or so for System32 though...
+	 * ARM will run for Virtual System (CUP/OS), this stream is so strong because we have a lot of legacy systems.
+	 * So, a possible way of ARM is to deprecate AArch32 and develop AArch64.
+	 * But, we have need of 32-bit CPU with Non-virtual OS, because it's first and having new look-up in the world.
+	 * We should not rely on legacies... One day, we will not be able to understand the special technology of legacies. 
+	 */
+
+	mov r0, #equ32_htcr_size0
+	orr r0, r0, #equ32_htcr_inner_none|equ32_htcr_outer_none|equ32_htcr_share_none
+	mcr p15, 4, r0, c2, c0, 2                 @ Hyp Translation Control Register (HTCR)
 
 	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
 	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache

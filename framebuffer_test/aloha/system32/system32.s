@@ -887,7 +887,7 @@ system32_malloc:
  * Activate Virtual Address
  *
  * Parameters
- * r0: Non-secure Bit
+ * r0: 0 is for Secure state, 1 is for Non-secure state, 2 is for Hyp mode
  *
  * Usage: r0-r3
  * Return: r0 (Vlue of TTBR0)
@@ -904,8 +904,8 @@ system32_activate_va:
 	and number_core, number_core, #0b11
 
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
-	mov mul_number, #0x8000
-	mul number_core, number_core, mul_number        @ 0x8000, 32768 Bytes Offset
+	mov mul_number, #0x10000
+	mul number_core, number_core, mul_number        @ 0x10000, 65536 Bytes Offset
 	add base_addr, base_addr, number_core
 	mov mul_number, #0x4000
 	mul non_secure, non_secure, mul_number          @ 0x4000, 16384 Bytes Offset
@@ -915,7 +915,7 @@ system32_activate_va:
 	temp .req r1
 
 	/* Invalidate TLB */
-	mov temp, #0
+	mov temp, #equ32_ttbcr_n0
 	mcr p15, 0, temp, c8, c7, 0
 
 	/* Translation Table Base Control Register (TTBCR) */
@@ -927,7 +927,7 @@ system32_activate_va:
 	mcr p15, 0, base_addr, c2, c0, 0
 	
 	/* Domain Access Control Register */
-	mov temp, #0xFF
+	mov temp, #0b01
 	mcr p15, 0, temp, c3, c0, 0                     @ Only Domain 0 is Client
 
 	system32_activate_va_success:
@@ -966,8 +966,8 @@ system32_lineup_basic_va:
 	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
 	and number_core, number_core, #0b11
 
-	mov addr, #0x8000
-	mul number_core, number_core, addr              @ 0x8000, 32768 Bytes Offset
+	mov addr, #0x10000
+	mul number_core, number_core, addr              @ 0x10000, 65536 Bytes Offset
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
 	add base_addr, base_addr, number_core
 
@@ -1044,6 +1044,46 @@ system32_lineup_basic_va:
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
 		ble system32_lineup_basic_va_nonsecuredevice
+
+	/* Hyp mode */
+
+	add base_addr, base_addr, #0x8000
+
+	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
+	lsl size, #2                                    @ Substitution of Multiplication by 4
+
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_none
+	orr descriptor, descriptor, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure|equ32_mmu_section_nonglobal
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
+
+	mov offset_addr, #0
+
+	system32_lineup_basic_va_hypmemory:
+		add addr, base_addr, offset_addr
+		str descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		blt system32_lineup_basic_va_hypmemory
+
+	mov size, #0x00F
+	add size, size, #0xFF0                  @ Make 0xFFF
+	lsl size, #2
+
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
+	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure|equ32_mmu_section_nonglobal
+	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	add descriptor, descriptor, #0x3F000000
+
+	system32_lineup_basic_va_hypdevice:
+		add addr, base_addr, offset_addr
+		str descriptor, [addr]
+		add descriptor, descriptor, #0x00100000
+		add offset_addr, offset_addr, #4
+		cmp offset_addr, size
+		ble system32_lineup_basic_va_hypdevice
 
 	system32_lineup_basic_va_success:
 		mov r0, addr
@@ -1179,5 +1219,5 @@ _SYSTEM32_HEAP:
 _SYSTEM32_HEAP_END:
 
 _SYSTEM32_VADESCRIPTOR:
-.fill 32768, 1, 0x00
+.fill 262144, 1, 0x00
 _SYSTEM32_VADESCRIPTOR_END:

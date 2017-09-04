@@ -171,11 +171,15 @@
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
 
+/**
+ * For Short Descriptor Translation Table (32-bit)
+ * Super Section is implemented for Long Physical Address Extension (LPAE)
+ */
 .equ equ32_mmu_fault,                     0b00                   @ [1:0]
 .equ equ32_mmu_page,                      0b01                   @ [1:0]
 .equ equ32_mmu_section,                   0b10                   @ [1:0]
 .equ equ32_mmu_reserve,                   0b10                   @ [1:0]
-
+.equ equ32_mmu_section_pnx,               0b01                   @ PNX[0], Never Execute in Privilege Mode (EL1), If Implemented
 .equ equ32_mmu_section_neverexecute,      0b10000                @ NX[4]
 .equ equ32_mmu_section_strongreorder,     0b0000                 @ C[3], B[2]
 .equ equ32_mmu_section_device,            0b0100                 @ C[3], B[2]
@@ -197,7 +201,6 @@
 .equ equ32_mmu_supersection,              0b1000000000000000000  @ [18]
 .equ equ32_mmu_section_nonsecure,         0b10000000000000000000 @ NS[19]
 .equ equ32_mmu_section_ecc,               0b1000000000           @ P[9], ECC (Error Check and Correct), If Implemented
-
 .equ equ32_mmu_section_domain00,          0b000000000 @ Domain[8:5]
 .equ equ32_mmu_section_domain01,          0b000100000 @ Domain[8:5]
 .equ equ32_mmu_section_domain02,          0b001000000 @ Domain[8:5]
@@ -215,15 +218,57 @@
 .equ equ32_mmu_section_domain14,          0b111000000 @ Domain[8:5]
 .equ equ32_mmu_section_domain15,          0b111100000 @ Domain[8:5]
 
+/* Translation Table Base Register (TTBR0/TTBR1), Banked by Secure/Non-secure `MRC/MCR p15, 0, <Rt>, c2, c0, 0/1` */
+.equ equ32_ttbr_share,                0b10      @ [1] Translation Table Walk To Shared Memory, Otherwise, Non-shared Memory
+.equ equ32_ttbr_share_inner,          0b100000  @ NOS[5], Not Outer Shareable
 .equ equ32_ttbr_inner_none,           0b0000000 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
 .equ equ32_ttbr_inner_wb_wa,          0b1000000 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
-.equ equ32_ttbr_inner_wt_nowa,        0b0000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
+.equ equ32_ttbr_inner_wt,             0b0000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
 .equ equ32_ttbr_inner_wb_nowa,        0b1000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
-.equ equ32_ttbr_share,                0b10      @ [1] Translation Table Walk To Shared Memory, Otherwise, Non-shared Memory
 .equ equ32_ttbr_outer_none,           0b00000   @ RGN[4:3], For Translation Table Walk
 .equ equ32_ttbr_outer_wb_wa,          0b01000   @ RGN[4:3], For Translation Table Walk
-.equ equ32_ttbr_outer_wt_nowa,        0b10000   @ RGN[4:3], For Translation Table Walk
+.equ equ32_ttbr_outer_wt,             0b10000   @ RGN[4:3], For Translation Table Walk
 .equ equ32_ttbr_outer_wb_nowa,        0b11000   @ RGN[4:3], For Translation Table Walk
+
+/* Translation Table Base Control Register (TTBCR), Banked by Secure/Non-secure `MRC/MCR p15, 0, <Rt>, c2, c0, 2` */
+.equ equ32_ttbcr_n0,   0b000    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, If n0, TTBR0 Only
+.equ equ32_ttbcr_n1,   0b001    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_n2,   0b010    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_n3,   0b011    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_n4,   0b100    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_n5,   0b101    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_n6,   0b110    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_n7,   0b111    @ N[2:0], Width of Base Address, Which Determines Usage of TTBR0 and TTBR1, Upper Address Uses TTBR1
+.equ equ32_ttbcr_pd0,  0b10000  @ PD0[4], Translation Table Walk Disable, TTBR0
+.equ equ32_ttbcr_pdl,  0b100000 @ PD0[5], Translation Table Walk Disable, TTBR1
+.equ equ32_ttbcr_eae,  0x80000000 @ EAE[31], Extended Address Enable, Use 64-bit Long Descriptor Translation Table Format, If Zero, 32-bit Short Descriptor Format
+
+/**
+ * Hyp Translation Control Register(HTCR) `MRC/MCR p15, 4, <Rt>, c2, c0, 2`
+ * In ARMv7/AArch32, Vitrual Address on Hyp Mode is basically treated by TTBR0.
+ * Beside, From ARMv7-A, Stage 1/2 Address Translation is Introduced with HTTBR(64-bit)/VTTBR(64-bit)/VTCR (32-bit)
+ * The System, HTTBR/VTTBR, Has Two Stage Translation, e.g., Using Intermediate Physical Address (IPA) for
+ * Virtualization of Other CPU/OS System. Note that Coretex-A53 Uses TTBR0 for HTCR and VCTR, and does not have HTTBR and VTTBR.
+ */
+.equ equ32_htcr_size0,           0b000 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size1,           0b001 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size2,           0b010 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size3,           0b011 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size4,           0b100 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size5,           0b101 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size6,           0b110 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_size7,           0b111 @ T0SZ[2:0], Size offset of Base Address by TTBR0 (For Long Descriptor Translation Table Format)
+.equ equ32_htcr_inner_none,      0b0000000000 @ IRGN0[9:8], Inner Cacheability, No Cache
+.equ equ32_htcr_inner_wb_wa,     0b0100000000 @ IRGN0[9:8], Inner Cacheability, Write Back, Write Allocate
+.equ equ32_htcr_inner_wt,        0b1000000000 @ IRGN0[9:8], Inner Cacheability, Write Throught, No Write Allocate
+.equ equ32_htcr_inner_wb_nowa,   0b1100000000 @ IRGN0[9:8], Inner Cacheability, Write Back, No Write Allocate
+.equ equ32_htcr_outer_none,      0b000000000000 @ ORGN0[11:10], Outer Cacheability, No Cache
+.equ equ32_htcr_outer_wb_wa,     0b010000000000 @ ORGN0[11:10], Outer Cacheability, Write Back, Write Allocate
+.equ equ32_htcr_outer_wt,        0b100000000000 @ ORGN0[11:10], Outer Cacheability, Write Throught, No Write Allocate
+.equ equ32_htcr_outer_wb_nowa,   0b110000000000 @ ORGN0[11:10], Outer Cacheability, Write Back, No Write Allocate
+.equ equ32_htcr_share_none,      0b00000000000000 @ SH0[13:12], Outer Cacheability, Write Back, No Write Allocate
+.equ equ32_htcr_share_outer,     0b10000000000000 @ SH0[13:12], Outer Cacheability, Write Back, No Write Allocate
+.equ equ32_htcr_share_inner,     0b11000000000000 @ SH0[13:12], Outer Cacheability, Write Back, No Write Allocate
 
 .equ equ32_user_mode,   0x10 @ 0b00010000 User mode (not priviledged)
 .equ equ32_fiq_mode,    0x11 @ 0b00010001 Fast Interrupt Request (FIQ) mode
