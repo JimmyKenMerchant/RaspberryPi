@@ -917,11 +917,11 @@ system32_activate_va:
 	temp .req r1
 
 	/* Invalidate TLB */
-	mov temp, #equ32_ttbcr_n0
+	mov temp, #0
 	mcr p15, 0, temp, c8, c7, 0
 
 	/* Translation Table Base Control Register (TTBCR) */
-	mov temp, #0                                    @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
+	mov temp, #equ32_ttbcr_n0                       @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
 	mcr p15, 0, temp, c2, c0, 2
 
 	/* Translation Table Base Register 0 (TTBR0) */
@@ -1014,9 +1014,9 @@ system32_lineup_basic_va:
 	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
-	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_none
-	orr descriptor, descriptor, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
+	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
+	orr descriptor, descriptor, #equ32_mmu_section_outer_wt|equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_nonsecure|equ32_mmu_section_shareable
 	orr descriptor, descriptor, #equ32_mmu_section_domain00
 
 	mov offset_addr, #0

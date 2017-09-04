@@ -185,18 +185,18 @@
 .equ equ32_mmu_section_device,            0b0100                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_none,        0b0000                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_wb_wa,       0b0100                 @ C[3], B[2]
-.equ equ32_mmu_section_inner_wt_nowa,     0b1000                 @ C[3], B[2]
+.equ equ32_mmu_section_inner_wt,          0b1000                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_wb_nowa,     0b1100                 @ C[3], B[2]
 .equ equ32_mmu_section_outer_none,        0b100000000000000      @ TEX[14:12]
 .equ equ32_mmu_section_outer_wb_wa,       0b101000000000000      @ TEX[14:12]
-.equ equ32_mmu_section_outer_wt_nowa,     0b110000000000000      @ TEX[14:12]
-.equ equ32_mmu_section_outer_nowb_nowa,   0b111000000000000      @ TEX[14:12]
+.equ equ32_mmu_section_outer_wt,          0b110000000000000      @ TEX[14:12]
+.equ equ32_mmu_section_outer_wb_nowa,     0b111000000000000      @ TEX[14:12]
 .equ equ32_mmu_section_access_none,       0b0000000000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_rw_none,    0b0000010000000000     @ APX[15] and AP[11:10], Privilege Access Only
 .equ equ32_mmu_section_access_rw_r,       0b0000100000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_rw_rw,      0b0000110000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_r_none,     0b1000010000000000     @ APX[15] and AP[11:10], Privilege Access Only
-.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Memory, Inner (Each Core) /Outer (Devices)
+.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Memory, Seems Outer (Devices)
 .equ equ32_mmu_section_nonglobal,         0b100000000000000000   @ nG[17], Non-global
 .equ equ32_mmu_supersection,              0b1000000000000000000  @ [18]
 .equ equ32_mmu_section_nonsecure,         0b10000000000000000000 @ NS[19]
