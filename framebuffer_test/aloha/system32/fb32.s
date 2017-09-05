@@ -16,7 +16,7 @@
  * r0: Pointer of Buffer to Be Filled by Color
  *
  * Usage: r0-r10
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
@@ -189,7 +189,7 @@ fb32_fill_color:
  * r3: Y Coordinate of Mask
  *
  * Usage: r0-r11
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer of Mask)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer of Mask)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
@@ -360,7 +360,7 @@ fb32_mask_image:
  * r2: Value of Alpha, 0-7 bits
  *
  * Usage: r0-r3
- * Return: r0 (0 as sucess)
+ * Return: r0 (0 as success)
  */
 .globl fb32_change_alpha_argb
 fb32_change_alpha_argb:
@@ -406,7 +406,7 @@ fb32_change_alpha_argb:
  * r1: Size of Data 
  *
  * Usage: r0-r2
- * Return: r0 (0 as sucess)
+ * Return: r0 (0 as success)
  */
 .globl fb32_rgba_to_argb
 fb32_rgba_to_argb:
@@ -452,7 +452,7 @@ fb32_rgba_to_argb:
  * r4: Y Radian
  *
  * Usage: r0-r9
- * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
  */
 .globl fb32_draw_circle
@@ -634,7 +634,7 @@ fb32_draw_circle:
  * r6: Point Height in Pixels, Origin is Upper Left Corner
  *
  * Usage: r0-r11
- * Return: r0 (0 as sucess, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Buffer Overflow
  */
 .globl fb32_draw_line
@@ -832,7 +832,7 @@ fb32_draw_line:
  * r1: Pointer of Buffer OUT
  *
  * Usage: r0-r9
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error(1): Buffer In is not Defined
  */
 .globl fb32_copy
@@ -936,7 +936,7 @@ fb32_copy:
  * (Callee ip, Caller r8): Y Crop (Lower Right Position Y)
  *
  * Usage: r0-r12
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
@@ -1361,7 +1361,7 @@ fb32_draw_image:
  * r4: Character Height in Pixels
  *
  * Usage: r0-r11
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Buffer)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * **fb32_clear_color is specially implemented to check if y_coord is over height to hide stopping to draw on higher functions.
  * This height-check virtually prevents Error(1)**
@@ -1541,7 +1541,7 @@ fb32_clear_color_block:
  * r0: Color (16-bit or 32-bit)
  *
  * Usage: r0-r4
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error(1): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS, FB32_SIZE, FB32_DEPTH
  */
@@ -1611,7 +1611,7 @@ fb32_clear_color:
  * r0: Pointer of Buffer to Attach
  *
  * Usage: r0-r5
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error(1): Buffer In is not Defined
  */
 .globl fb32_attach_buffer
@@ -1684,7 +1684,7 @@ fb32_attach_buffer:
  * r3: depth of Buffer
  *
  * Usage: r0-r5
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error: Memory Space for Buffer Can't Be Allocated
  */
 .globl fb32_set_renderbuffer
@@ -1748,11 +1748,81 @@ fb32_set_renderbuffer:
 
 
 /**
+ * function fb32_set_cache
+ * Set Cache Status for Memory Using as Framebuffer (By Section)
+ *
+ * Parameters
+ * r0: Secure state (0) or Non-secure state (1)
+ * r1: Flag of Descriptor
+ *
+ * Usage: r0-r4
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When Framebuffer is not Defined
+ */
+.globl fb32_set_cache
+fb32_set_cache:
+	non_secure     .req r0
+	desc_flag      .req r1
+	memorymap_base .req r2
+	size           .req r3
+	temp           .req r4
+
+	push {r4}
+
+	ldr memorymap_base, FB32_FRAMEBUFFER_ADDR
+	cmp memorymap_base, #0
+	beq fb32_set_cache_error
+
+	ldr size, FB32_FRAMEBUFFER_SIZE
+	cmp size, #0
+	beq fb32_set_cache_error
+	add size, size, memorymap_base
+
+	mov temp, #0xFF00000
+	add temp, #0xF0000000
+
+	and memorymap_base, memorymap_base, temp
+	and size, size, temp
+
+	fb32_set_cache_loop:
+		cmp memorymap_base, size
+		bgt fb32_set_cache_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
+		mov temp, desc_flag
+		add temp, temp, memorymap_base
+		push {r0-r3,lr}
+		mov r1, memorymap_base
+		mov r2, temp
+		bl system32_change_descriptor
+		pop {r0-r3,lr}
+		add memorymap_base, memorymap_base, #0x00100000
+		b fb32_set_cache_loop
+
+	fb32_set_cache_error:
+		mov r0, #1                       @ Return with Error
+		b fb32_set_cache_common
+
+	fb32_set_cache_success:
+		mov r0, #0                           @ Return with Success
+
+	fb32_set_cache_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb                              @ Flush Data in Pipeline to Cache
+		pop {r4}
+		mov pc, lr
+
+.unreq non_secure
+.unreq desc_flag
+.unreq memorymap_base
+.unreq size
+.unreq temp
+
+
+/**
  * function fb32_get_framebuffer
  * Get Framebuffer
  *
  * Usage: r0-r1
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error(1): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDRESS
  * External Variable(s): fb32_mail_framebuffer_addr

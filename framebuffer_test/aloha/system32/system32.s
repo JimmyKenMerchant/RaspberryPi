@@ -293,7 +293,7 @@ system32_cache_info:
  * r1: Program Address to Start Core
  *
  * Usage: r0-r2
- * Return: r0 (0 as sucess, 1 as error), 
+ * Return: r0 (0 as success, 1 as error), 
  * Error: Number of Core does not exist or assigned Core0
  */
 .globl system32_call_core
@@ -340,26 +340,21 @@ system32_call_core:
 
 /**
  * function system32_receive_core
- * Wait to Receive Message and Execute Program in 0-3 Cores
- *
- * Parameters
- * r0: Number of Core
+ * Wait to Receive Message and Execute Program
  *
  * Usage: r0-r2
- * Return: r0 (0 as sucess, 1 as error), 
+ * Return: r0 (0 as success, 1 as error), 
  * Error: Number of Core does not exist or assigned Core0
  */
 .globl system32_receive_core
 system32_receive_core:
 	/* Auto (Local) Variables, but just aliases */
-	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	core_number  .req r0
 	addr_start   .req r1
 	temp         .req r2
 
-	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
-	bgt system32_call_core_error
-	cmp core_number, #0
-	blt system32_call_core_error
+	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
+	and core_number, core_number, #0b11
 
 	mov temp, #equ32_cores_mailbox_offset
 	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
@@ -408,7 +403,7 @@ system32_receive_core:
  * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
  *
  * Usage: r0-r3
- * Return: r0 Reply Content, r1 (0 as sucess, 1 as error), 
+ * Return: r0 Reply Content, r1 (0 as success, 1 as error), 
  * Error: Number of Mailbox does not exist
  */
 .globl system32_mailbox_read
@@ -466,7 +461,7 @@ system32_mailbox_read:
  * r0: Content of Mail to Send
  *
  * Usage: r0-r4
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error: Number of Mailbox does not exist
  */
 .globl system32_mailbox_send
@@ -526,7 +521,7 @@ system32_mailbox_send:
  * r2: Align Bytes to Be Convert Endianness (2/4) 
  *
  * Usage: r0-r7
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error: Align Bytes is not 2/4
  */
 .globl system32_convert_endianness
@@ -660,7 +655,7 @@ system32_no_op:
  * r1: Data to Store
  *
  * Usage: r0-r1
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  */
 .globl system32_store_32
 system32_store_32:
@@ -677,7 +672,7 @@ system32_store_32:
  * r1: Data to Store
  *
  * Usage: r0-r1
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  */
 .globl system32_store_16
 system32_store_16:
@@ -694,7 +689,7 @@ system32_store_16:
  * r1: Data to Store
  *
  * Usage: r0-r1
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  */
 .globl system32_store_8
 system32_store_8:
@@ -885,22 +880,93 @@ system32_malloc:
 
 
 /**
+ * function system32_change_descriptor
+ * Activate Virtual Address
+ *
+ * Parameters
+ * r0: 0 is for Secure state, 1 is for Non-secure state, 2 is for Hyp mode (Reserved)
+ * r1: Address, 1M Offset
+ * r2: Descriptor
+ *
+ * Usage: r0-r5
+ * Return: r0 (0 as success, 1 as error)
+ */
+.globl system32_change_descriptor
+system32_change_descriptor:
+	/* Auto (Local) Variables, but just aliases */
+	non_secure  .req r0
+	addr        .req r1
+	desc        .req r2
+	number_core .req r3
+	mul_number  .req r4
+	base_addr   .req r5
+
+	push {r4,r5}
+
+	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
+	and number_core, number_core, #0b11
+
+	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
+	mov mul_number, #0x10000
+	mul number_core, number_core, mul_number        @ 0x10000, 65536 Bytes Offset
+	add base_addr, base_addr, number_core
+	mov mul_number, #0x4000
+	mul non_secure, non_secure, mul_number          @ 0x4000, 16384 Bytes Offset
+	add base_addr, base_addr, non_secure
+
+	.unreq number_core
+	temp .req r3
+
+	lsr addr, #20                                   @ Virtual to Physical Part in Level 1 Translation, Bit[31:20]
+	lsl addr, #2                                    @ Substitution of Multiplication by 4
+
+	add base_addr, base_addr, addr
+
+	str desc, [base_addr]
+
+	dsb                                         @ Ensure Completion of Instructions Before
+	isb                                         @ Flush Data in Pipeline to Cache
+
+	/* Cache Cleaning by MVA to Point of Coherency (PoC) L1, Not Point of Unification (PoU) L2 */
+	bic temp, base_addr, #0x1F                  @ If You Want Cache Operation by Modifier Virtual Address (MVA),
+	mcr p15, 0, temp, c7, c10, 1                @ Bit[5:0] Should Be Zeros
+
+	system32_change_descriptor_success:
+		mov r0, base_addr
+
+	system32_change_descriptor_common:
+		pop {r4,r5}
+		mov pc, lr
+
+.unreq non_secure
+.unreq addr
+.unreq desc
+.unreq temp
+.unreq mul_number
+.unreq base_addr
+
+
+/**
  * function system32_activate_va
  * Activate Virtual Address
  *
  * Parameters
  * r0: 0 is for Secure state, 1 is for Non-secure state, 2 is for Hyp mode (Reserved)
+ * r1: Flag of TTBR
  *
- * Usage: r0-r3
+ * Usage: r0-r4
  * Return: r0 (Vlue of TTBR0)
  */
 .globl system32_activate_va
 system32_activate_va:
 	/* Auto (Local) Variables, but just aliases */
 	non_secure  .req r0
-	number_core .req r1
-	base_addr   .req r2
-	mul_number  .req r3
+	ttbr_flag   .req r1
+	number_core .req r2
+	base_addr   .req r3
+	mul_number  .req r4
+
+	push {r4}
 
 	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
 	and number_core, number_core, #0b11
@@ -925,7 +991,7 @@ system32_activate_va:
 	mcr p15, 0, temp, c2, c0, 2
 
 	/* Translation Table Base Register 0 (TTBR0) */
-	orr base_addr, base_addr, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
+	orr base_addr, base_addr, ttbr_flag
 	mcr p15, 0, base_addr, c2, c0, 0
 	
 	/* Domain Access Control Register */
@@ -936,11 +1002,13 @@ system32_activate_va:
 		mov r0, base_addr
 
 	system32_activate_va_common:
-		dsb                                     @ Ensure Completion of Instructions Before
-		isb                                     @ Flush Data in Pipeline to Cache
+		dsb                                         @ Ensure Completion of Instructions Before
+		isb                                         @ Flush Data in Pipeline to Cache
+		pop {r4}
 		mov pc, lr
 
 .unreq non_secure
+.unreq ttbr_flag
 .unreq temp
 .unreq base_addr
 .unreq mul_number
@@ -950,20 +1018,26 @@ system32_activate_va:
  * function system32_lineup_basic_va
  * Line Up Basic The First Level Descriptor of Virtual Address, Secure/Non-Secure
  *
- * Usage: r0-r5
- * Return: r0 (Last Address of Descriptor, Empty), r1 (Last Descriptor)
+ * Parameters
+ * r0: Descriptor Flag on Secure state
+ * r1: Descriptor Flag on Non-secure state
+ *
+ * Usage: r0-r7
+ * Return: r0 (Last Address of Descriptor), r1 (Last Descriptor)
  */
 .globl system32_lineup_basic_va
 system32_lineup_basic_va:
 	/* Auto (Local) Variables, but just aliases */
-	number_core .req r0
-	base_addr   .req r1
-	size        .req r2
-	offset_addr .req r3
-	descriptor  .req r4
-	addr        .req r5
+	secure_flag    .req r0
+	nonsecure_flag .req r1
+	number_core    .req r2
+	base_addr      .req r3
+	size           .req r4
+	offset_addr    .req r5
+	descriptor     .req r6
+	addr           .req r7
 
-	push {r4,r5}
+	push {r4-r7}
 
 	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
 	and number_core, number_core, #0b11
@@ -976,9 +1050,7 @@ system32_lineup_basic_va:
 	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
-	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_none
-	orr descriptor, descriptor, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	mov descriptor, secure_flag
 
 	mov offset_addr, #0
 
@@ -997,7 +1069,7 @@ system32_lineup_basic_va:
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
 	orr descriptor, descriptor, #equ32_mmu_section_domain00
-	add descriptor, descriptor, #0x3F000000
+	add descriptor, descriptor, #equ32_peripherals_base
 
 	system32_lineup_basic_va_securedevice:
 		add addr, base_addr, offset_addr
@@ -1014,10 +1086,7 @@ system32_lineup_basic_va:
 	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
-	mov descriptor, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
-	orr descriptor, descriptor, #equ32_mmu_section_outer_wt|equ32_mmu_section_access_rw_rw
-	orr descriptor, descriptor, #equ32_mmu_section_nonsecure|equ32_mmu_section_shareable
-	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	mov descriptor, nonsecure_flag
 
 	mov offset_addr, #0
 
@@ -1037,7 +1106,7 @@ system32_lineup_basic_va:
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
 	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
 	orr descriptor, descriptor, #equ32_mmu_section_domain00
-	add descriptor, descriptor, #0x3F000000
+	add descriptor, descriptor, #equ32_peripherals_base
 
 	system32_lineup_basic_va_nonsecuredevice:
 		add addr, base_addr, offset_addr
@@ -1051,14 +1120,17 @@ system32_lineup_basic_va:
 
 	system32_lineup_basic_va_success:
 		mov r0, addr
+		sub r0, r0, #1
 		mov r1, descriptor
 
 	system32_lineup_basic_va_common:
 		dsb                                     @ Ensure Completion of Instructions Before
 		isb                                     @ Flush Data in Pipeline to Cache
-		pop {r4,r5}
+		pop {r4-r7}
 		mov pc, lr
 
+.unreq secure_flag
+.unreq nonsecure_flag
 .unreq number_core
 .unreq base_addr
 .unreq size

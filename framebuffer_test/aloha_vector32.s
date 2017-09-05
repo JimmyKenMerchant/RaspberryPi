@@ -49,6 +49,7 @@ _el01_reset:
 
 	push {r0-r3,lr}
 	mov r0, #1
+	mov r1, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
 	bl system32_activate_va
 	pop {r0-r3,lr}
 
@@ -171,11 +172,19 @@ _el3_mon:
 	mov sp, fp
 
 	push {r0-r3,lr}
+	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_none
+	orr r0, r0, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+	orr r0, r0, #equ32_mmu_section_domain00
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+	orr r1, r1, #equ32_mmu_section_nonsecure
+	orr r1, r1, #equ32_mmu_section_domain00
 	bl system32_lineup_basic_va
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #0
+	mov r1, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
 	bl system32_activate_va
 	pop {r0-r3,lr}
 
@@ -348,6 +357,16 @@ _aloha_reset:
 	bl fb32_get_framebuffer
 	pop {r0-r3}
 
+	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
+	push {r0-r3}
+	mov r0, #1
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+	orr r1, r1, #equ32_mmu_section_nonsecure
+	orr r1, r1, #equ32_mmu_section_domain00
+	bl fb32_set_cache
+	pop {r0-r3}
+
 	/* Clear Heap to All Zero */
 	push {r0-r3}
 	bl system32_clear_heap
@@ -355,11 +374,11 @@ _aloha_reset:
 
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
-	/*
-     * 20-21 Bits for CP 10, 22-23 Bits for CP 11
-     * Each 0b01 is for Enable in Previlege Mode
-     * Each 0b11 is for Enable in Previlege and User Mode
-     */
+	/**
+	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
+	 * Each 0b01 is for Enable in Previlege Mode
+	 * Each 0b11 is for Enable in Previlege and User Mode
+	 */
 	mov r0, #0b0101
 	lsl r0, r0, #20
 
