@@ -172,16 +172,19 @@
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
 
 /**
- * For Short Descriptor Translation Table (32-bit)
+ * For Short Descriptor Translation Table (32-bit), First Level
+ * Super Section (16M Bytes), Section (1M Bytes) and Page (64K/4K Bytes)
  * Super Section is implemented for Long Physical Address Extension (LPAE)
  */
-.equ equ32_mmu_fault,                     0b00                   @ [1:0]
-.equ equ32_mmu_page,                      0b01                   @ [1:0]
-.equ equ32_mmu_section,                   0b10                   @ [1:0]
-.equ equ32_mmu_reserve,                   0b10                   @ [1:0]
-.equ equ32_mmu_section_pnx,               0b01                   @ PNX[0], Never Execute in Privilege Mode (EL1), If Implemented
-.equ equ32_mmu_section_neverexecute,      0b10000                @ NX[4]
-.equ equ32_mmu_section_strongreorder,     0b0000                 @ C[3], B[2]
+.equ equ32_mmu_fault,                     0b00                   @ [1:0], Indexed by Bit[31:20] of Virtual Address
+.equ equ32_mmu_page,                      0b01                   @ [1:0], Page Table Base Address Bit[31:10] 2nd Level Descriptor
+.equ equ32_mmu_section,                   0b10                   @ [1:0], Section Base Address Bit[31:20]
+.equ equ32_mmu_reserve,                   0b11                   @ [1:0]
+.equ equ32_mmu_page_pxn,                  0b100                  @ PXN[2]
+.equ equ32_mmu_page_nonsecure,            0b1000                 @ NS[3]
+.equ equ32_mmu_section_pxn,               0b01                   @ PXN[0], Execute Never in Privilege Mode (EL1), If Implemented
+.equ equ32_mmu_section_executenever,      0b10000                @ XN[4]
+.equ equ32_mmu_section_stronglyordered,   0b0000                 @ C[3], B[2], Cacheable, Bufferable
 .equ equ32_mmu_section_device,            0b0100                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_none,        0b0000                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_wb_wa,       0b0100                 @ C[3], B[2]
@@ -198,25 +201,55 @@
 .equ equ32_mmu_section_access_r_none,     0b1000010000000000     @ APX[15] and AP[11:10], Privilege Access Only
 .equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Memory, Seems Outer (Devices)
 .equ equ32_mmu_section_nonglobal,         0b100000000000000000   @ nG[17], Non-global
-.equ equ32_mmu_supersection,              0b1000000000000000000  @ [18]
+.equ equ32_mmu_supersection,              0b1000000000000000000  @ [18], Bit[8:5] are PA[39:36], Bit[23:20] are PA[35:32]
 .equ equ32_mmu_section_nonsecure,         0b10000000000000000000 @ NS[19]
-.equ equ32_mmu_section_ecc,               0b1000000000           @ P[9], ECC (Error Check and Correct), If Implemented
-.equ equ32_mmu_section_domain00,          0b000000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain01,          0b000100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain02,          0b001000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain03,          0b001100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain04,          0b010000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain05,          0b010100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain06,          0b011000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain07,          0b011100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain08,          0b100000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain09,          0b100100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain10,          0b101000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain11,          0b101100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain12,          0b110000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain13,          0b110100000 @ Domain[8:5]
-.equ equ32_mmu_section_domain14,          0b111000000 @ Domain[8:5]
-.equ equ32_mmu_section_domain15,          0b111100000 @ Domain[8:5]
+.equ equ32_mmu_ecc,                       0b1000000000           @ P[9], ECC (Error Check and Correct), If Implemented
+.equ equ32_mmu_domain00,                  0b000000000 @ Domain[8:5], Common on section and page (1st Level)
+.equ equ32_mmu_domain01,                  0b000100000 @ Domain[8:5]
+.equ equ32_mmu_domain02,                  0b001000000 @ Domain[8:5]
+.equ equ32_mmu_domain03,                  0b001100000 @ Domain[8:5]
+.equ equ32_mmu_domain04,                  0b010000000 @ Domain[8:5]
+.equ equ32_mmu_domain05,                  0b010100000 @ Domain[8:5]
+.equ equ32_mmu_domain06,                  0b011000000 @ Domain[8:5]
+.equ equ32_mmu_domain07,                  0b011100000 @ Domain[8:5]
+.equ equ32_mmu_domain08,                  0b100000000 @ Domain[8:5]
+.equ equ32_mmu_domain09,                  0b100100000 @ Domain[8:5]
+.equ equ32_mmu_domain10,                  0b101000000 @ Domain[8:5]
+.equ equ32_mmu_domain11,                  0b101100000 @ Domain[8:5]
+.equ equ32_mmu_domain12,                  0b110000000 @ Domain[8:5]
+.equ equ32_mmu_domain13,                  0b110100000 @ Domain[8:5]
+.equ equ32_mmu_domain14,                  0b111000000 @ Domain[8:5]
+.equ equ32_mmu_domain15,                  0b111100000 @ Domain[8:5]
+
+/* Second Level Descriptor of Large Page (64K Bytes) and Small Page (4K Bytes) */
+
+.equ equ32_mmu_second_fault,                 0b00 @ [1:0] 2nd Level Descriptor 
+.equ equ32_mmu_second_large,                 0b01 @ [1:0] Indexed by Bit[19:16] of Virtual Address, Bit[31:16] becomes Physical
+.equ equ32_mmu_second_small,                 0b10 @ [1:0] Indexed by Bit[19:12] of Virtual Address, Bit[31:12] becomes Physical
+.equ equ32_mmu_second_small_xn,              0b1  @ XN[0]
+.equ equ32_mmu_second_large_xn,              0b1000000000000000 @ XN[15]
+.equ equ32_mmu_second_stronglyordered,       0b0000 @ C[3], B[2], Cacheable, Bufferable, Common on small/large page
+.equ equ32_mmu_second_device,                0b0100 @ C[3], B[2]
+.equ equ32_mmu_second_inner_none,            0b0000 @ C[3], B[2]
+.equ equ32_mmu_second_inner_wb_wa,           0b0100 @ C[3], B[2]
+.equ equ32_mmu_second_inner_wt,              0b1000 @ C[3], B[2]
+.equ equ32_mmu_second_inner_wb_nowa,         0b1100 @ C[3], B[2]
+.equ equ32_mmu_second_small_outer_none,      0b100000000 @ TEX[8:6]
+.equ equ32_mmu_second_small_outer_wb_wa,     0b101000000 @ TEX[8:6]
+.equ equ32_mmu_second_small_outer_wt,        0b110000000 @ TEX[8:6]
+.equ equ32_mmu_second_small_outer_wb_nowa,   0b111000000 @ TEX[8:6]
+.equ equ32_mmu_second_large_outer_none,      0b100000000000000 @ TEX[14:12]
+.equ equ32_mmu_second_large_outer_wb_wa,     0b101000000000000 @ TEX[14:12]
+.equ equ32_mmu_second_large_outer_wt,        0b110000000000000 @ TEX[14:12]
+.equ equ32_mmu_second_large_outer_wb_nowa,   0b111000000000000 @ TEX[14:12]
+.equ equ32_mmu_second_access_none,           0b0000000000 @ APX[9] and AP[5:4], Common on small/large page
+.equ equ32_mmu_second_access_rw_none,        0b0000010000 @ APX[9] and AP[5:4], Privilege Access Only
+.equ equ32_mmu_second_access_rw_r,           0b0000100000 @ APX[9] and AP[5:4]
+.equ equ32_mmu_second_access_rw_rw,          0b0000110000 @ APX[9] and AP[5:4]
+.equ equ32_mmu_second_access_r_none,         0b1000010000 @ APX[9] and AP[5:4], Privilege Access Only
+.equ equ32_mmu_second_shareable,             0b10000000000 @ S[10], Shareable Memory, Common on small/large
+.equ equ32_mmu_second_nonglobal,             0b100000000000 @ nG[11], Non-global, Common on small/large
+
 
 /* Translation Table Base Register (TTBR0/TTBR1), Banked by Secure/Non-secure `MRC/MCR p15, 0, <Rt>, c2, c0, 0/1` */
 .equ equ32_ttbr_share,                0b10      @ [1] Translation Table Walk To Shared Memory, Otherwise, Non-shared Memory

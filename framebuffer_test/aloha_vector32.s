@@ -49,7 +49,7 @@ _el01_reset:
 
 	push {r0-r3,lr}
 	mov r0, #1
-	mov r1, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
+	mov r1, #equ32_ttbr_inner_wb_wa|equ32_ttbr_outer_wb_wa
 	bl system32_activate_va
 	pop {r0-r3,lr}
 
@@ -174,11 +174,11 @@ _el3_mon:
 	push {r0-r3,lr}
 	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_none
 	orr r0, r0, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-	orr r0, r0, #equ32_mmu_section_domain00
+	orr r0, r0, #equ32_mmu_domain00
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
 	orr r1, r1, #equ32_mmu_section_nonsecure
-	orr r1, r1, #equ32_mmu_section_domain00
+	orr r1, r1, #equ32_mmu_domain00
 	bl system32_lineup_basic_va
 	pop {r0-r3,lr}
 
@@ -363,7 +363,7 @@ _aloha_reset:
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
 	orr r1, r1, #equ32_mmu_section_nonsecure
-	orr r1, r1, #equ32_mmu_section_domain00
+	orr r1, r1, #equ32_mmu_domain00
 	bl fb32_set_cache
 	pop {r0-r3}
 

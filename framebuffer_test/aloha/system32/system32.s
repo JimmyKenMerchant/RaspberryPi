@@ -265,7 +265,7 @@ system32_cache_info:
 	isb
 
 	/**
-	 * Cache Size ID Register (CCSIDR)
+	 * Cache Size Identification Register (CCSIDR)
 	 * Bit[2:0] LineSize, (log2(Number of Words)) - 2, e.g., 0b001 is 8 words per line, 0b010 is 16 words per line
 	 * Bit[12:3] Associativity, Way - 1, e.g., 0b0000000001 is 2-ways, 0b0000000011 is 4-ways
 	 * Bit[27:13] Number of Sets -1, e.g., 0 is 1 set (Line per Way)
@@ -1068,7 +1068,7 @@ system32_lineup_basic_va:
 
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
-	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 
 	system32_lineup_basic_va_securedevice:
@@ -1105,7 +1105,7 @@ system32_lineup_basic_va:
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
 	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
-	orr descriptor, descriptor, #equ32_mmu_section_domain00
+	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 
 	system32_lineup_basic_va_nonsecuredevice:
