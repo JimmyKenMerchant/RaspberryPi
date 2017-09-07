@@ -96,14 +96,10 @@ _el01_svc:
 
 	push {r0-r12,lr}
 	mrs r10, spsr
-	mrc p15, 0, r11, c12, c0, 0               @ Last VBAR Address to Retrieve
-	push {r10,r11}
-                              
-	blx r0
+	push {r10}
 
-	pop {r10,r11}
+	pop {r10}
 	msr spsr, r10
-	mcr p15, 0, r11, c12, c0, 0               @ Retrieve VBAR Address
 	pop {r0-r12,lr}
 
 	movs pc, lr
@@ -268,9 +264,10 @@ _aloha_reset:
 	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
 	 */
 	mov r0, sp                                @ Store Previous Stack Pointer
+	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
 	mov sp, #0x8000                           @ Stack Pointer to 0x8000
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-	push {r0,lr}
+	push {r0-r1,lr}
 
 	/* SVC mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
@@ -489,10 +486,12 @@ _aloha_render:
 	bl _user_start
 	pop {r0-r3}
 
-	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer and Link Register
-	ldr r0, [fp, #-4]                        @ Post-index, add four to fp afterward, Stack Pointer
+	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer, VBAR and Link Register
+	ldr r0, [fp, #-8]                        @ Stack Pointer
+	ldr r1, [fp, #-4]                        @ Stack Pointer
 	ldr lr, [fp]                             @ Link Register
 	mov sp, r0
+	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
 
 _aloha_debug:
