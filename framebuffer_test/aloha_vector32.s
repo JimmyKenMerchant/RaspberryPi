@@ -107,7 +107,7 @@ _el01_reset:
 	moveq r0, #0x8000
 	blxeq r0
 
-	/* cpsie i */
+	cpsie i
 
 	_el01_reset_loop:
 		b _el01_reset_loop
@@ -132,7 +132,7 @@ _el01_irq:
 	mrs r0, spsr
 	push {r0}
 
-	bl system32_receive_core
+	bl core123_handler
 
 	pop {r0}
 	msr spsr, r0
