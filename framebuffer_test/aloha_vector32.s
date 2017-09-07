@@ -26,7 +26,7 @@ _el01_supervisor_addr:            .word _el01_svc
 _el01_prefetch_abort_addr:        .word _el01_reset
 _el01_data_abort_addr:            .word _el01_reset
 _el01_reserve_addr:               .word _el01_reset
-_el01_irq_addr:                   .word _el01_irq
+_el01_irq_addr:                   .word _el01_reset
 _el01_fiq_addr:                   .word _el01_reset
 
 /* From Secure State SVC mode (EL1 Secure state) */
@@ -84,32 +84,12 @@ _el01_reset:
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
 	and r0, r0, #0b11
 
-	lsl r1, r0, #2
-	add r1, r1, #equ32_core0_irq_source
-	add r1, r1, #equ32_cores_base
-
-	mov r2, #0b1000
-	str r2, [r1]
-
-	mov r1, #equ32_irq_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r1
-
-	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
-	mul ip, ip, r0
-	mov fp, #0x6000
-	sub fp, fp, ip
-	mov sp, fp
-
-	mov r1, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r1
-
 	cmp r0, #0                                @ If Core is Zero
 	moveq r0, #0x8000
-	blxeq r0
-
-	cpsie i
+	svceq #0
 
 	_el01_reset_loop:
+		bl system32_receive_core
 		b _el01_reset_loop
 
 
@@ -117,30 +97,17 @@ _el01_svc:
 
 	push {r0-r12,lr}
 	mrs r10, spsr
-	push {r10}
+	mrc p15, 0, r11, c12, c0, 0               @ Last VBAR Address to Retrieve
+	push {r10,r11}
+                              
+	blx r0
 
-	pop {r10}
+	pop {r10,r11}
 	msr spsr, r10
+	mcr p15, 0, r11, c12, c0, 0               @ Retrieve VBAR Address
 	pop {r0-r12,lr}
 
 	movs pc, lr
-
-_el01_irq:
-	cpsid i                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
-
-	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
-	mrs r0, spsr
-	push {r0}
-
-	bl core123_handler
-
-	pop {r0}
-	msr spsr, r0
-	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
-
-	cpsie i                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
-
-	subs pc, lr, #4
 
 
 .section	.el2_vector
@@ -302,10 +269,9 @@ _aloha_reset:
 	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
 	 */
 	mov r0, sp                                @ Store Previous Stack Pointer
-	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
 	mov sp, #0x8000                           @ Stack Pointer to 0x8000
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-	push {r0-r1,lr}
+	push {r0,lr}
 
 	/* SVC mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
@@ -524,12 +490,10 @@ _aloha_render:
 	bl _user_start
 	pop {r0-r3}
 
-	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer, VBAR and Link Register
-	ldr r0, [fp, #-8]                        @ Stack Pointer
-	ldr r1, [fp, #-4]                        @ Stack Pointer
+	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer and Link Register
+	ldr r0, [fp, #-4]                        @ Post-index, add four to fp afterward, Stack Pointer
 	ldr lr, [fp]                             @ Link Register
 	mov sp, r0
-	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
 
 _aloha_debug:
