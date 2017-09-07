@@ -84,9 +84,30 @@ _el01_reset:
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
 	and r0, r0, #0b11
 
+	lsl r1, r0, #2
+	add r1, r1, #equ32_core0_irq_source
+	add r1, r1, #equ32_cores_base
+
+	mov r2, #0b1000
+	str r2, [r1]
+
+	mov r1, #equ32_irq_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r1
+
+	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
+	mul ip, ip, r0
+	mov fp, #0x6000
+	sub fp, fp, ip
+	mov sp, fp
+
+	mov r1, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r1
+
 	cmp r0, #0                                @ If Core is Zero
 	moveq r0, #0x8000
 	blxeq r0
+
+	/* cpsie i */
 
 	_el01_reset_loop:
 		b _el01_reset_loop
