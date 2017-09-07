@@ -86,10 +86,9 @@ _el01_reset:
 
 	cmp r0, #0                                @ If Core is Zero
 	moveq r0, #0x8000
-	svceq #0
+	blxeq r0
 
 	_el01_reset_loop:
-		bl system32_receive_core
 		b _el01_reset_loop
 
 

@@ -23,6 +23,20 @@
 .equ equ32_cores_mailbox2_readclear,   0xC8
 .equ equ32_cores_mailbox3_readclear,   0xCC
 
+.equ equ32_core0_mailboxes_interrupt,   0x50 @ Bit[0]+ Mailbox0+ IRQ Control, Bit[4]+ Mailbox0+ FIQ Control, IRQ Bit (0-3)
+.equ equ32_core1_mailboxes_interrupt,   0x54
+.equ equ32_core2_mailboxes_interrupt,   0x58
+.equ equ32_core3_mailboxes_interrupt,   0x5C
+
+.equ equ32_core0_irq_source,   0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ equ32_core1_irq_source,   0x64
+.equ equ32_core2_irq_source,   0x68
+.equ equ32_core3_irq_source,   0x6C
+.equ equ32_core0_fiq_source,   0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ equ32_core1_fiq_source,   0x74
+.equ equ32_core2_fiq_source,   0x78
+.equ equ32_core3_fiq_source,   0x7C
+
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
 .equ equ32_systemtimer_counter_higher,   0x08 @ Higher 32 Bits
