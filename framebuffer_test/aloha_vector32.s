@@ -26,7 +26,7 @@ _el01_supervisor_addr:            .word _el01_svc
 _el01_prefetch_abort_addr:        .word _el01_reset
 _el01_data_abort_addr:            .word _el01_reset
 _el01_reserve_addr:               .word _el01_reset
-_el01_irq_addr:                   .word _el01_reset
+_el01_irq_addr:                   .word _el01_irq
 _el01_fiq_addr:                   .word _el01_reset
 
 /* From Secure State SVC mode (EL1 Secure state) */
@@ -124,6 +124,23 @@ _el01_svc:
 	pop {r0-r12,lr}
 
 	movs pc, lr
+
+_el01_irq:
+	cpsid i                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+
+	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
+	mrs r0, spsr
+	push {r0}
+
+	bl system32_receive_core
+
+	pop {r0}
+	msr spsr, r0
+	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
+
+	cpsie i                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
+
+	subs pc, lr, #4
 
 
 .section	.el2_vector
