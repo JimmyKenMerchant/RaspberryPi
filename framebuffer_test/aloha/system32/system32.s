@@ -364,10 +364,9 @@ system32_receive_core:
 	mvn temp, #0
 	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
 	system32_receive_core_loop:
+		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
 		cmp addr_start, #0
 		beq system32_receive_core_loop
@@ -379,13 +378,15 @@ system32_receive_core:
 
 		mov r0, addr_start
 
+		push {lr}
 		svc #0
+		pop {lr}
 
 		b system32_receive_core_success
 
 	system32_receive_core_error:
 		mov r0, #1
-		b system32_call_core_common
+		b system32_receive_core_common
 
 	system32_receive_core_success:
 		mov r0, #0

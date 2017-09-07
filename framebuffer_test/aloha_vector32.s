@@ -107,6 +107,9 @@ _el01_svc:
 	mcr p15, 0, r11, c12, c0, 0               @ Retrieve VBAR Address
 	pop {r0-r12,lr}
 
+	dsb
+	isb
+
 	movs pc, lr
 
 
@@ -288,13 +291,24 @@ _aloha_reset:
 	mov r0, #0x8000
 	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
 
+	mov r0, #1
+	ldr r1, core123_handler
+	bl system32_call_core
+
+	mov r0, #2
+	ldr r1, core123_handler
+	bl system32_call_core
+
+	mov r0, #3
+	ldr r1, core123_handler
+	bl system32_call_core
+
 	mov r0, #equ32_peripherals_base
 	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
 	ldr r1, [r1]
 	add r0, r0, r1
 
-	mov r1, #0x00000000
-	mvn r1, r1                                @ Whole Inverter
+	mvn r1, #0                                       @ Whole Inverter
 
 	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All IRQs
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
@@ -404,18 +418,6 @@ _aloha_reset:
 	vcvtr.u32.f32 s0, s0                      @ In VFP Instructions, You Can Convert with Rounding Mode
 	vmov r0, s0
 	str r0, float_example3
-
-	mov r0, #1
-	ldr r1, core123_handler
-	bl system32_call_core
-
-	mov r0, #2
-	ldr r1, core123_handler
-	bl system32_call_core
-
-	mov r0, #3
-	ldr r1, core123_handler
-	bl system32_call_core
 
 _aloha_render:
 	push {r0-r8}
@@ -625,7 +627,9 @@ _core123_handler:
 	and r0, r0, #0b11
 	ldr r1, core_addr
 	mul r2, r0, r0
-	strb r2, [r1, r0]
+	ldrb r3, [r1,r0]
+	add r2, r2, r3
+	strb r2, [r1,r0]
 	dsb
 	isb
 	mov pc, lr
