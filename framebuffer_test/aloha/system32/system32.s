@@ -10,21 +10,6 @@
 .section	.system
 
 /**
- * Variables
- */
-.globl SYSTEM32_SYSTEMTIMER_BASE
-.globl SYSTEM32_INTERRUPT_BASE
-.globl SYSTEM32_ARMTIMER_BASE
-.globl SYSTEM32_MAILBOX_BASE
-.globl SYSTEM32_GPIO_BASE
-.balign 4
-SYSTEM32_SYSTEMTIMER_BASE:   .word 0x00003000
-SYSTEM32_INTERRUPT_BASE:     .word 0x0000B200
-SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
-SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
-SYSTEM32_GPIO_BASE:          .word 0x00200000
-
-/**
  * function system32_call_core
  * Call 0-3 Cores
  *
@@ -52,6 +37,9 @@ system32_call_core:
 	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
 
 	add core_number, core_number, #equ32_cores_base
+
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	mvn temp, #0
 	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
@@ -100,6 +88,9 @@ system32_receive_core:
 	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
 
 	add core_number, core_number, #equ32_cores_base
+
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	mvn temp, #0
 	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
@@ -390,6 +381,9 @@ system32_cache_info:
 	 * Index of the set will be Determined by Bit[*:4 + LineSize] of the Address, the length is Number of Sets
 	 */
 	mrc p15, 1, ccsidr, c0, c0, 0 @ Cache Selector
+
+	dsb
+	isb
 
 	system32_cache_info_common:
 		mov pc, lr
