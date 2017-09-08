@@ -35,8 +35,7 @@ SECTIONS {
 	. = 0xA000;
 	.system32 : {
 		system32.o(.system)
-		/* Add size, 16,777,216 bytes to the end of .vector */
-		. += 0x1000000;
+		. += 0x00100000;
 	}
 	.text : {
 		*(.text)
