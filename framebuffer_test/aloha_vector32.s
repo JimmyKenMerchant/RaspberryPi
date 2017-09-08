@@ -86,7 +86,7 @@ _el01_reset:
 
 	cmp r0, #0                                @ If Core is Zero
 	moveq r0, #0x8000
-	svceq #0
+	blxeq r0
 
 	_el01_reset_loop:
 		bl system32_receive_core
@@ -94,21 +94,6 @@ _el01_reset:
 
 
 _el01_svc:
-
-	push {r0-r12,lr}
-	mrs r10, spsr
-	mrc p15, 0, r11, c12, c0, 0               @ Last VBAR Address to Retrieve
-	push {r10,r11}
-                              
-	blx r0
-
-	pop {r10,r11}
-	msr spsr, r10
-	mcr p15, 0, r11, c12, c0, 0               @ Retrieve VBAR Address
-	pop {r0-r12,lr}
-
-	dsb
-	isb
 
 	movs pc, lr
 
@@ -272,9 +257,10 @@ _aloha_reset:
 	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
 	 */
 	mov r0, sp                                @ Store Previous Stack Pointer
+	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
 	mov sp, #0x8000                           @ Stack Pointer to 0x8000
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-	push {r0,lr}
+	push {r0-r1,lr}
 
 	/* SVC mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
@@ -304,9 +290,7 @@ _aloha_reset:
 	bl system32_call_core
 
 	mov r0, #equ32_peripherals_base
-	ldr r1, ADDR32_SYSTEM32_INTERRUPT_BASE
-	ldr r1, [r1]
-	add r0, r0, r1
+	add r0, r0, #equ32_interrupt_base
 
 	mvn r1, #0                                       @ Whole Inverter
 
@@ -318,9 +302,7 @@ _aloha_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	mov r0, #equ32_peripherals_base
-	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
-	ldr r1, [r1]
-	add r0, r0, r1
+	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
@@ -337,9 +319,7 @@ _aloha_reset:
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
 	mov r0, #equ32_peripherals_base
-	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
-	ldr r1, [r1]
-	add r0, r0, r1
+	add r0, r0, #equ32_gpio_base
 
 	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel4]
@@ -492,10 +472,12 @@ _aloha_render:
 	bl _user_start
 	pop {r0-r3}
 
-	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer and Link Register
-	ldr r0, [fp, #-4]                        @ Post-index, add four to fp afterward, Stack Pointer
+	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer, VBAR,and Link Register
+	ldr r0, [fp, #-8]                        @ Stack Pointer
+	ldr r1, [fp, #-4]                        @ Stack Pointer
 	ldr lr, [fp]                             @ Link Register
 	mov sp, r0
+	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
 
 _aloha_debug:
@@ -522,17 +504,13 @@ _aloha_fiq:
 
 _aloha_fiq_handler:
 	mov r0, #equ32_peripherals_base
-	ldr r1, ADDR32_SYSTEM32_ARMTIMER_BASE
-	ldr r1, [r1]
-	add r0, r0, r1
+	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]             @ any write to clear/ acknowledge
 
 	mov r0, #equ32_peripherals_base
-	ldr r1, ADDR32_SYSTEM32_GPIO_BASE
-	ldr r1, [r1]
-	add r0, r0, r1
+	add r0, r0, #equ32_gpio_base
 
 	ldr r1, gpio_toggle
 	eor r1, #0b00001100                       @ Exclusive OR to toggle
@@ -542,11 +520,8 @@ _aloha_fiq_handler:
 	mov r1, #equ32_gpio47
 	str r1, [r0]
 
-
 	mov r0, #equ32_peripherals_base
-	ldr r1, ADDR32_SYSTEM32_SYSTEMTIMER_BASE
-	ldr r1, [r1]
-	add r0, r0, r1
+	add r0, r0, #equ32_systemtimer_base
 
 	ldr r0, [r0, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
 	ldr r1, sys_timer_previous

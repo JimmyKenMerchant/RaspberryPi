@@ -19,12 +19,13 @@
 /**
  * system32/system32.s
  */
-
-.globl SYSTEM32_SYSTEMTIMER_BASE
-.globl SYSTEM32_INTERRUPT_BASE
-.globl SYSTEM32_ARMTIMER_BASE
-.globl SYSTEM32_MAILBOX_BASE
-.globl SYSTEM32_GPIO_BASE
+.globl system32_call_core
+.globl system32_receive_core
+.globl system32_cache_operation_all
+.globl system32_cache_operation
+.globl system32_cache_info
+.globl system32_mailbox_read
+.globl system32_mailbox_send
 .globl system32_convert_endianness
 .globl system32_sleep
 .globl system32_no_op
@@ -34,13 +35,15 @@
 .globl system32_load_32
 .globl system32_load_16
 .globl system32_load_8
+.globl system32_clear_heap
+.globl system32_malloc
+.globl system32_mfree
+.globl system32_change_descriptor
+.globl system32_activate_va
+.globl system32_lineup_basic_va
 .globl SYSTEM32_HEAP
+.globl SYSTEM32_VADESCRIPTOR
 
-ADDR32_SYSTEM32_SYSTEMTIMER_BASE: .word SYSTEM32_SYSTEMTIMER_BASE
-ADDR32_SYSTEM32_INTERRUPT_BASE:   .word SYSTEM32_INTERRUPT_BASE
-ADDR32_SYSTEM32_ARMTIMER_BASE:    .word SYSTEM32_ARMTIMER_BASE
-ADDR32_SYSTEM32_MAILBOX_BASE:     .word SYSTEM32_MAILBOX_BASE
-ADDR32_SYSTEM32_GPIO_BASE:        .word SYSTEM32_GPIO_BASE
 ADDR32_SYSTEM32_HEAP:             .word SYSTEM32_HEAP
 
 

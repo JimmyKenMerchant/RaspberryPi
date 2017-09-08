@@ -24,7 +24,6 @@ SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
 SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
 SYSTEM32_GPIO_BASE:          .word 0x00200000
 
-
 /**
  * function system32_call_core
  * Call 0-3 Cores
@@ -120,7 +119,7 @@ system32_receive_core:
 		mov r0, addr_start
 
 		push {lr}
-		svc #0
+		blx r0
 		pop {lr}
 
 		b system32_receive_core_success
@@ -418,8 +417,7 @@ system32_mailbox_read:
 	mov read, #equ32_mailbox0_read
 
 	mov memorymap_base, #equ32_peripherals_base
-	ldr temp, SYSTEM32_MAILBOX_BASE
-	add memorymap_base, memorymap_base, temp
+	add memorymap_base, memorymap_base, #equ32_mailbox_base
 
 	system32_mailbox_read_waitforread:
 		ldr temp, [memorymap_base, status]
@@ -479,8 +477,7 @@ system32_mailbox_send:
 	mov write, #equ32_mailbox0_write
 
 	mov memorymap_base, #equ32_peripherals_base
-	ldr temp, SYSTEM32_MAILBOX_BASE
-	add memorymap_base, memorymap_base, temp
+	add memorymap_base, memorymap_base, #equ32_mailbox_base
 
 	system32_mailbox_send_waitforwrite:
 		ldr temp, [memorymap_base, status]
@@ -618,8 +615,7 @@ system32_convert_endianness:
 system32_sleep:
 	push {r4-r5}
 	mov r1, #equ32_peripherals_base
-	ldr r2, SYSTEM32_SYSTEMTIMER_BASE
-	add r1, r1, r2
+	add r1, r1, #equ32_systemtimer_base
 	ldr r2, [r1, #equ32_systemtimer_counter_lower]  @ Get Lower 32 Bits
 	ldr r3, [r1, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
 	adds r2, r0                            @ Add with Changing Status Flags
