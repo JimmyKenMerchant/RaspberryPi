@@ -9,8 +9,6 @@
 
 .section	.system
 
-.include "system32/equ32.s"
-
 /**
  * Variables
  */
@@ -25,6 +23,122 @@ SYSTEM32_INTERRUPT_BASE:     .word 0x0000B200
 SYSTEM32_ARMTIMER_BASE:      .word 0x0000B400
 SYSTEM32_MAILBOX_BASE:       .word 0x0000B880
 SYSTEM32_GPIO_BASE:          .word 0x00200000
+
+
+/**
+ * function system32_call_core
+ * Call 0-3 Cores
+ *
+ * Parameters
+ * r0: Number of Core
+ * r1: Program Address to Start Core
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as success, 1 as error), 
+ * Error: Number of Core does not exist or assigned Core0
+ */
+.globl system32_call_core
+system32_call_core:
+	/* Auto (Local) Variables, but just aliases */
+	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	addr_start   .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	temp         .req r2
+
+	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
+	bgt system32_call_core_error
+	cmp core_number, #0
+	blt system32_call_core_error
+
+	mov temp, #equ32_cores_mailbox_offset
+	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
+
+	add core_number, core_number, #equ32_cores_base
+
+	mvn temp, #0
+	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
+
+	str addr_start, [core_number, #equ32_cores_mailbox3_writeset]
+
+	b system32_call_core_success
+
+	system32_call_core_error:
+		mov r0, #1
+		b system32_call_core_common
+
+	system32_call_core_success:
+		mov r0, #0
+
+	system32_call_core_common:
+		mov pc, lr
+
+.unreq core_number
+.unreq addr_start
+.unreq temp
+
+
+/**
+ * function system32_receive_core
+ * Wait to Receive Message and Execute Program
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as success, 1 as error), 
+ * Error: Number of Core does not exist or assigned Core0
+ */
+.globl system32_receive_core
+system32_receive_core:
+	/* Auto (Local) Variables, but just aliases */
+	core_number  .req r0
+	addr_start   .req r1
+	temp         .req r2
+
+	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
+	and core_number, core_number, #0b11
+
+	mov temp, #equ32_cores_mailbox_offset
+	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
+
+	add core_number, core_number, #equ32_cores_base
+
+	mvn temp, #0
+	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+
+	system32_receive_core_loop:
+		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
+		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
+		cmp addr_start, #0
+		beq system32_receive_core_loop
+
+		str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+
+		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
+
+		mov r0, addr_start
+
+		push {lr}
+		svc #0
+		pop {lr}
+
+		b system32_receive_core_success
+
+	system32_receive_core_error:
+		mov r0, #1
+		b system32_receive_core_common
+
+	system32_receive_core_success:
+		mov r0, #0
+
+	system32_receive_core_common:
+		mov pc, lr
+
+.unreq core_number
+.unreq addr_start
+.unreq temp
+
 
 /**
  * function system32_cache_operation_all
@@ -282,121 +396,6 @@ system32_cache_info:
 		mov pc, lr
 
 .unreq ccsidr
-
-
-/**
- * function system32_call_core
- * Call 0-3 Cores
- *
- * Parameters
- * r0: Number of Core
- * r1: Program Address to Start Core
- *
- * Usage: r0-r2
- * Return: r0 (0 as success, 1 as error), 
- * Error: Number of Core does not exist or assigned Core0
- */
-.globl system32_call_core
-system32_call_core:
-	/* Auto (Local) Variables, but just aliases */
-	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	addr_start   .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	temp         .req r2
-
-	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
-	bgt system32_call_core_error
-	cmp core_number, #0
-	blt system32_call_core_error
-
-	mov temp, #equ32_cores_mailbox_offset
-	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
-
-	add core_number, core_number, #equ32_cores_base
-
-	mvn temp, #0
-	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
-
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-	str addr_start, [core_number, #equ32_cores_mailbox3_writeset]
-
-	b system32_call_core_success
-
-	system32_call_core_error:
-		mov r0, #1
-		b system32_call_core_common
-
-	system32_call_core_success:
-		mov r0, #0
-
-	system32_call_core_common:
-		mov pc, lr
-
-.unreq core_number
-.unreq addr_start
-.unreq temp
-
-
-/**
- * function system32_receive_core
- * Wait to Receive Message and Execute Program
- *
- * Usage: r0-r2
- * Return: r0 (0 as success, 1 as error), 
- * Error: Number of Core does not exist or assigned Core0
- */
-.globl system32_receive_core
-system32_receive_core:
-	/* Auto (Local) Variables, but just aliases */
-	core_number  .req r0
-	addr_start   .req r1
-	temp         .req r2
-
-	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
-	and core_number, core_number, #0b11
-
-	mov temp, #equ32_cores_mailbox_offset
-	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
-
-	add core_number, core_number, #equ32_cores_base
-
-	mvn temp, #0
-	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
-
-	system32_receive_core_loop:
-		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
-		cmp addr_start, #0
-		beq system32_receive_core_loop
-
-		str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
-
-		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-		mov r0, addr_start
-
-		push {lr}
-		svc #0
-		pop {lr}
-
-		b system32_receive_core_success
-
-	system32_receive_core_error:
-		mov r0, #1
-		b system32_receive_core_common
-
-	system32_receive_core_success:
-		mov r0, #0
-
-	system32_receive_core_common:
-		mov pc, lr
-
-.unreq core_number
-.unreq addr_start
-.unreq temp
 
 
 /**
@@ -1258,3 +1257,6 @@ _SYSTEM32_HEAP_END:
 _SYSTEM32_VADESCRIPTOR:
 .fill 262144, 1, 0x00
 _SYSTEM32_VADESCRIPTOR_END:
+
+.include "system32/equ32.s"
+

@@ -47,23 +47,23 @@ _el01_reset:
 	sub fp, fp, ip
 	mov sp, fp
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #1
 	mov r1, #equ32_ttbr_inner_wb_wa|equ32_ttbr_outer_wb_wa
 	bl system32_activate_va
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #1                                @ L1
 	mov r1, #0
 	bl system32_cache_operation_all
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #2                                @ L2
 	mov r1, #0
 	bl system32_cache_operation_all
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
 	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
@@ -348,23 +348,23 @@ _aloha_reset:
 	ldr r1, ADDR32_FB32_DEPTH
 	str r0, [r1]
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, r1
 	mov r1, #1
 	mov r2, #1
 	bl system32_cache_operation
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	mov r0, #2
 	ldr r1, ADDR32_FB32_ALPHAMODE
 	str r0, [r1]
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, r1
 	mov r1, #1
 	mov r2, #1
 	bl system32_cache_operation
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	/* Framebuffer Obtain */
 	push {r0-r3}
