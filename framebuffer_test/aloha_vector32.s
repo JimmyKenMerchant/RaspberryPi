@@ -173,7 +173,7 @@ _el3_mon:
 	orr r0, r0, #equ32_mmu_domain00
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
-	orr r1, r1, #equ32_mmu_section_nonsecure
+	orr r1, r1, #equ32_mmu_section_nonsecure|equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	bl system32_lineup_basic_va
 	pop {r0-r3,lr}
@@ -300,18 +300,6 @@ _aloha_reset:
 	mov r0, #0x8000
 	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
 
-	mov r0, #1
-	ldr r1, core123_handler
-	bl system32_core_call
-
-	mov r0, #2
-	ldr r1, core123_handler
-	bl system32_core_call
-
-	mov r0, #3
-	ldr r1, core123_handler
-	bl system32_core_call
-
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
 
@@ -429,6 +417,59 @@ _aloha_render:
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
 	ldr r0, [r0]
 	bl fb32_clear_color
+
+	mov r0, #2
+	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	ldr r1, core123_handler
+	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
+	mov r1, #0
+	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
+	str r0, [r1]                              @ Store Pointer of Heap to Variable for Each Core
+	push {r0-r3}
+	mov r0, #3                                @ Indicate Number of Core
+	ldr r1, ADDR32_system32_core_handle       @ Indicate Handle Function
+	bl system32_core_call
+	pop {r0-r3}
+	/*bl system32_mfree*/                         @ Clear Memory Space
+
+push {r0-r3}
+ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
+dsb
+isb
+ldr r0, [r0]
+dsb
+isb
+mov r1, #500
+mov r2, #48
+bl print32_debug
+pop {r0-r3}
+
+push {r0-r3}
+ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
+dsb
+isb
+ldr r0, [r0]
+dsb
+isb
+ldr r0, [r0]
+mov r1, #500
+mov r2, #60
+bl print32_debug
+pop {r0-r3}
+
+push {r0-r3}
+ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
+dsb
+isb
+ldr r0, [r0]
+dsb
+isb
+ldr r0, [r0, #4]
+mov r1, #500
+mov r2, #72
+bl print32_debug
+pop {r0-r3}
 
 	ldr r0, string_hello                      @ Pointer of Array of String
 	mov r1, #0                                @ X Coordinate

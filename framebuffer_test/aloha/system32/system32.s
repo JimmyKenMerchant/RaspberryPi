@@ -115,9 +115,9 @@ system32_core_receive:
 
 		mov r0, addr_start
 
-		push {lr}
+		push {r0-r3,lr}
 		blx r0
-		pop {lr}
+		pop {r0-r3,lr}
 
 		b system32_core_receive_success
 
@@ -139,8 +139,15 @@ system32_core_receive:
 /**
  * function system32_core_handle
  * Execute Function with Arguments in Core
+ * This Function Uses Heap and Pointer of Heap.
+ * First of Heap Array is Pointer of Function.
+ * Second of Heap Array is Number of Arguments.
+ * Third and Over of Heap Array are Arguments of Function.
  *
- * Usage: r0-r8
+ * Return Value Will Be Stored on First and Second of Heap
+ * When Function is Finished, Pointer of Heap Will Be Zero to Indicate of Finishing.
+ *
+ * Usage: r0-r9
  * Return: r0 (0 as success, 1 as error), 
  * Error: Number of Core does not exist or assigned Core0
  */
@@ -152,12 +159,13 @@ system32_core_handle:
 	arg2         .req r2
 	arg3         .req r3
 	handle_addr  .req r4
-	addr_start   .req r5
-	num_arg      .req r6
-	dup_num_arg  .req r7
-	temp         .req r8
+	heap         .req r5
+	addr_start   .req r6
+	num_arg      .req r7
+	dup_num_arg  .req r8
+	temp         .req r9
 
-	push {r4-r8}
+	push {r4-r9}
 
 	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
 	and core_number, core_number, #0b11
@@ -173,8 +181,11 @@ system32_core_handle:
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-	ldr addr_start, [handle_addr]
-	ldr num_arg, [handle_addr, #4]
+	ldr heap, [handle_addr]
+	cmp heap, #0
+	bleq system32_core_handle_error
+	ldr addr_start, [heap]
+	ldr num_arg, [heap, #4]
 
 	mov dup_num_arg, #0
 
@@ -183,16 +194,16 @@ system32_core_handle:
 	cmp num_arg, #0
 	beq system32_core_handle_loop_branch
 	cmp num_arg, #1
-	ldrge arg0, [handle_addr, #8]
+	ldrge arg0, [heap, #8]
 	beq system32_core_handle_loop_branch
 	cmp num_arg, #2
-	ldrge arg1, [handle_addr, #12]
+	ldrge arg1, [heap, #12]
 	beq system32_core_handle_loop_branch
 	cmp num_arg, #3
-	ldrge arg2, [handle_addr, #16]
+	ldrge arg2, [heap, #16]
 	beq system32_core_handle_loop_branch
 	cmp num_arg, #4
-	ldrge arg3, [handle_addr, #20]
+	ldrge arg3, [heap, #20]
 	beq system32_core_handle_loop_branch
 
 	mov dup_num_arg, num_arg
@@ -205,23 +216,20 @@ system32_core_handle:
 	system32_core_handle_loop_loop:
 		cmp num_arg, #20
 		ble system32_core_handle_loop_branch
-		ldr temp, [handle_addr, num_arg]
+		ldr temp, [heap, num_arg]
 		push {temp}
 		sub num_arg, num_arg, #4
 		b system32_core_handle_loop_loop
 
 	system32_core_handle_loop_branch:
 		blx addr_start
-		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
-		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
+		str r0, [heap]                                       @ Return Value r0 to 2nd of Array
+		str r1, [heap, #4]                                   @ Return Value r1 to 3rd of Array
 		add sp, sp, dup_num_arg                              @ Offset SP
 		pop {r0-r3,lr}
 		
 		mov temp, #0
 		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
-
-		dsb
-		isb
 
 		b system32_core_handle_success
 
@@ -233,7 +241,7 @@ system32_core_handle:
 		mov r0, #0
 
 	system32_core_handle_common:
-		pop {r4-r8}
+		pop {r4-r9}
 		mov pc, lr
 
 .unreq arg0
@@ -241,6 +249,7 @@ system32_core_handle:
 .unreq arg2
 .unreq arg3
 .unreq handle_addr
+.unreq heap
 .unreq addr_start
 .unreq num_arg
 .unreq dup_num_arg
