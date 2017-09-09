@@ -10,7 +10,7 @@
 .section	.system
 
 /**
- * function system32_call_core
+ * function system32_core_call
  * Call 0-3 Cores
  *
  * Parameters
@@ -21,17 +21,17 @@
  * Return: r0 (0 as success, 1 as error), 
  * Error: Number of Core does not exist or assigned Core0
  */
-.globl system32_call_core
-system32_call_core:
+.globl system32_core_call
+system32_core_call:
 	/* Auto (Local) Variables, but just aliases */
 	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	addr_start   .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	temp         .req r2
 
 	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
-	bgt system32_call_core_error
+	bgt system32_core_call_error
 	cmp core_number, #0
-	blt system32_call_core_error
+	blt system32_core_call_error
 
 	mov temp, #equ32_cores_mailbox_offset
 	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
@@ -49,16 +49,19 @@ system32_call_core:
 
 	str addr_start, [core_number, #equ32_cores_mailbox3_writeset]
 
-	b system32_call_core_success
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-	system32_call_core_error:
+	b system32_core_call_success
+
+	system32_core_call_error:
 		mov r0, #1
-		b system32_call_core_common
+		b system32_core_call_common
 
-	system32_call_core_success:
+	system32_core_call_success:
 		mov r0, #0
 
-	system32_call_core_common:
+	system32_core_call_common:
 		mov pc, lr
 
 .unreq core_number
@@ -67,15 +70,15 @@ system32_call_core:
 
 
 /**
- * function system32_receive_core
+ * function system32_core_receive
  * Wait to Receive Message and Execute Program
  *
  * Usage: r0-r2
  * Return: r0 (0 as success, 1 as error), 
  * Error: Number of Core does not exist or assigned Core0
  */
-.globl system32_receive_core
-system32_receive_core:
+.globl system32_core_receive
+system32_core_receive:
 	/* Auto (Local) Variables, but just aliases */
 	core_number  .req r0
 	addr_start   .req r1
@@ -95,12 +98,15 @@ system32_receive_core:
 	mvn temp, #0
 	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
-	system32_receive_core_loop:
+	system32_core_receive_loop:
 		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
 		cmp addr_start, #0
-		beq system32_receive_core_loop
+		beq system32_core_receive_loop
+
+		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 		str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
 
@@ -113,21 +119,144 @@ system32_receive_core:
 		blx r0
 		pop {lr}
 
-		b system32_receive_core_success
+		b system32_core_receive_success
 
-	system32_receive_core_error:
+	system32_core_receive_error:
 		mov r0, #1
-		b system32_receive_core_common
+		b system32_core_receive_common
 
-	system32_receive_core_success:
+	system32_core_receive_success:
 		mov r0, #0
 
-	system32_receive_core_common:
+	system32_core_receive_common:
 		mov pc, lr
 
 .unreq core_number
 .unreq addr_start
 .unreq temp
+
+
+/**
+ * function system32_core_handle
+ * Execute Function with Arguments in Core
+ *
+ * Usage: r0-r8
+ * Return: r0 (0 as success, 1 as error), 
+ * Error: Number of Core does not exist or assigned Core0
+ */
+.globl system32_core_handle
+system32_core_handle:
+	/* Auto (Local) Variables, but just aliases */
+	core_number  .req r0
+	arg1         .req r1
+	arg2         .req r2
+	arg3         .req r3
+	handle_addr  .req r4
+	addr_start   .req r5
+	num_arg      .req r6
+	dup_num_arg  .req r7
+	temp         .req r8
+
+	push {r4-r8}
+
+	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
+	and core_number, core_number, #0b11
+
+	lsl core_number, core_number, #2         @ Substitution of Multiplication by 4
+
+	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
+	add handle_addr, handle_addr, core_number
+
+	.unreq core_number
+	arg0 .req r0
+
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
+
+	ldr addr_start, [handle_addr]
+	ldr num_arg, [handle_addr, #4]
+
+	mov dup_num_arg, #0
+
+	push {r0-r3,lr}
+
+	cmp num_arg, #0
+	beq system32_core_handle_loop_branch
+	cmp num_arg, #1
+	ldrge arg0, [handle_addr, #8]
+	beq system32_core_handle_loop_branch
+	cmp num_arg, #2
+	ldrge arg1, [handle_addr, #12]
+	beq system32_core_handle_loop_branch
+	cmp num_arg, #3
+	ldrge arg2, [handle_addr, #16]
+	beq system32_core_handle_loop_branch
+	cmp num_arg, #4
+	ldrge arg3, [handle_addr, #20]
+	beq system32_core_handle_loop_branch
+
+	mov dup_num_arg, num_arg
+	sub dup_num_arg, dup_num_arg, #4                         @ For Offset of SP Afterward
+	lsl dup_num_arg, dup_num_arg, #2                         @ Substitution of Multiplication by 4
+
+	lsl num_arg, num_arg, #2                                 @ Substitution of Multiplication by 4
+	add num_arg, num_arg, #4
+
+	system32_core_handle_loop_loop:
+		cmp num_arg, #20
+		ble system32_core_handle_loop_branch
+		ldr temp, [handle_addr, num_arg]
+		push {temp}
+		sub num_arg, num_arg, #4
+		b system32_core_handle_loop_loop
+
+	system32_core_handle_loop_branch:
+		blx addr_start
+		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
+		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
+		add sp, sp, dup_num_arg                              @ Offset SP
+		pop {r0-r3,lr}
+		
+		mov temp, #0
+		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
+
+		dsb
+		isb
+
+		b system32_core_handle_success
+
+	system32_core_handle_error:
+		mov r0, #1
+		b system32_core_handle_common
+
+	system32_core_handle_success:
+		mov r0, #0
+
+	system32_core_handle_common:
+		pop {r4-r8}
+		mov pc, lr
+
+.unreq arg0
+.unreq arg1
+.unreq arg2
+.unreq arg3
+.unreq handle_addr
+.unreq addr_start
+.unreq num_arg
+.unreq dup_num_arg
+.unreq temp
+
+
+.globl SYSTEM32_CORE_HANDLE_BASE
+.globl SYSTEM32_CORE_HANDLE_0
+.globl SYSTEM32_CORE_HANDLE_1
+.globl SYSTEM32_CORE_HANDLE_2
+.globl SYSTEM32_CORE_HANDLE_3
+SYSTEM32_CORE_HANDLE_BASE: .word SYSTEM32_CORE_HANDLE_0
+SYSTEM32_CORE_HANDLE_0:    .word 0x00000000
+SYSTEM32_CORE_HANDLE_1:    .word 0x00000000
+SYSTEM32_CORE_HANDLE_2:    .word 0x00000000
+SYSTEM32_CORE_HANDLE_3:    .word 0x00000000
 
 
 /**
@@ -199,12 +328,16 @@ system32_cache_operation_all:
 			blt system32_cache_operation_all_loop_common
 			lsl bit_mask, way_size_dup, temp         @ Set Way Bit[31:*]
 			add waysetlevel, setlevel, bit_mask
+			dsb
+			isb
 			cmp flag, #0
 			mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
 			cmp flag, #1
 			mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
 			cmp flag, #2
 			mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
+			dsb
+			isb
 			sub way_size_dup, way_size_dup, #1
 			b system32_cache_operation_all_loop_way
 
@@ -309,12 +442,16 @@ system32_cache_operation:
 		blt system32_cache_operation_success
 		lsl bit_mask, way_size, temp             @ Set Way Bit[31:*]
 		add waysetlevel, setlevel, bit_mask
+		dsb
+		isb
 		cmp flag, #0
 		mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
 		cmp flag, #1
 		mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
 		cmp flag, #2
 		mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
+		dsb
+		isb
 		sub way_size, way_size, #1
 		b system32_cache_operation_loop
 
@@ -354,6 +491,9 @@ system32_cache_operation:
 system32_cache_info:
 	/* Auto (Local) Variables, but just aliases */
 	ccselr       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	dsb
+	isb
 
 	/**
 	 * Cache Size Slection Register (CSSELR) for CCSIDR
@@ -414,17 +554,22 @@ system32_mailbox_read:
 	add memorymap_base, memorymap_base, #equ32_mailbox_base
 
 	system32_mailbox_read_waitforread:
+		dsb
+		isb
 		ldr temp, [memorymap_base, status]
 		cmp temp, #0x40000000                  @ Wait for Empty Flag is Cleared
 		beq system32_mailbox_read_waitforread
 
-	dmb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
+	dsb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+        isb                                      @ `DSB` Data Synchronization Barrier, completes all instructions before
                                                  @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
                                                  @ to ensure to fetch data from cache/ memory
                                                  @ These are useful in multi-core/ threads usage, etc.
 
 	ldr r0, [memorymap_base, read]
+
+	dsb
+	isb
 
 	b system32_mailbox_read_success
 
@@ -474,13 +619,19 @@ system32_mailbox_send:
 	add memorymap_base, memorymap_base, #equ32_mailbox_base
 
 	system32_mailbox_send_waitforwrite:
+		dsb
+		isb
 		ldr temp, [memorymap_base, status]
 		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
 		beq system32_mailbox_send_waitforwrite
 
-	dmb                                            @ `DMB` Data Memory Barrier, completes all memory access before
+	dsb
+	isb
 
 	str mail_content, [memorymap_base, write]
+
+	dsb
+	isb
 
 	b system32_mailbox_send_success
 
@@ -616,6 +767,8 @@ system32_sleep:
 	adc r3, #0                             @ Add with Carry Flag
 
 	system32_sleep_loop:
+		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 		ldr r4, [r1, #equ32_systemtimer_counter_lower]
 		ldr r5, [r1, #equ32_systemtimer_counter_higher]
 		cmp r3, r5                     @ Similar to `SUBS`, Compare Higher 32 Bits
@@ -749,7 +902,8 @@ system32_clear_heap:
 	heap_size   .req r1
 	heap_bytes  .req r2
 
-	dmb                                         @ Ensure Coherence of Cache and Memory
+	dsb                                         @ Ensure Coherence of Cache and Memory
+	isb
 
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
@@ -802,7 +956,8 @@ system32_malloc:
 
 	push {r4,r5}
 
-	dmb                                         @ Ensure Coherence of Cache and Memory
+	dsb                                         @ Ensure Coherence of Cache and Memory
+	isb
 
 	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
 
@@ -921,6 +1076,9 @@ system32_change_descriptor:
 	bic temp, base_addr, #0x1F                  @ If You Want Cache Operation by Modifier Virtual Address (MVA),
 	mcr p15, 0, temp, c7, c10, 1                @ Bit[5:0] Should Be Zeros
 
+	dsb
+	isb
+
 	system32_change_descriptor_success:
 		mov r0, base_addr
 
@@ -972,9 +1130,15 @@ system32_activate_va:
 	.unreq number_core
 	temp .req r1
 
+	dsb
+	isb
+
 	/* Invalidate TLB */
 	mov temp, #0
 	mcr p15, 0, temp, c8, c7, 0
+
+	dsb
+	isb
 
 	/* Translation Table Base Control Register (TTBCR) */
 	mov temp, #equ32_ttbcr_n0                       @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
@@ -1163,7 +1327,8 @@ system32_mfree:
 
 	push {r4}
 
-	dmb                                         @ Ensure Coherence of Cache and Memory
+	dsb                                         @ Ensure Coherence of Cache and Memory
+	isb
 
 	cmp block_start, #0
 	beq system32_mfree_error

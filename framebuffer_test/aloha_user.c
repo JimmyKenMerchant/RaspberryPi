@@ -92,8 +92,8 @@ void _user_start()
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 400, 20, 20 );
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 500, 20, 20 );
 
-	fb32_draw_circle( COLOR32_BLUE, 300, 300, 150, 200 );
-	fb32_draw_circle( COLOR32_BLUE, -100, 500, 200, 175 );
+	fb32_draw_circle( COLOR32_MAGENTA, 300, 300, 150, 200 );
+	fb32_draw_circle( COLOR32_GREEN, -100, 500, 200, 175 );
 
 	fb32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
 	int32* renderbuffer1 = (int32*)system32_load_32( FB32_RENDERBUFFER1 );

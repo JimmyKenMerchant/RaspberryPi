@@ -850,6 +850,9 @@ fb32_copy:
 
 	push {r4-r9}
 
+	dsb
+	isb
+
 	ldr buffer_in_addr, [buffer_in]
 	cmp buffer_in_addr, #0
 	beq fb32_copy_error
@@ -904,6 +907,8 @@ fb32_copy:
 		mov r0, #1                               @ Return with Error
 
 	fb32_copy_common:
+		dsb
+		isb
 		pop {r4-r9}
 		mov pc, lr
 
@@ -1387,8 +1392,6 @@ fb32_clear_color_block:
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	dmb                                              @ Ensure Coherence of Cache and Memory
-
 	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
 	sub sp, sp, #36                                  @ Retrieve SP
@@ -1512,8 +1515,6 @@ fb32_clear_color_block:
 		mov r0, #0                                   @ Return with Success
 
 	fb32_clear_color_block_common:
-		dsb                                          @ Ensure Completion of Instructions Before
-		isb                                          @ Flush Data in Pipeline to Cache
 		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
@@ -1555,8 +1556,6 @@ fb32_clear_color:
 
 	push {r4}
 
-	dmb                                         @ Ensure Coherence of Cache and Memory
-
 	ldr fb_buffer, FB32_ADDRESS
 	cmp fb_buffer, #0
 	beq fb32_clear_color_error
@@ -1591,8 +1590,6 @@ fb32_clear_color:
 		mov r0, #1                        @ Return with Error
 
 	fb32_clear_color_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb                              @ Flush Data in Pipeline to Cache
 		pop {r4}
 		mov pc, lr
 
@@ -1625,7 +1622,8 @@ fb32_attach_buffer:
 
 	push {r4,r5}
 
-	dmb                                         @ Ensure Coherence of Cache and Memory
+	dsb                                         @ Ensure Coherence of Cache and Memory
+	isb
 
 	ldr buffer_addr, [buffer]
 	cmp buffer_addr, #0
@@ -1698,6 +1696,9 @@ fb32_set_renderbuffer:
 
 	push {r4-r5}
 
+	dsb
+	isb
+
 	mul size, width, height
 
 	cmp depth, #16
@@ -1768,6 +1769,9 @@ fb32_set_cache:
 	temp           .req r4
 
 	push {r4}
+
+	dsb
+	isb
 
 	ldr memorymap_base, FB32_FRAMEBUFFER_ADDR
 	cmp memorymap_base, #0
