@@ -5,7 +5,6 @@
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT
  *
- * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
 #include "aloha/system32.h"
@@ -92,8 +91,8 @@ void _user_start()
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 400, 20, 20 );
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 500, 20, 20 );
 
-	fb32_draw_circle( COLOR32_MAGENTA, 300, 300, 150, 200 );
-	fb32_draw_circle( COLOR32_GREEN, -100, 500, 200, 175 );
+	fb32_draw_circle( COLOR32_GREEN, 300, 300, 150, 200 );
+	fb32_draw_circle( COLOR32_CYAN, -100, 500, 200, 175 );
 
 	fb32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
 	int32* renderbuffer1 = (int32*)system32_load_32( FB32_RENDERBUFFER1 );

@@ -10,6 +10,19 @@
 .section	.system
 
 /**
+ * Functions of system32_* access memory-mapped peripherals, specially, vendor-implemented inter-core processes.
+ * These accesses are using the internal bus in a processor. And it may cause several unpredictable errors.
+ * Bus process in a processor has more complexity than what we expect.
+ * Error caused by bus may be resolved just changing address (we are knowing bus trouble is caused by alignment),
+ * or you may not resolve it for the whole day.
+ * `DSB/DMB/ISB` and cache operations, clean/invalidate, are tools for resolving this issue.
+ * Anyhow, you'll test a lot of solutions for this trouble.
+ * If you want to change instructions and data on addresses in the section, `system`, you may meet
+ * any unpredictable errors. In `fb32.s`, Mailbox (vendor-implemented ARM-VideoCore interactive process) is used,
+ * so `fb32.s` and `print32.s` should be in section 'system'.
+ */
+
+/**
  * function system32_core_call
  * Call 0-3 Cores
  *
@@ -147,7 +160,7 @@ system32_core_receive:
  * Second of Heap Array is Number of Arguments.
  * Third and Over of Heap Array are Arguments of Function.
  *
- * Return Value Will Be Stored on First and Second of Heap
+ * Return Value Will Be Stored on 4 Bytes and 8 Bytes Offset from Pointer of Heap
  * When Function is Finished, Pointer of Heap Will Be Zero to Indicate of Finishing.
  *
  * Usage: r0-r9
@@ -234,12 +247,13 @@ system32_core_handle:
 		pop {r0-r3,lr}
 
 		/**
-		 * In This Point, I Initially Pointed to store return values to heap,
-		 * But both heap values show incorrect "E59FF018".
-		 * In manual, I should consider Data Barrier or Instruction Barrier,
-		 * and Cache Cleaning. But these instructions seems to make aborts.
-		 * My hypothesis is because of happnig inter-core communications, ldr/str processes.
-		 * To hide this problem, I tested one-way communications on ldr/str processes.  
+		 * In this point, I initially intended to store return values to heap,
+		 * but both heap values show incorrect value, "E59FF018".
+		 * Considering the ARM manual, I should put Data Barrier, Instruction Barrier,
+		 * and/or Cache Cleaning for this problem. But these instructions seems to make aborts.
+		 * My hypothesis is happening of busy on inter-core communication through ARM bus, ldr/str interactive processes.
+		 * To hide this issue, I tested one-way communications on ldr/str processes,
+		 * i.e., putting return values to other places where only store these values and nothing of any loading. 
 		 */
 
 		dsb
@@ -1415,19 +1429,25 @@ system32_mfree:
 .unreq heap_size
 
 
+
+
 /**
- * These Asm Files includes Enviromental Variables.
- * Make sure to reach Address of Variables by `str/ldr Rd, [PC, #Immediate]`,
- * othewise, Compiler can't recognaize Labels of Variables or these Literal Pool.
- * This Immediate Can't be Over #4095 (0xFFF), i.e. within 4K Bytes.
- * BUT if you assign ".globl" to the label, then these are mapped when linker (check inter.map).
- * These are useful if you use `extern` in C lang file.
+ * Make sure to complete addresses of variables by `str/ldr Rd, [PC, #Immediate]`,
+ * othewise, compiler can't recognaize labels of variables or literal pool.
+ * This Immediate can't be over #4095 (0xFFF), i.e. within 4K Bytes.
+ * But if you assign ".globl" to the label, then these are mapped when using `ld`, a linker (please check out inter.map).
+ * These are useful if you use `extern` in C lang file, or use the label in other assembler lang files.
  */
 .balign 4
 .include "system32/fb32.s"
 .balign 4
 /* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"
+
+/* Additional memory-mapped operations here */
+
+.section	.library
+
 .balign 4
 .include "system32/math32.s"
 .balign 4
@@ -1438,9 +1458,7 @@ system32_mfree:
 .include "system32/data.s"            @ Having Section .data
 .balign 4
 
-.section .system
-
-.section .bss
+.section	.bss
 
 _SYSTEM32_FB32_RENDERBUFFER0:
 .fill 16777216, 1, 0x00
@@ -1454,4 +1472,3 @@ _SYSTEM32_VADESCRIPTOR:
 _SYSTEM32_VADESCRIPTOR_END:
 
 .include "system32/equ32.s"
-

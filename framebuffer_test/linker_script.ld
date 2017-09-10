@@ -35,6 +35,11 @@ SECTIONS {
 	. = 0xA000;
 	.system32 : {
 		system32.o(.system)
+		. = 0x4000;
+	}
+	. = 0xE000;
+	.library32 : {
+		system32.o(.library)
 		. += 0x00100000;
 	}
 	.text : {

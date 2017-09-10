@@ -444,12 +444,26 @@ _aloha_render:
 
 	/* Core 3 */
 
-	mov r0, #2
+	mov r0, #9
 	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
-	ldr r1, core123_handler
+	ldr r1, core123_handler2
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
-	mov r1, #0
+	mov r1, #7
 	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	mov r1, #0x1
+	str r1, [r0, #8]
+	mov r1, #0x2
+	str r1, [r0, #12]
+	mov r1, #0x3
+	str r1, [r0, #16]
+	mov r1, #0x4
+	str r1, [r0, #20]
+	mov r1, #0x5
+	str r1, [r0, #24]
+	mov r1, #0x6
+	str r1, [r0, #28]
+	mov r1, #0x7
+	str r1, [r0, #32]
 	ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
 	str r0, [r1]                              @ Store Pointer of Heap to Variable for Each Core
 	push {r0-r3}
@@ -703,6 +717,25 @@ _core123_handler:
 	strb r2, [r1,r0]
 	dsb
 	isb
+	mov pc, lr
+
+core123_handler2: .word _core123_handler2
+_core123_handler2:
+	push {r4-r11}
+
+	add sp, sp, #32                 @ r4-r11 offset 32 bytes
+	pop {r4-r6}                     @ Get Fifth to Seventh Arguments
+	sub sp, sp, #44
+
+	add r0, r0, r1
+	add r0, r0, r2
+	add r0, r0, r3
+	add r0, r0, r4
+	add r0, r0, r5
+	add r0, r0, r6
+	dsb
+	isb
+	pop {r4-r11}
 	mov pc, lr
 
 /**
