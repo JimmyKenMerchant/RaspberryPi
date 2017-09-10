@@ -25,10 +25,11 @@
 /**
  * function system32_core_call
  * Call 0-3 Cores
+ * Need of SMP is on, and Cache is Inner Shareable.
  *
  * Parameters
- * r0: Number of Core
- * r1: Program Address to Start Core
+ * r0: Pointer of Heap
+ * r1: Number of Core
  *
  * Usage: r0-r2
  * Return: r0 (0 as success, 1 as error), 
@@ -37,30 +38,24 @@
 .globl system32_core_call
 system32_core_call:
 	/* Auto (Local) Variables, but just aliases */
-	core_number  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	addr_start   .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	temp         .req r2
+	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	handle_addr  .req r2
 
 	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
 	bgt system32_core_call_error
 	cmp core_number, #0
 	blt system32_core_call_error
 
-	mov temp, #equ32_cores_mailbox_offset
-	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
+	lsl core_number, core_number, #4         @ Substitution of Multiplication by 16
 
-	add core_number, core_number, #equ32_cores_base
-
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-	mvn temp, #0
-	str temp, [core_number, #equ32_cores_mailbox2_readclear] @ Write High to Reset
+	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
+	add handle_addr, handle_addr, core_number
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-	str addr_start, [core_number, #equ32_cores_mailbox2_writeset]
+	str heap, [handle_addr]
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
@@ -77,84 +72,16 @@ system32_core_call:
 	system32_core_call_common:
 		mov pc, lr
 
+.unreq heap
 .unreq core_number
-.unreq addr_start
-.unreq temp
-
-
-/**
- * function system32_core_receive
- * Wait to Receive Message and Execute Program
- *
- * Usage: r0-r2
- * Return: r0 (0 as success, 1 as error), 
- * Error: Number of Core does not exist or assigned Core0
- */
-.globl system32_core_receive
-system32_core_receive:
-	/* Auto (Local) Variables, but just aliases */
-	core_number  .req r0
-	addr_start   .req r1
-	temp         .req r2
-
-	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
-	and core_number, core_number, #0b11
-
-	mov temp, #equ32_cores_mailbox_offset
-	mul core_number, temp, core_number       @ Multiply Mailbox Offset to core_number
-
-	add core_number, core_number, #equ32_cores_base
-
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-	mvn temp, #0
-	str temp, [core_number, #equ32_cores_mailbox2_readclear] @ Write High to Reset
-
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-	system32_core_receive_loop:
-		ldr addr_start, [core_number, #equ32_cores_mailbox2_readclear]
-		cmp addr_start, #0
-		beq system32_core_receive_loop
-
-		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-		str temp, [core_number, #equ32_cores_mailbox2_readclear] @ Write High to Reset
-
-		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-
-		mov r0, addr_start
-
-		push {r0-r3,lr}
-		blx r0
-		cmp r0, #0
-		pop {r0-r3,lr}
-		
-		bne system32_core_receive_error
-		b system32_core_receive_success
-
-	system32_core_receive_error:
-		mov r0, #1
-		b system32_core_receive_common
-
-	system32_core_receive_success:
-		mov r0, #0
-
-	system32_core_receive_common:
-		mov pc, lr
-
-.unreq core_number
-.unreq addr_start
-.unreq temp
+.unreq handle_addr 
 
 
 /**
  * function system32_core_handle
  * Execute Function with Arguments in Core
+ * Need of SMP is on, and Cache is Inner Shareable.
+ *
  * This Function Uses Heap and Pointer of Heap.
  * First of Heap Array is Pointer of Function.
  * Second of Heap Array is Number of Arguments.
@@ -197,9 +124,11 @@ system32_core_handle:
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-	ldr heap, [handle_addr]
-	cmp heap, #0
-	bleq system32_core_handle_error
+	system32_core_handle_loop1:
+		ldr heap, [handle_addr]
+		cmp heap, #0
+		beq system32_core_handle_loop1
+
 	ldr addr_start, [heap]
 	ldr num_arg, [heap, #4]
 
@@ -208,19 +137,19 @@ system32_core_handle:
 	push {r0-r3,lr}
 
 	cmp num_arg, #0
-	beq system32_core_handle_loop_branch
+	beq system32_core_handle_branch
 	cmp num_arg, #1
 	ldrge arg0, [heap, #8]
-	beq system32_core_handle_loop_branch
+	beq system32_core_handle_branch
 	cmp num_arg, #2
 	ldrge arg1, [heap, #12]
-	beq system32_core_handle_loop_branch
+	beq system32_core_handle_branch
 	cmp num_arg, #3
 	ldrge arg2, [heap, #16]
-	beq system32_core_handle_loop_branch
+	beq system32_core_handle_branch
 	cmp num_arg, #4
 	ldrge arg3, [heap, #20]
-	beq system32_core_handle_loop_branch
+	beq system32_core_handle_branch
 
 	mov dup_num_arg, num_arg
 	sub dup_num_arg, dup_num_arg, #4                         @ For Offset of SP Afterward
@@ -229,15 +158,15 @@ system32_core_handle:
 	lsl num_arg, num_arg, #2                                 @ Substitution of Multiplication by 4
 	add num_arg, num_arg, #4
 
-	system32_core_handle_loop_loop:
+	system32_core_handle_loop2:
 		cmp num_arg, #20
-		ble system32_core_handle_loop_branch
+		ble system32_core_handle_branch
 		ldr temp, [heap, num_arg]
 		push {temp}
 		sub num_arg, num_arg, #4
-		b system32_core_handle_loop_loop
+		b system32_core_handle_loop2
 
-	system32_core_handle_loop_branch:
+	system32_core_handle_branch:
 		dsb
 		isb
 		blx addr_start
@@ -586,6 +515,7 @@ system32_cache_info:
 /**
  * function system32_mailbox_read
  * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
+ * This function is using a vendor-implemented process.
  *
  * Usage: r0-r3
  * Return: r0 Reply Content, r1 (0 as success, 1 as error), 
@@ -646,6 +576,7 @@ system32_mailbox_read:
 /**
  * function system32_mailbox_send
  * Wait and Send Mail to VideoCore IV (Mailbox 0 on Old System Only)
+ * This function is using a vendor-implemented process.
  *
  * Parameters
  * r0: Content of Mail to Send

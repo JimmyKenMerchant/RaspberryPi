@@ -1822,8 +1822,9 @@ fb32_set_cache:
 
 
 /**
- * function fb32_get_framebuffer
- * Get Framebuffer
+ * function fb32_get_framebuffer_mailbox
+ * Get Framebuffer from VideoCore IV
+ * This function is using a vendor-implemented process.
  *
  * Usage: r0-r1
  * Return: r0 (0 as success, 1 as error)
@@ -1831,8 +1832,8 @@ fb32_set_cache:
  * Global Enviromental Variable(s): FB32_ADDRESS
  * External Variable(s): fb32_mail_framebuffer_addr
  */
-.globl fb32_get_framebuffer
-fb32_get_framebuffer:
+.globl fb32_get_framebuffer_mailbox
+fb32_get_framebuffer_mailbox:
 	memorymap_base    .req r0
 	temp              .req r1
 
@@ -1847,11 +1848,11 @@ fb32_get_framebuffer:
 	ldr memorymap_base, fb32_mail_framebuffer_addr
 	ldr temp, [memorymap_base, #equ32_mailbox_gpuconfirm]
 	cmp temp, #0x80000000
-	bne fb32_get_framebuffer_error
+	bne fb32_get_framebuffer_mailbox_error
 
 	ldr memorymap_base, FB32_ADDRESS
 	cmp memorymap_base, #0
-	beq fb32_get_framebuffer_error
+	beq fb32_get_framebuffer_mailbox_error
 
 	and memorymap_base, memorymap_base, #equ32_fb_armmask            @ Change FB32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, FB32_ADDRESS                                 @ Store ARM7s FB32_ADDRESS
@@ -1872,12 +1873,12 @@ fb32_get_framebuffer:
 
 	mov r0, #0                               @ Return with Success
 
-	b fb32_get_framebuffer_common
+	b fb32_get_framebuffer_mailbox_common
 
-	fb32_get_framebuffer_error:
+	fb32_get_framebuffer_mailbox_error:
 		mov r0, #1                       @ Return with Error
 
-	fb32_get_framebuffer_common:
+	fb32_get_framebuffer_mailbox_common:
 		dsb                              @ Ensure Completion of Instructions Before
 		isb                              @ Flush Data in Pipeline to Cache
 		mov pc, lr

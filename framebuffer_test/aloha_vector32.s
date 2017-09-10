@@ -97,7 +97,7 @@ _el01_reset:
 	blxeq r0
 
 	_el01_reset_loop:
-		bl system32_core_receive
+		bl system32_core_handle
 		b _el01_reset_loop
 
 
@@ -357,9 +357,9 @@ _aloha_reset:
 	bl system32_cache_operation
 	pop {r0-r3}
 
-	/* Framebuffer Obtain */
+	/* Obtain Framebuffer from VideoCore IV */
 	push {r0-r3}
-	bl fb32_get_framebuffer
+	bl fb32_get_framebuffer_mailbox
 	pop {r0-r3}
 
 	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
@@ -418,7 +418,7 @@ _aloha_render:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
-	/* Core 2 */
+	/* Core 3 */
 
 	mov r0, #2
 	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
@@ -426,16 +426,13 @@ _aloha_render:
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
 	mov r1, #0
 	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
-	ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_2
-	str r0, [r1]                              @ Store Pointer of Heap to Variable for Each Core
 	push {r0-r3}
-	mov r0, #2                                @ Indicate Number of Core
-	ldr r1, ADDR32_system32_core_handle       @ Indicate Handle Function
+	mov r1, #3                                @ Indicate Number of Core
 	bl system32_core_call
 	pop {r0-r3}
 
 	_aloha_render_loop2:
-		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_2
+		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
 		ldr r1, [r1]
 		cmp r1, #0
 		bne _aloha_render_loop2
@@ -464,11 +461,8 @@ _aloha_render:
 	str r1, [r0, #28]
 	mov r1, #0x7
 	str r1, [r0, #32]
-	ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
-	str r0, [r1]                              @ Store Pointer of Heap to Variable for Each Core
 	push {r0-r3}
-	mov r0, #3                                @ Indicate Number of Core
-	ldr r1, ADDR32_system32_core_handle       @ Indicate Handle Function
+	mov r1, #3                                @ Indicate Number of Core
 	bl system32_core_call
 	pop {r0-r3}
 
