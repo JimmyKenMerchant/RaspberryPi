@@ -418,6 +418,32 @@ _aloha_render:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
+	/* Core 2 */
+
+	mov r0, #2
+	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	ldr r1, core123_handler
+	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
+	mov r1, #0
+	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_2
+	str r0, [r1]                              @ Store Pointer of Heap to Variable for Each Core
+	push {r0-r3}
+	mov r0, #2                                @ Indicate Number of Core
+	ldr r1, ADDR32_system32_core_handle       @ Indicate Handle Function
+	bl system32_core_call
+	pop {r0-r3}
+
+	_aloha_render_loop2:
+		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_2
+		ldr r1, [r1]
+		cmp r1, #0
+		bne _aloha_render_loop2
+
+	bl system32_mfree                         @ Clear Memory Space
+
+	/* Core 3 */
+
 	mov r0, #2
 	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
 	ldr r1, core123_handler
@@ -431,7 +457,14 @@ _aloha_render:
 	ldr r1, ADDR32_system32_core_handle       @ Indicate Handle Function
 	bl system32_core_call
 	pop {r0-r3}
-	/*bl system32_mfree*/                         @ Clear Memory Space
+
+	_aloha_render_loop3:
+		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
+		ldr r1, [r1]
+		cmp r1, #0
+		bne _aloha_render_loop3
+
+	bl system32_mfree                         @ Clear Memory Space
 
 push {r0-r3}
 ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
@@ -449,10 +482,9 @@ push {r0-r3}
 ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
 dsb
 isb
-ldr r0, [r0]
+ldr r0, [r0, #4]
 dsb
 isb
-ldr r0, [r0]
 mov r1, #500
 mov r2, #60
 bl print32_debug
@@ -462,10 +494,9 @@ push {r0-r3}
 ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
 dsb
 isb
-ldr r0, [r0]
+ldr r0, [r0, #8]
 dsb
 isb
-ldr r0, [r0, #4]
 mov r1, #500
 mov r2, #72
 bl print32_debug

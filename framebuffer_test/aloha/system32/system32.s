@@ -42,12 +42,12 @@ system32_core_call:
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	mvn temp, #0
-	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+	str temp, [core_number, #equ32_cores_mailbox2_readclear] @ Write High to Reset
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-	str addr_start, [core_number, #equ32_cores_mailbox3_writeset]
+	str addr_start, [core_number, #equ32_cores_mailbox2_writeset]
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
@@ -96,19 +96,20 @@ system32_core_receive:
 	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	mvn temp, #0
-	str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+	str temp, [core_number, #equ32_cores_mailbox2_readclear] @ Write High to Reset
+
+	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	system32_core_receive_loop:
-		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
-		ldr addr_start, [core_number, #equ32_cores_mailbox3_readclear]
+		ldr addr_start, [core_number, #equ32_cores_mailbox2_readclear]
 		cmp addr_start, #0
 		beq system32_core_receive_loop
 
 		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
-		str temp, [core_number, #equ32_cores_mailbox3_readclear] @ Write High to Reset
+		str temp, [core_number, #equ32_cores_mailbox2_readclear] @ Write High to Reset
 
 		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
@@ -117,8 +118,10 @@ system32_core_receive:
 
 		push {r0-r3,lr}
 		blx r0
+		cmp r0, #0
 		pop {r0-r3,lr}
-
+		
+		bne system32_core_receive_error
 		b system32_core_receive_success
 
 	system32_core_receive_error:
@@ -149,7 +152,7 @@ system32_core_receive:
  *
  * Usage: r0-r9
  * Return: r0 (0 as success, 1 as error), 
- * Error: Number of Core does not exist or assigned Core0
+ * Error: Pointer of Heap is Not Assigned
  */
 .globl system32_core_handle
 system32_core_handle:
@@ -170,7 +173,7 @@ system32_core_handle:
 	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
 	and core_number, core_number, #0b11
 
-	lsl core_number, core_number, #2         @ Substitution of Multiplication by 4
+	lsl core_number, core_number, #4         @ Substitution of Multiplication by 16
 
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, core_number
@@ -222,11 +225,25 @@ system32_core_handle:
 		b system32_core_handle_loop_loop
 
 	system32_core_handle_loop_branch:
+		dsb
+		isb
 		blx addr_start
-		str r0, [heap]                                       @ Return Value r0 to 2nd of Array
-		str r1, [heap, #4]                                   @ Return Value r1 to 3rd of Array
+		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
+		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
 		add sp, sp, dup_num_arg                              @ Offset SP
 		pop {r0-r3,lr}
+
+		/**
+		 * In This Point, I Initially Pointed to store return values to heap,
+		 * But both heap values show incorrect "E59FF018".
+		 * In manual, I should consider Data Barrier or Instruction Barrier,
+		 * and Cache Cleaning. But these instructions seems to make aborts.
+		 * My hypothesis is because of happnig inter-core communications, ldr/str processes.
+		 * To hide this problem, I tested one-way communications on ldr/str processes.  
+		 */
+
+		dsb
+		isb
 		
 		mov temp, #0
 		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
@@ -241,6 +258,8 @@ system32_core_handle:
 		mov r0, #0
 
 	system32_core_handle_common:
+		dsb
+		isb
 		pop {r4-r9}
 		mov pc, lr
 
@@ -261,11 +280,23 @@ system32_core_handle:
 .globl SYSTEM32_CORE_HANDLE_1
 .globl SYSTEM32_CORE_HANDLE_2
 .globl SYSTEM32_CORE_HANDLE_3
-SYSTEM32_CORE_HANDLE_BASE: .word SYSTEM32_CORE_HANDLE_0
-SYSTEM32_CORE_HANDLE_0:    .word 0x00000000
-SYSTEM32_CORE_HANDLE_1:    .word 0x00000000
-SYSTEM32_CORE_HANDLE_2:    .word 0x00000000
-SYSTEM32_CORE_HANDLE_3:    .word 0x00000000
+SYSTEM32_CORE_HANDLE_BASE:      .word SYSTEM32_CORE_HANDLE_0
+SYSTEM32_CORE_HANDLE_0:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_0_RETURN0: .word 0x00000000
+SYSTEM32_CORE_HANDLE_0_RETURN1: .word 0x00000000
+SYSTEM32_CORE_HANDLE_0_RESERVE: .word 0x00000000
+SYSTEM32_CORE_HANDLE_1:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_1_RETURN0: .word 0x00000000
+SYSTEM32_CORE_HANDLE_1_RETURN1: .word 0x00000000
+SYSTEM32_CORE_HANDLE_1_RESERVE: .word 0x00000000
+SYSTEM32_CORE_HANDLE_2:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_2_RETURN0: .word 0x00000000
+SYSTEM32_CORE_HANDLE_2_RETURN1: .word 0x00000000
+SYSTEM32_CORE_HANDLE_2_RESERVE: .word 0x00000000
+SYSTEM32_CORE_HANDLE_3:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_3_RETURN0: .word 0x00000000
+SYSTEM32_CORE_HANDLE_3_RETURN1: .word 0x00000000
+SYSTEM32_CORE_HANDLE_3_RESERVE: .word 0x00000000
 
 
 /**
@@ -468,8 +499,6 @@ system32_cache_operation:
 		mov r0, waysetlevel
 
 	system32_cache_operation_common:
-		dsb
-		isb
 		pop {r4-r10}
 		mov pc, lr
 
@@ -562,9 +591,10 @@ system32_mailbox_read:
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_mailbox_base
 
+	dsb
+	isb
+
 	system32_mailbox_read_waitforread:
-		dsb
-		isb
 		ldr temp, [memorymap_base, status]
 		cmp temp, #0x40000000                  @ Wait for Empty Flag is Cleared
 		beq system32_mailbox_read_waitforread
@@ -627,9 +657,10 @@ system32_mailbox_send:
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_mailbox_base
 
+	dsb
+	isb
+
 	system32_mailbox_send_waitforwrite:
-		dsb
-		isb
 		ldr temp, [memorymap_base, status]
 		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
 		beq system32_mailbox_send_waitforwrite
@@ -775,9 +806,9 @@ system32_sleep:
 	adds r2, r0                            @ Add with Changing Status Flags
 	adc r3, #0                             @ Add with Carry Flag
 
+	dsb
+
 	system32_sleep_loop:
-		dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-		isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 		ldr r4, [r1, #equ32_systemtimer_counter_lower]
 		ldr r5, [r1, #equ32_systemtimer_counter_higher]
 		cmp r3, r5                     @ Similar to `SUBS`, Compare Higher 32 Bits
@@ -911,11 +942,11 @@ system32_clear_heap:
 	heap_size   .req r1
 	heap_bytes  .req r2
 
-	dsb                                         @ Ensure Coherence of Cache and Memory
-	isb
-
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
+
+	dsb                                         @ Ensure Coherence of Cache and Memory
+	isb
 
 	add heap_size, heap_start, heap_size
 
@@ -965,13 +996,13 @@ system32_malloc:
 
 	push {r4,r5}
 
-	dsb                                         @ Ensure Coherence of Cache and Memory
-	isb
-
 	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
 
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
+
+	dsb                                         @ Ensure Coherence of Cache and Memory
+	isb
 
 	add heap_size, heap_start, heap_size
 
