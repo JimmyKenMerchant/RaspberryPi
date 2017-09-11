@@ -33,12 +33,12 @@ void _user_start()
 	system32_sleep( 1000000 );
 
 	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
-	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
-	fb32_change_alpha_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x99 );
+	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
+	draw32_change_alpha_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x99 );
 	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 500, 500, 64, 64, 0, 0, 0, 0 );
 
 	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE, 4 );
-	fb32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
+	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 
 	char8* float_string1 = math32_float32_to_string( float_number1, 0, 1, 0 );
@@ -112,7 +112,7 @@ void _user_start()
 	fb32_draw_circle( COLOR32_WHITE, 150, 150, 100, 100 );
 	fb32_draw_circle( COLOR32_BLACK, 150, 150, 50, 50 );
 
-	fb32_mask_image( FB32_RENDERBUFFER2, FB32_RENDERBUFFER1, 0, 0 );
+	draw32_mask_image( FB32_RENDERBUFFER2, FB32_RENDERBUFFER1, 0, 0 );
 
 	fb32_attach_buffer( FB32_RENDERBUFFER1 );
 	fb32_clear_color( 0x00000000 );
@@ -120,7 +120,7 @@ void _user_start()
 	fb32_draw_line( 0x9900FFFF, 20, 20, 100, 200, 1, 1 );
 	fb32_draw_line( 0x9900FFFF, 20, 20, 20, 100, 1, 1 );
 	fb32_draw_line( 0x9900FFFF, 20, 100, 100, 200, 1, 1 );
-	fb32_fill_color( FB32_RENDERBUFFER1 );
+	draw32_fill_color( FB32_RENDERBUFFER1 );
 
 	fb32_attach_buffer( FB32_FRAMEBUFFER );
 
@@ -134,12 +134,12 @@ void _user_start()
 
 	//print32_set_caret( print32_number( (uint32)renderbuffer0, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	fb32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
+	draw32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
 	uint32 renderbuffer0_width = system32_load_32(FB32_RENDERBUFFER0 + 1 ); // 4 bytes offset
 	uint32 renderbuffer0_height = system32_load_32(FB32_RENDERBUFFER0 + 2 ); // 8 bytes offset
 	
 	while(1) {
-		fb32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
+		draw32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
 		color_move++;
 		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII );
 		fb32_draw_image( renderbuffer0, 0, 0, renderbuffer0_width, renderbuffer0_height, 0, 10, 10, 0 );

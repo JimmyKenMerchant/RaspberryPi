@@ -270,61 +270,6 @@ extern int32 FB32_Y_CARET;
 
 
 /**
- * Fill by Color
- *
- * Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Base)
- * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Buffer is not Defined
- */
-extern uint64 fb32_fill_color
-(
-	int32* buffer
-);
-
-
-/**
- * Make Masked Image to Mask
- *
- * Return: Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Mask)
- * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Buffer is not Defined
- */
-extern uint64 fb32_mask_image
-(
-	int32* buffer_mask,
-	int32* buffer_base,
-	int32 x_coord, // Mask
-	int32 y_coord // Mask
-);
-
-
-/**
- * Change Value of Alpha Channel in ARGB Data
- * Caution! This Function is Used in 32-bit Depth Color
- *
- * Return: 0 as sucess
- */
-extern uint32 fb32_change_alpha_argb
-(
-	int32* data,
-	uint32 size,
-	uint32 alpha // 0-7 bits
-);
-
-
-/**
- * Convert 32-bit Depth Color RBGA to ARGB
- *
- * Return: 0 as sucess
- */
-extern uint32 fb32_rgba_to_argb
-(
-	int32* data,
-	uint32 size
-);
-
-
-/**
  * Draw Circle Filled with Color
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
@@ -358,19 +303,6 @@ extern uint64 fb32_draw_line
 	int32 y_coord_2,
 	uint32 width,
 	uint32 height
-);
-
-
-/**
- * Copy Framebuffer to Renderbuffer
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): Buffer In is not Defined
- */
-extern uint32 fb32_copy
-(
-	int32* buffer_in,
-	int32* buffer_out
 );
 
 
@@ -555,6 +487,79 @@ extern uint64 print32_number
 	uint32 height,
 	int32* font_base
 );
+
+
+/********************************
+ * system32/draw32.s
+ ********************************/
+
+/**
+ * Fill by Color
+ *
+ * Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Base)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
+ */
+extern uint64 draw32_fill_color
+(
+	int32* buffer
+);
+
+
+/**
+ * Make Masked Image to Mask
+ *
+ * Return: Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Mask)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined
+ */
+extern uint64 draw32_mask_image
+(
+	int32* buffer_mask,
+	int32* buffer_base,
+	int32 x_coord, // Mask
+	int32 y_coord // Mask
+);
+
+
+/**
+ * Change Value of Alpha Channel in ARGB Data
+ * Caution! This Function is Used in 32-bit Depth Color
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 draw32_change_alpha_argb
+(
+	int32* data,
+	uint32 size,
+	uint32 alpha // 0-7 bits
+);
+
+
+/**
+ * Convert 32-bit Depth Color RBGA to ARGB
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 draw32_rgba_to_argb
+(
+	int32* data,
+	uint32 size
+);
+
+
+/**
+ * Copy Framebuffer to Renderbuffer
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): Buffer In is not Defined
+ */
+extern uint32 draw32_copy
+(
+	int32* buffer_in,
+	int32* buffer_out
+);
+
 
 
 /********************************

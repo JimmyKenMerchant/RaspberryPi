@@ -161,7 +161,7 @@ _el3_mon:
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
 	and r0, r0, #0b11
 
-	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
+	mov ip, #0x800                            @ Offset 0x200 Bytes per Core
 	mul ip, ip, r0
 	mov fp, #0x6000
 	sub fp, fp, ip
@@ -359,6 +359,7 @@ _aloha_reset:
 
 	/* Obtain Framebuffer from VideoCore IV */
 	push {r0-r3}
+	mov r0, #0xFF                             @ Duration Time
 	bl fb32_get_framebuffer_mailbox
 	pop {r0-r3}
 

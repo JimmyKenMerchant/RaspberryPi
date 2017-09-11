@@ -15,7 +15,7 @@
  * Bus process in a processor has more complexity than what we expect.
  * Error caused by bus may be resolved just changing address (we are knowing bus trouble is caused by alignment),
  * or you may not resolve it for the whole day.
- * `DSB/DMB/ISB` and cache operations, clean/invalidate, are tools for resolving this issue.
+ * `DSB/DMB/ISB`, cache operations (clean/invalidate) and system sleeping, are tools for resolving this issue.
  * Anyhow, you'll test a lot of solutions for this trouble.
  * If you want to change instructions and data on addresses in the section, `system`, you may meet
  * any unpredictable errors. In `fb32.s`, Mailbox (vendor-implemented ARM-VideoCore interactive process) is used,
@@ -510,132 +510,6 @@ system32_cache_info:
 		mov pc, lr
 
 .unreq ccsidr
-
-
-/**
- * function system32_mailbox_read
- * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
- * This function is using a vendor-implemented process.
- *
- * Usage: r0-r3
- * Return: r0 Reply Content, r1 (0 as success, 1 as error), 
- * Error: Number of Mailbox does not exist
- */
-.globl system32_mailbox_read
-system32_mailbox_read:
-	/* Auto (Local) Variables, but just aliases */
-	memorymap_base  .req r0
-	temp            .req r1
-	status          .req r2
-	read            .req r3
-
-	mov status, #equ32_mailbox0_status
-	mov read, #equ32_mailbox0_read
-
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_mailbox_base
-
-	dsb
-	isb
-
-	system32_mailbox_read_waitforread:
-		ldr temp, [memorymap_base, status]
-		cmp temp, #0x40000000                  @ Wait for Empty Flag is Cleared
-		beq system32_mailbox_read_waitforread
-
-	dsb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-        isb                                      @ `DSB` Data Synchronization Barrier, completes all instructions before
-                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
-                                                 @ to ensure to fetch data from cache/ memory
-                                                 @ These are useful in multi-core/ threads usage, etc.
-
-	ldr r0, [memorymap_base, read]
-
-	dsb
-	isb
-
-	b system32_mailbox_read_success
-
-	system32_mailbox_read_error:
-		mov r0, #0
-		mov r1, #1
-		b system32_mailbox_read_common
-
-	system32_mailbox_read_success:
-		mov r1, #0
-
-	system32_mailbox_read_common:
-		mov pc, lr
-
-.unreq memorymap_base
-.unreq temp
-.unreq status
-.unreq read
-
-
-/**
- * function system32_mailbox_send
- * Wait and Send Mail to VideoCore IV (Mailbox 0 on Old System Only)
- * This function is using a vendor-implemented process.
- *
- * Parameters
- * r0: Content of Mail to Send
- *
- * Usage: r0-r4
- * Return: r0 (0 as success, 1 as error)
- * Error: Number of Mailbox does not exist
- */
-.globl system32_mailbox_send
-system32_mailbox_send:
-	/* Auto (Local) Variables, but just aliases */
-	mail_content    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base  .req r1
-	temp            .req r2
-	status          .req r3
-	write           .req r4
-
-	push {r4}
-
-	mov status, #equ32_mailbox0_status
-	mov write, #equ32_mailbox0_write
-
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_mailbox_base
-
-	dsb
-	isb
-
-	system32_mailbox_send_waitforwrite:
-		ldr temp, [memorymap_base, status]
-		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
-		beq system32_mailbox_send_waitforwrite
-
-	dsb
-	isb
-
-	str mail_content, [memorymap_base, write]
-
-	dsb
-	isb
-
-	b system32_mailbox_send_success
-
-	system32_mailbox_send_error:
-		mov r0, #1
-		b system32_mailbox_send_common
-
-	system32_mailbox_send_success:
-		mov r0, #0
-
-	system32_mailbox_send_common:
-		pop {r4}
-		mov pc, lr
-
-.unreq mail_content
-.unreq memorymap_base
-.unreq temp
-.unreq status
-.unreq write
 
 
 /**
@@ -1360,6 +1234,130 @@ system32_mfree:
 .unreq heap_size
 
 
+/**
+ * function system32_mailbox_read
+ * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
+ * This function is using a vendor-implemented process.
+ *
+ * Usage: r0-r3
+ * Return: r0 Reply Content, r1 (0 as success, 1 as error), 
+ * Error: Number of Mailbox does not exist
+ */
+.globl system32_mailbox_read
+system32_mailbox_read:
+	/* Auto (Local) Variables, but just aliases */
+	memorymap_base  .req r0
+	temp            .req r1
+	status          .req r2
+	read            .req r3
+
+	mov status, #equ32_mailbox0_status
+	mov read, #equ32_mailbox0_read
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_mailbox_base
+
+	dsb
+	isb
+
+	system32_mailbox_read_waitforread:
+		ldr temp, [memorymap_base, status]
+		cmp temp, #0x40000000                  @ Wait for Empty Flag is Cleared
+		beq system32_mailbox_read_waitforread
+
+	dsb                                      @ `DMB` Data Memory Barrier, completes all memory access before
+        isb                                      @ `DSB` Data Synchronization Barrier, completes all instructions before
+                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
+                                                 @ to ensure to fetch data from cache/ memory
+                                                 @ These are useful in multi-core/ threads usage, etc.
+
+	ldr r0, [memorymap_base, read]
+
+	dsb
+	isb
+
+	b system32_mailbox_read_success
+
+	system32_mailbox_read_error:
+		mov r0, #0
+		mov r1, #1
+		b system32_mailbox_read_common
+
+	system32_mailbox_read_success:
+		mov r1, #0
+
+	system32_mailbox_read_common:
+		mov pc, lr
+
+.unreq memorymap_base
+.unreq temp
+.unreq status
+.unreq read
+
+
+/**
+ * function system32_mailbox_send
+ * Wait and Send Mail to VideoCore IV (Mailbox 0 on Old System Only)
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Content of Mail to Send
+ *
+ * Usage: r0-r4
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Number of Mailbox does not exist
+ */
+.globl system32_mailbox_send
+system32_mailbox_send:
+	/* Auto (Local) Variables, but just aliases */
+	mail_content    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	memorymap_base  .req r1
+	temp            .req r2
+	status          .req r3
+	write           .req r4
+
+	push {r4}
+
+	mov status, #equ32_mailbox0_status
+	mov write, #equ32_mailbox0_write
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_mailbox_base
+
+	dsb
+	isb
+
+	system32_mailbox_send_waitforwrite:
+		ldr temp, [memorymap_base, status]
+		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
+		beq system32_mailbox_send_waitforwrite
+
+	dsb
+	isb
+
+	str mail_content, [memorymap_base, write]
+
+	dsb
+	isb
+
+	b system32_mailbox_send_success
+
+	system32_mailbox_send_error:
+		mov r0, #1
+		b system32_mailbox_send_common
+
+	system32_mailbox_send_success:
+		mov r0, #0
+
+	system32_mailbox_send_common:
+		pop {r4}
+		mov pc, lr
+
+.unreq mail_content
+.unreq memorymap_base
+.unreq temp
+.unreq status
+.unreq write
 
 
 /**
@@ -1379,6 +1377,8 @@ system32_mfree:
 
 .section	.library
 
+.balign 4
+.include "system32/draw32.s"
 .balign 4
 .include "system32/math32.s"
 .balign 4
