@@ -1391,9 +1391,6 @@ system32_mailbox_send:
 
 .section	.bss
 
-_SYSTEM32_FB32_RENDERBUFFER0:
-.fill 16777216, 1, 0x00
-
 _SYSTEM32_HEAP:
 .fill 16777216, 1, 0x00
 _SYSTEM32_HEAP_END:

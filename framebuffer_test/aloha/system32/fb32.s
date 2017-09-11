@@ -1139,83 +1139,6 @@ fb32_attach_buffer:
 
 
 /**
- * function fb32_set_renderbuffer
- * Set Renderbuffer
- *
- * Parameters
- * r0: Pointer of Renderbuffer to Set
- * r1: Width of BUffer
- * r2: height of Buffer
- * r3: depth of Buffer
- *
- * Usage: r0-r5
- * Return: r0 (0 as success, 1 as error)
- * Error: Memory Space for Buffer Can't Be Allocated
- */
-.globl fb32_set_renderbuffer
-fb32_set_renderbuffer:
-	buffer    .req r0
-	width     .req r1
-	height    .req r2
-	depth     .req r3
-	size      .req r4
-	addr      .req r5
-
-	push {r4-r5}
-
-	dsb
-	isb
-
-	mul size, width, height
-
-	cmp depth, #16
-	lsreq addr, size, #1                 @ Division of Multiplication by 2, i.e., Half Block (2 Bytes) per Pixel For Heap
-	addeq addr, addr, #1                 @ To Hide Overflow by Division
-	lsleq size, size, #1                 @ Multiplication of Multiplication by 2 (2 Bytes per Pixel)
-
-	cmp depth, #32
-	moveq addr, size                     @ One Block (4 Bytes) per Pixel for Heap
-	lsleq size, size, #2                 @ Multiplication of Multiplication by 4 (4 Bytes per Pixel)
-
-	push {r0-r3,lr}
-	mov r0, addr
-	bl system32_malloc
-	mov addr, r0
-	pop {r0-r3,lr}
-
-	cmp addr, #0
-	beq fb32_set_renderbuffer_error
-
-	str addr, [buffer]
-	str width, [buffer, #4]
-	str height, [buffer, #8]
-	str size, [buffer, #12]
-	str depth, [buffer, #16]
-	
-	b fb32_set_renderbuffer_success
-
-	fb32_set_renderbuffer_error:
-		mov r0, #1
-		b fb32_set_renderbuffer_common
-
-	fb32_set_renderbuffer_success:
-		mov r0, #0
-
-	fb32_set_renderbuffer_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb                              @ Flush Data in Pipeline to Cache
-		pop {r4-r5}
-		mov pc, lr
-
-.unreq buffer
-.unreq width
-.unreq height
-.unreq depth
-.unreq size
-.unreq addr
-
-
-/**
  * function fb32_set_cache
  * Set Cache Status for Memory Using as Framebuffer (By Section)
  *
@@ -1381,7 +1304,7 @@ FB32_FRAMEBUFFER_DEPTH:    .word 0x00
 
 .globl FB32_RENDERBUFFER0
 FB32_RENDERBUFFER0:        .word FB32_RENDERBUFFER0_ADDR
-FB32_RENDERBUFFER0_ADDR:   .word _SYSTEM32_FB32_RENDERBUFFER0
+FB32_RENDERBUFFER0_ADDR:   .word 0x00
 FB32_RENDERBUFFER0_WIDTH:  .word 0x00
 FB32_RENDERBUFFER0_HEIGHT: .word 0x00
 FB32_RENDERBUFFER0_SIZE:   .word 0x00

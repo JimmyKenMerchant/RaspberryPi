@@ -369,20 +369,6 @@ extern uint32 fb32_attach_buffer
 
 
 /**
- * Set Renderbuffer
- *
- * Return: 0 as sucess
- */
-extern uint32 fb32_set_renderbuffer
-(
-	int32* buffer,
-	uint32 width,
-	uint32 height,
-	uint32 depth
-);
-
-
-/**
  * Get Framebuffer
  *
  * Return: 0 as sucess, 1 as error
@@ -558,6 +544,20 @@ extern uint32 draw32_copy
 (
 	int32* buffer_in,
 	int32* buffer_out
+);
+
+
+/**
+ * Set Renderbuffer
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 draw32_set_renderbuffer
+(
+	int32* buffer,
+	uint32 width,
+	uint32 height,
+	uint32 depth
 );
 
 

@@ -94,12 +94,17 @@ void _user_start()
 	fb32_draw_circle( COLOR32_WHITE, 300, 300, 150, 200 );
 	fb32_draw_circle( COLOR32_CYAN, -100, 500, 200, 175 );
 
-	fb32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
+	draw32_set_renderbuffer( FB32_RENDERBUFFER0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	int32* renderbuffer0 = (int32*)system32_load_32( FB32_RENDERBUFFER0 );
+	uint32 renderbuffer0_width = system32_load_32(FB32_RENDERBUFFER0 + 1 ); // 4 bytes offset
+	uint32 renderbuffer0_height = system32_load_32(FB32_RENDERBUFFER0 + 2 ); // 8 bytes offset
+
+	draw32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
 	int32* renderbuffer1 = (int32*)system32_load_32( FB32_RENDERBUFFER1 );
 	uint32 renderbuffer1_width = system32_load_32(FB32_RENDERBUFFER1 + 1 ); // 4 bytes offset
 	uint32 renderbuffer1_height = system32_load_32(FB32_RENDERBUFFER1 + 2 ); // 8 bytes offset
 
-	fb32_set_renderbuffer( FB32_RENDERBUFFER2, 300, 300, 32 );
+	draw32_set_renderbuffer( FB32_RENDERBUFFER2, 300, 300, 32 );
 	int32* renderbuffer2 = (int32*)system32_load_32( FB32_RENDERBUFFER2 );
 	uint32 renderbuffer2_width = system32_load_32(FB32_RENDERBUFFER2 + 1 ); // 4 bytes offset
 	uint32 renderbuffer2_height = system32_load_32(FB32_RENDERBUFFER2 + 2 ); // 8 bytes offset
@@ -129,19 +134,11 @@ void _user_start()
 	fb32_draw_image( renderbuffer2, 100, 100, renderbuffer2_width, renderbuffer2_height, 0, 0, 0, 0 );
 
 	system32_sleep( 9000000 );
-
-	int32* renderbuffer0 = (int32*)system32_load_32( FB32_RENDERBUFFER0 );
-
-	//print32_set_caret( print32_number( (uint32)renderbuffer0, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII ) );
-
-	draw32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
-	uint32 renderbuffer0_width = system32_load_32(FB32_RENDERBUFFER0 + 1 ); // 4 bytes offset
-	uint32 renderbuffer0_height = system32_load_32(FB32_RENDERBUFFER0 + 2 ); // 8 bytes offset
 	
 	while(1) {
 		draw32_copy( FB32_FRAMEBUFFER, FB32_RENDERBUFFER0 );
 		color_move++;
-		print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII );
+		//print32_number( FB32_ADDRESS, 500, 500, color, back_color, 8 , 8, 12, FONT_MONO_12PX_ASCII );
 		fb32_draw_image( renderbuffer0, 0, 0, renderbuffer0_width, renderbuffer0_height, 0, 10, 10, 0 );
 		system32_sleep( 2000000 );
 	}
