@@ -18,190 +18,6 @@
 
 
 /**
- * function print32_char
- * Picture a Character
- *
- * Parameters
- * r0: Pointer of Character
- * r1: X Coordinate
- * r2: Y Coordinate
- * r3: Color (16-bit or 32-bit)
- * r4: Character Width in Pixels
- * r5: Character Height in Pixels
- *
- * Usage: r0-r12
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
- * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
- */
-.globl print32_char
-print32_char:
-	/* Auto (Local) Variables, but just aliases */
-	char_point  .req r0  @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
-	color       .req r3  @ Parameter, Register for Argument, Scratch Register
-	char_width  .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
-	char_height .req r5  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
-	f_buffer    .req r6  @ Pointer of Framebuffer
-	width       .req r7
-	depth       .req r8
-	size        .req r9
-	char_byte   .req r10
-	j           .req r11 @ Use for Horizontal Counter
-	bitmask     .req r12
-
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
-	pop {char_width,char_height}                     @ Get Fifth and Sixth Arguments
-	sub sp, sp, #40                                  @ Retrieve SP
-
-	ldr f_buffer, FB32_ADDRESS
-	cmp f_buffer, #0
-	beq print32_char_error2
-
-	ldr width, FB32_WIDTH
-	cmp width, #0
-	beq print32_char_error2
-
-	ldr depth, FB32_DEPTH
-	cmp depth, #0
-	beq print32_char_error2
-	cmp depth, #32
-	cmpne depth, #16
-	bne print32_char_error2
-
-	ldr size, FB32_SIZE
-	cmp size, #0
-	beq print32_char_error2
-	add size, f_buffer, size
-
-	cmp depth, #16
-	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
-
-	/* Set Location to Render the Character */
-
-	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
-	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
-	sublt char_point, char_point, y_coord            @ Add y_coord Value to char_point
-	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
-	addge f_buffer, f_buffer, y_coord
-	
-	.unreq y_coord
-	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
-
-	mov width_check, f_buffer
-	add width_check, width
-
-	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
-	addlt char_width, char_width, x_coord            @ Subtract x_coord Value from char_width
-	blt print32_char_loop
-	
-	cmp depth, #16
-	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
-	cmp depth, #32
-	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
-	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
-
-	print32_char_loop:
-
-		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
-		ble print32_char_success
-
-		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bge print32_char_error1
-
-		ldrb char_byte, [char_point]                 @ Load Horizontal Byte
-		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
-
-		print32_char_loop_horizontal:
-			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
-			cmp j, #0                                @ Horizontal Counter, Check
-			blt print32_char_loop_common
-
-			mov bitmask, #1
-			lsl bitmask, bitmask, j                  @ Logical Shift Left to Make Bit Mask for Current Character Bit
-			and bitmask, char_byte, bitmask
-
-			cmp bitmask, #0
-			beq print32_char_loop_horizontal_common
-
-			/* The Picture Process */
-			cmp depth, #16
-			streqh color, [f_buffer]                   @ Store half word
-			cmp depth, #32
-			streq color, [f_buffer]                    @ Store word
-
-			print32_char_loop_horizontal_common:
-				cmp depth, #16
-				addeq f_buffer, f_buffer, #2       @ Framebuffer Address Shift
-				cmp depth, #32
-				addeq f_buffer, f_buffer, #4       @ Framebuffer Address Shift
-
-				cmp f_buffer, width_check          @ Check Overflow of Width
-				blt print32_char_loop_horizontal
-
-				cmp depth, #16
-				lsleq j, j, #1                     @ substitution of Multiplication by 2
-				cmp depth, #32
-				lsleq j, j, #2                     @ substitution of Multiplication by 4
-				add f_buffer, f_buffer, j          @ Framebuffer Offset
-
-		print32_char_loop_common:
-			sub char_height, char_height, #1
-
-			add char_point, char_point, #1           @ Horizontal Sync (Character Pointer)
-
-			cmp depth, #16
-			lsleq j, char_width, #1                  @ substitution of Multiplication by 2
-			cmp depth, #32
-			lsleq j, char_width, #2                  @ substitution of Multiplication by 4
-			sub f_buffer, f_buffer, j                @ Offset Clear of Framebuffer
-
-			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
-
-			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
-
-			b print32_char_loop
-
-	print32_char_error1:
-		mov r0, #1                                   @ Return with Error 1
-		b print32_char_common
-
-	print32_char_error2:
-		mov r0, #2                                   @ Return with Error 2
-		b print32_char_common
-
-	print32_char_success:
-		mov r0, #0                                   @ Return with Success
-
-	print32_char_common:
-		mov r1, f_buffer
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-		mov pc, lr
-
-.unreq char_point
-.unreq x_coord
-.unreq width_check
-.unreq color
-.unreq char_width
-.unreq char_height
-.unreq f_buffer
-.unreq width
-.unreq depth
-.unreq size
-.unreq char_byte
-.unreq j
-.unreq bitmask
-
-
-/**
  * function print32_debug
  * Print Number in Register for Debug Use
  *
@@ -844,3 +660,187 @@ print32_number:
 .unreq i
 .unreq bitmask
 .unreq shift
+
+
+/**
+ * function print32_char
+ * Picture a Character
+ *
+ * Parameters
+ * r0: Pointer of Character
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Color (16-bit or 32-bit)
+ * r4: Character Width in Pixels
+ * r5: Character Height in Pixels
+ *
+ * Usage: r0-r12
+ * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
+ * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Framebuffer is not Defined
+ * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
+ */
+.globl print32_char
+print32_char:
+	/* Auto (Local) Variables, but just aliases */
+	char_point  .req r0  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
+	color       .req r3  @ Parameter, Register for Argument, Scratch Register
+	char_width  .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
+	char_height .req r5  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
+	f_buffer    .req r6  @ Pointer of Framebuffer
+	width       .req r7
+	depth       .req r8
+	size        .req r9
+	char_byte   .req r10
+	j           .req r11 @ Use for Horizontal Counter
+	bitmask     .req r12
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
+	pop {char_width,char_height}                     @ Get Fifth and Sixth Arguments
+	sub sp, sp, #40                                  @ Retrieve SP
+
+	ldr f_buffer, FB32_ADDRESS
+	cmp f_buffer, #0
+	beq print32_char_error2
+
+	ldr width, FB32_WIDTH
+	cmp width, #0
+	beq print32_char_error2
+
+	ldr depth, FB32_DEPTH
+	cmp depth, #0
+	beq print32_char_error2
+	cmp depth, #32
+	cmpne depth, #16
+	bne print32_char_error2
+
+	ldr size, FB32_SIZE
+	cmp size, #0
+	beq print32_char_error2
+	add size, f_buffer, size
+
+	cmp depth, #16
+	lsleq width, width, #1                           @ Vertical Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
+
+	/* Set Location to Render the Character */
+
+	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
+	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
+	sublt char_point, char_point, y_coord            @ Add y_coord Value to char_point
+	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	addge f_buffer, f_buffer, y_coord
+	
+	.unreq y_coord
+	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
+
+	mov width_check, f_buffer
+	add width_check, width
+
+	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
+	addlt char_width, char_width, x_coord            @ Subtract x_coord Value from char_width
+	blt print32_char_loop
+	
+	cmp depth, #16
+	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
+
+	print32_char_loop:
+
+		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
+		ble print32_char_success
+
+		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
+		bge print32_char_error1
+
+		ldrb char_byte, [char_point]                 @ Load Horizontal Byte
+		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
+
+		print32_char_loop_horizontal:
+			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
+			cmp j, #0                                @ Horizontal Counter, Check
+			blt print32_char_loop_common
+
+			mov bitmask, #1
+			lsl bitmask, bitmask, j                  @ Logical Shift Left to Make Bit Mask for Current Character Bit
+			and bitmask, char_byte, bitmask
+
+			cmp bitmask, #0
+			beq print32_char_loop_horizontal_common
+
+			/* The Picture Process */
+			cmp depth, #16
+			streqh color, [f_buffer]                   @ Store half word
+			cmp depth, #32
+			streq color, [f_buffer]                    @ Store word
+
+			print32_char_loop_horizontal_common:
+				cmp depth, #16
+				addeq f_buffer, f_buffer, #2       @ Framebuffer Address Shift
+				cmp depth, #32
+				addeq f_buffer, f_buffer, #4       @ Framebuffer Address Shift
+
+				cmp f_buffer, width_check          @ Check Overflow of Width
+				blt print32_char_loop_horizontal
+
+				cmp depth, #16
+				lsleq j, j, #1                     @ substitution of Multiplication by 2
+				cmp depth, #32
+				lsleq j, j, #2                     @ substitution of Multiplication by 4
+				add f_buffer, f_buffer, j          @ Framebuffer Offset
+
+		print32_char_loop_common:
+			sub char_height, char_height, #1
+
+			add char_point, char_point, #1           @ Horizontal Sync (Character Pointer)
+
+			cmp depth, #16
+			lsleq j, char_width, #1                  @ substitution of Multiplication by 2
+			cmp depth, #32
+			lsleq j, char_width, #2                  @ substitution of Multiplication by 4
+			sub f_buffer, f_buffer, j                @ Offset Clear of Framebuffer
+
+			add f_buffer, f_buffer, width            @ Horizontal Sync (Framebuffer)
+
+			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
+
+			b print32_char_loop
+
+	print32_char_error1:
+		mov r0, #1                                   @ Return with Error 1
+		b print32_char_common
+
+	print32_char_error2:
+		mov r0, #2                                   @ Return with Error 2
+		b print32_char_common
+
+	print32_char_success:
+		mov r0, #0                                   @ Return with Success
+
+	print32_char_common:
+		mov r1, f_buffer
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq char_point
+.unreq x_coord
+.unreq width_check
+.unreq color
+.unreq char_width
+.unreq char_height
+.unreq f_buffer
+.unreq width
+.unreq depth
+.unreq size
+.unreq char_byte
+.unreq j
+.unreq bitmask

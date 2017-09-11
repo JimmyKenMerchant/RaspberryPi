@@ -1368,10 +1368,10 @@ system32_mailbox_send:
  * These are useful if you use `extern` in C lang file, or use the label in other assembler lang files.
  */
 .balign 4
-.include "system32/fb32.s"
-.balign 4
 /* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"
+.balign 4
+.include "system32/fb32.s"
 
 /* Additional memory-mapped operations here */
 

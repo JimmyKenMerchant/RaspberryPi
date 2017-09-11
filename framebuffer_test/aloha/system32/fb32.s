@@ -7,6 +7,181 @@
  *
  */
 
+/* Frame Buffer Physical */
+
+.balign 16                      @ Need of 16 bytes align
+.globl FB32_DISPLAY_WIDTH
+.globl FB32_DISPLAY_HEIGHT
+.globl FB32_WIDTH
+.globl FB32_HEIGHT
+.globl FB32_DEPTH
+.globl FB32_PIXELORDER
+.globl FB32_ALPHAMODE
+.globl FB32_ADDRESS
+.globl FB32_SIZE
+fb32_mail_framebuffer:
+	.word fb32_mail_framebuffer_end - fb32_mail_framebuffer @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+fb32_mail_contents:
+	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_DISPLAY_WIDTH:
+	.word 800               @ Value Buffer, Width in Pixels
+FB32_DISPLAY_HEIGHT:
+	.word 640               @ Value Buffer, Height in Pixels
+.balign 4
+	.word 0x00048004        @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_WIDTH:
+	.word 800               @ Value Buffer, Width in Pixels
+FB32_HEIGHT:
+	.word 640               @ Value Buffer, Height in Pixels
+.balign 4
+	.word 0x00048005        @ Tag Identifier, Set Depth
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_DEPTH:
+	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 ARGB
+.balign 4
+	.word 0x00048006        @ Tag Identifier, Set Pixel Order
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_PIXELORDER:
+	.word 0x01              @ 0x00 is BGR, 0x01 is RGB
+.balign 4
+	.word 0x00048007        @ Tag Identifier, Set Alpha Mode (This Value is just for INNER of VideoCore, NOT CPU SIDE)
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_ALPHAMODE:
+	.word 0x00              @ 0x00 is Enabled(0:Fully Opaque<exist>), 0x01 is Reversed(0:Fully Transparent), 0x02 is Ignored
+.balign 4
+	.word 0x00040001        @ Tag Identifier, Allocate Buffer
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+FB32_ADDRESS:
+	.word 0x00000000        @ Value Buffer, Alignment in Bytes (in Response, Frame Buffer Base Address in Bytes)
+FB32_SIZE:
+	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
+.balign 4
+	.word 0x00000000        @ End Tag
+fb32_mail_framebuffer_end:
+.balign 16
+
+fb32_mail_blankon:
+	.word fb32_mail_blankon_end - fb32_mail_blankon @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00040002        @ Tag Identifier, Blank Screen
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000001        @ Value Buffer, State (0 means off, 1 means on)
+.balign 4
+	.word 0x00000000        @ End Tag
+fb32_mail_blankon_end:
+.balign 16
+
+fb32_mail_blankoff:
+	.word fb32_mail_blankoff_end - fb32_mail_blankoff @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00040002        @ Tag Identifier, Blank Screen
+	.word 0x00000004        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ Value Buffer, State (0 means off, 1 means on)
+.balign 4
+	.word 0x00000000        @ End Tag
+fb32_mail_blankoff_end:
+.balign 16
+
+fb32_mail_getedid:          @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
+	.word fb32_mail_getedid_end - fb32_mail_getedid @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00030020        @ Tag Identifier, get EDID
+	.word 0x00000136        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ EDID Block Number Requested/ Responded
+	.word 0x00000000        @ Status
+.fill 128, 1, 0x00          @ 128 * 1 byte EDID Block
+.balign 4
+	.word 0x00000000        @ End Tag
+fb32_mail_getedid_end:
+.balign 16
+
+fb32_mail_framebuffer_addr:
+	.word fb32_mail_framebuffer  @ Address of fb32_mail_framebuffer
+fb32_mail_blankon_addr:
+	.word fb32_mail_blankon      @ Address of fb32_mail_blankon
+fb32_mail_blankoff_addr:
+	.word fb32_mail_blankoff     @ Address of fb32_mail_blankoff
+fb32_mail_getedid_addr:
+	.word fb32_mail_getedid      @ Address of fb32_mail_getedid
+.balign 4
+
+
+/* Indicates Caret Position to Use in Printing Characters */
+.balign 4
+.globl FB32_X_CARET
+.globl FB32_Y_CARET
+FB32_X_CARET: .word 0x00000000
+FB32_Y_CARET: .word 0x00000000
+
+
+/* Buffers */
+
+.globl FB32_FRAMEBUFFER
+FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
+FB32_FRAMEBUFFER_ADDR:     .word 0x00
+FB32_FRAMEBUFFER_WIDTH:    .word 0x00
+FB32_FRAMEBUFFER_HEIGHT:   .word 0x00
+FB32_FRAMEBUFFER_SIZE:     .word 0x00
+FB32_FRAMEBUFFER_DEPTH:    .word 0x00
+
+.globl FB32_RENDERBUFFER0
+FB32_RENDERBUFFER0:        .word FB32_RENDERBUFFER0_ADDR
+FB32_RENDERBUFFER0_ADDR:   .word 0x00
+FB32_RENDERBUFFER0_WIDTH:  .word 0x00
+FB32_RENDERBUFFER0_HEIGHT: .word 0x00
+FB32_RENDERBUFFER0_SIZE:   .word 0x00
+FB32_RENDERBUFFER0_DEPTH:  .word 0x00
+
+.globl FB32_RENDERBUFFER1
+FB32_RENDERBUFFER1:        .word FB32_RENDERBUFFER1_ADDR
+FB32_RENDERBUFFER1_ADDR:   .word 0x00
+FB32_RENDERBUFFER1_WIDTH:  .word 0x00
+FB32_RENDERBUFFER1_HEIGHT: .word 0x00
+FB32_RENDERBUFFER1_SIZE:   .word 0x00
+FB32_RENDERBUFFER1_DEPTH:  .word 0x00
+
+.globl FB32_RENDERBUFFER2
+FB32_RENDERBUFFER2:        .word FB32_RENDERBUFFER2_ADDR
+FB32_RENDERBUFFER2_ADDR:   .word 0x00
+FB32_RENDERBUFFER2_WIDTH:  .word 0x00
+FB32_RENDERBUFFER2_HEIGHT: .word 0x00
+FB32_RENDERBUFFER2_SIZE:   .word 0x00
+FB32_RENDERBUFFER2_DEPTH:  .word 0x00
+
+.globl FB32_RENDERBUFFER3
+FB32_RENDERBUFFER3:        .word FB32_RENDERBUFFER3_ADDR
+FB32_RENDERBUFFER3_ADDR:   .word 0x00
+FB32_RENDERBUFFER3_WIDTH:  .word 0x00
+FB32_RENDERBUFFER3_HEIGHT: .word 0x00
+FB32_RENDERBUFFER3_SIZE:   .word 0x00
+FB32_RENDERBUFFER3_DEPTH:  .word 0x00
+
+.globl FB32_RENDERBUFFER4
+FB32_RENDERBUFFER4:        .word FB32_RENDERBUFFER4_ADDR
+FB32_RENDERBUFFER4_ADDR:   .word 0x00
+FB32_RENDERBUFFER4_WIDTH:  .word 0x00
+FB32_RENDERBUFFER4_HEIGHT: .word 0x00
+FB32_RENDERBUFFER4_SIZE:   .word 0x00
+FB32_RENDERBUFFER4_DEPTH:  .word 0x00
+
+.globl FB32_DOUBLEBUFFER_BACK
+.globl FB32_DOUBLEBUFFER_FRONT
+FB32_DOUBLEBUFFER_BACK:    .word 0x00
+FB32_DOUBLEBUFFER_FRONT:   .word 0x00
+
+
 /**
  * function fb32_draw_circle
  * Draw Circle Filled with Color
@@ -1068,6 +1243,148 @@ fb32_clear_color:
 
 
 /**
+ * function fb32_doublebuffer_flush
+ * Set Buffer for Double Buffer Operation
+ *
+ * Usage: r0-r7
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When buffer is not Defined
+ */
+.globl fb32_doublebuffer_flush
+fb32_doublebuffer_flush:
+	buffer_front      .req r0
+	buffer_back       .req r1
+	doublebuffer_base .req r2
+	f_buffer          .req r3
+	size              .req r4
+	depth             .req r5
+	r_buffer          .req r6
+	color             .req r7
+
+	push {r4-r7}
+
+	ldr buffer_front, FB32_DOUBLEBUFFER_FRONT 
+	cmp buffer_front, #0
+	beq fb32_doublebuffer_flush_error
+	ldr buffer_back, FB32_DOUBLEBUFFER_BACK
+	cmp buffer_back, #0
+	beq fb32_doublebuffer_flush_error
+
+	dsb
+	isb
+
+	str buffer_front, FB32_DOUBLEBUFFER_BACK 
+	str buffer_back, FB32_DOUBLEBUFFER_FRONT
+
+	ldr f_buffer, FB32_FRAMEBUFFER_ADDR
+	cmp f_buffer, #0
+	beq fb32_doublebuffer_flush_error
+	ldr size, FB32_FRAMEBUFFER_SIZE
+	cmp size, #0
+	beq fb32_doublebuffer_flush_error
+	ldr depth, FB32_FRAMEBUFFER_DEPTH
+	cmp depth, #0
+	beq fb32_doublebuffer_flush_error
+
+	add size, f_buffer, size
+
+	ldr r_buffer, [buffer_back]
+
+	fb32_doublebuffer_flush_loop:
+		cmp depth, #16
+		ldreqh color, [r_buffer]
+		streqh color, [f_buffer]
+		addeq r_buffer, r_buffer, #2
+		addeq f_buffer, f_buffer, #2
+		cmp depth, #32
+		ldreq color, [r_buffer]
+		streq color, [f_buffer]
+		addeq r_buffer, r_buffer, #4
+		addeq f_buffer, f_buffer, #4
+		cmp f_buffer, size
+		blt fb32_doublebuffer_flush_loop
+
+	push {r0-r3,lr}
+	mov r0, buffer_front
+	bl fb32_attach_buffer
+	pop {r0-r3,lr}
+
+	b fb32_doublebuffer_flush_success
+
+	fb32_doublebuffer_flush_error:
+		mov r0, #1                           @ Return with Error
+		b fb32_doublebuffer_flush_common
+
+	fb32_doublebuffer_flush_success:
+		mov r0, #0                           @ Return with Success
+
+	fb32_doublebuffer_flush_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb
+		pop {r4-r7}
+		mov pc, lr
+
+.unreq buffer_front
+.unreq buffer_back
+.unreq doublebuffer_base
+.unreq f_buffer
+.unreq size
+.unreq depth
+.unreq r_buffer
+.unreq color
+
+
+/**
+ * function fb32_doublebuffer_set
+ * Set Buffer for Double Buffer Operation
+ *
+ * Parameters
+ * r0: Pointer of Buffer to Front
+ * r1: Pointer of Buffer to Back
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When buffer is not Defined
+ */
+.globl fb32_doublebuffer_set
+fb32_doublebuffer_set:
+	buffer_front      .req r0
+	buffer_back       .req r1
+	doublebuffer_base .req r2
+
+	cmp buffer_front, #0
+	beq fb32_doublebuffer_set_error
+	cmp buffer_back, #0
+	beq fb32_doublebuffer_set_error
+
+	str buffer_back, FB32_DOUBLEBUFFER_BACK
+	str buffer_front, FB32_DOUBLEBUFFER_FRONT
+
+	push {r0-r3,lr}
+	mov r0, buffer_back
+	bl fb32_attach_buffer
+	pop {r0-r3,lr}
+
+	b fb32_doublebuffer_set_success
+
+	fb32_doublebuffer_set_error:
+		mov r0, #1                           @ Return with Error
+		b fb32_doublebuffer_set_common
+
+	fb32_doublebuffer_set_success:
+		mov r0, #0                           @ Return with Success
+
+	fb32_doublebuffer_set_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb
+		mov pc, lr
+
+.unreq buffer_front
+.unreq buffer_back 
+.unreq doublebuffer_base
+
+
+/**
  * function fb32_attach_buffer
  * Attach Buffer to Draw on It
  *
@@ -1122,11 +1439,11 @@ fb32_attach_buffer:
 	b fb32_attach_buffer_common
 
 	fb32_attach_buffer_error:
-		mov r0, #1                       @ Return with Error
+		mov r0, #1                           @ Return with Error
 
 	fb32_attach_buffer_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb                              @ Flush Data in Pipeline to Cache
+		dsb                                  @ Ensure Completion of Instructions Before
+		isb                                  @ Flush Instructions in Pipelines
 		pop {r4, r5}
 		mov pc, lr
 
@@ -1192,15 +1509,15 @@ fb32_set_cache:
 		b fb32_set_cache_loop
 
 	fb32_set_cache_error:
-		mov r0, #1                       @ Return with Error
+		mov r0, #1                           @ Return with Error
 		b fb32_set_cache_common
 
 	fb32_set_cache_success:
 		mov r0, #0                           @ Return with Success
 
 	fb32_set_cache_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb                              @ Flush Data in Pipeline to Cache
+		dsb                                  @ Ensure Completion of Instructions Before
+		isb                                  @ Flush Instructions in Pipelines
 		pop {r4}
 		mov pc, lr
 
@@ -1233,17 +1550,25 @@ fb32_get_framebuffer_mailbox:
 
 	ldr temp, fb32_mail_framebuffer_addr
 	add temp, temp, #equ32_mailbox_gpuoffset|equ32_mailbox_channel8
-	push {r0-r3,lr}
-	mov r0, temp
-	bl system32_mailbox_send
-	bl system32_mailbox_read
-	pop {r0-r3,lr}
+
+	dsb
+	isb
 
 	/**
 	 * VideoCoreIV is an outer system from ARM. For coherency, wait with sleep for suitable duration.
 	 * On BCM2836 with RasPi2, Duration of 0xFF is good, but on other system, such as BCM2837 with RasPiZero,
 	 * This duration may not be suitable.
 	 */
+
+	push {r0-r3,lr}
+	bl system32_sleep
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, temp
+	bl system32_mailbox_send
+	bl system32_mailbox_read
+	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	bl system32_sleep
@@ -1280,174 +1605,13 @@ fb32_get_framebuffer_mailbox:
 	b fb32_get_framebuffer_mailbox_common
 
 	fb32_get_framebuffer_mailbox_error:
-		mov r0, #1                       @ Return with Error
+		mov r0, #1                           @ Return with Error
 
 	fb32_get_framebuffer_mailbox_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb                              @ Flush Data in Pipeline to Cache
+		dsb                                  @ Ensure Completion of Instructions Before
+		isb                                  @ Flush Instructions in Pipeline
 		mov pc, lr
 
 .unreq duration
 .unreq memorymap_base
 .unreq temp
-
-
-/* Buffers */
-
-.globl FB32_FRAMEBUFFER
-FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
-FB32_FRAMEBUFFER_ADDR:     .word 0x00
-FB32_FRAMEBUFFER_WIDTH:    .word 0x00
-FB32_FRAMEBUFFER_HEIGHT:   .word 0x00
-FB32_FRAMEBUFFER_SIZE:     .word 0x00
-FB32_FRAMEBUFFER_DEPTH:    .word 0x00
-
-.globl FB32_RENDERBUFFER0
-FB32_RENDERBUFFER0:        .word FB32_RENDERBUFFER0_ADDR
-FB32_RENDERBUFFER0_ADDR:   .word 0x00
-FB32_RENDERBUFFER0_WIDTH:  .word 0x00
-FB32_RENDERBUFFER0_HEIGHT: .word 0x00
-FB32_RENDERBUFFER0_SIZE:   .word 0x00
-FB32_RENDERBUFFER0_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER1
-FB32_RENDERBUFFER1:        .word FB32_RENDERBUFFER1_ADDR
-FB32_RENDERBUFFER1_ADDR:   .word 0x00
-FB32_RENDERBUFFER1_WIDTH:  .word 0x00
-FB32_RENDERBUFFER1_HEIGHT: .word 0x00
-FB32_RENDERBUFFER1_SIZE:   .word 0x00
-FB32_RENDERBUFFER1_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER2
-FB32_RENDERBUFFER2:        .word FB32_RENDERBUFFER2_ADDR
-FB32_RENDERBUFFER2_ADDR:   .word 0x00
-FB32_RENDERBUFFER2_WIDTH:  .word 0x00
-FB32_RENDERBUFFER2_HEIGHT: .word 0x00
-FB32_RENDERBUFFER2_SIZE:   .word 0x00
-FB32_RENDERBUFFER2_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER3
-FB32_RENDERBUFFER3:        .word FB32_RENDERBUFFER3_ADDR
-FB32_RENDERBUFFER3_ADDR:   .word 0x00
-FB32_RENDERBUFFER3_WIDTH:  .word 0x00
-FB32_RENDERBUFFER3_HEIGHT: .word 0x00
-FB32_RENDERBUFFER3_SIZE:   .word 0x00
-FB32_RENDERBUFFER3_DEPTH:  .word 0x00
-
-
-/* Indicates Caret Position to Use in Printing Characters */
-.balign 4
-.globl FB32_X_CARET
-.globl FB32_Y_CARET
-FB32_X_CARET: .word 0x00000000
-FB32_Y_CARET: .word 0x00000000
-
-/* Frame Buffer Physical */
-
-.balign 16                      @ Need of 16 bytes align
-.globl FB32_DISPLAY_WIDTH
-.globl FB32_DISPLAY_HEIGHT
-.globl FB32_WIDTH
-.globl FB32_HEIGHT
-.globl FB32_DEPTH
-.globl FB32_PIXELORDER
-.globl FB32_ALPHAMODE
-.globl FB32_ADDRESS
-.globl FB32_SIZE
-fb32_mail_framebuffer:
-	.word fb32_mail_framebuffer_end - fb32_mail_framebuffer @ Size of this Mail
-	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-fb32_mail_contents:
-	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
-	.word 0x00000008        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB32_DISPLAY_WIDTH:
-	.word 800               @ Value Buffer, Width in Pixels
-FB32_DISPLAY_HEIGHT:
-	.word 640               @ Value Buffer, Height in Pixels
-.balign 4
-	.word 0x00048004        @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
-	.word 0x00000008        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB32_WIDTH:
-	.word 800               @ Value Buffer, Width in Pixels
-FB32_HEIGHT:
-	.word 640               @ Value Buffer, Height in Pixels
-.balign 4
-	.word 0x00048005        @ Tag Identifier, Set Depth
-	.word 0x00000004        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB32_DEPTH:
-	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 ARGB
-.balign 4
-	.word 0x00048006        @ Tag Identifier, Set Pixel Order
-	.word 0x00000004        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB32_PIXELORDER:
-	.word 0x01              @ 0x00 is BGR, 0x01 is RGB
-.balign 4
-	.word 0x00048007        @ Tag Identifier, Set Alpha Mode (This Value is just for INNER of VideoCore, NOT CPU SIDE)
-	.word 0x00000004        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB32_ALPHAMODE:
-	.word 0x00              @ 0x00 is Enabled(0:Fully Opaque<exist>), 0x01 is Reversed(0:Fully Transparent), 0x02 is Ignored
-.balign 4
-	.word 0x00040001        @ Tag Identifier, Allocate Buffer
-	.word 0x00000008        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-FB32_ADDRESS:
-	.word 0x00000000        @ Value Buffer, Alignment in Bytes (in Response, Frame Buffer Base Address in Bytes)
-FB32_SIZE:
-	.word 0x00000000        @ Value Buffer, Reserved for Response (in Response, Frame Buffer Size in Bytes)
-.balign 4
-	.word 0x00000000        @ End Tag
-fb32_mail_framebuffer_end:
-.balign 16
-
-fb32_mail_blankon:
-	.word fb32_mail_blankon_end - fb32_mail_blankon @ Size of this Mail
-	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00040002        @ Tag Identifier, Blank Screen
-	.word 0x00000004        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000001        @ Value Buffer, State (0 means off, 1 means on)
-.balign 4
-	.word 0x00000000        @ End Tag
-fb32_mail_blankon_end:
-.balign 16
-
-fb32_mail_blankoff:
-	.word fb32_mail_blankoff_end - fb32_mail_blankoff @ Size of this Mail
-	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00040002        @ Tag Identifier, Blank Screen
-	.word 0x00000004        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000        @ Value Buffer, State (0 means off, 1 means on)
-.balign 4
-	.word 0x00000000        @ End Tag
-fb32_mail_blankoff_end:
-.balign 16
-
-fb32_mail_getedid:          @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
-	.word fb32_mail_getedid_end - fb32_mail_getedid @ Size of this Mail
-	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00030020        @ Tag Identifier, get EDID
-	.word 0x00000136        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000        @ EDID Block Number Requested/ Responded
-	.word 0x00000000        @ Status
-.fill 128, 1, 0x00          @ 128 * 1 byte EDID Block
-.balign 4
-	.word 0x00000000        @ End Tag
-fb32_mail_getedid_end:
-.balign 16
-
-fb32_mail_framebuffer_addr:
-	.word fb32_mail_framebuffer  @ Address of fb32_mail_framebuffer
-fb32_mail_blankon_addr:
-	.word fb32_mail_blankon      @ Address of fb32_mail_blankon
-fb32_mail_blankoff_addr:
-	.word fb32_mail_blankoff     @ Address of fb32_mail_blankoff
-fb32_mail_getedid_addr:
-	.word fb32_mail_getedid      @ Address of fb32_mail_getedid
-.balign 4

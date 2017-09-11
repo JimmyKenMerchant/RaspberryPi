@@ -359,7 +359,7 @@ _aloha_reset:
 
 	/* Obtain Framebuffer from VideoCore IV */
 	push {r0-r3}
-	mov r0, #0xFF                             @ Duration Time
+	mov r0, #0x200                             @ Duration Time
 	bl fb32_get_framebuffer_mailbox
 	pop {r0-r3}
 
