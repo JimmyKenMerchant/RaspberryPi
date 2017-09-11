@@ -353,6 +353,11 @@ draw32_mask_image:
  * function draw32_set_renderbuffer
  * Set Renderbuffer
  *
+ * Render Buffer Will Be Set with Heap.
+ * Content of Render Buffer is Same as Framebuffer.
+ * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
+ * So, Block Size is 5 (20 Bytes).
+ *
  * Parameters
  * r0: Pointer of Renderbuffer to Set
  * r1: Width of BUffer
@@ -423,6 +428,56 @@ draw32_set_renderbuffer:
 .unreq height
 .unreq depth
 .unreq size
+.unreq addr
+
+
+/**
+ * function draw32_clear_renderbuffer
+ * Clear Renderbuffer with Freeing Memory
+ *
+ * Parameters
+ * r0: Pointer of Renderbuffer to Clear
+ *
+ * Usage: r0-r1
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Pointer of Buffer is Null (0)
+ */
+.globl draw32_clear_renderbuffer
+draw32_clear_renderbuffer:
+	buffer    .req r0
+	addr      .req r1
+
+	ldr addr, [buffer]
+	
+	push {r0-r3,lr}
+	mov r0, addr
+	bl system32_mfree
+	cmp r0, #0
+	bne draw32_clear_renderbuffer_error
+	pop {r0-r3,lr}
+
+	mov addr, #0
+	str addr, [buffer]
+	str addr, [buffer, #4]
+	str addr, [buffer, #8]
+	str addr, [buffer, #12]
+	str addr, [buffer, #16]
+
+	b draw32_clear_renderbuffer_success
+
+	draw32_clear_renderbuffer_error:
+		mov r0, #1
+		b draw32_clear_renderbuffer_common
+
+	draw32_clear_renderbuffer_success:
+		mov r0, #0
+
+	draw32_clear_renderbuffer_common:
+		dsb                              @ Ensure Completion of Instructions Before
+		isb                              @ Flush Data in Pipeline to Cache
+		mov pc, lr
+
+.unreq buffer
 .unreq addr
 
 

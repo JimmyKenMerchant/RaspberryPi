@@ -1169,7 +1169,7 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
  *
  * Parameters
- * r1: Pointer of Start Address of Memory Space
+ * r0: Pointer of Start Address of Memory Space
  *
  * Usage: r0-r4
  * Return: r0 (0 as Success, 1 as Error)

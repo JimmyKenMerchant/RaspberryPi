@@ -126,7 +126,13 @@ FB32_X_CARET: .word 0x00000000
 FB32_Y_CARET: .word 0x00000000
 
 
-/* Buffers */
+/**
+ * Buffers
+ * Render Buffer Will Be Set with Heap.
+ * Content of Render Buffer is Same as Framebuffer.
+ * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
+ * So, Block Size is 5 (20 Bytes).
+ */
 
 .globl FB32_FRAMEBUFFER
 FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
@@ -136,50 +142,176 @@ FB32_FRAMEBUFFER_HEIGHT:   .word 0x00
 FB32_FRAMEBUFFER_SIZE:     .word 0x00
 FB32_FRAMEBUFFER_DEPTH:    .word 0x00
 
-.globl FB32_RENDERBUFFER0
-FB32_RENDERBUFFER0:        .word FB32_RENDERBUFFER0_ADDR
-FB32_RENDERBUFFER0_ADDR:   .word 0x00
-FB32_RENDERBUFFER0_WIDTH:  .word 0x00
-FB32_RENDERBUFFER0_HEIGHT: .word 0x00
-FB32_RENDERBUFFER0_SIZE:   .word 0x00
-FB32_RENDERBUFFER0_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER1
-FB32_RENDERBUFFER1:        .word FB32_RENDERBUFFER1_ADDR
-FB32_RENDERBUFFER1_ADDR:   .word 0x00
-FB32_RENDERBUFFER1_WIDTH:  .word 0x00
-FB32_RENDERBUFFER1_HEIGHT: .word 0x00
-FB32_RENDERBUFFER1_SIZE:   .word 0x00
-FB32_RENDERBUFFER1_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER2
-FB32_RENDERBUFFER2:        .word FB32_RENDERBUFFER2_ADDR
-FB32_RENDERBUFFER2_ADDR:   .word 0x00
-FB32_RENDERBUFFER2_WIDTH:  .word 0x00
-FB32_RENDERBUFFER2_HEIGHT: .word 0x00
-FB32_RENDERBUFFER2_SIZE:   .word 0x00
-FB32_RENDERBUFFER2_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER3
-FB32_RENDERBUFFER3:        .word FB32_RENDERBUFFER3_ADDR
-FB32_RENDERBUFFER3_ADDR:   .word 0x00
-FB32_RENDERBUFFER3_WIDTH:  .word 0x00
-FB32_RENDERBUFFER3_HEIGHT: .word 0x00
-FB32_RENDERBUFFER3_SIZE:   .word 0x00
-FB32_RENDERBUFFER3_DEPTH:  .word 0x00
-
-.globl FB32_RENDERBUFFER4
-FB32_RENDERBUFFER4:        .word FB32_RENDERBUFFER4_ADDR
-FB32_RENDERBUFFER4_ADDR:   .word 0x00
-FB32_RENDERBUFFER4_WIDTH:  .word 0x00
-FB32_RENDERBUFFER4_HEIGHT: .word 0x00
-FB32_RENDERBUFFER4_SIZE:   .word 0x00
-FB32_RENDERBUFFER4_DEPTH:  .word 0x00
-
 .globl FB32_DOUBLEBUFFER_BACK
 .globl FB32_DOUBLEBUFFER_FRONT
 FB32_DOUBLEBUFFER_BACK:    .word 0x00
 FB32_DOUBLEBUFFER_FRONT:   .word 0x00
+
+
+/**
+ * function fb32_draw_arc
+ * Draw Arc
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ * r1: X Coordinate of Center
+ * r2: Y Coordinate of Center
+ * r3: Radius
+ * r4: Degree of Start
+ * r5: Degree of End
+ * r6: Width of Arc Line
+ * r7: Height of Arc Line
+ *
+ * Usage: r0-r9
+ * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
+ */
+.globl fb32_draw_arc
+fb32_draw_arc:
+	/* Auto (Local) Variables, but just aliases */
+	color            .req r0   @ Parameter, Register for Argument, Scratch Register
+	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
+	radius           .req r3   @ Parameter, Register for Argument and Result, Scratch Register
+	deg_start        .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	deg_end          .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_width       .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_height      .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	x_current        .req r8
+	y_current        .req r9
+
+	/* VFP/NEON Registers */
+	vfp_radian       .req d0 @ q0[0]
+	vfp_radian_start .req s0 @ Lower 32 Bits of d0
+	vfp_radian_end   .req s1 @ Upper 32 Bits of d0
+	vfp_position     .req d1
+	vfp_position_x   .req s2 @ Lower 32 Bits of d1
+	vfp_position_y   .req s3 @ Upper 32 Bits of d1
+	vfp_radius       .req d2
+	vfp_radius_x     .req s4
+	vfp_radius_y     .req s5
+	vfp_adder        .req s6
+
+	push {r4-r9}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                   @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	add sp, sp, #24                                   @ r4-r9 offset 24 bytes
+	pop {deg_start, deg_end, char_width, char_height} @ Get Fifth to Seventh Arguments
+	sub sp, sp, #40                                   @ Retrieve SP
+
+	vpush {s0-s6}
+
+	push {r0-r3,lr}
+	mov r0, deg_start
+	bl math32_degree_to_radian32
+	mov deg_start, r0                                 @ Float Type Value
+	pop {r0-r3,lr}
+
+	.unreq deg_start
+	radian_start .req r3
+
+	push {r0-r3,lr}
+	mov r0, deg_end
+	bl math32_degree_to_radian32
+	mov deg_end, r0                                   @ Float Type Value
+	pop {r0-r3,lr}
+
+	.unreq deg_end
+	radian_end .req r4
+
+	vmov vfp_radian, radian_start, radian_end
+	vcmp.f32 vfp_radian_start, vfp_radian_end
+	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovgt vfp_radian_start, vfp_radius_x
+	vmovgt vfp_radian_start, vfp_radian_end
+	vmovgt vfp_radian_end, vfp_radius_x
+
+	vdup.32 vfp_radius, radius
+	vcvt.f32.s32 vfp_radius, vfp_radius
+
+	vmov vfp_adder, #0.125
+	vmul.f32 vfp_adder, vfp_adder, vfp_adder
+	vmul.f32 vfp_adder, vfp_adder, vfp_adder
+
+	fb32_draw_arc_loop:
+		vcmp.f32 vfp_radian_start, vfp_radian_end
+		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
+		bgt fb32_draw_arc_success
+		vmov radian_start, vfp_radian_start
+
+		push {r0-r3,lr}
+		mov r0, radian_start
+		bl math32_cos32
+		mov x_current, r0
+		pop {r0-r3,lr}
+
+		push {r0-r3,lr}
+		mov r0, radian_start
+		bl math32_sin32
+		mov y_current, r0
+		pop {r0-r3,lr}
+
+		vmov vfp_position, x_current, y_current
+		vmul.f32 vfp_position, vfp_position, vfp_radius
+		vcvtr.s32.f32 vfp_position, vfp_position
+		vmov x_current, vfp_position_x
+		vmov y_current, vfp_position_y
+
+		add x_current, x_current, x_coord
+		add y_current, y_current, y_coord
+
+		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
+		mov r1, x_current
+		mov r2, y_current
+		mov r3, char_width
+		push {char_height} 
+		bl fb32_clear_color_block
+		add sp, sp, #4
+		push {r1}
+		add sp, sp, #4
+		cmp r0, #0                                          @ Compare Return 0 or 1
+		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
+		bne fb32_draw_arc_error
+
+		vadd.f32 vfp_radian_start, vfp_radian_start, vfp_adder
+		b fb32_draw_arc_loop
+
+	fb32_draw_arc_error:
+		mov r0, #1
+		b fb32_draw_arc_common
+
+	fb32_draw_arc_success:
+		mov r0, #0
+
+	fb32_draw_arc_common:
+		vpop {s0-s6}
+		lsl x_current, x_current, #16
+		add r1, x_current, y_current
+		pop {r4-r9}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq color
+.unreq x_coord
+.unreq y_coord
+.unreq radius
+.unreq radian_start
+.unreq radian_end
+.unreq char_width
+.unreq char_height
+.unreq x_current
+.unreq y_current
+.unreq vfp_radian
+.unreq vfp_radian_start
+.unreq vfp_radian_end
+.unreq vfp_position
+.unreq vfp_position_x
+.unreq vfp_position_y
+.unreq vfp_radius
+.unreq vfp_radius_x
+.unreq vfp_radius_y
+.unreq vfp_adder
 
 
 /**
@@ -191,8 +323,8 @@ FB32_DOUBLEBUFFER_FRONT:   .word 0x00
  * r0: Color (16-bit or 32-bit)
  * r1: X Coordinate of Center
  * r2: Y Coordinate of Center
- * r3: X Radian
- * r4: Y Radian
+ * r3: X Radius
+ * r4: Y Radius
  *
  * Usage: r0-r9
  * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
@@ -204,8 +336,8 @@ fb32_draw_circle:
 	color            .req r0   @ Parameter, Register for Argument, Scratch Register
 	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
-	x_radian         .req r3   @ Parameter, Register for Argument and Result, Scratch Register
-	y_radian         .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	x_radius         .req r3   @ Parameter, Register for Argument and Result, Scratch Register
+	y_radius         .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	char_width       .req r5
 	char_height      .req r6
 	x_current        .req r7
@@ -216,16 +348,16 @@ fb32_draw_circle:
 	vfp_xy_coord     .req d0 @ q0[0]
 	vfp_y_coord      .req s0 @ Lower 32 Bits of d0
 	vfp_x_coord      .req s1 @ Upper 32 Bits of d0
-	vfp_xy_radian    .req d1 @ q0[1]
-	vfp_y_radian     .req s2
-	vfp_x_radian     .req s3
+	vfp_xy_radius    .req d1 @ q0[1]
+	vfp_y_radius     .req s2
+	vfp_x_radius     .req s3
 	vfp_cal_ab       .req d2
 	vfp_cal_a        .req s4
 	vfp_cal_b        .req s5
 	vfp_cal_c        .req s6
 	vfp_x_start      .req s7
-	vfp_diff_radian  .req s8
-	vfp_radian       .req s9
+	vfp_diff_radius  .req s8
+	vfp_radius       .req s9
 	vfp_tri_height   .req s10
 	vfp_one          .req s11
 
@@ -233,45 +365,45 @@ fb32_draw_circle:
                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	add sp, sp, #24                                   @ r4-r9 offset 24 bytes
-	pop {y_radian}                                    @ Get Fifth
+	pop {y_radius}                                    @ Get Fifth
 	sub sp, sp, #28                                   @ Retrieve SP
 
 	vpush {s0-s11}
 
-	sub y_current, y_coord, y_radian                  @ First Y Coordinate to Draw
+	sub y_current, y_coord, y_radius                  @ First Y Coordinate to Draw
 	mov char_height, #1
 
-	add y_max, y_coord, y_radian                      @ As Counter
+	add y_max, y_coord, y_radius                      @ As Counter
 	sub y_max, y_max, #1                              @ Have Minus One
 
 	vmov vfp_xy_coord, y_coord, x_coord               @ Lower Bits from y_coord, Upper Bits x_coord, q0[0]
-	vmov vfp_xy_radian, y_radian, x_radian            @ Lower Bits from y_radian, Upper Bits x_radian, q0[1]
+	vmov vfp_xy_radius, y_radius, x_radius            @ Lower Bits from y_radius, Upper Bits x_radius, q0[1]
 	vcvt.f32.s32 vfp_xy_coord, vfp_xy_coord           @ *NEON*Convert Signed Integer to Single Precision Floating Point
-	vcvt.f32.u32  vfp_xy_radian, vfp_xy_radian        @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+	vcvt.f32.u32  vfp_xy_radius, vfp_xy_radius        @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
 
 	.unreq y_coord
 	x_diff .req r2
 
 	vmov vfp_x_start, vfp_x_coord
 
-	vmov vfp_radian, vfp_y_radian
-	vmov vfp_tri_height, vfp_y_radian
+	vmov vfp_radius, vfp_y_radius
+	vmov vfp_tri_height, vfp_y_radius
 
 	vmov vfp_one, #1.0                                @ Floating Point Constant (Immediate)
 
-	cmp x_radian, y_radian
+	cmp x_radius, y_radius
 	beq fb32_draw_circle_loop
 
-	vsub.f32 vfp_diff_radian, vfp_y_radian, vfp_x_radian
+	vsub.f32 vfp_diff_radius, vfp_y_radius, vfp_x_radius
 
 	/**
-	 * The difference of Ellipse's radian seems Like a parabola, so It can make an approximation formula by X = Y^2. It show as a line on X axis.
+	 * The difference of Ellipse's radius seems Like a parabola, so It can make an approximation formula by X = Y^2. It show as a line on X axis.
 	 * Besides, the difference of position in Free Fall of Physics show as a line on Y axis, and its proportion show as Y = X^2
 	 */
 
 	fb32_draw_circle_loop:
 		/* Pythagorean theorem C^2 = A^2 + B^2  */
-		vmul.f32 vfp_cal_c, vfp_radian, vfp_radian          @ C^2, Hypotenuse
+		vmul.f32 vfp_cal_c, vfp_radius, vfp_radius          @ C^2, Hypotenuse
 		vmul.f32 vfp_cal_b, vfp_tri_height, vfp_tri_height  @ B^2, Leg, (Height)
 		vsub.f32 vfp_cal_a, vfp_cal_c, vfp_cal_b            @ A^2, Leg, (Width)
 		vsqrt.f32 vfp_cal_a, vfp_cal_a                      @ A
@@ -304,17 +436,17 @@ fb32_draw_circle:
 
 		vsub.f32 vfp_tri_height, vfp_tri_height, vfp_one
 
-		cmp x_radian, y_radian
+		cmp x_radius, y_radius
 		beq fb32_draw_circle_loop_jump
 
-		/* Add Difference to vfp_x_radian in Case of Ellipse */
+		/* Add Difference to vfp_x_radius in Case of Ellipse */
 
 		vmov vfp_cal_a, vfp_tri_height
 		vabs.f32 vfp_cal_a, vfp_cal_a
-		vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radian                @ Compress Range Within 0.0-1.0
+		vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radius                @ Compress Range Within 0.0-1.0
 		vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ The Second Power of vfp_cal_a
-		vmul.f32 vfp_cal_a, vfp_diff_radian, vfp_cal_a
-		vadd.f32 vfp_radian, vfp_x_radian, vfp_cal_a
+		vmul.f32 vfp_cal_a, vfp_diff_radius, vfp_cal_a
+		vadd.f32 vfp_radius, vfp_x_radius, vfp_cal_a
 
 		fb32_draw_circle_loop_jump:
 
@@ -338,8 +470,8 @@ fb32_draw_circle:
 .unreq color
 .unreq x_coord
 .unreq x_diff
-.unreq x_radian
-.unreq y_radian
+.unreq x_radius
+.unreq y_radius
 .unreq char_width
 .unreq char_height
 .unreq x_current
@@ -348,16 +480,16 @@ fb32_draw_circle:
 .unreq vfp_xy_coord
 .unreq vfp_y_coord
 .unreq vfp_x_coord
-.unreq vfp_xy_radian
-.unreq vfp_y_radian
-.unreq vfp_x_radian
+.unreq vfp_xy_radius
+.unreq vfp_y_radius
+.unreq vfp_x_radius
 .unreq vfp_cal_ab
 .unreq vfp_cal_a
 .unreq vfp_cal_b
 .unreq vfp_cal_c
 .unreq vfp_x_start
-.unreq vfp_diff_radian
-.unreq vfp_radian
+.unreq vfp_diff_radius
+.unreq vfp_radius
 .unreq vfp_tri_height
 .unreq vfp_one
 

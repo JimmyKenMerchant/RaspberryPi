@@ -245,17 +245,16 @@ extern int16 system32_load_16( int16* address );
 
 extern char8 system32_load_8( char8* address );
 
+extern int32* system32_malloc( uint32 block_size );
+
+extern uint32 system32_mfree( int32* address );
+
 
 /********************************
  * system32/fb32.s
  ********************************/
 
 extern int32* FB32_FRAMEBUFFER;
-extern int32* FB32_RENDERBUFFER0;
-extern int32* FB32_RENDERBUFFER1;
-extern int32* FB32_RENDERBUFFER2;
-extern int32* FB32_RENDERBUFFER3;
-extern int32* FB32_RENDERBUFFER4;
 extern int32* FB32_DOUBLEBUFFER_BACK;
 extern int32* FB32_DOUBLEBUFFER_FRONT;
 
@@ -579,6 +578,11 @@ extern uint32 draw32_copy
 
 /**
  * Set Renderbuffer
+ *
+ * Render Buffer Will Be Set with Heap.
+ * Content of Render Buffer is Same as Framebuffer.
+ * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
+ * So, Block Size is 5 (20 Bytes).
  *
  * Return: 0 as sucess
  */

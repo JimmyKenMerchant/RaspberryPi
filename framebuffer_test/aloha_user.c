@@ -27,13 +27,15 @@ void _user_start()
 
 	system32_sleep( 5000000 );
 
-	draw32_set_renderbuffer( FB32_RENDERBUFFER0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	fb32_attach_buffer( FB32_RENDERBUFFER0 );
+	int32* renderbuffer0 = system32_malloc(5);
+	draw32_set_renderbuffer( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	fb32_attach_buffer( renderbuffer0 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
-	draw32_set_renderbuffer( FB32_RENDERBUFFER3, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	fb32_attach_buffer( FB32_RENDERBUFFER3 );
+	int32* renderbuffer1 = system32_malloc(5);
+	draw32_set_renderbuffer( renderbuffer1, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	fb32_attach_buffer( renderbuffer1 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
-	fb32_doublebuffer_set( FB32_RENDERBUFFER0, FB32_RENDERBUFFER3 );
+	fb32_doublebuffer_set( renderbuffer0, renderbuffer1 );
 
 	print32_set_caret( print32_string( string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -94,52 +96,55 @@ void _user_start()
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 400, 20, 20 );
 	fb32_draw_line( COLOR32_RED, 0, 400, 300, 500, 20, 20 );
 
-	fb32_draw_circle( COLOR32_WHITE, 300, 300, 150, 200 );
+	fb32_draw_circle( COLOR32_MAGENTA, 300, 300, 150, 200 );
 	fb32_draw_circle( COLOR32_CYAN, -100, 500, 200, 175 );
 
-	draw32_set_renderbuffer( FB32_RENDERBUFFER1, 300, 300, 32 );
-	int32* renderbuffer1 = (int32*)system32_load_32( FB32_RENDERBUFFER1 );
-	uint32 renderbuffer1_width = system32_load_32(FB32_RENDERBUFFER1 + 1 ); // 4 bytes offset
-	uint32 renderbuffer1_height = system32_load_32(FB32_RENDERBUFFER1 + 2 ); // 8 bytes offset
+	int32* renderbuffer2 = system32_malloc(5);
+	draw32_set_renderbuffer( renderbuffer2, 300, 300, 32 );
+	int32* renderbuffer2_addr = (int32*)system32_load_32( renderbuffer2 );
+	uint32 renderbuffer2_width = system32_load_32( renderbuffer2 + 1 ); // 4 bytes offset
+	uint32 renderbuffer2_height = system32_load_32( renderbuffer2 + 2 ); // 8 bytes offset
 
-	draw32_set_renderbuffer( FB32_RENDERBUFFER2, 300, 300, 32 );
-	int32* renderbuffer2 = (int32*)system32_load_32( FB32_RENDERBUFFER2 );
-	uint32 renderbuffer2_width = system32_load_32(FB32_RENDERBUFFER2 + 1 ); // 4 bytes offset
-	uint32 renderbuffer2_height = system32_load_32(FB32_RENDERBUFFER2 + 2 ); // 8 bytes offset
+	int32* renderbuffer3 = system32_malloc(5);
+	draw32_set_renderbuffer( renderbuffer3, 300, 300, 32 );
+	int32* renderbuffer3_addr = (int32*)system32_load_32( renderbuffer3 );
+	uint32 renderbuffer3_width = system32_load_32( renderbuffer3 + 1 ); // 4 bytes offset
+	uint32 renderbuffer3_height = system32_load_32( renderbuffer3 + 2 ); // 8 bytes offset
 
-	draw32_set_renderbuffer( FB32_RENDERBUFFER4, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	int32* renderbuffer4 = (int32*)system32_load_32( FB32_RENDERBUFFER4 );
-	uint32 renderbuffer4_width = system32_load_32(FB32_RENDERBUFFER4 + 1 ); // 4 bytes offset
-	uint32 renderbuffer4_height = system32_load_32(FB32_RENDERBUFFER4 + 2 ); // 8 bytes offset
+	int32* renderbuffer4 = system32_malloc(5);
+	draw32_set_renderbuffer( renderbuffer4, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	int32* renderbuffer4_addr = (int32*)system32_load_32( renderbuffer4 );
+	uint32 renderbuffer4_width = system32_load_32( renderbuffer4 + 1 ); // 4 bytes offset
+	uint32 renderbuffer4_height = system32_load_32( renderbuffer4 + 2 ); // 8 bytes offset
 
-	fb32_attach_buffer( FB32_RENDERBUFFER1 );
+	fb32_attach_buffer( renderbuffer2 );
 	fb32_clear_color( 0x66FFFFFF );
 
-	fb32_attach_buffer( FB32_RENDERBUFFER2 );
+	fb32_attach_buffer( renderbuffer3 );
 	fb32_clear_color( COLOR32_BLACK );
 	fb32_draw_circle( COLOR32_WHITE, 150, 150, 100, 100 );
 	fb32_draw_circle( COLOR32_BLACK, 150, 150, 50, 50 );
 
-	draw32_mask_image( FB32_RENDERBUFFER2, FB32_RENDERBUFFER1, 0, 0 );
+	draw32_mask_image( renderbuffer3, renderbuffer2, 0, 0 );
 
-	fb32_attach_buffer( FB32_RENDERBUFFER1 );
+	fb32_attach_buffer( renderbuffer2 );
 	fb32_clear_color( 0x00000000 );
 
 	fb32_draw_line( 0x9900FFFF, 20, 20, 100, 200, 1, 1 );
 	fb32_draw_line( 0x9900FFFF, 20, 20, 20, 100, 1, 1 );
 	fb32_draw_line( 0x9900FFFF, 20, 100, 100, 200, 1, 1 );
-	draw32_fill_color( FB32_RENDERBUFFER1 );
+	draw32_fill_color( renderbuffer2 );
 
 	fb32_attach_buffer( FB32_DOUBLEBUFFER_BACK );
 
-	fb32_draw_image( renderbuffer1, 100, 100, renderbuffer1_width, renderbuffer1_height, 0, 0, 0, 0 );
+	fb32_draw_image( renderbuffer2_addr, 100, 100, renderbuffer2_width, renderbuffer2_height, 0, 0, 0, 0 );
 
-	fb32_draw_image( renderbuffer2, 100, 100, renderbuffer2_width, renderbuffer2_height, 0, 0, 0, 0 );
+	fb32_draw_image( renderbuffer3_addr, 100, 100, renderbuffer3_width, renderbuffer3_height, 0, 0, 0, 0 );
 	
 	while(1) {
 		fb32_doublebuffer_flush();
-		draw32_copy( FB32_DOUBLEBUFFER_FRONT, FB32_RENDERBUFFER4 );
-		fb32_draw_image( renderbuffer4, 0, 0, renderbuffer4_width, renderbuffer4_height, 0, 10, 10, 0 );
-		system32_sleep( 2000000 );
+		draw32_copy( FB32_DOUBLEBUFFER_FRONT, renderbuffer4 );
+		fb32_draw_image( renderbuffer4_addr, 0, 0, renderbuffer4_width, renderbuffer4_height, 0, 10, 10, 0 );
+		system32_sleep( 200000 );
 	}
 }
