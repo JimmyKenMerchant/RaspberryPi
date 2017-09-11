@@ -9,7 +9,7 @@
 
 /* Frame Buffer Physical */
 
-.balign 16                      @ Need of 16 bytes align
+.balign 16                      @ Need of 16 bytes align, otherwise, you can't get Framebuffer from VideoCoreIV
 .globl FB32_DISPLAY_WIDTH
 .globl FB32_DISPLAY_HEIGHT
 .globl FB32_WIDTH
@@ -1244,7 +1244,7 @@ fb32_clear_color:
 
 /**
  * function fb32_doublebuffer_flush
- * Set Buffer for Double Buffer Operation
+ * Flush Back Buffer to Framebuffer and Swap Front and Back
  *
  * Usage: r0-r7
  * Return: r0 (0 as success, 1 as error)
@@ -1533,9 +1533,6 @@ fb32_set_cache:
  * Get Framebuffer from VideoCore IV
  * This function is using a vendor-implemented process.
  *
- * Parameters
- * r0: Duration Time to Obtain Frame Buffer
- *
  * Usage: r0-r1
  * Return: r0 (0 as success, 1 as error)
  * Error(1): When Framebuffer is not Defined
@@ -1551,27 +1548,10 @@ fb32_get_framebuffer_mailbox:
 	ldr temp, fb32_mail_framebuffer_addr
 	add temp, temp, #equ32_mailbox_gpuoffset|equ32_mailbox_channel8
 
-	dsb
-	isb
-
-	/**
-	 * VideoCoreIV is an outer system from ARM. For coherency, wait with sleep for suitable duration.
-	 * On BCM2836 with RasPi2, Duration of 0xFF is good, but on other system, such as BCM2837 with RasPiZero,
-	 * This duration may not be suitable.
-	 */
-
-	push {r0-r3,lr}
-	bl system32_sleep
-	pop {r0-r3,lr}
-
 	push {r0-r3,lr}
 	mov r0, temp
 	bl system32_mailbox_send
 	bl system32_mailbox_read
-	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	bl system32_sleep
 	pop {r0-r3,lr}
 
  	ldr memorymap_base, fb32_mail_framebuffer_addr

@@ -255,6 +255,9 @@ extern int32* FB32_RENDERBUFFER0;
 extern int32* FB32_RENDERBUFFER1;
 extern int32* FB32_RENDERBUFFER2;
 extern int32* FB32_RENDERBUFFER3;
+extern int32* FB32_RENDERBUFFER4;
+extern int32* FB32_DOUBLEBUFFER_BACK;
+extern int32* FB32_DOUBLEBUFFER_FRONT;
 
 extern uint32 FB32_ADDRESS;
 extern uint32 FB32_DISPLAY_WIDTH;
@@ -353,6 +356,33 @@ extern uint64 fb32_clear_color_block
 extern uint64 fb32_clear_color
 (
 	uint32 color
+);
+
+
+/**
+ * Flush Back Buffer to Framebuffer and Swap Front and Back
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When buffer is not defined
+ */
+extern uint32 fb32_doublebuffer_flush();
+
+
+/**
+ * Set Buffer for Double Buffer Operation
+ *
+ * Parameters
+ * r0: Pointer of Buffer to Front
+ * r1: Pointer of Buffer to Back
+ *
+ * Return: 0 as success, 1 as error
+ * Error(1): When buffer is not Defined
+ */
+extern uint32 fb32_doublebuffer_set
+(
+	int32* buffer_front,
+	int32* buffer_back
+
 );
 
 
