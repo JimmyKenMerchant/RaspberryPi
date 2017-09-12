@@ -196,8 +196,8 @@ bcm32_get_framebuffer:
 	mov r0, temp
 	bl fb32_attach_buffer
 	cmp r0, #0
-	bne bcm32_get_framebuffer_error
 	pop {r0-r3,lr}
+	bne bcm32_get_framebuffer_error
 
 	mov r0, #0                               @ Return with Success
 

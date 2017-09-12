@@ -55,114 +55,100 @@ FB32_DOUBLEBUFFER_FRONT:   .word 0x00
  * function fb32_draw_arc
  * Draw Arc
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
  *
  * Parameters
  * r0: Color (16-bit or 32-bit)
  * r1: X Coordinate of Center
  * r2: Y Coordinate of Center
- * r3: Radius
- * r4: Degree of Start
- * r5: Degree of End
- * r6: Width of Arc Line
- * r7: Height of Arc Line
+ * r3: X Radius
+ * r4: Y Radius
+ * r5: Radian of Start, Must Be Type of Single Presicion Float
+ * r6: Radian of End, Must Be Type of Single Presicion Float
+ * r7: Width of Arc Line
+ * r8: Height of Arc Line
  *
- * Usage: r0-r9
+ * Usage: r0-r10
  * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
  */
 .globl fb32_draw_arc
 fb32_draw_arc:
 	/* Auto (Local) Variables, but just aliases */
-	color            .req r0   @ Parameter, Register for Argument, Scratch Register
+	color            .req r0   @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
-	radius           .req r3   @ Parameter, Register for Argument and Result, Scratch Register
-	deg_start        .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	deg_end          .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width       .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height      .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	x_current        .req r8
-	y_current        .req r9
+	x_radius         .req r3   @ Parameter, Register for Argument, Scratch Register
+	y_radius         .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	start_radian     .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	end_radian       .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_width       .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_height      .req r8   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	x_current        .req r9
+	y_current        .req r10
 
 	/* VFP/NEON Registers */
-	vfp_radian       .req d0 @ q0[0]
-	vfp_radian_start .req s0 @ Lower 32 Bits of d0
-	vfp_radian_end   .req s1 @ Upper 32 Bits of d0
-	vfp_position     .req d1
-	vfp_position_x   .req s2 @ Lower 32 Bits of d1
-	vfp_position_y   .req s3 @ Upper 32 Bits of d1
-	vfp_radius       .req d2
-	vfp_radius_x     .req s4
-	vfp_radius_y     .req s5
-	vfp_adder        .req s6
+	vfp_d_radian     .req d0 @ q0[0]
+	vfp_start_radian .req s0 @ Lower 32 Bits of d0
+	vfp_end_radian   .req s1 @ Upper 32 Bits of d0
+	vfp_xy_position  .req d1
+	vfp_x_position   .req s2 @ Lower 32 Bits of d1
+	vfp_y_position   .req s3 @ Upper 32 Bits of d1
+	vfp_d_radius     .req d2
+	vfp_x_radius     .req s4
+	vfp_y_radius     .req s5
+	vfp_add          .req s6
+	vfp_temp         .req s7
 
-	push {r4-r9}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #24                                   @ r4-r9 offset 24 bytes
-	pop {deg_start, deg_end, char_width, char_height} @ Get Fifth to Seventh Arguments
-	sub sp, sp, #40                                   @ Retrieve SP
+	add sp, sp, #28                                   @ r4-r10 offset 28 bytes
+	pop {y_radius, start_radian, end_radian, char_width, char_height} @ Get Fifth to Ninth Arguments
+	sub sp, sp, #48                                   @ Retrieve SP
 
-	vpush {s0-s6}
+	vpush {s0-s7}
 
-	push {r0-r3,lr}
-	mov r0, deg_start
-	bl math32_degree_to_radian32
-	mov deg_start, r0                                 @ Float Type Value
-	pop {r0-r3,lr}
+	vmov vfp_d_radian, start_radian, end_radian
+	vcmp.f32 vfp_start_radian, vfp_end_radian
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovgt vfp_start_radian, vfp_x_radius
+	vmovgt vfp_start_radian, vfp_end_radian
+	vmovgt vfp_end_radian, vfp_x_radius
 
-	.unreq deg_start
-	radian_start .req r3
+	vmov vfp_d_radius, x_radius, y_radius
+	vcvt.f32.s32 vfp_d_radius, vfp_d_radius
 
-	push {r0-r3,lr}
-	mov r0, deg_end
-	bl math32_degree_to_radian32
-	mov deg_end, r0                                   @ Float Type Value
-	pop {r0-r3,lr}
-
-	.unreq deg_end
-	radian_end .req r4
-
-	vmov vfp_radian, radian_start, radian_end
-	vcmp.f32 vfp_radian_start, vfp_radian_end
-	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_radian_start, vfp_radius_x
-	vmovgt vfp_radian_start, vfp_radian_end
-	vmovgt vfp_radian_end, vfp_radius_x
-
-	vdup.32 vfp_radius, radius
-	vcvt.f32.s32 vfp_radius, vfp_radius
-
-	vmov vfp_adder, #0.125
-	vmul.f32 vfp_adder, vfp_adder, vfp_adder
-	vmul.f32 vfp_adder, vfp_adder, vfp_adder
+	vmov vfp_add, #0.125
+	vmul.f32 vfp_temp, vfp_x_radius, vfp_y_radius
+	vdiv.f32 vfp_add, vfp_add, vfp_temp
 
 	fb32_draw_arc_loop:
-		vcmp.f32 vfp_radian_start, vfp_radian_end
+		vcmp.f32 vfp_start_radian, vfp_end_radian
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 		bgt fb32_draw_arc_success
-		vmov radian_start, vfp_radian_start
+		vmov start_radian, vfp_start_radian
 
 		push {r0-r3,lr}
-		mov r0, radian_start
+		mov r0, start_radian
 		bl math32_cos32
 		mov x_current, r0
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
-		mov r0, radian_start
+		mov r0, start_radian
 		bl math32_sin32
 		mov y_current, r0
 		pop {r0-r3,lr}
 
-		vmov vfp_position, x_current, y_current
-		vmul.f32 vfp_position, vfp_position, vfp_radius
-		vcvtr.s32.f32 vfp_position, vfp_position
-		vmov x_current, vfp_position_x
-		vmov y_current, vfp_position_y
+		vmov vfp_xy_position, x_current, y_current
+		vmul.f32 vfp_xy_position, vfp_xy_position, vfp_d_radius
+		vcvtr.s32.f32 vfp_xy_position, vfp_xy_position
+		vmov x_current, vfp_x_position
+		vmov y_current, vfp_y_position
 
-		add x_current, x_current, x_coord
-		add y_current, y_current, y_coord
+		add x_current, x_coord, x_current
+		sub y_current, y_coord, y_current                   @ Y Coord is Reversal to Real Y Axis
 
 		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
@@ -177,7 +163,7 @@ fb32_draw_arc:
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne fb32_draw_arc_error
 
-		vadd.f32 vfp_radian_start, vfp_radian_start, vfp_adder
+		vadd.f32 vfp_start_radian, vfp_start_radian, vfp_add
 		b fb32_draw_arc_loop
 
 	fb32_draw_arc_error:
@@ -188,33 +174,35 @@ fb32_draw_arc:
 		mov r0, #0
 
 	fb32_draw_arc_common:
-		vpop {s0-s6}
+		vpop {s0-s7}
 		lsl x_current, x_current, #16
 		add r1, x_current, y_current
-		pop {r4-r9}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
 .unreq color
 .unreq x_coord
 .unreq y_coord
-.unreq radius
-.unreq radian_start
-.unreq radian_end
+.unreq x_radius
+.unreq y_radius
+.unreq start_radian
+.unreq end_radian
 .unreq char_width
 .unreq char_height
 .unreq x_current
 .unreq y_current
-.unreq vfp_radian
-.unreq vfp_radian_start
-.unreq vfp_radian_end
-.unreq vfp_position
-.unreq vfp_position_x
-.unreq vfp_position_y
-.unreq vfp_radius
-.unreq vfp_radius_x
-.unreq vfp_radius_y
-.unreq vfp_adder
+.unreq vfp_d_radian
+.unreq vfp_start_radian
+.unreq vfp_end_radian
+.unreq vfp_xy_position
+.unreq vfp_x_position
+.unreq vfp_y_position
+.unreq vfp_d_radius
+.unreq vfp_x_radius
+.unreq vfp_y_radius
+.unreq vfp_add
+.unreq vfp_temp
 
 
 /**

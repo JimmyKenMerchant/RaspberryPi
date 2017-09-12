@@ -43,11 +43,12 @@ math32_degree_to_radian32:
 	 * Radian = degrees X (pi Div by 180)
 	 */
 	vmov vfp_degree, degree
+	vcvt.f32.s32 vfp_degree, vfp_degree
 	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
 	vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
-	vmov r0, vfp_radian
 
 	math32_degree_to_radian32_common:
+		vmov r0, vfp_radian
 		vpop {s0-s2}
 		mov pc, lr
 
@@ -86,8 +87,11 @@ math32_sin32:
 	 * sinx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
 	 * For All x
 	 */
-	vmov vfp_radian, radian                         @ n = 0
-	vmov vfp_sum, vfp_radian
+	vmov vfp_radian, radian
+	vcmp.f32 vfp_radian, #0
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	vmov vfp_sum, vfp_radian                        @ n = 0
+	beq math32_sin32_common
 
 	vmov vfp_dividend, vfp_radian                   @ n = 1
 	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
@@ -136,9 +140,8 @@ math32_sin32:
 	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
 	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
-	vmov r0, vfp_sum
-
 	math32_sin32_common:
+		vmov r0, vfp_sum
 		vpop {s0-s4}
 		mov pc, lr
 
@@ -180,7 +183,10 @@ math32_cos32:
 	 * For All x
 	 */
 	vmov vfp_radian, radian                         @ n = 0
-	vmov vfp_sum, vfp_radian
+	vcmp.f32 vfp_radian, #0
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	vmov vfp_sum, #1.0
+	beq math32_cos32_common
 
 	vmov vfp_dividend, vfp_radian                   @ n = 1
 	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Second Power
@@ -223,9 +229,8 @@ math32_cos32:
 	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
 	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
-	vmov r0, vfp_sum
-
 	math32_cos32_common:
+		vmov r0, vfp_sum
 		vpop {s0-s4}
 		mov pc, lr
 
@@ -243,7 +248,7 @@ math32_cos32:
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Parameters
- * r0: Radian, Must Be Type of Single Precision Float, Must be |Radian| < pi, -pi through pi
+ * r0: Radian, Must Be Type of Single Precision Float, Must be |Radian| < pi Div by 2, -pi Div by 2 through pi Div by 2 exclusively
  *
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
@@ -268,7 +273,10 @@ math32_tan32:
 	 * B is Bernoulli Number
 	 */
 	vmov vfp_radian, radian                         @ n = 1
+	vcmp.f32 vfp_radian, #0
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	vmov vfp_sum, vfp_radian
+	beq math32_tan32_common
 
 	vmov vfp_dividend, vfp_radian                   @ n = 2
 	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
@@ -321,9 +329,8 @@ math32_tan32:
 	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
 	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
-	vmov r0, vfp_sum
-
 	math32_tan32_common:
+		vmov r0, vfp_sum
 		vpop {s0-s4}
 		mov pc, lr
 
@@ -393,6 +400,7 @@ math32_float32_to_string:
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 	movlt minus, #1
 	movge minus, #0
+	beq math32_float32_to_string_integer
 
 	vabs.f32 vfp_float, vfp_float
 

@@ -266,6 +266,26 @@ extern uint32 FB32_DEPTH;
 extern int32 FB32_X_CARET;
 extern int32 FB32_Y_CARET;
 
+/**
+ * Draw Arc
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
+ *
+ * Return: Lower32 bits (0 as success, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
+ */
+extern uint64 fb32_draw_arc
+(
+	uint32 color,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 x_radius,
+	uint32 y_radius,
+	float32 start_radian,
+	float32 end_radian,
+	uint32 width,
+	uint32 height
+);
 
 /**
  * Draw Circle Filled with Color
@@ -279,8 +299,8 @@ extern uint64 fb32_draw_circle
 	uint32 color,
 	int32 x_coord,
 	int32 y_coord,
-	uint32 x_radian,
-	uint32 y_radian
+	uint32 x_radius,
+	uint32 y_radius
 );
 
 
@@ -607,7 +627,7 @@ extern float32 math32_degree_to_radian32
  */
 extern float32 math32_sin32
 (
-	int32 radian
+	float32 radian
 );
 
 
@@ -619,7 +639,7 @@ extern float32 math32_sin32
  */
 extern float32 math32_cos32
 (
-	int32 radian
+	float32 radian
 );
 
 
@@ -632,7 +652,7 @@ extern float32 math32_cos32
  */
 extern float32 math32_tan32
 (
-	int32 radian
+	float32 radian
 );
 
 
