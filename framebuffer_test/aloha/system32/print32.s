@@ -678,7 +678,7 @@ print32_number:
  * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
- * Global Enviromental Variable(s): FB32_ADDRESS, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
 .globl print32_char
 print32_char:
@@ -704,7 +704,7 @@ print32_char:
 	pop {char_width,char_height}                     @ Get Fifth and Sixth Arguments
 	sub sp, sp, #40                                  @ Retrieve SP
 
-	ldr f_buffer, FB32_ADDRESS
+	ldr f_buffer, FB32_ADDR
 	cmp f_buffer, #0
 	beq print32_char_error2
 

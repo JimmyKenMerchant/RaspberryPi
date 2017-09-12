@@ -258,15 +258,11 @@ extern int32* FB32_FRAMEBUFFER;
 extern int32* FB32_DOUBLEBUFFER_BACK;
 extern int32* FB32_DOUBLEBUFFER_FRONT;
 
-extern uint32 FB32_ADDRESS;
-extern uint32 FB32_DISPLAY_WIDTH;
-extern uint32 FB32_DISPLAY_HEIGHT;
-extern uint32 FB32_SIZE;
-extern uint32 FB32_DEPTH;
-extern uint32 FB32_PIXELORDER;
-extern uint32 FB32_ALPHAMODE;
+extern uint32 FB32_ADDR;
 extern uint32 FB32_WIDTH;
 extern uint32 FB32_HEIGHT;
+extern uint32 FB32_SIZE;
+extern uint32 FB32_DEPTH;
 extern int32 FB32_X_CARET;
 extern int32 FB32_Y_CARET;
 
@@ -395,15 +391,6 @@ extern uint32 fb32_attach_buffer
 (
 	int32* buffer
 );
-
-
-/**
- * Get Framebuffer
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): When Framebuffer is not Defined
- */
-extern uint32 fb32_get_framebuffer();
 
 
 /********************************

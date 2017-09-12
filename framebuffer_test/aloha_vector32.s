@@ -336,7 +336,7 @@ _aloha_reset:
 	str r1, [r0, #equ32_gpio_gpfsel4]
 
 	mov r0, #32
-	ldr r1, ADDR32_FB32_DEPTH
+	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
 
 	push {r0-r3}
@@ -347,7 +347,7 @@ _aloha_reset:
 	pop {r0-r3}
 
 	mov r0, #2
-	ldr r1, ADDR32_FB32_ALPHAMODE
+	ldr r1, ADDR32_BCM32_ALPHAMODE
 	str r0, [r1]
 
 	push {r0-r3}
@@ -359,7 +359,7 @@ _aloha_reset:
 
 	/* Obtain Framebuffer from VideoCore IV */
 	push {r0-r3}
-	bl fb32_get_framebuffer_mailbox
+	bl bcm32_get_framebuffer
 	pop {r0-r3}
 
 	/* Set Cache Status for Memory Using as Framebuffer (By Section) */

@@ -33,11 +33,16 @@ SECTIONS {
 		. = 0x2000;
 	}
 	. = 0xA000;
+	.vendor32 : {
+		system32.o(.vendor)
+		. = 0x2000;
+	}
+	. = 0xC000;
 	.system32 : {
 		system32.o(.system)
 		. = 0x4000;
 	}
-	. = 0xE000;
+	. = 0x10000;
 	.library32 : {
 		system32.o(.library)
 		. += 0x00100000;
