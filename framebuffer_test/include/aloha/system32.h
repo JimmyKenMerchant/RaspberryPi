@@ -380,7 +380,7 @@ extern uint64 fb32_clear_color
  * Return: 0 as sucess, 1 as error
  * Error(1): When buffer is not defined
  */
-extern uint32 fb32_doublebuffer_flush();
+extern uint32 fb32_flush_doublebuffer();
 
 
 /**
@@ -393,7 +393,7 @@ extern uint32 fb32_doublebuffer_flush();
  * Return: 0 as success, 1 as error
  * Error(1): When buffer is not Defined
  */
-extern uint32 fb32_doublebuffer_set
+extern uint32 fb32_set_doublebuffer
 (
 	int32* buffer_front,
 	int32* buffer_back

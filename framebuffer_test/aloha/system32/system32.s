@@ -7,10 +7,20 @@
  *
  */
 
+/**
+ * The section, "vender" is to be used for drivers of vendor-implemented peripherals. These usually don't have any standard,
+ * So if you consider of compatibility with other ARM CPUs. Files in this section should be alternated with
+ * other ones.
+ */
 .section	.vendor
 
 .include "system32/bcm32.s"
 
+/**
+ * The section, "system" is to be used for drivers of ARM system registers, and standard peripherals,
+ * USB, I2C, UART, etc. These are usually aiming compatibility with other ARM CPUs,
+ * but memory mapping differs among CPUs. Addresses of peripherals should be changed. 
+ */
 .section	.system
 
 /**
@@ -1245,16 +1255,16 @@ system32_mfree:
  * But if you assign ".globl" to the label, then these are mapped when using `ld`, a linker (please check out inter.map).
  * These are useful if you use `extern` in C lang file, or use the label in other assembler lang files.
  */
-.balign 4
+
+/**
+ * The section, "library" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
+ * compatibility with other ARM CPUs. 
+ */
+.section	.library
 /* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"
 .balign 4
 .include "system32/fb32.s"
-
-/* Additional memory-mapped operations here */
-
-.section	.library
-
 .balign 4
 .include "system32/draw32.s"
 .balign 4

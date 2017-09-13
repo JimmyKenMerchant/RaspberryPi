@@ -18,7 +18,7 @@ FB32_ADDR:           .word 0x00
 FB32_WIDTH:          .word 0x00
 FB32_HEIGHT:         .word 0x00
 FB32_SIZE:           .word 0x00
-FB32_DEPTH:          .word 0x00
+FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB). 
 
 
 /* Indicates Caret Position to Use in Printing Characters */
@@ -1266,15 +1266,15 @@ fb32_clear_color:
 
 
 /**
- * function fb32_doublebuffer_flush
+ * function fb32_flush_doublebuffer
  * Flush Back Buffer to Framebuffer and Swap Front and Back
  *
  * Usage: r0-r7
  * Return: r0 (0 as success, 1 as error)
  * Error(1): When buffer is not Defined
  */
-.globl fb32_doublebuffer_flush
-fb32_doublebuffer_flush:
+.globl fb32_flush_doublebuffer
+fb32_flush_doublebuffer:
 	buffer_front      .req r0
 	buffer_back       .req r1
 	doublebuffer_base .req r2
@@ -1288,10 +1288,10 @@ fb32_doublebuffer_flush:
 
 	ldr buffer_front, FB32_DOUBLEBUFFER_FRONT 
 	cmp buffer_front, #0
-	beq fb32_doublebuffer_flush_error
+	beq fb32_flush_doublebuffer_error
 	ldr buffer_back, FB32_DOUBLEBUFFER_BACK
 	cmp buffer_back, #0
-	beq fb32_doublebuffer_flush_error
+	beq fb32_flush_doublebuffer_error
 
 	dsb
 	isb
@@ -1301,19 +1301,19 @@ fb32_doublebuffer_flush:
 
 	ldr f_buffer, FB32_FRAMEBUFFER_ADDR
 	cmp f_buffer, #0
-	beq fb32_doublebuffer_flush_error
+	beq fb32_flush_doublebuffer_error
 	ldr size, FB32_FRAMEBUFFER_SIZE
 	cmp size, #0
-	beq fb32_doublebuffer_flush_error
+	beq fb32_flush_doublebuffer_error
 	ldr depth, FB32_FRAMEBUFFER_DEPTH
 	cmp depth, #0
-	beq fb32_doublebuffer_flush_error
+	beq fb32_flush_doublebuffer_error
 
 	add size, f_buffer, size
 
 	ldr r_buffer, [buffer_back]
 
-	fb32_doublebuffer_flush_loop:
+	fb32_flush_doublebuffer_loop:
 		cmp depth, #16
 		ldreqh color, [r_buffer]
 		streqh color, [f_buffer]
@@ -1325,23 +1325,23 @@ fb32_doublebuffer_flush:
 		addeq r_buffer, r_buffer, #4
 		addeq f_buffer, f_buffer, #4
 		cmp f_buffer, size
-		blt fb32_doublebuffer_flush_loop
+		blt fb32_flush_doublebuffer_loop
 
 	push {r0-r3,lr}
 	mov r0, buffer_front
 	bl fb32_attach_buffer
 	pop {r0-r3,lr}
 
-	b fb32_doublebuffer_flush_success
+	b fb32_flush_doublebuffer_success
 
-	fb32_doublebuffer_flush_error:
+	fb32_flush_doublebuffer_error:
 		mov r0, #1                           @ Return with Error
-		b fb32_doublebuffer_flush_common
+		b fb32_flush_doublebuffer_common
 
-	fb32_doublebuffer_flush_success:
+	fb32_flush_doublebuffer_success:
 		mov r0, #0                           @ Return with Success
 
-	fb32_doublebuffer_flush_common:
+	fb32_flush_doublebuffer_common:
 		dsb                              @ Ensure Completion of Instructions Before
 		isb
 		pop {r4-r7}
@@ -1358,7 +1358,7 @@ fb32_doublebuffer_flush:
 
 
 /**
- * function fb32_doublebuffer_set
+ * function fb32_set_doublebuffer
  * Set Buffer for Double Buffer Operation
  *
  * Parameters
@@ -1369,16 +1369,16 @@ fb32_doublebuffer_flush:
  * Return: r0 (0 as success, 1 as error)
  * Error(1): When buffer is not Defined
  */
-.globl fb32_doublebuffer_set
-fb32_doublebuffer_set:
+.globl fb32_set_doublebuffer
+fb32_set_doublebuffer:
 	buffer_front      .req r0
 	buffer_back       .req r1
 	doublebuffer_base .req r2
 
 	cmp buffer_front, #0
-	beq fb32_doublebuffer_set_error
+	beq fb32_set_doublebuffer_error
 	cmp buffer_back, #0
-	beq fb32_doublebuffer_set_error
+	beq fb32_set_doublebuffer_error
 
 	str buffer_back, FB32_DOUBLEBUFFER_BACK
 	str buffer_front, FB32_DOUBLEBUFFER_FRONT
@@ -1388,16 +1388,16 @@ fb32_doublebuffer_set:
 	bl fb32_attach_buffer
 	pop {r0-r3,lr}
 
-	b fb32_doublebuffer_set_success
+	b fb32_set_doublebuffer_success
 
-	fb32_doublebuffer_set_error:
+	fb32_set_doublebuffer_error:
 		mov r0, #1                           @ Return with Error
-		b fb32_doublebuffer_set_common
+		b fb32_set_doublebuffer_common
 
-	fb32_doublebuffer_set_success:
+	fb32_set_doublebuffer_success:
 		mov r0, #0                           @ Return with Success
 
-	fb32_doublebuffer_set_common:
+	fb32_set_doublebuffer_common:
 		dsb                              @ Ensure Completion of Instructions Before
 		isb
 		mov pc, lr

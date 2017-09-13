@@ -39,7 +39,7 @@ void _user_start()
 	draw32_set_renderbuffer( renderbuffer1, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 	fb32_attach_buffer( renderbuffer1 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
-	fb32_doublebuffer_set( renderbuffer0, renderbuffer1 );
+	fb32_set_doublebuffer( renderbuffer0, renderbuffer1 );
 
 	fb32_draw_arc( COLOR32_BLUE, 500, 200, 100, 75, start_radian, end_radian, 1, 1 );
 
@@ -148,7 +148,7 @@ void _user_start()
 	//fb32_draw_image( renderbuffer3_addr, 100, 100, renderbuffer3_width, renderbuffer3_height, 0, 0, 0, 0 );
 	
 	while(1) {
-		fb32_doublebuffer_flush();
+		fb32_flush_doublebuffer();
 		draw32_copy( FB32_DOUBLEBUFFER_FRONT, renderbuffer4 );
 		fb32_draw_image( renderbuffer4_addr, 0, 0, renderbuffer4_width, renderbuffer4_height, 0, 10, 10, 0 );
 		system32_sleep( 2000000 );
