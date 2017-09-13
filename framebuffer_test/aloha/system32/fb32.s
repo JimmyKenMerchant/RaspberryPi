@@ -1034,13 +1034,11 @@ fb32_draw_image:
  * r3: Character Width in Pixels
  * r4: Character Height in Pixels
  *
- * Usage: r0-r11
+ * Usage: r0-r10
  * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
- * **fb32_clear_color is specially implemented to check if y_coord is over height to hide stopping to draw on higher functions.
- * This height-check virtually prevents Error(1)**
  * Error(2): When Buffer is not Defined
- * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB_HEIGHT, FB32_SIZE, FB32_DEPTH
+ * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
 .globl fb32_clear_color_block
 fb32_clear_color_block:
@@ -1052,18 +1050,17 @@ fb32_clear_color_block:
 	char_height .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
 	f_buffer    .req r5  @ Pointer of Buffer
 	width       .req r6
-	height      .req r7
-	depth       .req r8
-	size        .req r9
-	j           .req r10  @ Use for Horizontal Counter
-	bitmask     .req r11
+	depth       .req r7
+	size        .req r8
+	j           .req r9  @ Use for Horizontal Counter
+	bitmask     .req r10
 
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
+	add sp, sp, #28                                  @ r4-r10 offset 28 bytes
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
-	sub sp, sp, #36                                  @ Retrieve SP
+	sub sp, sp, #32                                  @ Retrieve SP
 
 	ldr f_buffer, FB32_ADDR
 	cmp f_buffer, #0
@@ -1071,10 +1068,6 @@ fb32_clear_color_block:
 
 	ldr width, FB32_WIDTH
 	cmp width, #0
-	beq fb32_clear_color_block_error2
-
-	ldr height, FB32_HEIGHT
-	cmp height, #0
 	beq fb32_clear_color_block_error2
 
 	ldr depth, FB32_DEPTH
@@ -1095,11 +1088,6 @@ fb32_clear_color_block:
 	lsleq width, width, #2                           @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	/* Set Location to Render the Character */
-
-	cmp y_coord, height                              @ If Value of y_coord is over Height of Buffer
-	subge height, y_coord, height
-	addge height, height, #1
-	subge char_height, height
 
 	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
 	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
@@ -1185,7 +1173,7 @@ fb32_clear_color_block:
 
 	fb32_clear_color_block_common:
 		mov r1, f_buffer
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
@@ -1196,7 +1184,6 @@ fb32_clear_color_block:
 .unreq char_height
 .unreq f_buffer
 .unreq width
-.unreq height
 .unreq depth
 .unreq size
 .unreq j

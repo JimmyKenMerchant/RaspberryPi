@@ -373,3 +373,12 @@ bcm32_mailbox_send:
 .equ bcm32_core1_mailboxes_interrupt,   0x54
 .equ bcm32_core2_mailboxes_interrupt,   0x58
 .equ bcm32_core3_mailboxes_interrupt,   0x5C
+
+.equ bcm32_core0_irq_source,   0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ bcm32_core1_irq_source,   0x64
+.equ bcm32_core2_irq_source,   0x68
+.equ bcm32_core3_irq_source,   0x6C
+.equ bcm32_core0_fiq_source,   0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ bcm32_core1_fiq_source,   0x74
+.equ bcm32_core2_fiq_source,   0x78
+.equ bcm32_core3_fiq_source,   0x7C

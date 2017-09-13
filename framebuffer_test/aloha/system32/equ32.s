@@ -7,6 +7,9 @@
  *
  */
 
+/**
+ * Standard Peripherals
+ */
 
 /* BCM2836 and BCM2837 Peripheral Base */
 /* If BCM 2835, Peripheral Base is 0x20000000 */
@@ -15,15 +18,6 @@
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
 .equ equ32_gpio_base,          0x00200000
-
-.equ equ32_core0_irq_source,   0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
-.equ equ32_core1_irq_source,   0x64
-.equ equ32_core2_irq_source,   0x68
-.equ equ32_core3_irq_source,   0x6C
-.equ equ32_core0_fiq_source,   0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
-.equ equ32_core1_fiq_source,   0x74
-.equ equ32_core2_fiq_source,   0x78
-.equ equ32_core3_fiq_source,   0x7C
 
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
@@ -146,6 +140,11 @@
 .equ equ32_gpio51,   0b1 << 19 @ Bit High
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
+
+
+/**
+ * ARM System Registers (Coprocessors)
+ */
 
 /**
  * For Short Descriptor Translation Table (32-bit), First Level

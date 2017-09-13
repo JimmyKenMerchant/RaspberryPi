@@ -18,6 +18,7 @@
  * So if you consider of compatibility with other ARM CPUs. Files in this section should be alternated with
  * other ones.
  */
+
 .section	.vendor
 
 .include "system32/bcm32.s"
@@ -27,6 +28,7 @@
  * USB, I2C, UART, etc. These are usually aiming compatibility with other ARM CPUs,
  * but memory mapping differs among CPUs. Addresses of peripherals in "equ32.s" should be changed. 
  */
+
 .section	.system
 
 .include "system32/equ32.s"
@@ -1229,7 +1231,9 @@ system32_mfree:
  * The section, "library" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
  * compatibility with other ARM CPUs. 
  */
+
 .section	.library
+
 /* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"
 .balign 4
