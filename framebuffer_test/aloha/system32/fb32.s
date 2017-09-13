@@ -74,7 +74,7 @@ FB32_DOUBLEBUFFER_FRONT:   .word 0x00
  */
 .globl fb32_draw_arc
 fb32_draw_arc:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	color            .req r0   @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
@@ -119,8 +119,11 @@ fb32_draw_arc:
 	vmov vfp_d_radius, x_radius, y_radius
 	vcvt.f32.s32 vfp_d_radius, vfp_d_radius
 
-	vmov vfp_add, #0.125
-	vmul.f32 vfp_temp, vfp_x_radius, vfp_y_radius
+	vmov vfp_add, #0.125                              @ 0.0175 is Close to Radian per Degree
+	vcmp.f32 vfp_x_radius, vfp_y_radius
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovge vfp_temp, vfp_x_radius
+	vmovlt vfp_temp, vfp_y_radius
 	vdiv.f32 vfp_add, vfp_add, vfp_temp
 
 	fb32_draw_arc_loop:
@@ -159,9 +162,9 @@ fb32_draw_arc:
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                                          @ Compare Return 0 or 1
+		cmp r0, #2                                          @ Compare Return 2
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
-		bne fb32_draw_arc_error
+		beq fb32_draw_arc_error
 
 		vadd.f32 vfp_start_radian, vfp_start_radian, vfp_add
 		b fb32_draw_arc_loop
@@ -223,7 +226,7 @@ fb32_draw_arc:
  */
 .globl fb32_draw_circle
 fb32_draw_circle:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	color            .req r0   @ Parameter, Register for Argument, Scratch Register
 	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
@@ -316,9 +319,9 @@ fb32_draw_circle:
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                                          @ Compare Return 0 or 1
+		cmp r0, #2                                          @ Compare Return 2
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
-		bne fb32_draw_circle_error
+		beq fb32_draw_circle_error
 
 		cmp y_current,  y_max                               @ Already, y_max Has Been Minus One Before Loop
 		bge fb32_draw_circle_success
@@ -405,7 +408,7 @@ fb32_draw_circle:
  */
 .globl fb32_draw_line
 fb32_draw_line:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	color            .req r0   @ Parameter, Register for Argument, Scratch Register
 	x_coord_1        .req r1   @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord_1        .req r2   @ Parameter, Register for Argument, Scratch Register
@@ -524,9 +527,10 @@ fb32_draw_line:
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                                     @ Compare Return 0 or 1
+		cmp r0, #2                                     @ Compare Return 2
 		pop {r0-r3,lr}                                 @ Retrieve Registers Before Error Check, POP does not flags-update
-		bne fb32_draw_line_error
+
+		beq fb32_draw_line_error
 
 		fb32_draw_line_loop_common:
 			add i, i, #1
@@ -613,7 +617,7 @@ fb32_draw_line:
  */
 .globl fb32_draw_image
 fb32_draw_image:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	image_point      .req r0  @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord          .req r1  @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord          .req r2  @ Parameter, Register for Argument, Scratch Register
@@ -1040,7 +1044,7 @@ fb32_draw_image:
  */
 .globl fb32_clear_color_block
 fb32_clear_color_block:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	color       .req r0  @ Parameter, Register for Argument, Scratch Register
 	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
@@ -1294,7 +1298,6 @@ fb32_flush_doublebuffer:
 	beq fb32_flush_doublebuffer_error
 
 	dsb
-	isb
 
 	str buffer_front, FB32_DOUBLEBUFFER_BACK 
 	str buffer_back, FB32_DOUBLEBUFFER_FRONT
@@ -1342,8 +1345,7 @@ fb32_flush_doublebuffer:
 		mov r0, #0                           @ Return with Success
 
 	fb32_flush_doublebuffer_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb
+		dsb                                  @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -1398,8 +1400,7 @@ fb32_set_doublebuffer:
 		mov r0, #0                           @ Return with Success
 
 	fb32_set_doublebuffer_common:
-		dsb                              @ Ensure Completion of Instructions Before
-		isb
+		dsb                                  @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq buffer_front
@@ -1430,7 +1431,6 @@ fb32_attach_buffer:
 	push {r4,r5}
 
 	dsb                                         @ Ensure Coherence of Cache and Memory
-	isb
 
 	ldr buffer_addr, [buffer]
 	cmp buffer_addr, #0
@@ -1462,11 +1462,10 @@ fb32_attach_buffer:
 	b fb32_attach_buffer_common
 
 	fb32_attach_buffer_error:
-		mov r0, #1                           @ Return with Error
+		mov r0, #1                       @ Return with Error
 
 	fb32_attach_buffer_common:
-		dsb                                  @ Ensure Completion of Instructions Before
-		isb                                  @ Flush Instructions in Pipelines
+		dsb                              @ Ensure Completion of Instructions Before
 		pop {r4, r5}
 		mov pc, lr
 
@@ -1501,7 +1500,6 @@ fb32_set_cache:
 	push {r4}
 
 	dsb
-	isb
 
 	ldr memorymap_base, FB32_FRAMEBUFFER_ADDR
 	cmp memorymap_base, #0
@@ -1540,7 +1538,6 @@ fb32_set_cache:
 
 	fb32_set_cache_common:
 		dsb                                  @ Ensure Completion of Instructions Before
-		isb                                  @ Flush Instructions in Pipelines
 		pop {r4}
 		mov pc, lr
 

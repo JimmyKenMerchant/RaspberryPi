@@ -8,11 +8,11 @@
  */
 
 .globl MATH32_PI32
-MATH32_PI32: .float 3.14159265358979
+MATH32_PI32: .float 3.14159265359
 .balign 8
 
 .globl MATH32_PI_PER_DEGREE32
-MATH32_PI_PER_DEGREE32: .float 0.0174532925199433
+MATH32_PI_PER_DEGREE32: .float 0.01745329252
 .balign 8
 
 
@@ -29,7 +29,7 @@ MATH32_PI_PER_DEGREE32: .float 0.0174532925199433
  */
 .globl math32_degree_to_radian32
 math32_degree_to_radian32:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP/NEON Registers */
@@ -71,7 +71,7 @@ math32_degree_to_radian32:
  */
 .globl math32_sin32
 math32_sin32:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP/NEON Registers */
@@ -166,7 +166,7 @@ math32_sin32:
  */
 .globl math32_cos32
 math32_cos32:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP/NEON Registers */
@@ -255,7 +255,7 @@ math32_cos32:
  */
 .globl math32_tan32
 math32_tan32:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP/NEON Registers */
@@ -360,7 +360,7 @@ math32_tan32:
  */
 .globl math32_float32_to_string
 math32_float32_to_string:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	float          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	min_integer    .req r1
 	max_decimal    .req r2
@@ -712,7 +712,7 @@ math32_float32_to_string:
  */
 .globl math32_int32_to_string_deci
 math32_int32_to_string_deci:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	integer       .req r0
 	min_length    .req r1
 	signed        .req r2
@@ -984,7 +984,7 @@ math32_int32_to_string_deci:
  */
 .globl math32_int32_to_string_hexa
 math32_int32_to_string_hexa:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	integer     .req r0
 	min_length  .req r1
 	signed      .req r2
@@ -1130,7 +1130,7 @@ math32_int32_to_string_hexa:
  */
 .globl math32_count_zero32
 math32_count_zero32:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	register      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	mask          .req r1
 	base          .req r2
@@ -1172,7 +1172,7 @@ math32_count_zero32:
  */
 .globl math32_hexa_to_deci32
 math32_hexa_to_deci32:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	hexa        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	deci_upper  .req r1
 	power_lower .req r2
@@ -1302,7 +1302,7 @@ math32_hexa_to_deci32_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  */
 .globl math32_decimal_adder64
 math32_decimal_adder64:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register

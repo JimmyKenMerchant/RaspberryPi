@@ -65,14 +65,14 @@ _el01_reset:
 	bl system32_cache_operation_all
 	pop {r0-r3}
 
-	dsb
-	isb
+	dsb                                       @ Ensure Completion of Instructions Before
+	isb                                       @ Flush Instructions in Pipelines
 
 	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
 	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
 
-	dsb
-	isb
+	dsb                                       @ Ensure Completion of Instructions Before
+	isb                                       @ Flush Instructions in Pipelines
 
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b101                        @ Enable Data Cache[2] and MMU(EL0 and EL1)[0]
@@ -80,14 +80,12 @@ _el01_reset:
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 
 	dsb
-	isb
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
 	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 
 	dsb
-	isb
 
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
 	and r0, r0, #0b11
@@ -196,14 +194,14 @@ _el3_mon:
 	bl system32_cache_operation_all
 	pop {r0-r3,lr}
 
-	dsb
-	isb
+	dsb                                       @ Ensure Completion of Instructions Before
+	isb                                       @ Flush Instructions in Pipelines
 
 	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
 	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
 
-	dsb
-	isb
+	dsb                                       @ Ensure Completion of Instructions Before
+	isb                                       @ Flush Instructions in Pipelines
 
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b101                        @ Enable Data Cache[2] and (EL0 and EL1)MMU[0]
@@ -211,7 +209,6 @@ _el3_mon:
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 
 	dsb
-	isb
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
@@ -219,21 +216,18 @@ _el3_mon:
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
 
 	dsb
-	isb
 
 	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
 	add r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18]
 	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
 
 	dsb
-	isb
 
 	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
 	add r0, r0, #0x100                        @ HCE Bit (Hypervisor Call Enable)
 	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure state, Secure Configuration Register (SCR)
 
 	dsb
-	isb
 
 	/* Non-secure State Below */
 
@@ -241,7 +235,6 @@ _el3_mon:
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
 
 	dsb
-	isb
 
 	movs pc, lr                               @ Return to SVC Mode
 

@@ -31,7 +31,7 @@
  */
 .globl print32_debug
 print32_debug:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	register          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
@@ -86,7 +86,7 @@ print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
  */
 .globl print32_set_caret
 print32_set_caret:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	chars             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	xy_coord          .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	width             .req r2
@@ -139,7 +139,7 @@ print32_set_caret:
  */
 .globl print32_strcat
 print32_strcat:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	string_point1     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	string_point2     .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	string_byte       .req r2
@@ -235,7 +235,7 @@ print32_strcat:
  */
 .globl print32_strlen
 print32_strlen:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	string_byte       .req r1
 	length            .req r2
@@ -282,7 +282,7 @@ print32_strlen:
  */
 .globl print32_string
 print32_string:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
@@ -330,7 +330,7 @@ print32_string:
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                               @ Compare Return 0 or 1
+		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
 
@@ -345,7 +345,7 @@ print32_string:
 		add sp, sp, #8
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                               @ Compare Return 0 or 1
+		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
 
@@ -426,7 +426,7 @@ print32_string:
  */
 .globl print32_number_double
 print32_number_double:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	number_lower      .req r0  @ Parameter, Register for Argument and Result, Scratch Register
 	number_upper      .req r1  @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord           .req r2  @ Parameter, Register for Argument and Result, Scratch Register
@@ -465,7 +465,7 @@ print32_number_double:
 		add sp, sp, #20
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                         @ Compare Return 0 or 1
+		cmp r0, #0                         @ Compare Return 0
 		addne length, r0, length_lower
 		pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_double_error
@@ -493,7 +493,7 @@ print32_number_double:
 		add sp, sp, #20
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                         @ Compare Return 0 or 1
+		cmp r0, #0                         @ Compare Return 0
 		movne length, r0
 		pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_double_error
@@ -546,7 +546,7 @@ print32_number_double:
  */
 .globl print32_number
 print32_number:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	number         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord        .req r2 @ Parameter, Register for Argument, Scratch Register
@@ -587,7 +587,7 @@ print32_number:
 		add sp, sp, #4
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                               @ Compare Return 0 or 1
+		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_error
 
@@ -610,7 +610,7 @@ print32_number:
 		add sp, sp, #8
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                               @ Compare Return 0 or 1
+		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_error
 
@@ -682,7 +682,7 @@ print32_number:
  */
 .globl print32_char
 print32_char:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	char_point  .req r0  @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register

@@ -9,6 +9,164 @@
 
 
 /**
+ * function draw32_antialias
+ * Anti-aliasing
+ * Caution! This Function is Used in 32-bit Depth Color
+ * First and Last Pixel of Base is not anti-aliased, and there is no horizontal sync.
+ *
+ * Parameters
+ * r0: Pointer of Buffer for Result
+ * r1: Pointer of Buffer to Be Aliased, Base
+ *
+ * Usage: r0-r10
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined, or Depth is not 32-bit
+ */
+.globl draw32_antialias
+draw32_antialias:
+	/* Auto (Local) Variables, but just Aliases */
+	buffer_result  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	buffer_base    .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	size_result    .req r2 @ Scratch Register
+	size_base      .req r3 @ Scratch Register
+	color          .req r4
+	color_before   .req r5
+	color_after    .req r6
+	bitmask        .req r7
+	bitmask_before .req r8
+	bitmask_after  .req r9
+	color_result   .req r10
+	shift          .req r11
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	ldr size_result, [buffer_result, #12]
+	cmp size_result, #0
+	beq draw32_antialias_error2
+
+	ldr shift, [buffer_result, #16]
+	cmp shift, #32                             @ Depth Check
+	bne draw32_antialias_error2
+
+	ldr buffer_result, [buffer_result]
+	cmp buffer_result, #0
+	beq draw32_antialias_error2
+
+	.unreq buffer_result
+	result_addr .req r0
+
+	add size_result, result_addr, size_result
+
+	ldr size_base, [buffer_base, #12]
+	cmp size_base, #0
+	beq draw32_antialias_error2
+
+	ldr shift, [buffer_base, #16]
+	cmp shift, #32                             @ Depth Check
+	bne draw32_antialias_error2
+
+	ldr buffer_base, [buffer_base]
+	cmp buffer_base, #0
+	beq draw32_antialias_error2
+
+	.unreq buffer_base
+	base_addr .req r1
+
+	add size_base, base_addr, size_base
+	sub size_base, size_base, #4               @ Not to Reach Last Pixel of Base
+
+	ldr color, [base_addr]                     @ First Pixel of Base
+	str color, [result_addr]
+
+	draw32_antialias_loop:
+
+		add base_addr, base_addr, #4
+		add result_addr, result_addr, #4
+
+		cmp base_addr, size_base
+		bgt draw32_antialias_success
+
+		cmp result_addr, size_result
+		bge draw32_antialias_error1
+
+		cmp base_addr, size_base
+		ldreq color, [base_addr]           @ Last Pixel of Base
+		streq color, [result_addr]
+		beq draw32_antialias_loop
+
+		ldr color, [base_addr]
+		ldr color_before, [base_addr, #-4]
+		ldr color_after, [base_addr, #4]
+		
+		mov shift, #0
+		mov color_result, #0
+
+		draw32_antialias_loop_color:
+			cmp shift, #32
+			bge draw32_antialias_loop_common
+			mov bitmask, #0xFF
+			mov bitmask_before, #0xFF
+			mov bitmask_after, #0xFF
+			lsl bitmask, bitmask, shift
+			lsl bitmask_before, bitmask_before, shift
+			lsl bitmask_after, bitmask_after, shift
+			and bitmask, bitmask, color
+			and bitmask_before, bitmask_before, color_before
+			and bitmask_after, bitmask_after, color_after
+			lsr bitmask, bitmask, shift
+			lsr bitmask_before, bitmask_before, shift
+			lsr bitmask_after, bitmask_after, shift
+			lsl bitmask, bitmask, #2                             @ Substitution of Multiplication by 4
+			lsl bitmask_before, bitmask_before, #1               @ Substitution of Multiplication by 2
+			lsl bitmask_after, bitmask_after, #1                 @ Substitution of Multiplication by 2
+			add bitmask, bitmask, bitmask_before
+			add bitmask, bitmask, bitmask_after
+			lsr bitmask, #3                                      @ Substitutuion of Division by 8
+			lsl bitmask, bitmask, shift
+			add color_result, color_result, bitmask
+			add shift, shift, #8
+
+			b draw32_antialias_loop_color
+
+		draw32_antialias_loop_common:
+			str color_result, [result_addr]
+
+			b draw32_antialias_loop
+
+	draw32_antialias_error1:
+		mov r0, #1                                 @ Return with Error 1
+		b draw32_antialias_common
+
+	draw32_antialias_error2:
+		mov r0, #2                                 @ Return with Error 2
+		b draw32_antialias_common
+
+	draw32_antialias_success:
+		mov r0, #0                                 @ Return with Success
+
+	draw32_antialias_common:
+		mov r1, base_addr
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		mov pc, lr
+
+.unreq result_addr
+.unreq base_addr
+.unreq size_result
+.unreq size_base
+.unreq color
+.unreq color_before
+.unreq color_after
+.unreq bitmask
+.unreq bitmask_before
+.unreq bitmask_after
+.unreq color_result
+.unreq shift
+
+
+/**
  * function draw32_fill_color
  * Fill by Color
  *
@@ -22,11 +180,11 @@
  */
 .globl draw32_fill_color
 draw32_fill_color:
-	/* Auto (Local) Variables, but just aliases */
-	buffer_base .req r0  @ Parameter, Register for Argument, Scratch Register
-	base_addr   .req r1  @ Pointer of Base
-	color       .req r2
-	width       .req r3
+	/* Auto (Local) Variables, but just Aliases */
+	buffer_base .req r0 @ Parameter, Register for Argument, Scratch Register
+	base_addr   .req r1 @ Parameter, Register for Result, Scratch Register
+	color       .req r2 @ Scratch Register
+	width       .req r3 @ Scratch Register
 	height      .req r4
 	depth       .req r5
 	size        .req r6
@@ -195,19 +353,19 @@ draw32_fill_color:
  */
 .globl draw32_mask_image
 draw32_mask_image:
-	/* Auto (Local) Variables, but just aliases */
-	buffer_mask .req r0   @ Parameter, Register for Argument and Result, Scratch Register
-	buffer_base .req r1   @ Parameter, Register for Argument, Scratch Register
-	x_coord     .req r2   @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord     .req r3   @ Parameter, Register for Argument, Scratch Register
-	base_addr   .req r4   @ Pointer of Base
+	/* Auto (Local) Variables, but just Aliases */
+	buffer_mask .req r0  @ Parameter, Register for Argument and Result, Scratch Register
+	buffer_base .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
+	y_coord     .req r3  @ Parameter, Register for Argument, Scratch Register
+	base_addr   .req r4  @ Pointer of Base
 	width       .req r5
 	depth       .req r6
 	size        .req r7
-	mask_addr   .req r8   @ Pointer of Mask
+	mask_addr   .req r8  @ Pointer of Mask
 	mask_width  .req r9
 	mask_height .req r10
-	j           .req r11  @ Use for Horizontal Counter
+	j           .req r11 @ Use for Horizontal Counter
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -370,10 +528,11 @@ draw32_mask_image:
  */
 .globl draw32_set_renderbuffer
 draw32_set_renderbuffer:
-	buffer    .req r0
-	width     .req r1
-	height    .req r2
-	depth     .req r3
+	/* Auto (Local) Variables, but just Aliases */
+	buffer    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	width     .req r1 @ Parameter, Register for Argument, Scratch Register
+	height    .req r2 @ Parameter, Register for Argument, Scratch Register
+	depth     .req r3 @ Parameter, Register for Argument, Scratch Register
 	size      .req r4
 	addr      .req r5
 
@@ -444,8 +603,9 @@ draw32_set_renderbuffer:
  */
 .globl draw32_clear_renderbuffer
 draw32_clear_renderbuffer:
-	buffer    .req r0
-	addr      .req r1
+	/* Auto (Local) Variables, but just Aliases */
+	buffer    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	addr      .req r1 @ Scratch Register
 
 	ldr addr, [buffer]
 	
@@ -495,10 +655,11 @@ draw32_clear_renderbuffer:
  */
 .globl draw32_copy
 draw32_copy:
+	/* Auto (Local) Variables, but just Aliases */
 	buffer_in         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	buffer_out        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	buffer_in_addr    .req r2
-	buffer_out_addr   .req r3
+	buffer_out        .req r1 @ Parameter, Register for Argument, Scratch Register
+	buffer_in_addr    .req r2 @ Scratch Register
+	buffer_out_addr   .req r3 @ Scratch Register
 	width             .req r4
 	height            .req r5
 	size              .req r6
@@ -597,11 +758,11 @@ draw32_copy:
  */
 .globl draw32_change_alpha_argb
 draw32_change_alpha_argb:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	value_alpha     .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	swap            .req r3
+	size            .req r1 @ Parameter, Register for Argument, Scratch Register
+	value_alpha     .req r2 @ Parameter, Register for Argument, Scratch Register
+	swap            .req r3 @ Scratch Register
 
 	add size, size, data_point
 	lsl value_alpha, value_alpha, #24
@@ -643,10 +804,10 @@ draw32_change_alpha_argb:
  */
 .globl draw32_rgba_to_argb
 draw32_rgba_to_argb:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	swap            .req r2
+	size            .req r1 @ Scratch Register
+	swap            .req r2 @ Scratch Register
 
 	add size, size, data_point
 

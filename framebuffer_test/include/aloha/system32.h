@@ -39,17 +39,6 @@ void _user_start();
 /* BCM2836 and BCM2837 Peripheral Base */
 /* If BCM 2835, Peripheral Base is 0x20000000 */
 #define equ32_peripherals_base    0x3F000000
-#define equ32_cores_base          0x40000000
-
-#define equ32_cores_mailbox_offset        0x10 // Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
-#define equ32_cores_mailbox0_writeset     0x80
-#define equ32_cores_mailbox1_writeset     0x84
-#define equ32_cores_mailbox2_writeset     0x88
-#define equ32_cores_mailbox3_writeset     0x8C // Use for Inter-core Communication in RasPi's start.elf
-#define equ32_cores_mailbox0_readclear    0xC0 // Write Hight to Clear
-#define equ32_cores_mailbox1_readclear    0xC4
-#define equ32_cores_mailbox2_readclear    0xC8
-#define equ32_cores_mailbox3_readclear    0xCC
 
 #define equ32_systemtimer_control_status    0x00
 #define equ32_systemtimer_counter_lower     0x04 // Lower 32 Bits
@@ -69,32 +58,6 @@ void _user_start();
 #define equ32_interrupt_disable_irqs1         0x1C
 #define equ32_interrupt_disable_irqs2         0x20
 #define equ32_interrupt_disable_basic_irqs    0x24
-
-#define equ32_mailbox_channel0    0x00
-#define equ32_mailbox_channel1    0x01
-#define equ32_mailbox_channel2    0x02
-#define equ32_mailbox_channel3    0x03
-#define equ32_mailbox_channel4    0x04
-#define equ32_mailbox_channel5    0x05
-#define equ32_mailbox_channel6    0x06
-#define equ32_mailbox_channel7    0x07
-#define equ32_mailbox_channel8    0x08
-#define equ32_mailbox0_read       0x00 @ On Old System of Mailbox (from Single Core), Mailbox is only 0-1 accessible.
-#define equ32_mailbox0_poll       0x10 @ Because, 0-1 are alternatively connected, e.g., read/write Mapping.
-#define equ32_mailbox0_sender     0x14
-#define equ32_mailbox0_status     0x18 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-#define equ32_mailbox0_config     0x1C
-#define equ32_mailbox0_write      0x20 @ Mailbox 1 Read/ Mailbox 0 Write is the same address
-#define equ32_mailbox1_read       0x20
-#define equ32_mailbox1_poll       0x30
-#define equ32_mailbox1_sender     0x34
-#define equ32_mailbox1_status     0x38 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-#define equ32_mailbox1_config     0x3C
-#define equ32_mailbox1_write      0x00 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
-
-#define equ32_mailbox_gpuconfirm    0x04
-#define equ32_mailbox_gpuoffset     0x40000000
-#define equ32_fb_armmask            0x3FFFFFFF
 
 #define equ32_armtimer_load          0x00
 #define equ32_armtimer_control       0x08
@@ -514,6 +477,22 @@ extern uint64 print32_number
 /********************************
  * system32/draw32.s
  ********************************/
+
+/**
+ * Anti-aliasing
+ * Caution! This Function is Used in 32-bit Depth Color
+ * First and Last Pixel of Base is not anti-aliased, and there is no horizontal sync.
+ *
+ * Return: Lower 32 Bits (0 as success, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Base)
+ * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
+ * Error(2): When Buffer is not Defined, or Depth is not 32-bit
+ */
+
+extern uint64 draw32_antialias
+(
+	int32* buffer_result,
+	int32* buffer_base
+);
 
 /**
  * Fill by Color

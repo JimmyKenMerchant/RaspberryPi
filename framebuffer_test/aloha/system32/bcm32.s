@@ -135,7 +135,7 @@ bcm32_get_framebuffer:
 	temp              .req r1
 
 	ldr temp, bcm32_mail_framebuffer_addr
-	add temp, temp, #equ32_mailbox_gpuoffset|equ32_mailbox_channel8
+	add temp, temp, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
 
 	push {r0-r3,lr}
 	mov r0, temp
@@ -161,10 +161,9 @@ bcm32_get_framebuffer:
 		blt bcm32_get_framebuffer_loop
 
 	dsb
-	isb
 
  	ldr memorymap_base, bcm32_mail_framebuffer_addr
-	ldr temp, [memorymap_base, #equ32_mailbox_gpuconfirm]
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
 	cmp temp, #0x80000000
 	bne bcm32_get_framebuffer_error
 
@@ -175,7 +174,7 @@ bcm32_get_framebuffer:
 	ldr temp, bcm32_FB32_FRAMEBUFFER_addr
 	ldr temp, [temp]
 
-	and memorymap_base, memorymap_base, #equ32_fb_armmask            @ Change FB32_ADDRESS VideoCore's to ARM's
+	and memorymap_base, memorymap_base, #bcm32_mailbox_armmask      @ Change BCM32_ADDRESS VideoCore's to ARM's
 	str memorymap_base, [temp]
 
 	ldr memorymap_base, BCM32_WIDTH
@@ -208,7 +207,6 @@ bcm32_get_framebuffer:
 
 	bcm32_get_framebuffer_common:
 		dsb                                  @ Ensure Completion of Instructions Before
-		isb                                  @ Flush Instructions in Pipeline
 		mov pc, lr
 
 .unreq memorymap_base
@@ -226,20 +224,19 @@ bcm32_get_framebuffer:
  */
 .globl bcm32_mailbox_read
 bcm32_mailbox_read:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base  .req r0
 	temp            .req r1
 	status          .req r2
 	read            .req r3
 
-	mov status, #equ32_mailbox0_status
-	mov read, #equ32_mailbox0_read
+	mov status, #bcm32_mailbox0_status
+	mov read, #bcm32_mailbox0_read
 
 	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_mailbox_base
+	add memorymap_base, memorymap_base, #bcm32_mailbox_base
 
 	dsb
-	isb
 
 	bcm32_mailbox_read_waitforread:
 		ldr temp, [memorymap_base, status]
@@ -247,15 +244,14 @@ bcm32_mailbox_read:
 		beq bcm32_mailbox_read_waitforread
 
 	dsb                                      @ `DMB` Data Memory Barrier, completes all memory access before
-        isb                                      @ `DSB` Data Synchronization Barrier, completes all instructions before
+                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
                                                  @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
-                                                 @ to ensure to fetch data from cache/ memory
+                                                 @ to ensure fetching instructions from cache/ memory
                                                  @ These are useful in multi-core/ threads usage, etc.
 
 	ldr r0, [memorymap_base, read]
 
 	dsb
-	isb
 
 	b bcm32_mailbox_read_success
 
@@ -290,7 +286,7 @@ bcm32_mailbox_read:
  */
 .globl bcm32_mailbox_send
 bcm32_mailbox_send:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	mail_content    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	memorymap_base  .req r1
 	temp            .req r2
@@ -299,14 +295,13 @@ bcm32_mailbox_send:
 
 	push {r4}
 
-	mov status, #equ32_mailbox0_status
-	mov write, #equ32_mailbox0_write
+	mov status, #bcm32_mailbox0_status
+	mov write, #bcm32_mailbox0_write
 
 	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_mailbox_base
+	add memorymap_base, memorymap_base, #bcm32_mailbox_base
 
 	dsb
-	isb
 
 	bcm32_mailbox_send_waitforwrite:
 		ldr temp, [memorymap_base, status]
@@ -314,12 +309,10 @@ bcm32_mailbox_send:
 		beq bcm32_mailbox_send_waitforwrite
 
 	dsb
-	isb
 
 	str mail_content, [memorymap_base, write]
 
 	dsb
-	isb
 
 	b bcm32_mailbox_send_success
 
@@ -339,3 +332,44 @@ bcm32_mailbox_send:
 .unreq temp
 .unreq status
 .unreq write
+
+.equ bcm32_mailbox_base,         0x0000B800
+.equ bcm32_mailbox_channel0,     0x00
+.equ bcm32_mailbox_channel1,     0x01
+.equ bcm32_mailbox_channel2,     0x02
+.equ bcm32_mailbox_channel3,     0x03
+.equ bcm32_mailbox_channel4,     0x04
+.equ bcm32_mailbox_channel5,     0x05
+.equ bcm32_mailbox_channel6,     0x06
+.equ bcm32_mailbox_channel7,     0x07
+.equ bcm32_mailbox_channel8,     0x08
+.equ bcm32_mailbox0_read,        0x80 @ On Old System of Mailbox (from Single Core), Mailbox is only 0-1 accessible.
+.equ bcm32_mailbox0_poll,        0x90 @ Because, 0-1 are alternatively connected, e.g., read/write Mapping.
+.equ bcm32_mailbox0_sender,      0x94
+.equ bcm32_mailbox0_status,      0x98 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+.equ bcm32_mailbox0_config,      0x9C
+.equ bcm32_mailbox0_write,       0xA0 @ Mailbox 1 Read/ Mailbox 0 Write is the same address
+.equ bcm32_mailbox1_read,        0xA0
+.equ bcm32_mailbox1_poll,        0xB0
+.equ bcm32_mailbox1_sender,      0xB4
+.equ bcm32_mailbox1_status,      0xB8 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+.equ bcm32_mailbox1_config,      0xBC
+.equ bcm32_mailbox1_write,       0x80 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
+.equ bcm32_mailbox_gpuconfirm,   0x04
+.equ bcm32_mailbox_gpuoffset,    0x40000000
+.equ bcm32_mailbox_armmask,      0x3FFFFFFF
+
+.equ bcm32_cores_base,                  0x40000000
+.equ bcm32_cores_mailbox_offset,        0x10 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
+.equ bcm32_cores_mailbox0_writeset,     0x80
+.equ bcm32_cores_mailbox1_writeset,     0x84
+.equ bcm32_cores_mailbox2_writeset,     0x88
+.equ bcm32_cores_mailbox3_writeset,     0x8C @ Use for Inter-core Communication in RasPi's start.elf
+.equ bcm32_cores_mailbox0_readclear,    0xC0 @ Write Hight to Clear
+.equ bcm32_cores_mailbox1_readclear,    0xC4
+.equ bcm32_cores_mailbox2_readclear,    0xC8
+.equ bcm32_cores_mailbox3_readclear,    0xCC
+.equ bcm32_core0_mailboxes_interrupt,   0x50 @ Bit[0]+ Mailbox0+ IRQ Control, Bit[4]+ Mailbox0+ FIQ Control, IRQ Bit (0-3)
+.equ bcm32_core1_mailboxes_interrupt,   0x54
+.equ bcm32_core2_mailboxes_interrupt,   0x58
+.equ bcm32_core3_mailboxes_interrupt,   0x5C

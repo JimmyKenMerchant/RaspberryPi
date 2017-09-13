@@ -8,6 +8,12 @@
  */
 
 /**
+ * Functions which access memory-mapped peripherals may make missing of cache.
+ * Make sure to use cache operations, clean/invalidate. Or `DSB/DMB/ISB`.
+ * If you meet missig of cache, even you use cache operations, use cache operations of Set/Way type.
+ */
+
+/**
  * The section, "vender" is to be used for drivers of vendor-implemented peripherals. These usually don't have any standard,
  * So if you consider of compatibility with other ARM CPUs. Files in this section should be alternated with
  * other ones.
@@ -19,22 +25,11 @@
 /**
  * The section, "system" is to be used for drivers of ARM system registers, and standard peripherals,
  * USB, I2C, UART, etc. These are usually aiming compatibility with other ARM CPUs,
- * but memory mapping differs among CPUs. Addresses of peripherals should be changed. 
+ * but memory mapping differs among CPUs. Addresses of peripherals in "equ32.s" should be changed. 
  */
 .section	.system
 
-/**
- * Functions of system32_* access memory-mapped peripherals, specially, vendor-implemented inter-core processes.
- * These accesses are using the internal bus in a processor. And it may cause several unpredictable errors.
- * Bus process in a processor has more complexity than what we expect.
- * Error caused by bus may be resolved just changing address (we are knowing bus trouble is caused by alignment),
- * or you may not resolve it for the whole day.
- * `DSB/DMB/ISB`, cache operations (clean/invalidate) and system sleeping, are tools for resolving this issue.
- * Anyhow, you'll test a lot of solutions for this trouble.
- * If you want to change instructions and data on addresses in the section, `system`, you may meet
- * any unpredictable errors. In `fb32.s`, Mailbox (vendor-implemented ARM-VideoCore interactive process) is used,
- * so `fb32.s` and `print32.s` should be in section 'system'.
- */
+.include "system32/equ32.s"
 
 /**
  * function system32_core_call
@@ -51,7 +46,7 @@
  */
 .globl system32_core_call
 system32_core_call:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	handle_addr  .req r2
@@ -67,12 +62,10 @@ system32_core_call:
 	add handle_addr, handle_addr, core_number
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	str heap, [handle_addr]
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	b system32_core_call_success
 
@@ -110,7 +103,7 @@ system32_core_call:
  */
 .globl system32_core_handle
 system32_core_handle:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	core_number  .req r0
 	arg1         .req r1
 	arg2         .req r2
@@ -136,7 +129,6 @@ system32_core_handle:
 	arg0 .req r0
 
 	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-	isb @ Ensure to Access Cache or Memory, Current Pipeline is Flushed
 
 	system32_core_handle_loop1:
 		ldr heap, [handle_addr]
@@ -182,7 +174,6 @@ system32_core_handle:
 
 	system32_core_handle_branch:
 		dsb
-		isb
 		blx addr_start
 		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
 		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
@@ -191,16 +182,12 @@ system32_core_handle:
 
 		/**
 		 * In this point, I initially intended to store return values to heap,
-		 * but both heap values show incorrect value, "E59FF018".
-		 * Considering the ARM manual, I should put Data Barrier, Instruction Barrier,
-		 * and/or Cache Cleaning for this problem. But these instructions seems to make aborts.
-		 * My hypothesis is happening of busy on inter-core communication through ARM bus, ldr/str interactive processes.
+		 * but both heap values show incorrect value, "E59FF018" which seems to be missing of cache.
 		 * To hide this issue, I tested one-way communications on ldr/str processes,
 		 * i.e., putting return values to other places where only store these values and nothing of any loading. 
 		 */
 
 		dsb
-		isb
 		
 		mov temp, #0
 		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
@@ -216,7 +203,6 @@ system32_core_handle:
 
 	system32_core_handle_common:
 		dsb
-		isb
 		pop {r4-r9}
 		mov pc, lr
 
@@ -269,7 +255,7 @@ SYSTEM32_CORE_HANDLE_3_RESERVE: .word 0x00000000
  */
 .globl system32_cache_operation_all
 system32_cache_operation_all:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	level        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	flag         .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	set_bit      .req r2
@@ -326,7 +312,6 @@ system32_cache_operation_all:
 			lsl bit_mask, way_size_dup, temp         @ Set Way Bit[31:*]
 			add waysetlevel, setlevel, bit_mask
 			dsb
-			isb
 			cmp flag, #0
 			mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
 			cmp flag, #1
@@ -334,7 +319,6 @@ system32_cache_operation_all:
 			cmp flag, #2
 			mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
 			dsb
-			isb
 			sub way_size_dup, way_size_dup, #1
 			b system32_cache_operation_all_loop_way
 
@@ -347,7 +331,6 @@ system32_cache_operation_all:
 
 	system32_cache_operation_all_common:
 		dsb
-		isb
 		pop {r4-r11}
 		mov pc, lr
 
@@ -384,7 +367,7 @@ system32_cache_operation_all:
  */
 .globl system32_cache_operation
 system32_cache_operation:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	p_address   .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	level       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	flag        .req r2 @ Parameter, Register for Argument and Result, Scratch Register
@@ -484,11 +467,8 @@ system32_cache_operation:
  */
 .globl system32_cache_info
 system32_cache_info:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	ccselr       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-
-	dsb
-	isb
 
 	/**
 	 * Cache Size Slection Register (CSSELR) for CCSIDR
@@ -501,7 +481,6 @@ system32_cache_info:
 	ccsidr .req r0
 
 	dsb
-	isb
 
 	/**
 	 * Cache Size Identification Register (CCSIDR)
@@ -518,7 +497,6 @@ system32_cache_info:
 	mrc p15, 1, ccsidr, c0, c0, 0 @ Cache Selector
 
 	dsb
-	isb
 
 	system32_cache_info_common:
 		mov pc, lr
@@ -541,7 +519,7 @@ system32_cache_info:
  */
 .globl system32_convert_endianness
 system32_convert_endianness:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	align_bytes     .req r2 @ Parameter, Register for Argument and Result, Scratch Register
@@ -770,7 +748,7 @@ system32_load_8:
  */
 .globl system32_clear_heap
 system32_clear_heap:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	heap_start  .req r0
 	heap_size   .req r1
 	heap_bytes  .req r2
@@ -778,8 +756,7 @@ system32_clear_heap:
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
-	dsb                                         @ Ensure Coherence of Cache and Memory
-	isb
+	dsb                                         @ Ensure Completion of Instructions Before
 
 	add heap_size, heap_start, heap_size
 
@@ -796,7 +773,6 @@ system32_clear_heap:
 
 	system32_clear_heap_common:
 		dsb                                 @ Ensure Completion of Instructions Before
-		isb                                 @ Flush Data in Pipeline to Cache
 		mov r0, #0
 		mov pc, lr
 
@@ -819,7 +795,7 @@ system32_clear_heap:
  */
 .globl system32_malloc
 system32_malloc:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	size        .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
 	heap_start  .req r1
 	heap_size   .req r2
@@ -834,8 +810,7 @@ system32_malloc:
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
-	dsb                                         @ Ensure Coherence of Cache and Memory
-	isb
+	dsb                                         @ Ensure Completion of Instructions Before
 
 	add heap_size, heap_start, heap_size
 
@@ -885,7 +860,6 @@ system32_malloc:
 
 	system32_malloc_common:
 		dsb                                     @ Ensure Completion of Instructions Before
-		isb                                     @ Flush Data in Pipeline to Cache
 		pop {r4,r5}
 		mov pc, lr
 
@@ -911,7 +885,7 @@ system32_malloc:
  */
 .globl system32_change_descriptor
 system32_change_descriptor:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	non_secure  .req r0
 	addr        .req r1
 	desc        .req r2
@@ -943,14 +917,13 @@ system32_change_descriptor:
 	str desc, [base_addr]
 
 	dsb                                         @ Ensure Completion of Instructions Before
-	isb                                         @ Flush Data in Pipeline to Cache
 
 	/* Cache Cleaning by MVA to Point of Coherency (PoC) L1, Not Point of Unification (PoU) L2 */
 	bic temp, base_addr, #0x1F                  @ If You Want Cache Operation by Modifier Virtual Address (MVA),
 	mcr p15, 0, temp, c7, c10, 1                @ Bit[5:0] Should Be Zeros
 
-	dsb
-	isb
+	dsb                                         @ Ensure Completion of Instructions Before
+	isb                                         @ Flush Data in Pipeline to Cache
 
 	system32_change_descriptor_success:
 		mov r0, base_addr
@@ -980,7 +953,7 @@ system32_change_descriptor:
  */
 .globl system32_activate_va
 system32_activate_va:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	non_secure  .req r0
 	ttbr_flag   .req r1
 	number_core .req r2
@@ -1003,15 +976,15 @@ system32_activate_va:
 	.unreq number_core
 	temp .req r1
 
-	dsb
-	isb
+	dsb                                         @ Ensure Completion of Instructions Before
+	isb                                         @ Flush Data in Pipeline to Cache
 
 	/* Invalidate TLB */
 	mov temp, #0
 	mcr p15, 0, temp, c8, c7, 0
 
-	dsb
-	isb
+	dsb                                         @ Ensure Completion of Instructions Before
+	isb                                         @ Flush Data in Pipeline to Cache
 
 	/* Translation Table Base Control Register (TTBCR) */
 	mov temp, #equ32_ttbcr_n0                       @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
@@ -1029,8 +1002,7 @@ system32_activate_va:
 		mov r0, base_addr
 
 	system32_activate_va_common:
-		dsb                                         @ Ensure Completion of Instructions Before
-		isb                                         @ Flush Data in Pipeline to Cache
+		dsb                                     @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 
@@ -1054,7 +1026,7 @@ system32_activate_va:
  */
 .globl system32_lineup_basic_va
 system32_lineup_basic_va:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	secure_flag    .req r0
 	nonsecure_flag .req r1
 	number_core    .req r2
@@ -1152,7 +1124,6 @@ system32_lineup_basic_va:
 
 	system32_lineup_basic_va_common:
 		dsb                                     @ Ensure Completion of Instructions Before
-		isb                                     @ Flush Data in Pipeline to Cache
 		pop {r4-r7}
 		mov pc, lr
 
@@ -1191,7 +1162,7 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
  */
 .globl system32_mfree
 system32_mfree:
-	/* Auto (Local) Variables, but just aliases */
+	/* Auto (Local) Variables, but just Aliases */
 	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	block_size       .req r1
 	heap_start       .req r2
@@ -1200,8 +1171,7 @@ system32_mfree:
 
 	push {r4}
 
-	dsb                                         @ Ensure Coherence of Cache and Memory
-	isb
+	dsb                                         @ Ensure Completion of Instructions Before
 
 	cmp block_start, #0
 	beq system32_mfree_error
@@ -1237,7 +1207,6 @@ system32_mfree:
 
 	system32_mfree_common:
 		dsb                                     @ Ensure Completion of Instructions Before
-		isb                                     @ Flush Data in Pipeline to Cache
 		pop {r4}
 		mov pc, lr
 
@@ -1286,5 +1255,3 @@ _SYSTEM32_HEAP_END:
 _SYSTEM32_VADESCRIPTOR:
 .fill 262144, 1, 0x00
 _SYSTEM32_VADESCRIPTOR_END:
-
-.include "system32/equ32.s"
