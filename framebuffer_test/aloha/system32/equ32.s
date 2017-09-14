@@ -18,6 +18,7 @@
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
 .equ equ32_gpio_base,          0x00200000
+.equ equ32_usb_ehci_base,      0x00980000
 
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
@@ -140,6 +141,29 @@
 .equ equ32_gpio51,   0b1 << 19 @ Bit High
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
+
+
+/**
+ * USB2.0
+ * Enhanced Host Controller Interface (EHCI2.0) is a USB standard applied to USB2.0.
+ * EHCI2.0 is ruling the standard of registers (even names) to control USB2.0,
+ * and making its drivers used in wide diversity across CPUs and Intellectual Properties (IPs).
+ * But in fact, between IPs, there are differences to define registers.
+ * However, these differences are tiny. USB2.0's popularity depends on this strict standard.
+ */
+
+/* Core Global Control and Status Registers (CSRs) */
+.equ equ32_usb_ehci_gotgctl,      0x00000000 @ OTG Control and Status Register r/w
+.equ equ32_usb_ehci_gotgint,      0x00000004 @ OTG Interrupt Register r/w
+.equ equ32_usb_ehci_gahbcfg,      0x00000008 @ Core Internal Bus Configuration Register r/w
+.equ equ32_usb_ehci_gusbcfg,      0x0000000C @ Core USB Configuration Register r/w
+.equ equ32_usb_ehci_grstctl,      0x00000010 @ Core Reset Register r/w
+.equ equ32_usb_ehci_gintsts,      0x00000014 @ Core Interrupt Register r/w
+.equ equ32_usb_ehci_gintmsk,      0x00000018 @ Core Interrupt Register r/w
+
+/* Host Mode Control and Status Registers (CSRs) */
+
+/* Device Mode Control and Status Registers (CSRs) */
 
 
 /**
