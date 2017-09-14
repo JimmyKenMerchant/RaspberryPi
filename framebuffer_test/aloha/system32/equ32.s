@@ -145,23 +145,64 @@
 
 /**
  * USB2.0
- * Enhanced Host Controller Interface (EHCI2.0) is a USB standard applied to USB2.0.
- * EHCI2.0 is ruling the standard of registers (even names) to control USB2.0,
+ *
+ * Enhanced Host Controller Interface (EHCI) specification is a USB standard applied to USB2.0.
+ * EHCI is introduced by Intel and USB Implementers Forum (USB-IF).
+ * EHCI is ruling the standard of registers to control USB2.0,
  * and making its drivers used in wide diversity across CPUs and Intellectual Properties (IPs).
+ * USB-IF also introduced On-the-GO (OTG) specification, which allows to connect each USB device.
  * But in fact, between IPs, there are differences to define registers.
  * However, these differences are tiny. USB2.0's popularity depends on this strict standard.
  */
 
 /* Core Global Control and Status Registers (CSRs) */
-.equ equ32_usb_ehci_gotgctl,      0x00000000 @ OTG Control and Status Register r/w
-.equ equ32_usb_ehci_gotgint,      0x00000004 @ OTG Interrupt Register r/w
-.equ equ32_usb_ehci_gahbcfg,      0x00000008 @ Core Internal Bus Configuration Register r/w
-.equ equ32_usb_ehci_gusbcfg,      0x0000000C @ Core USB Configuration Register r/w
-.equ equ32_usb_ehci_grstctl,      0x00000010 @ Core Reset Register r/w
-.equ equ32_usb_ehci_gintsts,      0x00000014 @ Core Interrupt Register r/w
-.equ equ32_usb_ehci_gintmsk,      0x00000018 @ Core Interrupt Register r/w
+.equ equ32_usb_ehci_gotgctl,      0x00000000 @ OTG Control and Status
+.equ equ32_usb_ehci_gotgint,      0x00000004 @ OTG Interrupt
+.equ equ32_usb_ehci_gahbcfg,      0x00000008 @ Core Internal Bus (AHB) Configuration
+.equ equ32_usb_ehci_gusbcfg,      0x0000000C @ Core USB Configuration
+.equ equ32_usb_ehci_grstctl,      0x00000010 @ Core Reset
+.equ equ32_usb_ehci_gintsts,      0x00000014 @ Core Interrupt
+.equ equ32_usb_ehci_gintmsk,      0x00000018 @ Core Interrupt Mask
+.equ equ32_usb_ehci_grxstsr,      0x0000001C @ Receive Status Debug Read
+.equ equ32_usb_ehci_grxstsp,      0x00000020 @ Receive Status Read/Pop
+.equ equ32_usb_ehci_grxfsiz,      0x00000024 @ Receive FIFO Size
+.equ equ32_usb_ehci_gnptxfsiz,    0x00000028 @ Non-periodic Transmit FIFO Size
+.equ equ32_usb_ehci_gnptxsts,     0x0000002C @ Non-periodic Transmit FIFO/Queue
+.equ equ32_usb_ehci_gi2cctl,      0x00000030 @ I2C Access
+.equ equ32_usb_ehci_gpvndctl,     0x00000034 @ PHY Vendor Control
+.equ equ32_usb_ehci_ggpio,        0x00000038 @ General Purpose Input/Output
+.equ equ32_usb_ehci_guid,         0x0000003C @ User ID
+.equ equ32_usb_ehci_grsv1,        0x00000040 @ Reserved1
+.equ equ32_usb_ehci_ghwcfg1,      0x00000044 @ User HW Config1
+.equ equ32_usb_ehci_ghwcfg2,      0x00000048 @ User HW Config2
+.equ equ32_usb_ehci_ghwcfg3,      0x0000004C @ User HW Config3
+.equ equ32_usb_ehci_ghwcfg4,      0x00000050 @ User HW Config4
+
+.equ equ32_usb_ehci_ptxfsiz_base, 0x00000100 @ Base of Periodic Transmit FIFO Size Registers
+.equ equ32_usb_ehci_hptxfsiz,     0x00000000 @ Host Periodic Transmit FIFO Size
+.equ equ32_usb_ehci_dptxfsiz1,    0x00000004 @ Device Periodic Transmit FIFO-1 Size
+.equ equ32_usb_ehci_dptxfsiz2,    0x00000008 @ Device Periodic Transmit FIFO-2 Size
+.equ equ32_usb_ehci_dptxfsiz3,    0x0000000C @ Device Periodic Transmit FIFO-3 Size
+.equ equ32_usb_ehci_dptxfsiz4,    0x00000010 @ Device Periodic Transmit FIFO-4 Size
+.equ equ32_usb_ehci_dptxfsiz5,    0x00000014 @ Device Periodic Transmit FIFO-5 Size
+.equ equ32_usb_ehci_dptxfsiz6,    0x00000018 @ Device Periodic Transmit FIFO-6 Size
+.equ equ32_usb_ehci_dptxfsiz7,    0x0000001C @ Device Periodic Transmit FIFO-7 Size
+.equ equ32_usb_ehci_dptxfsiz8,    0x00000020 @ Device Periodic Transmit FIFO-8 Size
+.equ equ32_usb_ehci_dptxfsiz9,    0x00000024 @ Device Periodic Transmit FIFO-9 Size
+.equ equ32_usb_ehci_dptxfsiz10,   0x00000028 @ Device Periodic Transmit FIFO-10 Size
+.equ equ32_usb_ehci_dptxfsiz11,   0x0000002C @ Device Periodic Transmit FIFO-11 Size
+.equ equ32_usb_ehci_dptxfsiz12,   0x00000030 @ Device Periodic Transmit FIFO-12 Size
+.equ equ32_usb_ehci_dptxfsiz13,   0x00000034 @ Device Periodic Transmit FIFO-13 Size
+.equ equ32_usb_ehci_dptxfsiz14,   0x00000038 @ Device Periodic Transmit FIFO-14 Size
+.equ equ32_usb_ehci_dptxfsiz15,   0x0000003C @ Device Periodic Transmit FIFO-15 Size
 
 /* Host Mode Control and Status Registers (CSRs) */
+.equ equ32_usb_ehci_host_base,    0x00000400 @ Base of Host Global Registers
+.equ equ32_usb_ehci_hcfg,         0x00000000 @ Host Configuration
+.equ equ32_usb_ehci_hfir,         0x00000004 @ Host Frame Interval
+.equ equ32_usb_ehci_hfnum,        0x00000008 @ Host Frame Number/Frame Time Remaining
+.equ equ32_usb_ehci_hrsv1,        0x0000000C @ Reserved1
+.equ equ32_usb_ehci_hptxsts,      0x00000010 @ Host Periodic Transmit FIFO/Queue Status
 
 /* Device Mode Control and Status Registers (CSRs) */
 
