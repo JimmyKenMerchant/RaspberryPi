@@ -29,7 +29,7 @@ void _user_start()
 	float32 start_sin = math32_sin32( start_radian );
 	float32 end_sin = math32_sin32( end_radian );
 
-	system32_sleep( 1000000 );
+	system32_sleep( 10000000 );
 
 	int32* renderbuffer0 = system32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );

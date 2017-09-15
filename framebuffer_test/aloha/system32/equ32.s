@@ -144,16 +144,16 @@
 
 
 /**
- * USB2.0 On-the Go (OTG)
+ * USB2.0 On-the-Go (OTG)
  *
  * USB Implementers Forum (USB-IF) introduced OTG hardware specification for USB2.0 in 2001,
- * which allows to connect each USB device.
- * In contrast of Enhanced Host Controller Interface (EHCI) specification introduced by Intel and USB-IF,
- * OTG Interfaces had not been ruled on the standard of Control and Status Registers (CSRs).
- * On mobile sector, this issue had reduced usage of OTG.
+ * which allows to connect each USB device without any personal computer.
+ * In contrast of Enhanced Host Controller Interface (EHCI) specification and its families introduced by Intel and USB-IF,
+ * Host/Device Interfaces for OTG had not been ruled on the standard of Control and Status Registers (CSRs).
+ * On mobile sector, this issue had prevented spreading usage of OTG.
  * But around 2010, CSRs of OTG seemed to be integrated among chip vendors with ARM architecture
  * to spread usage of OTG, and to develop its drivers in OSs for mobile sector.
- * So we can fortunately write a driver of OTG generically. 
+ * So we can fortunately write a driver of OTG generically.
  */
 
 /* Core Global Control and Status Registers (CSRs) */
@@ -180,9 +180,9 @@
 .equ equ32_usb_otg_ghwcfg4,        0x00000050 @ User HW Config4
 
 /* Vendor-specific Extra Registers (Base is 0x00000000) */
-.equ equ32_bcm_usb_mdio_cntl       0x00000080 @ MDIO Interface Control (BCM2835-2837)
-.equ equ32_bcm_usb_mdio_gen        0x00000084 @ Data for MDIO Interfaace (BCM2835-2837)
-.equ equ32_bcm_usb_vbus_drv        0x00000088 @ Vbus and Other Miscellaneous Controls (BCM2835-2837)
+.equ equ32_bcm_usb_mdio_cntl,      0x00000080 @ MDIO Interface Control (BCM2835-2837)
+.equ equ32_bcm_usb_mdio_gen,       0x00000084 @ Data for MDIO Interfaace (BCM2835-2837)
+.equ equ32_bcm_usb_vbus_drv,       0x00000088 @ Vbus and Other Miscellaneous Controls (BCM2835-2837)
 
 .equ equ32_usb_otg_ptxfsiz_base,   0x00000100 @ Base of Periodic Transmit FIFO Size Registers
 .equ equ32_usb_otg_hptxfsiz,       0x00000000 @ Host Periodic Transmit FIFO Size

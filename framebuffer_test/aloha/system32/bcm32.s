@@ -22,7 +22,6 @@
 bcm32_mail_framebuffer:
 	.word bcm32_mail_framebuffer_end - bcm32_mail_framebuffer @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-bcm32_mail_contents:
 	.word 0x00048003        @ Tag Identifier, Set Physical Width/Height (Size in Physical Display)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
@@ -67,8 +66,8 @@ BCM32_SIZE:
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_framebuffer_end:
-.balign 16
 
+.balign 16
 bcm32_mail_blankon:
 	.word bcm32_mail_blankon_end - bcm32_mail_blankon @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
@@ -79,8 +78,8 @@ bcm32_mail_blankon:
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_blankon_end:
-.balign 16
 
+.balign 16
 bcm32_mail_blankoff:
 	.word bcm32_mail_blankoff_end - bcm32_mail_blankoff @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
@@ -91,9 +90,9 @@ bcm32_mail_blankoff:
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_blankoff_end:
-.balign 16
 
-bcm32_mail_getedid:          @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
+.balign 16
+bcm32_mail_getedid:         @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
 	.word bcm32_mail_getedid_end - bcm32_mail_getedid @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00030020        @ Tag Identifier, get EDID
@@ -105,18 +104,34 @@ bcm32_mail_getedid:          @ get EDID (Extended Display Identification Data) f
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_getedid_end:
+
 .balign 16
-
-bcm32_mail_framebuffer_addr:
-	.word bcm32_mail_framebuffer  @ Address of bcm32_mail_framebuffer
-bcm32_mail_blankon_addr:
-	.word bcm32_mail_blankon      @ Address of bcm32_mail_blankon
-bcm32_mail_blankoff_addr:
-	.word bcm32_mail_blankoff     @ Address of bcm32_mail_blankoff
-bcm32_mail_getedid_addr:
-	.word bcm32_mail_getedid      @ Address of bcm32_mail_getedid
+bcm32_mail_setpowerstate:   @ Set Power State of Peripheral Devices
+	.word bcm32_mail_setpowerstate_end - bcm32_mail_setpowerstate @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00028001        @ Tag Identifier, Set PowerState: 0x00028001; Get PowerState: 0x00020001; Get Timing: 0x00020002
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ DeviceID, 0x0:SDCard,0x1:UART0,0x2:UART1,0x3:USBHCD,0x4:I2C0,0x5:I2C1,0x6:I2C2,0x7:SPI,0x8:CCP2TX
+	.word 0x00000000        @ State, Bit[0]: 0 off, 1 on; Bit[1]: (Req 0 No Wait, 1 Wait), (Res 0 Device Exists, 1 Device No Exists)
 .balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_setpowerstate_end:
 
+/* Pointers */
+.balign 4
+bcm32_mail_framebuffer_addr:
+	.word bcm32_mail_framebuffer   @ Address of bcm32_mail_framebuffer
+bcm32_mail_blankon_addr:
+	.word bcm32_mail_blankon       @ Address of bcm32_mail_blankon
+bcm32_mail_blankoff_addr:
+	.word bcm32_mail_blankoff      @ Address of bcm32_mail_blankoff
+bcm32_mail_getedid_addr:
+	.word bcm32_mail_getedid       @ Address of bcm32_mail_getedid
+bcm32_mail_setpowerstate_addr:
+	.word bcm32_mail_setpowerstate @ Address of bcm32_mail_setpowerstate
+
+.balign 4
 bcm32_FB32_FRAMEBUFFER_addr:
 	.word FB32_FRAMEBUFFER
 
@@ -131,6 +146,7 @@ bcm32_FB32_FRAMEBUFFER_addr:
  */
 .globl bcm32_get_framebuffer
 bcm32_get_framebuffer:
+	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base    .req r0
 	temp              .req r1
 
@@ -148,6 +164,8 @@ bcm32_get_framebuffer:
 	ldr memorymap_base, bcm32_mail_framebuffer_addr
 	ldr temp, bcm32_mail_framebuffer                                @ Get Size
 	add temp, temp, memorymap_base
+
+	dsb
 
 	bcm32_get_framebuffer_loop:
 		push {r0-r3,lr}
@@ -209,6 +227,101 @@ bcm32_get_framebuffer:
 		dsb                                  @ Ensure Completion of Instructions Before
 		mov pc, lr
 
+.unreq memorymap_base
+.unreq temp
+
+
+/**
+ * function bcm32_set_powerstate
+ * Set Power State of Peripheral Device by Transmitting command to VideocoreIV
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: DeviceID, 0x0:SDCard,0x1:UART0,0x2:UART1,0x3:USBHCD,0x4:I2C0,0x5:I2C1,0x6:I2C2,0x7:SPI,0x8:CCP2TX
+ * r1: State, Bit[0]: 0 off, 1 on; Bit[1]: 0 No Wait, 1 Wait
+ *
+ * Usage: r0-r1
+ * Return: r0 (Bit[0]: 0 off, 1 on; Bit[1] 0 Device Exists, 1 Device No Exists)
+ * Error(0xFFFFFFFF): Invalid of Mailing
+ */
+.globl bcm32_set_powerstate
+bcm32_set_powerstate:
+	/* Auto (Local) Variables, but just Aliases */
+	deviceid          .req r0
+	state             .req r1
+	memorymap_base    .req r2
+	temp              .req r3
+
+	ldr memorymap_base, bcm32_mail_setpowerstate_addr
+	ldr temp, bcm32_mail_setpowerstate                          @ Get Size
+	add temp, temp, memorymap_base
+
+	str deviceid, [memorymap_base, #20]	
+	str state, [memorymap_base, #24]
+
+	dsb
+
+	bcm32_set_powerstate_loop1:
+		push {r0-r3,lr}
+		mov r0, memorymap_base
+		mov r1, #1
+		mov r2, #1                                          @ Clean
+		bl system32_cache_operation
+		pop {r0-r3,lr}
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blt bcm32_set_powerstate_loop1
+
+	dsb
+	
+	ldr temp, bcm32_mail_setpowerstate_addr
+	add temp, temp, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+
+	push {r0-r3,lr}
+	mov r0, temp
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+	pop {r0-r3,lr}
+
+	dsb
+
+	ldr memorymap_base, bcm32_mail_setpowerstate_addr
+	ldr temp, bcm32_mail_setpowerstate                          @ Get Size
+	add temp, temp, memorymap_base
+
+	dsb
+
+	bcm32_set_powerstate_loop2:
+		push {r0-r3,lr}
+		mov r0, memorymap_base
+		mov r1, #1
+		mov r2, #0                                          @ Invalidate
+		bl system32_cache_operation
+		pop {r0-r3,lr}
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blt bcm32_set_powerstate_loop2
+
+	dsb
+
+ 	ldr memorymap_base, bcm32_mail_setpowerstate_addr
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_set_powerstate_error
+
+	ldr r0, [memorymap_base, #24]
+
+	b bcm32_set_powerstate_common
+
+	bcm32_set_powerstate_error:
+		mvn r0, #0                           @ Return with Error
+
+	bcm32_set_powerstate_common:
+		dsb                                  @ Ensure Completion of Instructions Before
+		mov pc, lr
+
+.unreq deviceid
+.unreq state
 .unreq memorymap_base
 .unreq temp
 
