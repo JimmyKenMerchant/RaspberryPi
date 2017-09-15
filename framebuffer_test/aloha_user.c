@@ -41,7 +41,7 @@ void _user_start()
 	fb32_clear_color( COLOR32_NAVYBLUE );
 	fb32_set_doublebuffer( renderbuffer0, renderbuffer1 );
 
-	fb32_draw_arc( COLOR32_RED, 500, 200, 300, 300, start_radian, end_radian, 1, 1 );
+	fb32_draw_arc( COLOR32_WHITE, 500, 200, 300, 300, start_radian, end_radian, 1, 1 );
 
 	print32_set_caret( print32_string( string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
