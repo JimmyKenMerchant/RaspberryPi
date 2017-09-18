@@ -550,12 +550,44 @@ pop {r0-r3}
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
 	mov r0, #0x3
-	mov r1, #0x3
+	mov r1, #0x1
 	bl bcm32_set_powerstate
 
 push {r0-r3}
 mov r1, #500
 mov r2, #90
+bl print32_debug
+pop {r0-r3}
+
+	bl usb2032_otg_start
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1 ,#equ32_usb20_otg_gotgctl]
+
+push {r0-r3}
+mov r1, #500
+mov r2, #102
+bl print32_debug
+pop {r0-r3}
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1 ,#equ32_bcm_usb20_vbus_drv]
+
+push {r0-r3}
+mov r1, #500
+mov r2, #114
+bl print32_debug
+pop {r0-r3}
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1, #equ32_usb20_otg_gahbcfg]
+
+push {r0-r3}
+mov r1, #500
+mov r2, #126
 bl print32_debug
 pop {r0-r3}
 

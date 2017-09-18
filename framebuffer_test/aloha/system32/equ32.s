@@ -18,7 +18,7 @@
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
 .equ equ32_gpio_base,          0x00200000
-.equ equ32_usb_otg_base,      0x00980000
+.equ equ32_usb20_otg_base,     0x00980000
 
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
@@ -157,71 +157,72 @@
  */
 
 /* Core Global Control and Status Registers (CSRs) */
-.equ equ32_usb_otg_gotgctl,        0x00000000 @ OTG Control and Status
-.equ equ32_usb_otg_gotgint,        0x00000004 @ OTG Interrupt
-.equ equ32_usb_otg_gahbcfg,        0x00000008 @ Core Internal Bus (Advanced High-performance Bus: AHB) Configuration
-.equ equ32_usb_otg_gusbcfg,        0x0000000C @ Core USB Configuration
-.equ equ32_usb_otg_grstctl,        0x00000010 @ Core Reset
-.equ equ32_usb_otg_gintsts,        0x00000014 @ Core Interrupt
-.equ equ32_usb_otg_gintmsk,        0x00000018 @ Core Interrupt Mask
-.equ equ32_usb_otg_grxstsr,        0x0000001C @ Receive Status Debug Read
-.equ equ32_usb_otg_grxstsp,        0x00000020 @ Receive Status Read/Pop
-.equ equ32_usb_otg_grxfsiz,        0x00000024 @ Receive FIFO Size
-.equ equ32_usb_otg_gnptxfsiz,      0x00000028 @ Non-periodic Transmit FIFO Size
-.equ equ32_usb_otg_gnptxsts,       0x0000002C @ Non-periodic Transmit FIFO/Queue
-.equ equ32_usb_otg_gi2cctl,        0x00000030 @ I2C Access
-.equ equ32_usb_otg_gpvndctl,       0x00000034 @ PHY Vendor Control
-.equ equ32_usb_otg_ggpio,          0x00000038 @ General Purpose Input/Output
-.equ equ32_usb_otg_guid,           0x0000003C @ User ID
-.equ equ32_usb_otg_grsv,           0x00000040 @ Reserved
-.equ equ32_usb_otg_ghwcfg1,        0x00000044 @ User HW Config1
-.equ equ32_usb_otg_ghwcfg2,        0x00000048 @ User HW Config2
-.equ equ32_usb_otg_ghwcfg3,        0x0000004C @ User HW Config3
-.equ equ32_usb_otg_ghwcfg4,        0x00000050 @ User HW Config4
+.equ equ32_usb20_otg_gotgctl,        0x00000000 @ OTG Control and Status
+.equ equ32_usb20_otg_gotgint,        0x00000004 @ OTG Interrupt
+.equ equ32_usb20_otg_gahbcfg,        0x00000008 @ Core Internal Bus (Advanced High-performance Bus: AHB) Configuration
+.equ equ32_usb20_otg_gusbcfg,        0x0000000C @ Core USB Configuration
+.equ equ32_usb20_otg_grstctl,        0x00000010 @ Core Reset
+.equ equ32_usb20_otg_gintsts,        0x00000014 @ Core Interrupt
+.equ equ32_usb20_otg_gintmsk,        0x00000018 @ Core Interrupt Mask
+.equ equ32_usb20_otg_grxstsr,        0x0000001C @ Receive Status Debug Read
+.equ equ32_usb20_otg_grxstsp,        0x00000020 @ Receive Status Read/Pop
+.equ equ32_usb20_otg_grxfsiz,        0x00000024 @ Receive FIFO Size
+.equ equ32_usb20_otg_gnptxfsiz,      0x00000028 @ Non-periodic Transmit FIFO Size
+.equ equ32_usb20_otg_gnptxsts,       0x0000002C @ Non-periodic Transmit FIFO/Queue
+.equ equ32_usb20_otg_gi2cctl,        0x00000030 @ I2C Access
+.equ equ32_usb20_otg_gpvndctl,       0x00000034 @ PHY Vendor Control
+.equ equ32_usb20_otg_ggpio,          0x00000038 @ General Purpose Input/Output
+.equ equ32_usb20_otg_guid,           0x0000003C @ User ID
+.equ equ32_usb20_otg_grsv,           0x00000040 @ Reserved
+.equ equ32_usb20_otg_ghwcfg1,        0x00000044 @ User HW Config1
+.equ equ32_usb20_otg_ghwcfg2,        0x00000048 @ User HW Config2
+.equ equ32_usb20_otg_ghwcfg3,        0x0000004C @ User HW Config3
+.equ equ32_usb20_otg_ghwcfg4,        0x00000050 @ User HW Config4
+.equ equ32_usb20_otg_pcgctl,         0x00000E00 @ Power and Clock Gating Control
 
-/* Vendor-specific Extra Registers (Base is 0x00000000) */
-.equ equ32_bcm_usb_mdio_cntl,      0x00000080 @ MDIO Interface Control (BCM2835-2837)
-.equ equ32_bcm_usb_mdio_gen,       0x00000084 @ Data for MDIO Interfaace (BCM2835-2837)
-.equ equ32_bcm_usb_vbus_drv,       0x00000088 @ Vbus and Other Miscellaneous Controls (BCM2835-2837)
+/* Vendor-specific Extra Registers (Base is the same as Core CSRs) */
+.equ equ32_bcm_usb20_mdio_cntl,      0x00000080 @ MDIO Interface Control (BCM2835-2837)
+.equ equ32_bcm_usb20_mdio_gen,       0x00000084 @ Data for MDIO Interfaace (BCM2835-2837)
+.equ equ32_bcm_usb20_vbus_drv,       0x00000088 @ Vbus and Other Miscellaneous Controls (BCM2835-2837)
 
-.equ equ32_usb_otg_ptxfsiz_base,   0x00000100 @ Base of Periodic Transmit FIFO Size Registers
-.equ equ32_usb_otg_hptxfsiz,       0x00000000 @ Host Periodic Transmit FIFO Size
-.equ equ32_usb_otg_dptxfsiz1,      0x00000004 @ Device Periodic Transmit FIFO-1 Size
-.equ equ32_usb_otg_dptxfsiz2,      0x00000008 @ Device Periodic Transmit FIFO-2 Size
-.equ equ32_usb_otg_dptxfsiz3,      0x0000000C @ Device Periodic Transmit FIFO-3 Size
-.equ equ32_usb_otg_dptxfsiz4,      0x00000010 @ Device Periodic Transmit FIFO-4 Size
-.equ equ32_usb_otg_dptxfsiz5,      0x00000014 @ Device Periodic Transmit FIFO-5 Size
-.equ equ32_usb_otg_dptxfsiz6,      0x00000018 @ Device Periodic Transmit FIFO-6 Size
-.equ equ32_usb_otg_dptxfsiz7,      0x0000001C @ Device Periodic Transmit FIFO-7 Size
-.equ equ32_usb_otg_dptxfsiz8,      0x00000020 @ Device Periodic Transmit FIFO-8 Size
-.equ equ32_usb_otg_dptxfsiz9,      0x00000024 @ Device Periodic Transmit FIFO-9 Size
-.equ equ32_usb_otg_dptxfsiz10,     0x00000028 @ Device Periodic Transmit FIFO-10 Size
-.equ equ32_usb_otg_dptxfsiz11,     0x0000002C @ Device Periodic Transmit FIFO-11 Size
-.equ equ32_usb_otg_dptxfsiz12,     0x00000030 @ Device Periodic Transmit FIFO-12 Size
-.equ equ32_usb_otg_dptxfsiz13,     0x00000034 @ Device Periodic Transmit FIFO-13 Size
-.equ equ32_usb_otg_dptxfsiz14,     0x00000038 @ Device Periodic Transmit FIFO-14 Size
-.equ equ32_usb_otg_dptxfsiz15,     0x0000003C @ Device Periodic Transmit FIFO-15 Size
+.equ equ32_usb20_otg_ptxfsiz_base,   0x00000100 @ Base of Periodic Transmit FIFO Size Registers (+ equ32_usb20_otg_base)
+.equ equ32_usb20_otg_hptxfsiz,       0x00000000 @ Host Periodic Transmit FIFO Size
+.equ equ32_usb20_otg_dptxfsiz1,      0x00000004 @ Device Periodic Transmit FIFO-1 Size
+.equ equ32_usb20_otg_dptxfsiz2,      0x00000008 @ Device Periodic Transmit FIFO-2 Size
+.equ equ32_usb20_otg_dptxfsiz3,      0x0000000C @ Device Periodic Transmit FIFO-3 Size
+.equ equ32_usb20_otg_dptxfsiz4,      0x00000010 @ Device Periodic Transmit FIFO-4 Size
+.equ equ32_usb20_otg_dptxfsiz5,      0x00000014 @ Device Periodic Transmit FIFO-5 Size
+.equ equ32_usb20_otg_dptxfsiz6,      0x00000018 @ Device Periodic Transmit FIFO-6 Size
+.equ equ32_usb20_otg_dptxfsiz7,      0x0000001C @ Device Periodic Transmit FIFO-7 Size
+.equ equ32_usb20_otg_dptxfsiz8,      0x00000020 @ Device Periodic Transmit FIFO-8 Size
+.equ equ32_usb20_otg_dptxfsiz9,      0x00000024 @ Device Periodic Transmit FIFO-9 Size
+.equ equ32_usb20_otg_dptxfsiz10,     0x00000028 @ Device Periodic Transmit FIFO-10 Size
+.equ equ32_usb20_otg_dptxfsiz11,     0x0000002C @ Device Periodic Transmit FIFO-11 Size
+.equ equ32_usb20_otg_dptxfsiz12,     0x00000030 @ Device Periodic Transmit FIFO-12 Size
+.equ equ32_usb20_otg_dptxfsiz13,     0x00000034 @ Device Periodic Transmit FIFO-13 Size
+.equ equ32_usb20_otg_dptxfsiz14,     0x00000038 @ Device Periodic Transmit FIFO-14 Size
+.equ equ32_usb20_otg_dptxfsiz15,     0x0000003C @ Device Periodic Transmit FIFO-15 Size
 
 /* Host Mode Control and Status Registers (CSRs) */
-.equ equ32_usb_otg_host_base,            0x00000400 @ Base of Host Global Registers
-.equ equ32_usb_otg_hcfg,                 0x00000000 @ Host Configuration
-.equ equ32_usb_otg_hfir,                 0x00000004 @ Host Frame Interval
-.equ equ32_usb_otg_hfnum,                0x00000008 @ Host Frame Number/Frame Time Remaining
-.equ equ32_usb_otg_hrsv,                 0x0000000C @ Reserved
-.equ equ32_usb_otg_hptxsts,              0x00000010 @ Host Periodic Transmit FIFO/Queue Status
-.equ equ32_usb_otg_haint,                0x00000014 @ Host All Channels Interrupt
-.equ equ32_usb_otg_haintmsk,             0x00000018 @ Host All Channels Interrupt Mask
-.equ equ32_usb_otg_hprt,                 0x00000040 @ Host Port Control and Status
-.equ equ32_usb_otg_hostchannel_base,     0x00000500 @ Base of Host Channel Registers
-.equ equ32_usb_otg_hostchannel_offset,   0x00000020 @ Offset of Host Channel N Registers N = 0-15
-.equ equ32_usb_otg_hccharn,              0x00000000 @ Host Channel N Characteristics
-.equ equ32_usb_otg_hcspltn,              0x00000004 @ Host Channel N Split Control
-.equ equ32_usb_otg_hcintn,               0x00000008 @ Host Channel N Interrupt
-.equ equ32_usb_otg_hcintmskn,            0x0000000C @ Host Channel N Interrupt Mask
-.equ equ32_usb_otg_hctsizn,              0x00000010 @ Host Channel N Transfer Size
-.equ equ32_usb_otg_hcdman,               0x00000014 @ Host Channel N DMA Address
-.equ equ32_usb_otg_hcrsv1n,              0x00000018 @ Reserved1
-.equ equ32_usb_otg_hcrsv2n,              0x0000001C @ Reserved2
+.equ equ32_usb20_otg_host_base,            0x00000400 @ Base of Host Global Registers (+ equ32_usb20_otg_base)
+.equ equ32_usb20_otg_hcfg,                 0x00000000 @ Host Configuration
+.equ equ32_usb20_otg_hfir,                 0x00000004 @ Host Frame Interval
+.equ equ32_usb20_otg_hfnum,                0x00000008 @ Host Frame Number/Frame Time Remaining
+.equ equ32_usb20_otg_hrsv,                 0x0000000C @ Reserved
+.equ equ32_usb20_otg_hptxsts,              0x00000010 @ Host Periodic Transmit FIFO/Queue Status
+.equ equ32_usb20_otg_haint,                0x00000014 @ Host All Channels Interrupt
+.equ equ32_usb20_otg_haintmsk,             0x00000018 @ Host All Channels Interrupt Mask
+.equ equ32_usb20_otg_hprt,                 0x00000040 @ Host Port Control and Status
+.equ equ32_usb20_otg_hostchannel_base,     0x00000500 @ Base of Host Channel Registers
+.equ equ32_usb20_otg_hostchannel_offset,   0x00000020 @ Offset of Host Channel N Registers N = 0-15
+.equ equ32_usb20_otg_hccharn,              0x00000000 @ Host Channel N Characteristics
+.equ equ32_usb20_otg_hcspltn,              0x00000004 @ Host Channel N Split Control
+.equ equ32_usb20_otg_hcintn,               0x00000008 @ Host Channel N Interrupt
+.equ equ32_usb20_otg_hcintmskn,            0x0000000C @ Host Channel N Interrupt Mask
+.equ equ32_usb20_otg_hctsizn,              0x00000010 @ Host Channel N Transfer Size
+.equ equ32_usb20_otg_hcdman,               0x00000014 @ Host Channel N DMA Address
+.equ equ32_usb20_otg_hcrsv1n,              0x00000018 @ Reserved1
+.equ equ32_usb20_otg_hcrsv2n,              0x0000001C @ Reserved2
 
 /* Device Mode Control and Status Registers (CSRs) */
 

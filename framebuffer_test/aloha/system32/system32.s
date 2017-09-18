@@ -1227,6 +1227,9 @@ system32_mfree:
  * These are useful if you use `extern` in C lang file, or use the label in other assembler lang files.
  */
 
+.include "system32/usb2032.s"
+.balign 4
+
 /**
  * The section, "library" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
  * compatibility with other ARM CPUs. 
