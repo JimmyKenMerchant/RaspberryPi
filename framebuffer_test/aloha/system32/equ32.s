@@ -226,6 +226,91 @@
 
 /* Device Mode Control and Status Registers (CSRs) */
 
+/* Standard Device Request */
+
+/* bmRequestType (1 Byte, Offset 0) */
+.equ equ32_usb20_reqt_recipient_device,      0b00000000
+.equ equ32_usb20_reqt_recipient_interface,   0b00000001
+.equ equ32_usb20_reqt_recipient_endpoint,    0b00000010
+.equ equ32_usb20_reqt_recipient_other,       0b00000011
+.equ equ32_usb20_reqt_type_standard,         0b00000000
+.equ equ32_usb20_reqt_type_class,            0b00100000
+.equ equ32_usb20_reqt_type_vendor,           0b01000000
+.equ equ32_usb20_reqt_host_to_device,        0b00000000
+.equ equ32_usb20_reqt_device_to_host,        0b10000000
+
+/* bRequest (1 Byte, Offset 1, << 8) */
+.equ equ32_usb20_req_get_status,             0x00
+.equ equ32_usb20_req_clear_feature,          0x01
+.equ equ32_usb20_req_set_feature,            0x03
+.equ equ32_usb20_req_set_address,            0x05
+.equ equ32_usb20_req_get_descriptor,         0x06
+.equ equ32_usb20_req_set_descriptor,         0x07
+.equ equ32_usb20_req_get_configuration,      0x08
+.equ equ32_usb20_req_set_configuration,      0x09
+.equ equ32_usb20_req_get_interface,          0x0A
+.equ equ32_usb20_req_set_interface,          0x0B
+.equ equ32_usb20_req_synch_frame,            0x0C
+
+.equ equ32_usb20_req_hid_get_report,         0x01
+.equ equ32_usb20_req_hid_get_idle,           0x02
+.equ equ32_usb20_req_hid_get_protocol,       0x03
+.equ equ32_usb20_req_hid_set_report,         0x09
+.equ equ32_usb20_req_hid_set_idle,           0x0A
+.equ equ32_usb20_req_hid_set_protocol,       0x0B
+
+/* wValue (2 Bytes, Offset 2, << 16) */
+.equ equ32_usb20_val_get_status,             0x0000
+
+.equ equ32_usb20_val_descriptor_device,                      0x0100 @ Lower 1 Byte is Index of Descriptor
+.equ equ32_usb20_val_descriptor_configuration,               0x0200
+.equ equ32_usb20_val_descriptor_string,                      0x0300
+.equ equ32_usb20_val_descriptor_interface,                   0x0400 @ Recipient is Interface
+.equ equ32_usb20_val_descriptor_endpoint,                    0x0500 @ Recipient is Endpoint
+.equ equ32_usb20_val_descriptor_device_qualifier,            0x0600
+.equ equ32_usb20_val_descriptor_other_speed_configuration,   0x0700
+.equ equ32_usb20_val_descriptor_interface_power,             0x0800 @ Recipient is Interface
+.equ equ32_usb20_val_descriptor_otg,                         0x0900 @ Session Request Protocol (SRP) and Host Negotiation Protocol
+.equ equ32_usb20_val_descriptor_hid,                         0x2100
+.equ equ32_usb20_val_descriptor_hidreport,                   0x2200
+.equ equ32_usb20_val_descriptor_hidphysical,                 0x2300
+.equ equ32_usb20_val_descriptor_hub,                         0x2900 @ Class Number of Ports (Offset 2 Bytes)
+
+.equ equ32_usb20_val_hub_localpower,              0x0000 @ Status of Hub is similar to Value (+0x10 is change status)
+.equ equ32_usb20_val_hub_overcurrent,             0x0001
+.equ equ32_usb20_val_hubport_connection,          0x0000 @ Status of HubPort is similar to Upper 2 Bytes of Value
+.equ equ32_usb20_val_hubport_enable,              0x0001
+.equ equ32_usb20_val_hubport_suspend,             0x0002
+.equ equ32_usb20_val_hubport_overcurrent,         0x0003
+.equ equ32_usb20_val_hubport_reset,               0x0004
+.equ equ32_usb20_val_hubport_power,               0x0008
+.equ equ32_usb20_val_hubport_lowspeed,            0x0009
+.equ equ32_usb20_val_hubport_highspeed,           0x000A
+.equ equ32_usb20_val_hubport_connection_change,   0x0010 @ Connection Status is changed
+.equ equ32_usb20_val_hubport_enable_change,       0x0011
+.equ equ32_usb20_val_hubport_suspend_change,      0x0012
+.equ equ32_usb20_val_hubport_overcurrent_change,  0x0013
+.equ equ32_usb20_val_hubport_reset_change,        0x0014 @ Indicates Completion of Reset
+
+.equ equ32_usb20_val_hid_report_input,            0x0100 @ Lower 1 Byte is Index of Report
+.equ equ32_usb20_val_hid_report_output,           0x0200 @ Lower 1 Byte is Index of Report
+.equ equ32_usb20_val_hid_report_feature,          0x0300 @ Lower 1 Byte is Index of Report
+ 
+/* wIndex (2 Bytes, Offset 4, << 32), Indexing Interface, Endpoint, or Language ID*/
+.equ equ32_usb20_index_device,            0x0000     @ Except indicating Language ID in descriptor, wIndex is zero in std.
+
+/* wLength (2 Bytes, Offset 6, << 48) */
+.equ equ32_usb20_len_get_status,          0x0002
+.equ equ32_usb20_len_clear_feature,       0x0000
+.equ equ32_usb20_len_set_feature,         0x0000
+.equ equ32_usb20_len_set_address,         0x0000
+.equ equ32_usb20_len_get_configuration,   0x0001
+.equ equ32_usb20_len_get_configuration,   0x0000
+.equ equ32_usb20_len_get_interface,       0x0001
+.equ equ32_usb20_len_set_interface,       0x0000
+.equ equ32_usb20_len_synch_frame,         0x0002
+
+
 /**
  * ARM System Registers (Coprocessors)
  */

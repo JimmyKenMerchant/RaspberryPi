@@ -39,6 +39,7 @@ usb2032_otg_start:
 	 * Besides, GAHBCFG of BCM2836 has 0x0000000E in Default.
 	 * In this function, DMA is enabled, so DMA Burst Becomes Incremental16
 	 */
+	and temp, temp, #0x0F
 	orr temp, temp, #0x20                                     @ Enable DMA Bit[5]
 
 	str temp, [memorymap_base ,#equ32_usb20_otg_gahbcfg]
