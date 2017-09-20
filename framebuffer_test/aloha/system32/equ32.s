@@ -157,27 +157,27 @@
  */
 
 /* Core Global Control and Status Registers (CSRs) */
-.equ equ32_usb20_otg_gotgctl,        0x00000000 @ OTG Control and Status
-.equ equ32_usb20_otg_gotgint,        0x00000004 @ OTG Interrupt
-.equ equ32_usb20_otg_gahbcfg,        0x00000008 @ Core Internal Bus (Advanced High-performance Bus: AHB) Configuration
-.equ equ32_usb20_otg_gusbcfg,        0x0000000C @ Core USB Configuration
-.equ equ32_usb20_otg_grstctl,        0x00000010 @ Core Reset
-.equ equ32_usb20_otg_gintsts,        0x00000014 @ Core Interrupt
-.equ equ32_usb20_otg_gintmsk,        0x00000018 @ Core Interrupt Mask
-.equ equ32_usb20_otg_grxstsr,        0x0000001C @ Receive Status Debug Read
-.equ equ32_usb20_otg_grxstsp,        0x00000020 @ Receive Status Read/Pop
-.equ equ32_usb20_otg_grxfsiz,        0x00000024 @ Receive FIFO Size
-.equ equ32_usb20_otg_gnptxfsiz,      0x00000028 @ Non-periodic Transmit FIFO Size
-.equ equ32_usb20_otg_gnptxsts,       0x0000002C @ Non-periodic Transmit FIFO/Queue
-.equ equ32_usb20_otg_gi2cctl,        0x00000030 @ I2C Access
-.equ equ32_usb20_otg_gpvndctl,       0x00000034 @ PHY Vendor Control
-.equ equ32_usb20_otg_ggpio,          0x00000038 @ General Purpose Input/Output
-.equ equ32_usb20_otg_guid,           0x0000003C @ User ID
-.equ equ32_usb20_otg_grsv,           0x00000040 @ Reserved
-.equ equ32_usb20_otg_ghwcfg1,        0x00000044 @ User HW Config1
-.equ equ32_usb20_otg_ghwcfg2,        0x00000048 @ User HW Config2
-.equ equ32_usb20_otg_ghwcfg3,        0x0000004C @ User HW Config3
-.equ equ32_usb20_otg_ghwcfg4,        0x00000050 @ User HW Config4
+.equ equ32_usb20_otg_gotgctl,        0x00000000 @ Global OTG Control (and Status)
+.equ equ32_usb20_otg_gotgint,        0x00000004 @ Global OTG Interrupt
+.equ equ32_usb20_otg_gahbcfg,        0x00000008 @ Global Advanced High-performance Bus (AHB: Internal Bus) Configuration
+.equ equ32_usb20_otg_gusbcfg,        0x0000000C @ Global USB Configuration
+.equ equ32_usb20_otg_grstctl,        0x00000010 @ Global Reset Control
+.equ equ32_usb20_otg_gintsts,        0x00000014 @ Global Interrupt Status
+.equ equ32_usb20_otg_gintmsk,        0x00000018 @ Global Interrupt Mask
+.equ equ32_usb20_otg_grxstsr,        0x0000001C @ Global Receive Status Read (Debug)
+.equ equ32_usb20_otg_grxstsp,        0x00000020 @ Global Receive Status Pop
+.equ equ32_usb20_otg_grxfsiz,        0x00000024 @ Global Receive FIFO Size
+.equ equ32_usb20_otg_gnptxfsiz,      0x00000028 @ Global Non-periodic Transmit FIFO Size
+.equ equ32_usb20_otg_gnptxsts,       0x0000002C @ Global Non-periodic Transmit (FIFO/Queue) Status
+.equ equ32_usb20_otg_gi2cctl,        0x00000030 @ Global I2C Control
+.equ equ32_usb20_otg_gpvndctl,       0x00000034 @ Global PHY Vendor Control
+.equ equ32_usb20_otg_ggpio,          0x00000038 @ Global General Purpose Input/Output
+.equ equ32_usb20_otg_guid,           0x0000003C @ Global User ID
+.equ equ32_usb20_otg_grsv,           0x00000040 @ Global Reserved
+.equ equ32_usb20_otg_ghwcfg1,        0x00000044 @ Global User HW Config1
+.equ equ32_usb20_otg_ghwcfg2,        0x00000048 @ Global User HW Config2
+.equ equ32_usb20_otg_ghwcfg3,        0x0000004C @ Global User HW Config3
+.equ equ32_usb20_otg_ghwcfg4,        0x00000050 @ Global User HW Config4
 .equ equ32_usb20_otg_pcgctl,         0x00000E00 @ Power and Clock Gating Control
 
 /* Vendor-specific Extra Registers (Base is the same as Core CSRs) */
@@ -207,9 +207,9 @@
 .equ equ32_usb20_otg_host_base,            0x00000400 @ Base of Host Global Registers (+ equ32_usb20_otg_base)
 .equ equ32_usb20_otg_hcfg,                 0x00000000 @ Host Configuration
 .equ equ32_usb20_otg_hfir,                 0x00000004 @ Host Frame Interval
-.equ equ32_usb20_otg_hfnum,                0x00000008 @ Host Frame Number/Frame Time Remaining
-.equ equ32_usb20_otg_hrsv,                 0x0000000C @ Reserved
-.equ equ32_usb20_otg_hptxsts,              0x00000010 @ Host Periodic Transmit FIFO/Queue Status
+.equ equ32_usb20_otg_hfnum,                0x00000008 @ Host Frame Number (and Frame Time Remaining)
+.equ equ32_usb20_otg_hrsv,                 0x0000000C @ Host Reserved
+.equ equ32_usb20_otg_hptxsts,              0x00000010 @ Host Periodic Transmit (FIFO/Queue) Status
 .equ equ32_usb20_otg_haint,                0x00000014 @ Host All Channels Interrupt
 .equ equ32_usb20_otg_haintmsk,             0x00000018 @ Host All Channels Interrupt Mask
 .equ equ32_usb20_otg_hprt,                 0x00000040 @ Host Port Control and Status
@@ -221,8 +221,8 @@
 .equ equ32_usb20_otg_hcintmskn,            0x0000000C @ Host Channel N Interrupt Mask
 .equ equ32_usb20_otg_hctsizn,              0x00000010 @ Host Channel N Transfer Size
 .equ equ32_usb20_otg_hcdman,               0x00000014 @ Host Channel N DMA Address
-.equ equ32_usb20_otg_hcrsv1n,              0x00000018 @ Reserved1
-.equ equ32_usb20_otg_hcrsv2n,              0x0000001C @ Reserved2
+.equ equ32_usb20_otg_hcrsv1n,              0x00000018 @ Host Channel Reserved1
+.equ equ32_usb20_otg_hcrsv2n,              0x0000001C @ Host Channel Reserved2
 
 /* Device Mode Control and Status Registers (CSRs) */
 
