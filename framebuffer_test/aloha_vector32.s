@@ -559,7 +559,7 @@ mov r2, #90
 bl print32_debug
 pop {r0-r3}
 
-	bl usb2032_otg_start
+	bl usb2032_otg_host_start
 
 push {r0-r3}
 mov r1, #500
