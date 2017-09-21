@@ -8,17 +8,25 @@
  */
 
 /**
- * function usb2032_otg_host_wait
+ * function usb2032_otg_host_receiver
  * Wait Receive Responce from Device and Disable Interrupt
  *
  * Parameters
  * r0: Channel 0-15
  *
  * Usage: r0-r2
- * Return: r0 (Host Channel Interrupt Status)
+ * Return: r0 (Status of Channel)
+ * Bit[0]: Completed
+ * Bit[1]: Halted
+ * Bit[2]: ACK
+ * Bit[3]: NAK
+ * Bit[4]: STALL
+ * Bit[5]: NYET
+ * Bit[6]: Internal Bus Error
+ * Bit[7]: Transaction and Other Errors
  */
-.globl usb2032_otg_host_wait
-usb2032_otg_host_wait:
+.globl usb2032_otg_host_receiver
+usb2032_otg_host_receiver:
 	/* Auto (Local) Variables, but just Aliases */
 	channel        .req r0
 	memorymap_base .req r1
@@ -29,21 +37,25 @@ usb2032_otg_host_wait:
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_hostchannel_base
 	mov temp, #equ32_usb20_otg_hostchannel_offset
 	mul temp, channel, temp
-	add memorymap_base, memorymap_base, temp                               @ Add Each Channel Offset
+	add memorymap_base, memorymap_base, temp                             @ Add Each Channel Offset
 
-	usb2032_otg_host_wait_loop:
+	/**
+	 * On the loop below, we should consider of the limitter, but this system is aiming simple.
+	 * Implementing the limitter causes complex of codes to treat it.
+	 * If you want to escape from loop, set channel-halt from another core. 
+	 */
+	usb2032_otg_host_receiver_loop:
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
-		cmp temp, #0
-		beq usb2032_otg_host_wait_loop
-
-		dsb
+		tst temp, #0x00000002                                            @ Check Halted (HCD Disabled Channel N)
+		beq usb2032_otg_host_receiver_loop
 
 		/**
+		 * Bit[11] and over may exist in case of some SoC
 		 * Data Toggle Error Bit[10]
 		 * Frame Overrun Bit[9]
 		 * Babble Error Bit[8]
 		 * Transaction Error Bit[7]
-		 * NYET Bit[6]
+		 * NYET (Not Yet) Bit[6] for Split Control
 		 * ACK Bit[5]
 		 * NAK Bit[4]
 		 * STALL Bit[3]
@@ -52,9 +64,30 @@ usb2032_otg_host_wait:
 		 * Transfer Completed Bit[0]
 		 */
 
-		mov r0, temp
+		dsb
 
-	usb2032_otg_host_wait_common:
+		mov r0, #0
+
+		/* Bit Translation Process */
+
+		tst temp, #0x00000001
+		orrne r0, r0, #0x00000001                                         @ Completed Bit[0]
+		tst temp, #0x00000002
+		orrne r0, r0, #0x00000002                                         @ Halted Bit[1]
+		tst temp, #0x00000020
+		orrne r0, r0, #0x00000004                                         @ ACK Bit[2]
+		tst temp, #0x00000010
+		orrne r0, r0, #0x00000008                                         @ NAK Bit[3]
+		tst temp, #0x00000008
+		orrne r0, r0, #0x00000010                                         @ STALL Bit[4]
+		tst temp, #0x00000040
+		orrne r0, r0, #0x00000020                                         @ NYET Bit[5]
+		tst temp, #0x00000004
+		orrne r0, r0, #0x00000040                                         @ Internal Bus Error Bit[6]
+		tst temp, #0x00000F80
+		orrne r0, r0, #0x00000080                                         @ Transaction and Other Errors Bit[7]
+
+	usb2032_otg_host_receiver_common:
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ Set-clear
 		mov temp, #0
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]            @ Mask All
@@ -67,96 +100,133 @@ usb2032_otg_host_wait:
 
 
 /**
- * function usb2032_otg_host_send
+ * function usb2032_otg_host_sender
  * Send Message to Device and Enable Interrupt
  *
  * Parameters
  * r0: Channel 0-15
+ * r1: Split-Complete (1) or Not (0)
  *
- * Usage: r0-r2
  * Return: r0 (0 as success, 1 as Error)
  * Error(1): Channel is Already Enabled
  */
-.globl usb2032_otg_host_send
-usb2032_otg_host_send:
+.globl usb2032_otg_host_sender
+usb2032_otg_host_sender:
 	/* Auto (Local) Variables, but just Aliases */
 	channel        .req r0
-	memorymap_base .req r1
-	temp           .req r2
+	complete_splt  .req r1
+	memorymap_base .req r2
+	temp           .req r3
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_base
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_hostchannel_base
 	mov temp, #equ32_usb20_otg_hostchannel_offset
 	mul temp, channel, temp
-	add memorymap_base, memorymap_base, temp                               @ Add Each Channel Offset
+	add memorymap_base, memorymap_base, temp                              @ Add Each Channel Offset
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
-	tst temp, #0x80000000                                                  @ Channel Enable Bit[31]
-	bne usb2032_otg_host_send_error                                        @ Channel is Already Enabled
+	tst temp, #0x80000000                                                 @ Channel Enable Bit[31]
+	bne usb2032_otg_host_sender_error                                     @ Channel is Already Enabled
+
+	ldr temp, [memorymap_base, #equ32_usb20_otg_hctsizn]
+	dsb
+	bic temp, #0x00F80000                                                 @ Clear Packet Count Bit[28:19]
+	bic temp, #0x1F000000                                                 @ Clear Packet Count Bit[28:19]
+	orr temp, #0x00080000                                                 @ Packet Count Bit[28:19] to 1
+	str temp, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 	dsb
-	str temp, [memorymap_base, #equ32_usb20_otg_hcintn]                    @ Set-clear
+	str temp, [memorymap_base, #equ32_usb20_otg_hcintn]                   @ Set-clear
 
 	mvn temp, #0
-	str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]                 @ Unmask All
+	str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]                @ Unmask All
 
-	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
-	dsb
-	orr temp, #0x80000000
+	cmp complete_splt, #0
+	beq usb2032_otg_host_sender_jump
+	 
+	ldr temp, [memorymap_base, #equ32_usb20_otg_hcspltn]
+	tst temp, #0x80000000                                                 @ Split Enable Bit[31]
+	beq usb2032_otg_host_sender_jump
 
-	str temp, [memorymap_base, #equ32_usb20_otg_hccharn]
+	orr temp, #0x00010000                                                 @ Do Complete Split Bit[16]
+	str temp, [memorymap_base, #equ32_usb20_otg_hcspltn]
 
-	b usb2032_otg_host_send_success
+	usb2032_otg_host_sender_jump:
+		dsb
+		ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
+		dsb
 
-	usb2032_otg_host_send_error:
+		orr temp, #0x80000000
+		str temp, [memorymap_base, #equ32_usb20_otg_hccharn]              @ Enable Channel
+
+		b usb2032_otg_host_sender_success
+
+	usb2032_otg_host_sender_error:
 		mov r0, #1                                                        @ Return with Error
-		b usb2032_otg_host_send_common
+		b usb2032_otg_host_sender_common
 
-	usb2032_otg_host_send_success:
+	usb2032_otg_host_sender_success:
 		mov r0, #0                                                        @ Return with Success
 
-	usb2032_otg_host_send_common:
+	usb2032_otg_host_sender_common:
 		dsb                                                               @ Ensure Completion of Instructions Before
 		mov pc, lr
 	
 .unreq channel
+.unreq complete_splt
 .unreq memorymap_base
 .unreq temp
 
 
 /**
- * function usb2032_otg_host_set_channel
+ * function usb2032_otg_host_setter
  * Set Channel
  *
  * Parameters
  * r0: Channel 0-15
- * r1: Value of Host Channel N Characteristics Register
- * r2: Value of Host Channel N Split Control Register
- * r3: Value of Host Channel N Transfer Size Register
- * r4: Value of Host Channel N DMA Address Register
+ * 
+ * r1: Channel N Characteristics, Reserved Bits expects SBZ (Zeros)
+ *   r1 Bit[10:0]: Maximum Packet Size
+ *   r1 Bit[14:11]: Endpoint Number
+ *   r1 Bit[15]: Endpoint Direction, 0 Out, 1, In
+ *   r1 Bit[17:16]: Endpoint Type, 0 Control, 1 Isochronous, 2 Bulk, 3 Interrupt
+ *   r1 Bit[24:18]: Device Address
+ *   r1 Bit[25]: Full and High Speed(0)/Low Speed(1)
+ *   r1 Bit[26]: Even(0)/Odd(1) Frame in Periodic Transactions
  *
- * Usage: r0-r6
+ * r2: Channel N Transfer Size, Reserved Bits expects SBZ (Zeros)
+ *   r2 Bit[18:0]: Transfer Size
+ *
+ * r3: Channel N DMA Address
+ *
+ * r4: Channel N Split Control, Reserved Bits expects SBZ (Zeros)
+ *   r4 Bit[6:0]: Port Address
+ *   r4 Bit[13:7]: Hub Address
+ *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All
+ *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
+ *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Channel is Already Enabled
  */
-.globl usb2032_otg_host_set_channel
-usb2032_otg_host_set_channel:
+.globl usb2032_otg_host_setter
+usb2032_otg_host_setter:
 	/* Auto (Local) Variables, but just Aliases */
 	channel        .req r0
-	hcchar         .req r1
-	hcsplt         .req r2
-	hctsiz         .req r3
-	hcdma          .req r4
-	memorymap_base .req r5
+	character      .req r1
+	transfer_size  .req r2
+	dma_addr       .req r3
+	split_ctl      .req r4
+	hcchar         .req r5
 	temp           .req r6
+	memorymap_base .req r7
 
-	push {r4-r6}
+	push {r4-r7}
 
-	add sp, sp, #12                                                        @ r4-r6 offset 12 bytes
-	pop {hcdma}                                                            @ Get Fifth Argument
-	sub sp, sp, #16 
+	add sp, sp, #16                                                        @ r4-r7 offset 16 bytes
+	pop {split_ctl}                                                        @ Get Fifth Argument
+	sub sp, sp, #20 
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_base
@@ -167,34 +237,62 @@ usb2032_otg_host_set_channel:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	tst temp, #0x80000000                                                  @ Channel Enable Bit[31]
-	bne usb2032_otg_host_set_channel_error                                 @ Channel is Already Enabled
+	bne usb2032_otg_host_setter_error                                      @ Channel is Already Enabled
 
+	mov hcchar, #0
+
+	and temp, character, #0x00FF                                           @ Bit[7:0]
+	orr hcchar, hcchar, temp
+	and temp, character, #0xFF00                                           @ Bit[15:8]
+	orr hcchar, hcchar, temp
+
+	and temp, character, #0x00030000                                       @ Endpoint Type Bit[17:16]
+	lsl temp, temp, #2
+	orr hcchar, hcchar, temp
+
+	and temp, character, #0x01FC0000                                       @ Device Address Bit[24:18]
+	lsl temp, temp, #4
+	orr hcchar, hcchar, temp
+
+	tst character, #0x02000000                                             @ Full and High Speed(0)/Low Speed(1) Bit[25]
+	orrne hcchar, hcchar, #0x00020000
+	
+	tst character, #0x04000000                                             @ Even(0)/Odd(1) Frame Bit[26]
+	orrne hcchar, hcchar, #0x20000000
+
+	/* Force Setting */
+	orr hcchar, hcchar, #0x00100000                                        @ Multi Count/ Error Count Bit[21:20] in OTG
+
+	dsb
+ 
 	str hcchar, [memorymap_base, #equ32_usb20_otg_hccharn]
-	str hcsplt, [memorymap_base, #equ32_usb20_otg_hcspltn]
-	str hctsiz, [memorymap_base, #equ32_usb20_otg_hctsizn]
-	str hcdma, [memorymap_base, #equ32_usb20_otg_hcdman]
 
-	b usb2032_otg_host_set_channel_success
+	str transfer_size, [memorymap_base, #equ32_usb20_otg_hctsizn]
+	str dma_addr, [memorymap_base, #equ32_usb20_otg_hcdman]
+	str split_ctl, [memorymap_base, #equ32_usb20_otg_hcspltn]
 
-	usb2032_otg_host_set_channel_error:
+	b usb2032_otg_host_setter_success
+
+	usb2032_otg_host_setter_error:
 		mov r0, #1                                                         @ Return with Error
-		b usb2032_otg_host_set_channel_common
+		b usb2032_otg_host_setter_common
 
-	usb2032_otg_host_set_channel_success:
+	usb2032_otg_host_setter_success:
 		mov r0, #0                                                         @ Return with Success
 
-	usb2032_otg_host_set_channel_common:
+	usb2032_otg_host_setter_common:
 		dsb                                                                @ Ensure Completion of Instructions Before
-		pop {r4-r6}
+		pop {r4-r7}
 		mov pc, lr
 
 .unreq channel
+.unreq character
+.unreq transfer_size
+.unreq dma_addr
+.unreq split_ctl
 .unreq hcchar
-.unreq hcsplt
-.unreq hctsiz
-.unreq hcdma
-.unreq memorymap_base
 .unreq temp
+.unreq memorymap_base
 
 
 /**
@@ -202,7 +300,6 @@ usb2032_otg_host_set_channel:
  * Enable USB2.0 OTG
  * In addition to this function, you may need to power on the USB implementation in SoC.
  *
- * Usage: r0-r2
  * Return: r0 (0 as success, 1 as error)
  * Error(1): AHB (Advanced High-performance Bus) is not in Idle State.
  */
@@ -332,14 +429,30 @@ usb2032_otg_host_start:
 
 		usb2032_otg_host_start_jump_loop:
 			ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]
-			tst temp, #0x00000004                                       @ Port Enable Bit[2]
+			tst temp, #0x00000004                                  @ Port Enable Bit[2]
 			beq usb2032_otg_host_start_jump_loop
 
-		/**
-		 * If already connected with devices including Hub,
-		 * HPRT bit[1:0] become set, Port Connection Deteched Bit[1] causes
-		 * an interrupt on GINTSTS. If you want clear it, you will need to set-clear to Bit[1] after initializing devices
-		 */
+			/**
+			 * If already connected with devices including Hub,
+			 * HPRT bit[1:0] become set, Port Connection Deteched Bit[1] causes
+			 * an interrupt on GINTSTS. If you want clear it, you will need to write-clear to Bit[1]
+			 * Also, Port Enable/Disable Change Bit[3], Port Overcurrent Change Bit[5] are to write-clear
+			 */
+			bic temp, #0x4                                         @ Clear Port Enable Bit[2] Because Write-clear
+
+			str temp, [memorymap_base, #equ32_usb20_otg_hprt]
+
+			ldr temp, usb2032_otg_host_setter_addr
+			dsb
+			str temp, USB2032_SETTER
+
+			ldr temp, usb2032_otg_host_sender_addr
+			dsb
+			str temp, USB2032_SENDER
+
+			ldr temp, usb2032_otg_host_receiver_addr
+			dsb
+			str temp, USB2032_RECEIVER
 
 		b usb2032_otg_host_start_success
 
@@ -357,3 +470,15 @@ usb2032_otg_host_start:
 .unreq memorymap_base
 .unreq temp
 .unreq temp2
+
+.globl USB2032_SETTER
+.globl USB2032_SENDER
+.globl USB2032_RECEIVER
+USB2032_SETTER:   .word 0x00
+USB2032_SENDER:   .word 0x00
+USB2032_RECEIVER: .word 0x00
+
+usb2032_otg_host_setter_addr:   .word usb2032_otg_host_setter
+usb2032_otg_host_sender_addr:   .word usb2032_otg_host_sender
+usb2032_otg_host_receiver_addr: .word usb2032_otg_host_receiver
+
