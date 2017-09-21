@@ -328,8 +328,6 @@ print32_string:
 		push {char_height} 
 		bl fb32_clear_color_block
 		add sp, sp, #4
-		push {r1}
-		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
@@ -343,8 +341,6 @@ print32_string:
 		push {char_width,char_height}            @ Push Character Width and Hight
 		bl print32_char
 		add sp, sp, #8
-		push {r1}
-		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
@@ -585,8 +581,6 @@ print32_number:
 		push {char_height} 
 		bl fb32_clear_color_block
 		add sp, sp, #4
-		push {r1}
-		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_error
@@ -608,8 +602,6 @@ print32_number:
 		push {char_width,char_height}            @ Push Character Width and Hight
 		bl print32_char
 		add sp, sp, #8
-		push {r1}
-		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_error

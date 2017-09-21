@@ -160,8 +160,6 @@ fb32_draw_arc:
 		push {char_height} 
 		bl fb32_clear_color_block
 		add sp, sp, #4
-		push {r1}
-		add sp, sp, #4
 		cmp r0, #2                                          @ Compare Return 2
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
 		beq fb32_draw_arc_error
@@ -316,8 +314,6 @@ fb32_draw_circle:
 		mov r3, char_width
 		push {char_height} 
 		bl fb32_clear_color_block
-		add sp, sp, #4
-		push {r1}
 		add sp, sp, #4
 		cmp r0, #2                                          @ Compare Return 2
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
@@ -524,8 +520,6 @@ fb32_draw_line:
 		mov r3, char_width
 		push {char_height} 
 		bl fb32_clear_color_block
-		add sp, sp, #4
-		push {r1}
 		add sp, sp, #4
 		cmp r0, #2                                     @ Compare Return 2
 		pop {r0-r3,lr}                                 @ Retrieve Registers Before Error Check, POP does not flags-update

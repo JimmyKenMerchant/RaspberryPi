@@ -742,138 +742,6 @@ system32_load_8:
 
 
 /**
- * function system32_clear_heap
- * Clear (All Zero) in Heap
- *
- * Usage: r0-r2
- * Return: r0 (0 as Success)
- */
-.globl system32_clear_heap
-system32_clear_heap:
-	/* Auto (Local) Variables, but just Aliases */
-	heap_start  .req r0
-	heap_size   .req r1
-	heap_bytes  .req r2
-
-	ldr heap_start, SYSTEM32_HEAP_ADDR
-	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
-
-	dsb                                         @ Ensure Completion of Instructions Before
-
-	add heap_size, heap_start, heap_size
-
-	mov heap_bytes, #0
-
-	system32_clear_heap_loop:
-		cmp heap_start, heap_size
-		bge system32_clear_heap_common      @ If Heap Space Overflow
-
-		str heap_bytes, [heap_start]
-
-		add heap_start, heap_start, #4
-		b system32_clear_heap_loop          @ If Bytes are not Zero
-
-	system32_clear_heap_common:
-		dsb                                 @ Ensure Completion of Instructions Before
-		mov r0, #0
-		mov pc, lr
-
-.unreq heap_start
-.unreq heap_size
-.unreq heap_bytes
-
-
-/**
- * function system32_malloc
- * Get Memory Space from Heap (4 Bytes Align)
- * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
- * Argument, Size Means Number of Block which Has 4 Bytes
- *
- * Parameters
- * r0: Size of Memory
- *
- * Usage: r0-r5
- * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
- */
-.globl system32_malloc
-system32_malloc:
-	/* Auto (Local) Variables, but just Aliases */
-	size        .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
-	heap_start  .req r1
-	heap_size   .req r2
-	heap_bytes  .req r3
-	check_start .req r4
-	check_size  .req r5
-
-	push {r4,r5}
-
-	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
-
-	ldr heap_start, SYSTEM32_HEAP_ADDR
-	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
-
-	dsb                                         @ Ensure Completion of Instructions Before
-
-	add heap_size, heap_start, heap_size
-
-	system32_malloc_loop:
-		cmp heap_start, heap_size
-		bge system32_malloc_error               @ If Heap Space Overflow
-
-		ldr heap_bytes, [heap_start]
-		cmp heap_bytes, #0
-		beq system32_malloc_loop_sizecheck      @ If Bytes are Zero
-
-		add heap_start, heap_start, heap_bytes
-		add heap_start, heap_start, #4
-		b system32_malloc_loop                  @ If Bytes are not Zero
-
-		/* Whether Check Size is Enough or Not */
-
-		system32_malloc_loop_sizecheck:
-			mov check_start, heap_start
-			add check_size, check_start, size
-
-			system32_malloc_loop_sizecheck_loop:
-				cmp check_start, heap_size
-				bge system32_malloc_error               @ If Heap Space Overflow
-
-				cmp check_start, check_size
-				bgt system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
-
-				ldr heap_bytes, [check_start]
-
-				cmp heap_bytes, #0
-				addeq check_start, check_start, #4
-				beq system32_malloc_loop_sizecheck_loop @ If Bytes are Zero
-
-				add heap_start, check_start, heap_bytes
-				add heap_start, heap_start, #4
-				b system32_malloc_loop                  @ If Bytes are not Zero
-
-	system32_malloc_error:
-		mov r0, #0
-		b system32_malloc_common
-
-	system32_malloc_success:
-		str size, [heap_start]                  @ Store Size (Bytes) on Start Address of Memory Minus 4 Bytes
-		mov r0, heap_start
-		add r0, r0, #4                          @ Slide for Start Address of Memory
-
-	system32_malloc_common:
-		dsb                                     @ Ensure Completion of Instructions Before
-		pop {r4,r5}
-		mov pc, lr
-
-.unreq size
-.unreq heap_start
-.unreq heap_size
-.unreq heap_bytes
-.unreq check_start
-.unreq check_size
-
-
-/**
  * function system32_change_descriptor
  * Activate Virtual Address
  *
@@ -1137,6 +1005,138 @@ system32_lineup_basic_va:
 .unreq offset_addr
 .unreq descriptor
 .unreq addr
+
+
+/**
+ * function system32_clear_heap
+ * Clear (All Zero) in Heap
+ *
+ * Usage: r0-r2
+ * Return: r0 (0 as Success)
+ */
+.globl system32_clear_heap
+system32_clear_heap:
+	/* Auto (Local) Variables, but just Aliases */
+	heap_start  .req r0
+	heap_size   .req r1
+	heap_bytes  .req r2
+
+	ldr heap_start, SYSTEM32_HEAP_ADDR
+	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
+
+	dsb                                         @ Ensure Completion of Instructions Before
+
+	add heap_size, heap_start, heap_size
+
+	mov heap_bytes, #0
+
+	system32_clear_heap_loop:
+		cmp heap_start, heap_size
+		bge system32_clear_heap_common      @ If Heap Space Overflow
+
+		str heap_bytes, [heap_start]
+
+		add heap_start, heap_start, #4
+		b system32_clear_heap_loop          @ If Bytes are not Zero
+
+	system32_clear_heap_common:
+		dsb                                 @ Ensure Completion of Instructions Before
+		mov r0, #0
+		mov pc, lr
+
+.unreq heap_start
+.unreq heap_size
+.unreq heap_bytes
+
+
+/**
+ * function system32_malloc
+ * Get Memory Space from Heap (4 Bytes Align)
+ * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
+ * Argument, Size Means Number of Block which Has 4 Bytes
+ *
+ * Parameters
+ * r0: Number of Block Size of Memory, 1 Block means 4 bytes
+ *
+ * Usage: r0-r5
+ * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
+ */
+.globl system32_malloc
+system32_malloc:
+	/* Auto (Local) Variables, but just Aliases */
+	size        .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
+	heap_start  .req r1
+	heap_size   .req r2
+	heap_bytes  .req r3
+	check_start .req r4
+	check_size  .req r5
+
+	push {r4,r5}
+
+	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
+
+	ldr heap_start, SYSTEM32_HEAP_ADDR
+	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
+
+	dsb                                         @ Ensure Completion of Instructions Before
+
+	add heap_size, heap_start, heap_size
+
+	system32_malloc_loop:
+		cmp heap_start, heap_size
+		bge system32_malloc_error               @ If Heap Space Overflow
+
+		ldr heap_bytes, [heap_start]
+		cmp heap_bytes, #0
+		beq system32_malloc_loop_sizecheck      @ If Bytes are Zero
+
+		add heap_start, heap_start, heap_bytes
+		add heap_start, heap_start, #4
+		b system32_malloc_loop                  @ If Bytes are not Zero
+
+		/* Whether Check Size is Enough or Not */
+
+		system32_malloc_loop_sizecheck:
+			mov check_start, heap_start
+			add check_size, check_start, size
+
+			system32_malloc_loop_sizecheck_loop:
+				cmp check_start, heap_size
+				bge system32_malloc_error               @ If Heap Space Overflow
+
+				cmp check_start, check_size
+				bgt system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
+
+				ldr heap_bytes, [check_start]
+
+				cmp heap_bytes, #0
+				addeq check_start, check_start, #4
+				beq system32_malloc_loop_sizecheck_loop @ If Bytes are Zero
+
+				add heap_start, check_start, heap_bytes
+				add heap_start, heap_start, #4
+				b system32_malloc_loop                  @ If Bytes are not Zero
+
+	system32_malloc_error:
+		mov r0, #0
+		b system32_malloc_common
+
+	system32_malloc_success:
+		str size, [heap_start]                  @ Store Size (Bytes) on Start Address of Memory Minus 4 Bytes
+		mov r0, heap_start
+		add r0, r0, #4                          @ Slide for Start Address of Memory
+
+	system32_malloc_common:
+		dsb                                     @ Ensure Completion of Instructions Before
+		pop {r4,r5}
+		mov pc, lr
+
+.unreq size
+.unreq heap_start
+.unreq heap_size
+.unreq heap_bytes
+.unreq check_start
+.unreq check_size
 
 
 .globl SYSTEM32_HEAP

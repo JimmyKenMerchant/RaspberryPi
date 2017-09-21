@@ -8,13 +8,101 @@
  */
 
 /**
+ * function usb2032_hub_activate
+ * Search and Activate Hub
+ *
+ * Parameters
+ * r0: Channel 0-15
+ * r1: Split-transaction(1)/Not(0)
+ *
+ * Return: r0 (0 as success, 1 as Error)
+ * Error(1): Failed Memory Allocation
+ */
+.globl usb2032_hub_activate
+usb2032_hub_activate:
+	/* Auto (Local) Variables, but just Aliases */
+	channel        .req r0
+	flag_split     .req r1
+	temp           .req r2
+	temp2          .req r3
+	temp3          .req r4
+	exe_setter     .req r5
+	exe_sender     .req r6
+	exe_receiver   .req r7
+	buffer         .req r8
+	split          .req r9
+
+	push {r4-r9}
+
+	ldr exe_setter, USB2032_SETTER
+	ldr exe_sender, USB2032_SENDER
+	ldr exe_receiver, USB2032_RECEIVER
+
+	push {r0-r3,lr}
+	mov r0, #16           @ 4 Bytes by 16 Blocks Equals 64 Bytes
+	bl system32_malloc
+	mov buffer, r0
+	pop {r0-r3,lr}
+
+	cmp buffer, #0
+	beq usb2032_hub_activate_error1
+
+	mov split, #0
+	/*cmp flag_split, #0*/
+
+	push {r0-r3,lr}
+	mov r1, #64
+	orr r1, #0x8000
+	mov r2, #64
+	mov r3, buffer
+	push {split}
+	blx exe_setter
+	add sp, sp, #4
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r1, #0
+	blx exe_sender
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	blx exe_receiver
+	mov temp3, r0
+	pop {r0-r3,lr}
+
+	b usb2032_hub_activate_success
+
+	usb2032_hub_activate_error1:
+		mov r0, #1
+		b usb2032_hub_activate_common
+
+	usb2032_hub_activate_success:
+		mov r0, temp3
+
+	usb2032_hub_activate_common:
+		dsb                                                               @ Ensure Completion of Instructions Before
+		pop {r4-r9}
+		mov pc, lr
+
+.unreq channel
+.unreq flag_split
+.unreq temp
+.unreq temp2
+.unreq temp3
+.unreq exe_setter
+.unreq exe_sender
+.unreq exe_receiver
+.unreq buffer
+.unreq split
+
+
+/**
  * function usb2032_otg_host_receiver
  * Wait Receive Responce from Device and Disable Interrupt
  *
  * Parameters
  * r0: Channel 0-15
  *
- * Usage: r0-r2
  * Return: r0 (Status of Channel)
  * Bit[0]: Completed
  * Bit[1]: Halted
@@ -88,7 +176,7 @@ usb2032_otg_host_receiver:
 		orrne r0, r0, #0x00000080                                         @ Transaction and Other Errors Bit[7]
 
 	usb2032_otg_host_receiver_common:
-		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ Set-clear
+		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ write-clear
 		mov temp, #0
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]            @ Mask All
 		dsb                                                               @ Ensure Completion of Instructions Before
@@ -131,14 +219,14 @@ usb2032_otg_host_sender:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hctsizn]
 	dsb
-	bic temp, #0x00F80000                                                 @ Clear Packet Count Bit[28:19]
-	bic temp, #0x1F000000                                                 @ Clear Packet Count Bit[28:19]
+	bic temp, #0x00F80000                                                 @ Clear Packet Count Bit[23:19]
+	bic temp, #0x1F000000                                                 @ Clear Packet Count Bit[28:24]
 	orr temp, #0x00080000                                                 @ Packet Count Bit[28:19] to 1
 	str temp, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 	dsb
-	str temp, [memorymap_base, #equ32_usb20_otg_hcintn]                   @ Set-clear
+	str temp, [memorymap_base, #equ32_usb20_otg_hcintn]                   @ write-clear
 
 	mvn temp, #0
 	str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]                @ Unmask All
@@ -187,7 +275,7 @@ usb2032_otg_host_sender:
  * Parameters
  * r0: Channel 0-15
  * 
- * r1: Channel N Characteristics, Reserved Bits expects SBZ (Zeros)
+ * r1: Channel N Characteristics (Virtual Register), Reserved Bits expects SBZ (Zeros)
  *   r1 Bit[10:0]: Maximum Packet Size
  *   r1 Bit[14:11]: Endpoint Number
  *   r1 Bit[15]: Endpoint Direction, 0 Out, 1, In
@@ -196,18 +284,18 @@ usb2032_otg_host_sender:
  *   r1 Bit[25]: Full and High Speed(0)/Low Speed(1)
  *   r1 Bit[26]: Even(0)/Odd(1) Frame in Periodic Transactions
  *
- * r2: Channel N Transfer Size, Reserved Bits expects SBZ (Zeros)
+ * r2: Channel N Transfer Size (Virtual Register), Reserved Bits expects SBZ (Zeros)
  *   r2 Bit[18:0]: Transfer Size
  *
  * r3: Channel N DMA Address
  *
- * r4: Channel N Split Control, Reserved Bits expects SBZ (Zeros)
+ * r4: Channel N Split Control (Virtual Register), Reserved Bits expects SBZ (Zeros)
  *   r4 Bit[6:0]: Port Address
  *   r4 Bit[13:7]: Hub Address
  *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All
  *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
  *
- * Return: r0 (0 as success, 1 as error)
+ * Return: r0 (0 as success, 1 as error), r1 (Actual Value on Channel N Characteristics Register of SoC)
  * Error(1): Channel is Already Enabled
  */
 .globl usb2032_otg_host_setter
@@ -267,18 +355,26 @@ usb2032_otg_host_setter:
  
 	str hcchar, [memorymap_base, #equ32_usb20_otg_hccharn]
 
+	bic transfer_size, transfer_size, #0xFF000000
+	bic transfer_size, transfer_size, #0x00F80000                          @ Only Validate Bit[18:0]
 	str transfer_size, [memorymap_base, #equ32_usb20_otg_hctsizn]
+
 	str dma_addr, [memorymap_base, #equ32_usb20_otg_hcdman]
+
+	bic split_ctl, split_ctl, #0x7F000000
+	bic split_ctl, split_ctl, #0x00FF0000                                  @ Only Validate Bit[31] and Bit[15:0]
 	str split_ctl, [memorymap_base, #equ32_usb20_otg_hcspltn]
 
 	b usb2032_otg_host_setter_success
 
 	usb2032_otg_host_setter_error:
 		mov r0, #1                                                         @ Return with Error
+		mov r1, #0
 		b usb2032_otg_host_setter_common
 
 	usb2032_otg_host_setter_success:
 		mov r0, #0                                                         @ Return with Success
+		mov r1, hcchar
 
 	usb2032_otg_host_setter_common:
 		dsb                                                                @ Ensure Completion of Instructions Before
@@ -431,6 +527,8 @@ usb2032_otg_host_start:
 			ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]
 			tst temp, #0x00000004                                  @ Port Enable Bit[2]
 			beq usb2032_otg_host_start_jump_loop
+
+			dsb
 
 			/**
 			 * If already connected with devices including Hub,
