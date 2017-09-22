@@ -353,8 +353,8 @@ bcm32_mailbox_read:
 
 	bcm32_mailbox_read_waitforread:
 		ldr temp, [memorymap_base, status]
-		cmp temp, #0x40000000                  @ Wait for Empty Flag is Cleared
-		beq bcm32_mailbox_read_waitforread
+		tst temp, #0x40000000                  @ Wait for Empty Flag is Cleared
+		bne bcm32_mailbox_read_waitforread
 
 	dsb                                      @ `DMB` Data Memory Barrier, completes all memory access before
                                                  @ `DSB` Data Synchronization Barrier, completes all instructions before
@@ -418,8 +418,8 @@ bcm32_mailbox_send:
 
 	bcm32_mailbox_send_waitforwrite:
 		ldr temp, [memorymap_base, status]
-		cmp temp, #0x80000000                  @ Wait for Full Flag is Cleared
-		beq bcm32_mailbox_send_waitforwrite
+		tst temp, #0x80000000                  @ Wait for Full Flag is Cleared
+		bne bcm32_mailbox_send_waitforwrite
 
 	dsb
 

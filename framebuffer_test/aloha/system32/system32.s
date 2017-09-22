@@ -458,6 +458,59 @@ system32_cache_operation:
 
 
 /**
+ * function system32_cache_operation_heap
+ * Invalidate and Clean Cache by Physical Address in an Allocated Heap
+ *
+ * Parameters
+ * r0: Pointer of Heap Block Allocated
+ * r1: Cache Level, 1/2
+ * r2: Flag, 0(Invalidate)/1(Clean)/2(Clean and Invalidate)
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error: Pointer of Start Address is Null (0)
+ */
+.globl system32_cache_operation_heap
+system32_cache_operation_heap:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	level       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	flag        .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	block_size  .req r3
+
+	cmp block_start, #0
+	beq system32_cache_operation_heap_error
+
+	ldr block_size, [block_start, #-4]
+	add block_size, block_start, block_size
+
+	system32_cache_operation_heap_loop:
+		cmp block_start, block_size
+		bge system32_cache_operation_heap_success
+
+		push {r0-r3,lr}
+		bl system32_cache_operation
+		pop {r0-r3,lr}
+
+		add block_start, block_start, #4
+		b system32_cache_operation_heap_loop
+
+	system32_cache_operation_heap_error:
+		mov r0, #1
+		b system32_cache_operation_heap_common
+
+	system32_cache_operation_heap_success:
+		mov r0, #0
+
+	system32_cache_operation_heap_common:
+		mov pc, lr
+
+.unreq block_start
+.unreq level
+.unreq flag
+.unreq block_size
+
+
+/**
  * function system32_cache_info
  * Return Particular Cache Information
  *
@@ -1180,7 +1233,7 @@ system32_mfree:
 
 	ldr block_size, [block_start, #-4]
 	add block_size, block_start, block_size
-	sub block_start, block_start, #4
+	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Erase Size Indicator
 
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes

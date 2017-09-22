@@ -39,13 +39,28 @@ usb2032_hub_activate:
 	ldr exe_receiver, USB2032_RECEIVER
 
 	push {r0-r3,lr}
-	mov r0, #16           @ 4 Bytes by 16 Blocks Equals 64 Bytes
+	mov r0, #16                           @ 4 Bytes by 16 Blocks Equals 64 Bytes
 	bl system32_malloc
 	mov buffer, r0
 	pop {r0-r3,lr}
 
 	cmp buffer, #0
 	beq usb2032_hub_activate_error1
+
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host
+	orr temp, temp, #equ32_usb20_req_get_status<<8
+	orr temp, temp, #equ32_usb20_val_get_status<<16
+	str temp, [buffer]
+	mov temp, #equ32_usb20_index_device
+	orr temp, temp, #equ32_usb20_len_get_status<<16
+	str temp, [buffer, #4]
+
+	push {r0-r3,lr}
+	mov r0, buffer
+	mov r1, #1
+	mov r2, #1                            @ Clean
+	bl system32_cache_operation_heap
+	pop {r0-r3,lr}
 
 	mov split, #0
 	/*cmp flag_split, #0*/
@@ -68,6 +83,13 @@ usb2032_hub_activate:
 	push {r0-r3,lr}
 	blx exe_receiver
 	mov temp3, r0
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, buffer
+	mov r1, #1
+	mov r2, #0                            @ invalidate
+	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 
 	b usb2032_hub_activate_success
@@ -133,9 +155,11 @@ usb2032_otg_host_receiver:
 	 * If you want to escape from loop, set channel-halt from another core. 
 	 */
 	usb2032_otg_host_receiver_loop:
+		/*
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 		tst temp, #0x00000002                                            @ Check Halted (HCD Disabled Channel N)
 		beq usb2032_otg_host_receiver_loop
+		*/
 
 		/**
 		 * Bit[11] and over may exist in case of some SoC
@@ -525,7 +549,7 @@ usb2032_otg_host_start:
 
 		usb2032_otg_host_start_jump_loop:
 			ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]
-			tst temp, #0x00000004                                  @ Port Enable Bit[2]
+			tst temp, #0x00000008                                  @ Port Enable/Disable Change Bit[3]
 			beq usb2032_otg_host_start_jump_loop
 
 			dsb

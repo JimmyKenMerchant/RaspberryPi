@@ -569,7 +569,8 @@ pop {r0-r3}
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
-	ldr r0, [r1 ,#equ32_usb20_otg_gotgctl]
+	add r1, r1, #equ32_usb20_otg_host_base
+	ldr r0, [r1, #equ32_usb20_otg_hprt]
 
 push {r0-r3}
 mov r1, #500
@@ -577,10 +578,8 @@ mov r2, #114
 bl print32_debug
 pop {r0-r3}
 
-	mov r1, #equ32_peripherals_base
-	add r1, r1, #equ32_usb20_otg_base
-	add r1, r1, #equ32_usb20_otg_host_base
-	ldr r0, [r1, #equ32_usb20_otg_hprt]
+	mov r0, #0
+	bl usb2032_hub_activate
 
 push {r0-r3}
 mov r1, #500

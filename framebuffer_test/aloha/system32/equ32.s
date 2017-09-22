@@ -236,8 +236,8 @@
 .equ equ32_usb20_reqt_type_standard,         0b00000000
 .equ equ32_usb20_reqt_type_class,            0b00100000
 .equ equ32_usb20_reqt_type_vendor,           0b01000000
-.equ equ32_usb20_reqt_host_to_device,        0b00000000
-.equ equ32_usb20_reqt_device_to_host,        0b10000000
+.equ equ32_usb20_reqt_host_to_device,        0b00000000 @ Out
+.equ equ32_usb20_reqt_device_to_host,        0b10000000 @ In
 
 /* bRequest (1 Byte, Offset 1, << 8) */
 .equ equ32_usb20_req_get_status,             0x00
