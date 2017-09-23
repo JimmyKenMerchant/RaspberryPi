@@ -13,7 +13,6 @@
  *
  * Parameters
  * r0: Channel 0-15
- * r1: Split-transaction(1)/Not(0)
  *
  * Return: r0 (0 as success, 1 as Error)
  * Error(1): Failed Memory Allocation
@@ -22,10 +21,10 @@
 usb2032_hub_activate:
 	/* Auto (Local) Variables, but just Aliases */
 	channel        .req r0
-	flag_split     .req r1
-	temp           .req r2
-	temp2          .req r3
-	temp3          .req r4
+	temp           .req r1
+	temp2          .req r2
+	temp3          .req r3
+	temp4          .req r4
 	exe_setter     .req r5
 	exe_sender     .req r6
 	exe_receiver   .req r7
@@ -39,36 +38,41 @@ usb2032_hub_activate:
 	ldr exe_receiver, USB2032_RECEIVER
 
 	push {r0-r3,lr}
-	mov r0, #16                           @ 4 Bytes by 16 Blocks Equals 64 Bytes
+	mov r0, #2                           @ 4 Bytes by 2 Blocks Equals 8 Bytes
 	bl system32_malloc
 	mov buffer, r0
 	pop {r0-r3,lr}
 
-	cmp buffer, #0
+	cmp buffer, #0                       @ DMA Needs DWORD(32/64bit) aligned
 	beq usb2032_hub_activate_error1
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host
-	orr temp, temp, #equ32_usb20_req_get_status<<8
-	orr temp, temp, #equ32_usb20_val_get_status<<16
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8
+	orr temp, temp, #equ32_usb20_val_descriptor_device<<16
 	str temp, [buffer]
 	mov temp, #equ32_usb20_index_device
-	orr temp, temp, #equ32_usb20_len_get_status<<16
+	orr temp, temp, #64<<16
 	str temp, [buffer, #4]
+
+	dsb
 
 	push {r0-r3,lr}
 	mov r0, buffer
 	mov r1, #1
-	mov r2, #1                            @ Clean
+	mov r2, #1                                @ Clean
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 
-	mov split, #0
+	mov split, #0x0
+	/*mov split, #0x10000000*/                @ Split Enable
+	/*orr split, split, #0x0000C000*/         @ All
 	/*cmp flag_split, #0*/
 
 	push {r0-r3,lr}
-	mov r1, #64
-	orr r1, #0x8000
-	mov r2, #64
+	mov r1, #64                               @ Maximam Packet Size
+	mov r2, #8                                @ Transfer Size is 8 Bytes
+	orr r2, r2, #0x00080000                   @ Transfer Packet is 1 Packet
+	orr r2, r2, #0x60000000                   @ Data Type is Setup
 	mov r3, buffer
 	push {split}
 	blx exe_setter
@@ -82,7 +86,7 @@ usb2032_hub_activate:
 
 	push {r0-r3,lr}
 	blx exe_receiver
-	mov temp3, r0
+	mov temp4, r0
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
@@ -99,7 +103,7 @@ usb2032_hub_activate:
 		b usb2032_hub_activate_common
 
 	usb2032_hub_activate_success:
-		mov r0, temp3
+		mov r0, temp4
 
 	usb2032_hub_activate_common:
 		dsb                                                               @ Ensure Completion of Instructions Before
@@ -107,7 +111,6 @@ usb2032_hub_activate:
 		mov pc, lr
 
 .unreq channel
-.unreq flag_split
 .unreq temp
 .unreq temp2
 .unreq temp3
@@ -149,17 +152,19 @@ usb2032_otg_host_receiver:
 	mul temp, channel, temp
 	add memorymap_base, memorymap_base, temp                             @ Add Each Channel Offset
 
+	dsb
+
 	/**
 	 * On the loop below, we should consider of the limitter, but this system is aiming simple.
 	 * Implementing the limitter causes complex of codes to treat it.
 	 * If you want to escape from loop, set channel-halt from another core. 
 	 */
 	usb2032_otg_host_receiver_loop:
-		/*
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
-		tst temp, #0x00000002                                            @ Check Halted (HCD Disabled Channel N)
-		beq usb2032_otg_host_receiver_loop
-		*/
+		/*tst temp, #0x00000002*/                                            @ Check Halted (HCD Disabled Channel N)
+		cmp temp, #0
+		/*beq usb2032_otg_host_receiver_loop*/
+
 
 		/**
 		 * Bit[11] and over may exist in case of some SoC
@@ -196,8 +201,16 @@ usb2032_otg_host_receiver:
 		orrne r0, r0, #0x00000020                                         @ NYET Bit[5]
 		tst temp, #0x00000004
 		orrne r0, r0, #0x00000040                                         @ Internal Bus Error Bit[6]
-		tst temp, #0x00000F80
-		orrne r0, r0, #0x00000080                                         @ Transaction and Other Errors Bit[7]
+		tst temp, #0x00000080
+		orrne r0, r0, #0x00000080                                         @ Transaction Error Bit[7]
+		tst temp, #0x00000100
+		orrne r0, r0, #0x00000100                                         @ Babble Error Bit[8]
+		tst temp, #0x00000200
+		orrne r0, r0, #0x00000200                                         @ Frame Overrun Bit[9]
+		tst temp, #0x00000400
+		orrne r0, r0, #0x00000400                                         @ Data Toggle Error Bit[10]
+		tst temp, #0x00000800
+		orrne r0, r0, #0x00000800                                         @ Other Errors Bit[11]
 
 	usb2032_otg_host_receiver_common:
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ write-clear
@@ -237,16 +250,11 @@ usb2032_otg_host_sender:
 	mul temp, channel, temp
 	add memorymap_base, memorymap_base, temp                              @ Add Each Channel Offset
 
+	dsb
+
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	tst temp, #0x80000000                                                 @ Channel Enable Bit[31]
 	bne usb2032_otg_host_sender_error                                     @ Channel is Already Enabled
-
-	ldr temp, [memorymap_base, #equ32_usb20_otg_hctsizn]
-	dsb
-	bic temp, #0x00F80000                                                 @ Clear Packet Count Bit[23:19]
-	bic temp, #0x1F000000                                                 @ Clear Packet Count Bit[28:24]
-	orr temp, #0x00080000                                                 @ Packet Count Bit[28:19] to 1
-	str temp, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 	dsb
@@ -300,7 +308,7 @@ usb2032_otg_host_sender:
  * r0: Channel 0-15
  * 
  * r1: Channel N Characteristics (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r1 Bit[10:0]: Maximum Packet Size
+ *   r1 Bit[10:0]: Maximum Packet Size (in Low Speed, Fixed to 8 bytes)
  *   r1 Bit[14:11]: Endpoint Number
  *   r1 Bit[15]: Endpoint Direction, 0 Out, 1, In
  *   r1 Bit[17:16]: Endpoint Type, 0 Control, 1 Isochronous, 2 Bulk, 3 Interrupt
@@ -310,6 +318,8 @@ usb2032_otg_host_sender:
  *
  * r2: Channel N Transfer Size (Virtual Register), Reserved Bits expects SBZ (Zeros)
  *   r2 Bit[18:0]: Transfer Size
+ *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
+ *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
  *
  * r3: Channel N DMA Address
  *
@@ -347,6 +357,8 @@ usb2032_otg_host_setter:
 	mul temp, channel, temp
 	add memorymap_base, memorymap_base, temp                               @ Add Each Channel Offset
 
+	dsb
+
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	tst temp, #0x80000000                                                  @ Channel Enable Bit[31]
 	bne usb2032_otg_host_setter_error                                      @ Channel is Already Enabled
@@ -379,8 +391,7 @@ usb2032_otg_host_setter:
  
 	str hcchar, [memorymap_base, #equ32_usb20_otg_hccharn]
 
-	bic transfer_size, transfer_size, #0xFF000000
-	bic transfer_size, transfer_size, #0x00F80000                          @ Only Validate Bit[18:0]
+	bic transfer_size, transfer_size, #0x80000000                          @ Only Validate Bit[30:0]
 	str transfer_size, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
 	str dma_addr, [memorymap_base, #equ32_usb20_otg_hcdman]

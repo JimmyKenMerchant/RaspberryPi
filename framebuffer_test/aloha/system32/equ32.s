@@ -180,7 +180,7 @@
 .equ equ32_usb20_otg_ghwcfg4,        0x00000050 @ Global User HW Config4
 .equ equ32_usb20_otg_pcgctl,         0x00000E00 @ Power and Clock Gating Control
 
-/* Vendor-specific Extra Registers (Base is the same as Core CSRs) */
+/* Vendor-specific Extra Registers (Base is the same as Core Global CSRs) */
 .equ equ32_bcm_usb20_mdio_cntl,      0x00000080 @ MDIO Interface Control (BCM2835-2837)
 .equ equ32_bcm_usb20_mdio_gen,       0x00000084 @ Data for MDIO Interfaace (BCM2835-2837)
 .equ equ32_bcm_usb20_vbus_drv,       0x00000088 @ Vbus and Other Miscellaneous Controls (BCM2835-2837)

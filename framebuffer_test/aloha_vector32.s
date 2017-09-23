@@ -569,8 +569,7 @@ pop {r0-r3}
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
-	add r1, r1, #equ32_usb20_otg_host_base
-	ldr r0, [r1, #equ32_usb20_otg_hprt]
+	ldr r0, [r1, #equ32_usb20_otg_pcgctl]
 
 push {r0-r3}
 mov r1, #500

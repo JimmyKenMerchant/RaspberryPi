@@ -332,8 +332,7 @@ bcm32_set_powerstate:
  * This function is using a vendor-implemented process.
  *
  * Usage: r0-r3
- * Return: r0 Reply Content, r1 (0 as success, 1 as error), 
- * Error: Number of Mailbox does not exist
+ * Return: r0 (Reply Content)
  */
 .globl bcm32_mailbox_read
 bcm32_mailbox_read:
@@ -365,16 +364,6 @@ bcm32_mailbox_read:
 	ldr r0, [memorymap_base, read]
 
 	dsb
-
-	b bcm32_mailbox_read_success
-
-	bcm32_mailbox_read_error:
-		mov r0, #0
-		mov r1, #1
-		b bcm32_mailbox_read_common
-
-	bcm32_mailbox_read_success:
-		mov r1, #0
 
 	bcm32_mailbox_read_common:
 		mov pc, lr
