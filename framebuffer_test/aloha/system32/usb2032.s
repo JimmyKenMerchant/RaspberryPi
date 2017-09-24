@@ -7,6 +7,27 @@
  *
  */
 
+
+/**
+ * As of September 24, 2017, functions in usb2032.s is under construction and suspending through 10-day attempting.
+ * Reasons are as follows.
+ *
+ * 1. No response, handshakes from a device (#0) when USB HCD transmits an OUT transaction (requests such as GET_DESCRIPTOR),
+ *    and an IN transaction makes an interrupt of Transaction Error. 
+ *
+ * 2. Raspberry Pi 2 and 3 are having inner USB Hub. This USB Hub (5 ports and port #1 is already used by an ethernet adaptor),
+ *    seems to need to power on, because this is self-powered (From a descriptor). But there is no information about it.
+ *    GPIO-38 is a USB (and GPIO) current-up handler, but not a power-on switch for the HUB. Anyway, no current on the HUB ports.
+ *    VideoCore may handle this power state, but there is no information about it too.
+ *
+ * 3. Other reasons may exist than #1, but currently no way of confirming it. RasPi Zero, with no inner Hub is using BCM2835,
+ *    but this system is compatible from BCM2836 because of ARMv7/AArch32.
+ * 
+ * 4. No data cache, DMA incremental changes attempted, but no response persists.
+ *
+ * 5. Halting an Host Channel by the Disable Bit is not functioned. There is need of confirming it. 
+ */
+
 /**
  * function usb2032_hub_activate
  * Search and Activate Hub
@@ -43,12 +64,14 @@ usb2032_hub_activate:
 	mov buffer, r0
 	pop {r0-r3,lr}
 
-	cmp buffer, #0                       @ DMA Needs DWORD(32/64bit) aligned
+	cmp buffer, #0                       @ DMA Needs DWORD(32bit/64bit) aligned
 	beq usb2032_hub_activate_error1
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host
-	orr temp, temp, #equ32_usb20_req_get_descriptor<<8
-	orr temp, temp, #equ32_usb20_val_descriptor_device<<16
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ Request
+	orr temp, temp, #1<<16                                       @ Descriptor Index
+	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ Descriptor Type
+
 	str temp, [buffer]
 	mov temp, #equ32_usb20_index_device
 	orr temp, temp, #64<<16
@@ -63,13 +86,21 @@ usb2032_hub_activate:
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 
-	mov split, #0x0
+	push {r0-r3,lr}
+	mov r0, buffer
+	mov r1, #2
+	mov r2, #1                                @ Clean
+	bl system32_cache_operation_heap
+	pop {r0-r3,lr}
+
+	mov split, #0x0                           @ Upsream Hub is High Speed with No Split Transaction
 	/*mov split, #0x10000000*/                @ Split Enable
 	/*orr split, split, #0x0000C000*/         @ All
 	/*cmp flag_split, #0*/
 
 	push {r0-r3,lr}
 	mov r1, #64                               @ Maximam Packet Size
+	orr r1, r1, #0<<18
 	mov r2, #8                                @ Transfer Size is 8 Bytes
 	orr r2, r2, #0x00080000                   @ Transfer Packet is 1 Packet
 	orr r2, r2, #0x60000000                   @ Data Type is Setup
@@ -92,6 +123,13 @@ usb2032_hub_activate:
 	push {r0-r3,lr}
 	mov r0, buffer
 	mov r1, #1
+	mov r2, #0                            @ invalidate
+	bl system32_cache_operation_heap
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, buffer
+	mov r1, #2
 	mov r2, #0                            @ invalidate
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
@@ -155,15 +193,13 @@ usb2032_otg_host_receiver:
 	dsb
 
 	/**
-	 * On the loop below, we should consider of the limitter, but this system is aiming simple.
-	 * Implementing the limitter causes complex of codes to treat it.
-	 * If you want to escape from loop, set channel-halt from another core. 
+	 * On the loop below, we consider of the limitter (Time Out).
 	 */
 	usb2032_otg_host_receiver_loop:
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 		/*tst temp, #0x00000002*/                                            @ Check Halted (HCD Disabled Channel N)
 		cmp temp, #0
-		/*beq usb2032_otg_host_receiver_loop*/
+		beq usb2032_otg_host_receiver_loop
 
 
 		/**
@@ -360,6 +396,7 @@ usb2032_otg_host_setter:
 	dsb
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
+	dsb
 	tst temp, #0x80000000                                                  @ Channel Enable Bit[31]
 	bne usb2032_otg_host_setter_error                                      @ Channel is Already Enabled
 
@@ -392,6 +429,7 @@ usb2032_otg_host_setter:
 	str hcchar, [memorymap_base, #equ32_usb20_otg_hccharn]
 
 	bic transfer_size, transfer_size, #0x80000000                          @ Only Validate Bit[30:0]
+
 	str transfer_size, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
 	str dma_addr, [memorymap_base, #equ32_usb20_otg_hcdman]
@@ -446,7 +484,7 @@ usb2032_otg_host_start:
 
 	/**
 	 * Core Global CSRs (Base + 0x0)
-	 * Core USB Configuration has each default setting in SoCs,
+	 * Global USB Configuration has each default setting in SoCs,
 	 * e.g. in BCM2836 has 0x20402700.
 	 * So in this section, we need to make DMA on, make Core Reset and FIFO Flush,
 	 * and make power on, reset, enable host port.
@@ -462,23 +500,24 @@ usb2032_otg_host_start:
 	/**
 	 * AHB Cofiguration (GAHBCFG) Bit[23] may have DMA Incremental(0) or single (1) in case.
 	 * BCM2836 has 0x0000000E in Default.
-	 * In this function, DMA is enabled and DMA Burst Becomes Incremental16
+	 * In this function, DMA is enabled and DMA Burst Becomes Incremental
 	 */
 	mov temp, #0x2E                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
 	str temp, [memorymap_base, #equ32_usb20_otg_gahbcfg]      @ Global AHB Configuration
 
 	dsb
 
-	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Core Global Reset Control
+	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Global Reset Control
 
 	bic temp, temp, #0x7C0                                    @ TxFIFO Number Bit[10:6]
 	orr temp, temp, #0x400                                    @ Flush All TxFIFOs
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
 	dsb
-
+	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+	dsb
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_start_error                               @ If Bus is Not in Idle
+	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
 	orr temp, temp, #0x20                                     @ TxFIFO Reset Bit[5]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -495,7 +534,7 @@ usb2032_otg_host_start:
 	dsb
 
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_start_error                               @ If Bus is Not in Idle
+	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
 	orr temp, temp, #0x10                                     @ RxFIFO Reset Bit[4]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -512,7 +551,7 @@ usb2032_otg_host_start:
 	dsb
 
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_start_error                               @ If Bus is Not in Idle
+	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
 	orr temp, temp, #0x01                                     @ Core Soft Reset Bit[0]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -535,7 +574,7 @@ usb2032_otg_host_start:
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]         @ Host Port Control and Status
 
 	tst temp, #0x00001000                                     @ Port Power Bit[12]
-	bne usb2032_otg_host_start_jump                                @ If Power On
+	bne usb2032_otg_host_start_jump                           @ If Power On
 
 	orr temp, #0x00001000
 	str temp, [memorymap_base, #equ32_usb20_otg_hprt]
@@ -543,6 +582,7 @@ usb2032_otg_host_start:
 	dsb
 
 	usb2032_otg_host_start_jump:
+
 		orr temp, #0x00000100                                      @ Port Reset Bit[8]
 		str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
@@ -572,8 +612,16 @@ usb2032_otg_host_start:
 			 * Also, Port Enable/Disable Change Bit[3], Port Overcurrent Change Bit[5] are to write-clear
 			 */
 			bic temp, #0x4                                         @ Clear Port Enable Bit[2] Because Write-clear
-
 			str temp, [memorymap_base, #equ32_usb20_otg_hprt]
+
+			/* Global OTG Control */
+			mov memorymap_base, #equ32_peripherals_base
+			add memorymap_base, memorymap_base, #equ32_usb20_otg_base
+			ldr temp, [memorymap_base, #equ32_usb20_otg_gotgctl]       @ Global OTG Control and Status
+			dsb
+			orr temp, temp, #0x00000400                                @ Host Set HNP Enable Bit[10]
+			str temp,  [memorymap_base, #equ32_usb20_otg_gotgctl]
+			dsb
 
 			ldr temp, usb2032_otg_host_setter_addr
 			dsb

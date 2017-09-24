@@ -549,43 +549,6 @@ pop {r0-r3}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
 
-	mov r0, #0x3
-	mov r1, #0x1
-	bl bcm32_set_powerstate
-
-push {r0-r3}
-mov r1, #500
-mov r2, #90
-bl print32_debug
-pop {r0-r3}
-
-	bl usb2032_otg_host_start
-
-push {r0-r3}
-mov r1, #500
-mov r2, #102
-bl print32_debug
-pop {r0-r3}
-
-	mov r1, #equ32_peripherals_base
-	add r1, r1, #equ32_usb20_otg_base
-	ldr r0, [r1, #equ32_usb20_otg_pcgctl]
-
-push {r0-r3}
-mov r1, #500
-mov r2, #114
-bl print32_debug
-pop {r0-r3}
-
-	mov r0, #0
-	bl usb2032_hub_activate
-
-push {r0-r3}
-mov r1, #500
-mov r2, #126
-bl print32_debug
-pop {r0-r3}
-
 	pop {r0-r8}
 
 	cpsie f
@@ -629,7 +592,7 @@ _aloha_fiq_handler:
 	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
-	str r1, [r0, #equ32_armtimer_clear]             @ any write to clear/ acknowledge
+	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
