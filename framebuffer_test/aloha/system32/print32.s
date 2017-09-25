@@ -667,7 +667,7 @@ print32_number:
  * r5: Character Height in Pixels
  *
  * Usage: r0-r12
- * Return: r0 (0 as sucess, 1 and 2 as error), r1 (Last Pointer of Framebuffer)
+ * Return: r0 (0 as sucess, 1 and 2 as error)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
@@ -818,7 +818,6 @@ print32_char:
 		mov r0, #0                                   @ Return with Success
 
 	print32_char_common:
-		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr

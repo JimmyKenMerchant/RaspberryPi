@@ -54,7 +54,7 @@ FB32_DOUBLEBUFFER_FRONT:   .word 0x00
 /**
  * function fb32_draw_arc
  * Draw Arc
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
  *
  * Parameters
@@ -87,7 +87,7 @@ fb32_draw_arc:
 	x_current        .req r9
 	y_current        .req r10
 
-	/* VFP/NEON Registers */
+	/* VFP Registers */
 	vfp_d_radian     .req d0 @ q0[0]
 	vfp_start_radian .req s0 @ Lower 32 Bits of d0
 	vfp_end_radian   .req s1 @ Upper 32 Bits of d0
@@ -112,14 +112,24 @@ fb32_draw_arc:
 	vmov vfp_d_radian, start_radian, end_radian
 	vcmp.f32 vfp_start_radian, vfp_end_radian
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_start_radian, vfp_x_radius
+	vmovgt vfp_start_radian, vfp_temp
 	vmovgt vfp_start_radian, vfp_end_radian
-	vmovgt vfp_end_radian, vfp_x_radius
+	vmovgt vfp_end_radian, vfp_temp
 
 	vmov vfp_d_radius, x_radius, y_radius
-	vcvt.f32.s32 vfp_d_radius, vfp_d_radius
+	.unreq x_radius
+	temp .req r3
+	vcvt.f32.s32 vfp_x_radius, vfp_x_radius
+	vcvt.f32.s32 vfp_y_radius, vfp_y_radius
 
-	vmov vfp_add, #0.125                              @ 0.0175 is Close to Radian per Degree
+	mov temp, #1
+	vmov vfp_add, temp
+	vcvt.f32.s32 vfp_add, vfp_add
+	mov temp, #8
+	vmov vfp_temp, temp
+	vcvt.f32.s32 vfp_temp, vfp_temp
+	vdiv.f32 vfp_add, vfp_add, vfp_temp               @ 0.125, 0.0175 is Close to Radian per Degree
+
 	vcmp.f32 vfp_x_radius, vfp_y_radius
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
 	vmovge vfp_temp, vfp_x_radius
@@ -145,10 +155,11 @@ fb32_draw_arc:
 		pop {r0-r3,lr}
 
 		vmov vfp_xy_position, x_current, y_current
-		vmul.f32 vfp_xy_position, vfp_xy_position, vfp_d_radius
-		vcvtr.s32.f32 vfp_xy_position, vfp_xy_position
-		vmov x_current, vfp_x_position
-		vmov y_current, vfp_y_position
+		vmul.f32 vfp_x_position, vfp_x_position, vfp_x_radius
+		vmul.f32 vfp_y_position, vfp_y_position, vfp_y_radius
+		vcvtr.s32.f32 vfp_x_position, vfp_x_position
+		vcvtr.s32.f32 vfp_y_position, vfp_y_position
+		vmov x_current, y_current, vfp_xy_position
 
 		add x_current, x_coord, x_current
 		sub y_current, y_coord, y_current                   @ Y Coord is Reversal to Real Y Axis
@@ -185,7 +196,7 @@ fb32_draw_arc:
 .unreq color
 .unreq x_coord
 .unreq y_coord
-.unreq x_radius
+.unreq temp
 .unreq y_radius
 .unreq start_radian
 .unreq end_radian
@@ -209,7 +220,7 @@ fb32_draw_arc:
 /**
  * function fb32_draw_circle
  * Draw Circle Filled with Color
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Color (16-bit or 32-bit)
@@ -236,14 +247,13 @@ fb32_draw_circle:
 	y_current        .req r8
 	y_max            .req r9
 
-	/* VFP/NEON Registers */
+	/* VFP Registers */
 	vfp_xy_coord     .req d0 @ q0[0]
 	vfp_y_coord      .req s0 @ Lower 32 Bits of d0
 	vfp_x_coord      .req s1 @ Upper 32 Bits of d0
 	vfp_xy_radius    .req d1 @ q0[1]
 	vfp_y_radius     .req s2
 	vfp_x_radius     .req s3
-	vfp_cal_ab       .req d2
 	vfp_cal_a        .req s4
 	vfp_cal_b        .req s5
 	vfp_cal_c        .req s6
@@ -270,8 +280,10 @@ fb32_draw_circle:
 
 	vmov vfp_xy_coord, y_coord, x_coord               @ Lower Bits from y_coord, Upper Bits x_coord, q0[0]
 	vmov vfp_xy_radius, y_radius, x_radius            @ Lower Bits from y_radius, Upper Bits x_radius, q0[1]
-	vcvt.f32.s32 vfp_xy_coord, vfp_xy_coord           @ *NEON*Convert Signed Integer to Single Precision Floating Point
-	vcvt.f32.u32  vfp_xy_radius, vfp_xy_radius        @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+	vcvt.f32.s32 vfp_y_coord, vfp_y_coord             @ Convert Signed Integer to Single Precision Floating Point
+	vcvt.f32.s32 vfp_x_coord, vfp_x_coord             @ Convert Signed Integer to Single Precision Floating Point
+	vcvt.f32.u32 vfp_y_radius, vfp_y_radius           @ Convert Unsigned Integer to Single Precision Floating Point
+	vcvt.f32.u32 vfp_x_radius, vfp_x_radius           @ Convert Unsigned Integer to Single Precision Floating Point
 
 	.unreq y_coord
 	x_diff .req r2
@@ -280,8 +292,10 @@ fb32_draw_circle:
 
 	vmov vfp_radius, vfp_y_radius
 	vmov vfp_tri_height, vfp_y_radius
-
-	vmov vfp_one, #1.0                                @ Floating Point Constant (Immediate)
+	
+	mov x_diff, #1
+	vmov vfp_one, x_diff
+	vcvt.f32.s32 vfp_one, vfp_one
 
 	cmp x_radius, y_radius
 	beq fb32_draw_circle_loop
@@ -373,7 +387,6 @@ fb32_draw_circle:
 .unreq vfp_xy_radius
 .unreq vfp_y_radius
 .unreq vfp_x_radius
-.unreq vfp_cal_ab
 .unreq vfp_cal_a
 .unreq vfp_cal_b
 .unreq vfp_cal_c
@@ -387,7 +400,7 @@ fb32_draw_circle:
 /**
  * function fb32_draw_line
  * Draw Line
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Color (16-bit or 32-bit)
@@ -418,14 +431,13 @@ fb32_draw_line:
 	dup_char_width   .req r10
 	y_direction      .req r11  @ 1 is to Lower Right (Y Increment), -1 is to Upper Right (Y Decrement)
 
-	/* VFP/NEON Registers */
+	/* VFP Registers */
 	vfp_xy_coord_1   .req d0 @ q0[0]
 	vfp_y_coord_1    .req s0 @ Lower 32 Bits of d0
 	vfp_x_coord_1    .req s1 @ Upper 32 Bits of d0
 	vfp_xy_coord_2   .req d1 @ q0[1]
 	vfp_y_coord_2    .req s2
 	vfp_x_coord_2    .req s3
-	vfp_xy_coord_3   .req d2
 	vfp_y_coord_3    .req s4
 	vfp_x_coord_3    .req s5
 	vfp_char_width   .req s6
@@ -478,10 +490,14 @@ fb32_draw_line:
 	fb32_draw_line_coord:
 		vmov vfp_xy_coord_1, y_coord_1, x_coord_1     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[0]
 		vmov vfp_xy_coord_2, y_coord_2, x_coord_2     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[1]
-		vcvt.f32.s32 q0, q0                           @ *NEON*Convert Signed Integer to Single Precision Floating Point
+		vcvt.f32.s32 vfp_y_coord_1, vfp_y_coord_1     @ Convert Signed Integer to Single Precision Floating Point
+		vcvt.f32.s32 vfp_x_coord_1, vfp_x_coord_1     @ Convert Signed Integer to Single Precision Floating Point
+		vcvt.f32.s32 vfp_y_coord_2, vfp_y_coord_2     @ Convert Signed Integer to Single Precision Floating Point
+		vcvt.f32.s32 vfp_x_coord_2, vfp_x_coord_2     @ Convert Signed Integer to Single Precision Floating Point
 
-		/* *NEON*Subtract Each 32-Bit Lane as Single Precision */
-		vsub.f32 vfp_xy_coord_3, vfp_xy_coord_1, vfp_xy_coord_2
+		/* Subtract Each 32-Bit Lane as Single Precision */
+		vsub.f32 vfp_y_coord_3, vfp_y_coord_1, vfp_y_coord_2
+		vsub.f32 vfp_x_coord_3, vfp_x_coord_1, vfp_x_coord_2
 
 		vcmp.f32 vfp_y_coord_3, #0
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
@@ -510,7 +526,10 @@ fb32_draw_line:
 		mov i, #0
 		vmov vfp_i, i
 		vcvt.f32.s32 vfp_i, vfp_i
-		vmov vfp_one, #1.0                             @ Floating Point Constant (Immediate)
+
+		mov i, #1
+		vmov vfp_one, i
+		vcvt.f32.s32 vfp_one, vfp_one
 
 	fb32_draw_line_loop:
 
@@ -576,7 +595,6 @@ fb32_draw_line:
 .unreq vfp_xy_coord_2
 .unreq vfp_y_coord_2
 .unreq vfp_x_coord_2
-.unreq vfp_xy_coord_3
 .unreq vfp_y_coord_3
 .unreq vfp_x_coord_3
 .unreq vfp_char_width
@@ -590,7 +608,7 @@ fb32_draw_line:
 /**
  * function fb32_draw_image
  * Draw Image
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Pointer of Image
@@ -626,29 +644,25 @@ fb32_draw_image:
 	bitmask          .req r11
 	x_crop_char      .req r12 @ ip is Alias of r12, This Function Uses r12 as ip Too. x_crop_char Uses After Usage as ip
 
-	/* VFP/NEON Registers */
-	vfp_src         .req q0
+	/* VFP Registers */
 	vfp_src_lower   .req d0
 	vfp_src_upper   .req d1
 	vfp_src_blue    .req s0
 	vfp_src_green   .req s1
 	vfp_src_red     .req s2
 	vfp_src_alpha   .req s3
-	vfp_dst         .req q1
 	vfp_dst_lower   .req d2
 	vfp_dst_upper   .req d3
 	vfp_dst_blue    .req s4
 	vfp_dst_green   .req s5
 	vfp_dst_red     .req s6
 	vfp_dst_alpha   .req s7
-	vfp_cal         .req q2
 	vfp_cal_lower   .req d4
 	vfp_cal_upper   .req d5
 	vfp_cal_a       .req s8
 	vfp_cal_b       .req s9
-	vfp_cal_c       .req s10
+	vfp_cal_one     .req s10
 	vfp_cal_d       .req s11
-	vfp_out         .req q3
 	vfp_out_lower   .req d6
 	vfp_out_upper   .req d7
 	vfp_out_blue    .req s12
@@ -716,6 +730,10 @@ fb32_draw_image:
 	j .req r10                                       @ Use for Horizontal Counter
 	.unreq y_coord
 	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
+
+	mov j, #1
+	vmov vfp_cal_one, j
+	vcvt.f32.s32 vfp_cal_one, vfp_cal_one
 
 	mov width_check, f_buffer
 	add width_check, width
@@ -830,7 +848,10 @@ fb32_draw_image:
 				and depth, color, #0xFF000000
 				lsr depth, depth, #24
 				vmov vfp_src_alpha, depth                          @ Alpha of SRC
-				vcvt.f32.u32 vfp_src, vfp_src                      @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_src_blue, vfp_src_blue            @ Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_src_green, vfp_src_green          @ Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_src_red, vfp_src_red              @ Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_src_alpha, vfp_src_alpha          @ Convert Unsigned Integer to Single Precision Floating Point
 
 				/* DST */
 				ldr color, [f_buffer]
@@ -846,15 +867,22 @@ fb32_draw_image:
 				and depth, color, #0xFF000000
 				lsr depth, depth, #24
 				vmov vfp_dst_alpha, depth                          @ Alpha of DST
-				vcvt.f32.u32 vfp_dst, vfp_dst                      @ *NEON*Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_dst_blue, vfp_dst_blue            @ Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_dst_green, vfp_dst_green          @ Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_dst_red, vfp_dst_red              @ Convert Unsigned Integer to Single Precision Floating Point
+				vcvt.f32.u32 vfp_dst_alpha, vfp_dst_alpha          @ Convert Unsigned Integer to Single Precision Floating Point
 
 				/* Clean Color Register */
 				mov color, #0
 
 				/* Sanitize OUT_ARGB */
 				mov depth, #0
-				vdup.32 vfp_out, depth
-				vcvt.f32.u32 vfp_out, vfp_out
+				vmov vfp_out_lower, depth, color
+				vmov vfp_out_upper, depth, color
+				vcvt.f32.u32 vfp_out_blue, vfp_out_blue
+				vcvt.f32.u32 vfp_out_green, vfp_out_green
+				vcvt.f32.u32 vfp_out_red, vfp_out_red
+				vcvt.f32.u32 vfp_out_alpha, vfp_out_alpha
 
 				/* Alpha divisor to Range within 0.0-1.0 */
 				mov depth, #255
@@ -864,8 +892,7 @@ fb32_draw_image:
 				vdiv.f32 vfp_dst_alpha, vfp_dst_alpha, vfp_divisor
 
 				/* DST_Alpha x (1 - SRC_Alpha) to vfp_cal_a */
-				vmov vfp_cal_a, #1.0
-				vcmp.f32 vfp_dst_alpha, vfp_cal_a
+				vcmp.f32 vfp_dst_alpha, vfp_cal_one
 				vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV
 				vmoveq vfp_out_alpha, vfp_dst_alpha                     @ If DST_Alpha Is 1.0, OUT_Alpha Becomes 1.0
 				vsub.f32 vfp_cal_b, vfp_cal_a, vfp_src_alpha
@@ -880,30 +907,34 @@ fb32_draw_image:
 				beq fb32_draw_image_loop_horizontal_depth32_alphablend  @ If OUT_Alpha is 0.0, OUT_ARGB Becomes all 0.0
 
 				/* DST_RGB x (DST_Alpha x (1 - SRC_Alpha)) to vfp_dst */
-				vdup.f32 vfp_cal, vfp_cal_lower[0]                      @ NEON Side Name of vfp_cal_a
-				vmul.f32 vfp_dst, vfp_dst, vfp_cal                      @ *NEON*
+				vmul.f32 vfp_dst_blue, vfp_dst_blue, vfp_cal_a
+				vmul.f32 vfp_dst_green, vfp_dst_green, vfp_cal_a
+				vmul.f32 vfp_dst_red, vfp_dst_red, vfp_cal_a
 
 				/* SRC_RGB x SRC_Alpha to vfp_src */
-				vdup.f32 vfp_cal, vfp_src_upper[1]                      @ NEON Side Name of vfp_src_alpha
-				vmul.f32 vfp_src, vfp_src, vfp_cal                      @ *NEON*
+				vmul.f32 vfp_src_blue, vfp_src_blue, vfp_src_alpha
+				vmul.f32 vfp_src_green, vfp_src_green, vfp_src_alpha
+				vmul.f32 vfp_src_red, vfp_src_red, vfp_src_alpha
 
 				/* (SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha))) to vfp_dst */
-				vadd.f32 vfp_dst, vfp_dst, vfp_src                      @ *NEON*
+				vadd.f32 vfp_dst_blue, vfp_src_blue, vfp_dst_blue
+				vadd.f32 vfp_dst_green, vfp_src_green, vfp_dst_green
+				vadd.f32 vfp_dst_red, vfp_src_red, vfp_dst_red
 
 				/* OUT_RGB, ((SRC_RGB x SRC_Alpha) + (DST_RGB x (DST_Alpha x (1 - SRC_Alpha)))) Div by OUT_Alpha to vfp_out */
-				vmov vfp_src_alpha, vfp_out_alpha                       @ Store to Retrieve
-				vmov vfp_cal_a, #1.0
-				vmov vfp_cal_b, vfp_out_alpha
-				vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_cal_b
-				vdup.f32 vfp_cal, vfp_cal_lower[0]                      @ NEON Side Name of vfp_cal_a
-				vmul.f32 vfp_out, vfp_dst, vfp_cal                      @ *NEON*
+				vdiv.f32 vfp_cal_a, vfp_cal_one, vfp_out_alpha
+				vmul.f32 vfp_out_blue, vfp_dst_blue, vfp_cal_a
+				vmul.f32 vfp_out_green, vfp_dst_green, vfp_cal_a
+				vmul.f32 vfp_out_red, vfp_dst_red, vfp_cal_a
 
 				/* Retrieve OUT_Alpha to Range within 0 to 255 */
-				vmov vfp_out_alpha, vfp_src_alpha
 				vmul.f32 vfp_out_alpha, vfp_out_alpha, vfp_divisor
 
 				fb32_draw_image_loop_horizontal_depth32_alphablend:
-					vcvtr.u32.f32 vfp_out, vfp_out                      @ *NEON* Convert Single Precision Floating Point to Unsinged Integer
+					vcvtr.u32.f32 vfp_out_blue, vfp_out_blue            @ Convert Single Precision Floating Point to Unsinged Integer
+					vcvtr.u32.f32 vfp_out_green, vfp_out_green          @ Convert Single Precision Floating Point to Unsinged Integer
+					vcvtr.u32.f32 vfp_out_red, vfp_out_red              @ Convert Single Precision Floating Point to Unsinged Integer
+					vcvtr.u32.f32 vfp_out_alpha, vfp_out_alpha          @ Convert Single Precision Floating Point to Unsinged Integer
 					vmov depth, vfp_out_blue
 					add color, color, depth
 					vmov depth, vfp_out_green
@@ -986,28 +1017,24 @@ fb32_draw_image:
 .unreq j
 .unreq bitmask
 .unreq x_crop_char
-.unreq vfp_src
 .unreq vfp_src_lower
 .unreq vfp_src_upper
 .unreq vfp_src_blue
 .unreq vfp_src_green
 .unreq vfp_src_red
 .unreq vfp_src_alpha
-.unreq vfp_dst
 .unreq vfp_dst_lower
 .unreq vfp_dst_upper
 .unreq vfp_dst_blue
 .unreq vfp_dst_green
 .unreq vfp_dst_red
 .unreq vfp_dst_alpha
-.unreq vfp_cal
 .unreq vfp_cal_lower
 .unreq vfp_cal_upper
 .unreq vfp_cal_a
 .unreq vfp_cal_b
-.unreq vfp_cal_c
+.unreq vfp_cal_one
 .unreq vfp_cal_d
-.unreq vfp_out
 .unreq vfp_out_lower
 .unreq vfp_out_upper
 .unreq vfp_out_blue
@@ -1029,7 +1056,7 @@ fb32_draw_image:
  * r4: Character Height in Pixels
  *
  * Usage: r0-r10
- * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
@@ -1166,7 +1193,6 @@ fb32_clear_color_block:
 		mov r0, #0                                   @ Return with Success
 
 	fb32_clear_color_block_common:
-		mov r1, f_buffer
 		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr

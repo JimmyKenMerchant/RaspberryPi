@@ -388,6 +388,7 @@ _aloha_reset:
 	mov r0, #0x40000000                       @ Enable NEON/VFP
 	vmsr fpexc, r0
 
+	/*
 	ldr r0, addr_float
 	vld1.32 {d0,d1}, [r0]                     @ Load float_example1 and float_example2 (8 bytes aligned)
 	vadd.f32 d2, d0, d1                       @ Add as Single Presicion Floating Point (d0-31 is 64-bit, q0-15 is 1238-bit)
@@ -403,6 +404,7 @@ _aloha_reset:
 	vcvtr.u32.f32 s0, s0                      @ In VFP Instructions, You Can Convert with Rounding Mode
 	vmov r0, s0
 	str r0, float_example3
+	*/
 
 _aloha_render:
 	push {r0-r8}
@@ -548,6 +550,43 @@ pop {r0-r3}
 	push {r4-r8}
 	bl print32_number
 	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+
+	mov r0, #0x3
+	mov r1, #0x1
+	bl bcm32_set_powerstate
+
+push {r0-r3}
+mov r1, #500
+mov r2, #90
+bl print32_debug
+pop {r0-r3}
+
+	bl usb2032_otg_host_start
+
+push {r0-r3}
+mov r1, #500
+mov r2, #102
+bl print32_debug
+pop {r0-r3}
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1, #equ32_usb20_otg_ghwcfg2]
+
+push {r0-r3}
+mov r1, #500
+mov r2, #114
+bl print32_debug
+pop {r0-r3}
+
+	mov r0, #2
+	bl usb2032_hub_activate
+
+push {r0-r3}
+mov r1, #500
+mov r2, #126
+bl print32_debug
+pop {r0-r3}
 
 	pop {r0-r8}
 

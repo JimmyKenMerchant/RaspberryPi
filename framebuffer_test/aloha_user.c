@@ -48,7 +48,7 @@ void _user_start()
 	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	draw32_change_alpha_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x99 );
-	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 500, 500, 64, 64, 0, 0, 0, 0 );
+	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
 
 	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE, 4 );
 	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
@@ -157,7 +157,7 @@ void _user_start()
 
 	fb32_draw_image( renderbuffer5_addr, 100, 100, renderbuffer5_width, renderbuffer5_height, 0, 0, 0, 0 );
 
-	fb32_draw_line( COLOR32_GREEN, -50, 800, 100, 100, 20, 20 );
+	fb32_draw_line( COLOR32_GRAY, -50, 800, 100, 100, 20, 20 );
 	
 	while(1) {
 		fb32_flush_doublebuffer();

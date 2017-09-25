@@ -199,7 +199,7 @@ usb2032_otg_host_receiver:
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 		/*tst temp, #0x00000002*/                                            @ Check Halted (HCD Disabled Channel N)
 		cmp temp, #0
-		beq usb2032_otg_host_receiver_loop
+		/*beq usb2032_otg_host_receiver_loop*/
 
 
 		/**
@@ -502,7 +502,7 @@ usb2032_otg_host_start:
 	 * BCM2836 has 0x0000000E in Default.
 	 * In this function, DMA is enabled and DMA Burst Becomes Incremental
 	 */
-	mov temp, #0x2E                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
+	mov temp, #0x2A                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
 	str temp, [memorymap_base, #equ32_usb20_otg_gahbcfg]      @ Global AHB Configuration
 
 	dsb
@@ -571,7 +571,12 @@ usb2032_otg_host_start:
 
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_host_base
 
+	mov temp, #0x4                                            @ Set FS-LS Only Bit[2], PHY Clock to 30Mhz or 60Mhz Bit[1:0]
+	str temp, [memorymap_base, #equ32_usb20_otg_hcfg]         @ Host Configuration
+
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]         @ Host Port Control and Status
+
+	dsb
 
 	tst temp, #0x00001000                                     @ Port Power Bit[12]
 	bne usb2032_otg_host_start_jump                           @ If Power On
