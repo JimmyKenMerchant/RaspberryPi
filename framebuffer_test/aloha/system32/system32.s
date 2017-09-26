@@ -13,6 +13,8 @@
  * If you meet missig of cache, even you use cache operations, use cache operations of Set/Way type.
  */
 
+.include "system32/macro32.s"
+
 /**
  * The section, "vender" is to be used for drivers of vendor-implemented peripherals. These usually don't have any standard,
  * So if you consider of compatibility with other ARM CPUs. Files in this section should be alternated with
@@ -37,6 +39,7 @@
  * function system32_core_call
  * Call 0-3 Cores
  * Need of SMP is on, and Cache is Inner Shareable.
+ * Caution! This Function is compatible from ARMv7/AArch32
  *
  * Parameters
  * r0: Pointer of Heap
@@ -90,6 +93,7 @@ system32_core_call:
  * function system32_core_handle
  * Execute Function with Arguments in Core
  * Need of SMP is on, and Cache is Inner Shareable.
+ * Caution! This Function is compatible from ARMv7/AArch32
  *
  * This Function Uses Heap and Pointer of Heap.
  * First of Heap Array is Pointer of Function.
@@ -313,14 +317,12 @@ system32_cache_operation_all:
 			blt system32_cache_operation_all_loop_common
 			lsl bit_mask, way_size_dup, temp         @ Set Way Bit[31:*]
 			add waysetlevel, setlevel, bit_mask
-			dsb
 			cmp flag, #0
 			mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
 			cmp flag, #1
 			mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
 			cmp flag, #2
 			mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
-			dsb
 			sub way_size_dup, way_size_dup, #1
 			b system32_cache_operation_all_loop_way
 
@@ -332,7 +334,7 @@ system32_cache_operation_all:
 		mov r0, waysetlevel 
 
 	system32_cache_operation_all_common:
-		dsb
+		macro32_dsb_v6 ip
 		pop {r4-r11}
 		mov pc, lr
 
@@ -424,16 +426,12 @@ system32_cache_operation:
 		blt system32_cache_operation_success
 		lsl bit_mask, way_size, temp             @ Set Way Bit[31:*]
 		add waysetlevel, setlevel, bit_mask
-		dsb
-		isb
 		cmp flag, #0
 		mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
 		cmp flag, #1
 		mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
 		cmp flag, #2
 		mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
-		dsb
-		isb
 		sub way_size, way_size, #1
 		b system32_cache_operation_loop
 
@@ -441,6 +439,7 @@ system32_cache_operation:
 		mov r0, waysetlevel
 
 	system32_cache_operation_common:
+		macro32_dsb_v6 ip
 		pop {r4-r10}
 		mov pc, lr
 
@@ -530,12 +529,10 @@ system32_cache_info:
 	 * Bit[0] is 0 (Data or Unified Cache)/ 1 (Instruction Cache)
 	 * Bit[3:1] is 0b000 (Level1)/ 0b001(Level2), Other Bits are Reserved
 	 */
-	mcr p15, 2, ccselr, c0, c0, 0 @ Cache Selector
+	mcr p15, 2, ccselr, c0, c0, 0
 
 	.unreq ccselr
 	ccsidr .req r0
-
-	dsb
 
 	/**
 	 * Cache Size Identification Register (CCSIDR)
@@ -549,9 +546,7 @@ system32_cache_info:
 	 *
 	 * Index of the set will be Determined by Bit[*:4 + LineSize] of the Address, the length is Number of Sets
 	 */
-	mrc p15, 1, ccsidr, c0, c0, 0 @ Cache Selector
-
-	dsb
+	mrc p15, 1, ccsidr, c0, c0, 0
 
 	system32_cache_info_common:
 		mov pc, lr
@@ -671,8 +666,6 @@ system32_sleep:
 	ldr r3, [r1, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
 	adds r2, r0                            @ Add with Changing Status Flags
 	adc r3, #0                             @ Add with Carry Flag
-
-	dsb
 
 	system32_sleep_loop:
 		ldr r4, [r1, #equ32_systemtimer_counter_lower]
@@ -839,14 +832,14 @@ system32_change_descriptor:
 
 	str desc, [base_addr]
 
-	dsb                                         @ Ensure Completion of Instructions Before
+	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
 
 	/* Cache Cleaning by MVA to Point of Coherency (PoC) L1, Not Point of Unification (PoU) L2 */
-	bic temp, base_addr, #0x1F                  @ If You Want Cache Operation by Modifier Virtual Address (MVA),
-	mcr p15, 0, temp, c7, c10, 1                @ Bit[5:0] Should Be Zeros
+	bic temp, base_addr, #0x1F                      @ If You Want Cache Operation by Modifier Virtual Address (MVA),
+	mcr p15, 0, temp, c7, c10, 1                    @ Bit[5:0] Should Be Zeros
 
-	dsb                                         @ Ensure Completion of Instructions Before
-	isb                                         @ Flush Data in Pipeline to Cache
+	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
+	macro32_isb_v6 ip                               @ Flush Data in Pipeline to Cache
 
 	system32_change_descriptor_success:
 		mov r0, base_addr
@@ -899,15 +892,15 @@ system32_activate_va:
 	.unreq number_core
 	temp .req r1
 
-	dsb                                         @ Ensure Completion of Instructions Before
-	isb                                         @ Flush Data in Pipeline to Cache
+	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
+	macro32_isb_v6 ip                               @ Flush Data in Pipeline to Cache
 
 	/* Invalidate TLB */
 	mov temp, #0
 	mcr p15, 0, temp, c8, c7, 0
 
-	dsb                                         @ Ensure Completion of Instructions Before
-	isb                                         @ Flush Data in Pipeline to Cache
+	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
+	macro32_isb_v6 ip                               @ Flush Data in Pipeline to Cache
 
 	/* Translation Table Base Control Register (TTBCR) */
 	mov temp, #equ32_ttbcr_n0                       @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
@@ -925,7 +918,7 @@ system32_activate_va:
 		mov r0, base_addr
 
 	system32_activate_va_common:
-		dsb                                     @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 
@@ -1046,7 +1039,7 @@ system32_lineup_basic_va:
 		mov r1, descriptor
 
 	system32_lineup_basic_va_common:
-		dsb                                     @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -1077,7 +1070,7 @@ system32_clear_heap:
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
-	dsb                                         @ Ensure Completion of Instructions Before
+	macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Before
 
 	add heap_size, heap_start, heap_size
 
@@ -1093,7 +1086,7 @@ system32_clear_heap:
 		b system32_clear_heap_loop          @ If Bytes are not Zero
 
 	system32_clear_heap_common:
-		dsb                                 @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Before
 		mov r0, #0
 		mov pc, lr
 
@@ -1131,7 +1124,7 @@ system32_malloc:
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
-	dsb                                         @ Ensure Completion of Instructions Before
+	macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Beforee
 
 	add heap_size, heap_start, heap_size
 
@@ -1180,7 +1173,7 @@ system32_malloc:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	system32_malloc_common:
-		dsb                                     @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                       @ Ensure Completion of Instructions Before
 		pop {r4,r5}
 		mov pc, lr
 
@@ -1226,7 +1219,7 @@ system32_mfree:
 
 	push {r4}
 
-	dsb                                         @ Ensure Completion of Instructions Before
+	macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Before
 
 	cmp block_start, #0
 	beq system32_mfree_error
@@ -1261,7 +1254,7 @@ system32_mfree:
 		mov r0, #0
 
 	system32_mfree_common:
-		dsb                                     @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                       @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 

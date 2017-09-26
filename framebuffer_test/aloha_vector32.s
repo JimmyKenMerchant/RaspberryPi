@@ -8,6 +8,9 @@
  * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
+.include "system32/equ32.s"
+.include "system32/macro32.s"
+
 .section	.el01_vector
 .globl _start
 _start:
@@ -800,5 +803,4 @@ core3:
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4
-
 /* End of Line is Needed */

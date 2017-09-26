@@ -622,7 +622,7 @@ fb32_draw_line:
  * (Callee ip, Caller r8): Y Crop (Lower Right Position Y)
  *
  * Usage: r0-r12
- * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
@@ -999,7 +999,6 @@ fb32_draw_image:
 
 	fb32_draw_image_common:
 		vpop {s0-s16}
-		mov r1, f_buffer
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
@@ -1304,8 +1303,6 @@ fb32_flush_doublebuffer:
 	cmp buffer_back, #0
 	beq fb32_flush_doublebuffer_error
 
-	dsb
-
 	str buffer_front, FB32_DOUBLEBUFFER_BACK 
 	str buffer_back, FB32_DOUBLEBUFFER_FRONT
 
@@ -1352,7 +1349,7 @@ fb32_flush_doublebuffer:
 		mov r0, #0                           @ Return with Success
 
 	fb32_flush_doublebuffer_common:
-		dsb                                  @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -1407,7 +1404,7 @@ fb32_set_doublebuffer:
 		mov r0, #0                           @ Return with Success
 
 	fb32_set_doublebuffer_common:
-		dsb                                  @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq buffer_front
@@ -1437,7 +1434,7 @@ fb32_attach_buffer:
 
 	push {r4,r5}
 
-	dsb                                         @ Ensure Coherence of Cache and Memory
+	macro32_dsb_v6 ip                         @ Ensure Coherence of Cache and Memory
 
 	ldr buffer_addr, [buffer]
 	cmp buffer_addr, #0
@@ -1472,7 +1469,7 @@ fb32_attach_buffer:
 		mov r0, #1                       @ Return with Error
 
 	fb32_attach_buffer_common:
-		dsb                              @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
 		pop {r4, r5}
 		mov pc, lr
 
@@ -1506,7 +1503,7 @@ fb32_set_cache:
 
 	push {r4}
 
-	dsb
+	macro32_dsb_v6 ip
 
 	ldr memorymap_base, FB32_FRAMEBUFFER_ADDR
 	cmp memorymap_base, #0
@@ -1544,7 +1541,7 @@ fb32_set_cache:
 		mov r0, #0                           @ Return with Success
 
 	fb32_set_cache_common:
-		dsb                                  @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 

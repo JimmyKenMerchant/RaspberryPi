@@ -7,8 +7,6 @@
  *
  */
 
-.include "system32/equ32.s"
-
 /**
  * include/aloha/system32.h
  */

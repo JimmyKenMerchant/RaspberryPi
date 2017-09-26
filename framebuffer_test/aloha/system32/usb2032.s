@@ -15,10 +15,15 @@
  * 1. No response, handshakes from a device (#0) when USB HCD transmits an OUT transaction (requests such as GET_DESCRIPTOR),
  *    and an IN transaction makes an interrupt of Transaction Error. 
  *
- * 2. Raspberry Pi 2 and 3 are having inner USB Hub. This USB Hub (5 ports and port #1 is already used by an ethernet adaptor),
+ * 2. Raspberry Pi B, B+, 2 and 3 are having inner USB Hub.
+ *    This USB Hub (5 ports and port #1 is already used by an ethernet adaptor),
  *    seems to need to power on, because this is self-powered (From a descriptor). But there is no information about it.
  *    GPIO-38 is a USB (and GPIO) current-up handler, but not a power-on switch for the HUB. Anyway, no current on the HUB ports.
  *    VideoCore may handle this power state, but there is no information about it too.
+ *    I got information that GPIO-44 (ALT1: GPCLK1) is 25Mhz clock source of LAN9514 (the chip of USB Hub).
+ *    In conclusion, activation of LAN9514 is needed, but this method isn't open.
+ *    Opening inforamtion or not is the strategy of the company. If non-open, we should consider of another way.
+ *    In this case, we'll consider of RasPi Zero. Zero also gives us making RasPi possible a USB device.
  *
  * 3. Other reasons may exist than #1, but currently no way of confirming it. RasPi Zero, with no inner Hub is using BCM2835,
  *    but this system is compatible from BCM2836 because of ARMv7/AArch32.
@@ -26,6 +31,8 @@
  * 4. No data cache, DMA incremental changes attempted, but no response persists.
  *
  * 5. Halting an Host Channel by the Disable Bit is not functioned. There is need of confirming it. 
+ *
+ * 6. The chip is for high-speed, but PHY (Physical Transiver of USB system) of BCM2835 seems to be up to Full-speed. 
  */
 
 /**
@@ -76,8 +83,6 @@ usb2032_hub_activate:
 	mov temp, #equ32_usb20_index_device
 	orr temp, temp, #64<<16
 	str temp, [buffer, #4]
-
-	dsb
 
 	push {r0-r3,lr}
 	mov r0, buffer
@@ -144,7 +149,7 @@ usb2032_hub_activate:
 		mov r0, temp4
 
 	usb2032_hub_activate_common:
-		dsb                                                               @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                                                               @ Ensure Completion of Instructions Before
 		pop {r4-r9}
 		mov pc, lr
 
@@ -190,8 +195,6 @@ usb2032_otg_host_receiver:
 	mul temp, channel, temp
 	add memorymap_base, memorymap_base, temp                             @ Add Each Channel Offset
 
-	dsb
-
 	/**
 	 * On the loop below, we consider of the limitter (Time Out).
 	 */
@@ -216,8 +219,6 @@ usb2032_otg_host_receiver:
 		 * Channel Halted Bit[1]
 		 * Transfer Completed Bit[0]
 		 */
-
-		dsb
 
 		mov r0, #0
 
@@ -252,7 +253,7 @@ usb2032_otg_host_receiver:
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ write-clear
 		mov temp, #0
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]            @ Mask All
-		dsb                                                               @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                                                               @ Ensure Completion of Instructions Before
 		mov pc, lr
 	
 .unreq channel
@@ -286,14 +287,11 @@ usb2032_otg_host_sender:
 	mul temp, channel, temp
 	add memorymap_base, memorymap_base, temp                              @ Add Each Channel Offset
 
-	dsb
-
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	tst temp, #0x80000000                                                 @ Channel Enable Bit[31]
 	bne usb2032_otg_host_sender_error                                     @ Channel is Already Enabled
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
-	dsb
 	str temp, [memorymap_base, #equ32_usb20_otg_hcintn]                   @ write-clear
 
 	mvn temp, #0
@@ -310,9 +308,7 @@ usb2032_otg_host_sender:
 	str temp, [memorymap_base, #equ32_usb20_otg_hcspltn]
 
 	usb2032_otg_host_sender_jump:
-		dsb
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
-		dsb
 
 		orr temp, #0x80000000
 		str temp, [memorymap_base, #equ32_usb20_otg_hccharn]              @ Enable Channel
@@ -327,7 +323,7 @@ usb2032_otg_host_sender:
 		mov r0, #0                                                        @ Return with Success
 
 	usb2032_otg_host_sender_common:
-		dsb                                                               @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                                                               @ Ensure Completion of Instructions Before
 		mov pc, lr
 	
 .unreq channel
@@ -393,10 +389,7 @@ usb2032_otg_host_setter:
 	mul temp, channel, temp
 	add memorymap_base, memorymap_base, temp                               @ Add Each Channel Offset
 
-	dsb
-
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
-	dsb
 	tst temp, #0x80000000                                                  @ Channel Enable Bit[31]
 	bne usb2032_otg_host_setter_error                                      @ Channel is Already Enabled
 
@@ -423,8 +416,6 @@ usb2032_otg_host_setter:
 
 	/* Force Setting */
 	orr hcchar, hcchar, #0x00100000                                        @ Multi Count/ Error Count Bit[21:20] in OTG
-
-	dsb
  
 	str hcchar, [memorymap_base, #equ32_usb20_otg_hccharn]
 
@@ -450,7 +441,7 @@ usb2032_otg_host_setter:
 		mov r1, hcchar
 
 	usb2032_otg_host_setter_common:
-		dsb                                                                @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                                                                @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -495,8 +486,6 @@ usb2032_otg_host_start:
 	orr temp, #0x20000000                                     @ Set Force Host Mode Bit[29]
 	str temp, [memorymap_base, #equ32_usb20_otg_gusbcfg]
 
-	dsb
-
 	/**
 	 * AHB Cofiguration (GAHBCFG) Bit[23] may have DMA Incremental(0) or single (1) in case.
 	 * BCM2836 has 0x0000000E in Default.
@@ -505,24 +494,20 @@ usb2032_otg_host_start:
 	mov temp, #0x2A                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
 	str temp, [memorymap_base, #equ32_usb20_otg_gahbcfg]      @ Global AHB Configuration
 
-	dsb
-
 	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Global Reset Control
 
 	bic temp, temp, #0x7C0                                    @ TxFIFO Number Bit[10:6]
 	orr temp, temp, #0x400                                    @ Flush All TxFIFOs
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	dsb
 	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
-	dsb
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
 	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
 	orr temp, temp, #0x20                                     @ TxFIFO Reset Bit[5]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	dsb
+	macro32_dsb_v6 ip
 
 	usb2032_otg_host_start_loop1:
 		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -531,15 +516,13 @@ usb2032_otg_host_start:
 
 	mov temp, temp2
 
-	dsb
-
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
 	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
 	orr temp, temp, #0x10                                     @ RxFIFO Reset Bit[4]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	dsb
+	macro32_dsb_v6 ip
 
 	usb2032_otg_host_start_loop2:
 		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -548,22 +531,18 @@ usb2032_otg_host_start:
 
 	mov temp, temp2
 
-	dsb
-
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
 	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
 	orr temp, temp, #0x01                                     @ Core Soft Reset Bit[0]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	dsb
+	macro32_dsb_v6 ip
 
 	usb2032_otg_host_start_loop3:
 		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
 		cmp temp, temp2
 		beq usb2032_otg_host_start_loop3
-
-	dsb
 
 	/**
 	 * Host Mode CSRs (Base + 0x400)
@@ -576,22 +555,20 @@ usb2032_otg_host_start:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]         @ Host Port Control and Status
 
-	dsb
-
 	tst temp, #0x00001000                                     @ Port Power Bit[12]
 	bne usb2032_otg_host_start_jump                           @ If Power On
 
 	orr temp, #0x00001000
 	str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-	dsb
+	macro32_dsb_v6 ip
 
 	usb2032_otg_host_start_jump:
 
 		orr temp, #0x00000100                                      @ Port Reset Bit[8]
 		str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-		dsb
+		macro32_dsb_v6 ip
 
 		push {r0-r3,lr}
 		mov r0, #0xC400                                            @ 50176 us, 50.176 ms (In High-speed, 50 ms is minimum)
@@ -601,14 +578,12 @@ usb2032_otg_host_start:
 		bic temp, #0x00000100                                      @ Clear Port Reset Bit[8]
 		str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-		dsb
+		macro32_dsb_v6 ip
 
 		usb2032_otg_host_start_jump_loop:
 			ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]
 			tst temp, #0x00000008                                  @ Port Enable/Disable Change Bit[3]
 			beq usb2032_otg_host_start_jump_loop
-
-			dsb
 
 			/**
 			 * If already connected with devices including Hub,
@@ -623,21 +598,16 @@ usb2032_otg_host_start:
 			mov memorymap_base, #equ32_peripherals_base
 			add memorymap_base, memorymap_base, #equ32_usb20_otg_base
 			ldr temp, [memorymap_base, #equ32_usb20_otg_gotgctl]       @ Global OTG Control and Status
-			dsb
 			orr temp, temp, #0x00000400                                @ Host Set HNP Enable Bit[10]
 			str temp,  [memorymap_base, #equ32_usb20_otg_gotgctl]
-			dsb
 
 			ldr temp, usb2032_otg_host_setter_addr
-			dsb
 			str temp, USB2032_SETTER
 
 			ldr temp, usb2032_otg_host_sender_addr
-			dsb
 			str temp, USB2032_SENDER
 
 			ldr temp, usb2032_otg_host_receiver_addr
-			dsb
 			str temp, USB2032_RECEIVER
 
 		b usb2032_otg_host_start_success
@@ -650,7 +620,7 @@ usb2032_otg_host_start:
 		mov r0, #0                           @ Return with Success
 
 	usb2032_otg_host_start_common:
-		dsb                                  @ Ensure Completion of Instructions Before
+		macro32_dsb_v6 ip                                  @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq memorymap_base
