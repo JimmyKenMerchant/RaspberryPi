@@ -290,7 +290,7 @@ extern uint64 fb32_draw_line
 /**
  * Draw Image
  *
- * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
+ * Return: 0 as sucess, 1 and 2 as error
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
@@ -311,7 +311,7 @@ extern uint64 fb32_draw_image
 /**
  * Clear Block by Color
  *
- * Return: Lower 32 bits (0 as sucess, 1 and 2 as error), Upper 32 bits (Last Pointer of Framebuffer)
+ * Return: 0 as sucess, 1 and 2 as error
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
@@ -483,7 +483,7 @@ extern uint64 print32_number
  * Caution! This Function is Used in 32-bit Depth Color
  * First and Last Pixel of Base is not anti-aliased, and there is no horizontal sync.
  *
- * Return: Lower 32 Bits (0 as success, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Base)
+ * Return: 0 as success, 1 and 2 as error
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined, or Depth is not 32-bit
  */
@@ -497,7 +497,7 @@ extern uint64 draw32_antialias
 /**
  * Fill by Color
  *
- * Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Base)
+ * Return: 0 as sucess, 1 and 2 as error
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
@@ -510,7 +510,7 @@ extern uint64 draw32_fill_color
 /**
  * Make Masked Image to Mask
  *
- * Return: Lower 32 Bits (0 as sucess, 1 and 2 as error), Upper 32 Bits (Last Pointer of Buffer of Mask)
+ * Return: 0 as sucess, 1 and 2 as error
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */

@@ -66,11 +66,11 @@ system32_core_call:
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, core_number
 
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	macro32_dsb_v6 ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	str heap, [handle_addr]
 
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	macro32_dsb_v6 ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	b system32_core_call_success
 
@@ -134,7 +134,7 @@ system32_core_handle:
 	.unreq core_number
 	arg0 .req r0
 
-	dsb @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	macro32_dsb_v6 ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	system32_core_handle_loop1:
 		ldr heap, [handle_addr]
@@ -179,7 +179,7 @@ system32_core_handle:
 		b system32_core_handle_loop2
 
 	system32_core_handle_branch:
-		dsb
+		macro32_dsb_v6 ip
 		blx addr_start
 		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
 		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
@@ -193,7 +193,7 @@ system32_core_handle:
 		 * i.e., putting return values to other places where only store these values and nothing of any loading. 
 		 */
 
-		dsb
+		macro32_dsb_v6 ip
 		
 		mov temp, #0
 		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
@@ -208,7 +208,7 @@ system32_core_handle:
 		mov r0, #0
 
 	system32_core_handle_common:
-		dsb
+		macro32_dsb_v6 ip
 		pop {r4-r9}
 		mov pc, lr
 

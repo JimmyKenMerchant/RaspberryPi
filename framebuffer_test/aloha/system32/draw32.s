@@ -19,7 +19,7 @@
  * r1: Pointer of Buffer to Be Aliased, Base
  *
  * Usage: r0-r10
- * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined, or Depth is not 32-bit
  */
@@ -147,7 +147,6 @@ draw32_antialias:
 		mov r0, #0                                 @ Return with Success
 
 	draw32_antialias_common:
-		mov r1, base_addr
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
@@ -174,7 +173,7 @@ draw32_antialias:
  * r0: Pointer of Buffer to Be Filled by Color
  *
  * Usage: r0-r10
- * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer of Base)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
@@ -317,7 +316,6 @@ draw32_fill_color:
 		mov r0, #0                                 @ Return with Success
 
 	draw32_fill_color_common:
-		mov r1, base_addr
 		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
@@ -347,7 +345,7 @@ draw32_fill_color:
  * r3: Y Coordinate of Mask
  *
  * Usage: r0-r11
- * Return: r0 (0 as success, 1 and 2 as error), r1 (Last Pointer of Buffer of Mask)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
@@ -488,7 +486,6 @@ draw32_mask_image:
 		mov r0, #0                                   @ Return with Success
 
 	draw32_mask_image_common:
-		mov r1, mask_addr
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
