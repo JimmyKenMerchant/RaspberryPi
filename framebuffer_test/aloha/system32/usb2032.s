@@ -149,7 +149,7 @@ usb2032_hub_activate:
 		mov r0, temp4
 
 	usb2032_hub_activate_common:
-		macro32_dsb_v6 ip                                                               @ Ensure Completion of Instructions Before
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
 		pop {r4-r9}
 		mov pc, lr
 
@@ -253,7 +253,7 @@ usb2032_otg_host_receiver:
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ write-clear
 		mov temp, #0
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]            @ Mask All
-		macro32_dsb_v6 ip                                                               @ Ensure Completion of Instructions Before
+		macro32_dsb ip                                                    @ Ensure Completion of Instructions Before
 		mov pc, lr
 	
 .unreq channel
@@ -323,7 +323,7 @@ usb2032_otg_host_sender:
 		mov r0, #0                                                        @ Return with Success
 
 	usb2032_otg_host_sender_common:
-		macro32_dsb_v6 ip                                                               @ Ensure Completion of Instructions Before
+		macro32_dsb ip                                                    @ Ensure Completion of Instructions Before
 		mov pc, lr
 	
 .unreq channel
@@ -441,7 +441,7 @@ usb2032_otg_host_setter:
 		mov r1, hcchar
 
 	usb2032_otg_host_setter_common:
-		macro32_dsb_v6 ip                                                                @ Ensure Completion of Instructions Before
+		macro32_dsb ip                                                     @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -507,7 +507,7 @@ usb2032_otg_host_start:
 	orr temp, temp, #0x20                                     @ TxFIFO Reset Bit[5]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	usb2032_otg_host_start_loop1:
 		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -522,7 +522,7 @@ usb2032_otg_host_start:
 	orr temp, temp, #0x10                                     @ RxFIFO Reset Bit[4]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	usb2032_otg_host_start_loop2:
 		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -537,7 +537,7 @@ usb2032_otg_host_start:
 	orr temp, temp, #0x01                                     @ Core Soft Reset Bit[0]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	usb2032_otg_host_start_loop3:
 		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -561,14 +561,14 @@ usb2032_otg_host_start:
 	orr temp, #0x00001000
 	str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	usb2032_otg_host_start_jump:
 
 		orr temp, #0x00000100                                      @ Port Reset Bit[8]
 		str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 
 		push {r0-r3,lr}
 		mov r0, #0xC400                                            @ 50176 us, 50.176 ms (In High-speed, 50 ms is minimum)
@@ -578,7 +578,7 @@ usb2032_otg_host_start:
 		bic temp, #0x00000100                                      @ Clear Port Reset Bit[8]
 		str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 
 		usb2032_otg_host_start_jump_loop:
 			ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]
@@ -620,7 +620,7 @@ usb2032_otg_host_start:
 		mov r0, #0                           @ Return with Success
 
 	usb2032_otg_host_start_common:
-		macro32_dsb_v6 ip                                  @ Ensure Completion of Instructions Before
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq memorymap_base

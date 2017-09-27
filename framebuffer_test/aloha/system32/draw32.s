@@ -535,8 +535,8 @@ draw32_set_renderbuffer:
 
 	push {r4-r5}
 
-	macro32_dsb_v6 ip
-	macro32_isb_v6 ip
+	macro32_dsb ip
+	macro32_isb ip
 
 	mul size, width, height
 
@@ -574,8 +574,8 @@ draw32_set_renderbuffer:
 		mov r0, #0
 
 	draw32_set_renderbuffer_common:
-		macro32_dsb_v6 ip                @ Ensure Completion of Instructions Before
-		macro32_isb_v6 ip                @ Flush Data in Pipeline to Cache
+		macro32_dsb ip                   @ Ensure Completion of Instructions Before
+		macro32_isb ip                   @ Flush Data in Pipeline to Cache
 		pop {r4-r5}
 		mov pc, lr
 
@@ -630,8 +630,8 @@ draw32_clear_renderbuffer:
 		mov r0, #0
 
 	draw32_clear_renderbuffer_common:
-		macro32_dsb_v6 ip                @ Ensure Completion of Instructions Before
-		macro32_isb_v6 ip                @ Flush Data in Pipeline to Cache
+		macro32_dsb ip                   @ Ensure Completion of Instructions Before
+		macro32_isb ip                   @ Flush Data in Pipeline to Cache
 		mov pc, lr
 
 .unreq buffer
@@ -666,8 +666,8 @@ draw32_copy:
 
 	push {r4-r9}
 
-	macro32_dsb_v6 ip
-	macro32_isb_v6 ip
+	macro32_dsb ip
+	macro32_isb ip
 
 	ldr buffer_in_addr, [buffer_in]
 	cmp buffer_in_addr, #0
@@ -723,8 +723,8 @@ draw32_copy:
 		mov r0, #1                               @ Return with Error
 
 	draw32_copy_common:
-		macro32_dsb_v6 ip
-		macro32_isb_v6 ip
+		macro32_dsb ip
+		macro32_isb ip
 		pop {r4-r9}
 		mov pc, lr
 

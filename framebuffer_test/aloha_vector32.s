@@ -472,62 +472,31 @@ _aloha_render:
 
 	bl system32_mfree                         @ Clear Memory Space
 
-push {r0-r3}
 ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
 ldr r0, [r0]
-mov r1, #500
-mov r2, #48
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 48
 
-push {r0-r3}
 ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
 ldr r0, [r0, #4]
-mov r1, #500
-mov r2, #60
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 60
 
-push {r0-r3}
 ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
 ldr r0, [r0, #8]
-mov r1, #500
-mov r2, #72
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 72
 
 	ldr r0, string_hello                      @ Pointer of Array of String
-	mov r1, #0                                @ X Coordinate
-	mov r2, #0                                @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
+	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
+	ldr r1, [r1]
+	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r2, [r2]
+	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #100                              @ Length of Characters, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_string
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+	macro32_print_string r0 0 0 r1 r2 100 8 12 r3
 
 	ldr r0, string_test                       @ Pointer of Array of String
-	mov r1, #0                                @ X Coordinate
-	mov r2, #100                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #100                              @ Length of Characters, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_string
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+	macro32_print_string r0 0 100 r1 r2 100 8 12 r3
 
+	push {r1-r3}
 	ldrb r0, core0
 	ldrb r1, core1
 	ldrb r2, core2
@@ -535,61 +504,30 @@ pop {r0-r3}
 	add r0, r0, r1
 	add r0, r0, r2
 	add r0, r0, r3
+	pop {r1-r3}
 
-	/*bl system32_lineup_basic_va*/
-	/*mov r0, r1*/
-
-	mov r1, #0                                @ X Coordinate
-	mov r2, #136                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_number
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
+	macro32_print_number r0 0 136 r1 r2 100 8 12 r3
 
 	mov r0, #0x3
 	mov r1, #0x1
 	bl bcm32_set_powerstate
 
-push {r0-r3}
-mov r1, #500
-mov r2, #90
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 90
 
 	bl usb2032_otg_host_start
 
-push {r0-r3}
-mov r1, #500
-mov r2, #102
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 102
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
 	ldr r0, [r1, #equ32_usb20_otg_ghwcfg2]
 
-push {r0-r3}
-mov r1, #500
-mov r2, #114
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 114
 
 	mov r0, #2
 	bl usb2032_hub_activate
 
-push {r0-r3}
-mov r1, #500
-mov r2, #126
-bl print32_debug
-pop {r0-r3}
+macro32_debug r0 500 126
 
 	pop {r0-r8}
 

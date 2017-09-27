@@ -1349,7 +1349,7 @@ fb32_flush_doublebuffer:
 		mov r0, #0                           @ Return with Success
 
 	fb32_flush_doublebuffer_common:
-		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -1404,7 +1404,7 @@ fb32_set_doublebuffer:
 		mov r0, #0                           @ Return with Success
 
 	fb32_set_doublebuffer_common:
-		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq buffer_front
@@ -1434,7 +1434,7 @@ fb32_attach_buffer:
 
 	push {r4,r5}
 
-	macro32_dsb_v6 ip                         @ Ensure Coherence of Cache and Memory
+	macro32_dsb ip                           @ Ensure Coherence of Cache and Memory
 
 	ldr buffer_addr, [buffer]
 	cmp buffer_addr, #0
@@ -1469,7 +1469,7 @@ fb32_attach_buffer:
 		mov r0, #1                       @ Return with Error
 
 	fb32_attach_buffer_common:
-		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {r4, r5}
 		mov pc, lr
 
@@ -1503,7 +1503,7 @@ fb32_set_cache:
 
 	push {r4}
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	ldr memorymap_base, FB32_FRAMEBUFFER_ADDR
 	cmp memorymap_base, #0
@@ -1541,7 +1541,7 @@ fb32_set_cache:
 		mov r0, #0                           @ Return with Success
 
 	fb32_set_cache_common:
-		macro32_dsb_v6 ip                    @ Ensure Completion of Instructions Before
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 

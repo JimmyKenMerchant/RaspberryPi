@@ -66,11 +66,11 @@ system32_core_call:
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, core_number
 
-	macro32_dsb_v6 ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	str heap, [handle_addr]
 
-	macro32_dsb_v6 ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	macro32_dsb ip
 
 	b system32_core_call_success
 
@@ -134,7 +134,7 @@ system32_core_handle:
 	.unreq core_number
 	arg0 .req r0
 
-	macro32_dsb_v6 ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
+	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	system32_core_handle_loop1:
 		ldr heap, [handle_addr]
@@ -179,7 +179,7 @@ system32_core_handle:
 		b system32_core_handle_loop2
 
 	system32_core_handle_branch:
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 		blx addr_start
 		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
 		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
@@ -193,7 +193,7 @@ system32_core_handle:
 		 * i.e., putting return values to other places where only store these values and nothing of any loading. 
 		 */
 
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 		
 		mov temp, #0
 		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
@@ -208,7 +208,7 @@ system32_core_handle:
 		mov r0, #0
 
 	system32_core_handle_common:
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 		pop {r4-r9}
 		mov pc, lr
 
@@ -334,7 +334,7 @@ system32_cache_operation_all:
 		mov r0, waysetlevel 
 
 	system32_cache_operation_all_common:
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 		pop {r4-r11}
 		mov pc, lr
 
@@ -439,7 +439,7 @@ system32_cache_operation:
 		mov r0, waysetlevel
 
 	system32_cache_operation_common:
-		macro32_dsb_v6 ip
+		macro32_dsb ip
 		pop {r4-r10}
 		mov pc, lr
 
@@ -832,14 +832,14 @@ system32_change_descriptor:
 
 	str desc, [base_addr]
 
-	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
+	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
 
 	/* Cache Cleaning by MVA to Point of Coherency (PoC) L1, Not Point of Unification (PoU) L2 */
 	bic temp, base_addr, #0x1F                      @ If You Want Cache Operation by Modifier Virtual Address (MVA),
 	mcr p15, 0, temp, c7, c10, 1                    @ Bit[5:0] Should Be Zeros
 
-	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
-	macro32_isb_v6 ip                               @ Flush Data in Pipeline to Cache
+	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
+	macro32_isb ip                                  @ Flush Data in Pipeline to Cache
 
 	system32_change_descriptor_success:
 		mov r0, base_addr
@@ -892,15 +892,15 @@ system32_activate_va:
 	.unreq number_core
 	temp .req r1
 
-	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
-	macro32_isb_v6 ip                               @ Flush Data in Pipeline to Cache
+	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
+	macro32_isb ip                                  @ Flush Data in Pipeline to Cache
 
 	/* Invalidate TLB */
 	mov temp, #0
 	mcr p15, 0, temp, c8, c7, 0
 
-	macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
-	macro32_isb_v6 ip                               @ Flush Data in Pipeline to Cache
+	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
+	macro32_isb ip                                  @ Flush Data in Pipeline to Cache
 
 	/* Translation Table Base Control Register (TTBCR) */
 	mov temp, #equ32_ttbcr_n0                       @ Set N Bit for Translation Table Base Addeess Bit[31:14], 0xFFFC000
@@ -918,7 +918,7 @@ system32_activate_va:
 		mov r0, base_addr
 
 	system32_activate_va_common:
-		macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
+		macro32_dsb ip                               @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 
@@ -1039,7 +1039,7 @@ system32_lineup_basic_va:
 		mov r1, descriptor
 
 	system32_lineup_basic_va_common:
-		macro32_dsb_v6 ip                               @ Ensure Completion of Instructions Before
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
 		pop {r4-r7}
 		mov pc, lr
 
@@ -1070,7 +1070,7 @@ system32_clear_heap:
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
-	macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Before
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	add heap_size, heap_start, heap_size
 
@@ -1086,7 +1086,7 @@ system32_clear_heap:
 		b system32_clear_heap_loop          @ If Bytes are not Zero
 
 	system32_clear_heap_common:
-		macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Before
+		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		mov r0, #0
 		mov pc, lr
 
@@ -1124,7 +1124,7 @@ system32_malloc:
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes
 
-	macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Beforee
+	macro32_dsb ip                              @ Ensure Completion of Instructions Beforee
 
 	add heap_size, heap_start, heap_size
 
@@ -1173,7 +1173,7 @@ system32_malloc:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	system32_malloc_common:
-		macro32_dsb_v6 ip                       @ Ensure Completion of Instructions Before
+		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4,r5}
 		mov pc, lr
 
@@ -1219,7 +1219,7 @@ system32_mfree:
 
 	push {r4}
 
-	macro32_dsb_v6 ip                           @ Ensure Completion of Instructions Before
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	cmp block_start, #0
 	beq system32_mfree_error
@@ -1254,7 +1254,7 @@ system32_mfree:
 		mov r0, #0
 
 	system32_mfree_common:
-		macro32_dsb_v6 ip                       @ Ensure Completion of Instructions Before
+		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
 

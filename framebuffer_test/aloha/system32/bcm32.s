@@ -159,13 +159,13 @@ bcm32_get_framebuffer:
 	bl bcm32_mailbox_read
 	pop {r0-r3,lr}
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	ldr memorymap_base, bcm32_mail_framebuffer_addr
 	ldr temp, bcm32_mail_framebuffer                                @ Get Size
 	add temp, temp, memorymap_base
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	bcm32_get_framebuffer_loop:
 		push {r0-r3,lr}
@@ -178,7 +178,7 @@ bcm32_get_framebuffer:
 		cmp memorymap_base, temp
 		blt bcm32_get_framebuffer_loop
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
  	ldr memorymap_base, bcm32_mail_framebuffer_addr
 	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
@@ -207,7 +207,7 @@ bcm32_get_framebuffer:
 	ldr memorymap_base, BCM32_DEPTH
 	str memorymap_base, [temp, #16]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	push {r0-r3,lr}
 	mov r0, temp
@@ -224,7 +224,7 @@ bcm32_get_framebuffer:
 		mov r0, #1                           @ Return with Error
 
 	bcm32_get_framebuffer_common:
-		macro32_dsb_v6 ip                                  @ Ensure Completion of Instructions Before
+		macro32_dsb ip                                     @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq memorymap_base
@@ -259,7 +259,7 @@ bcm32_set_powerstate:
 	str deviceid, [memorymap_base, #20]	
 	str state, [memorymap_base, #24]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	bcm32_set_powerstate_loop1:
 		push {r0-r3,lr}
@@ -272,7 +272,7 @@ bcm32_set_powerstate:
 		cmp memorymap_base, temp
 		blt bcm32_set_powerstate_loop1
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 	
 	ldr temp, bcm32_mail_setpowerstate_addr
 	add temp, temp, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
@@ -283,13 +283,13 @@ bcm32_set_powerstate:
 	bl bcm32_mailbox_read
 	pop {r0-r3,lr}
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	ldr memorymap_base, bcm32_mail_setpowerstate_addr
 	ldr temp, bcm32_mail_setpowerstate                          @ Get Size
 	add temp, temp, memorymap_base
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	bcm32_set_powerstate_loop2:
 		push {r0-r3,lr}
@@ -302,7 +302,7 @@ bcm32_set_powerstate:
 		cmp memorymap_base, temp
 		blt bcm32_set_powerstate_loop2
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
  	ldr memorymap_base, bcm32_mail_setpowerstate_addr
 	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
@@ -317,7 +317,7 @@ bcm32_set_powerstate:
 		mvn r0, #0                           @ Return with Error
 
 	bcm32_set_powerstate_common:
-		macro32_dsb_v6 ip                        @ Ensure Completion of Instructions Before
+		macro32_dsb ip                           @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq deviceid
@@ -348,14 +348,14 @@ bcm32_mailbox_read:
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #bcm32_mailbox_base
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	bcm32_mailbox_read_waitforread:
 		ldr temp, [memorymap_base, status]
 		tst temp, #0x40000000                  @ Wait for Empty Flag is Cleared
 		bne bcm32_mailbox_read_waitforread
 
-	macro32_dsb_v6 ip                        @ `DMB` Data Memory Barrier, completes all memory access before
+	macro32_dsb ip                           @ `DMB` Data Memory Barrier, completes all memory access before
                                                  @ `DSB` Data Synchronization Barrier, completes all instructions before
                                                  @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
                                                  @ to ensure fetching instructions from cache/ memory
@@ -403,18 +403,18 @@ bcm32_mailbox_send:
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #bcm32_mailbox_base
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	bcm32_mailbox_send_waitforwrite:
 		ldr temp, [memorymap_base, status]
 		tst temp, #0x80000000                  @ Wait for Full Flag is Cleared
 		bne bcm32_mailbox_send_waitforwrite
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	str mail_content, [memorymap_base, write]
 
-	macro32_dsb_v6 ip
+	macro32_dsb ip
 
 	b bcm32_mailbox_send_success
 
