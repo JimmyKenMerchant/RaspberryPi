@@ -13,6 +13,7 @@
 COMP = arm-none-eabi
 # Available fpu info from Features in /proc/cpuinfo of Raspbian 
 TARGET = -mcpu=cortex-a7 -mfpu=vfp
+INC = aloha_raspi
 CC = $(COMP)-gcc
 AS = $(COMP)-as
 LINKER = $(COMP)-ld
@@ -43,10 +44,10 @@ $(OBJ3).o: $(OBJ3).c $(HEADER)
 	$(CC) $< -I include/ -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
 
 # Make OBJ2, system32.o
-include aloha/system32/system32.mk
+include $(INC)/system32/system32.mk
 
 $(OBJ1).o: $(OBJ1).s
-	$(AS) $< -I aloha/ -o $@ $(TARGET)
+	$(AS) $< -I $(INC)/ -o $@ $(TARGET)
 
 .PHONY: warn
 warn: all clean

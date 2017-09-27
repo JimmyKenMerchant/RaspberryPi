@@ -5,5 +5,5 @@
 # License URL: https://opensource.org/licenses/MIT
 ##
 
-system32.o: aloha/system32/system32.s
-	$(AS) $^ -I aloha/ -o $@ $(TARGET)
+system32.o: $(INC)/system32/system32.s
+	$(AS) $^ -I $(INC)/ -o $@ $(TARGET)

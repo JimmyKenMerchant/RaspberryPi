@@ -593,24 +593,18 @@ _aloha_fiq_handler:
 	sub r2, r0, r1
 	str r0, sys_timer_previous
 
-	push {r0-r9,lr}
+	push {lr}
 	mov r0, r2
 	bl math32_hexa_to_deci32
-	mov r2, #80                               @ X Coordinate
-	mov r3, #388                              @ Y Coordinate
-	ldr r4, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	pop {lr}
+
+	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
+	ldr r2, [r2]
+	ldr r3, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r3, [r3]
+	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r4, [r4]
-	ldr r5, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r5, [r5]
-	mov r6, #16                               @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r7, #8
-	mov r8, #12
-	ldr r9, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r9, [r9]
-	push {r4-r9}
-	bl print32_number_double
-	add sp, sp, #24                           @ Increment SP because of push {r4-r7}
-	pop {r0-r9,lr}
+	macro32_print_number_double r0 r1 80 388 r2 r3 16 8 12 r4
 
 	ldr r0, timer_sub
 	ldr r1, timer_main
@@ -623,40 +617,7 @@ _aloha_fiq_handler:
 	str r0, timer_sub
 	str r1, timer_main
 
-	push {r0-r8,lr}
-	mov r1, #80                               @ X Coordinate
-	mov r2, #400                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_number
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-	pop {r0-r8,lr}
-
-	push {r0-r8,lr}
-	mov r0, r1
-	mov r1, #80                               @ X Coordinate
-	mov r2, #412                              @ Y Coordinate
-	ldr r3, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r4, [r4]
-	mov r5, #8                                @ Number of Digits, 8 Digits Maximum, Need of PUSH/POP
-	mov r6, #8
-	mov r7, #12
-	ldr r8, ADDR32_FONT_MONO_12PX_ASCII
-	ldr r8, [r8]
-	push {r4-r8}
-	bl print32_number
-	add sp, sp, #20                           @ Increment SP because of push {r4-r7}
-	pop {r0-r8,lr}
+	macro32_print_number_double r0 r1 80 400 r2 r3 16 8 12 r4
 
 	mov pc, lr
 

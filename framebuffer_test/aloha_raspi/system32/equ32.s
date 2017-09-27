@@ -18,7 +18,19 @@
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
 .equ equ32_gpio_base,          0x00200000
+.equ equ32_dma0_base,          0x00007000
 .equ equ32_usb20_otg_base,     0x00980000
+
+.equ equ32_gpio_i2c0_base_upper,     0x00200000
+.equ equ32_gpio_i2c0_base_lower,     0x00005000
+.equ equ32_gpio_i2c1_base_upper,     0x00800000
+.equ equ32_gpio_i2c1_base_lower,     0x00004000
+.equ equ32_gpio_i2c2_base_upper,     0x00800000
+.equ equ32_gpio_i2c2_base_lower,     0x00005000
+.equ equ32_gpio_pwm_base_upper,      0x00200000
+.equ equ32_gpio_pwm_base_lower,      0x0000C000
+.equ equ32_dma15_base_upper,         0x00E00000
+.equ equ32_dma15_base_lower,         0x00005000
 
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
@@ -50,6 +62,15 @@
 .equ equ32_gpio_gpfsel3,     0x0C @ GPIO 30-39 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
 .equ equ32_gpio_gpfsel4,     0x10 @ GPIO 40-49 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
 .equ equ32_gpio_gpfsel5,     0x14 @ GPIO 50-53 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
+
+.equ equ32_gpio_gpfseln_input,    0b000
+.equ equ32_gpio_gpfseln_output,   0b001
+.equ equ32_gpio_gpfseln_alt0,     0b100
+.equ equ32_gpio_gpfseln_alt1,     0b101
+.equ equ32_gpio_gpfseln_alt2,     0b110
+.equ equ32_gpio_gpfseln_alt3,     0b111
+.equ equ32_gpio_gpfseln_alt4,     0b011
+.equ equ32_gpio_gpfseln_alt5,     0b010
 
 .equ equ32_gpio_gpset0,      0x1C @ GPIO 0-31, Output Set, each 1 bit, 0 no effect, 1 set Pin
 .equ equ32_gpio_gpset1,      0x20 @ GPIO 32-53, Output Set, each 1 bit, 0 no effect, 1 set Pin
@@ -141,6 +162,58 @@
 .equ equ32_gpio51,   0b1 << 19 @ Bit High
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
+
+.equ equ32_gpio_pwm_ctl,      0x00000000
+.equ equ32_gpio_pwm_sta,      0x00000004
+.equ equ32_gpio_pwm_dmac,     0x00000008
+.equ equ32_gpio_pwm_rng1,     0x00000010
+.equ equ32_gpio_pwm_dat1,     0x00000014
+.equ equ32_gpio_pwm_fif1,     0x00000018
+.equ equ32_gpio_pwm_rng2,     0x00000020
+.equ equ32_gpio_pwm_dat2,     0x00000024
+
+.equ equ32_gpio_pwm_ctl_msen2,   0x00008000 @ Channel2 M/S Enable
+.equ equ32_gpio_pwm_ctl_usef2,   0x00002000 @ Channel2 M/S Use FIFO
+.equ equ32_gpio_pwm_ctl_pola2,   0x00001000 @ Channel2 Polarity Invert
+.equ equ32_gpio_pwm_ctl_sbit2,   0x00000800 @ Channel2 Silence Bit
+.equ equ32_gpio_pwm_ctl_rptl2,   0x00000400 @ Channel2 Repeat Last Data (When FIFO)
+.equ equ32_gpio_pwm_ctl_mode2,   0x00000200 @ Channel2 Mode PWM (0) or Serialiser (1)
+.equ equ32_gpio_pwm_ctl_pwen2,   0x00000100 @ Channel2 Enable
+.equ equ32_gpio_pwm_ctl_msen1,   0x00000080 @ Channel1 M/S Enable
+.equ equ32_gpio_pwm_ctl_clrf1,   0x00000040 @ Channel1 Clear FIFO
+.equ equ32_gpio_pwm_ctl_usef1,   0x00000020 @ Channel1 M/S Use FIFO
+.equ equ32_gpio_pwm_ctl_pola1,   0x00000010 @ Channel1 Polarity Invert
+.equ equ32_gpio_pwm_ctl_sbit1,   0x00000008 @ Channel1 Silence Bit
+.equ equ32_gpio_pwm_ctl_rptl1,   0x00000004 @ Channel1 Repeat Last Data (When FIFO)
+.equ equ32_gpio_pwm_ctl_mode1,   0x00000002 @ Channel1 Mode PWM (0) or Serialiser (1)
+.equ equ32_gpio_pwm_ctl_pwen1,   0x00000001 @ Channel1 Enable
+
+.equ equ32_gpio_pwm_sta_sta4,     0x00001000 @ Channel4 State
+.equ equ32_gpio_pwm_sta_sta3,     0x00000800 @ Channel3 State
+.equ equ32_gpio_pwm_sta_sta2,     0x00000400 @ Channel2 State
+.equ equ32_gpio_pwm_sta_sta1,     0x00000200 @ Channel1 State
+.equ equ32_gpio_pwm_sta_berr,     0x00000100 @ Bus Error Flag, Write-clear
+.equ equ32_gpio_pwm_sta_gapo4,    0x00000080 @ Channel4 State Gap Occurred Flag, Write-clear
+.equ equ32_gpio_pwm_sta_gapo3,    0x00000040 @ Channel3 State Gap Occurred Flag, Write-clear
+.equ equ32_gpio_pwm_sta_gapo2,    0x00000020 @ Channel2 State Gap Occurred Flag, Write-clear
+.equ equ32_gpio_pwm_sta_gapo1,    0x00000010 @ Channel1 State Gap Occurred Flag, Write-clear
+.equ equ32_gpio_pwm_sta_rerr1,    0x00000008 @ FIFO Read Error Flag, Write-clear
+.equ equ32_gpio_pwm_sta_werr1,    0x00000004 @ FIFO Write Error Flag, Write-clear
+.equ equ32_gpio_pwm_sta_empt1,    0x00000002 @ FIFO Empty Flag
+.equ equ32_gpio_pwm_sta_full1,    0x00000001 @ FIFO Full Flag
+
+.equ equ32_dma0_channel_offset,       0x00000100 @ Channel 0-14
+.equ equ32_dma_channel_int_status,    0x00000FE0 @ Channel 0-15 Interrupt Status
+.equ equ32_dma_channel_enable,        0x00000FF0 @ Channel 0-15 Global Enable Bits
+.equ equ32_dma_cs,                    0x00000000 @ DMA Channel0 Control and Status
+.equ equ32_dma_conblk_ad,             0x00000004 @ DMA Channel0 Control Block (CB) Address
+.equ equ32_dma_ti,                    0x00000008 @ DMA Channel0 CB Word0 (Transfer Information)
+.equ equ32_dma_source_ad,             0x0000000C @ DMA Channel0 CB Word1 (Source Address)
+.equ equ32_dma_dest_ad,               0x00000010 @ DMA Channel0 CB Word2 (Destination Address)
+.equ equ32_dma_txfr_len,              0x00000014 @ DMA Channel0 CB Word3 (Transfer Length)
+.equ equ32_dma_stride,                0x00000018 @ DMA Channel0 CB Word4 (2D Stride)
+.equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel0 CB Word5 (Next CB Address)
+.equ equ32_dma_debug,                 0x00000020 @ DMA Channel0 Debug
 
 
 /**
