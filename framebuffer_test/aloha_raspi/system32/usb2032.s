@@ -15,13 +15,13 @@
  * 1. No response, handshakes from a device (#0) when USB HCD transmits an OUT transaction (requests such as GET_DESCRIPTOR),
  *    and an IN transaction makes an interrupt of Transaction Error. 
  *
- * 2. Raspberry Pi B, B+, 2 and 3 are having inner USB Hub.
- *    This USB Hub (5 ports and port #1 is already used by an ethernet adaptor),
- *    seems to need to power on, because this is self-powered (From a descriptor). But there is no information about it.
+ * 2. Raspberry Pi B, B+, 2 and 3 are having inner USB Hub, LAN9514/9512 (LAN).
+ *    LAN, 5 ports and port #1 is already used by an ethernet adaptor,
+ *    seems to need to activate. But there is no information about it.
  *    GPIO-38 is a USB (and GPIO) current-up handler, but not a power-on switch for the HUB. Anyway, no current on the HUB ports.
  *    VideoCore may handle this power state, but there is no information about it too.
- *    I got information that GPIO-44 (ALT1: GPCLK1) is 25Mhz clock source of LAN9514 (the chip of USB Hub).
- *    In conclusion, activation of LAN9514 is needed, but this method isn't open.
+ *    I got information that GPIO-44 (ALT0: GPCLK1) is 25Mhz clock source of LAN.
+ *    In conclusion, activation of LAN is needed, but this method isn't open.
  *    Opening inforamtion or not is the strategy of the company. If non-open, we should consider of another way.
  *    In this case, we'll consider of RasPi Zero. Zero also gives us making RasPi possible a USB device.
  *
@@ -32,7 +32,12 @@
  *
  * 5. Halting an Host Channel by the Disable Bit is not functioned. There is need of confirming it. 
  *
- * 6. The chip is for high-speed, but PHY (Physical Transiver of USB system) of BCM2835 seems to be up to Full-speed. 
+ * 6. The chip is for high-speed, but PHY (Physical Transiver of USB system) of BCM2835 seems to be up to Full-speed.
+ *
+ * 7. I tested to enable GPIO-44 for GPCLK1, but there was no response. There is a mystery where power source of LAN9514 is on.
+ *    From the datasheet, LAN9514 operates with 3.3V, so some GPIO PIN seems to be the source.
+ *    Plus, we should know how to give 5V to VBUS of each port connected to LAN9514, and more.
+ *    Anyhow, U2 (LAN) and U1 (BCM) connecting schematics is not open from RasPi Foundation.
  */
 
 /**
@@ -491,7 +496,7 @@ usb2032_otg_host_start:
 	 * BCM2836 has 0x0000000E in Default.
 	 * In this function, DMA is enabled and DMA Burst Becomes Incremental
 	 */
-	mov temp, #0x2A                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
+	mov temp, #0x2E                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
 	str temp, [memorymap_base, #equ32_usb20_otg_gahbcfg]      @ Global AHB Configuration
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Global Reset Control

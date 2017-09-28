@@ -217,14 +217,14 @@
 .equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel0 CB Word5 (Next CB Address)
 .equ equ32_dma_debug,                 0x00000020 @ DMA Channel0 Debug
 
-.equ equ32_cm_gp0ctl,          0x00000070 @ Clock Manager GP0 (GPIO) Clock Control
-.equ equ32_cm_gp0div,          0x00000074 @ Clock Manager GP0 (GPIO) Clock Divisor
-.equ equ32_cm_gp1ctl,          0x00000078 @ Clock Manager GP1 (GPIO) Clock Control
-.equ equ32_cm_gp1div,          0x0000007C @ Clock Manager GP1 (GPIO) Clock Divisor
-.equ equ32_cm_gp2ctl,          0x00000080 @ Clock Manager GP2 (GPIO) Clock Control
-.equ equ32_cm_gp2div,          0x00000084 @ Clock Manager GP2 (GPIO) Clock Divisor
-.equ equ32_cm_pwmctl,          0x000000A0 @ Clock Manager GP2 (GPIO) Clock Control
-.equ equ32_cm_pwmdiv,          0x000000A4 @ Clock Manager GP2 (GPIO) Clock Divisor
+.equ equ32_cm_gp0ctl,          0x00000070 @ Clock Manager General Purpose 0 (GPO) Clock Control
+.equ equ32_cm_gp0div,          0x00000074 @ Clock Manager General Purpose 0 (GPO) Clock Divisor
+.equ equ32_cm_gp1ctl,          0x00000078 @ Clock Manager General Purpose 1 (GP1) Clock Control
+.equ equ32_cm_gp1div,          0x0000007C @ Clock Manager General Purpose 1 (GP1) Clock Divisor
+.equ equ32_cm_gp2ctl,          0x00000080 @ Clock Manager General Purpose 2 (GP2) Clock Control
+.equ equ32_cm_gp2div,          0x00000084 @ Clock Manager General Purpose 2 (GP2) Clock Divisor
+.equ equ32_cm_pwmctl,          0x000000A0 @ Clock Manager PWM Clock Control
+.equ equ32_cm_pwmdiv,          0x000000A4 @ Clock Manager PWM Clock Divisor
 
 .equ equ32_cm_ctl_passwd,          0x5A000000 @ Password of Clock Manager
 .equ equ32_cm_ctl_mash_0,          0x00000000 @ Integer Division
@@ -239,9 +239,9 @@
 .equ equ32_cm_ctl_src_osc,         0x00000001 @ Oscillator (19.2Mhz)
 .equ equ32_cm_ctl_src_deb0,        0x00000002 @ Test Debug 0 (0 Hz)
 .equ equ32_cm_ctl_src_deb1,        0x00000003 @ Test Debug 1 (0 Hz)
-.equ equ32_cm_ctl_src_plla,        0x00000004 @ PLL A (650MHz but depends on CPU Clock?)
-.equ equ32_cm_ctl_src_pllc,        0x00000005 @ PLL C (400Mhz but depends on CPU Clock?)
-.equ equ32_cm_ctl_src_plld,        0x00000006 @ PLL D (200Mhz but depends on CPU Clock?)
+.equ equ32_cm_ctl_src_plla,        0x00000004 @ PLL A (0Hz?)
+.equ equ32_cm_ctl_src_pllc,        0x00000005 @ PLL C (1000Mhz but depends on CPU Clock?)
+.equ equ32_cm_ctl_src_plld,        0x00000006 @ PLL D (500Mhz)
 .equ equ32_cm_ctl_src_hdmi,        0x00000007 @ HDMI Auxiliary (216Mhz?)
 
 

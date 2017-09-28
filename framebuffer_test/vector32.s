@@ -328,7 +328,8 @@ _os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	mov r1, #1 << 21                          @ Set GPIO 47 OUTPUT
+	mov r1, #equ32_gpio_gpfseln_output << 21   @ Set GPIO 47 OUTPUT
+	add r1, r1, #equ32_gpio_gpfseln_alt0 << 12 @ Set GPIO 44 ALT0
 	str r1, [r0, #equ32_gpio_gpfsel4]
 
 	mov r0, #32
@@ -528,6 +529,23 @@ macro32_debug r0 500 114
 	bl usb2032_hub_activate
 
 macro32_debug r0 500 126
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_cm_base_upper
+	add r1, r1, #equ32_cm_base_lower
+	ldr r0, [r1, #equ32_cm_gp1ctl]
+
+macro32_debug r0 500 150
+
+	ldr r0, [r1, #equ32_cm_gp1div]
+
+macro32_debug r0 500 162
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_gpio_base
+	ldr r0, [r1, #equ32_gpio_gpfsel4]
+
+macro32_debug r0 500 174
 
 	pop {r0-r8}
 
