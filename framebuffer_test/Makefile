@@ -21,10 +21,10 @@ COPY = $(COMP)-objcopy
 DUMP = $(COMP)-objdump
 
 LDSCRIPT = linker_script.ld
-OBJ1 = aloha_vector32
+OBJ1 = vector32
 OBJ2 = system32
-OBJ3 = aloha_user
-HEADER = include/stdio.h include/aloha/system32.h 
+OBJ3 = user32
+HEADER = include/*.h include/*/*.h
 
 # "$@" means the target and $^ means all of dependencies and $< is first one.
 # If you meets "make: `main' is up to date.", use "touch" command to renew.
@@ -40,7 +40,7 @@ kernel.img: inter.elf
 inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
-$(OBJ3).o: $(OBJ3).c $(HEADER)
+$(OBJ3).o: $(OBJ3).c
 	$(CC) $< -I include/ -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
 
 # Make OBJ2, system32.o

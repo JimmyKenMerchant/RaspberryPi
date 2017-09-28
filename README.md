@@ -15,7 +15,56 @@ This project is aiming to obtain a conclusion of the software system in Multi-co
 5. Difference from Unix. Unix is intended to be used as an OS of Mainframe which is for big systems such as an accounting-automation system in a corporation. In contrast of IBM system, Unix was aiming open source, liberty from any platform, and academicism. One characteristic story of Unix is what it is almost made of C language (C), because C gives us easily reforming Unix to fit with every platform or CPU architecture. Unix (and Linux, its family) is most successful OS in the world. Even in mobile sector, Unix is spreading its domain. As a hardware, some phone is not only renowned as a milestone of electronics, but as a software, it made a revolution in mobile sector. Many developers have pursued to made their mobile products of Unix. Unix is initially considering of networking, so if you want to connect your mobile product to Internet or any network, Unix seems to be the best choice at all. Besides, Unix is considering less efficiency than maintenance ability. C is not a fast language, because it is made for maintenance ability. If you want the best efficiency, Assembler language (Asm) becomes a choice. In this system, functions for C is made of Asm, and C is used for handling the higher stage. Writing functions with Asm needs to be a bunch of awareness. One of these is Stack Pointer, which is never seen in C. In view of project managing, Unix is preferred, because many developers are learning this system in universities. Mobile products with Unix are the symbol of a union of corporations and universities. We should applaud to this union. But there is an aspect that many inventions, except Unix, are lost because of difficult to obtain　supports. In Japan, 10 years ago, psychologists ripped off supports for scholars in universities. It was a boom to obtain students. This made a cold winter of whole scholars. Preferring Unix in universities may make a story just like scholars in Japan.
 
 6. Philosophy of Minimalism. Is minimalism as having measles? My opinion is NO, because this thought is a fitting architecture of computer science. This system is with minimalism. On the postmodern world, minimalism is a stream as well as constructivism. Constructivism is like roman, which is enthusiastic to architecture itself. Minimalism is a venture to simple one and study of architecture. Minimalism, in computer science, is relevant to the stance committing with C. C is derived from Natural Language Processing (NLP), which claims the ideal of computer languages is like a natural language such as English, Chinese, Hawaiian, and Japanese language. NLP is developed with mathematical sign and symbol that we used to learn on schools. Mathematical sign and symbol on computer language have given us better understanding than binary (0 and 1 only!) Machine language (Machine) or Asm. Plus, parenthesis from grammar also has given us understanding. One answer of these is C. So is Asm no need? No, Asm is actually needed to understand a computer deeply. Asm is close to Machine, but it gives the least NLP. If you want to handle a computer directly, the best answer is Machine. Machine is used on the world of 8/16-bit microcontrollers even now. But if you want a big computer to handle, it's difficult to stay with Machine. Asm is the alternative to Machine on the 32/64-bit world. In this system, Asm is used for its booting process, exceptions, and functions. C is used for the process after the booting. I'm also attempting to use several macros for Asm. I can say that C is conditioned macros for Asm. If I have a time, I'll show you how C is made of macros.
- 
+
+7. Structure of System. This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below.
+```
+/**
+ * function system32_sleep
+ * Sleep in Micro Seconds
+ *
+ * Parameters
+ * r0: Micro Seconds to Sleep
+ *
+ * Usage: r0-r5
+ */
+.globl system32_sleep
+system32_sleep:
+	/* Auto (Local) Variables, but just Aliases */
+	usecond        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	memorymap_base .req r1
+	count_low      .req r2
+	count_high     .req r3
+	time_low       .req r4
+	time_high      .req r5
+
+	push {r4-r5}
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
+	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+	adds count_low, usecond                                             @ Add with Changing Status Flags
+	adc count_high, #0                                                  @ Add with Carry Flag
+
+	system32_sleep_loop:
+		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]
+		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
+		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
+		cmple count_low, time_low                                   @ Compare Lower 32 Bits
+		bgt system32_sleep_loop
+
+	system32_sleep_common:
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq usecond
+.unreq memorymap_base
+.unreq count_low
+.unreq count_high
+.unreq time_low
+.unreq time_high
+```
+Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
+
 **INSTALL**
 
 * On Raspbian Command Line (Linux Bash)

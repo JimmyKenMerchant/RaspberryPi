@@ -1,5 +1,5 @@
 /**
- * aloha_kernel.s
+ * vector32.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -11,7 +11,7 @@
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
-.section	.el01_vector
+.section	.el01_vector32
 .globl _start
 _start:
 /* VBAR (EL0 and EL1) */
@@ -107,7 +107,7 @@ _el01_svc:
 	movs pc, lr
 
 
-.section	.el2_vector
+.section	.el2_vector32
 /* HVBAR (EL2), It Will Be Changed for Virtual OS */
 	_el2_reserve0: .word 0x00
 	ldr pc, _el2_undefined_instruction_addr    @ 0x04
@@ -142,7 +142,7 @@ _el2_hyp:
 
 	eret
 
-.section	.el3_vector
+.section	.el3_vector32
 /*MVBAR (EL3) */
 	_el3_reserve0: .word 0x00
 	_el3_reserve1: .word 0x00
@@ -249,27 +249,27 @@ _el3_mon:
  * Hyp mode banks SP, SPSR, ELR, but LR is shared with User and System mode.
  * BUT REMEBER, in HYP mode, banking registers is INVALID because of no mode change.
  */
-.section	.aloha_vector
-.globl _aloha_start
-_aloha_start:
-	ldr pc, _aloha_reset_addr                    @ 0x00 reset
-	ldr pc, _aloha_undefined_instruction_addr    @ 0x04 (Hyp mode in Hyp mode)
-	ldr pc, _aloha_supervisor_addr               @ 0x08 (Hyp mode in Hyp mode)
-	ldr pc, _aloha_prefetch_abort_addr           @ 0x0C (Hyp mode in Hyp mode)
-	ldr pc, _aloha_data_abort_addr               @ 0x10 (Hyp mode in Hyp mode)
-	ldr pc, _aloha_reserve_addr                  @ If you call `HVC` in Hyp Mode, It translates to `SVC`
-	ldr pc, _aloha_irq_addr                      @ 0x18 (Hyp mode in Hyp mode)
-	ldr pc, _aloha_fiq_addr                      @ 0x1C (Hyp mode in Hyp mode)
-_aloha_reset_addr:                 .word _aloha_reset
-_aloha_undefined_instruction_addr: .word _aloha_reset
-_aloha_supervisor_addr:            .word _aloha_reset
-_aloha_prefetch_abort_addr:        .word _aloha_reset
-_aloha_data_abort_addr:            .word _aloha_reset
-_aloha_reserve_addr:               .word _aloha_reset
-_aloha_irq_addr:                   .word _aloha_reset
-_aloha_fiq_addr:                   .word _aloha_fiq
+.section	.os_vector32
+.globl _os_start
+_os_start:
+	ldr pc, _os_reset_addr                    @ 0x00 reset
+	ldr pc, _os_undefined_instruction_addr    @ 0x04 (Hyp mode in Hyp mode)
+	ldr pc, _os_supervisor_addr               @ 0x08 (Hyp mode in Hyp mode)
+	ldr pc, _os_prefetch_abort_addr           @ 0x0C (Hyp mode in Hyp mode)
+	ldr pc, _os_data_abort_addr               @ 0x10 (Hyp mode in Hyp mode)
+	ldr pc, _os_reserve_addr                  @ If you call `HVC` in Hyp Mode, It translates to `SVC`
+	ldr pc, _os_irq_addr                      @ 0x18 (Hyp mode in Hyp mode)
+	ldr pc, _os_fiq_addr                      @ 0x1C (Hyp mode in Hyp mode)
+_os_reset_addr:                 .word _os_reset
+_os_undefined_instruction_addr: .word _os_reset
+_os_supervisor_addr:            .word _os_reset
+_os_prefetch_abort_addr:        .word _os_reset
+_os_data_abort_addr:            .word _os_reset
+_os_reserve_addr:               .word _os_reset
+_os_irq_addr:                   .word _os_reset
+_os_fiq_addr:                   .word _os_fiq
 
-_aloha_reset:
+_os_reset:
 	/*
 	 * To Handle HYP mode well, you need to know all interrupts are treated in HYP mode
 	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
@@ -409,7 +409,7 @@ _aloha_reset:
 	str r0, float_example3
 	*/
 
-_aloha_render:
+_os_render:
 	push {r0-r8}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
@@ -429,11 +429,11 @@ _aloha_render:
 	bl system32_core_call
 	pop {r0-r3}
 
-	_aloha_render_loop2:
+	_os_render_loop2:
 		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
 		ldr r1, [r1]
 		cmp r1, #0
-		bne _aloha_render_loop2
+		bne _os_render_loop2
 
 	bl system32_mfree                         @ Clear Memory Space
 
@@ -464,11 +464,11 @@ _aloha_render:
 	bl system32_core_call
 	pop {r0-r3}
 
-	_aloha_render_loop3:
+	_os_render_loop3:
 		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
 		ldr r1, [r1]
 		cmp r1, #0
-		bne _aloha_render_loop3
+		bne _os_render_loop3
 
 	bl system32_mfree                         @ Clear Memory Space
 
@@ -545,19 +545,19 @@ macro32_debug r0 500 126
 	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
 
-_aloha_debug:
+_os_debug:
 	cpsie f                                  @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
-	_aloha_debug_loop1:
-		b _aloha_debug_loop1
+	_os_debug_loop1:
+		b _os_debug_loop1
 
-_aloha_fiq:
+_os_fiq:
 	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
 
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
 	mrs r0, spsr
 	push {r0}
 
-	bl _aloha_fiq_handler
+	bl _os_fiq_handler
 
 	pop {r0}
 	msr spsr, r0
@@ -567,7 +567,7 @@ _aloha_fiq:
 
 	subs pc, lr, #4
 
-_aloha_fiq_handler:
+_os_fiq_handler:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
@@ -578,10 +578,12 @@ _aloha_fiq_handler:
 	add r0, r0, #equ32_gpio_base
 
 	ldr r1, gpio_toggle
-	eor r1, #0b00001100                       @ Exclusive OR to toggle
+	eor r1, #0b00000001                       @ Exclusive OR to toggle
 	str r1, gpio_toggle
 
-	add r0, r0, r1
+	cmp r1, #0
+	addeq r0, r0, #equ32_gpio_gpclr1
+	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
 
@@ -658,7 +660,7 @@ _core123_handler2:
  * Variables
  */
 .balign 4
-gpio_toggle:       .byte 0b00100000         @ 0x20 (gpset_1)
+gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
 	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End

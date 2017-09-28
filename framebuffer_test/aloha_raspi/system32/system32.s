@@ -16,22 +16,20 @@
 .include "system32/macro32.s"
 
 /**
- * The section, "vender" is to be used for drivers of vendor-implemented peripherals. These usually don't have any standard,
+ * "vender_system32" is to be used for drivers of vendor-implemented peripherals. These usually don't have any standard,
  * So if you consider of compatibility with other ARM CPUs. Files in this section should be alternated with
  * other ones.
  */
-
-.section	.vendor
+.section	.vendor_system32
 
 .include "system32/bcm32.s"
 
 /**
- * The section, "system" is to be used for drivers of ARM system registers, and standard peripherals,
+ * "arm_system32" is to be used for drivers of ARM system registers, and standard peripherals,
  * USB, I2C, UART, etc. These are usually aiming compatibility with other ARM CPUs,
  * but memory mapping differs among CPUs. Addresses of peripherals in "equ32.s" should be changed. 
  */
-
-.section	.system
+.section	.arm_system32
 
 .include "system32/equ32.s"
 
@@ -659,23 +657,39 @@ system32_convert_endianness:
  */
 .globl system32_sleep
 system32_sleep:
+	/* Auto (Local) Variables, but just Aliases */
+	usecond        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	memorymap_base .req r1
+	count_low      .req r2
+	count_high     .req r3
+	time_low       .req r4
+	time_high      .req r5
+
 	push {r4-r5}
-	mov r1, #equ32_peripherals_base
-	add r1, r1, #equ32_systemtimer_base
-	ldr r2, [r1, #equ32_systemtimer_counter_lower]  @ Get Lower 32 Bits
-	ldr r3, [r1, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
-	adds r2, r0                            @ Add with Changing Status Flags
-	adc r3, #0                             @ Add with Carry Flag
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
+	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+	adds count_low, usecond                                             @ Add with Changing Status Flags
+	adc count_high, #0                                                  @ Add with Carry Flag
 
 	system32_sleep_loop:
-		ldr r4, [r1, #equ32_systemtimer_counter_lower]
-		ldr r5, [r1, #equ32_systemtimer_counter_higher]
-		cmp r3, r5                     @ Similar to `SUBS`, Compare Higher 32 Bits
-		cmpeq r2, r4                   @ Compare Lower 32 Bits if the Same on Higher 32 Bits
+		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]
+		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
+		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
+		cmple count_low, time_low                                   @ Compare Lower 32 Bits
 		bgt system32_sleep_loop
 
-	pop {r4-r5}
-	mov pc, lr
+	system32_sleep_common:
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq usecond
+.unreq memorymap_base
+.unreq count_low
+.unreq count_high
+.unreq time_low
+.unreq time_high
 
 
 /**
@@ -1277,11 +1291,10 @@ system32_mfree:
 .balign 4
 
 /**
- * The section, "library" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
+ * "library_system32" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
  * compatibility with other ARM CPUs. 
  */
-
-.section	.library
+.section	.library_system32
 
 /* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"

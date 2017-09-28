@@ -21,16 +21,18 @@
 .equ equ32_dma0_base,          0x00007000
 .equ equ32_usb20_otg_base,     0x00980000
 
-.equ equ32_gpio_i2c0_base_upper,     0x00200000
-.equ equ32_gpio_i2c0_base_lower,     0x00005000
-.equ equ32_gpio_i2c1_base_upper,     0x00800000
-.equ equ32_gpio_i2c1_base_lower,     0x00004000
-.equ equ32_gpio_i2c2_base_upper,     0x00800000
-.equ equ32_gpio_i2c2_base_lower,     0x00005000
-.equ equ32_gpio_pwm_base_upper,      0x00200000
-.equ equ32_gpio_pwm_base_lower,      0x0000C000
-.equ equ32_dma15_base_upper,         0x00E00000
-.equ equ32_dma15_base_lower,         0x00005000
+.equ equ32_gpio_i2c0_base_upper,   0x00200000
+.equ equ32_gpio_i2c0_base_lower,   0x00005000
+.equ equ32_gpio_i2c1_base_upper,   0x00800000
+.equ equ32_gpio_i2c1_base_lower,   0x00004000
+.equ equ32_gpio_i2c2_base_upper,   0x00800000
+.equ equ32_gpio_i2c2_base_lower,   0x00005000
+.equ equ32_gpio_pwm_base_upper,    0x00200000
+.equ equ32_gpio_pwm_base_lower,    0x0000C000
+.equ equ32_dma15_base_upper,       0x00E00000
+.equ equ32_dma15_base_lower,       0x00005000
+.equ equ32_cm_base_upper,          0x00100000 @ Clock Manager
+.equ equ32_cm_base_lower,          0x00001000 @ Clock Manager
 
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
@@ -214,6 +216,33 @@
 .equ equ32_dma_stride,                0x00000018 @ DMA Channel0 CB Word4 (2D Stride)
 .equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel0 CB Word5 (Next CB Address)
 .equ equ32_dma_debug,                 0x00000020 @ DMA Channel0 Debug
+
+.equ equ32_cm_gp0ctl,          0x00000070 @ Clock Manager GP0 (GPIO) Clock Control
+.equ equ32_cm_gp0div,          0x00000074 @ Clock Manager GP0 (GPIO) Clock Divisor
+.equ equ32_cm_gp1ctl,          0x00000078 @ Clock Manager GP1 (GPIO) Clock Control
+.equ equ32_cm_gp1div,          0x0000007C @ Clock Manager GP1 (GPIO) Clock Divisor
+.equ equ32_cm_gp2ctl,          0x00000080 @ Clock Manager GP2 (GPIO) Clock Control
+.equ equ32_cm_gp2div,          0x00000084 @ Clock Manager GP2 (GPIO) Clock Divisor
+.equ equ32_cm_pwmctl,          0x000000A0 @ Clock Manager GP2 (GPIO) Clock Control
+.equ equ32_cm_pwmdiv,          0x000000A4 @ Clock Manager GP2 (GPIO) Clock Divisor
+
+.equ equ32_cm_ctl_passwd,          0x5A000000 @ Password of Clock Manager
+.equ equ32_cm_ctl_mash_0,          0x00000000 @ Integer Division
+.equ equ32_cm_ctl_mash_1,          0x00000200 @ 1-stage Mash
+.equ equ32_cm_ctl_mash_2,          0x00000400 @ 2-stage Mash
+.equ equ32_cm_ctl_mash_3,          0x00000600 @ 3-stage Mash
+.equ equ32_cm_ctl_flip,            0x00000100 @ Invert Output
+.equ equ32_cm_ctl_busy,            0x00000080 @ Running
+.equ equ32_cm_ctl_kill,            0x00000020 @ Kill
+.equ equ32_cm_ctl_enab,            0x00000010 @ Enable
+.equ equ32_cm_ctl_src_gnd,         0x00000000 @ GND (0 Hz)
+.equ equ32_cm_ctl_src_osc,         0x00000001 @ Oscillator (19.2Mhz)
+.equ equ32_cm_ctl_src_deb0,        0x00000002 @ Test Debug 0 (0 Hz)
+.equ equ32_cm_ctl_src_deb1,        0x00000003 @ Test Debug 1 (0 Hz)
+.equ equ32_cm_ctl_src_plla,        0x00000004 @ PLL A (650MHz but depends on CPU Clock?)
+.equ equ32_cm_ctl_src_pllc,        0x00000005 @ PLL C (400Mhz but depends on CPU Clock?)
+.equ equ32_cm_ctl_src_plld,        0x00000006 @ PLL D (200Mhz but depends on CPU Clock?)
+.equ equ32_cm_ctl_src_hdmi,        0x00000007 @ HDMI Auxiliary (216Mhz?)
 
 
 /**
