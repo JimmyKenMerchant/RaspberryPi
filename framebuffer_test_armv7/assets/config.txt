@@ -46,6 +46,5 @@ hdmi_group=0
 #Signal IRQ for Interrupt Service Routine (ISR) from VideoCoreIV for Vertical Sync
 #Seems It's just FAKE, but in case of Strict Coding in Video, you may need of ISR.
 #I mean, VideoCoreIV has other strategies for Vertical Sync,
-#probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller.
-#Anyway, VideoCoreIV's capacity seems just for economy type display (small sized one), Broadcom may upgrade it though...
+#probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller...
 fake_vsync_isr=1
