@@ -46,7 +46,7 @@ system32_sleep:
 	adc count_high, #0                                                  @ Add with Carry Flag
 
 	system32_sleep_loop:
-		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]
+		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower] @ In Case of Interrupt, Load Lower Bits First
 		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
 		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
 		cmple count_low, time_low                                   @ Compare Lower 32 Bits
