@@ -65,6 +65,8 @@ system32_sleep:
 ```
 Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
 
+7. Security of System. Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally.
+
 **INSTALL**
 
 * On Raspbian Command Line (Linux Bash)
@@ -73,7 +75,7 @@ e.g. To get kernel.img of 10Hz blinker on Hyp mode
 ```
 cd ~/Desktop
 git clone https://github.com/JimmyKenMerchant/RaspberryPi.git
-cd RaspberryPi/frequency_counter
+cd RaspberryPi/frequency_counter_armv7
 make
 ```
 config.txt in share/assets/raspi* is used with each kernel.img.
