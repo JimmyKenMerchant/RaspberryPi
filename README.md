@@ -73,14 +73,36 @@ e.g. To get kernel.img of 10Hz blinker on Hyp mode
 ```
 cd ~/Desktop
 git clone https://github.com/JimmyKenMerchant/RaspberryPi.git
-cd RaspberryPi/10herts_blinker_hyp
+cd RaspberryPi/frequency_counter
 make
 ```
-config.txt in assets folder is used with each kernel.img.
+config.txt in share/assets/raspi* is used with each kernel.img.
 You need to paste these config.txt and kernel.img to the root directory of your boot media (e.g. FAT32 formatted SD Card).
 You also need to get latest start.elf and bootcode.bin from RasPi Official Repository, and paste these to the root directory of your boot media.
 
 The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on ARMv7 Raspberry Pi.
+
+**Preprocessor Definition on Make File**
+
+Note: Currently This Project is Only Useful and Tested on `__ARMV7__=1' and `__RASPI2B__=1`
+
+* `__ARMV8__=1`: Use for Raspberry Pi with BCM2837
+
+* `__ARMV7__=1`: Use for Raspberry Pi with BCM2836
+
+* `__ARMV6__=1`:  Use for Raspberry Pi with BCM2835
+
+* `__RASPI3B__=1`: Use for Raspberry Pi 3 B
+
+* `__RASPI2B__=1`: Use for Raspberry Pi 2 B
+
+* `__RASPI1B__=1`: Use for Raspberry Pi 1 B Plus
+
+* `__RASPI1A__=1`: Use for Raspberry Pi 1 A Plus
+
+* `__RASPIZERO__=1`: Use for Raspberry Pi Zero
+
+* `__RASPIZEROW__=1`: Use for Raspberry Pi Zero W
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 

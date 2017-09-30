@@ -6,4 +6,4 @@
 ##
 
 system32.o: $(ASINC)/system32/system32.s
-	$(AS) $^ -I $(ASINC)/ -o $@ $(TARGET)
+	$(AS) $^ -I $(ASINC)/ --defsym $(DEFARCH) --defsym $(DEFTYPE) -o $@ $(TARGET)
