@@ -8,6 +8,12 @@
  */
 
 /**
+ * Constants
+ */
+
+.equ equ32_tab_length,   4
+
+/**
  * Standard Peripherals
  */
 

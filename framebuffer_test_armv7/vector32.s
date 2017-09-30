@@ -333,41 +333,6 @@ _os_reset:
 	add r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4 @ Set GPIO 44 AlT0 (GPCLK1)
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
-	/*mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5*/     @ Set GPIO 5 AlT0 (GPCLK1)
-	/*str r1, [r0, #equ32_gpio_gpfsel00]*/
-
-	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 AlT0 (PWM0)
-	str r1, [r0, #equ32_gpio_gpfsel10]
-
-	/**
-	 * PWM
-	 * Makes 19.2Mhz (From Oscillator) Div by 512 Equals 37500Hz.
-	 * And Makes 37500Hz Div by 32 (Default Range) Equals 1171.875Hz.
-	 * Data is Just 1, so Voltage Will Be One 32th to Full if Lowpass Filter is Attached.
-	 */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_cm_base_lower
-	add r0, r0, #equ32_cm_base_upper
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #0x200 << equ32_cm_div_integer                 @ Decimal 512
-	str r1, [r0, #equ32_cm_pwmdiv]
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc        @ 19.2Mhz
-	str r1, [r0, #equ32_cm_pwmctl]
-
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_pwm_base_lower
-	add r0, r0, #equ32_pwm_base_upper
-
-	mov r1, #1
-	str r1, [r0, #equ32_pwm_dat1]
-
-	mov r1, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_pwen1
-	str r1, [r0, #equ32_pwm_ctl]
-
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH

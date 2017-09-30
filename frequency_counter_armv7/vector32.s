@@ -330,8 +330,11 @@ _os_reset:
 	add r0, r0, #equ32_gpio_base
 
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
-	add r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4 @ Set GPIO 44 AlT0 (GPCLK1)
 	str r1, [r0, #equ32_gpio_gpfsel40]
+
+	/* GPCLK1 is Already Set to 25Mhz */
+	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 AlT0 (GPCLK1)
+	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 AlT0 (PWM0)
 	str r1, [r0, #equ32_gpio_gpfsel10]
@@ -339,8 +342,8 @@ _os_reset:
 	mov r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-	mov r1, #equ32_gpio21                                      @ Set GPIO21 Rising Edge Detect
-	str r1, [r0, #equ32_gpio_gpren0]
+	mov r1, #equ32_gpio21                                      @ Set GPIO21 Async Rising Edge Detect
+	str r1, [r0, #equ32_gpio_gparen0]
 
 	/**
 	 * PWM
@@ -372,6 +375,28 @@ _os_reset:
 	str r1, [r0, #equ32_pwm_ctl]
 
 	/* Obtain Framebuffer from VideoCore IV */
+	mov r0, #400
+	ldr r1, ADDR32_BCM32_WIDTH
+	str r0, [r1]
+
+	push {r0-r3}
+	mov r0, r1
+	mov r1, #1
+	mov r2, #1
+	bl system32_cache_operation
+	pop {r0-r3}
+
+	mov r0, #320
+	ldr r1, ADDR32_BCM32_HEIGHT
+	str r0, [r1]
+
+	push {r0-r3}
+	mov r0, r1
+	mov r1, #1
+	mov r2, #1
+	bl system32_cache_operation
+	pop {r0-r3}
+
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
@@ -438,13 +463,22 @@ _os_render:
 	bl fb32_clear_color
 
 	ldr r0, string_hello                      @ Pointer of Array of String
-	ldr r1, ADDR32_COLOR32_BLUE               @ Color (16-bit or 32-bit)
+	ldr r1, ADDR32_COLOR32_WHITE              @ Color (16-bit or 32-bit)
 	ldr r1, [r1]
-	ldr r2, ADDR32_COLOR32_WHITE              @ Background Color (16-bit or 32-bit)
+	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
 	ldr r2, [r2]
 	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r3, [r3]
-	macro32_print_string r0 0 150 r1 r2 200 8 12 r3
+	macro32_print_string r0 0 48 r1 r2 200 8 12 r3
+
+	ldr r0, string_helts                      @ Pointer of Array of String
+	macro32_print_string r0 232 200 r1 r2 2 8 12 r3
+
+	ldr r0, string_copy1                      @ Pointer of Array of String
+	macro32_print_string r0 148 284 r1 r2 30 8 12 r3
+
+	ldr r0, string_copy2                      @ Pointer of Array of String
+	macro32_print_string r0 148 300 r1 r2 30 8 12 r3
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
@@ -537,7 +571,7 @@ _os_fiq_handler:
 	ldr r3, [r3]
 	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r4, [r4]
-	macro32_print_number_double r0 r1 300 300 r2 r3 16 8 12 r4
+	macro32_print_number_double r0 r1 100 200 r2 r3 16 8 12 r4
 
 	_os_fiq_handler_jump:
 		mov pc, lr
@@ -549,9 +583,21 @@ _os_fiq_handler:
 gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
-	.ascii "\n\tALOHA!\n\tThis is Frequency Counter. GPIO 21 is Input Pin.\n\n\tNote: Voltage Limitation is UP TO 3.3V!\n\tGPIO 12 is Frequency Output Pin for Test.\n\tMahalo!\0" @ Add Null Escape Character on The End
+	.ascii "\tALOHA!\n\tFrequency Counter.\n\tGPIO 21 is Input Pin.\n\n\tNote: Voltage Limitation is UP TO 3.3V!\n\tGPIO 12 is Output Pin for Test.\n\tGPIO 5 is Output Pin for Max. Frequency Test.\n\tMahalo!\0" @ Add Null Escape Character on The End
 string_hello:
 	.word _string_hello
+_string_helts:
+	.ascii "Hz\0" @ Add Null Escape Character on The End
+string_helts:
+	.word _string_helts
+_string_copy1:
+	.ascii "Product of Kenta Ishii\0" @ Add Null Escape Character on The End
+string_copy1:
+	.word _string_copy1
+_string_copy2:
+	.ascii "Powered by ALOHA SYSTEM32\0" @ Add Null Escape Character on The End
+string_copy2:
+	.word _string_copy2
 freq_count:
 	.word 0x00000000
 irq_count:

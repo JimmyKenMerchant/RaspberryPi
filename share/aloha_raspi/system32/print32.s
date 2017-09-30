@@ -313,7 +313,7 @@ print32_string:
 		beq print32_string_success               @ Break Loop if Null Character
 
 		cmp string_byte, #0x09
-		moveq tab_length, #4
+		moveq tab_length, #equ32_tab_length
 		beq print32_string_loop_tab
 
 		cmp string_byte, #0x0A

@@ -13,9 +13,11 @@
 COMP = arm-none-eabi
 # Available fpu info from Features in /proc/cpuinfo of Raspbian 
 TARGET = -mcpu=cortex-a7 -mfpu=vfp
-INC = aloha_raspi
 CC = $(COMP)-gcc
+CCINC = ../share/include
+CCHEADER = ../share/include/*.h
 AS = $(COMP)-as
+ASINC = ../share/aloha_raspi
 LINKER = $(COMP)-ld
 COPY = $(COMP)-objcopy
 DUMP = $(COMP)-objdump
@@ -24,7 +26,7 @@ LDSCRIPT = linker_script.ld
 OBJ1 = vector32
 OBJ2 = system32
 OBJ3 = user32
-HEADER = include/*.h include/*/*.h
+
 
 # "$@" means the target and $^ means all of dependencies and $< is first one.
 # If you meets "make: `main' is up to date.", use "touch" command to renew.
@@ -40,14 +42,14 @@ kernel.img: inter.elf
 inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
-$(OBJ3).o: $(OBJ3).c
-	$(CC) $< -I include/ -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
+$(OBJ3).o: $(OBJ3).c $(CCHEADER)
+	$(CC) $< -I $(CCINC)/ -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
 
 # Make OBJ2, system32.o
-include $(INC)/system32/system32.mk
+include $(ASINC)/system32/system32.mk
 
 $(OBJ1).o: $(OBJ1).s
-	$(AS) $< -I $(INC)/ -o $@ $(TARGET)
+	$(AS) $< -I $(ASINC)/ -o $@ $(TARGET)
 
 .PHONY: warn
 warn: all clean
