@@ -35,7 +35,7 @@
 
 /**
  * function system32_core_call
- * Call 0-3 Cores
+ * Call Cores
  * Need of SMP is on, and Cache is Inner Shareable.
  * Caution! This Function is compatible from ARMv7/AArch32
  *
@@ -45,7 +45,7 @@
  *
  * Usage: r0-r2
  * Return: r0 (0 as success, 1 as error), 
- * Error: Number of Core does not exist or assigned Core0
+ * Error: Number of Core is Not Valid
  */
 .globl system32_core_call
 system32_core_call:
@@ -54,12 +54,12 @@ system32_core_call:
 	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	handle_addr  .req r2
 
-	cmp core_number, #3                      @ 0 <= mailbox_number <= 3
+	cmp core_number, #7                      @ 0 <= core_number <= 7
 	bgt system32_core_call_error
 	cmp core_number, #0
 	blt system32_core_call_error
 
-	lsl core_number, core_number, #4         @ Substitution of Multiplication by 16
+	lsl core_number, core_number, #2         @ Substitution of Multiplication by 4
 
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, core_number
@@ -93,17 +93,17 @@ system32_core_call:
  * Need of SMP is on, and Cache is Inner Shareable.
  * Caution! This Function is compatible from ARMv7/AArch32
  *
- * This Function Uses Heap and Pointer of Heap.
+ * This Function Uses Heap.
  * First of Heap Array is Pointer of Function.
  * Second of Heap Array is Number of Arguments.
- * Third and Over of Heap Array are Arguments of Function.
+ * Third and More of Heap Array are Arguments of Function.
  *
- * Return Value Will Be Stored on 4 Bytes and 8 Bytes Offset from Pointer of Heap
- * When Function is Finished, Pointer of Heap Will Be Zero to Indicate of Finishing.
+ * Return Value Will Be Stored to Heap.
+ *
+ * When Function is Finished, SYSTEM32_CORE_HANDLE_n Will Be Zero to Indicate Finishing.
  *
  * Usage: r0-r9
- * Return: r0 (0 as success, 1 as error), 
- * Error: Pointer of Heap is Not Assigned
+ * Return: r0 (0 as success)
  */
 .globl system32_core_handle
 system32_core_handle:
@@ -124,7 +124,7 @@ system32_core_handle:
 	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
 	and core_number, core_number, #0b11
 
-	lsl core_number, core_number, #4         @ Substitution of Multiplication by 16
+	lsl core_number, core_number, #2         @ Substitution of Multiplication by 4
 
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, core_number
@@ -179,30 +179,15 @@ system32_core_handle:
 	system32_core_handle_branch:
 		macro32_dsb ip
 		blx addr_start
-		str r0, [handle_addr, #4]                            @ Return Value r0 to 2nd of Array
-		str r1, [handle_addr, #8]                            @ Return Value r1 to 3rd of Array
-		add sp, sp, dup_num_arg                              @ Offset SP
-		pop {r0-r3,lr}
-
-		/**
-		 * In this point, I initially intended to store return values to heap,
-		 * but both heap values show incorrect value, "E59FF018" which seems to be missing of cache.
-		 * To hide this issue, I tested one-way communications on ldr/str processes,
-		 * i.e., putting return values to other places where only store these values and nothing of any loading. 
-		 */
-
 		macro32_dsb ip
+		str r0, [heap]                                @ Return Value r0
+		str r1, [heap, #4]                            @ Return Value r1
+		add sp, sp, dup_num_arg                       @ Offset SP
+		pop {r0-r3,lr}
 		
 		mov temp, #0
-		str temp, [handle_addr]                              @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
+		str temp, [handle_addr]                       @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
 
-		b system32_core_handle_success
-
-	system32_core_handle_error:
-		mov r0, #1
-		b system32_core_handle_common
-
-	system32_core_handle_success:
 		mov r0, #0
 
 	system32_core_handle_common:
@@ -227,23 +212,19 @@ system32_core_handle:
 .globl SYSTEM32_CORE_HANDLE_1
 .globl SYSTEM32_CORE_HANDLE_2
 .globl SYSTEM32_CORE_HANDLE_3
+.globl SYSTEM32_CORE_HANDLE_4
+.globl SYSTEM32_CORE_HANDLE_5
+.globl SYSTEM32_CORE_HANDLE_6
+.globl SYSTEM32_CORE_HANDLE_7
 SYSTEM32_CORE_HANDLE_BASE:      .word SYSTEM32_CORE_HANDLE_0
 SYSTEM32_CORE_HANDLE_0:         .word 0x00000000
-SYSTEM32_CORE_HANDLE_0_RETURN0: .word 0x00000000
-SYSTEM32_CORE_HANDLE_0_RETURN1: .word 0x00000000
-SYSTEM32_CORE_HANDLE_0_RESERVE: .word 0x00000000
 SYSTEM32_CORE_HANDLE_1:         .word 0x00000000
-SYSTEM32_CORE_HANDLE_1_RETURN0: .word 0x00000000
-SYSTEM32_CORE_HANDLE_1_RETURN1: .word 0x00000000
-SYSTEM32_CORE_HANDLE_1_RESERVE: .word 0x00000000
 SYSTEM32_CORE_HANDLE_2:         .word 0x00000000
-SYSTEM32_CORE_HANDLE_2_RETURN0: .word 0x00000000
-SYSTEM32_CORE_HANDLE_2_RETURN1: .word 0x00000000
-SYSTEM32_CORE_HANDLE_2_RESERVE: .word 0x00000000
 SYSTEM32_CORE_HANDLE_3:         .word 0x00000000
-SYSTEM32_CORE_HANDLE_3_RETURN0: .word 0x00000000
-SYSTEM32_CORE_HANDLE_3_RETURN1: .word 0x00000000
-SYSTEM32_CORE_HANDLE_3_RESERVE: .word 0x00000000
+SYSTEM32_CORE_HANDLE_4:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_5:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_6:         .word 0x00000000
+SYSTEM32_CORE_HANDLE_7:         .word 0x00000000
 
 
 /**
@@ -907,13 +888,10 @@ system32_activate_va:
 	temp .req r1
 
 	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
-	macro32_isb ip                                  @ Flush Data in Pipeline to Cache
 
 	/* Invalidate TLB */
-	mov temp, #0
-	mcr p15, 0, temp, c8, c7, 0
+	macro32_invalidate_tlb ip
 
-	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
 	macro32_isb ip                                  @ Flush Data in Pipeline to Cache
 
 	/* Translation Table Base Control Register (TTBCR) */
@@ -1090,14 +1068,14 @@ system32_clear_heap:
 
 	mov heap_bytes, #0
 
-	system32_clear_heap_loop:
+	system32_clear_heap_loop1:
 		cmp heap_start, heap_size
 		bge system32_clear_heap_common      @ If Heap Space Overflow
 
 		str heap_bytes, [heap_start]
 
 		add heap_start, heap_start, #4
-		b system32_clear_heap_loop          @ If Bytes are not Zero
+		b system32_clear_heap_loop1         @ If Bytes are not Zero
 
 	system32_clear_heap_common:
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
@@ -1107,6 +1085,150 @@ system32_clear_heap:
 .unreq heap_start
 .unreq heap_size
 .unreq heap_bytes
+
+
+/**
+ * function system32_set_cache_vadescriptor
+ * Change to Cache Status for Virtual Address (VA) Descriptor
+ *
+ * Parameters
+ * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
+ * r1: Flag of Descriptor
+ *
+ * Usage: r0-r4
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When VA is not Defined
+ */
+.globl system32_set_cache_vadescriptor
+system32_set_cache_vadescriptor:
+	non_secure     .req r0
+	desc_flag      .req r1
+	memorymap_base .req r2
+	size           .req r3
+	temp           .req r4
+
+	push {r4}
+
+	macro32_dsb ip
+
+	ldr memorymap_base, SYSTEM32_VADESCRIPTOR_ADDR
+	cmp memorymap_base, #0
+	beq system32_set_cache_vadescriptor_error
+
+	ldr size, SYSTEM32_VADESCRIPTOR_SIZE
+	cmp size, #0
+	beq system32_set_cache_vadescriptor_error
+
+	add size, size, memorymap_base
+
+	mov temp, #0xFF00000
+	add temp, #0xF0000000
+
+	and memorymap_base, memorymap_base, temp     @ Mask
+	and size, size, temp                         @ Mask
+
+	system32_set_cache_vadescriptor_loop:
+		cmp memorymap_base, size
+		bgt system32_set_cache_vadescriptor_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
+		mov temp, desc_flag
+		add temp, temp, memorymap_base
+		push {r0-r3,lr}
+		mov r1, memorymap_base
+		mov r2, temp
+		bl system32_change_descriptor
+		pop {r0-r3,lr}
+		add memorymap_base, memorymap_base, #0x00100000
+		b system32_set_cache_vadescriptor_loop
+
+	system32_set_cache_vadescriptor_error:
+		mov r0, #1                           @ Return with Error
+		b system32_set_cache_vadescriptor_common
+
+	system32_set_cache_vadescriptor_success:
+		mov r0, #0                           @ Return with Success
+
+	system32_set_cache_vadescriptor_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {r4}
+		mov pc, lr
+
+.unreq non_secure
+.unreq desc_flag
+.unreq memorymap_base
+.unreq size
+.unreq temp
+
+
+/**
+ * function system32_set_cache_heap
+ * Change to Cache Status for HEAP
+ *
+ * Parameters
+ * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
+ * r1: Flag of Descriptor
+ *
+ * Usage: r0-r4
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When HEAP is not Defined
+ */
+.globl system32_set_cache_heap
+system32_set_cache_heap:
+	non_secure     .req r0
+	desc_flag      .req r1
+	memorymap_base .req r2
+	size           .req r3
+	temp           .req r4
+
+	push {r4}
+
+	macro32_dsb ip
+
+	ldr memorymap_base, SYSTEM32_HEAP_ADDR
+	cmp memorymap_base, #0
+	beq system32_set_cache_heap_error
+
+	ldr size, SYSTEM32_HEAP_SIZE
+	cmp size, #0
+	beq system32_set_cache_heap_error
+
+	add size, size, memorymap_base
+
+	mov temp, #0xFF00000
+	add temp, #0xF0000000
+
+	and memorymap_base, memorymap_base, temp     @ Mask
+	and size, size, temp                         @ Mask
+
+	system32_set_cache_heap_loop:
+		cmp memorymap_base, size
+		bgt system32_set_cache_heap_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
+		mov temp, desc_flag
+		add temp, temp, memorymap_base
+		push {r0-r3,lr}
+		mov r1, memorymap_base
+		mov r2, temp
+		bl system32_change_descriptor
+		pop {r0-r3,lr}
+		add memorymap_base, memorymap_base, #0x00100000
+		b system32_set_cache_heap_loop
+
+	system32_set_cache_heap_error:
+		mov r0, #1                           @ Return with Error
+		b system32_set_cache_heap_common
+
+	system32_set_cache_heap_success:
+		mov r0, #0                           @ Return with Success
+
+	system32_set_cache_heap_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {r4}
+		mov pc, lr
+
+.unreq non_secure
+.unreq desc_flag
+.unreq memorymap_base
+.unreq size
+.unreq temp
 
 
 /**

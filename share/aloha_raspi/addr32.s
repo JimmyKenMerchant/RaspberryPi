@@ -28,7 +28,6 @@ ADDR32_BCM32_SIZE:                 .word BCM32_SIZE
 /**
  * system32/system32.s
  */
-ADDR32_system32_core_handle:      .word system32_core_handle
 ADDR32_SYSTEM32_CORE_HANDLE_0:    .word SYSTEM32_CORE_HANDLE_0
 ADDR32_SYSTEM32_CORE_HANDLE_1:    .word SYSTEM32_CORE_HANDLE_1
 ADDR32_SYSTEM32_CORE_HANDLE_2:    .word SYSTEM32_CORE_HANDLE_2

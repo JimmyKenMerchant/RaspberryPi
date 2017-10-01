@@ -1486,7 +1486,7 @@ fb32_attach_buffer:
  * Set Cache Status for Memory Using as Framebuffer (By Section)
  *
  * Parameters
- * r0: Secure state (0) or Non-secure state (1)
+ * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
  * r1: Flag of Descriptor
  *
  * Usage: r0-r4
@@ -1517,8 +1517,8 @@ fb32_set_cache:
 	mov temp, #0xFF00000
 	add temp, #0xF0000000
 
-	and memorymap_base, memorymap_base, temp
-	and size, size, temp
+	and memorymap_base, memorymap_base, temp     @ Mask
+	and size, size, temp                         @ Mask
 
 	fb32_set_cache_loop:
 		cmp memorymap_base, size

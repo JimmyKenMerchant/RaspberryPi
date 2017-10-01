@@ -93,7 +93,7 @@
  */
 .macro macro32_dsb reg0:vararg
 .ifdef __ARMV6__
-	mov \reg0, #0
+	mov \reg0, #0                       @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
 	mcr p15, 0, \reg0, c7, c10, 4
 .else
 	dsb
@@ -125,5 +125,33 @@
 	mcr p15, 0, \reg0, c7, c5, 6
 .else
 	isb
+.endif
+.endm
+
+
+/**
+ * Invalidate TLB
+ */
+.macro macro32_invalidate_tlb reg0:vararg
+.ifdef __ARMV6__
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c8, c7, 0
+.else
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c8, c7, 0
+.endif
+.endm
+
+
+/**
+ * Invalidate Entire Instruction Cache and Flush Branch Target Cache
+ */
+.macro macro32_invalidate_instruction reg0:vararg
+.ifdef __ARMV6__
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c7, c5, 0
+.else
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c7, c5, 0
 .endif
 .endm

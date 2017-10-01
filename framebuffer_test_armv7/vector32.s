@@ -5,7 +5,6 @@
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT
  *
- * This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).
  */
 
 .include "system32/equ32.s"
@@ -68,27 +67,25 @@ _el01_reset:
 	bl system32_cache_operation_all
 	pop {r0-r3}
 
-	dsb                                       @ Ensure Completion of Instructions Before
-	isb                                       @ Flush Instructions in Pipelines
+	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 
-	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
-	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
+	macro32_invalidate_instruction ip
 
-	dsb                                       @ Ensure Completion of Instructions Before
-	isb                                       @ Flush Instructions in Pipelines
+	macro32_isb ip                            @ Flush Instructions in Pipelines
 
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b101                        @ Enable Data Cache[2] and MMU(EL0 and EL1)[0]
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 
-	dsb
+	macro32_dsb ip
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000000                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core
 	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 
-	dsb
+	macro32_dsb ip
 
 	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
 	and r0, r0, #0b11
@@ -106,7 +103,6 @@ _el01_svc:
 
 	movs pc, lr
 
-
 .section	.el2_vector32
 /* HVBAR (EL2), It Will Be Changed for Virtual OS */
 	_el2_reserve0: .word 0x00
@@ -121,26 +117,9 @@ _el2_undefined_instruction_addr: .word _el01_reset
 _el2_supervisor_addr:            .word _el01_reset
 _el2_prefetch_abort_addr:        .word _el01_reset
 _el2_data_abort_addr:            .word _el01_reset
-_el2_hypervisor_addr:            .word _el2_hyp
+_el2_hypervisor_addr:            .word _el01_reset
 _el2_irq_addr:                   .word _el01_reset
 _el2_fiq_addr:                   .word _el01_reset
-
-_el2_hyp:
-	/**
-	 * Using Hyp mode (EL2) on System32 is stopped,
-	 * because MMU on Hyp mode may be in need of Long Descriptor Translation Table
-	 * With Address Space Identifier (ASID), and need of a test on Coretex-A53 (e.g. BCM2836).
-	 * So now folked for using Non-secure EL1 (SVC and other mode).
-	 * System32 aims to use in Non-virtual situation, besides, EL2 aims to use on Virtual CPU/OS.
-	 * Considering this view, System32 (Non-virtual OS) should be on Non-secure EL1.
-	 * If AArch32 is deprecated, I will be in need of Virtual CUP/OS on AArch64 or so for System32 though...
-	 * ARM will run for Virtual System (CUP/OS), this stream is so strong because we have a lot of legacy systems.
-	 * So, a possible way of ARM is to deprecate AArch32 and develop AArch64.
-	 * But, we have need of 32-bit CPU with Non-virtual OS, because it's first and having new look-up in the world.
-	 * We should not rely on legacies... One day, we will not be able to understand the special technology of legacies. 
-	 */
-
-	eret
 
 .section	.el3_vector32
 /*MVBAR (EL3) */
@@ -197,47 +176,45 @@ _el3_mon:
 	bl system32_cache_operation_all
 	pop {r0-r3,lr}
 
-	dsb                                       @ Ensure Completion of Instructions Before
-	isb                                       @ Flush Instructions in Pipelines
+	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 
-	mov r0, #0                                @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
-	mcr p15, 0, r0, c7, c5, 0                 @ Invalidate Entire Instruction Cache and Flush Branch Target Cache
+	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
+	macro32_invalidate_instruction ip
 
-	dsb                                       @ Ensure Completion of Instructions Before
-	isb                                       @ Flush Instructions in Pipelines
+	macro32_isb ip                            @ Flush Instructions in Pipelines
 
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b101                        @ Enable Data Cache[2] and (EL0 and EL1)MMU[0]
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction and Branch Target Chache
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 
-	dsb
+	macro32_dsb ip
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And Enable [0]FW, Cache and TLB Maintenance Broadcast (From ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
 
-	dsb
+	macro32_dsb ip
 
 	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
 	add r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18]
 	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
 
-	dsb
+	macro32_dsb ip
 
 	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
 	add r0, r0, #0x100                        @ HCE Bit (Hypervisor Call Enable)
 	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure state, Secure Configuration Register (SCR)
 
-	dsb
+	macro32_dsb ip
 
 	/* Non-secure State Below */
 
 	mov r0, #0x1000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
 
-	dsb
+	macro32_dsb ip
 
 	movs pc, lr                               @ Return to SVC Mode
 
@@ -270,11 +247,6 @@ _os_irq_addr:                   .word _os_reset
 _os_fiq_addr:                   .word _os_fiq
 
 _os_reset:
-	/*
-	 * To Handle HYP mode well, you need to know all interrupts are treated in HYP mode
-	 * e.g., if you enter IRQ in HYP mode, it means CALL HYP MODE AGAIN
-	 * To remember SP, ELR, SPSR, etc. on the time when start.elf commands HYP with, store these in the stack FIRST. 
-	 */
 	mov r0, sp                                @ Store Previous Stack Pointer
 	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
 	mov sp, #0x8000                           @ Stack Pointer to 0x8000
@@ -363,12 +335,39 @@ _os_reset:
 	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
 	push {r0-r3}
 	mov r0, #1
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
 	orr r1, r1, #equ32_mmu_section_nonsecure
 	orr r1, r1, #equ32_mmu_domain00
 	bl fb32_set_cache
 	pop {r0-r3}
+
+	/* Set Cache Status for HEAP */
+	push {r0-r3}
+	mov r0, #1
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+	orr r1, r1, #equ32_mmu_section_nonsecure
+	orr r1, r1, #equ32_mmu_domain00
+	bl system32_set_cache_heap
+	pop {r0-r3}
+
+	/* Set Cache Status for Virtual Address Descriptor */
+	push {r0-r3}
+	mov r0, #1
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+	orr r1, r1, #equ32_mmu_section_nonsecure
+	orr r1, r1, #equ32_mmu_domain00
+	bl system32_set_cache_vadescriptor
+	pop {r0-r3}
+
+	macro32_dsb ip
+	macro32_invalidate_tlb ip
+	macro32_isb ip
+	macro32_dsb ip
+	macro32_invalidate_instruction ip
+	macro32_isb ip
 
 	/* Clear Heap to All Zero */
 	push {r0-r3}
@@ -387,29 +386,11 @@ _os_reset:
 
 	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
 
-	dsb
-	isb                                       @ Must Need When You Renew CPACR
+	macro32_dsb ip
+	macro32_isb ip                            @ Must Need When You Renew CPACR
 
 	mov r0, #0x40000000                       @ Enable NEON/VFP
 	vmsr fpexc, r0
-
-	/*
-	ldr r0, addr_float
-	vld1.32 {d0,d1}, [r0]                     @ Load float_example1 and float_example2 (8 bytes aligned)
-	vadd.f32 d2, d0, d1                       @ Add as Single Presicion Floating Point (d0-31 is 64-bit, q0-15 is 1238-bit)
-	vcvt.s32.f32 d3, d2                       @ Floating Point to Singed Integer (U32 for Unsigned Integer)
-                                                  @ Floating Point to Integer Uses Round Towards Zero in NEON Instructions
-                                                  @ Integer to Floating/Fixed Point Uses Round to Nearest in NEON Instructions
-	vst1.32 {d2,d3}, [r0]                     @ Store Result to float_example1, float_example2 as Integer
-
-	ldr r0, float_example3
-	ldr r1, float_example1
-	vmov d0, r0, r1                           @ VFP Instructions (s0-31 is 32 bit), d0 Lower Bits from r0, Upper Bits from r1
-	vadd.f32 s0, s0, s1                       @ d0[0] Lower Bits Equals s0, d0[1] Upper Bits Equals s1
-	vcvtr.u32.f32 s0, s0                      @ In VFP Instructions, You Can Convert with Rounding Mode
-	vmov r0, s0
-	str r0, float_example3
-	*/
 
 _os_render:
 	push {r0-r8}
@@ -472,19 +453,17 @@ _os_render:
 		cmp r1, #0
 		bne _os_render_loop3
 
+	push {r0-r3}
+	mov r1, #1
+	mov r2, #0                                @ Invalidate Memory Space Cache to Obtain Return from Other Core
+	bl system32_cache_operation
+	pop {r0-r3}
+
+	ldr r1, [r0]
+
+macro32_debug r1 500 500
+
 	bl system32_mfree                         @ Clear Memory Space
-
-ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
-ldr r0, [r0]
-macro32_debug r0 500 48
-
-ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
-ldr r0, [r0, #4]
-macro32_debug r0 500 60
-
-ldr r0, ADDR32_SYSTEM32_CORE_HANDLE_3
-ldr r0, [r0, #8]
-macro32_debug r0 500 72
 
 	ldr r0, string_hello                      @ Pointer of Array of String
 	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
@@ -652,8 +631,8 @@ _core123_handler:
 	ldrb r3, [r1,r0]
 	add r2, r2, r3
 	strb r2, [r1,r0]
-	dsb
-	isb
+	macro32_dsb ip
+	macro32_isb ip
 	mov pc, lr
 
 core123_handler2: .word _core123_handler2
@@ -670,8 +649,8 @@ _core123_handler2:
 	add r0, r0, r4
 	add r0, r0, r5
 	add r0, r0, r6
-	dsb
-	isb
+	macro32_dsb ip
+	macro32_isb ip
 	pop {r4-r11}
 	mov pc, lr
 
