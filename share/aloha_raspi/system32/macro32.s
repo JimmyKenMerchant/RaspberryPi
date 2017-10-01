@@ -155,3 +155,17 @@
 	mcr p15, 0, \reg0, c7, c5, 0
 .endif
 .endm
+
+
+/**
+ * Get Multi-core Identifier
+ */
+.macro macro32_multicore_id reg0:req
+.ifdef __ARMV6__
+	mov \reg0, #0
+.else
+	mrc p15, 0, \reg0, c0, c0, 5        @ Multiprocessor Affinity Register (MPIDR)
+	and \reg0, \reg0, #0b11
+.endif
+.endm
+

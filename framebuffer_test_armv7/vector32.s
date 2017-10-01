@@ -40,8 +40,7 @@ _el01_reset:
 
 	smc #0
 
-	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
-	and r0, r0, #0b11
+	macro32_multicore_id r0
 
 	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
 	mul ip, ip, r0
@@ -87,8 +86,7 @@ _el01_reset:
 
 	macro32_dsb ip
 
-	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
-	and r0, r0, #0b11
+	macro32_multicore_id r0
 
 	cmp r0, #0                                @ If Core is Zero
 	moveq r0, #0x8000
@@ -138,8 +136,7 @@ _el3_irq_addr:                   .word _el01_reset
 _el3_fiq_addr:                   .word _el01_reset
 
 _el3_mon:
-	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
-	and r0, r0, #0b11
+	macro32_multicore_id r0
 
 	mov ip, #0x800                            @ Offset 0x200 Bytes per Core
 	mul ip, ip, r0
@@ -339,7 +336,11 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
 	orr r1, r1, #equ32_mmu_section_nonsecure
 	orr r1, r1, #equ32_mmu_domain00
-	bl fb32_set_cache
+	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
+	ldr r3, [r3]
+	bl system32_set_cache
 	pop {r0-r3}
 
 	/* Set Cache Status for HEAP */
@@ -349,7 +350,11 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
 	orr r1, r1, #equ32_mmu_section_nonsecure
 	orr r1, r1, #equ32_mmu_domain00
-	bl system32_set_cache_heap
+	ldr r2, ADDR32_SYSTEM32_HEAP_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_HEAP_SIZE
+	ldr r3, [r3]
+	bl system32_set_cache
 	pop {r0-r3}
 
 	/* Set Cache Status for Virtual Address Descriptor */
@@ -359,7 +364,11 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
 	orr r1, r1, #equ32_mmu_section_nonsecure
 	orr r1, r1, #equ32_mmu_domain00
-	bl system32_set_cache_vadescriptor
+	ldr r2, ADDR32_SYSTEM32_VADESCRIPTOR_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_VADESCRIPTOR_SIZE
+	ldr r3, [r3]
+	bl system32_set_cache
 	pop {r0-r3}
 
 	macro32_dsb ip
@@ -624,8 +633,7 @@ _os_fiq_handler:
 core123_handler: .word _core123_handler
 
 _core123_handler:
-	mrc p15, 0, r0, c0, c0, 5                 @ Multiprocessor Affinity Register (MPIDR)
-	and r0, r0, #0b11
+	macro32_multicore_id r0
 	ldr r1, core_addr
 	mul r2, r0, r0
 	ldrb r3, [r1,r0]

@@ -51,18 +51,18 @@
 system32_core_call:
 	/* Auto (Local) Variables, but just Aliases */
 	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	core_number  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	number_core  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	handle_addr  .req r2
 
-	cmp core_number, #7                      @ 0 <= core_number <= 7
+	cmp number_core, #7                      @ 0 <= number_core <= 7
 	bgt system32_core_call_error
-	cmp core_number, #0
+	cmp number_core, #0
 	blt system32_core_call_error
 
-	lsl core_number, core_number, #2         @ Substitution of Multiplication by 4
+	lsl number_core, number_core, #2         @ Substitution of Multiplication by 4
 
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
-	add handle_addr, handle_addr, core_number
+	add handle_addr, handle_addr, number_core
 
 	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
@@ -83,7 +83,7 @@ system32_core_call:
 		mov pc, lr
 
 .unreq heap
-.unreq core_number
+.unreq number_core
 .unreq handle_addr 
 
 
@@ -108,7 +108,7 @@ system32_core_call:
 .globl system32_core_handle
 system32_core_handle:
 	/* Auto (Local) Variables, but just Aliases */
-	core_number  .req r0
+	number_core  .req r0
 	arg1         .req r1
 	arg2         .req r2
 	arg3         .req r3
@@ -121,15 +121,14 @@ system32_core_handle:
 
 	push {r4-r9}
 
-	mrc p15, 0, core_number, c0, c0, 5       @ Multiprocessor Affinity Register (MPIDR)
-	and core_number, core_number, #0b11
+	macro32_multicore_id number_core
 
-	lsl core_number, core_number, #2         @ Substitution of Multiplication by 4
+	lsl number_core, number_core, #2         @ Substitution of Multiplication by 4
 
 	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
-	add handle_addr, handle_addr, core_number
+	add handle_addr, handle_addr, number_core
 
-	.unreq core_number
+	.unreq number_core
 	arg0 .req r0
 
 	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
@@ -806,8 +805,7 @@ system32_change_descriptor:
 
 	push {r4,r5}
 
-	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
-	and number_core, number_core, #0b11
+	macro32_multicore_id number_core
 
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
 	mov mul_number, #0x10000
@@ -873,8 +871,7 @@ system32_activate_va:
 
 	push {r4}
 
-	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
-	and number_core, number_core, #0b11
+	macro32_multicore_id number_core
 
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
 	mov mul_number, #0x10000
@@ -924,6 +921,7 @@ system32_activate_va:
 /**
  * function system32_lineup_basic_va
  * Line Up Basic The First Level Descriptor of Virtual Address, Secure/Non-Secure
+ * By Using This function, Destination Address Becomes The Same as Virtual Address.
  *
  * Parameters
  * r0: Descriptor Flag on Secure state
@@ -946,8 +944,7 @@ system32_lineup_basic_va:
 
 	push {r4-r7}
 
-	mrc p15, 0, number_core, c0, c0, 5              @ Multiprocessor Affinity Register (MPIDR)
-	and number_core, number_core, #0b11
+	macro32_multicore_id number_core
 
 	mov addr, #0x10000
 	mul number_core, number_core, addr              @ 0x10000, 65536 Bytes Offset
@@ -1046,6 +1043,176 @@ system32_lineup_basic_va:
 
 
 /**
+ * function system32_change_address
+ * Change Translated Destination of Virtual Address
+ *
+ * Parameters
+ * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
+ * r1: Address of Virtual Address
+ * r2: Address of Destination
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When Virtual Address is not Defined
+ */
+.globl system32_change_address
+system32_change_address:
+	non_secure     .req r0
+	addr_va        .req r1
+	addr_dest      .req r2
+	base_addr      .req r3
+	temp           .req r4
+	number_core    .req r5
+
+	push {r4-r5}
+
+	macro32_dsb ip
+
+	mov temp, #0xFF00000
+	add temp, #0xF0000000
+
+	and addr_va, addr_va, temp                @ Mask Other than Bit[31:20]
+	and addr_dest, addr_dest, temp            @ Mask Other than Bit[31:20]
+
+	macro32_multicore_id number_core
+
+	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
+	mov temp, #0x10000
+	mul number_core, number_core, temp        @ 0x10000, 65536 Bytes Offset
+	add base_addr, base_addr, number_core
+	mov temp, #0x4000
+	mul temp, non_secure, temp                @ 0x4000, 16384 Bytes Offset
+	add base_addr, base_addr, temp
+
+	lsr temp, addr_va, #20                    @ Virtual to Physical Part in Level 1 Translation, Bit[31:20]
+	lsl temp, temp, #2                        @ Substitution of Multiplication by 4
+
+	add base_addr, base_addr, temp
+	ldr temp, [base_addr]
+
+	macro32_dsb ip
+
+	bic temp, temp, #0xFF00000
+	bic temp, temp, #0xF0000000
+
+	orr addr_dest, addr_dest, temp          @ Make VA Descriptor
+
+	push {r0-r3,lr}
+	mov r1, addr_va
+	mov r2, addr_dest
+	bl system32_change_descriptor
+	pop {r0-r3,lr}
+
+	mov r0, #0                              @ Return with Success
+
+	system32_change_address_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq non_secure
+.unreq addr_va
+.unreq addr_dest
+.unreq base_addr
+.unreq temp
+.unreq number_core
+
+
+/**
+ * function system32_set_cache
+ * Change Cache Status for HEAP
+ *
+ * Parameters
+ * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
+ * r1: Flag of Descriptor
+ * r2: Start Address of Virtual Memory to Set Cache
+ * r3: Size of Memory to Set Cache 
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): When Virtual Address is not Defined
+ */
+.globl system32_set_cache
+system32_set_cache:
+	non_secure     .req r0
+	desc_flag      .req r1
+	memorymap_base .req r2
+	size           .req r3
+	temp           .req r4
+	base_addr      .req r5
+	number_core    .req r6
+
+	push {r4-r6}
+
+	macro32_dsb ip
+
+	cmp memorymap_base, #0
+	beq system32_set_cache_error
+
+	cmp size, #0
+	beq system32_set_cache_error
+
+	add size, size, memorymap_base
+
+	mov temp, #0xFF00000
+	add temp, #0xF0000000
+
+	and memorymap_base, memorymap_base, temp     @ Mask Other than Bit[31:20]
+	and size, size, temp                         @ Mask Other than Bit[31:20]
+
+	macro32_multicore_id number_core
+
+	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
+	mov temp, #0x10000
+	mul number_core, number_core, temp           @ 0x10000, 65536 Bytes Offset
+	add base_addr, base_addr, number_core
+	mov temp, #0x4000
+	mul temp, non_secure, temp                   @ 0x4000, 16384 Bytes Offset
+	add base_addr, base_addr, temp
+
+	lsr temp, memorymap_base, #20
+	lsl temp, temp, #2
+
+	add base_addr, base_addr, temp
+
+	system32_set_cache_loop:
+		cmp memorymap_base, size
+		bgt system32_set_cache_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
+		ldr temp, [base_addr]
+		macro32_dsb ip
+		bic temp, temp, #0x000000FF                  @ Clear Except Destination Address
+		bic temp, temp, #0x0000FF00
+		bic temp, temp, #0x000F0000
+		orr temp, temp, desc_flag                    @ Make VA Descriptor
+		push {r0-r3,lr}
+		mov r1, memorymap_base
+		mov r2, temp
+		bl system32_change_descriptor
+		pop {r0-r3,lr}
+		add memorymap_base, memorymap_base, #0x00100000
+		add base_addr, base_addr, #4
+		b system32_set_cache_loop
+
+	system32_set_cache_error:
+		mov r0, #1                           @ Return with Error
+		b system32_set_cache_common
+
+	system32_set_cache_success:
+		mov r0, #0                           @ Return with Success
+
+	system32_set_cache_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {r4-r6}
+		mov pc, lr
+
+.unreq non_secure
+.unreq desc_flag
+.unreq memorymap_base
+.unreq size
+.unreq temp
+.unreq base_addr
+.unreq number_core
+
+
+/**
  * function system32_clear_heap
  * Clear (All Zero) in Heap
  *
@@ -1085,150 +1252,6 @@ system32_clear_heap:
 .unreq heap_start
 .unreq heap_size
 .unreq heap_bytes
-
-
-/**
- * function system32_set_cache_vadescriptor
- * Change to Cache Status for Virtual Address (VA) Descriptor
- *
- * Parameters
- * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
- * r1: Flag of Descriptor
- *
- * Usage: r0-r4
- * Return: r0 (0 as success, 1 as error)
- * Error(1): When VA is not Defined
- */
-.globl system32_set_cache_vadescriptor
-system32_set_cache_vadescriptor:
-	non_secure     .req r0
-	desc_flag      .req r1
-	memorymap_base .req r2
-	size           .req r3
-	temp           .req r4
-
-	push {r4}
-
-	macro32_dsb ip
-
-	ldr memorymap_base, SYSTEM32_VADESCRIPTOR_ADDR
-	cmp memorymap_base, #0
-	beq system32_set_cache_vadescriptor_error
-
-	ldr size, SYSTEM32_VADESCRIPTOR_SIZE
-	cmp size, #0
-	beq system32_set_cache_vadescriptor_error
-
-	add size, size, memorymap_base
-
-	mov temp, #0xFF00000
-	add temp, #0xF0000000
-
-	and memorymap_base, memorymap_base, temp     @ Mask
-	and size, size, temp                         @ Mask
-
-	system32_set_cache_vadescriptor_loop:
-		cmp memorymap_base, size
-		bgt system32_set_cache_vadescriptor_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
-		mov temp, desc_flag
-		add temp, temp, memorymap_base
-		push {r0-r3,lr}
-		mov r1, memorymap_base
-		mov r2, temp
-		bl system32_change_descriptor
-		pop {r0-r3,lr}
-		add memorymap_base, memorymap_base, #0x00100000
-		b system32_set_cache_vadescriptor_loop
-
-	system32_set_cache_vadescriptor_error:
-		mov r0, #1                           @ Return with Error
-		b system32_set_cache_vadescriptor_common
-
-	system32_set_cache_vadescriptor_success:
-		mov r0, #0                           @ Return with Success
-
-	system32_set_cache_vadescriptor_common:
-		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		pop {r4}
-		mov pc, lr
-
-.unreq non_secure
-.unreq desc_flag
-.unreq memorymap_base
-.unreq size
-.unreq temp
-
-
-/**
- * function system32_set_cache_heap
- * Change to Cache Status for HEAP
- *
- * Parameters
- * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
- * r1: Flag of Descriptor
- *
- * Usage: r0-r4
- * Return: r0 (0 as success, 1 as error)
- * Error(1): When HEAP is not Defined
- */
-.globl system32_set_cache_heap
-system32_set_cache_heap:
-	non_secure     .req r0
-	desc_flag      .req r1
-	memorymap_base .req r2
-	size           .req r3
-	temp           .req r4
-
-	push {r4}
-
-	macro32_dsb ip
-
-	ldr memorymap_base, SYSTEM32_HEAP_ADDR
-	cmp memorymap_base, #0
-	beq system32_set_cache_heap_error
-
-	ldr size, SYSTEM32_HEAP_SIZE
-	cmp size, #0
-	beq system32_set_cache_heap_error
-
-	add size, size, memorymap_base
-
-	mov temp, #0xFF00000
-	add temp, #0xF0000000
-
-	and memorymap_base, memorymap_base, temp     @ Mask
-	and size, size, temp                         @ Mask
-
-	system32_set_cache_heap_loop:
-		cmp memorymap_base, size
-		bgt system32_set_cache_heap_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
-		mov temp, desc_flag
-		add temp, temp, memorymap_base
-		push {r0-r3,lr}
-		mov r1, memorymap_base
-		mov r2, temp
-		bl system32_change_descriptor
-		pop {r0-r3,lr}
-		add memorymap_base, memorymap_base, #0x00100000
-		b system32_set_cache_heap_loop
-
-	system32_set_cache_heap_error:
-		mov r0, #1                           @ Return with Error
-		b system32_set_cache_heap_common
-
-	system32_set_cache_heap_success:
-		mov r0, #0                           @ Return with Success
-
-	system32_set_cache_heap_common:
-		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		pop {r4}
-		mov pc, lr
-
-.unreq non_secure
-.unreq desc_flag
-.unreq memorymap_base
-.unreq size
-.unreq temp
 
 
 /**
@@ -1321,13 +1344,13 @@ system32_malloc:
 .unreq check_size
 
 
-.globl SYSTEM32_HEAP
-SYSTEM32_HEAP:        .word SYSTEM32_HEAP_ADDR
+.globl SYSTEM32_HEAP_ADDR
+.globl SYSTEM32_HEAP_SIZE
 SYSTEM32_HEAP_ADDR:   .word _SYSTEM32_HEAP
 SYSTEM32_HEAP_SIZE:   .word _SYSTEM32_HEAP_END - _SYSTEM32_HEAP
 
-.globl SYSTEM32_VADESCRIPTOR
-SYSTEM32_VADESCRIPTOR: .word SYSTEM32_VADESCRIPTOR_ADDR
+.globl SYSTEM32_VADESCRIPTOR_ADDR
+.globl SYSTEM32_VADESCRIPTOR_SIZE
 SYSTEM32_VADESCRIPTOR_ADDR: .word _SYSTEM32_VADESCRIPTOR
 SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCRIPTOR
 

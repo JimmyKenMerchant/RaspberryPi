@@ -38,6 +38,11 @@ FB32_Y_CARET: .word 0x00000000
  */
 
 .globl FB32_FRAMEBUFFER
+.globl FB32_FRAMEBUFFER_ADDR
+.globl FB32_FRAMEBUFFER_WIDTH
+.globl FB32_FRAMEBUFFER_HEIGHT
+.globl FB32_FRAMEBUFFER_SIZE
+.globl FB32_FRAMEBUFFER_DEPTH
 FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
 FB32_FRAMEBUFFER_ADDR:     .word 0x00
 FB32_FRAMEBUFFER_WIDTH:    .word 0x00
@@ -1479,74 +1484,3 @@ fb32_attach_buffer:
 .unreq height
 .unreq size
 .unreq depth
-
-
-/**
- * function fb32_set_cache
- * Set Cache Status for Memory Using as Framebuffer (By Section)
- *
- * Parameters
- * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
- * r1: Flag of Descriptor
- *
- * Usage: r0-r4
- * Return: r0 (0 as success, 1 as error)
- * Error(1): When Framebuffer is not Defined
- */
-.globl fb32_set_cache
-fb32_set_cache:
-	non_secure     .req r0
-	desc_flag      .req r1
-	memorymap_base .req r2
-	size           .req r3
-	temp           .req r4
-
-	push {r4}
-
-	macro32_dsb ip
-
-	ldr memorymap_base, FB32_FRAMEBUFFER_ADDR
-	cmp memorymap_base, #0
-	beq fb32_set_cache_error
-
-	ldr size, FB32_FRAMEBUFFER_SIZE
-	cmp size, #0
-	beq fb32_set_cache_error
-	add size, size, memorymap_base
-
-	mov temp, #0xFF00000
-	add temp, #0xF0000000
-
-	and memorymap_base, memorymap_base, temp     @ Mask
-	and size, size, temp                         @ Mask
-
-	fb32_set_cache_loop:
-		cmp memorymap_base, size
-		bgt fb32_set_cache_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
-		mov temp, desc_flag
-		add temp, temp, memorymap_base
-		push {r0-r3,lr}
-		mov r1, memorymap_base
-		mov r2, temp
-		bl system32_change_descriptor
-		pop {r0-r3,lr}
-		add memorymap_base, memorymap_base, #0x00100000
-		b fb32_set_cache_loop
-
-	fb32_set_cache_error:
-		mov r0, #1                           @ Return with Error
-		b fb32_set_cache_common
-
-	fb32_set_cache_success:
-		mov r0, #0                           @ Return with Success
-
-	fb32_set_cache_common:
-		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		pop {r4}
-		mov pc, lr
-
-.unreq non_secure
-.unreq desc_flag
-.unreq memorymap_base
-.unreq size
-.unreq temp
