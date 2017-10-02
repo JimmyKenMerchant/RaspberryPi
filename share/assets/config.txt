@@ -14,7 +14,7 @@ disable_commandline_tags=1
 kernel_address=0
 
 #CPU Clock Mhz, you may need to voltage up for overclock
-arm_freq=900
+#arm_freq=900
 
 #GPU(APB) Clock MHz, you may need to voltage up for overclock
 #In RasPi2(BCM2836), Maximum Clock of Arm Peripheral Bus (APB) seems to be 250Mhz, even setting 500Mhz on GPU
@@ -24,7 +24,7 @@ gpu_freq=240
 sdram_freq=250
 
 #GPU Memory Mbytes
-gpu_mem=256
+gpu_mem=128
 
 #Black Border (0) or Not (1)
 disable_overscan=1
@@ -46,5 +46,5 @@ hdmi_group=0
 #Signal IRQ for Interrupt Service Routine (ISR) from VideoCoreIV for Vertical Sync
 #Seems It's just FAKE, but in case of Strict Coding in Video, you may need of ISR.
 #I mean, VideoCoreIV has other strategies for Vertical Sync,
-#probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller...
+#probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller.
 fake_vsync_isr=1

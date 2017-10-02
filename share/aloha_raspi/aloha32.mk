@@ -9,7 +9,7 @@
 # In GNU Make (gmake on BSD), GNUmakefile will be searched faster than Makefile
 
 # Values of DEFARCH and DEFTYPE are Needed to be Changed for Types of RasPi.
-type ?= 2b
+# type ?= 2b
 
 # Available fpu info from Features in /proc/cpuinfo of Raspbian
 ifeq ($(type), 3b)
