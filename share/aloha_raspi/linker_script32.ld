@@ -1,5 +1,5 @@
 /**
- * linker_script.ld
+ * linker_script32.ld
  * Author: Kenta Ishii
  * License: MIT
  * License URL: https://opensource.org/licenses/MIT

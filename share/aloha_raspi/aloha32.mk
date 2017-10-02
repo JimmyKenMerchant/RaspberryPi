@@ -9,32 +9,39 @@
 # In GNU Make (gmake on BSD), GNUmakefile will be searched faster than Makefile
 
 # Values of DEFARCH and DEFTYPE are Needed to be Changed for Types of RasPi.
-# make PRODUCT:=__RASPI3B=1
-# make PRODUCT:=__RASPI2B=1
-# make PRODUCT:=__RASPIZERO=1
-# make PRODUCT:=__RASPIZEROW=1
-PRODUCT ?= __RASPI2B=1
+type ?= 2b
 
 # Available fpu info from Features in /proc/cpuinfo of Raspbian
-ifeq ($(PRODUCT), __RASPI3B=1)
+ifeq ($(type), 3b)
+	PRODUCT:=__RASPI3B=1
 	TARGET := -mcpu=cortex-a53 -mfpu=vfp
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 endif
 
-ifeq ($(PRODUCT), __RASPI2B=1)
+ifeq ($(type), new2b)
+	PRODUCT:=__RASPI2B=1
+	TARGET := -mcpu=cortex-a7 -mfpu=vfp
+	ARCH := __ARMV8=1
+	CPU := __BCM2837=1
+endif
+
+ifeq ($(type), 2b)
+	PRODUCT:=__RASPI2B=1
 	TARGET := -mcpu=cortex-a7 -mfpu=vfp
 	ARCH := __ARMV7=1
 	CPU := __BCM2836=1
 endif
 
-ifeq ($(PRODUCT), __RASPIZERO=1)
+ifeq ($(type), zero)
+	PRODUCT:=__RASPIZERO=1
 	TARGET := -mcpu=arm1176jzf-s -mfpu=vfp
 	ARCH := __ARMV6=1
 	CPU := __BCM2835=1
 endif
 
-ifeq ($(PRODUCT), __RASPIZEROW=1)
+ifeq ($(type), zerow)
+	PRODUCT:=__RASPIZEROW=1
 	TARGET := -mcpu=arm1176jzf-s -mfpu=vfp
 	ARCH := __ARMV6=1
 	CPU := __BCM2835=1
@@ -42,13 +49,16 @@ endif
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
 COMP := arm-none-eabi
+BIT := __AARCH32=1
 
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BIT)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BIT)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy
@@ -74,13 +84,13 @@ inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
 $(OBJ3).o: $(OBJ3).c $(CCHEADER)
-	$(CC) $< -I $(CCINC)/ -D $(PRODUCT) -D $(ARCH) -D $(CPU) -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
+	$(CC) $< -I $(CCINC)/ $(CCDEF) -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
 
-# Make OBJ2, system32.o
-include $(ASINC)/system32/system32.mk
+$(OBJ2).o: $(ASINC)/$(OBJ2)/$(OBJ2).s
+	$(AS) $< -I $(ASINC)/ $(ASDEF) -o $@ $(TARGET)
 
 $(OBJ1).o: $(OBJ1).s
-	$(AS) $< -I $(ASINC)/ --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) -o $@ $(TARGET)
+	$(AS) $< -I $(ASINC)/ $(ASDEF) -o $@ $(TARGET)
 
 .PHONY: warn
 warn: all clean
