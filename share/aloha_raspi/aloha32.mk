@@ -21,7 +21,7 @@ endif
 
 ifeq ($(type), new2b)
 	PRODUCT:=__RASPI2B=1
-	TARGET := -mcpu=cortex-a7 -mfpu=vfp
+	TARGET := -mcpu=cortex-a53 -mfpu=vfp
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 endif
