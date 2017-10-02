@@ -17,9 +17,12 @@
  * Standard Peripherals
  */
 
-/* BCM2836 and BCM2837 Peripheral Base */
-/* If BCM 2835, Peripheral Base is 0x20000000 */
-.equ equ32_peripherals_base,   0x3F000000
+.ifdef __BCM2835
+	.equ equ32_peripherals_base,   0x20000000
+.else
+	/* BCM2836 and BCM2837 Peripheral Base */
+	.equ equ32_peripherals_base,   0x3F000000
+.endif
 .equ equ32_systemtimer_base,   0x00003000
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400

@@ -951,7 +951,8 @@ system32_lineup_basic_va:
 	ldr base_addr, SYSTEM32_VADESCRIPTOR_ADDR
 	add base_addr, base_addr, number_core
 
-	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
+	mov size, #equ32_peripherals_base
+	lsr size, #20                                   @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
 	mov descriptor, secure_flag
@@ -987,7 +988,8 @@ system32_lineup_basic_va:
 
 	add base_addr, base_addr, #0x4000
 
-	mov size, #0x3F0                                @ Bit[31:20], Max 0xFFF
+	mov size, #equ32_peripherals_base
+	lsr size, #20                                   @ Bit[31:20], Max 0xFFF
 	lsl size, #2                                    @ Substitution of Multiplication by 4
 
 	mov descriptor, nonsecure_flag

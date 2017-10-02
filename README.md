@@ -86,27 +86,19 @@ You also need to get latest start.elf and bootcode.bin from RasPi Official Repos
 
 The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on ARMv7 Raspberry Pi.
 
-**Preprocessor Definition on Make File**
+**Preprocessor Definition on `Make` Command (Cunrrently `__RASPI2B=1` Only)**
 
-Note: Currently This Project is Only Useful and Tested on `__ARMV7__=1' and `__RASPI2B__=1`
+* `__RASPI3B=1`: Use for Raspberry Pi 3 B
 
-* `__ARMV8__=1`: Use for Raspberry Pi with BCM2837
+* `__RASPI2B=1`: Use for Raspberry Pi 2 B
 
-* `__ARMV7__=1`: Use for Raspberry Pi with BCM2836
+* `__RASPI1B=1`: Use for Raspberry Pi 1 B Plus
 
-* `__ARMV6__=1`:  Use for Raspberry Pi with BCM2835
+* `__RASPI1A=1`: Use for Raspberry Pi 1 A Plus
 
-* `__RASPI3B__=1`: Use for Raspberry Pi 3 B
+* `__RASPIZERO=1`: Use for Raspberry Pi Zero
 
-* `__RASPI2B__=1`: Use for Raspberry Pi 2 B
-
-* `__RASPI1B__=1`: Use for Raspberry Pi 1 B Plus
-
-* `__RASPI1A__=1`: Use for Raspberry Pi 1 A Plus
-
-* `__RASPIZERO__=1`: Use for Raspberry Pi Zero
-
-* `__RASPIZEROW__=1`: Use for Raspberry Pi Zero W
+* `__RASPIZEROW=1`: Use for Raspberry Pi Zero W
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 

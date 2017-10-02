@@ -92,7 +92,7 @@
  * Data Synchronization Barrier for compatibility between ARMv6 and ARMv7+
  */
 .macro macro32_dsb reg0:vararg
-.ifdef __ARMV6__
+.ifdef __ARMV6
 	mov \reg0, #0                       @ If You Want Invalidate/ Clean Entire One, Needed Zero (SBZ)
 	mcr p15, 0, \reg0, c7, c10, 4
 .else
@@ -105,7 +105,7 @@
  * Data Memory Barrier for compatibility between ARMv6 and ARMv7+
  */
 .macro macro32_dmb reg0:vararg
-.ifdef __ARMV6__
+.ifdef __ARMV6
 	mov \reg0, #0
 	mcr p15, 0, \reg0, c7, c10, 5
 .else
@@ -119,7 +119,7 @@
  * Using Flush Prefetch Buffer and Flush Entire Branch Target Cache
  */
 .macro macro32_isb reg0:vararg
-.ifdef __ARMV6__
+.ifdef __ARMV6
 	mov \reg0, #0
 	mcr p15, 0, \reg0, c7, c5, 4
 	mcr p15, 0, \reg0, c7, c5, 6
@@ -133,7 +133,7 @@
  * Invalidate TLB
  */
 .macro macro32_invalidate_tlb reg0:vararg
-.ifdef __ARMV6__
+.ifdef __ARMV6
 	mov \reg0, #0
 	mcr p15, 0, \reg0, c8, c7, 0
 .else
@@ -147,7 +147,7 @@
  * Invalidate Entire Instruction Cache and Flush Branch Target Cache
  */
 .macro macro32_invalidate_instruction reg0:vararg
-.ifdef __ARMV6__
+.ifdef __ARMV6
 	mov \reg0, #0
 	mcr p15, 0, \reg0, c7, c5, 0
 .else
@@ -161,7 +161,7 @@
  * Get Multi-core Identifier
  */
 .macro macro32_multicore_id reg0:req
-.ifdef __ARMV6__
+.ifdef __ARMV6
 	mov \reg0, #0
 .else
 	mrc p15, 0, \reg0, c0, c0, 5        @ Multiprocessor Affinity Register (MPIDR)

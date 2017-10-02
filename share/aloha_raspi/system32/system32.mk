@@ -6,4 +6,4 @@
 ##
 
 system32.o: $(ASINC)/system32/system32.s
-	$(AS) $^ -I $(ASINC)/ --defsym $(DEFARCH) --defsym $(DEFTYPE) -o $@ $(TARGET)
+	$(AS) $^ -I $(ASINC)/ --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) -o $@ $(TARGET)

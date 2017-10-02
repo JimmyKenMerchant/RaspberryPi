@@ -363,7 +363,7 @@ bcm32_mailbox_read:
 
 	ldr r0, [memorymap_base, read]
 
-	dsb
+	macro32_dsb ip
 
 	bcm32_mailbox_read_common:
 		mov pc, lr
