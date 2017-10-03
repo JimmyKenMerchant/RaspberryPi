@@ -9,9 +9,15 @@
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
-.include "vector32/el01.s"
-.include "vector32/el2.s"
-.include "vector32/el3.s"
+
+.ifdef __ARMV6
+	.include "vector32/el01_armv6.s"
+	.include "vector32/el3_armv6.s"
+.else
+	.include "vector32/el01_armv7.s"
+	.include "vector32/el2_armv7.s"
+	.include "vector32/el3_armv7.s"
+.endif
 
 .section	.os_vector32
 .globl _os_start

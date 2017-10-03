@@ -9,8 +9,15 @@
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
-.include "vector32/el01_simple.s"
-.include "vector32/el3_simple.s"
+
+.ifdef __ARMV6
+	.include "vector32/el01_armv6.s"
+	.include "vector32/el3_armv6.s"
+.else
+	.include "vector32/el01_armv7.s"
+	.include "vector32/el2_armv7.s"
+	.include "vector32/el3_armv7.s"
+.endif
 
 .section	.os_vector32
 .globl _os_start
@@ -145,6 +152,8 @@ _os_fiq_handler:
 	addne r0, r0, #equ32_gpio_gpset0
 	mov r1, #equ32_gpio21
 	str r1, [r0]
+
+	macro32_dsb ip
 
 	_os_fiq_handler_jump:
 		mov pc, lr

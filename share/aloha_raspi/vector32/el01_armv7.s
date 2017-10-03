@@ -1,5 +1,5 @@
 /**
- * el01.s
+ * el01_armv7.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -75,13 +75,11 @@ _el01_reset:
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 	macro32_dsb ip
 
-.ifndef __ARMV6
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And Enable [0]FW, Cache and TLB Maintenance Broadcast (From ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 	macro32_dsb ip
-.endif
 
 	macro32_multicore_id r0
 
@@ -92,7 +90,6 @@ _el01_reset:
 	_el01_reset_loop:
 		bl system32_core_handle
 		b _el01_reset_loop
-
 
 _el01_svc:
 

@@ -1,5 +1,5 @@
 /**
- * el3.s
+ * el3_armv7.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -74,34 +74,26 @@ _el3_mon:
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 	macro32_dsb ip
 
-.ifndef __ARMV6
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And Enable [0]FW, Cache and TLB Maintenance Broadcast (From ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
 	macro32_dsb ip
-.endif
 
 	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
-.ifndef __ARMV6
 	add r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18]
-.endif
 	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
 	macro32_dsb ip
 
 	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
-.ifndef __ARMV6
 	add r0, r0, #0x100                        @ HCE Bit (Hypervisor Call Enable)
-.endif
 	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure state, Secure Configuration Register (SCR)
 	macro32_dsb ip
 
 	/* Non-secure State Below */
 
-.ifndef __ARMV6
 	mov r0, #0x1000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
 	macro32_dsb ip
-.endif
 
 	movs pc, lr                               @ Return to SVC Mode

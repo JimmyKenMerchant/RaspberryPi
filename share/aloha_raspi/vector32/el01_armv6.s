@@ -1,5 +1,5 @@
 /**
- * el01_simple.s
+ * el01_armv6.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -30,29 +30,16 @@ _el01_fiq_addr:                   .word _el01_reset
 
 /* From Secure State SVC mode (EL1 Secure state) */
 _el01_reset:
-	mov r0, #0x0
-	mcr p15, 0, r0, c12, c0, 0                @ VBAR(User Mode, EL0, and Privileged Mode, EL1), IVT Base Vector Address
+	mov r0, #0x0                              @ VBAR(User Mode, EL0, and Privileged Mode, EL1), IVT Base Vector Address
+	mcr p15, 0, r0, c12, c0, 0                @ VBAR is Banked by Secure/Non-secure state
 	mov r0, #0x2000
 	mcr p15, 0, r0, c12, c0, 1                @ MVBAR (Secure Monitor mode, EL3), IVT Base Vector Address
 
 	smc #0
 
-	macro32_multicore_id r0
-
-	mov ip, #0x200                            @ Offset 0x200 Bytes per Core
-	mul ip, ip, r0
-	mov fp, #0x4000
-	sub fp, fp, ip
-	mov sp, fp
-
-	cmp r0, #0                                @ If Core is Zero
-	moveq r0, #0x8000
-	blxeq r0
-
-	_el01_reset_loop:
-		bl system32_core_handle
-		b _el01_reset_loop
-
+	mov sp, #0x4000
+	mov r0, #0x8000
+	blx r0
 
 _el01_svc:
 
