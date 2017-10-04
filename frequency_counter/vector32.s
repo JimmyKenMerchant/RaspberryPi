@@ -277,6 +277,8 @@ _os_render:
 		ldrne r2, freq_count
 		addne r2, r2, #1
 		strne r2, freq_count
+		macro32_dsb ip                            @ Data Synchronization Barrier is Needed
+		macro32_isb ip                            @ Instruction Synchronization Barrier is Needed
 		b _os_render_loop
 
 	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer, VBAR,and Link Register
@@ -333,7 +335,7 @@ _os_fiq_handler:
 	add r0, r0, #1
 	cmp r0, #10
 	strlt r0, irq_count
-	
+
 	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
 
 	blt _os_fiq_handler_jump
@@ -341,9 +343,13 @@ _os_fiq_handler:
 	mov r0, #0
 	str r0, irq_count
 
+	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
+
 	ldr r0, freq_count
 	mov r1, #0
 	str r1, freq_count
+
+	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
 
 	push {lr}
 	bl math32_hexa_to_deci32
@@ -357,7 +363,10 @@ _os_fiq_handler:
 	ldr r4, [r4]
 	macro32_print_number_double r0 r1 100 200 r2 r3 16 8 12 r4
 
+	macro32_invalidate_instruction ip
+
 	_os_fiq_handler_jump:
+		macro32_dsb ip                            @ Data Synchronization Barrier is Needed
 		mov pc, lr
 
 /**
@@ -368,18 +377,22 @@ gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
 	.ascii "\tALOHA!\n\tFrequency Counter.\n\tGPIO 21 is Input Pin.\n\n\tNote: Voltage Limitation is UP TO 3.3V!\n\tGPIO 12 is Output Pin for Test.\n\tGPIO 5 is Output Pin for Max. Frequency Test.\n\tMahalo!\0" @ Add Null Escape Character on The End
+.balign 4
 string_hello:
 	.word _string_hello
 _string_helts:
 	.ascii "Hz\0" @ Add Null Escape Character on The End
+.balign 4
 string_helts:
 	.word _string_helts
 _string_copy1:
 	.ascii "Product of Kenta Ishii\0" @ Add Null Escape Character on The End
+.balign 4
 string_copy1:
 	.word _string_copy1
 _string_copy2:
 	.ascii "Powered by ALOHA SYSTEM32\0" @ Add Null Escape Character on The End
+.balign 4
 string_copy2:
 	.word _string_copy2
 freq_count:

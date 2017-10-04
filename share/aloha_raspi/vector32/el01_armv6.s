@@ -41,6 +41,9 @@ _el01_reset:
 	mov r0, #0x8000
 	blx r0
 
+	_el01_reset_loop:
+		b _el01_reset_loop
+
 _el01_svc:
 
 	movs pc, lr
