@@ -91,15 +91,7 @@ usb2032_hub_activate:
 
 	push {r0-r3,lr}
 	mov r0, buffer
-	mov r1, #1
-	mov r2, #1                                @ Clean
-	bl system32_cache_operation_heap
-	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	mov r0, buffer
-	mov r1, #2
-	mov r2, #1                                @ Clean
+	mov r1, #1                                @ Clean
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 
@@ -132,15 +124,7 @@ usb2032_hub_activate:
 
 	push {r0-r3,lr}
 	mov r0, buffer
-	mov r1, #1
-	mov r2, #0                            @ invalidate
-	bl system32_cache_operation_heap
-	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	mov r0, buffer
-	mov r1, #2
-	mov r2, #0                            @ invalidate
+	mov r1, #0                                @ Invalidate
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 

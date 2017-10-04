@@ -33,6 +33,10 @@
 
 .include "system32/equ32.s"
 
+
+/* Definition Only in ARMv7/AArch32 */
+.ifndef __ARMV6
+
 /**
  * function system32_core_call
  * Call Cores
@@ -229,6 +233,7 @@ SYSTEM32_CORE_HANDLE_7:         .word 0x00000000
 /**
  * function system32_cache_operation_all
  * Cache Operation to All Cache
+ * Caution! This Function is compatible from ARMv7/AArch32
  *
  * Parameters
  * r0: Cache Level, 1/2
@@ -333,7 +338,9 @@ system32_cache_operation_all:
 /**
  * function system32_cache_operation
  * Invalidate and Clean Cache by Physical Address
- * In Arm, Data Cache System is Controled with MMU, Virtual Address.
+ * Caution! This Function is compatible from ARMv7/AArch32
+ *
+ * In ARM, Data Cache System is Controled with MMU, Virtual Address.
  * Besides, Indexing Line Set by Address is Using Common Part Between Physical/Vitual.
  * This Idea seems to Be Good, But, Bits of Line Set May Overflow to Part of Virtual Address,
  * If Number of Sets is Large, or LineSize is Large.
@@ -435,61 +442,9 @@ system32_cache_operation:
 
 
 /**
- * function system32_cache_operation_heap
- * Invalidate and Clean Cache by Physical Address in an Allocated Heap
- *
- * Parameters
- * r0: Pointer of Heap Block Allocated
- * r1: Cache Level, 1/2
- * r2: Flag, 0(Invalidate)/1(Clean)/2(Clean and Invalidate)
- *
- * Return: r0 (0 as Success, 1 as Error)
- * Error: Pointer of Start Address is Null (0)
- */
-.globl system32_cache_operation_heap
-system32_cache_operation_heap:
-	/* Auto (Local) Variables, but just Aliases */
-	block_start .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	level       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	flag        .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	block_size  .req r3
-
-	cmp block_start, #0
-	beq system32_cache_operation_heap_error
-
-	ldr block_size, [block_start, #-4]
-	add block_size, block_start, block_size
-
-	system32_cache_operation_heap_loop:
-		cmp block_start, block_size
-		bge system32_cache_operation_heap_success
-
-		push {r0-r3,lr}
-		bl system32_cache_operation
-		pop {r0-r3,lr}
-
-		add block_start, block_start, #4
-		b system32_cache_operation_heap_loop
-
-	system32_cache_operation_heap_error:
-		mov r0, #1
-		b system32_cache_operation_heap_common
-
-	system32_cache_operation_heap_success:
-		mov r0, #0
-
-	system32_cache_operation_heap_common:
-		mov pc, lr
-
-.unreq block_start
-.unreq level
-.unreq flag
-.unreq block_size
-
-
-/**
  * function system32_cache_info
  * Return Particular Cache Information
+ * Caution! This Function is compatible from ARMv7/AArch32
  *
  * Parameters
  * r0: Content of Cache Size Slection Register (CSSELR) for CCSIDR
@@ -530,6 +485,66 @@ system32_cache_info:
 		mov pc, lr
 
 .unreq ccsidr
+
+
+/* End of Definition Only in ARMv7/AArch32 */
+.endif
+
+
+/**
+ * function system32_cache_operation_heap
+ * Invalidate and Clean Cache by MVA Address in an Allocated Heap
+ *
+ * Parameters
+ * r0: Pointer of Heap Block Allocated
+ * r1: Flag, 0(Invalidate)/1(Clean)/2(Clean and Invalidate)
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error: Pointer of Start Address is Null (0)
+ */
+.globl system32_cache_operation_heap
+system32_cache_operation_heap:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	flag        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	block_size  .req r2
+
+	cmp block_start, #0
+	beq system32_cache_operation_heap_error
+
+	ldr block_size, [block_start, #-4]
+	add block_size, block_start, block_size
+
+	bic block_start, block_start, #0x1F
+	bic block_size, block_size, #0x1F
+
+	system32_cache_operation_heap_loop:
+		cmp block_start, block_size
+		bgt system32_cache_operation_heap_success
+
+		cmp flag, #0
+		mcreq p15, 0, block_start, c7, c6, 1     @ Invalidate Data Cache
+		cmp flag, #1
+		mcreq p15, 0, block_start, c7, c10, 1    @ Clean Data Cache
+		cmp flag, #2
+		mcreq p15, 0, block_start, c7, c14, 1    @ Clean and Invalidate Data Cache
+
+		add block_start, block_start, #0x20      @ 32 Bytes (4 Words) Align
+		b system32_cache_operation_heap_loop
+
+	system32_cache_operation_heap_error:
+		mov r0, #1
+		b system32_cache_operation_heap_common
+
+	system32_cache_operation_heap_success:
+		mov r0, #0
+
+	system32_cache_operation_heap_common:
+		mov pc, lr
+
+.unreq block_start
+.unreq flag
+.unreq block_size
 
 
 /**
@@ -1258,12 +1273,12 @@ system32_clear_heap:
 
 /**
  * function system32_malloc
- * Get Memory Space from Heap (4 Bytes Align)
+ * Get Memory Space from Heap (4 Bytes:1 Word Align)
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
- * Argument, Size Means Number of Block which Has 4 Bytes
+ * Argument, Size Means Number of Words Allocated
  *
  * Parameters
- * r0: Number of Block Size of Memory, 1 Block means 4 bytes
+ * r0: Number of Words, 1 Word means 4 Bytes
  *
  * Usage: r0-r5
  * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
@@ -1280,7 +1295,7 @@ system32_malloc:
 
 	push {r4,r5}
 
-	lsl size, size, #2                          @ Substitution of Multiplication by 4, Blocks to Bytes
+	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
 
 	ldr heap_start, SYSTEM32_HEAP_ADDR
 	ldr heap_size, SYSTEM32_HEAP_SIZE           @ In Bytes

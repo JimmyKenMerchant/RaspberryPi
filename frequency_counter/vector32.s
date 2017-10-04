@@ -144,45 +144,25 @@ _os_reset:
 	ldr r1, ADDR32_BCM32_WIDTH
 	str r0, [r1]
 
-	push {r0-r3}
-	mov r0, r1
-	mov r1, #1
-	mov r2, #1
-	bl system32_cache_operation
-	pop {r0-r3}
+	macro32_clean_cache r1, ip
 
 	mov r0, #320
 	ldr r1, ADDR32_BCM32_HEIGHT
 	str r0, [r1]
 
-	push {r0-r3}
-	mov r0, r1
-	mov r1, #1
-	mov r2, #1
-	bl system32_cache_operation
-	pop {r0-r3}
+	macro32_clean_cache r1, ip
 
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
 
-	push {r0-r3}
-	mov r0, r1
-	mov r1, #1
-	mov r2, #1
-	bl system32_cache_operation
-	pop {r0-r3}
+	macro32_clean_cache r1, ip
 
 	mov r0, #2
 	ldr r1, ADDR32_BCM32_ALPHAMODE
 	str r0, [r1]
 
-	push {r0-r3}
-	mov r0, r1
-	mov r1, #1
-	mov r2, #1
-	bl system32_cache_operation
-	pop {r0-r3}
+	macro32_clean_cache r1, ip
 
 	push {r0-r3}
 	bl bcm32_get_framebuffer

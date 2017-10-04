@@ -158,6 +158,33 @@
 
 
 /**
+ * Invalidate Data Cache by MVA
+ */
+.macro macro32_invalidate_cache reg0 reg1:req
+	bic \reg1, \reg0, #0x1F
+	mcr p15, 0, \reg1, c7, c6, 1
+.endm
+
+
+/**
+ * Clean Data Cache by MVA
+ */
+.macro macro32_clean_cache reg0 reg1:req
+	bic \reg1, \reg0, #0x1F
+	mcr p15, 0, \reg1, c7, c10, 1
+.endm
+
+
+/**
+ * Clean and Invalidate Data Cache by MVA
+ */
+.macro macro32_clean_invalidate_cache reg0 reg1:req
+	bic \reg1, \reg0, #0x1F
+	mcr p15, 0, \reg1, c7, c14, 1
+.endm
+
+
+/**
  * Get Multi-core Identifier
  */
 .macro macro32_multicore_id reg0:req
