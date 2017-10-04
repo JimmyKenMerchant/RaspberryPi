@@ -65,19 +65,20 @@ _el01_reset:
 
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 
-	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
-	macro32_invalidate_instruction ip
-	macro32_isb ip                            @ Flush Instructions in Pipelines
-
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b101                        @ Enable Data Cache Bit[2] and (EL0 and EL1)MMU Bit[0]
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction L1 Cache Bit[12] and Branch Prediction Bit[11]
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
-	macro32_dsb ip
+
+	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
+	macro32_invalidate_instruction ip
+
+	macro32_dsb ip                            @ Ensure Completion of Instructions Before
+	macro32_isb ip                            @ Flush Instructions in Pipelines
 
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
-	orr r0, r0, #0b01000001                   @ Enable [6]SMP (Symmetric Multi Processing), Shares Memory on Each Core,
-                                                  @ And Enable [0]FW, Cache and TLB Maintenance Broadcast (From ARMv8)
+	orr r0, r0, #0b01000000                   @ Enable SMP Bit[6] (Symmetric Multi Processing), Shares Memory on Each Core,
+                                                  @ And This Bit is deprecated on Cortex-A53 (ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 	macro32_dsb ip
 
