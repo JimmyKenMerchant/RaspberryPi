@@ -312,6 +312,9 @@ _os_fiq:
 	subs pc, lr, #4
 
 _os_fiq_handler:
+
+	macro32_invalidate_instruction ip
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
@@ -362,8 +365,6 @@ _os_fiq_handler:
 	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r4, [r4]
 	macro32_print_number_double r0 r1 100 200 r2 r3 16 8 12 r4
-
-	macro32_invalidate_instruction ip
 
 	_os_fiq_handler_jump:
 		macro32_dsb ip                            @ Data Synchronization Barrier is Needed
