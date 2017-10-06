@@ -127,15 +127,140 @@ print32_set_caret:
 
 
 /**
+ * function print32_strstr
+ * Search Byte Character in String
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Pointer of Array of String to Be Searched (Key)
+ *
+ * Return: r0 (Pointer of First Character in String, if not 0)
+ */
+.globl print32_strstr
+print32_strstr:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point1      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_point2      .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	char_search        .req r2
+	temp               .req r3
+	string_length2     .req r4
+	string_point1_dup  .req r5
+	string_length2_dup .req r6
+
+	push {r4-r6}
+
+	push {r0-r3,lr}
+	mov r0, string_point2
+	bl print32_strlen
+	mov string_length2, r0
+	pop {r0-r3,lr}
+
+	mov string_length2_dup, string_length2
+	add string_length2, string_point2, string_length2
+
+	mov string_point1_dup, #0
+
+	print32_strstr_loop:
+		cmp string_point2, string_length2
+		subge string_point1_dup, string_point1_dup, string_length2_dup
+		bge print32_strstr_common
+
+		ldrb char_search, [string_point2]
+
+		push {r0-r3,lr}
+		mov r1, char_search
+		bl print32_strchar
+		mov string_point1_dup, r0
+		pop {r0-r3,lr}
+
+		cmp string_point1_dup, #0
+		beq print32_strstr_common
+
+		add string_point2, string_point2, #1
+		mov string_point1, string_point1_dup
+
+		b print32_strstr_loop
+
+	print32_strstr_common:
+		mov r0, string_point1_dup
+		pop {r4-r6}
+		mov pc, lr
+
+.unreq string_point1
+.unreq string_point2
+.unreq char_search
+.unreq temp
+.unreq string_length2
+.unreq string_point1_dup
+.unreq string_length2_dup
+
+
+/**
+ * function print32_strchar
+ * Search Byte Character in String
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Character to Be Searched (Key)
+ *
+ * Return: r0 (Pointer of Character, if not 0)
+ */
+.globl print32_strchar
+print32_strchar:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	char_search       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	char_string       .req r2
+	temp              .req r3
+	string_length     .req r4
+
+	push {r4}
+
+	push {r0-r3,lr}
+	bl print32_strlen
+	mov string_length, r0
+	pop {r0-r3,lr}
+
+	add string_length, string_point, string_length
+
+	print32_strchar_loop:
+		cmp string_point, string_length
+		movge string_point, #0
+		bge print32_strchar_common
+
+		ldrb char_string, [string_point]
+		cmp char_string, char_search
+		beq print32_strchar_common
+
+		add string_point, string_point, #1
+		b print32_strchar_loop
+
+	print32_strchar_common:
+		mov r0, string_point
+		pop {r4}
+		mov pc, lr
+
+.unreq string_point
+.unreq char_search
+.unreq char_string
+.unreq temp
+.unreq string_length
+
+
+/**
  * function print32_strcat
  * Concatenation of Two Strings
+ * Caution! On the C Langage string.h library, strcat returns Pointer of Array of the first argument with
+ * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.
+ * But that makes buffer overflow easily. So in this function, print32_strcat returns new Pointer of Array.
+ * Note that this function makes new memory space to be needed to make the memory free.
  *
  * Parameters
  * r0: Pointer of Array of String
  * r1: Pointer of Array of String
  *
  * Usage: r0-r7
- * Return: r0 (Pointer of Concatenated String)
+ * Return: r0 (Pointer of Concatenated String, if 0, no enough space for new Pointer of Array)
  */
 .globl print32_strcat
 print32_strcat:
