@@ -1,4 +1,4 @@
-# Framebuffer Test
+# USB Test
 
 * Author: Kenta Ishii
 * License: MIT

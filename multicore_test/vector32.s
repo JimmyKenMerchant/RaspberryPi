@@ -95,63 +95,8 @@ _os_reset:
 	add r0, r0, #equ32_gpio_base
 
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
-	str r1, [r0, #equ32_gpio_gpfsel40]
-
-	/* GPCLK1 is Already Set to 25Mhz */
-	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 AlT0 (GPCLK1)
-	str r1, [r0, #equ32_gpio_gpfsel00]
-
-	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 AlT0 (PWM0)
-	str r1, [r0, #equ32_gpio_gpfsel10]
-
-	mov r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
-	str r1, [r0, #equ32_gpio_gpfsel20]
-
-	mov r1, #equ32_gpio21                                      @ Set GPIO21 Async Rising Edge Detect
-	str r1, [r0, #equ32_gpio_gparen0]
-
-	/**
-	 * PWM
-	 * Makes 19.2Mhz (From Oscillator) Div by 512 Equals 37500Hz.
-	 * And Makes 37500Hz Div by 32 (Default Range) Equals 1171.875Hz.
-	 * Data is Just 1, so Voltage Will Be One 32th to Full if Lowpass Filter is Attached.
-	 */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_cm_base_lower
-	add r0, r0, #equ32_cm_base_upper
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #0x200 << equ32_cm_div_integer                 @ Decimal 512
-	str r1, [r0, #equ32_cm_pwmdiv]
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc        @ 19.2Mhz
-	str r1, [r0, #equ32_cm_pwmctl]
-
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_pwm_base_lower
-	add r0, r0, #equ32_pwm_base_upper
-
-	mov r1, #1
-	str r1, [r0, #equ32_pwm_dat1]
-
-	mov r1, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_pwen1
-	str r1, [r0, #equ32_pwm_ctl]
 
 	/* Obtain Framebuffer from VideoCore IV */
-	mov r0, #400
-	ldr r1, ADDR32_BCM32_WIDTH
-	str r0, [r1]
-
-	macro32_clean_cache r1, ip
-
-	mov r0, #320
-	ldr r1, ADDR32_BCM32_HEIGHT
-	str r0, [r1]
-
-	macro32_clean_cache r1, ip
-
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
@@ -259,45 +204,99 @@ _os_reset:
 	vmsr fpexc, r0
 
 _os_render:
+	push {r0-r8}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
 	ldr r0, [r0]
 	bl fb32_clear_color
 
+	/* Core 3 */
+
+	mov r0, #2
+	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	ldr r1, core123_handler
+	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
+	mov r1, #0
+	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	push {r0-r3}
+	mov r1, #3                                @ Indicate Number of Core
+	bl system32_core_call
+	pop {r0-r3}
+
+	_os_render_loop2:
+		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
+		ldr r1, [r1]
+		cmp r1, #0
+		bne _os_render_loop2
+
+	bl system32_free                          @ Clear Memory Space
+
+	/* Core 3 */
+
+	mov r0, #9
+	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	ldr r1, core123_handler2
+	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
+	mov r1, #7
+	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	mov r1, #0x1
+	str r1, [r0, #8]
+	mov r1, #0x2
+	str r1, [r0, #12]
+	mov r1, #0x3
+	str r1, [r0, #16]
+	mov r1, #0x4
+	str r1, [r0, #20]
+	mov r1, #0x5
+	str r1, [r0, #24]
+	mov r1, #0x6
+	str r1, [r0, #28]
+	mov r1, #0x7
+	str r1, [r0, #32]
+	push {r0-r3}
+	mov r1, #3                                @ Indicate Number of Core
+	bl system32_core_call
+	pop {r0-r3}
+
+	_os_render_loop3:
+		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
+		ldr r1, [r1]
+		cmp r1, #0
+		bne _os_render_loop3
+
+	ldr r1, [r0]
+
+macro32_debug r1 500 500
+
+	bl system32_free                          @ Clear Memory Space
+
 	ldr r0, string_hello                      @ Pointer of Array of String
-	ldr r1, ADDR32_COLOR32_WHITE              @ Color (16-bit or 32-bit)
+	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
 	ldr r1, [r1]
 	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
 	ldr r2, [r2]
 	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r3, [r3]
-	macro32_print_string r0 0 48 r1 r2 200 8 12 r3
+	macro32_print_string r0, 0, 0, r1, r2, 100, 8, 12, r3
 
-	ldr r0, string_helts                      @ Pointer of Array of String
-	macro32_print_string r0 232 200 r1 r2 2 8 12 r3
+	ldr r0, string_test                       @ Pointer of Array of String
+	macro32_print_string r0, 0, 100, r1, r2, 100, 8, 12, r3
 
-	ldr r0, string_copy1                      @ Pointer of Array of String
-	macro32_print_string r0 148 284 r1 r2 30 8 12 r3
+	push {r1-r3}
+	ldrb r0, core0
+	ldrb r1, core1
+	ldrb r2, core2
+	ldrb r3, core3
+	add r0, r0, r1
+	add r0, r0, r2
+	add r0, r0, r3
+	pop {r1-r3}
 
-	ldr r0, string_copy2                      @ Pointer of Array of String
-	macro32_print_string r0 148 300 r1 r2 30 8 12 r3
+macro32_debug r0 500 512
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
-	mov r1, #equ32_gpio21
+	pop {r0-r8}
 
 	cpsie f
-
-	_os_render_loop:
-		ldr r2, [r0, #equ32_gpio_gpeds0]
-		tst r2, r1
-		strne r1, [r0, #equ32_gpio_gpeds0]
-		ldrne r2, freq_count
-		addne r2, r2, #1
-		strne r2, freq_count
-		macro32_dsb ip                            @ Data Synchronization Barrier is Needed
-		macro32_isb ip                            @ Instruction Synchronization Barrier is Needed
-		b _os_render_loop
 
 	push {r0-r3,lr}
 	bl _user_start
@@ -334,9 +333,6 @@ _os_fiq:
 	subs pc, lr, #4
 
 _os_fiq_handler:
-
-	macro32_invalidate_instruction ip
-
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
@@ -356,27 +352,16 @@ _os_fiq_handler:
 	mov r1, #equ32_gpio47
 	str r1, [r0]
 
-	ldr r0, irq_count
-	add r0, r0, #1
-	cmp r0, #10
-	strlt r0, irq_count
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_systemtimer_base
 
-	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
-
-	blt _os_fiq_handler_jump
-
-	mov r0, #0
-	str r0, irq_count
-
-	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
-
-	ldr r0, freq_count
-	mov r1, #0
-	str r1, freq_count
-
-	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
+	ldr r0, [r0, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
+	ldr r1, sys_timer_previous
+	sub r2, r0, r1
+	str r0, sys_timer_previous
 
 	push {lr}
+	mov r0, r2
 	bl math32_hexa_to_deci32
 	pop {lr}
 
@@ -386,11 +371,54 @@ _os_fiq_handler:
 	ldr r3, [r3]
 	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r4, [r4]
-	macro32_print_number_double r0 r1 100 200 r2 r3 16 8 12 r4
+	macro32_print_number_double r0 r1 80 388 r2 r3 16 8 12 r4
 
-	_os_fiq_handler_jump:
-		macro32_dsb ip                            @ Data Synchronization Barrier is Needed
-		mov pc, lr
+	ldr r0, timer_sub
+	ldr r1, timer_main
+
+	add r0, r0, #1
+	cmp r0, #10
+	addge r1, #1
+	movge r0, #0
+
+	str r0, timer_sub
+	str r1, timer_main
+
+	macro32_print_number_double r0 r1 80 400 r2 r3 16 8 12 r4
+
+	mov pc, lr
+
+core123_handler: .word _core123_handler
+
+_core123_handler:
+	macro32_multicore_id r0
+	ldr r1, core_addr
+	mul r2, r0, r0
+	ldrb r3, [r1,r0]
+	add r2, r2, r3
+	strb r2, [r1,r0]
+	macro32_dsb ip
+	macro32_isb ip
+	mov pc, lr
+
+core123_handler2: .word _core123_handler2
+_core123_handler2:
+	push {r4-r11}
+
+	add sp, sp, #32                 @ r4-r11 offset 32 bytes
+	pop {r4-r6}                     @ Get Fifth to Seventh Arguments
+	sub sp, sp, #44
+
+	add r0, r0, r1
+	add r0, r0, r2
+	add r0, r0, r3
+	add r0, r0, r4
+	add r0, r0, r5
+	add r0, r0, r6
+	macro32_dsb ip
+	macro32_isb ip
+	pop {r4-r11}
+	mov pc, lr
 
 /**
  * Variables
@@ -399,29 +427,31 @@ _os_fiq_handler:
 gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
-	.ascii "\tALOHA!\n\tFrequency Counter.\n\tGPIO 21 is Input Pin.\n\n\tNote: Voltage Limitation is UP TO 3.3V!\n\tGPIO 12 is Output Pin for Test.\n\tGPIO 5 is Output Pin for Max. Frequency Test.\n\tMahalo!\0" @ Add Null Escape Character on The End
+	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
 string_hello:
 	.word _string_hello
-_string_helts:
-	.ascii "Hz\0" @ Add Null Escape Character on The End
+_string_test:
+	.ascii "Sytem Timer Interval\n\t100K? 100K by 10 Equals 1M!\n\tSystem Timer is 1M Hz!\0"
 .balign 4
-string_helts:
-	.word _string_helts
-_string_copy1:
-	.ascii "Product of Kenta Ishii\0" @ Add Null Escape Character on The End
-.balign 4
-string_copy1:
-	.word _string_copy1
-_string_copy2:
-	.ascii "Powered by ALOHA SYSTEM32\0" @ Add Null Escape Character on The End
-.balign 4
-string_copy2:
-	.word _string_copy2
-freq_count:
+string_test:
+	.word _string_test
+timer_main:
 	.word 0x00000000
-irq_count:
+timer_sub:
 	.word 0x00000000
+sys_timer_previous:
+	.word 0x00000000
+core_addr:
+	.word core0
+core0:
+	.byte 0x00000000
+core1:
+	.byte 0x00000000
+core2:
+	.byte 0x00000000
+core3:
+	.byte 0x00000000
 .balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`

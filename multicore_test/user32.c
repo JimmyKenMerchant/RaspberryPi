@@ -11,7 +11,6 @@
 
 void _user_start()
 {
-	
 	while(1) {
 	}
 }

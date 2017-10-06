@@ -69,6 +69,14 @@ extern int32* system32_malloc( uint32 block_size );
 
 extern uint32 system32_mfree( int32* address );
 
+extern uint32 system32_memcpy( int32* address_dst, int32* address_src );
+
+extern void system32_dsb();
+
+extern void system32_msb();
+
+extern void system32_isb();
+
 
 /********************************
  * system32/fb32.s

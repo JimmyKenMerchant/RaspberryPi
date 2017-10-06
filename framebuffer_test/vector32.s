@@ -95,8 +95,6 @@ _os_reset:
 	add r0, r0, #equ32_gpio_base
 
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
-	add r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4 @ Set GPIO 44 AlT0 (GPCLK1)
-	str r1, [r0, #equ32_gpio_gpfsel40]
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
@@ -117,10 +115,16 @@ _os_reset:
 
 	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
 	push {r0-r3}
+.ifndef __ARMV6
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
 	ldr r2, [r2]
@@ -131,10 +135,16 @@ _os_reset:
 
 	/* Set Cache Status for HEAP */
 	push {r0-r3}
+.ifndef __ARMV6
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_HEAP_ADDR
 	ldr r2, [r2]
@@ -145,10 +155,16 @@ _os_reset:
 
 	/* Set Cache Status for Virtual Address Descriptor */
 	push {r0-r3}
+.ifndef __ARMV6
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_VADESCRIPTOR_ADDR
 	ldr r2, [r2]
@@ -188,141 +204,16 @@ _os_reset:
 	vmsr fpexc, r0
 
 _os_render:
-	push {r0-r8}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
 	ldr r0, [r0]
 	bl fb32_clear_color
 
-	/* Core 3 */
-
-	mov r0, #2
-	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
-	ldr r1, core123_handler
-	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
-	mov r1, #0
-	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
-	push {r0-r3}
-	mov r1, #3                                @ Indicate Number of Core
-	bl system32_core_call
-	pop {r0-r3}
-
-	_os_render_loop2:
-		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
-		ldr r1, [r1]
-		cmp r1, #0
-		bne _os_render_loop2
-
-	bl system32_free                          @ Clear Memory Space
-
-	/* Core 3 */
-
-	mov r0, #9
-	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
-	ldr r1, core123_handler2
-	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
-	mov r1, #7
-	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
-	mov r1, #0x1
-	str r1, [r0, #8]
-	mov r1, #0x2
-	str r1, [r0, #12]
-	mov r1, #0x3
-	str r1, [r0, #16]
-	mov r1, #0x4
-	str r1, [r0, #20]
-	mov r1, #0x5
-	str r1, [r0, #24]
-	mov r1, #0x6
-	str r1, [r0, #28]
-	mov r1, #0x7
-	str r1, [r0, #32]
-	push {r0-r3}
-	mov r1, #3                                @ Indicate Number of Core
-	bl system32_core_call
-	pop {r0-r3}
-
-	_os_render_loop3:
-		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
-		ldr r1, [r1]
-		cmp r1, #0
-		bne _os_render_loop3
-
-	ldr r1, [r0]
-
-macro32_debug r1 500 500
-
-	bl system32_free                          @ Clear Memory Space
-
-	ldr r0, string_hello                      @ Pointer of Array of String
-	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
-	ldr r1, [r1]
-	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r3, [r3]
-	macro32_print_string r0 0 0 r1 r2 100 8 12 r3
-
-	ldr r0, string_test                       @ Pointer of Array of String
-	macro32_print_string r0 0 100 r1 r2 100 8 12 r3
-
-	push {r1-r3}
-	ldrb r0, core0
-	ldrb r1, core1
-	ldrb r2, core2
-	ldrb r3, core3
-	add r0, r0, r1
-	add r0, r0, r2
-	add r0, r0, r3
-	pop {r1-r3}
-
-	macro32_print_number r0 0 136 r1 r2 100 8 12 r3
-
-	mov r0, #0x3
-	mov r1, #0x1
-	bl bcm32_set_powerstate
-
-macro32_debug r0 500 90
-
-	bl usb2032_otg_host_start
-
-macro32_debug r0 500 102
-
-	mov r1, #equ32_peripherals_base
-	add r1, r1, #equ32_usb20_otg_base
-	ldr r0, [r1, #equ32_usb20_otg_ghwcfg2]
-
-macro32_debug r0 500 114
-
-	mov r0, #2
-	bl usb2032_hub_activate
-
-macro32_debug r0 500 126
-
-	mov r1, #equ32_peripherals_base
-	add r1, r1, #equ32_cm_base_lower
-	add r1, r1, #equ32_cm_base_upper
-	ldr r0, [r1, #equ32_cm_pwmctl]
-
-macro32_debug r0 500 150
-
-	ldr r0, [r1, #equ32_cm_pwmdiv]
-
-macro32_debug r0 500 162
-
-	mov r1, #equ32_peripherals_base
-	add r1, r1, #equ32_gpio_base
-	ldr r0, [r1, #equ32_gpio_gpfsel40]
-
-macro32_debug r0 500 174
-
-	pop {r0-r8}
-
 	cpsie f
 
-	push {r0-r3}
+	push {r0-r3,lr}
 	bl _user_start
-	pop {r0-r3}
+	pop {r0-r3,lr}
 
 	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer, VBAR,and Link Register
 	ldr r0, [fp, #-8]                        @ Stack Pointer
@@ -410,38 +301,6 @@ _os_fiq_handler:
 
 	mov pc, lr
 
-core123_handler: .word _core123_handler
-
-_core123_handler:
-	macro32_multicore_id r0
-	ldr r1, core_addr
-	mul r2, r0, r0
-	ldrb r3, [r1,r0]
-	add r2, r2, r3
-	strb r2, [r1,r0]
-	macro32_dsb ip
-	macro32_isb ip
-	mov pc, lr
-
-core123_handler2: .word _core123_handler2
-_core123_handler2:
-	push {r4-r11}
-
-	add sp, sp, #32                 @ r4-r11 offset 32 bytes
-	pop {r4-r6}                     @ Get Fifth to Seventh Arguments
-	sub sp, sp, #44
-
-	add r0, r0, r1
-	add r0, r0, r2
-	add r0, r0, r3
-	add r0, r0, r4
-	add r0, r0, r5
-	add r0, r0, r6
-	macro32_dsb ip
-	macro32_isb ip
-	pop {r4-r11}
-	mov pc, lr
-
 /**
  * Variables
  */
@@ -458,34 +317,12 @@ _string_test:
 .balign 4
 string_test:
 	.word _string_test
-addr_float: .word float_example1
-float_example1:
-	.float 4.4
-	.word 0x00
-float_example2:
-	.float 7.8
-	.word 0x00
-float_example3:
-	.float 3.3
-	.word 0x00
-double_example:
-	.double 3.3
 timer_main:
 	.word 0x00000000
 timer_sub:
 	.word 0x00000000
 sys_timer_previous:
 	.word 0x00000000
-core_addr:
-	.word core0
-core0:
-	.byte 0x00000000
-core1:
-	.byte 0x00000000
-core2:
-	.byte 0x00000000
-core3:
-	.byte 0x00000000
 .balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`

@@ -1,6 +1,4 @@
-# Frequency Counter for Multi-core Raspberry Pi (ARMv7+)
-
-**This Program is tested by Raspberry Pi 2 Model B V1.1 whose CPU is BCM2836, Coretex-A7 MPCore (ARMv7-A).**
+# Frequency Counter
 
 * Author: Kenta Ishii
 * License: MIT
@@ -19,6 +17,10 @@
 * GPIO 21 as Input (Caution! Voltage Limitation Is Up To 3.3V!)
 
 ## GPIO 21 IS UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+
+**Compatibility**
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
 
 **Specification**
 

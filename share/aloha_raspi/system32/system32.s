@@ -1536,6 +1536,39 @@ system32_memcpy:
 
 
 /**
+ * function system32_dsb
+ * Data Synchronization Barrier
+ *
+ */
+.globl system32_dsb
+system32_dsb:
+		macro32_dsb ip
+		mov pc, lr
+
+
+/**
+ * function system32_dmb
+ * Data Memory Barrier
+ *
+ */
+.globl system32_dmb
+system32_dmb:
+		macro32_dmb ip
+		mov pc, lr
+
+
+/**
+ * function system32_isb
+ * Instruction Synchronization Barrier
+ *
+ */
+.globl system32_isb
+system32_isb:
+		macro32_isb ip
+		mov pc, lr
+
+
+/**
  * Make sure to complete addresses of variables by `str/ldr Rd, [PC, #Immediate]`,
  * othewise, compiler can't recognaize labels of variables or literal pool.
  * This Immediate can't be over #4095 (0xFFF), i.e. within 4K Bytes.

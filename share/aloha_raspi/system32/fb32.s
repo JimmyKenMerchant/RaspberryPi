@@ -196,6 +196,7 @@ fb32_draw_arc:
 		add r1, x_current, y_current
 		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		macro32_dsb ip
 		mov pc, lr
 
 .unreq color
@@ -626,7 +627,6 @@ fb32_draw_line:
  * (Callee ip, Caller r7): X Crop (Lower Right Position X)
  * (Callee ip, Caller r8): Y Crop (Lower Right Position Y)
  *
- * Usage: r0-r12
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
@@ -646,8 +646,7 @@ fb32_draw_image:
 	size             .req r8
 	color            .req r9
 	char_width_bytes .req r10
-	bitmask          .req r11
-	x_crop_char      .req r12 @ ip is Alias of r12, This Function Uses r12 as ip Too. x_crop_char Uses After Usage as ip
+	x_crop_char      .req r11
 
 	/* VFP Registers */
 	vfp_src_lower   .req d0
@@ -798,7 +797,6 @@ fb32_draw_image:
 		lsleq x_crop_char, ip, #2                @ X Crop Bytes, substitution of Multiplication by 4 (No Minus)
 
 	fb32_draw_image_loop:
-
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
 		ble fb32_draw_image_success
 
@@ -1019,7 +1017,6 @@ fb32_draw_image:
 .unreq size
 .unreq color
 .unreq j
-.unreq bitmask
 .unreq x_crop_char
 .unreq vfp_src_lower
 .unreq vfp_src_upper

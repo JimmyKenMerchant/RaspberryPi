@@ -1,4 +1,4 @@
-# Framebuffer Test
+# Multicore Test
 
 * Author: Kenta Ishii
 * License: MIT

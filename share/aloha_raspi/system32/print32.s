@@ -790,7 +790,6 @@ print32_number:
  * r4: Character Width in Pixels
  * r5: Character Height in Pixels
  *
- * Usage: r0-r12
  * Return: r0 (0 as sucess, 1 and 2 as error)
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
@@ -811,7 +810,6 @@ print32_char:
 	size        .req r9
 	char_byte   .req r10
 	j           .req r11 @ Use for Horizontal Counter
-	bitmask     .req r12
 
 	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -868,6 +866,9 @@ print32_char:
 	cmp depth, #32
 	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
 	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
+
+	.unreq x_coord
+	bitmask .req r1
 
 	print32_char_loop:
 
@@ -947,7 +948,7 @@ print32_char:
 		mov pc, lr
 
 .unreq char_point
-.unreq x_coord
+.unreq bitmask
 .unreq width_check
 .unreq color
 .unreq char_width
@@ -958,4 +959,3 @@ print32_char:
 .unreq size
 .unreq char_byte
 .unreq j
-.unreq bitmask
