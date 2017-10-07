@@ -127,25 +127,25 @@ print32_set_caret:
 
 
 /**
- * function print32_strstr
- * Search Byte Character in String
+ * function print32_strindex
+ * Search Second Key String in First String
  *
  * Parameters
  * r0: Pointer of Array of String
  * r1: Pointer of Array of String to Be Searched (Key)
  *
- * Return: r0 (Pointer of First Character in String, if not 0)
+ * Return: r0 (Index of First Character in String, if not -1)
  */
-.globl print32_strstr
-print32_strstr:
+.globl print32_strindex
+print32_strindex:
 	/* Auto (Local) Variables, but just Aliases */
 	string_point1      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	string_point2      .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	char_search        .req r2
 	temp               .req r3
-	string_length2     .req r4
-	string_point1_dup  .req r5
-	string_length2_dup .req r6
+	increment          .req r4
+	string_length2     .req r5
+	string_size2       .req r6
 
 	push {r4-r6}
 
@@ -155,34 +155,36 @@ print32_strstr:
 	mov string_length2, r0
 	pop {r0-r3,lr}
 
-	mov string_length2_dup, string_length2
-	add string_length2, string_point2, string_length2
+	add string_size2, string_point2, string_length2
 
-	mov string_point1_dup, #0
+	mov increment, #0
 
-	print32_strstr_loop:
-		cmp string_point2, string_length2
-		subge string_point1_dup, string_point1_dup, string_length2_dup
-		bge print32_strstr_common
+	print32_strindex_loop:
+		cmp string_point2, string_size2
+		subge increment, increment, string_length2     @ string_length2 May Have Zero
+		bge print32_strindex_common
 
 		ldrb char_search, [string_point2]
 
-		push {r0-r3,lr}
-		mov r1, char_search
-		bl print32_strchar
-		mov string_point1_dup, r0
-		pop {r0-r3,lr}
+		add temp, string_point1, increment
 
-		cmp string_point1_dup, #0
-		beq print32_strstr_common
+		push {r0-r3,lr}
+		mov r0, temp
+		mov r1, char_search
+		bl print32_charindex
+		cmp r0, #-1                                    @ 0xFFFFFFF
+		addne increment, increment, r0
+		moveq increment, r0
+		pop {r0-r3,lr}
+		beq print32_strindex_common
 
 		add string_point2, string_point2, #1
-		mov string_point1, string_point1_dup
+		add increment, increment, #1
 
-		b print32_strstr_loop
+		b print32_strindex_loop
 
-	print32_strstr_common:
-		mov r0, string_point1_dup
+	print32_strindex_common:
+		mov r0, increment
 		pop {r4-r6}
 		mov pc, lr
 
@@ -190,31 +192,32 @@ print32_strstr:
 .unreq string_point2
 .unreq char_search
 .unreq temp
+.unreq increment
 .unreq string_length2
-.unreq string_point1_dup
-.unreq string_length2_dup
+.unreq string_size2
 
 
 /**
- * function print32_strchar
+ * function print32_charindex
  * Search Byte Character in String
  *
  * Parameters
  * r0: Pointer of Array of String
  * r1: Character to Be Searched (Key)
  *
- * Return: r0 (Pointer of Character, if not 0)
+ * Return: r0 (Index of Character, if not -1)
  */
-.globl print32_strchar
-print32_strchar:
+.globl print32_charindex
+print32_charindex:
 	/* Auto (Local) Variables, but just Aliases */
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	char_search       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	char_string       .req r2
-	temp              .req r3
+	increment         .req r3
 	string_length     .req r4
+	temp              .req r5
 
-	push {r4}
+	push {r4-r5}
 
 	push {r0-r3,lr}
 	bl print32_strlen
@@ -223,34 +226,38 @@ print32_strchar:
 
 	add string_length, string_point, string_length
 
-	print32_strchar_loop:
-		cmp string_point, string_length
-		movge string_point, #0
-		bge print32_strchar_common
+	mov increment, #0
 
-		ldrb char_string, [string_point]
+	print32_charindex_loop:
+		add temp, string_point, increment
+		cmp temp, string_length
+		mvnge increment, #0
+		bge print32_charindex_common
+
+		ldrb char_string, [temp]
 		cmp char_string, char_search
-		beq print32_strchar_common
+		beq print32_charindex_common
 
-		add string_point, string_point, #1
-		b print32_strchar_loop
+		add increment, increment, #1
+		b print32_charindex_loop
 
-	print32_strchar_common:
-		mov r0, string_point
-		pop {r4}
+	print32_charindex_common:
+		mov r0, increment
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq string_point
 .unreq char_search
 .unreq char_string
-.unreq temp
+.unreq increment
 .unreq string_length
+.unreq temp
 
 
 /**
  * function print32_strcat
  * Concatenation of Two Strings
- * Caution! On the C Langage string.h library, strcat returns Pointer of Array of the first argument with
+ * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
  * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.
  * But that makes buffer overflow easily. So in this function, print32_strcat returns new Pointer of Array.
  * Note that this function makes new memory space to be needed to make the memory free.

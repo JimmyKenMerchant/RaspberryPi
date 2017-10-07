@@ -608,7 +608,7 @@ draw32_clear_renderbuffer:
 	
 	push {r0-r3,lr}
 	mov r0, addr
-	bl system32_free
+	bl system32_mfree
 	cmp r0, #0
 	bne draw32_clear_renderbuffer_error
 	pop {r0-r3,lr}

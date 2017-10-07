@@ -1276,6 +1276,7 @@ system32_clear_heap:
  * Get Memory Space from Heap (4 Bytes:1 Word Align)
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
  * Argument, Size Means Number of Words Allocated
+ * Caution! There are differences between the standard function in C language and this function.
  *
  * Parameters
  * r0: Number of Words, 1 Word means 4 Bytes
@@ -1373,7 +1374,7 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
 
 
 /**
- * function system32_free
+ * function system32_mfree
  * Free Memory Space in Heap
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
  *
@@ -1384,8 +1385,8 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
  * Return: r0 (0 as Success, 1 as Error)
  * Error: Pointer of Start Address is Null (0)
  */
-.globl system32_free
-system32_free:
+.globl system32_mfree
+system32_mfree:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	block_size       .req r1
@@ -1398,7 +1399,7 @@ system32_free:
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	cmp block_start, #0
-	beq system32_free_error
+	beq system32_mfree_error
 
 	ldr block_size, [block_start, #-4]
 	add block_size, block_start, block_size
@@ -1409,27 +1410,27 @@ system32_free:
 	add heap_size, heap_start, heap_size
 
 	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bgt system32_free_error                     @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	bgt system32_mfree_error                     @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
 
 	mov zero, #0
 
-	system32_free_loop:
+	system32_mfree_loop:
 		cmp block_start, block_size
-		bge system32_free_success
+		bge system32_mfree_success
 
 		str zero, [block_start]
 		add block_start, block_start, #4
 
-		b system32_free_loop
+		b system32_mfree_loop
 
-	system32_free_error:
+	system32_mfree_error:
 		mov r0, #1
-		b system32_free_common
+		b system32_mfree_common
 
-	system32_free_success:
+	system32_mfree_success:
 		mov r0, #0
 
-	system32_free_common:
+	system32_mfree_common:
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4}
 		mov pc, lr
@@ -1442,38 +1443,40 @@ system32_free:
 
 
 /**
- * function system32_memcpy
+ * function system32_mcopy
  * Copy Value in Memory
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space to Be Destination
  * r1: Pointer of Start Address of Memory Space to Be Copied (Source)
- * r2: Size of Bytes to Be Copied
+ * r2: Offset of Bytes to Be Copied (Source)
+ * r3: Size of Bytes to Be Copied (Source)
  *
  * Return: r0 (Pointer of Start Address of Memory Space to Be Destination, If 0, No Enough Space to Copy to First Argument)
  */
-.globl system32_memcpy
-system32_memcpy:
+.globl system32_mcopy
+system32_mcopy:
 	/* Auto (Local) Variables, but just Aliases */
 	heap1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	heap2        .req r1 @ Parameter, Register for Argument
-	size         .req r2 @ Parameter, Register for Argument
-	heap1_size   .req r3
-	heap2_size   .req r4
-	byte         .req r5
-	heap_start   .req r6
-	heap_size    .req r7
-	heap1_dup    .req r8
+	offset       .req r2 @ Parameter, Register for Argument
+	size         .req r3 @ Parameter, Register for Argument
+	heap1_size   .req r4
+	heap2_size   .req r5
+	byte         .req r6
+	heap_start   .req r7
+	heap_size    .req r8
+	heap1_dup    .req r9
 
-	push {r4-r8}
+	push {r4-r9}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	cmp heap1, #0
-	beq system32_memcpy_error
+	beq system32_mcopy_error
 
 	cmp heap2, #0
-	beq system32_memcpy_error
+	beq system32_mcopy_error
 
 	ldr heap1_size, [heap1, #-4]
 	add heap1_size, heap1_size, heap1
@@ -1486,21 +1489,23 @@ system32_memcpy:
 	add heap_size, heap_start, heap_size
 
 	cmp heap1, heap_start
-	blt system32_memcpy_error
+	blt system32_mcopy_error
 	cmp heap2, heap_start
-	blt system32_memcpy_error
+	blt system32_mcopy_error
 	cmp heap1_size, heap_size
-	bge system32_memcpy_error
+	bge system32_mcopy_error
 	cmp heap2_size, heap_size
-	bge system32_memcpy_error
+	bge system32_mcopy_error
 
 	mov heap1_dup, heap1
 
-	system32_memcpy_loop:
+	add heap2, heap2, offset
+
+	system32_mcopy_loop:
 		cmp heap1, heap1_size
-		bge system32_memcpy_error
+		bge system32_mcopy_error
 		cmp heap2, heap2_size
-		bge system32_memcpy_error
+		bge system32_mcopy_error
 
 		ldrb byte, [heap2]
 		strb byte, [heap1]
@@ -1509,23 +1514,24 @@ system32_memcpy:
 		add heap2, heap2, #1
 		sub size, size, #1
 		cmp size, #0
-		ble system32_memcpy_success
-		b system32_memcpy_loop                  @ If Bytes are not Zero
+		ble system32_mcopy_success
+		b system32_mcopy_loop                   @ If Bytes are not Zero
 
-	system32_memcpy_error:
+	system32_mcopy_error:
 		mov r0, #0
-		b system32_memcpy_common
+		b system32_mcopy_common
 
-	system32_memcpy_success:
+	system32_mcopy_success:
 		mov r0, heap1_dup
 
-	system32_memcpy_common:
+	system32_mcopy_common:
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
-		pop {r4-r8}
+		pop {r4-r9}
 		mov pc, lr
 
 .unreq heap1
 .unreq heap2
+.unreq offset
 .unreq size
 .unreq heap1_size
 .unreq heap2_size

@@ -22,7 +22,6 @@ FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits
 
 
 /* Indicates Caret Position to Use in Printing Characters */
-.balign 4
 .globl FB32_X_CARET
 .globl FB32_Y_CARET
 FB32_X_CARET: .word 0x00000000
@@ -55,6 +54,7 @@ FB32_FRAMEBUFFER_DEPTH:    .word 0x00
 FB32_DOUBLEBUFFER_BACK:    .word 0x00
 FB32_DOUBLEBUFFER_FRONT:   .word 0x00
 
+.balign 4
 
 /**
  * function fb32_draw_arc
@@ -68,12 +68,11 @@ FB32_DOUBLEBUFFER_FRONT:   .word 0x00
  * r2: Y Coordinate of Center
  * r3: X Radius
  * r4: Y Radius
- * r5: Radian of Start, Must Be Type of Single Presicion Float
- * r6: Radian of End, Must Be Type of Single Presicion Float
+ * r5: Radian on Start of Arc
+ * r6: Radian on End of Arc
  * r7: Width of Arc Line
  * r8: Height of Arc Line
  *
- * Usage: r0-r10
  * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
  */
@@ -91,6 +90,7 @@ fb32_draw_arc:
 	char_height      .req r8   @ Parameter, have to PUSH/POP in ARM C lang Regulation
 	x_current        .req r9
 	y_current        .req r10
+	flag             .req r11
 
 	/* VFP Registers */
 	vfp_d_radian     .req d0 @ q0[0]
@@ -105,19 +105,19 @@ fb32_draw_arc:
 	vfp_add          .req s6
 	vfp_temp         .req s7
 
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #28                                   @ r4-r10 offset 28 bytes
+	add sp, sp, #32                                   @ r4-r11 offset 32 bytes
 	pop {y_radius, start_radian, end_radian, char_width, char_height} @ Get Fifth to Ninth Arguments
-	sub sp, sp, #48                                   @ Retrieve SP
+	sub sp, sp, #52                                   @ Retrieve SP
 
 	vpush {s0-s7}
 
 	vmov vfp_d_radian, start_radian, end_radian
 	vcmp.f32 vfp_start_radian, vfp_end_radian
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_start_radian, vfp_temp
+	vmovgt vfp_temp, vfp_start_radian
 	vmovgt vfp_start_radian, vfp_end_radian
 	vmovgt vfp_end_radian, vfp_temp
 
@@ -130,16 +130,19 @@ fb32_draw_arc:
 	mov temp, #1
 	vmov vfp_add, temp
 	vcvt.f32.s32 vfp_add, vfp_add
-	mov temp, #8
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vdiv.f32 vfp_add, vfp_add, vfp_temp               @ 0.125, 0.0175 is Close to Radian per Degree
 
 	vcmp.f32 vfp_x_radius, vfp_y_radius
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
 	vmovge vfp_temp, vfp_x_radius
 	vmovlt vfp_temp, vfp_y_radius
 	vdiv.f32 vfp_add, vfp_add, vfp_temp
+
+	.unreq temp
+	.unreq y_radius
+	x_current_before .req r3
+	y_current_before .req r4
+
+	mov flag, #0                                      @ To Hide to Compare Before/After at First Time
 
 	fb32_draw_arc_loop:
 		vcmp.f32 vfp_start_radian, vfp_end_radian
@@ -169,6 +172,11 @@ fb32_draw_arc:
 		add x_current, x_coord, x_current
 		sub y_current, y_coord, y_current                   @ Y Coord is Reversal to Real Y Axis
 
+		cmp flag, #1
+		cmpeq x_current, x_current_before
+		cmpeq y_current, y_current_before
+		beq fb32_draw_arc_loop_common
+
 		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
 		mov r1, x_current
 		mov r2, y_current
@@ -180,8 +188,13 @@ fb32_draw_arc:
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
 		beq fb32_draw_arc_error
 
-		vadd.f32 vfp_start_radian, vfp_start_radian, vfp_add
-		b fb32_draw_arc_loop
+		fb32_draw_arc_loop_common:
+			mov flag, #1
+			mov x_current_before, x_current
+			mov y_current_before, y_current
+			vadd.f32 vfp_start_radian, vfp_start_radian, vfp_add
+
+			b fb32_draw_arc_loop
 
 	fb32_draw_arc_error:
 		mov r0, #1
@@ -194,22 +207,22 @@ fb32_draw_arc:
 		vpop {s0-s7}
 		lsl x_current, x_current, #16
 		add r1, x_current, y_current
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-		macro32_dsb ip
 		mov pc, lr
 
 .unreq color
 .unreq x_coord
 .unreq y_coord
-.unreq temp
-.unreq y_radius
+.unreq x_current_before
+.unreq y_current_before
 .unreq start_radian
 .unreq end_radian
 .unreq char_width
 .unreq char_height
 .unreq x_current
 .unreq y_current
+.unreq flag
 .unreq vfp_d_radian
 .unreq vfp_start_radian
 .unreq vfp_end_radian
@@ -1091,6 +1104,9 @@ fb32_clear_color_block:
 	ldr width, FB32_WIDTH
 	cmp width, #0
 	beq fb32_clear_color_block_error2
+
+	cmp x_coord, width                               @ If Value of x_coord is Over Width
+	bge fb32_clear_color_block_success
 
 	ldr depth, FB32_DEPTH
 	cmp depth, #0

@@ -229,7 +229,7 @@ _os_render:
 		cmp r1, #0
 		bne _os_render_loop2
 
-	bl system32_free                          @ Clear Memory Space
+	bl system32_mfree                         @ Clear Memory Space
 
 	/* Core 3 */
 
@@ -268,7 +268,7 @@ _os_render:
 
 macro32_debug r1 500 500
 
-	bl system32_free                          @ Clear Memory Space
+	bl system32_mfree                         @ Clear Memory Space
 
 	ldr r0, string_hello                      @ Pointer of Array of String
 	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
