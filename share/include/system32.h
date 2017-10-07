@@ -7,9 +7,9 @@
  *
  */
 
-#ifndef AARCH32
+#ifndef __AARCH32
 
-#define AARCH32
+#define __AARCH32
 
 #endif
 
@@ -69,7 +69,7 @@ extern int32* system32_malloc( uint32 block_size );
 
 extern uint32 system32_mfree( int32* address );
 
-extern uint32 system32_memcpy( int32* address_dst, int32* address_src );
+extern int32* system32_mcopy( int32* address_dst, int32* address_src, uint32 offset, uint32 size );
 
 extern void system32_dsb();
 
@@ -159,7 +159,7 @@ extern uint64 fb32_draw_line
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
-extern uint64 fb32_draw_image
+extern uint32 fb32_draw_image
 (
 	int32* image_point,
 	int32 x_coord,
@@ -180,7 +180,7 @@ extern uint64 fb32_draw_image
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
-extern uint64 fb32_clear_color_block
+extern uint32 fb32_clear_color_block
 (
 	uint32 color,
 	int32 x_coord,
@@ -196,7 +196,7 @@ extern uint64 fb32_clear_color_block
  * Return: 0 as sucess, 1 as error
  * Error(1): When Framebuffer is not Defined
  */
-extern uint64 fb32_clear_color
+extern uint32 fb32_clear_color
 (
 	uint32 color
 );
@@ -257,7 +257,35 @@ extern uint32 print32_set_caret
 
 
 /**
+ * Search Second Key String in First String
+ *
+ * Return: Index of First Character in String, if not -1
+ */
+extern int32 print32_strindex
+(
+	char8* string,
+	char8* string_key
+);
+
+
+/**
+ * Search Byte Character in String
+ *
+ * Return: Index of Character, if not -1
+ */
+extern int32 print32_charindex
+(
+	char8* string,
+	char8 character_key
+);
+
+
+/**
  * Concatenation of Two Strings
+ * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
+ * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.
+ * But that makes buffer overflow easily. So in this function, print32_strcat returns new Pointer of Array.
+ * Note that this function makes new memory space to be needed to make the memory free.
  *
  * Return: Pointer of Concatenated String
  */
@@ -353,7 +381,7 @@ extern uint64 print32_number
  * Error(2): When Buffer is not Defined, or Depth is not 32-bit
  */
 
-extern uint64 draw32_antialias
+extern uint32 draw32_antialias
 (
 	int32* buffer_result,
 	int32* buffer_base
@@ -366,7 +394,7 @@ extern uint64 draw32_antialias
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
-extern uint64 draw32_fill_color
+extern uint32 draw32_fill_color
 (
 	int32* buffer
 );
@@ -379,7 +407,7 @@ extern uint64 draw32_fill_color
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
  */
-extern uint64 draw32_mask_image
+extern uint32 draw32_mask_image
 (
 	int32* buffer_mask,
 	int32* buffer_base,

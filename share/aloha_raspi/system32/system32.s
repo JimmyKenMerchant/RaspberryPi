@@ -1410,7 +1410,7 @@ system32_mfree:
 	add heap_size, heap_start, heap_size
 
 	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bgt system32_mfree_error                     @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	bgt system32_mfree_error                    @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
 
 	mov zero, #0
 
@@ -1489,13 +1489,13 @@ system32_mcopy:
 	add heap_size, heap_start, heap_size
 
 	cmp heap1, heap_start
-	blt system32_mcopy_error
+	blo system32_mcopy_error                    @ Unsigned Lower Than
 	cmp heap2, heap_start
-	blt system32_mcopy_error
+	blo system32_mcopy_error
 	cmp heap1_size, heap_size
-	bge system32_mcopy_error
+	bhs system32_mcopy_error                    @ Unsigned Higher Than or Same
 	cmp heap2_size, heap_size
-	bge system32_mcopy_error
+	bhs system32_mcopy_error
 
 	mov heap1_dup, heap1
 
