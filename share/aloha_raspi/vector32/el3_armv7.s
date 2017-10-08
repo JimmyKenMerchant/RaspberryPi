@@ -26,7 +26,7 @@ _el3_fiq_addr:                   .word _el01_reset
 _el3_mon:
 	macro32_multicore_id r0
 
-	mov ip, #0x800                            @ Offset 0x200 Bytes per Core
+	mov ip, #0x200                            @ Offset 0x200 Bytes (128 Words) per Core
 	mul ip, ip, r0
 	mov fp, #0x6000
 	sub fp, fp, ip
@@ -51,15 +51,18 @@ _el3_mon:
 
 	push {r0-r3,lr}
 	mov r0, #1                                @ L1
-	mov r1, #0
+	mov r1, #0                                @ Invalidate
 	bl system32_cache_operation_all
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #2                                @ L2
-	mov r1, #0
+	mov r1, #0                                @ Invalidate
 	bl system32_cache_operation_all
 	pop {r0-r3,lr}
+
+	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
+	macro32_invalidate_instruction_all ip
 
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 
@@ -67,9 +70,6 @@ _el3_mon:
 	orr r0, r0, #0b101                        @ Enable Data Cache Bit[2] and (EL0 and EL1)MMU Bit[0]
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction L1 Cache Bit[12] and Branch Prediction Bit[11]
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
-
-	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
-	macro32_invalidate_instruction ip
 
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 	macro32_isb ip                            @ Flush Instructions in Pipelines

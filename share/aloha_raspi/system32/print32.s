@@ -144,10 +144,18 @@ print32_strindex:
 	char_search        .req r2
 	temp               .req r3
 	increment          .req r4
-	string_length2     .req r5
-	string_size2       .req r6
+	string_size1       .req r5
+	string_length2     .req r6
+	string_size2       .req r7
 
-	push {r4-r6}
+	push {r4-r7}
+
+	push {r0-r3,lr}
+	bl print32_strlen
+	mov string_size1, r0
+	pop {r0-r3,lr}
+
+	add string_size1, string_point1, string_size1
 
 	push {r0-r3,lr}
 	mov r0, string_point2
@@ -164,9 +172,13 @@ print32_strindex:
 		subge increment, increment, string_length2     @ string_length2 May Have Zero
 		bge print32_strindex_common
 
-		ldrb char_search, [string_point2]
-
 		add temp, string_point1, increment
+
+		cmp temp, string_size1
+		mvnge increment, #0
+		bge print32_strindex_common
+
+		ldrb char_search, [string_point2]
 
 		push {r0-r3,lr}
 		mov r0, temp
@@ -185,7 +197,7 @@ print32_strindex:
 
 	print32_strindex_common:
 		mov r0, increment
-		pop {r4-r6}
+		pop {r4-r7}
 		mov pc, lr
 
 .unreq string_point1
@@ -193,6 +205,7 @@ print32_strindex:
 .unreq char_search
 .unreq temp
 .unreq increment
+.unreq string_size1
 .unreq string_length2
 .unreq string_size2
 

@@ -518,7 +518,7 @@
 .equ equ32_mmu_second_access_rw_rw,          0b0000110000 @ APX[9] and AP[5:4]
 .equ equ32_mmu_second_access_r_none,         0b1000010000 @ APX[9] and AP[5:4], Privilege Access Only
 .equ equ32_mmu_second_shareable,             0b10000000000 @ S[10], Shareable Memory, Common on small/large
-.equ equ32_mmu_second_nonglobal,             0b100000000000 @ nG[11], Non-global, Common on small/large
+.equ equ32_mmu_second_nonglobal,             0b100000000000 @ nG[11], Non-global, Common on small/large, C13, Context ID Register
 
 
 /* Translation Table Base Register (TTBR0/TTBR1), Banked by Secure/Non-secure `MRC/MCR p15, 0, <Rt>, c2, c0, 0/1` */

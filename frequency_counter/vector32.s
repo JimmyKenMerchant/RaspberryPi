@@ -229,10 +229,10 @@ _os_reset:
 	pop {r0-r3}
 
 	macro32_dsb ip
-	macro32_invalidate_tlb ip
+	macro32_invalidate_tlb_all ip
 	macro32_isb ip
 	macro32_dsb ip
-	macro32_invalidate_instruction ip
+	macro32_invalidate_instruction_all ip
 	macro32_isb ip
 
 	/* Clear Heap to All Zero */
@@ -335,7 +335,7 @@ _os_fiq:
 
 _os_fiq_handler:
 
-	macro32_invalidate_instruction ip
+	macro32_invalidate_instruction_all ip
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base

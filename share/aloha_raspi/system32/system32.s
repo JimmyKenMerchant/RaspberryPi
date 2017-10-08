@@ -901,8 +901,8 @@ system32_activate_va:
 
 	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
 
-	/* Invalidate TLB */
-	macro32_invalidate_tlb ip
+	/* Invalidate All Unlocked TLB */
+	macro32_invalidate_tlb_all ip
 
 	macro32_isb ip                                  @ Flush Data in Pipeline to Cache
 

@@ -90,6 +90,7 @@
 
 /**
  * Data Synchronization Barrier for compatibility between ARMv6 and ARMv7+
+ * Available in User Mode
  */
 .macro macro32_dsb reg0:vararg
 .ifdef __ARMV6
@@ -103,6 +104,7 @@
 
 /**
  * Data Memory Barrier for compatibility between ARMv6 and ARMv7+
+ * Available in User Mode
  */
 .macro macro32_dmb reg0:vararg
 .ifdef __ARMV6
@@ -116,29 +118,70 @@
 
 /**
  * Instruction Synchronization Barrier for compatibility between ARMv6 and ARMv7+
- * Using Flush Prefetch Buffer and Flush Entire Branch Target Cache
+ * Using Flush Prefetch Buffer on ARMv6
+ * Available in User Mode
  */
 .macro macro32_isb reg0:vararg
 .ifdef __ARMV6
 	mov \reg0, #0
 	mcr p15, 0, \reg0, c7, c5, 4
-	mcr p15, 0, \reg0, c7, c5, 6
 .else
-	isb
+	isb                                 @ Includes Flush Entire Branch Target Cache
 .endif
 .endm
 
 
 /**
- * Invalidate TLB
+ * Flush Entire Branch Target Cache
+ * In IMB (Instruction Memory Barrier) Process, Use with Flush Prefetch Buffer on ARMv6
  */
-.macro macro32_invalidate_tlb reg0:vararg
+.macro macro32_flush_branch reg0:vararg
 .ifdef __ARMV6
 	mov \reg0, #0
-	mcr p15, 0, \reg0, c8, c7, 0
+	mcr p15, 0, \reg0, c7, c5, 6
 .else
 	mov \reg0, #0
-	mcr p15, 0, \reg0, c8, c7, 0
+	mcr p15, 0, \reg0, c7, c5, 6
+.endif
+.endm
+
+
+/**
+ * Invalidate All Unlocked TLB
+ */
+.macro macro32_invalidate_tlb_all reg0:vararg
+.ifdef __ARMV6
+	mcr p15, 0, \reg0, c8, c7, 0 @ Unified (1176JZF-S is Unified Only)
+.else
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c8, c3, 0 @ TLB Inner Shareable
+	mcr p15, 0, \reg0, c8, c5, 0 @ Instruction TLB
+	mcr p15, 0, \reg0, c8, c6, 0 @ Data TLB
+	mcr p15, 0, \reg0, c8, c7, 0 @ Unified TLB
+.endif
+.endm
+
+
+/**
+ * Invalidate Entire Data Cache
+ * ARMv6 Only
+ */
+.macro macro32_invalidate_cache_all reg0:vararg
+.ifdef __ARMV6
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c7, c6, 0
+.endif
+.endm
+
+
+/**
+ * Invalidate Entire Both Cache and Flush Branch Target Cache
+ * ARMv6 Only
+ */
+.macro macro32_invalidate_both_all reg0:vararg
+.ifdef __ARMV6
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c7, c7, 0
 .endif
 .endm
 
@@ -146,7 +189,7 @@
 /**
  * Invalidate Entire Instruction Cache and Flush Branch Target Cache
  */
-.macro macro32_invalidate_instruction reg0:vararg
+.macro macro32_invalidate_instruction_all reg0:vararg
 .ifdef __ARMV6
 	mov \reg0, #0
 	mcr p15, 0, \reg0, c7, c5, 0
@@ -195,4 +238,3 @@
 	and \reg0, \reg0, #0b11
 .endif
 .endm
-
