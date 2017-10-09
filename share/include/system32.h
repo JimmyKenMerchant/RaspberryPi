@@ -31,6 +31,7 @@
 
 void _user_start();
 
+__attribute__((noinline)) uint32 example_svc_30( int32 a, int32 b, int32 c, int32 d );
 
 /********************************
  * system32/system32.s

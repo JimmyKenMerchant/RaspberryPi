@@ -8,9 +8,12 @@
  */
 
 #include "system32.h"
+#include "system32.c"
 
 void _user_start()
 {
+
+	int32 result = example_svc_30( 300, 400, 500, 600 );
 
 	char8 string[] = "ALOHA!\n\tHello World, Everyone!\0";
 	char8 newline[] = "\n\0";

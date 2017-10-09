@@ -20,7 +20,7 @@ _os_start:
 	ldr pc, _os_fiq_addr                      @ 0x1C SP 0x8000
 _os_reset_addr:                 .word _os_reset
 _os_undefined_instruction_addr: .word _os_reset
-_os_supervisor_addr:            .word _os_reset
+_os_supervisor_addr:            .word _os_svc
 _os_prefetch_abort_addr:        .word _os_reset
 _os_data_abort_addr:            .word _os_reset
 _os_reserve_addr:               .word _os_reset
@@ -86,18 +86,25 @@ _os_reset:
 	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
 
+_os_svc:
+	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
+	ldr ip, [lr, #-4]                        @ Load SVC Instruction
+	mvn fp, #0xFF000000                      @ Immediate Bit[23:0]
+	and ip, ip, fp
+	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
+	movs pc, lr
 
 _os_irq:
 	cpsid i                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
 
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
-	mrs r0, spsr
-	push {r0}
+	/*mrs r0, spsr*/
+	/*push {r0}*/
 
 	bl os_irq
 
-	pop {r0}
-	msr spsr, r0
+	/*pop {r0}*/
+	/*msr spsr, r0*/
 	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
 
 	cpsie i                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
@@ -109,13 +116,13 @@ _os_fiq:
 	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
 
 	push {r0-r7,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
-	mrs r0, spsr
-	push {r0}
+	/*mrs r0, spsr*/
+	/*push {r0}*/
 
 	bl os_fiq
 
-	pop {r0}
-	msr spsr, r0
+	/*pop {r0}*/
+	/*msr spsr, r0*/
 	pop {r0-r7,lr}                           @ Equals to ldmfd (stack pointer full, decrement order)
 
 	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
