@@ -420,10 +420,8 @@ print32_strlen:
  * r7: Character Height in Pixels
  * r8: Font Set Base to Picture Character
  *
- * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
- * Global Enviromental Variable(s): ARRAY_ASCII_FONT_BITMAP8, FB32_WIDTH
  */
 .globl print32_string
 print32_string:

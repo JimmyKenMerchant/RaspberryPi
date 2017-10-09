@@ -58,9 +58,13 @@ SECTIONS {
 	.rodata : {
 		*(.rodata)
 	}
-	. = 0x04000000;
+	. = ALIGN(0x00100000);
 	.bss : {
 		*(.bss)
+	}
+	. = ALIGN(0x00100000);
+	.va : {
+		*(.va)
 	}
 
 }
