@@ -1369,9 +1369,6 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
 SYSTEM32_DATAMEMORY_ADDR:   .word _SYSTEM32_DATAMEMORY
 SYSTEM32_DATAMEMORY_SIZE:   .word equ32_datamemory_size
 
-.globl SYSTEM32_STACKPOINTER
-SYSTEM32_STACKPOINTER:      .word _SYSTEM32_STACKPOINTER
-
 
 /**
  * function system32_mfree
@@ -1620,9 +1617,9 @@ _SYSTEM32_HEAP:
 .space 16777216                       @ Filled With Zero in Default, 16M Bytes
 _SYSTEM32_HEAP_END:
 
-_SYSTEM32_STACKPOINTER:
+.globl SYSTEM32_STACKPOINTER
+SYSTEM32_STACKPOINTER:
 .space 65536
-_SYSTEM32_STACKPOINTER_END:
 
 .globl SYSTEM32_CORE_HANDLE_0
 .globl SYSTEM32_CORE_HANDLE_1
@@ -1641,7 +1638,7 @@ SYSTEM32_CORE_HANDLE_5:         .space 4
 SYSTEM32_CORE_HANDLE_6:         .space 4
 SYSTEM32_CORE_HANDLE_7:         .space 4
 
-.section	.va                   @ 16K Bytes Align for Each Descriptor on Reset
+.section	.va_system32          @ 16K Bytes Align for Each Descriptor on Reset
 _SYSTEM32_VADESCRIPTOR:
 .space 262144                         @ Filled With Zero in Default, 256K Bytes
 _SYSTEM32_VADESCRIPTOR_END:

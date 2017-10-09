@@ -50,21 +50,20 @@ SECTIONS {
 	.text : {
 		*(.text)
 	}
-
-	.data : {
-		*(.data)
-	}
-
 	.rodata : {
 		*(.rodata)
 	}
 	. = ALIGN(0x00100000);
+	.data : {
+		system32.o(.data)
+		*(.data)
+	}
 	.bss : {
 		*(.bss)
 	}
 	. = ALIGN(0x00100000);
-	.va : {
-		*(.va)
+	.va_system32 : {
+		system32.o(.va_system32)
 	}
 
 }
