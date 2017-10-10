@@ -108,9 +108,9 @@ os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_HEAP_ADDR
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_HEAP_SIZE
+	ldr r3, ADDR32_SYSTEM32_DATAMEMORY_SIZE
 	ldr r3, [r3]
 	bl system32_set_cache
 	pop {r0-r3,lr}

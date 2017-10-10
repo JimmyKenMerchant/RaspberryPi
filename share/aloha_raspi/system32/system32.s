@@ -1375,9 +1375,6 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
 SYSTEM32_DATAMEMORY_ADDR:   .word _SYSTEM32_DATAMEMORY
 SYSTEM32_DATAMEMORY_SIZE:   .word equ32_datamemory_size
 
-.globl SYSTEM32_STACKPOINTER
-SYSTEM32_STACKPOINTER:      .word _SYSTEM32_STACKPOINTER
-
 
 /**
  * function system32_mfree
@@ -1628,7 +1625,21 @@ _SYSTEM32_HEAP:
 .space 16777216                       @ Filled With Zero in Default, 16M Bytes
 _SYSTEM32_HEAP_END:
 
-_SYSTEM32_STACKPOINTER:         .space 65536
+/**
+ * Initial SVC Mode: 0x4000 (-0x200 Offset by Core ID)
+ * Initial Hyp Mode: 0x5000 (-0x200 Offset by Core ID)
+ * Initial Mon Mode: 0x6000 (-0x200 Offset by Core ID)
+ * OS Undefined Mode: 0x7200
+ * OS Supervisor Mode: 0x7400
+ * OS Abort Mode: 0x7600
+ * OS IRQ Mode: 0x7800
+ * OS FIQ Mode: 0x8000
+ *
+ * OS User/System Mode Uses SYSTEM32_STACKPOINTER
+ */
+.globl SYSTEM32_STACKPOINTER
+SYSTEM32_STACKPOINTER_TOP:         .space 65536
+SYSTEM32_STACKPOINTER:
 
 .section	.va_system32          @ 16K Bytes Align for Each Descriptor on Reset
 

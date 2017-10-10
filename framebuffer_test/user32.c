@@ -154,7 +154,7 @@ void _user_start()
 
 	fb32_draw_image( renderbuffer5_addr, 100, 100, renderbuffer5_width, renderbuffer5_height, 0, 0, 0, 0 );
 
-	fb32_draw_line( COLOR32_BLUE, -50, 800, 100, 100, 20, 20 );
+	fb32_draw_line( COLOR32_MAGENTA, -50, 800, 100, 100, 20, 20 );
 	
 	while(1) {
 		_flush_doublebuffer();

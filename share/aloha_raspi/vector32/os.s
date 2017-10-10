@@ -10,7 +10,7 @@
 .section	.os_vector32
 .globl _os_start
 _os_start:
-	ldr pc, _os_reset_addr                    @ 0x00 User/System Mode SP 0x7000
+	ldr pc, _os_reset_addr                    @ 0x00 User/System Mode SP SYSTEM32_STACKPOINTER
 	ldr pc, _os_undefined_instruction_addr    @ 0x04 SP 0x7200
 	ldr pc, _os_supervisor_addr               @ 0x08 SP 0x7400
 	ldr pc, _os_prefetch_abort_addr           @ 0x0C SP 0x7600
@@ -69,7 +69,8 @@ _os_reset:
 	mov r0, #equ32_user_mode                  @ Enable FIQ, IRQ, and Abort
 	msr cpsr_c, r0
 
-	mov sp, #0x7000
+	ldr ip, ADDR32_SYSTEM32_STACKPOINTER
+	mov sp, ip
 
 	push {r0-r3}
 	bl _user_start
