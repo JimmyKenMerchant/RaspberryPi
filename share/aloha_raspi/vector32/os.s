@@ -87,24 +87,48 @@ _os_reset:
 	mov pc, lr
 
 _os_svc:
-	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
+	push {r4-r11,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	mvn fp, #0xFF000000                      @ Immediate Bit[23:0]
 	and ip, ip, fp
-	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
-	movs pc, lr
+
+	cmp ip, #0
+	beq _os_svc_0
+	cmp ip, #0x50
+	beq _os_svc_0x50
+	cmp ip, #0x51
+	beq _os_svc_0x51
+	cmp ip, #0x52
+	beq _os_svc_0x52
+
+	b _os_svc_common                         @ Default
+
+	_os_svc_0:
+		b _os_svc_common
+
+	_os_svc_0x50:
+		bl fb32_flush_doublebuffer
+		b _os_svc_common
+
+	_os_svc_0x51:
+		bl fb32_set_doublebuffer
+		b _os_svc_common
+
+	_os_svc_0x52:
+		bl fb32_attach_buffer
+		b _os_svc_common
+
+	_os_svc_common:
+		pop {r4-r11,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
+		movs pc, lr
 
 _os_irq:
 	cpsid i                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
 
 	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
-	/*mrs r0, spsr*/
-	/*push {r0}*/
 
 	bl os_irq
 
-	/*pop {r0}*/
-	/*msr spsr, r0*/
 	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
 
 	cpsie i                                  @ Enable Aborts (a), FIQ(f), IRQ(i)

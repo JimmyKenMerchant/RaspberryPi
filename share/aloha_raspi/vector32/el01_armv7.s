@@ -88,16 +88,10 @@ _el01_reset:
 	moveq r1, #0x8000
 	blxeq r1
 
-	macro32_multicore_id r0
-
-	mov r1, #equ32_user_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r1
-
-	mov ip, #0x200                            @ Offset 0x200 Bytes (128 Words) per Core, Same Base as Passed SVC Mode
-	mul ip, ip, r0
-	mov fp, #0x4000
-	sub fp, fp, ip
-	mov sp, fp
+	/**
+	 * Caution! Multi-core seems to share memories in privileged mode only.
+	 * So, If you use Multi-core, you need to have secure process to treat this.
+	 */
 
 	_el01_reset_loop:
 		bl system32_core_handle

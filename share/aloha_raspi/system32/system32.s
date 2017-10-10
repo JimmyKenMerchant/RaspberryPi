@@ -65,9 +65,8 @@ system32_core_call:
 
 	lsl number_core, number_core, #2         @ Substitution of Multiplication by 4
 
-	ldr handle_addr, _SYSTEM32_CORE_HANDLE_BASE
+	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, number_core
-	ldr handle_addr, [handle_addr]
 
 	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
@@ -130,9 +129,8 @@ system32_core_handle:
 
 	lsl number_core, number_core, #2         @ Substitution of Multiplication by 4
 
-	ldr handle_addr, _SYSTEM32_CORE_HANDLE_BASE
+	ldr handle_addr, SYSTEM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, number_core
-	ldr handle_addr, [handle_addr]
 
 	.unreq number_core
 	arg0 .req r0
@@ -211,15 +209,23 @@ system32_core_handle:
 .unreq dup_num_arg
 .unreq temp
 
-_SYSTEM32_CORE_HANDLE_BASE:      .word _SYSTEM32_CORE_HANDLE_0
-_SYSTEM32_CORE_HANDLE_0:         .word SYSTEM32_CORE_HANDLE_0
-_SYSTEM32_CORE_HANDLE_1:         .word SYSTEM32_CORE_HANDLE_1
-_SYSTEM32_CORE_HANDLE_2:         .word SYSTEM32_CORE_HANDLE_2
-_SYSTEM32_CORE_HANDLE_3:         .word SYSTEM32_CORE_HANDLE_3
-_SYSTEM32_CORE_HANDLE_4:         .word SYSTEM32_CORE_HANDLE_4
-_SYSTEM32_CORE_HANDLE_5:         .word SYSTEM32_CORE_HANDLE_5
-_SYSTEM32_CORE_HANDLE_6:         .word SYSTEM32_CORE_HANDLE_6
-_SYSTEM32_CORE_HANDLE_7:         .word SYSTEM32_CORE_HANDLE_7
+SYSTEM32_CORE_HANDLE_BASE:      .word SYSTEM32_CORE_HANDLE_0
+.globl SYSTEM32_CORE_HANDLE_0
+.globl SYSTEM32_CORE_HANDLE_1
+.globl SYSTEM32_CORE_HANDLE_2
+.globl SYSTEM32_CORE_HANDLE_3
+.globl SYSTEM32_CORE_HANDLE_4
+.globl SYSTEM32_CORE_HANDLE_5
+.globl SYSTEM32_CORE_HANDLE_6
+.globl SYSTEM32_CORE_HANDLE_7
+SYSTEM32_CORE_HANDLE_0:         .space 4
+SYSTEM32_CORE_HANDLE_1:         .space 4
+SYSTEM32_CORE_HANDLE_2:         .space 4
+SYSTEM32_CORE_HANDLE_3:         .space 4
+SYSTEM32_CORE_HANDLE_4:         .space 4
+SYSTEM32_CORE_HANDLE_5:         .space 4
+SYSTEM32_CORE_HANDLE_6:         .space 4
+SYSTEM32_CORE_HANDLE_7:         .space 4
 
 
 /**
@@ -1369,6 +1375,9 @@ SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCR
 SYSTEM32_DATAMEMORY_ADDR:   .word _SYSTEM32_DATAMEMORY
 SYSTEM32_DATAMEMORY_SIZE:   .word equ32_datamemory_size
 
+.globl SYSTEM32_STACKPOINTER
+SYSTEM32_STACKPOINTER:      .word _SYSTEM32_STACKPOINTER
+
 
 /**
  * function system32_mfree
@@ -1598,7 +1607,7 @@ _SYSTEM32_DATAMEMORY:
 /* print32.s uses memory spaces in fb32.s, so this file is needed to close to fb32.s within 4K bytes */
 .include "system32/print32.s"
 .balign 4
-.include "system32/fb32.s"
+.include "system32/fb32.s"            @ Having Section .data
 .balign 4
 .include "system32/draw32.s"
 .balign 4
@@ -1613,32 +1622,16 @@ _SYSTEM32_DATAMEMORY:
 
 .section	.bss
 
+.balign 16
+
 _SYSTEM32_HEAP:
 .space 16777216                       @ Filled With Zero in Default, 16M Bytes
 _SYSTEM32_HEAP_END:
 
-.globl SYSTEM32_STACKPOINTER
-SYSTEM32_STACKPOINTER:
-.space 65536
-
-.globl SYSTEM32_CORE_HANDLE_0
-.globl SYSTEM32_CORE_HANDLE_1
-.globl SYSTEM32_CORE_HANDLE_2
-.globl SYSTEM32_CORE_HANDLE_3
-.globl SYSTEM32_CORE_HANDLE_4
-.globl SYSTEM32_CORE_HANDLE_5
-.globl SYSTEM32_CORE_HANDLE_6
-.globl SYSTEM32_CORE_HANDLE_7
-SYSTEM32_CORE_HANDLE_0:         .space 4
-SYSTEM32_CORE_HANDLE_1:         .space 4
-SYSTEM32_CORE_HANDLE_2:         .space 4
-SYSTEM32_CORE_HANDLE_3:         .space 4
-SYSTEM32_CORE_HANDLE_4:         .space 4
-SYSTEM32_CORE_HANDLE_5:         .space 4
-SYSTEM32_CORE_HANDLE_6:         .space 4
-SYSTEM32_CORE_HANDLE_7:         .space 4
+_SYSTEM32_STACKPOINTER:         .space 65536
 
 .section	.va_system32          @ 16K Bytes Align for Each Descriptor on Reset
+
 _SYSTEM32_VADESCRIPTOR:
 .space 262144                         @ Filled With Zero in Default, 256K Bytes
 _SYSTEM32_VADESCRIPTOR_END:

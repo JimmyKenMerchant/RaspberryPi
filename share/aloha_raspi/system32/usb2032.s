@@ -7,7 +7,6 @@
  *
  */
 
-
 /**
  * As of September 24, 2017, functions in usb2032.s is under construction and suspending through 10-day attempting.
  * Reasons are as follows.

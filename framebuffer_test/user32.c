@@ -13,12 +13,8 @@
 void _user_start()
 {
 
-	int32 result = example_svc_30( 300, 400, 500, 600 );
-
 	char8 string[] = "ALOHA!\n\tHello World, Everyone!\0";
 	char8 newline[] = "\n\0";
-	FB32_X_CARET = 0;
-	FB32_Y_CARET = 200;
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	uint32 number = 0x80000000;
@@ -34,13 +30,13 @@ void _user_start()
 
 	int32* renderbuffer0 = system32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	fb32_attach_buffer( renderbuffer0 );
+	_attach_buffer( renderbuffer0 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
 	int32* renderbuffer1 = system32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer1, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	fb32_attach_buffer( renderbuffer1 );
+	_attach_buffer( renderbuffer1 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
-	fb32_set_doublebuffer( renderbuffer0, renderbuffer1 );
+	_set_doublebuffer( renderbuffer0, renderbuffer1 );
 
 	fb32_draw_arc( COLOR32_WHITE, 500, 200, 300, 300, start_radian, end_radian, 1, 1 );
 
@@ -130,17 +126,17 @@ void _user_start()
 	uint32 renderbuffer5_width = system32_load_32( renderbuffer5 + 1 ); // 4 bytes offset
 	uint32 renderbuffer5_height = system32_load_32( renderbuffer5 + 2 ); // 8 bytes offset
 
-	fb32_attach_buffer( renderbuffer2 );
+	_attach_buffer( renderbuffer2 );
 	fb32_clear_color( 0x66FFFFFF );
 
-	fb32_attach_buffer( renderbuffer3 );
+	_attach_buffer( renderbuffer3 );
 	fb32_clear_color( COLOR32_BLACK );
 	fb32_draw_circle( COLOR32_WHITE, 150, 150, 100, 100 );
 	fb32_draw_circle( COLOR32_BLACK, 150, 150, 50, 50 );
 
 	draw32_mask_image( renderbuffer3, renderbuffer2, 0, 0 );
 
-	fb32_attach_buffer( renderbuffer2 );
+	_attach_buffer( renderbuffer2 );
 	fb32_clear_color( 0x00000000 );
 
 	fb32_draw_line( 0x9900FFFF, 20, 20, 100, 200, 1, 1 );
@@ -148,7 +144,7 @@ void _user_start()
 	fb32_draw_line( 0x9900FFFF, 20, 100, 100, 200, 1, 1 );
 	draw32_fill_color( renderbuffer2 );
 
-	fb32_attach_buffer( FB32_DOUBLEBUFFER_BACK );
+	_attach_buffer( FB32_DOUBLEBUFFER_BACK );
 
 	fb32_draw_image( renderbuffer2_addr, 100, 100, renderbuffer2_width, renderbuffer2_height, 0, 0, 0, 0 );
 
@@ -161,7 +157,7 @@ void _user_start()
 	fb32_draw_line( COLOR32_BLUE, -50, 800, 100, 100, 20, 20 );
 	
 	while(1) {
-		fb32_flush_doublebuffer();
+		_flush_doublebuffer();
 		draw32_copy( FB32_DOUBLEBUFFER_FRONT, renderbuffer4 );
 		fb32_draw_image( renderbuffer4_addr, 0, 0, renderbuffer4_width, renderbuffer4_height, 0, 10, 10, 0 );
 		system32_sleep( 2000000 );

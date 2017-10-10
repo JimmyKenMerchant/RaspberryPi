@@ -18,14 +18,7 @@ FB32_ADDR:           .word 0x00
 FB32_WIDTH:          .word 0x00
 FB32_HEIGHT:         .word 0x00
 FB32_SIZE:           .word 0x00
-FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB). 
-
-
-/* Indicates Caret Position to Use in Printing Characters */
-.globl FB32_X_CARET
-.globl FB32_Y_CARET
-FB32_X_CARET: .word 0x00000000
-FB32_Y_CARET: .word 0x00000000
+FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB).
 
 
 /**
@@ -1497,3 +1490,13 @@ fb32_attach_buffer:
 .unreq height
 .unreq size
 .unreq depth
+
+.section	.data
+
+/* Indicates Caret Position to Use in Printing Characters */
+.globl FB32_X_CARET
+.globl FB32_Y_CARET
+FB32_X_CARET: .word 0x00000000
+FB32_Y_CARET: .word 0x00000000
+
+.section	.library_system32

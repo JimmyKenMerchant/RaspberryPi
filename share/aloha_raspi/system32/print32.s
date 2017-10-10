@@ -80,9 +80,7 @@ print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
  * r0: Lower of Return
  * r1: Upper of Return 
  *
- * Usage: r0-r4
  * Return: r0 (Number of Characters Which Were Not Drawn)
- * Global Enviromental Variable(s): FB32_X_CARET, FB32_Y_CARET, FB32_WIDTH
  */
 .globl print32_set_caret
 print32_set_caret:
@@ -113,17 +111,24 @@ print32_set_caret:
 		bge print32_set_caret_loop
 		
 	print32_set_caret_common:
-		str x_coord, FB32_X_CARET
-		str y_coord, FB32_Y_CARET
+		.unreq width
+		temp .req r2
+		ldr temp, print32_set_caret_addr_x_caret
+		str x_coord, [temp]
+		ldr temp, print32_set_caret_addr_y_caret
+		str y_coord, [temp]
 		pop {r4} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 		mov pc, lr
 
 .unreq chars
 .unreq xy_coord
-.unreq width
+.unreq temp
 .unreq x_coord
 .unreq y_coord
+
+print32_set_caret_addr_x_caret: .word FB32_X_CARET
+print32_set_caret_addr_y_caret: .word FB32_Y_CARET
 
 
 /**

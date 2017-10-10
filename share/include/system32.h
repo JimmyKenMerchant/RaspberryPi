@@ -31,7 +31,24 @@
 
 void _user_start();
 
-__attribute__((noinline)) uint32 example_svc_30( int32 a, int32 b, int32 c, int32 d );
+/* System Calls */
+
+__attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
+
+__attribute__((noinline)) uint32 _flush_doublebuffer();
+
+__attribute__((noinline)) uint32 _set_doublebuffer
+(
+	int32* buffer_front,
+	int32* buffer_back
+
+);
+
+__attribute__((noinline)) uint32 _attach_buffer
+(
+	int32* buffer
+);
+
 
 /********************************
  * system32/system32.s
