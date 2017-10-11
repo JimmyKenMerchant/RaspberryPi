@@ -53,6 +53,7 @@ _el3_mon:
 	mrc p15, 0, r0, c1, c0, 0                 @ System Control Register (SCTLR)
 	orr r0, r0, #0b101                        @ Enable Data Cache Bit[2] and (EL0 and EL1)MMU Bit[0]
 	orr r0, r0, #0b0001100000000000           @ Enable Instruction L1 Cache Bit[12] and Branch Prediction Bit[11]
+	orr r0, r0, #0x00800000                   @ Enable XP Bit[23], Extended Page Tables for Execute Never (XN) Bit, etc.
 	mcr p15, 0, r0, c1, c0, 0                 @ Banked by Secure/Non-secure
 
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before

@@ -446,6 +446,8 @@
  * For Short Descriptor Translation Table (32-bit), First Level
  * Super Section (16M Bytes), Section (1M Bytes) and Page (64K/4K Bytes)
  * Super Section is implemented for Long Physical Address Extension (LPAE)
+ * If you want XN, APX, S, and nG Bits in ARMv6, enable XP Bit[23] in SCTLR of ARMv6
+ * PXN Bit is From ARMv7
  */
 .equ equ32_mmu_fault,                     0b00                   @ [1:0], Indexed by Bit[31:20] of Virtual Address
 .equ equ32_mmu_page,                      0b01                   @ [1:0], Page Table Base Address Bit[31:10] 2nd Level Descriptor
