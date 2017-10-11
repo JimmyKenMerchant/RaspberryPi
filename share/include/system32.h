@@ -31,24 +31,25 @@
 
 void _user_start();
 
-/* System Calls */
+/**
+ * System calls
+ * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed.
+ * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
+ */
 
 __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
 
 __attribute__((noinline)) uint32 _flush_doublebuffer();
 
-__attribute__((noinline)) uint32 _set_doublebuffer
-(
-	int32* buffer_front,
-	int32* buffer_back
+__attribute__((noinline)) uint32 _set_doublebuffer( int32* buffer_front, int32* buffer_back );
 
-);
+__attribute__((noinline)) uint32 _attach_buffer( int32* buffer );
 
-__attribute__((noinline)) uint32 _attach_buffer
-(
-	int32* buffer
-);
+__attribute__((noinline)) void _sleep( uint32 u_seconds );
 
+__attribute__((noinline)) void _store_32( int32* address, int32 data );
+
+__attribute__((noinline)) int32 _load_32( int32* address );
 
 /********************************
  * system32/system32.s

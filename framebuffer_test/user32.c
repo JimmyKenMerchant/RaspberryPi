@@ -155,11 +155,13 @@ void _user_start()
 	fb32_draw_image( renderbuffer5_addr, 100, 100, renderbuffer5_width, renderbuffer5_height, 0, 0, 0, 0 );
 
 	fb32_draw_line( COLOR32_MAGENTA, -50, 800, 100, 100, 20, 20 );
+
+	fb32_draw_line( COLOR32_GREEN, 1000, 800, 100, 100, 20, 20 );
 	
 	while(1) {
 		_flush_doublebuffer();
 		draw32_copy( FB32_DOUBLEBUFFER_FRONT, renderbuffer4 );
 		fb32_draw_image( renderbuffer4_addr, 0, 0, renderbuffer4_width, renderbuffer4_height, 0, 10, 10, 0 );
-		system32_sleep( 2000000 );
+		_sleep( 2000000 );
 	}
 }

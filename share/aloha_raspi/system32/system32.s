@@ -58,7 +58,9 @@ system32_core_call:
 	number_core  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	handle_addr  .req r2
 
-	cmp number_core, #7                      @ 0 <= number_core <= 7
+	and number_core, number_core, #0b11      @ Prevet Memory Overflow
+
+	cmp number_core, #3                      @ 0 <= number_core <= 3
 	bgt system32_core_call_error
 	cmp number_core, #0
 	blt system32_core_call_error
@@ -214,18 +216,11 @@ SYSTEM32_CORE_HANDLE_BASE:      .word SYSTEM32_CORE_HANDLE_0
 .globl SYSTEM32_CORE_HANDLE_1
 .globl SYSTEM32_CORE_HANDLE_2
 .globl SYSTEM32_CORE_HANDLE_3
-.globl SYSTEM32_CORE_HANDLE_4
-.globl SYSTEM32_CORE_HANDLE_5
-.globl SYSTEM32_CORE_HANDLE_6
-.globl SYSTEM32_CORE_HANDLE_7
-SYSTEM32_CORE_HANDLE_0:         .space 4
-SYSTEM32_CORE_HANDLE_1:         .space 4
-SYSTEM32_CORE_HANDLE_2:         .space 4
-SYSTEM32_CORE_HANDLE_3:         .space 4
-SYSTEM32_CORE_HANDLE_4:         .space 4
-SYSTEM32_CORE_HANDLE_5:         .space 4
-SYSTEM32_CORE_HANDLE_6:         .space 4
-SYSTEM32_CORE_HANDLE_7:         .space 4
+SYSTEM32_CORE_HANDLE_0:         .word 0x00
+SYSTEM32_CORE_HANDLE_1:         .word 0x00
+SYSTEM32_CORE_HANDLE_2:         .word 0x00
+SYSTEM32_CORE_HANDLE_3:         .word 0x00
+.balign 64 @ Prevet Memory Overflow to The Next Instruction
 
 
 /**
@@ -985,7 +980,7 @@ system32_lineup_basic_va:
 	lsl size, #2
 
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
-	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_access_rw_none
 	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 
@@ -1022,7 +1017,7 @@ system32_lineup_basic_va:
 	lsl size, #2
 
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
-	orr descriptor, descriptor, #equ32_mmu_section_access_rw_rw
+	orr descriptor, descriptor, #equ32_mmu_section_access_rw_none
 	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
 	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
@@ -1370,11 +1365,6 @@ SYSTEM32_HEAP_SIZE:         .word _SYSTEM32_HEAP_END - _SYSTEM32_HEAP
 SYSTEM32_VADESCRIPTOR_ADDR: .word _SYSTEM32_VADESCRIPTOR
 SYSTEM32_VADESCRIPTOR_SIZE: .word _SYSTEM32_VADESCRIPTOR_END - _SYSTEM32_VADESCRIPTOR
 
-.globl SYSTEM32_DATAMEMORY_ADDR
-.globl SYSTEM32_DATAMEMORY_SIZE
-SYSTEM32_DATAMEMORY_ADDR:   .word _SYSTEM32_DATAMEMORY
-SYSTEM32_DATAMEMORY_SIZE:   .word equ32_datamemory_size
-
 
 /**
  * function system32_mfree
@@ -1593,7 +1583,8 @@ system32_isb:
  */
 
 .section	.data
-_SYSTEM32_DATAMEMORY:
+.globl SYSTEM32_DATAMEMORY
+SYSTEM32_DATAMEMORY:
 
 /**
  * "library_system32" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have

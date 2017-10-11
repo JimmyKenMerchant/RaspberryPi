@@ -64,7 +64,97 @@ _os_reset:
 	mov r0, #0x8000
 	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
 
+	push {r0-r3}
 	bl os_reset
+	pop {r0-r3}
+
+	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
+	push {r0-r3}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
+	ldr r3, [r3]
+	bl system32_set_cache
+	pop {r0-r3}
+
+	/* Set Cache Status for HEAP */
+	push {r0-r3}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
+	mov r3, #equ32_datamemory_size
+	bl system32_set_cache
+	pop {r0-r3}
+
+	/* Set Cache Status for Virtual Address Descriptor */
+	push {r0-r3}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_VADESCRIPTOR_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_VADESCRIPTOR_SIZE
+	ldr r3, [r3]
+	bl system32_set_cache
+	pop {r0-r3}
+
+	macro32_dsb ip
+	macro32_invalidate_tlb_all ip
+	macro32_isb ip
+	macro32_dsb ip
+	macro32_invalidate_instruction_all ip
+	macro32_isb ip
+
+	/* Clear Heap to All Zero */
+	push {r0-r3}
+	bl system32_clear_heap
+	pop {r0-r3}
+
+	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
+	
+	/**
+	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
+	 * Each 0b01 is for Enable in Previlege Mode
+	 * Each 0b11 is for Enable in Previlege and User Mode
+	 */
+	mov r0, #0b1111
+	lsl r0, r0, #20
+
+	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
+
+	macro32_dsb ip
+	macro32_isb ip                            @ Must Need When You Renew CPACR
+
+	mov r0, #0x40000000                       @ Enable NEON/VFP
+	vmsr fpexc, r0
 
 	mov r0, #equ32_user_mode                  @ Enable FIQ, IRQ, and Abort
 	msr cpsr_c, r0
@@ -101,6 +191,12 @@ _os_svc:
 	beq _os_svc_0x51
 	cmp ip, #0x52
 	beq _os_svc_0x52
+	cmp ip, #0x58
+	beq _os_svc_0x58
+	cmp ip, #0x60
+	beq _os_svc_0x60
+	cmp ip, #0x63
+	beq _os_svc_0x63
 
 	b _os_svc_common                         @ Default
 
@@ -117,6 +213,18 @@ _os_svc:
 
 	_os_svc_0x52:
 		bl fb32_attach_buffer
+		b _os_svc_common
+
+	_os_svc_0x58:
+		bl system32_sleep
+		b _os_svc_common
+
+	_os_svc_0x60:
+		bl system32_store_32
+		b _os_svc_common
+
+	_os_svc_0x63:
+		bl system32_load_32
 		b _os_svc_common
 
 	_os_svc_common:

@@ -38,3 +38,20 @@ __attribute__((noinline)) uint32 _attach_buffer( int32* buffer )
 	asm volatile ("svc #0x52");
 	return result;
 }
+
+__attribute__((noinline)) void _sleep( uint32 u_seconds )
+{
+	asm volatile ("svc #0x58");
+}
+
+__attribute__((noinline)) void _store_32( int32* address, int32 data )
+{
+	asm volatile ("svc #0x60");
+}
+
+__attribute__((noinline)) int32 _load_32( int32* address )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x63");
+	return result;
+}
