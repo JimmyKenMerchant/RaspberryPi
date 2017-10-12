@@ -358,7 +358,7 @@
 .equ equ32_usb20_otg_haint,                0x00000014 @ Host All Channels Interrupt
 .equ equ32_usb20_otg_haintmsk,             0x00000018 @ Host All Channels Interrupt Mask
 .equ equ32_usb20_otg_hprt,                 0x00000040 @ Host Port Control and Status
-.equ equ32_usb20_otg_hostchannel_base,     0x00000500 @ Base of Host Channel Registers
+.equ equ32_usb20_otg_hostchannel_base,     0x00000500 @ Base of Host Channel Registers (+ equ32_usb20_otg_base)
 .equ equ32_usb20_otg_hostchannel_offset,   0x00000020 @ Offset of Host Channel N Registers N = 0-15
 .equ equ32_usb20_otg_hccharn,              0x00000000 @ Host Channel N Characteristics
 .equ equ32_usb20_otg_hcspltn,              0x00000004 @ Host Channel N Split Control

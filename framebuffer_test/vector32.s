@@ -57,6 +57,7 @@ os_reset:
 	add r0, r0, #equ32_gpio_base
 
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel40]
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32

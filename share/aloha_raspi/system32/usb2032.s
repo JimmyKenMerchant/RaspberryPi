@@ -70,12 +70,12 @@ usb2032_hub_activate:
 	ldr exe_receiver, USB2032_RECEIVER
 
 	push {r0-r3,lr}
-	mov r0, #2                           @ 4 Bytes by 2 Blocks Equals 8 Bytes
+	mov r0, #2                           @ 4 Bytes by 2 Words Equals 8 Bytes (64bit)
 	bl system32_malloc
 	mov buffer, r0
 	pop {r0-r3,lr}
 
-	cmp buffer, #0                       @ DMA Needs DWORD(32bit/64bit) aligned
+	cmp buffer, #0                       @ DMA Needs DWORD(32bit) aligned
 	beq usb2032_hub_activate_error1
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host

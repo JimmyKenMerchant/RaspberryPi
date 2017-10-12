@@ -312,6 +312,50 @@ bcm32_set_powerstate:
 
 
 /**
+ * function bcm32_poweron_usb
+ * Power on USB
+ * This function is using a vendor-implemented process.
+ *
+ * Usage: r0-r1
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): Powering on USB is not in Success
+ */
+.globl bcm32_poweron_usb
+bcm32_poweron_usb:
+	/* Auto (Local) Variables, but just Aliases */
+	temp              .req r0
+	temp2             .req r4
+
+	push {r4}
+	
+	mov temp, #0x80
+
+	push {r0-r3,lr}
+	mov r0, temp
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+	mov temp2, r0
+	pop {r0-r3,lr}
+
+	cmp temp2, #0x80
+	bne bcm32_poweron_usb_error
+
+	mov r0, #0                                       @ Return with Success
+	b bcm32_poweron_usb_common
+
+	bcm32_poweron_usb_error:
+		mov r0, #1                               @ Return with Error
+
+	bcm32_poweron_usb_common:
+		macro32_dsb ip                           @ Ensure Completion of Instructions Before
+		pop {r4}
+		mov pc, lr
+
+.unreq temp
+.unreq temp2
+
+
+/**
  * function bcm32_mailbox_read
  * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
  * This function is using a vendor-implemented process.
