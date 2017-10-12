@@ -64,9 +64,27 @@
 .equ equ32_interrupt_disable_basic_irqs,   0x24
 
 .equ equ32_armtimer_load,         0x00
+.equ equ32_armtimer_value,        0x04 @ Read
 .equ equ32_armtimer_control,      0x08
 .equ equ32_armtimer_clear,        0x0C
+.equ equ32_armtimer_rawirq,       0x10
+.equ equ32_armtimer_maskedirq,    0x14
+.equ equ32_armtimer_reload,       0x18
 .equ equ32_armtimer_predivider,   0x1C
+.equ equ32_armtimer_freerunning,  0x20 @ BCM Only
+
+.equ equ32_armtimer_freerun_prescale,       16     @ Bit[23:16] Use with `LSL`
+.equ equ32_armtimer_freerun_enable,         0x200  @ Bit[9]
+.equ equ32_armtimer_halt_debug,             0x100  @ Bit[8] Halted in Debug halted mode
+.equ equ32_armtimer_enable,                 0x80   @ Bit[7]
+.equ equ32_armtimer_periodic,               0x40   @ Bit[6] Not used in BCM2835-2837, always in Free running mode
+.equ equ32_armtimer_interrupt_enable,       0x20   @ Bit[5]
+.equ equ32_armtimer_prescale_1,             0b0000 @ Bit[3:2]
+.equ equ32_armtimer_prescale_16,            0b0100 @ Bit[3:2]
+.equ equ32_armtimer_prescale_256,           0b1000 @ Bit[3:2]
+.equ equ32_armtimer_prescale_bcm_1,         0b1100 @ Bit[3:2] BCM Only
+.equ equ32_armtimer_23bit_counter,          0x2    @ Bit[1] Or 16-bit counters (0)
+.equ equ32_armtimer_oneshot,                0x1    @ Bit[0] Not used in BCM2835-2837, always in Wrapping mode
 
 .equ equ32_gpio_gpfsel00,     0x00 @ GPIO 0-9   Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
 .equ equ32_gpio_gpfsel10,     0x04 @ GPIO 10-19 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions

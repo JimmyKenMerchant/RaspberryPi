@@ -41,13 +41,12 @@ os_reset:
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9998 (9999 - 1), 16 bits counter on default
-	add r1, r1, #0x0E                         @ 0x0E Low 1 Byte of decimal 9998, 16 bits counter on default
+	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
+	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
 	str r1, [r0, #equ32_armtimer_load]
 
-	mov r1, #0x3E0000                         @ High 2 Bytes
-	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 100K
-	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
+	mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16 @ Prescaler 1/16 to 100K
+
 	str r1, [r0, #equ32_armtimer_control]
 
 	/**
@@ -77,8 +76,8 @@ os_reset:
 
 	/**
 	 * PWM
-	 * Makes 19.2Mhz (From Oscillator) Div by 512 Equals 37500Hz.
-	 * And Makes 37500Hz Div by 32 (Default Range) Equals 1171.875Hz.
+	 * Makes 19.2Mhz (From Oscillator) Div by 3 Equals 6.4Mhz
+	 * And Div by 32 (Default Range) Equals 200KHz.
 	 * Data is Just 1, so Voltage Will Be One 32th to Full if Lowpass Filter is Attached.
 	 */
 	mov r0, #equ32_peripherals_base
@@ -86,7 +85,7 @@ os_reset:
 	add r0, r0, #equ32_cm_base_upper
 
 	mov r1, #equ32_cm_passwd
-	add r1, r1, #0x200 << equ32_cm_div_integer                 @ Decimal 512
+	add r1, r1, #3 << equ32_cm_div_integer
 	str r1, [r0, #equ32_cm_pwmdiv]
 
 	mov r1, #equ32_cm_passwd
@@ -336,6 +335,11 @@ os_fiq:
 		mov r0, #equ32_peripherals_base
 		add r0, r0, #equ32_armtimer_base
 
+		mov r1, #0                                @ Disable Timer
+		str r1, [r0, #equ32_armtimer_control]
+
+		macro32_dsb ip                            @ Ensure to Disable Timer
+
 		mov r1, #0
 		str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
@@ -343,7 +347,11 @@ os_fiq:
 		add r1, r1, #0x0E                         @ 0x0E Low 1 Byte of decimal 9998, 16 bits counter on default
 		str r1, [r0, #equ32_armtimer_load]        @ Reset Counter
 
-		macro32_dsb ip
+		mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16
+
+		str r1, [r0, #equ32_armtimer_control]
+
+		macro32_dsb ip                            @ Ensure to Enable Timer
 		mov pc, lr
 
 /**
