@@ -202,12 +202,30 @@ macro32_debug r0 500 102
 	ldr r0, [r1, #equ32_usb20_otg_hprt]
 
 macro32_debug r0 500 114
-/*
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1, #equ32_usb20_otg_grxfsiz]
+
+macro32_debug r0 500 126
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1, #equ32_usb20_otg_gnptxfsiz]
+
+macro32_debug r0 500 138
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	add r1, r1, #equ32_usb20_otg_ptxfsiz_base
+	ldr r0, [r1, #equ32_usb20_otg_hptxfsiz]
+
+macro32_debug r0 500 150
+
 	mov r0, #2
 	bl usb2032_hub_activate
 
-macro32_debug r0 500 126
-*/
+macro32_debug r0 500 162
 
 	pop {r0-r8,lr}
 

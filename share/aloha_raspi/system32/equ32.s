@@ -28,7 +28,7 @@
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
 .equ equ32_gpio_base,          0x00200000
-.equ equ32_dma0_base,          0x00007000
+.equ equ32_dma_base,           0x00007000 @ Channel 0-14
 .equ equ32_usb20_otg_base,     0x00980000
 
 .equ equ32_i2c0_base_upper,    0x00200000
@@ -39,7 +39,7 @@
 .equ equ32_i2c2_base_lower,    0x00005000
 .equ equ32_pwm_base_upper,     0x00200000
 .equ equ32_pwm_base_lower,     0x0000C000
-.equ equ32_dma15_base_upper,   0x00E00000
+.equ equ32_dma15_base_upper,   0x00E00000 @ Channel 15 Only
 .equ equ32_dma15_base_lower,   0x00005000
 .equ equ32_cm_base_upper,      0x00100000 @ Clock Manager
 .equ equ32_cm_base_lower,      0x00001000 @ Clock Manager
@@ -244,18 +244,18 @@
 .equ equ32_pwm_sta_empt1,    0x00000002 @ FIFO Empty Flag
 .equ equ32_pwm_sta_full1,    0x00000001 @ FIFO Full Flag
 
-.equ equ32_dma0_channel_offset,       0x00000100 @ Channel 0-14
+.equ equ32_dma_channel_offset,        0x00000100 @ Channel 0-14
 .equ equ32_dma_channel_int_status,    0x00000FE0 @ Channel 0-15 Interrupt Status
 .equ equ32_dma_channel_enable,        0x00000FF0 @ Channel 0-15 Global Enable Bits
-.equ equ32_dma_cs,                    0x00000000 @ DMA Channel0 Control and Status
-.equ equ32_dma_conblk_ad,             0x00000004 @ DMA Channel0 Control Block (CB) Address
-.equ equ32_dma_ti,                    0x00000008 @ DMA Channel0 CB Word0 (Transfer Information)
-.equ equ32_dma_source_ad,             0x0000000C @ DMA Channel0 CB Word1 (Source Address)
-.equ equ32_dma_dest_ad,               0x00000010 @ DMA Channel0 CB Word2 (Destination Address)
-.equ equ32_dma_txfr_len,              0x00000014 @ DMA Channel0 CB Word3 (Transfer Length)
-.equ equ32_dma_stride,                0x00000018 @ DMA Channel0 CB Word4 (2D Stride)
-.equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel0 CB Word5 (Next CB Address)
-.equ equ32_dma_debug,                 0x00000020 @ DMA Channel0 Debug
+.equ equ32_dma_cs,                    0x00000000 @ DMA Channel Control and Status
+.equ equ32_dma_conblk_ad,             0x00000004 @ DMA Channel Control Block (CB) Address
+.equ equ32_dma_ti,                    0x00000008 @ DMA Channel CB Word0 (Transfer Information)
+.equ equ32_dma_source_ad,             0x0000000C @ DMA Channel CB Word1 (Source Address)
+.equ equ32_dma_dest_ad,               0x00000010 @ DMA Channel CB Word2 (Destination Address)
+.equ equ32_dma_txfr_len,              0x00000014 @ DMA Channel CB Word3 (Transfer Length)
+.equ equ32_dma_stride,                0x00000018 @ DMA Channel CB Word4 (2D Stride)
+.equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel CB Word5 (Next CB Address)
+.equ equ32_dma_debug,                 0x00000020 @ DMA Channel Debug
 
 .equ equ32_cm_gp0ctl,          0x00000070 @ Clock Manager General Purpose 0 (GPO) Clock Control
 .equ equ32_cm_gp0div,          0x00000074 @ Clock Manager General Purpose 0 (GPO) Clock Divisor

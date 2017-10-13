@@ -9,34 +9,21 @@
 
 /**
  * As of September 24, 2017, functions in usb2032.s is under construction and suspending through 10-day attempting.
- * Reasons are as follows.
+ *
+ * MEMORANDUM
  *
  * 1. No response, handshakes from a device (#0) when USB HCD transmits an OUT transaction (requests such as GET_DESCRIPTOR),
  *    and an IN transaction makes an interrupt of Transaction Error. 
  *
  * 2. Raspberry Pi B, B+, 2 and 3 are having inner USB Hub, LAN9514/9512 (LAN).
- *    LAN, 5 ports and port #1 is already used by an ethernet adaptor,
- *    seems to need to activate. But there is no information about it.
- *    GPIO-38 is a USB (and GPIO) current-up handler, but not a power-on switch for the HUB. Anyway, no current on the HUB ports.
- *    VideoCore may handle this power state, but there is no information about it too.
- *    I got information that GPIO-44 (ALT0: GPCLK1) is 25Mhz clock source of LAN.
- *    In conclusion, activation of LAN is needed, but this method isn't open.
- *    Opening inforamtion or not is the strategy of the company. If non-open, we should consider of another way.
- *    In this case, we'll consider of RasPi Zero. Zero also gives us making RasPi possible a USB device.
+ *    LAN has 5 ports, and port #1 is already used by an ethernet adaptor.
+ *    GPIO-38 is a USB (and GPIO) current-up handler, and GPIO-44 (ALT0: GPCLK1) is 25Mhz clock source of LAN.
  *
- * 3. Other reasons may exist than #1, but currently no way of confirming it. RasPi Zero, with no inner Hub is using BCM2835,
- *    but this system is compatible from BCM2836 because of ARMv7/AArch32.
+ * 3. The chip is for high-speed, but PHY (Physical Transiver of USB system) of BCM2835 seems to be up to Full-speed.
  * 
- * 4. No data cache, DMA incremental changes attempted, but no response persists.
- *
- * 5. Halting an Host Channel by the Disable Bit is not functioned. There is need of confirming it. 
- *
- * 6. The chip is for high-speed, but PHY (Physical Transiver of USB system) of BCM2835 seems to be up to Full-speed.
- *
- * 7. I tested to enable GPIO-44 for GPCLK1, but there was no response. There is a mystery where power source of LAN9514 is on.
- *    From the datasheet, LAN9514 operates with 3.3V, so some GPIO PIN seems to be the source.
- *    Plus, we should know how to give 5V to VBUS of each port connected to LAN9514, and more.
- *    Anyhow, U2 (LAN) and U1 (BCM) connecting schematics is not open from RasPi Foundation.
+ * 4. Tested on RasPi Zero W. It seems that the resetting sequence of USB HCD is placed on some inappropriate place.
+ *    So far, a keyboard device issues ACK to GET_DESCRIPTOR, but a self-powered hub dosen't issue any response.
+ *    Resetting may be needed on the Hub. 
  */
 
 /**
@@ -78,9 +65,9 @@ usb2032_hub_activate:
 	cmp buffer, #0                       @ DMA Needs DWORD(32bit) aligned
 	beq usb2032_hub_activate_error1
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host
 	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ Request
-	orr temp, temp, #1<<16                                       @ Descriptor Index
+	orr temp, temp, #0<<16                                       @ Descriptor Index
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ Descriptor Type
 
 	str temp, [buffer]
@@ -94,14 +81,19 @@ usb2032_hub_activate:
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 
-	mov split, #0x0                           @ Upsream Hub is High Speed with No Split Transaction
-	/*mov split, #0x10000000*/                @ Split Enable
-	/*orr split, split, #0x0000C000*/         @ All
-	/*cmp flag_split, #0*/
+	mov split, #0x0                           @ Root Hub Port #1
+	/*
+	orr split, split, #0<<7                   @ Root Hub Address #0
+	orr split, split, #0x80000000             @ Split Enable
+	orr split, split, #0x0000C000             @ All
+	*/
 
 	push {r0-r3,lr}
 	mov r1, #64                               @ Maximam Packet Size
-	orr r1, r1, #0<<18
+	orr r1, r1, #0<<11                        @ Endpoint Number
+	orr r1, r1, #0<<15                        @ In(1)/Out(0)
+	orr r1, r1, #0<<16                        @ Endpoint Type
+	orr r1, r1, #0<<18                        @ Device Address
 	mov r2, #8                                @ Transfer Size is 8 Bytes
 	orr r2, r2, #0x00080000                   @ Transfer Packet is 1 Packet
 	orr r2, r2, #0x60000000                   @ Data Type is Setup
@@ -188,9 +180,8 @@ usb2032_otg_host_receiver:
 	 */
 	usb2032_otg_host_receiver_loop:
 		ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
-		/*tst temp, #0x00000002*/                                            @ Check Halted (HCD Disabled Channel N)
-		cmp temp, #0
-		/*beq usb2032_otg_host_receiver_loop*/
+		tst temp, #0x00000002                                        @ Check Halted (HCD Disabled Channel N)
+		beq usb2032_otg_host_receiver_loop
 
 
 		/**
@@ -456,10 +447,37 @@ usb2032_otg_host_start:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base    .req r0
 	temp              .req r1
-	temp2             .req r2
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_base
+
+	/**
+	 * Reset
+	 */
+	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Global Reset Control
+
+	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
+	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
+
+	orr temp, temp, #0x01                                     @ Core Soft Reset Bit[0]
+	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+
+	macro32_dsb ip
+
+	usb2032_otg_host_start_resetcore:
+		ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+		tst temp, #0x01
+		bne usb2032_otg_host_start_resetcore
+
+	orr temp, temp, #0x02                                     @ HClk Soft Reset Bit[0]
+	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+
+	macro32_dsb ip
+
+	usb2032_otg_host_start_resetinternalbus:
+		ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+		tst temp, #0x02
+		bne usb2032_otg_host_start_resetinternalbus
 
 	/**
 	 * Core Global CSRs (Base + 0x0)
@@ -482,6 +500,29 @@ usb2032_otg_host_start:
 	mov temp, #0x2E                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
 	str temp, [memorymap_base, #equ32_usb20_otg_gahbcfg]      @ Global AHB Configuration
 
+	/**
+	 * FIFO Size
+	 */
+	mov temp, #0x1000
+	str temp, [memorymap_base, #equ32_usb20_otg_grxfsiz]      @ RxFIFO Size (Words)
+
+	mov temp, #0x1000                                         @ Start Address Bit[15:0], Equals RxFIFO Size
+	orr temp, temp, #0x0100<<16                               @ Size Bit [31:16]
+	str temp, [memorymap_base, #equ32_usb20_otg_gnptxfsiz]    @ Non-periodic (NP) TxFIFO Size
+
+	/* Periodic TxFIFO Size Registers (Base + 0x100) */
+
+	add memorymap_base, memorymap_base, #equ32_usb20_otg_ptxfsiz_base
+
+	mov temp, #0x2000                                         @ Start Address Bit[15:0], Equals RxFIFO Size + NPTxFIFO Size
+	orr temp, temp, #0x0200<<16                               @ Size Bit [31:16]
+	str temp, [memorymap_base, #equ32_usb20_otg_hptxfsiz]     @ Non-periodic TxFIFO Size
+
+	sub memorymap_base, memorymap_base, #equ32_usb20_otg_ptxfsiz_base
+
+	/**
+	 * FIFO Flush
+	 */
 	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Global Reset Control
 
 	bic temp, temp, #0x7C0                                    @ TxFIFO Number Bit[10:6]
@@ -498,11 +539,9 @@ usb2032_otg_host_start:
 	macro32_dsb ip
 
 	usb2032_otg_host_start_loop1:
-		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
-		cmp temp, temp2
-		beq usb2032_otg_host_start_loop1
-
-	mov temp, temp2
+		ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+		tst temp, #0x20
+		bne usb2032_otg_host_start_loop1
 
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
 	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
@@ -513,24 +552,9 @@ usb2032_otg_host_start:
 	macro32_dsb ip
 
 	usb2032_otg_host_start_loop2:
-		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
-		cmp temp, temp2
-		beq usb2032_otg_host_start_loop2
-
-	mov temp, temp2
-
-	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
-
-	orr temp, temp, #0x01                                     @ Core Soft Reset Bit[0]
-	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
-
-	macro32_dsb ip
-
-	usb2032_otg_host_start_loop3:
-		ldr temp2, [memorymap_base, #equ32_usb20_otg_grstctl]
-		cmp temp, temp2
-		beq usb2032_otg_host_start_loop3
+		ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
+		tst temp, #0x10
+		bne usb2032_otg_host_start_loop2
 
 	/**
 	 * Host Mode CSRs (Base + 0x400)
@@ -613,7 +637,6 @@ usb2032_otg_host_start:
 
 .unreq memorymap_base
 .unreq temp
-.unreq temp2
 
 .globl USB2032_SETTER
 .globl USB2032_SENDER
