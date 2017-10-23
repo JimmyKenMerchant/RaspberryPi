@@ -65,15 +65,42 @@ usb2032_hub_activate:
 	cmp buffer, #0                       @ DMA Needs DWORD(32bit) aligned
 	beq usb2032_hub_activate_error1
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host
-	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ Request
-	orr temp, temp, #0<<16                                       @ Descriptor Index
-	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ Descriptor Type
-
+	/*
+	mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
+	orr temp, temp, #1<<16                                       @ wValue, Descriptor Index
 	str temp, [buffer]
-	mov temp, #equ32_usb20_index_device
-	orr temp, temp, #64<<16
+	*/
+
+	/*
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
+	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
+	orr temp, temp, #equ32_usb20_val_descriptor_class<<16        @ wValue, Descriptor Type
+	str temp, [buffer]
+	mov temp, #equ32_usb20_index_device                          @ wIndex
+	orr temp, temp, #64<<16                                      @ wLength
 	str temp, [buffer, #4]
+	*/
+
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
+	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
+	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
+	str temp, [buffer]
+	mov temp, #equ32_usb20_index_device                          @ wIndex
+	orr temp, temp, #64<<16                                      @ wLength
+	str temp, [buffer, #4]
+	
+	/*
+	mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
+	orr temp, temp, #equ32_usb20_val_get_status<<16              @ wValue
+	str temp, [buffer]
+	mov temp, #1                                                 @ wIndex
+	orr temp, temp, #equ32_usb20_len_get_status_port<<16         @ wLength
+	str temp, [buffer, #4]
+	*/
 
 	push {r0-r3,lr}
 	mov r0, buffer
@@ -81,8 +108,10 @@ usb2032_hub_activate:
 	bl system32_cache_operation_heap
 	pop {r0-r3,lr}
 
-	mov split, #0x0                           @ Root Hub Port #1
+	mov split, #0x0
+
 	/*
+	mov split, #0x1                           @ Root Hub Port #1
 	orr split, split, #0<<7                   @ Root Hub Address #0
 	orr split, split, #0x80000000             @ Split Enable
 	orr split, split, #0x0000C000             @ All
@@ -489,7 +518,6 @@ usb2032_otg_host_start:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_gusbcfg]      @ Global USB Configuration
 	bic temp, #0x40000000                                     @ Clear Force Device Mode Bit[30]
-	orr temp, #0x20000000                                     @ Set Force Host Mode Bit[29]
 	str temp, [memorymap_base, #equ32_usb20_otg_gusbcfg]
 
 	/**
@@ -533,28 +561,28 @@ usb2032_otg_host_start:
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
 	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
-	orr temp, temp, #0x20                                     @ TxFIFO Reset Bit[5]
+	orr temp, temp, #0x20                                     @ TxFIFO Flush Bit[5]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
 	macro32_dsb ip
 
-	usb2032_otg_host_start_loop1:
+	usb2032_otg_host_start_flushtxfifo:
 		ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 		tst temp, #0x20
-		bne usb2032_otg_host_start_loop1
+		bne usb2032_otg_host_start_flushtxfifo
 
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
 	beq usb2032_otg_host_start_error                          @ If Bus is Not in Idle
 
-	orr temp, temp, #0x10                                     @ RxFIFO Reset Bit[4]
+	orr temp, temp, #0x10                                     @ RxFIFO Flush Bit[4]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
 	macro32_dsb ip
 
-	usb2032_otg_host_start_loop2:
+	usb2032_otg_host_start_flushrxfifo:
 		ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 		tst temp, #0x10
-		bne usb2032_otg_host_start_loop2
+		bne usb2032_otg_host_start_flushrxfifo
 
 	/**
 	 * Host Mode CSRs (Base + 0x400)
@@ -562,7 +590,7 @@ usb2032_otg_host_start:
 
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_host_base
 
-	mov temp, #0x4                                            @ Set FS-LS Only Bit[2], PHY Clock to 30Mhz or 60Mhz Bit[1:0]
+	mov temp, #0x04                                           @ Set FS-LS Only Bit[2], PHY Clock to 30Mhz or 60Mhz Bit[1:0]
 	str temp, [memorymap_base, #equ32_usb20_otg_hcfg]         @ Host Configuration
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]         @ Host Port Control and Status
@@ -583,7 +611,9 @@ usb2032_otg_host_start:
 		macro32_dsb ip
 
 		push {r0-r3,lr}
-		mov r0, #0xC400                                            @ 50176 us, 50.176 ms (In High-speed, 50 ms is minimum)
+		/*mov r0, #0xC400*/                                            @ 50176 us, 50.176 ms (In High-speed, 50 ms is minimum)
+		mov r0, #0xEB00                                            @ 60160 us
+
 		bl system32_sleep
 		pop {r0-r3,lr}
 

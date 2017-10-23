@@ -397,16 +397,17 @@
 .equ equ32_usb20_req_set_interface,          0x0B
 .equ equ32_usb20_req_synch_frame,            0x0C
 
-.equ equ32_usb20_req_hid_get_report,         0x01
-.equ equ32_usb20_req_hid_get_idle,           0x02
-.equ equ32_usb20_req_hid_get_protocol,       0x03
-.equ equ32_usb20_req_hid_set_report,         0x09
-.equ equ32_usb20_req_hid_set_idle,           0x0A
-.equ equ32_usb20_req_hid_set_protocol,       0x0B
+.equ equ32_usb20_req_hid_get_report,         0x01 @ With `0x81` of bmRequestType
+.equ equ32_usb20_req_hid_get_idle,           0x02 @ With `0x81` of bmRequestType
+.equ equ32_usb20_req_hid_get_protocol,       0x03 @ With `0x81` of bmRequestType
+.equ equ32_usb20_req_hid_set_report,         0x09 @ With `0x21` of bmRequestType
+.equ equ32_usb20_req_hid_set_idle,           0x0A @ With `0x21` of bmRequestType
+.equ equ32_usb20_req_hid_set_protocol,       0x0B @ With `0x21` of bmRequestType
 
 /* wValue (2 Bytes, Offset 2, << 16) */
 .equ equ32_usb20_val_get_status,             0x0000
 
+.equ equ32_usb20_val_descriptor_class,                       0x0000 @ With `0xA0` of bmRequestType
 .equ equ32_usb20_val_descriptor_device,                      0x0100 @ Lower 1 Byte is Index of Descriptor
 .equ equ32_usb20_val_descriptor_configuration,               0x0200
 .equ equ32_usb20_val_descriptor_string,                      0x0300
@@ -417,9 +418,10 @@
 .equ equ32_usb20_val_descriptor_interface_power,             0x0800 @ Recipient is Interface
 .equ equ32_usb20_val_descriptor_otg,                         0x0900 @ Session Request Protocol (SRP) and Host Negotiation Protocol
 .equ equ32_usb20_val_descriptor_hid,                         0x2100
-.equ equ32_usb20_val_descriptor_hidreport,                   0x2200
-.equ equ32_usb20_val_descriptor_hidphysical,                 0x2300
-.equ equ32_usb20_val_descriptor_hub,                         0x2900 @ Class Number of Ports (Offset 2 Bytes)
+.equ equ32_usb20_val_descriptor_hidreport,                   0x2200 @ With `0x81` of bmRequestType
+.equ equ32_usb20_val_descriptor_hidphysical,                 0x2300 @ With `0x81` of bmRequestType
+
+.equ equ32_usb20_val_descriptor_hub,                         0x2900 @ Get By equ32_usb20_val_descriptor_class
 
 .equ equ32_usb20_val_hub_localpower,              0x0000 @ Status of Hub is similar to Value (+0x10 is change status)
 .equ equ32_usb20_val_hub_overcurrent,             0x0001
@@ -446,11 +448,12 @@
 
 /* wLength (2 Bytes, Offset 6, << 48) */
 .equ equ32_usb20_len_get_status,          0x0002
+.equ equ32_usb20_len_get_status_port,     0x0004
 .equ equ32_usb20_len_clear_feature,       0x0000
 .equ equ32_usb20_len_set_feature,         0x0000
 .equ equ32_usb20_len_set_address,         0x0000
 .equ equ32_usb20_len_get_configuration,   0x0001
-.equ equ32_usb20_len_get_configuration,   0x0000
+.equ equ32_usb20_len_set_configuration,   0x0000
 .equ equ32_usb20_len_get_interface,       0x0001
 .equ equ32_usb20_len_set_interface,       0x0000
 .equ equ32_usb20_len_synch_frame,         0x0002
