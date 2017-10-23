@@ -518,6 +518,7 @@ usb2032_otg_host_start:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_gusbcfg]      @ Global USB Configuration
 	bic temp, #0x40000000                                     @ Clear Force Device Mode Bit[30]
+	orr temp, #0x20000000                                     @ Set Force Host Mode Bit[29]
 	str temp, [memorymap_base, #equ32_usb20_otg_gusbcfg]
 
 	/**
