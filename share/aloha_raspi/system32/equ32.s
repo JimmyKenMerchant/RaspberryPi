@@ -13,6 +13,7 @@
 
 .equ equ32_tab_length,   4
 .equ equ32_datamemory_size, 0x04000000
+.equ equ32_usb2032_timeout, 0x0000FF00
 
 /**
  * Standard Peripherals

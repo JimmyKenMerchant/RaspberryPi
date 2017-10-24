@@ -192,7 +192,7 @@ os_reset_render:
 
 macro32_debug r0 500 90
 
-	bl usb2032_otg_host_start
+	bl usb2032_otg_host_reset_bcm
 
 macro32_debug r0 500 102
 
