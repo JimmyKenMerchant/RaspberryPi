@@ -9,6 +9,28 @@
 
 
 /**
+ * Print Hexadecimal Value
+ * Use r0 for Array of Bytes, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
+ */
+.macro macro32_print_hexa reg0_array x_coord y_coord reg1_color reg2_back_color length char_width char_height reg3_font:req
+	push {r0-r8,lr}
+	mov r0, \reg0_array                       @ Pointer of Array of Bytes
+	mov r8, \reg3_font
+	mov r3, \reg1_color                       @ Color (16-bit or 32-bit)
+	mov r4, \reg2_back_color                  @ Background Color (16-bit or 32-bit)
+	mov r1, #\x_coord                         @ X Coordinate
+	mov r2, #\y_coord                         @ Y Coordinate
+	mov r5, #\length                          @ Length of Characters, Need of PUSH/POP
+	mov r6, #\char_width
+	mov r7, #\char_height
+	push {r4-r8}
+	bl print32_hexa
+	add sp, sp, #20                           @ Increment SP because of push
+	pop {r0-r8,lr}
+.endm
+
+
+/**
  * Print String
  * Use r0 for string, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
  */

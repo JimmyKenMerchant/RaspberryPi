@@ -183,7 +183,8 @@ os_reset_render:
 	ldr r2, [r2]
 	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r3, [r3]
-	macro32_print_string r0, 0, 0, r1, r2, 100, 8, 12, r3
+	macro32_print_string r0, 0, 0, r1, r2, 22, 8, 12, r3
+	macro32_print_hexa r0, 0, 50, r1, r2, 22, 8, 12, r3
 
 	ldr r0, string_test                       @ Pointer of Array of String
 	macro32_print_string r0, 0, 100, r1, r2, 100, 8, 12, r3
@@ -302,7 +303,7 @@ _string_hello:
 string_hello:
 	.word _string_hello
 _string_test:
-	.ascii "Sytem Timer Interval\n\t100K? 100K by 10 Equals 1M!\n\tSystem Timer is 1M Hz!\0"
+	.ascii "System Timer Interval\n\t100K? 100K by 10 Equals 1M!\n\tSystem Timer is 1M Hz!\0"
 .balign 4
 string_test:
 	.word _string_test

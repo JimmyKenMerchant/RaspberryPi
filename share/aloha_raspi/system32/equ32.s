@@ -11,9 +11,10 @@
  * Constants
  */
 
-.equ equ32_tab_length,   4
-.equ equ32_datamemory_size, 0x04000000
-.equ equ32_usb2032_timeout, 0x0000FF00
+.equ equ32_system32_datamemory_size,  0x04000000
+.equ equ32_usb2032_timeout,           0x0000FF00
+.equ equ32_print32_hexa_length_max,   0x000000FF
+.equ equ32_print32_string_tab_length, 4
 
 /**
  * Standard Peripherals

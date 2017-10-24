@@ -102,7 +102,7 @@ _os_reset:
 .endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
-	mov r3, #equ32_datamemory_size
+	mov r3, #equ32_system32_datamemory_size
 	bl system32_set_cache
 	pop {r0-r3}
 
