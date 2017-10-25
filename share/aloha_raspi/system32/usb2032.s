@@ -20,6 +20,13 @@
  *
  * 3. Changed the duration of resetting the host port from appx. 50ms to appx. 60ms. LAN9514 issues ACK after this change.
  *
+ * 4. Trial of GET_DESCRIPTOR to Zero W and 2B (V1.1). On Zero W, each device descriptor of HUB and HID can be gotten
+ *    successfully. But 2B, the device descriptor of HUB, LAN9514, can not be gotten. So far,
+ *    the DMA buffer is common between Tx/Rx, and there may be need of reviewing clean/invalidate process of cache on 2B.
+ *
+ * 5. On Data stage, its PID must be DATA1. If you choose others, USB HCD interrupts Data Toggle Error.
+ *
+ * 6. On Status stage, its PID must be DATA1. 
  */
 
 /**
@@ -46,33 +53,31 @@ usb2032_hub_activate:
 
 	push {r4-r7}
 
+	/* Setup Stage */
+
 	ldr exe_transaction, USB2032_TRANSACTION
 
 	push {r0-r3,lr}
-	mov r0, #2                           @ 4 Bytes by 2 Words Equals 8 Bytes (64bit)
-	bl system32_malloc
-	mov buffer, r0
+	mov r0, #1000
+	bl system32_sleep                  @ For HUB
 	pop {r0-r3,lr}
 
-	cmp buffer, #0                       @ DMA Needs DWORD(32bit) aligned
+	push {r0-r3,lr}
+	mov r0, #16                        @ 4 Bytes by 16 Words Equals 64 Bytes
+	bl system32_malloc
+	mov temp, r0
+	pop {r0-r3,lr}
+
+	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
 	beq usb2032_hub_activate_error1
 
+	mov buffer, temp
+
 	/*
-	mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
 	orr temp, temp, #1<<16                                       @ wValue, Descriptor Index
 	str temp, [buffer]
-	*/
-
-	/*
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
-	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
-	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
-	orr temp, temp, #equ32_usb20_val_descriptor_class<<16        @ wValue, Descriptor Type
-	str temp, [buffer]
-	mov temp, #equ32_usb20_index_device                          @ wIndex
-	orr temp, temp, #64<<16                                      @ wLength
-	str temp, [buffer, #4]
 	*/
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -83,6 +88,17 @@ usb2032_hub_activate:
 	mov temp, #equ32_usb20_index_device                          @ wIndex
 	orr temp, temp, #64<<16                                      @ wLength
 	str temp, [buffer, #4]
+
+	/*
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
+	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
+	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
+	str temp, [buffer]
+	mov temp, #equ32_usb20_index_device                          @ wIndex
+	orr temp, temp, #64<<16                                      @ wLength
+	str temp, [buffer, #4]
+	*/
 	
 	/*
 	mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -118,6 +134,51 @@ usb2032_hub_activate:
 	blx exe_transaction
 	add sp, sp, #4
 	mov response, r0
+	mov temp, r1
+	pop {r0-r3,lr}
+
+macro32_debug response 500 288
+
+macro32_debug temp 500 300
+
+	push {r0-r3,lr}
+	mov r0, #1000
+	bl system32_sleep                             @ For HUB
+	pop {r0-r3,lr}
+
+	/* Data Stage */
+
+	orr character, character, #1<<15              @ In(1)/Out(0)
+
+	mov transfer_size, #8                         @ Transfer Size is 8 Bytes
+	orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
+	orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+
+	push {r0-r3,lr}
+	push {split_ctl}
+	blx exe_transaction
+	add sp, sp, #4
+	mov response, r0
+	mov temp, r1
+	pop {r0-r3,lr}
+
+macro32_debug response 500 312
+
+macro32_debug temp 500 324
+
+	/* Status Stage */
+
+	bic character, character, #1<<15              @ In(1)/Out(0)
+
+	mov transfer_size, #0                         @ Transfer Size is 8 Bytes
+	orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
+	orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1 (Status Stage is Always DATA1)
+
+	push {r0-r3,lr}
+	push {split_ctl}
+	blx exe_transaction
+	add sp, sp, #4
+	mov response, r0
 	pop {r0-r3,lr}
 
 	b usb2032_hub_activate_success
@@ -128,6 +189,7 @@ usb2032_hub_activate:
 
 	usb2032_hub_activate_success:
 		mov r0, response
+		mov r1, buffer
 
 	usb2032_hub_activate_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
@@ -137,11 +199,11 @@ usb2032_hub_activate:
 .unreq channel
 .unreq character
 .unreq transfer_size
-.unreq buffer
 .unreq split_ctl
+.unreq temp
 .unreq exe_transaction
 .unreq response
-.unreq temp
+.unreq buffer
 
 
 /**
@@ -174,7 +236,7 @@ usb2032_hub_activate:
  *   r4 Bit[16]: Complete Split
  *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
  *
- * Return: r0 (Status of Channel, -1 and -2 as error)
+ * Return: r0 (Status of Channel, -1 and -2 as error), r1 (Current Status of Transfer Register)
  * Bit[0]: Completed
  * Bit[1]: Halted
  * Bit[2]: ACK
@@ -184,26 +246,27 @@ usb2032_hub_activate:
  * Bit[6]: Internal Bus Error
  * Bit[7]: Transaction and Other Errors
  * Error(-1): Time Out
- * Error(-2): Channel is Already Enabled
+ * Error(-2): Channel is Already Enabled, r1 will be 0
  */
 .globl usb2032_otg_host_transaction
 usb2032_otg_host_transaction:
 	/* Auto (Local) Variables, but just Aliases */
-	channel        .req r0
-	character      .req r1
-	transfer_size  .req r2
-	buffer         .req r3
-	split_ctl      .req r4
-	exe_setter     .req r5
-	exe_sender     .req r6
-	exe_receiver   .req r7
-	response       .req r8
+	channel            .req r0
+	character          .req r1
+	transfer_size      .req r2
+	buffer             .req r3
+	split_ctl          .req r4
+	exe_setter         .req r5
+	exe_sender         .req r6
+	exe_receiver       .req r7
+	response           .req r8
+	transfer_size_last .req r9
 
-	push {r4-r8}
+	push {r4-r9}
 
-	add sp, sp, #20                                                        @ r4-r8 offset 16 bytes
+	add sp, sp, #24                                                        @ r4-r8 offset 16 bytes
 	pop {split_ctl}                                                        @ Get Fifth Argument
-	sub sp, sp, #24 	
+	sub sp, sp, #28 	
 
 	ldr exe_setter, USB2032_SETTER
 	ldr exe_sender, USB2032_SENDER
@@ -232,6 +295,7 @@ usb2032_otg_host_transaction:
 	push {r0-r3,lr}
 	blx exe_receiver
 	mov response, r0
+	mov transfer_size_last, r1
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
@@ -244,14 +308,16 @@ usb2032_otg_host_transaction:
 
 	usb2032_otg_host_transaction_error2:
 		mvn r0, #1
+		mov r1, #0
 		b usb2032_otg_host_transaction_common
 
 	usb2032_otg_host_transaction_success:
 		mov r0, response
+		mov r1, transfer_size_last
 
 	usb2032_otg_host_transaction_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r8}
+		pop {r4-r9}
 		mov pc, lr
 
 .unreq channel
@@ -263,6 +329,7 @@ usb2032_otg_host_transaction:
 .unreq exe_sender
 .unreq exe_receiver
 .unreq response
+.unreq transfer_size_last
 
 
 /**
@@ -272,7 +339,7 @@ usb2032_otg_host_transaction:
  * Parameters
  * r0: Channel 0-15
  *
- * Return: r0 (Status of Channel, -1 as error)
+ * Return: r0 (Status of Channel, -1 as error), r1 (Current Status of Transfer Register)
  * Bit[0]: Completed
  * Bit[1]: Halted
  * Bit[2]: ACK
@@ -365,6 +432,7 @@ usb2032_otg_host_receiver:
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ write-clear
 		mov temp, #0
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintmskn]            @ Mask All
+		ldr r1, [memorymap_base, #equ32_usb20_otg_hctsizn]
 		macro32_dsb ip                                                    @ Ensure Completion of Instructions Before
 		mov pc, lr
 	
@@ -579,7 +647,7 @@ usb2032_otg_host_reset_bcm:
 	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]      @ Global Reset Control
 
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_reset_bcm_error1                         @ If Bus is Not in Idle
+	beq usb2032_otg_host_reset_bcm_error1                     @ If Bus is Not in Idle
 
 	orr temp, temp, #0x01                                     @ Core Soft Reset Bit[0]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -629,7 +697,7 @@ usb2032_otg_host_reset_bcm:
 	 * BCM2836 has 0x0000000E in Default.
 	 * In this function, DMA is enabled and DMA Burst Becomes Incremental
 	 */
-	mov temp, #0x2E                                           @ Enable DMA Bit[5], BurstType Bit[4:1]
+	mov temp, #0x30                                           @ Enable DMA Bit[5], BurstType Bit[4:1] (Adopted by BCM)
 	str temp, [memorymap_base, #equ32_usb20_otg_gahbcfg]      @ Global AHB Configuration
 
 	/**
@@ -704,13 +772,13 @@ usb2032_otg_host_reset_bcm:
 
 	add memorymap_base, memorymap_base, #equ32_usb20_otg_host_base
 
-	mov temp, #0                                              @ Clear FS-LS Only Bit[2], PHY Clock to 30Mhz or 60Mhz Bit[1:0]
+	mov temp, #0x0                                            @ Clear FS-LS Only Bit[2], PHY Clock to 30Mhz or 60Mhz Bit[1:0]
 	str temp, [memorymap_base, #equ32_usb20_otg_hcfg]         @ Host Configuration
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hprt]         @ Host Port Control and Status
 
 	tst temp, #0x00001000                                     @ Port Power Bit[12]
-	bne usb2032_otg_host_reset_bcm_jump                           @ If Power On
+	bne usb2032_otg_host_reset_bcm_jump                       @ If Power On
 
 	orr temp, #0x00001000
 	str temp, [memorymap_base, #equ32_usb20_otg_hprt]

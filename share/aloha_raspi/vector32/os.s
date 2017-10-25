@@ -133,11 +133,6 @@ _os_reset:
 	macro32_invalidate_instruction_all ip
 	macro32_isb ip
 
-	/* Clear Heap to All Zero */
-	push {r0-r3}
-	bl system32_clear_heap
-	pop {r0-r3}
-
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
 	/**

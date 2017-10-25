@@ -32,6 +32,11 @@ _el3_mon:
 	sub fp, fp, ip
 	mov sp, fp
 
+	/* Clear Heap to All Zero */
+	push {r0-r3,lr}
+	bl system32_clear_heap
+	pop {r0-r3,lr}
+
 	push {r0-r3,lr}
 	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_none
 	orr r0, r0, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_r

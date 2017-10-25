@@ -146,11 +146,6 @@ os_reset:
 	macro32_invalidate_instruction_all ip
 	macro32_isb ip
 
-	/* Clear Heap to All Zero */
-	push {r0-r3,lr}
-	bl system32_clear_heap
-	pop {r0-r3,lr}
-
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
 	/**
@@ -227,6 +222,15 @@ macro32_debug r0 500 150
 	bl usb2032_hub_activate
 
 macro32_debug r0 500 162
+
+	mov r0, r1
+	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
+	ldr r1, [r1]
+	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r2, [r2]
+	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
+	ldr r3, [r3]
+	macro32_print_hexa r0, 500, 174, r1, r2, 64, 8, 12, r3
 
 	pop {r0-r8,lr}
 

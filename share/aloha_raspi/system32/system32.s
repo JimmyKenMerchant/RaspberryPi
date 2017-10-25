@@ -1247,7 +1247,7 @@ system32_clear_heap:
 
 	system32_clear_heap_loop1:
 		cmp heap_start, heap_size
-		bge system32_clear_heap_common      @ If Heap Space Overflow
+		bhs system32_clear_heap_common      @ If Heap Space Overflow
 
 		str heap_bytes, [heap_start]
 
@@ -1274,20 +1274,20 @@ system32_clear_heap:
  * Parameters
  * r0: Number of Words, 1 Word means 4 Bytes
  *
- * Usage: r0-r5
  * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
  */
 .globl system32_malloc
 system32_malloc:
 	/* Auto (Local) Variables, but just Aliases */
-	size        .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
-	heap_start  .req r1
-	heap_size   .req r2
-	heap_bytes  .req r3
-	check_start .req r4
-	check_size  .req r5
+	size           .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
+	heap_start     .req r1
+	heap_size      .req r2
+	heap_bytes     .req r3
+	check_start    .req r4
+	check_size     .req r5
+	heap_start_dup .req r6
 
-	push {r4,r5}
+	push {r4-r6}
 
 	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
 
@@ -1296,11 +1296,15 @@ system32_malloc:
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
+	mov heap_start_dup, heap_start
+
 	add heap_size, heap_start, heap_size
 
 	system32_malloc_loop:
 		cmp heap_start, heap_size
-		bge system32_malloc_error               @ If Heap Space Overflow
+		bhs system32_malloc_error               @ If Heap Space Overflow
+		cmp heap_start, heap_start_dup
+		blo system32_malloc_error               @ If Heap Space Underflow
 
 		ldr heap_bytes, [heap_start]
 		cmp heap_bytes, #0
@@ -1318,10 +1322,12 @@ system32_malloc:
 
 			system32_malloc_loop_sizecheck_loop:
 				cmp check_start, heap_size
-				bge system32_malloc_error               @ If Heap Space Overflow
+				bhs system32_malloc_error               @ If Heap Space Overflow
+				cmp heap_start, heap_start_dup
+				blo system32_malloc_error               @ If Heap Space Underflow
 
 				cmp check_start, check_size
-				bgt system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
+				bhi system32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
 
 				ldr heap_bytes, [check_start]
 
@@ -1344,7 +1350,7 @@ system32_malloc:
 
 	system32_malloc_common:
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
-		pop {r4,r5}
+		pop {r4-r6}
 		mov pc, lr
 
 .unreq size
@@ -1353,6 +1359,7 @@ system32_malloc:
 .unreq heap_bytes
 .unreq check_start
 .unreq check_size
+.unreq heap_start_dup
 
 
 .globl SYSTEM32_HEAP_ADDR
