@@ -302,7 +302,7 @@ os_fiq:
 gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
-	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
 string_hello:
 	.word _string_hello
