@@ -27,7 +27,7 @@
  *
  * 6. On Status stage, its PID must be DATA1.
  *
- * 7. HUB seems to be needed to have the duration between each transactions.
+ * 7. HUB seems to be needed to have the duration before transactions.
  */
 
 /**
@@ -145,11 +145,6 @@ usb2032_hub_activate:
 macro32_debug response 500 288
 
 macro32_debug temp 500 300
-
-	push {r0-r3,lr}
-	mov r0, #1000
-	bl system32_sleep                             @ For HUB
-	pop {r0-r3,lr}
 
 	/* Data Stage */
 

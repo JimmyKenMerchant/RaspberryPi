@@ -173,7 +173,7 @@ _os_reset:
 	mov pc, lr
 
 _os_svc:
-	push {r4-r11,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
+	push {fp,lr}                             @ Push fp (r11) and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	mvn fp, #0xFF000000                      @ Immediate Bit[23:0]
 	and ip, ip, fp
@@ -223,18 +223,19 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_common:
-		pop {r4-r11,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
+		pop {fp,lr}                          @ Pop fp (r11) and lr
 		movs pc, lr
 
 _os_irq:
 	cpsid i                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+	push {lr}
 
-	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
+	/*push {r0-r12,lr}*/                         @ Equals to stmfd (stack pointer full, decrement order)
 
 	bl os_irq
 
-	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
-
+	/*pop {r0-r12,lr}*/                          @ Equals to ldmfd (stack pointer full, decrement order)
+	pop {lr}
 	cpsie i                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
 
 	subs pc, lr, #4
@@ -242,17 +243,19 @@ _os_irq:
 
 _os_fiq:
 	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+	push {lr}
 
-	push {r0-r7,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
-	/*mrs r0, spsr*/
+	/*push {r0-r7,lr}*/                          @ Equals to stmfd (stack pointer full, decrement order)
+	/*mrs r0, spsr*/                         @ No Need of Save Status Flags in Interrupts of ARM
 	/*push {r0}*/
 
 	bl os_fiq
 
 	/*pop {r0}*/
-	/*msr spsr, r0*/
-	pop {r0-r7,lr}                           @ Equals to ldmfd (stack pointer full, decrement order)
+	/*msr spsr, r0*/                         @ No Need of Load Status Flags in Interrupts of ARM
+	/*pop {r0-r7,lr}*/                           @ Equals to ldmfd (stack pointer full, decrement order)
 
+	pop {lr}
 	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
 
 	subs pc, lr, #4

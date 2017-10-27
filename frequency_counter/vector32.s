@@ -284,9 +284,12 @@ _os_render:
 	mov pc, lr
 
 os_irq:
+	push {r0-r12}
+	pop {r0-r12}
 	mov pc, lr
 
 os_fiq:
+	push {r0-r7}
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -352,6 +355,7 @@ os_fiq:
 		str r1, [r0, #equ32_armtimer_control]
 
 		macro32_dsb ip                            @ Ensure to Enable Timer
+		pop {r0-r7}
 		mov pc, lr
 
 /**

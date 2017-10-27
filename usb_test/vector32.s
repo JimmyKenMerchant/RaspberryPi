@@ -237,9 +237,12 @@ macro32_debug r0 500 162
 	mov pc, lr
 
 os_irq:
+	push {r0-r12}
+	pop {r0-r12}
 	mov pc, lr
 
 os_fiq:
+	push {r0-r7}
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
@@ -278,7 +281,7 @@ os_fiq:
 	ldr r3, [r3]
 	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r4, [r4]
-	macro32_print_number_double r0 r1 80 388 r2 r3 16 8 12 r4
+	macro32_print_number_double r0, r1, 80, 388, r2, r3, 16, 8, 12, r4
 
 	ldr r0, timer_sub
 	ldr r1, timer_main
@@ -291,8 +294,9 @@ os_fiq:
 	str r0, timer_sub
 	str r1, timer_main
 
-	macro32_print_number_double r0 r1 80 400 r2 r3 16 8 12 r4
+	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
 
+	pop {r0-r7}
 	mov pc, lr
 
 /**
