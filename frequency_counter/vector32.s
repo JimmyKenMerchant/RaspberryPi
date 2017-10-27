@@ -41,18 +41,17 @@ os_reset:
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r1, #0x10000
+	add r1, r1, #0x8600
+	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
 	str r1, [r0, #equ32_armtimer_load]
 
-	mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16 @ Prescaler 1/16 to 100K
+	mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16|equ32_armtimer_23bit_counter @ Prescaler 1/16 to 100K
 
 	str r1, [r0, #equ32_armtimer_control]
 
 	/**
-	 * So We need to get a 10hz Timer Interrupt (100000/10000).
-	 * But in this case, counter will be reset on FIQ.
-	 * For correction on the reset, make 9999, but not 10000.
+	 * So We need to get a 1hz Timer Interrupt (100000/100000).
 	 */
 
 	/* GPIO */
@@ -272,13 +271,15 @@ _os_render:
 
 	cpsie f
 
+	freq_count .req r7
+
+	mov freq_count, #0
+
 	_os_render_loop:
 		ldr r2, [r0, #equ32_gpio_gpeds0]
 		tst r2, r1
 		strne r1, [r0, #equ32_gpio_gpeds0]
-		ldrne r2, freq_count
-		addne r2, r2, #1
-		strne r2, freq_count
+		addne freq_count, freq_count, #1
 		b _os_render_loop
 
 	mov pc, lr
@@ -289,7 +290,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r6}                              @ r7 is used across modes
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -305,21 +306,9 @@ os_fiq:
 	mov r1, #equ32_gpio47
 	str r1, [r0]
 
-	ldr r0, irq_count
-	add r0, r0, #1
-	cmp r0, #10
-	strlt r0, irq_count
-
 	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
 
-	blt _os_fiq_handler_jump
-
-	mov r0, #0
-	str r0, irq_count
-
-	ldr r0, freq_count
-	mov r1, #0
-	str r1, freq_count
+	mov r0, freq_count
 
 	push {lr}
 	bl math32_hexa_to_deci32
@@ -331,7 +320,9 @@ os_fiq:
 	ldr r3, [r3]
 	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r4, [r4]
-	macro32_print_number_double r0 r1 100 200 r2 r3 16 8 12 r4
+	macro32_print_number_double r0, r1, 100, 200, r2, r3, 16, 8, 12, r4
+
+	mov freq_count, #0
 
 	_os_fiq_handler_jump:
 
@@ -346,17 +337,21 @@ os_fiq:
 		mov r1, #0
 		str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-		mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9998 (9999 - 1), 16 bits counter on default
-		add r1, r1, #0x0E                         @ 0x0E Low 1 Byte of decimal 9998, 16 bits counter on default
+		mov r1, #0x10000
+		add r1, r1, #0x8600
+		add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
 		str r1, [r0, #equ32_armtimer_load]        @ Reset Counter
 
-		mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16
+		mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16|equ32_armtimer_23bit_counter @ Prescaler 1/16 to 100K
 
 		str r1, [r0, #equ32_armtimer_control]
 
 		macro32_dsb ip                            @ Ensure to Enable Timer
-		pop {r0-r7}
+		pop {r0-r6}
 		mov pc, lr
+
+.unreq freq_count
+
 
 /**
  * Variables
@@ -365,7 +360,7 @@ os_fiq:
 gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
-	.ascii "\tALOHA!\n\tFrequency Counter.\n\tGPIO 21 is Input Pin.\n\n\tNote: Voltage Limitation is UP TO 3.3V!\n\tGPIO 12 is Output Pin for Test.\n\tGPIO 5 is Output Pin for Max. Frequency Test.\n\tMahalo!\0" @ Add Null Escape Character on The End
+	.ascii "\tALOHA!\n\tFrequency Counter.\n\tGPIO 21 is Input Pin.\n\n\tNote: Voltage Limitation is UP TO 3.3V!\n\tGPIO 12 is Output Pin for Test.\n\tGPIO 4 is Output Pin for Max. Frequency Test.\n\tMahalo!\0" @ Add Null Escape Character on The End
 .balign 4
 string_hello:
 	.word _string_hello
@@ -384,10 +379,6 @@ _string_copy2:
 .balign 4
 string_copy2:
 	.word _string_copy2
-freq_count:
-	.word 0x00000000
-irq_count:
-	.word 0x00000000
 .balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`
