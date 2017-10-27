@@ -269,11 +269,18 @@ _os_render:
 	add r0, r0, #equ32_gpio_base
 	mov r1, #equ32_gpio21
 
-	cpsie f
+	correction     .req r5
+	basement       .req r6
+	freq_count     .req r7
+	vfp_correction .req s0
+	vfp_freq_count .req s1
 
-	freq_count .req r7
-
+	ldr correction, mem_correction
+	vmov vfp_correction, correction
+	ldr basement, mem_basement
 	mov freq_count, #0
+
+	cpsie f
 
 	_os_render_loop:
 		ldr r2, [r0, #equ32_gpio_gpeds0]
@@ -290,11 +297,25 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r6}                              @ r7 is used across modes
+	push {r0-r4}                              @ r5-r7 is used across modes
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
 .endif
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_armtimer_base
+
+	mov r1, #0                                @ Disable Timer
+	str r1, [r0, #equ32_armtimer_control]
+
+	mov r1, #0
+	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
+
+	macro32_dsb ip                            @ Ensure to Disable Timer
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
 
 	ldr r1, gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
@@ -308,7 +329,14 @@ os_fiq:
 
 	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
 
-	mov r0, freq_count
+	/* Correct and Set Basement */
+
+	vmov vfp_freq_count, freq_count
+	vcvt.f32.u32 vfp_freq_count, vfp_freq_count
+	vmul.f32 vfp_freq_count, vfp_freq_count, vfp_correction
+	vcvtr.u32.f32 vfp_freq_count, vfp_freq_count
+	vmov r0, vfp_freq_count
+	add r0, r0, basement
 
 	push {lr}
 	bl math32_hexa_to_deci32
@@ -322,35 +350,31 @@ os_fiq:
 	ldr r4, [r4]
 	macro32_print_number_double r0, r1, 100, 200, r2, r3, 16, 8, 12, r4
 
+	/* Reset Sequence */
+
 	mov freq_count, #0
 
-	_os_fiq_handler_jump:
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_armtimer_base
 
-		mov r0, #equ32_peripherals_base
-		add r0, r0, #equ32_armtimer_base
+	mov r1, #0x10000
+	add r1, r1, #0x8600
+	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
+	str r1, [r0, #equ32_armtimer_load]        @ Reset Counter
 
-		mov r1, #0                                @ Disable Timer
-		str r1, [r0, #equ32_armtimer_control]
+	mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16|equ32_armtimer_23bit_counter @ Prescaler 1/16 to 100K
 
-		macro32_dsb ip                            @ Ensure to Disable Timer
+	str r1, [r0, #equ32_armtimer_control]
 
-		mov r1, #0
-		str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
+	macro32_dsb ip                            @ Ensure to Enable Timer
+	pop {r0-r4}
+	mov pc, lr
 
-		mov r1, #0x10000
-		add r1, r1, #0x8600
-		add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
-		str r1, [r0, #equ32_armtimer_load]        @ Reset Counter
-
-		mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16|equ32_armtimer_23bit_counter @ Prescaler 1/16 to 100K
-
-		str r1, [r0, #equ32_armtimer_control]
-
-		macro32_dsb ip                            @ Ensure to Enable Timer
-		pop {r0-r6}
-		mov pc, lr
-
+.unreq correction
+.unreq basement
 .unreq freq_count
+.unreq vfp_correction
+.unreq vfp_freq_count
 
 
 /**
@@ -379,6 +403,12 @@ _string_copy2:
 .balign 4
 string_copy2:
 	.word _string_copy2
+.balign 4
+mem_correction:
+	.float 0.999991
+.balign 4
+mem_basement:
+	.word 0
 .balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`
