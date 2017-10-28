@@ -47,6 +47,8 @@ __attribute__((noinline)) uint32 _attach_buffer( int32* buffer );
 
 __attribute__((noinline)) void _sleep( uint32 u_seconds );
 
+__attribute__((noinline)) uchar8 _random( uchar8 range_start, uchar8 range_end );
+
 __attribute__((noinline)) void _store_32( int32* address, int32 data );
 
 __attribute__((noinline)) int32 _load_32( int32* address );
@@ -71,6 +73,8 @@ extern uint32 system32_convert_endianness
 extern void system32_no_op();
 
 extern void system32_sleep( uint32 u_seconds );
+
+extern uchar8 system32_random( uchar8 range_start, uchar8 range_end );
 
 extern void system32_store_32( int32* address, int32 data);
 

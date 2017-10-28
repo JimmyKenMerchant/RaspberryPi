@@ -173,10 +173,9 @@ _os_reset:
 	mov pc, lr
 
 _os_svc:
-	push {fp,lr}                             @ Push fp (r11) and lr
+	push {lr}                                @ Push lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
-	mvn fp, #0xFF000000                      @ Immediate Bit[23:0]
-	and ip, ip, fp
+	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
 
 	cmp ip, #0
 	beq _os_svc_0
@@ -188,6 +187,8 @@ _os_svc:
 	beq _os_svc_0x52
 	cmp ip, #0x58
 	beq _os_svc_0x58
+	cmp ip, #0x59
+	beq _os_svc_0x59
 	cmp ip, #0x60
 	beq _os_svc_0x60
 	cmp ip, #0x63
@@ -214,6 +215,10 @@ _os_svc:
 		bl system32_sleep
 		b _os_svc_common
 
+	_os_svc_0x59:
+		bl system32_random
+		b _os_svc_common
+
 	_os_svc_0x60:
 		bl system32_store_32
 		b _os_svc_common
@@ -223,7 +228,7 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_common:
-		pop {fp,lr}                          @ Pop fp (r11) and lr
+		pop {lr}                         @ Pop lr
 		movs pc, lr
 
 _os_irq:

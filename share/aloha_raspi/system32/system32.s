@@ -681,6 +681,85 @@ system32_sleep:
 
 
 /**
+ * function system32_random
+ * Shuffle and Return Random Value
+ * Caution! This function uses a type of pseudorandom generation, Linear-feedback Shift Register (LFSR)
+ *
+ * Parameters
+ * r0: Start of Range (0-255)
+ * r1: End of Range (0-255)
+ *
+ * Return: r0 (Random Value)
+ */
+.globl system32_random
+system32_random:
+	/* Auto (Local) Variables, but just Aliases */
+	range_start     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	range_end       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	byte            .req r2
+	temp            .req r3
+	temp2           .req r4
+	memorymap_base  .req r5
+
+	push {r4-r5}
+
+	/**
+	 * Fibonacci LFSRs
+	 */
+
+	ldrb byte, system32_random_value
+
+	system32_random_loop:
+		and temp, byte, #0x1             @ X^8
+
+		and temp2, byte, #0x4            @ X^6
+		lsr temp2, temp2, #2
+		eor temp, temp, temp2
+
+		and temp2, byte, #0x8            @ X^5
+		lsr temp2, temp2, #3
+		eor temp, temp, temp2
+
+		and temp2, byte, #0x10           @ X^4
+		lsr temp2, temp2, #4
+		eor temp, temp, temp2
+
+		lsl temp, #7                     @ MSB
+		lsr byte, #1
+		orr byte, byte, temp
+
+		/* Subtract System Time for Randomness */
+
+		mov memorymap_base, #equ32_peripherals_base
+		add memorymap_base, memorymap_base, #equ32_systemtimer_base
+		ldrb temp, [memorymap_base, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
+
+		sub byte, byte, temp
+		and byte, byte, #0xFF
+
+		cmp byte, range_start
+		blo system32_random_loop
+		cmp byte, range_end
+		bhi system32_random_loop
+
+	system32_random_common:
+		strb byte, system32_random_value
+		mov r0, byte
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq range_start
+.unreq range_end
+.unreq byte
+.unreq temp
+.unreq temp2
+.unreq memorymap_base
+
+system32_random_value: .byte 0xFF
+.balign 4
+
+
+/**
  * function system32_no_op
  * Do Nothing
  */

@@ -44,6 +44,13 @@ __attribute__((noinline)) void _sleep( uint32 u_seconds )
 	asm volatile ("svc #0x58");
 }
 
+__attribute__((noinline)) uchar8 _random( uchar8 range_start, uchar8 range_end )
+{
+	register uchar8 result asm("r0");
+	asm volatile ("svc #0x59");
+	return result;
+}
+
 __attribute__((noinline)) void _store_32( int32* address, int32 data )
 {
 	asm volatile ("svc #0x60");
