@@ -218,7 +218,7 @@
 .equ equ32_pwm_dat2,     0x00000024
 
 .equ equ32_pwm_ctl_msen2,   0x00008000 @ Channel2 M/S Enable
-.equ equ32_pwm_ctl_usef2,   0x00002000 @ Channel2 M/S Use FIFO
+.equ equ32_pwm_ctl_usef2,   0x00002000 @ Channel2 Use FIFO
 .equ equ32_pwm_ctl_pola2,   0x00001000 @ Channel2 Polarity Invert
 .equ equ32_pwm_ctl_sbit2,   0x00000800 @ Channel2 Silence Bit
 .equ equ32_pwm_ctl_rptl2,   0x00000400 @ Channel2 Repeat Last Data (When FIFO)
@@ -226,7 +226,7 @@
 .equ equ32_pwm_ctl_pwen2,   0x00000100 @ Channel2 Enable
 .equ equ32_pwm_ctl_msen1,   0x00000080 @ Channel1 M/S Enable
 .equ equ32_pwm_ctl_clrf1,   0x00000040 @ Channel1 Clear FIFO
-.equ equ32_pwm_ctl_usef1,   0x00000020 @ Channel1 M/S Use FIFO
+.equ equ32_pwm_ctl_usef1,   0x00000020 @ Channel1 Use FIFO
 .equ equ32_pwm_ctl_pola1,   0x00000010 @ Channel1 Polarity Invert
 .equ equ32_pwm_ctl_sbit1,   0x00000008 @ Channel1 Silence Bit
 .equ equ32_pwm_ctl_rptl1,   0x00000004 @ Channel1 Repeat Last Data (When FIFO)
@@ -247,6 +247,10 @@
 .equ equ32_pwm_sta_empt1,    0x00000002 @ FIFO Empty Flag
 .equ equ32_pwm_sta_full1,    0x00000001 @ FIFO Full Flag
 
+.equ equ32_pwm_dmac_enable,  0x80000000 @ DMA Enable
+.equ equ32_pwm_dmac_panic,   8          @ DMA Thereshold for PANIC signal Bit[15:8]
+.equ equ32_pwm_dmac_dreq,    0          @ DMA Thereshold for DREQ signal BIt[7:0]
+
 .equ equ32_dma_channel_offset,        0x00000100 @ Channel 0-14
 .equ equ32_dma_channel_int_status,    0x00000FE0 @ Channel 0-15 Interrupt Status
 .equ equ32_dma_channel_enable,        0x00000FF0 @ Channel 0-15 Global Enable Bits
@@ -259,6 +263,36 @@
 .equ equ32_dma_stride,                0x00000018 @ DMA Channel CB Word4 (2D Stride)
 .equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel CB Word5 (Next CB Address)
 .equ equ32_dma_debug,                 0x00000020 @ DMA Channel Debug
+
+.equ equ32_dma_cs_reset,              0x80000000 @ Reset DMA Channel
+.equ equ32_dma_cs_abort,              0x40000000 @ Abort DMA Channel (Forward Next CB)
+.equ equ32_dma_cs_disdebug,           0x20000000 @ Disable Debug Pause Signal
+.equ equ32_dma_cs_wait_writes,        0x10000000 @ Wait For Outstanding Writes
+.equ equ32_dma_cs_panic_priority,     20         @ AXI Panic Priority Level Bit[23:20]
+.equ equ32_dma_cs_priority,           16         @ AXI Priority Level Bit[19:16]
+.equ equ32_dma_cs_error,              0x00000100 @ Issues DMA Error
+.equ equ32_dma_cs_waiting_writes,     0x00000040 @ Waiting For Outstanding Writes
+.equ equ32_dma_cs_dreq_stops,         0x00000020 @ DREQ Stops DMA
+.equ equ32_dma_cs_paused,             0x00000010 @ DMA is Paused
+.equ equ32_dma_cs_dreq,               0x00000008 @ Singnaling DREQ
+.equ equ32_dma_cs_int,                0x00000004 @ Interrupt Status
+.equ equ32_dma_cs_end,                0x00000002 @ Issues DMA End
+.equ equ32_dma_cs_active,             0x00000001 @ Activate DMA Channel
+
+.equ equ32_dma_ti_no_wide_bursts,     0x04000000 @ Prevents Wide Bursts
+.equ equ32_dma_ti_waits,              21         @ Add Wait Cycles Bit[25:21]
+.equ equ32_dma_ti_permap,             16         @ Peripheral Mapping Bit[20:16]
+.equ equ32_dma_ti_burst_length,       12         @ Burst Length Bit[15:12]
+.equ equ32_dma_ti_src_ignore,         0x00000800 @ Ignore Source
+.equ equ32_dma_ti_src_dreq,           0x00000400 @ Use DREQ in Reading Source
+.equ equ32_dma_ti_src_width,          0x00000200 @ 32-bit(0)/128-bit(1) Source Width
+.equ equ32_dma_ti_src_inc,            0x00000100 @ Incremental of Source Address
+.equ equ32_dma_ti_dst_ignore,         0x00000080 @ Ignore Destination
+.equ equ32_dma_ti_dst_dreq,           0x00000040 @ Use DREQ in Writing to Destination
+.equ equ32_dma_ti_dst_width,          0x00000020 @ 32-bit(0)/128-bit(1) Destination Width
+.equ equ32_dma_ti_dst_inc,            0x00000010 @ Incremental of Destination Address
+.equ equ32_dma_ti_tdmode,             0x00000002 @ Enable 2D mode
+.equ equ32_dma_ti_inten,              0x00000001 @ Enable Interrupts
 
 .equ equ32_cm_gp0ctl,          0x00000070 @ Clock Manager General Purpose 0 (GPO) Clock Control
 .equ equ32_cm_gp0div,          0x00000074 @ Clock Manager General Purpose 0 (GPO) Clock Divisor
