@@ -501,7 +501,7 @@ math32_float32_to_string:
 
 		push {r0-r3,lr}
 		mov r0, #1
-		bl system32_malloc
+		bl heap32_malloc
 		mov string_decimal, r0
 		pop {r0-r3,lr}
 
@@ -525,12 +525,12 @@ math32_float32_to_string:
 
 		push {r0-r3,lr}
 		mov r0, string_integer 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, string_decimal
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		mov string_integer, string_cmp
@@ -589,12 +589,12 @@ math32_float32_to_string:
 
 			push {r0-r3,lr}
 			mov r0, string_integer 
-			bl system32_mfree
+			bl heap32_mfree
 			pop {r0-r3,lr}
 
 			push {r0-r3,lr}
 			mov r0, string_decimal
-			bl system32_mfree
+			bl heap32_mfree
 			pop {r0-r3,lr}
 
 			mov string_integer, string_cmp
@@ -616,7 +616,7 @@ math32_float32_to_string:
 
 		push {r0-r3,lr}
 		mov r0, #1
-		bl system32_malloc
+		bl heap32_malloc
 		mov string_decimal, r0
 		pop {r0-r3,lr}
 
@@ -641,12 +641,12 @@ math32_float32_to_string:
 
 		push {r0-r3,lr}
 		mov r0, string_integer 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, string_decimal
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		mov string_integer, string_cmp
@@ -675,12 +675,12 @@ math32_float32_to_string:
 
 		push {r0-r3,lr}
 		mov r0, string_integer 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, string_decimal
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		mov string_integer, string_cmp
@@ -689,17 +689,17 @@ math32_float32_to_string:
 	math32_float32_to_string_error:
 		push {r0-r3,lr}
 		mov r0, string_integer 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, string_decimal
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, string_cmp
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		mov r0, #0
@@ -869,7 +869,7 @@ math32_int32_to_string_deci:
 
 		push {r0-r3,lr}
 		mov r0, #1
-		bl system32_malloc
+		bl heap32_malloc
 		mov string_minus, r0
 		pop {r0-r3,lr}
 
@@ -901,12 +901,12 @@ math32_int32_to_string_deci:
 
 		push {r0-r3,lr}
 		mov r0, string_minus 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, string_upper
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		mov string_upper, string_cmp
@@ -924,12 +924,12 @@ math32_int32_to_string_deci:
 
 			push {r0-r3,lr}
 			mov r0, string_upper 
-			bl system32_mfree
+			bl heap32_mfree
 			pop {r0-r3,lr}
 
 			push {r0-r3,lr}
 			mov r0, string_lower
-			bl system32_mfree
+			bl heap32_mfree
 			pop {r0-r3,lr}
 
 			b math32_int32_to_string_deci_success 
@@ -951,12 +951,12 @@ math32_int32_to_string_deci:
 
 			push {r0-r3,lr}
 			mov r0, string_minus 
-			bl system32_mfree
+			bl heap32_mfree
 			pop {r0-r3,lr}
 
 			push {r0-r3,lr}
 			mov r0, string_lower
-			bl system32_mfree
+			bl heap32_mfree
 			pop {r0-r3,lr}
 
 			b math32_int32_to_string_deci_success 
@@ -964,19 +964,19 @@ math32_int32_to_string_deci:
 	math32_int32_to_string_deci_error:
 		push {r0-r3,lr}
 		mov r0, string_lower
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 		push {r0-r3,lr}
 		mov r0, string_upper
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 		push {r0-r3,lr}
 		mov r0, string_minus 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 		push {r0-r3,lr}
 		mov r0, string_cmp 
-		bl system32_mfree
+		bl heap32_mfree
 		pop {r0-r3,lr}
 
 		mov r0, #0
@@ -1082,7 +1082,7 @@ math32_int32_to_string_hexa:
 
 		push {r0-r3,lr}
 		mov r0, heap_size
-		bl system32_malloc
+		bl heap32_malloc
 		mov heap_origin, r0
 		pop {r0-r3,lr}
 

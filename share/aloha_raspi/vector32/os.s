@@ -85,7 +85,7 @@ _os_reset:
 	ldr r2, [r2]
 	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
 	ldr r3, [r3]
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3}
 
 	/* Set Cache Status for HEAP */
@@ -103,7 +103,7 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
 	mov r3, #equ32_system32_datamemory_size
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3}
 
 	/* Set Cache Status for Virtual Address Descriptor */
@@ -119,11 +119,11 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_VADESCRIPTOR_ADDR
+	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
 	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_VADESCRIPTOR_SIZE
+	ldr r3, ADDR32_ARM32_VADESCRIPTOR_SIZE
 	ldr r3, [r3]
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3}
 
 	macro32_dsb ip
@@ -212,19 +212,19 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x58:
-		bl system32_sleep
+		bl arm32_sleep
 		b _os_svc_common
 
 	_os_svc_0x59:
-		bl system32_random
+		bl arm32_random
 		b _os_svc_common
 
 	_os_svc_0x60:
-		bl system32_store_32
+		bl arm32_store_32
 		b _os_svc_common
 
 	_os_svc_0x63:
-		bl system32_load_32
+		bl arm32_load_32
 		b _os_svc_common
 
 	_os_svc_common:

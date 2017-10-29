@@ -58,12 +58,12 @@ usb2032_hub_activate:
 
 	push {r0-r3,lr}
 	mov r0, #1000
-	bl system32_sleep                  @ For HUB
+	bl arm32_sleep                  @ For HUB
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
-	bl system32_malloc
+	bl heap32_malloc
 	mov temp, r0
 	pop {r0-r3,lr}
 	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
@@ -72,7 +72,7 @@ usb2032_hub_activate:
 
 	push {r0-r3,lr}
 	mov r0, #16                        @ 4 Bytes by 16 Words Equals 64 Bytes
-	bl system32_malloc
+	bl heap32_malloc
 	mov buffer_res, r0
 	pop {r0-r3,lr}
 	cmp buffer_res, #0                 @ DMA Needs DWORD(32bit) aligned
@@ -184,7 +184,7 @@ macro32_debug temp 500 324
 
 	push {r0-r3,lr}
 	mov r0, buffer_req
-	bl system32_mfree
+	bl heap32_mfree
 	pop {r0-r3,lr}
 
 	b usb2032_hub_activate_success
@@ -281,7 +281,7 @@ usb2032_transaction:
 	push {r0-r3,lr}
 	mov r0, buffer
 	mov r1, #1                                @ Clean
-	bl system32_cache_operation_heap
+	bl arm32_cache_operation_heap
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
@@ -307,7 +307,7 @@ usb2032_transaction:
 	push {r0-r3,lr}
 	mov r0, buffer
 	mov r1, #0                                @ Invalidate
-	bl system32_cache_operation_heap
+	bl arm32_cache_operation_heap
 	pop {r0-r3,lr}
 
 	b usb2032_transaction_success
@@ -802,7 +802,7 @@ usb2032_otg_host_reset_bcm:
 
 		mov r0, #0xEB00                                            @ 60160 us, 60.160 ms
 
-		bl system32_sleep
+		bl arm32_sleep
 		pop {r0-r3,lr}
 
 		bic temp, #0x00000100                                      @ Clear Port Reset Bit[8]

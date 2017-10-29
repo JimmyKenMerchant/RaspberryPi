@@ -54,7 +54,7 @@ __attribute__((noinline)) void _store_32( int32* address, int32 data );
 __attribute__((noinline)) int32 _load_32( int32* address );
 
 /********************************
- * system32/system32.s
+ * system32/arm/arm32.s
  ********************************/
 
 /**
@@ -63,46 +63,40 @@ __attribute__((noinline)) int32 _load_32( int32* address );
  * Return: 0 as sucess, 1 as error
  * Error: Align Bytes is not 2/4
  */
-extern uint32 system32_convert_endianness
+extern uint32 arm32_convert_endianness
 (
 	int32* data,
 	uint32 size,
 	uint32 align_bytes
 );
 
-extern void system32_no_op();
+extern void arm32_no_op();
 
-extern void system32_sleep( uint32 u_seconds );
+extern void arm32_sleep( uint32 u_seconds );
 
-extern uchar8 system32_random( uchar8 range_start, uchar8 range_end );
+extern uchar8 arm32_random( uchar8 range_start, uchar8 range_end );
 
-extern void system32_store_32( int32* address, int32 data);
+extern void arm32_store_32( int32* address, int32 data);
 
-extern void system32_store_16( int16* address, int16 data);
+extern void arm32_store_16( int16* address, int16 data);
 
-extern void system32_store_8( char8* address, char8 data);
+extern void arm32_store_8( char8* address, char8 data);
 
-extern int32 system32_load_32( int32* address );
+extern int32 arm32_load_32( int32* address );
 
-extern int16 system32_load_16( int16* address );
+extern int16 arm32_load_16( int16* address );
 
-extern char8 system32_load_8( char8* address );
+extern char8 arm32_load_8( char8* address );
 
-extern int32* system32_malloc( uint32 block_size );
+extern void arm32_dsb();
 
-extern uint32 system32_mfree( int32* address );
+extern void arm32_msb();
 
-extern int32* system32_mcopy( int32* address_dst, int32* address_src, uint32 offset, uint32 size );
-
-extern void system32_dsb();
-
-extern void system32_msb();
-
-extern void system32_isb();
+extern void arm32_isb();
 
 
 /********************************
- * system32/fb32.s
+ * system32/library/fb32.s
  ********************************/
 
 extern int32* FB32_FRAMEBUFFER;
@@ -265,7 +259,7 @@ extern uint32 fb32_attach_buffer
 
 
 /********************************
- * system32/print32.s
+ * system32/library/print32.s
  ********************************/
 
 /**
@@ -391,7 +385,7 @@ extern uint64 print32_number
 
 
 /********************************
- * system32/draw32.s
+ * system32/library/draw32.s
  ********************************/
 
 /**
@@ -499,7 +493,7 @@ extern uint32 draw32_set_renderbuffer
 
 
 /********************************
- * system32/math32.s
+ * system32/library/math32.s
  ********************************/
 
 /**
@@ -596,7 +590,20 @@ extern char8* math32_int32_to_string_hexa
 
 
 /********************************
- * system32/font_mono_12px.s
+ * system32/library/heap32.s
+ ********************************/
+
+extern int32* heap32_malloc( uint32 block_size );
+
+
+extern uint32 heap32_mfree( int32* address );
+
+
+extern int32* heap32_mcopy( int32* address_dst, int32* address_src, uint32 offset, uint32 size );
+
+
+/********************************
+ * system32/library/font_mono_12px.s
  ********************************/
 
 extern int32* FONT_MONO_12PX_ASCII;
@@ -645,7 +652,7 @@ extern uint32 COLOR32_BLACK;
 
 
 /********************************
- * system32/data.s
+ * system32/library/data.s
  ********************************/
 
 extern int32* DATA_COLOR32_SAMPLE_IMAGE0;

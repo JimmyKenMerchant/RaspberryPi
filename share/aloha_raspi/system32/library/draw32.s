@@ -551,7 +551,7 @@ draw32_set_renderbuffer:
 
 	push {r0-r3,lr}
 	mov r0, addr
-	bl system32_malloc
+	bl heap32_malloc
 	mov addr, r0
 	pop {r0-r3,lr}
 
@@ -608,7 +608,7 @@ draw32_clear_renderbuffer:
 	
 	push {r0-r3,lr}
 	mov r0, addr
-	bl system32_mfree
+	bl heap32_mfree
 	cmp r0, #0
 	bne draw32_clear_renderbuffer_error
 	pop {r0-r3,lr}

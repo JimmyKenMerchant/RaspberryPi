@@ -130,7 +130,7 @@ _os_reset:
 	ldr r2, [r2]
 	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
 	ldr r3, [r3]
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3}
 
 	/* Set Cache Status for HEAP */
@@ -146,11 +146,9 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_HEAP_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_HEAP_SIZE
-	ldr r3, [r3]
-	bl system32_set_cache
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
+	mov r3, #equ32_system32_datamemory_size
+	bl arm32_set_cache
 	pop {r0-r3}
 
 	/* Set Cache Status for Virtual Address Descriptor */
@@ -166,11 +164,11 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_VADESCRIPTOR_ADDR
+	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
 	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_VADESCRIPTOR_SIZE
+	ldr r3, ADDR32_ARM32_VADESCRIPTOR_SIZE
 	ldr r3, [r3]
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3}
 
 	macro32_dsb ip
@@ -179,11 +177,6 @@ _os_reset:
 	macro32_dsb ip
 	macro32_invalidate_instruction_all ip
 	macro32_isb ip
-
-	/* Clear Heap to All Zero */
-	push {r0-r3}
-	bl system32_clear_heap
-	pop {r0-r3}
 
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	
@@ -213,28 +206,28 @@ _os_render:
 	/* Core 3 */
 
 	mov r0, #2
-	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	bl heap32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
 	ldr r1, core123_handler
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
 	mov r1, #0
 	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
 	push {r0-r3}
 	mov r1, #3                                @ Indicate Number of Core
-	bl system32_core_call
+	bl arm32_core_call
 	pop {r0-r3}
 
 	_os_render_loop2:
-		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
+		ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 		ldr r1, [r1]
 		cmp r1, #0
 		bne _os_render_loop2
 
-	bl system32_mfree                         @ Clear Memory Space
+	bl heap32_mfree                         @ Clear Memory Space
 
 	/* Core 3 */
 
 	mov r0, #9
-	bl system32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	bl heap32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
 	ldr r1, core123_handler2
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
 	mov r1, #7
@@ -255,11 +248,11 @@ _os_render:
 	str r1, [r0, #32]
 	push {r0-r3}
 	mov r1, #3                                @ Indicate Number of Core
-	bl system32_core_call
+	bl arm32_core_call
 	pop {r0-r3}
 
 	_os_render_loop3:
-		ldr r1, ADDR32_SYSTEM32_CORE_HANDLE_3
+		ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 		ldr r1, [r1]
 		cmp r1, #0
 		bne _os_render_loop3
@@ -268,7 +261,7 @@ _os_render:
 
 macro32_debug r1 500 500
 
-	bl system32_mfree                         @ Clear Memory Space
+	bl heap32_mfree                         @ Clear Memory Space
 
 	ldr r0, string_hello                      @ Pointer of Array of String
 	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)

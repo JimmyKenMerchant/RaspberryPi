@@ -324,7 +324,7 @@ print32_strcat:
 
 	push {r0-r3,lr}
 	mov r0, heap_size
-	bl system32_malloc
+	bl heap32_malloc
 	mov heap_origin, r0
 	pop {r0-r3,lr}
 

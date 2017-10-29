@@ -168,7 +168,7 @@ os_reset:
 	ldr r2, [r2]
 	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
 	ldr r3, [r3]
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3,lr}
 
 	/* Set Cache Status for HEAP */
@@ -184,11 +184,9 @@ os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_HEAP_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_HEAP_SIZE
-	ldr r3, [r3]
-	bl system32_set_cache
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
+	mov r3, #equ32_system32_datamemory_size
+	bl arm32_set_cache
 	pop {r0-r3,lr}
 
 	/* Set Cache Status for Virtual Address Descriptor */
@@ -204,11 +202,11 @@ os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_VADESCRIPTOR_ADDR
+	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
 	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_VADESCRIPTOR_SIZE
+	ldr r3, ADDR32_ARM32_VADESCRIPTOR_SIZE
 	ldr r3, [r3]
-	bl system32_set_cache
+	bl arm32_set_cache
 	pop {r0-r3,lr}
 
 	macro32_dsb ip
@@ -217,11 +215,6 @@ os_reset:
 	macro32_dsb ip
 	macro32_invalidate_instruction_all ip
 	macro32_isb ip
-
-	/* Clear Heap to All Zero */
-	push {r0-r3,lr}
-	bl system32_clear_heap
-	pop {r0-r3,lr}
 
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
 	

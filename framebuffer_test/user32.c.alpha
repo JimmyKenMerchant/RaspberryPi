@@ -8,6 +8,7 @@
  */
 
 #include "system32.h"
+#include "system32.c"
 
 void _user_start()
 {
@@ -34,7 +35,7 @@ void _user_start()
 
 	int32 search_string = print32_strindex( string1, "HA!" );
 
-	char8* copy_string1 = (char8*)system32_malloc(7); // 28 Bytes
+	char8* copy_string1 = (char8*)heap32_malloc(7); // 28 Bytes
 
 	copy_string1[0] = 0x56; // "V"
 	copy_string1[1] = 0x57; // "W"
@@ -43,9 +44,9 @@ void _user_start()
 	copy_string1[4] = 0x5A; // "Z"
 	copy_string1[5] = 0x0; // "\0"
 
-	char8* copy_string2 = (char8*)system32_malloc(7); // 28 Bytes
+	char8* copy_string2 = (char8*)heap32_malloc(7); // 28 Bytes
 
-	int32* error = system32_mcopy( (int32*)copy_string2, (int32*)copy_string1, 1, 3);
+	int32* error = heap32_mcopy( (int32*)copy_string2, (int32*)copy_string1, 1, 3);
 
 	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -62,17 +63,17 @@ void _user_start()
 	print32_set_caret( print32_number( (uint32)error, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	system32_mfree( (int32*)copy_string1 );
+	heap32_mfree( (int32*)copy_string1 );
 
-	system32_mfree( (int32*)copy_string2 );
+	heap32_mfree( (int32*)copy_string2 );
 
-	system32_sleep( 10000000 );
+	_sleep( 10000000 );
 
-	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
+	arm32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	draw32_change_alpha_argb( DATA_COLOR32_SAMPLE_IMAGE0, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x99 );
 
-	system32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE, 4 );
+	arm32_convert_endianness( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE, 4 );
 	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 	
 	while(1) {
@@ -83,6 +84,6 @@ void _user_start()
 		fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
 		fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 		clear_color = clear_color + 20;
-		system32_sleep( 2000000 );
+		_sleep( 2000000 );
 	}
 }

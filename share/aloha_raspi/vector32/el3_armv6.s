@@ -29,7 +29,7 @@ _el3_mon:
 
 	/* Clear Heap to All Zero */
 	push {r0-r3,lr}
-	bl system32_clear_heap
+	bl heap32_clear_heap
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
@@ -40,14 +40,14 @@ _el3_mon:
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
 	orr r1, r1, #equ32_mmu_section_nonsecure
 	orr r1, r1, #equ32_mmu_domain00
-	bl system32_lineup_basic_va
+	bl arm32_lineup_basic_va
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #0
 	/* On ARMv6, Bit[6] is SBZ and Inner Cache Indicator is Only Bit[0] */
 	mov r1, #equ32_ttbr_inner_wt|equ32_ttbr_outer_wb_wa
-	bl system32_activate_va
+	bl arm32_activate_va
 	pop {r0-r3,lr}
 
 	/* Invalidate Entire Data Cache, Instruction Cache, and Flush Branch Target Cache */

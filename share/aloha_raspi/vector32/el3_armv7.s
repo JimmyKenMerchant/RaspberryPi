@@ -34,7 +34,7 @@ _el3_mon:
 
 	/* Clear Heap to All Zero */
 	push {r0-r3,lr}
-	bl system32_clear_heap
+	bl heap32_clear_heap
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
@@ -45,25 +45,25 @@ _el3_mon:
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
 	orr r1, r1, #equ32_mmu_section_nonsecure|equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
-	bl system32_lineup_basic_va
+	bl arm32_lineup_basic_va
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #0
 	mov r1, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
-	bl system32_activate_va
+	bl arm32_activate_va
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #1                                @ L1
 	mov r1, #0                                @ Invalidate
-	bl system32_cache_operation_all
+	bl arm32_cache_operation_all
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, #2                                @ L2
 	mov r1, #0                                @ Invalidate
-	bl system32_cache_operation_all
+	bl arm32_cache_operation_all
 	pop {r0-r3,lr}
 
 	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */

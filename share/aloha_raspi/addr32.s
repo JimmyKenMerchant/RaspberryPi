@@ -8,11 +8,13 @@
  */
 
 /**
- * include/aloha/system32.h
+ * system32/system32.s
  */
+ADDR32_SYSTEM32_STACKPOINTER:     .word SYSTEM32_STACKPOINTER
+ADDR32_SYSTEM32_DATAMEMORY:       .word SYSTEM32_DATAMEMORY
 
 /**
- * system32/bcm32.s
+ * system32/vendor/bcm32.s
  */
 
 ADDR32_BCM32_DISPLAY_WIDTH:        .word BCM32_DISPLAY_WIDTH
@@ -26,28 +28,24 @@ ADDR32_BCM32_ADDRESS:              .word BCM32_ADDRESS
 ADDR32_BCM32_SIZE:                 .word BCM32_SIZE
 
 /**
- * system32/system32.s
+ * system32/arm/arm32.s
  */
 
 .ifndef __ARMV6
 
-ADDR32_SYSTEM32_CORE_HANDLE_0:       .word SYSTEM32_CORE_HANDLE_0
-ADDR32_SYSTEM32_CORE_HANDLE_1:       .word SYSTEM32_CORE_HANDLE_1
-ADDR32_SYSTEM32_CORE_HANDLE_2:       .word SYSTEM32_CORE_HANDLE_2
-ADDR32_SYSTEM32_CORE_HANDLE_3:       .word SYSTEM32_CORE_HANDLE_3
+ADDR32_ARM32_CORE_HANDLE_0:       .word ARM32_CORE_HANDLE_0
+ADDR32_ARM32_CORE_HANDLE_1:       .word ARM32_CORE_HANDLE_1
+ADDR32_ARM32_CORE_HANDLE_2:       .word ARM32_CORE_HANDLE_2
+ADDR32_ARM32_CORE_HANDLE_3:       .word ARM32_CORE_HANDLE_3
 
 .endif
 
-ADDR32_SYSTEM32_HEAP_ADDR:           .word SYSTEM32_HEAP_ADDR
-ADDR32_SYSTEM32_HEAP_SIZE:           .word SYSTEM32_HEAP_SIZE
-ADDR32_SYSTEM32_VADESCRIPTOR_ADDR:   .word SYSTEM32_VADESCRIPTOR_ADDR
-ADDR32_SYSTEM32_VADESCRIPTOR_SIZE:   .word SYSTEM32_VADESCRIPTOR_SIZE
-ADDR32_SYSTEM32_STACKPOINTER:        .word SYSTEM32_STACKPOINTER
-ADDR32_SYSTEM32_DATAMEMORY:          .word SYSTEM32_DATAMEMORY
+ADDR32_ARM32_VADESCRIPTOR_ADDR:   .word ARM32_VADESCRIPTOR_ADDR
+ADDR32_ARM32_VADESCRIPTOR_SIZE:   .word ARM32_VADESCRIPTOR_SIZE
 
 
 /**
- * system32/fb32.s
+ * system32/library/fb32.s
  */
 
 ADDR32_FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER
@@ -69,25 +67,14 @@ ADDR32_FB32_DEPTH:                .word FB32_DEPTH
 
 
 /**
- * system32/print32.s
- */
-
-
-/**
- * system32/math32.s
- */
-
-ADDR32_math32_decimal_adder64:  .word math32_decimal_adder64
-
-/**
- * system32/font_mono_12px.s
+ * system32/library/font_mono_12px.s
  */
 
 ADDR32_FONT_MONO_12PX_ASCII:   .word FONT_MONO_12PX_ASCII
 
 
 /**
- * system32/color.s
+ * system32/library/color.s
  */
 
 ADDR32_COLOR16_RED:          .word COLOR16_RED
@@ -129,7 +116,7 @@ ADDR32_COLOR32_BLACK:        .word COLOR32_BLACK
 
 
 /**
- * system32/data32.s
+ * system32/library/data32.s
  */
 
 ADDR32_DATA_COLOR32_SAMPLE_IMAGE0:      .word DATA_COLOR32_SAMPLE_IMAGE0

@@ -8,11 +8,11 @@
  */
 
 #include "system32.h"
+#include "system32.c"
 
 void _user_start()
 {
 	
 	while(1) {
-		system32_sleep( 2000000 );
 	}
 }

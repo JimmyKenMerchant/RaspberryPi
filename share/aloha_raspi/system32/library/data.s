@@ -20,10 +20,10 @@ DATA_COLOR32_SAMPLE_IMAGE1_SIZE: .word _DATA_COLOR32_SAMPLE_IMAGE1_END - _DATA_C
 .section	.data
 
 _DATA_COLOR32_SAMPLE_IMAGE0:
-.incbin "system32/data/bugufo_abgr.bin"          @ Little Endian, ABGR Style
+.incbin "system32/library/data/bugufo_abgr.bin"          @ Little Endian, ABGR Style
 _DATA_COLOR32_SAMPLE_IMAGE0_END:
 _DATA_COLOR32_SAMPLE_IMAGE1:
-.incbin "system32/data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style
+.incbin "system32/library/data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style
 _DATA_COLOR32_SAMPLE_IMAGE1_END:
 
 .section	.library_system32

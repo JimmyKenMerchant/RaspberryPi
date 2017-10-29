@@ -48,19 +48,19 @@ _el01_reset:
 	push {r0-r3}
 	mov r0, #1
 	mov r1, #equ32_ttbr_inner_wb_wa|equ32_ttbr_outer_wb_wa
-	bl system32_activate_va
+	bl arm32_activate_va
 	pop {r0-r3}
 
 	push {r0-r3}
 	mov r0, #1                                @ L1
 	mov r1, #0                                @ Invalidate
-	bl system32_cache_operation_all
+	bl arm32_cache_operation_all
 	pop {r0-r3}
 
 	push {r0-r3}
 	mov r0, #2                                @ L2
 	mov r1, #0                                @ Invalidate
-	bl system32_cache_operation_all
+	bl arm32_cache_operation_all
 	pop {r0-r3}
 
 	/* Invalidate Entire Instruction Cache and Flush Branch Target Cache */
@@ -94,7 +94,7 @@ _el01_reset:
 	 */
 
 	_el01_reset_loop:
-		bl system32_core_handle
+		bl arm32_core_handle
 		b _el01_reset_loop
 
 _el01_svc:
