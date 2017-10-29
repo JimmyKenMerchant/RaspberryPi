@@ -728,7 +728,7 @@ arm32_random:
 .unreq temp2
 .unreq memorymap_base
 
-arm32_random_value: .byte 0xFF
+arm32_random_value: .byte equ32_arm32_random_value
 .balign 4
 
 

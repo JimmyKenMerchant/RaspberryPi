@@ -173,62 +173,53 @@ _os_reset:
 	mov pc, lr
 
 _os_svc:
-	push {lr}                                @ Push lr
+	push {fp,lr}                             @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
+	cmp ip, #7                               @ Prevent Overflow SVC Table
+	bhi _os_svc_common
+	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 
-	cmp ip, #0
-	beq _os_svc_0
-	cmp ip, #0x50
-	beq _os_svc_0x50
-	cmp ip, #0x51
-	beq _os_svc_0x51
-	cmp ip, #0x52
-	beq _os_svc_0x52
-	cmp ip, #0x58
-	beq _os_svc_0x58
-	cmp ip, #0x59
-	beq _os_svc_0x59
-	cmp ip, #0x60
-	beq _os_svc_0x60
-	cmp ip, #0x63
-	beq _os_svc_0x63
+	ldr fp, _os_svc_base
+	add fp, fp, ip
+	bx fp
 
-	b _os_svc_common                         @ Default
+	_os_svc_base: .word _os_svc_0
 
 	_os_svc_0:
+		mov r0, r0
 		b _os_svc_common
 
-	_os_svc_0x50:
+	_os_svc_0x1:
 		bl fb32_flush_doublebuffer
 		b _os_svc_common
 
-	_os_svc_0x51:
+	_os_svc_0x2:
 		bl fb32_set_doublebuffer
 		b _os_svc_common
 
-	_os_svc_0x52:
+	_os_svc_0x3:
 		bl fb32_attach_buffer
 		b _os_svc_common
 
-	_os_svc_0x58:
+	_os_svc_0x4:
 		bl arm32_sleep
 		b _os_svc_common
 
-	_os_svc_0x59:
+	_os_svc_0x5:
 		bl arm32_random
 		b _os_svc_common
 
-	_os_svc_0x60:
+	_os_svc_0x6:
 		bl arm32_store_32
 		b _os_svc_common
 
-	_os_svc_0x63:
+	_os_svc_0x7:
 		bl arm32_load_32
 		b _os_svc_common
 
 	_os_svc_common:
-		pop {lr}                         @ Pop lr
+		pop {fp,lr}                         @ Pop fp and lr
 		movs pc, lr
 
 _os_irq:
