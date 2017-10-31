@@ -654,85 +654,6 @@ arm32_sleep:
 
 
 /**
- * function arm32_random
- * Shuffle and Return Random Value
- * Caution! This function uses a type of pseudorandom generation, Linear-feedback Shift Register (LFSR)
- *
- * Parameters
- * r0: Start of Range (0-255)
- * r1: End of Range (0-255)
- *
- * Return: r0 (Random Value)
- */
-.globl arm32_random
-arm32_random:
-	/* Auto (Local) Variables, but just Aliases */
-	range_start     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	range_end       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	byte            .req r2
-	temp            .req r3
-	temp2           .req r4
-	memorymap_base  .req r5
-
-	push {r4-r5}
-
-	/**
-	 * Fibonacci LFSRs
-	 */
-
-	ldrb byte, arm32_random_value
-
-	arm32_random_loop:
-		and temp, byte, #0x1             @ X^8
-
-		and temp2, byte, #0x4            @ X^6
-		lsr temp2, temp2, #2
-		eor temp, temp, temp2
-
-		and temp2, byte, #0x8            @ X^5
-		lsr temp2, temp2, #3
-		eor temp, temp, temp2
-
-		and temp2, byte, #0x10           @ X^4
-		lsr temp2, temp2, #4
-		eor temp, temp, temp2
-
-		lsl temp, #7                     @ MSB
-		lsr byte, #1
-		orr byte, byte, temp
-
-		/* Subtract System Time for Randomness */
-
-		mov memorymap_base, #equ32_peripherals_base
-		add memorymap_base, memorymap_base, #equ32_systemtimer_base
-		ldrb temp, [memorymap_base, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
-
-		sub byte, byte, temp
-		and byte, byte, #0xFF
-
-		cmp byte, range_start
-		blo arm32_random_loop
-		cmp byte, range_end
-		bhi arm32_random_loop
-
-	arm32_random_common:
-		strb byte, arm32_random_value
-		mov r0, byte
-		pop {r4-r5}
-		mov pc, lr
-
-.unreq range_start
-.unreq range_end
-.unreq byte
-.unreq temp
-.unreq temp2
-.unreq memorymap_base
-
-arm32_random_value: .byte equ32_arm32_random_value
-.balign 4
-
-
-/**
  * function arm32_no_op
  * Do Nothing
  */
@@ -1311,6 +1232,135 @@ arm32_dmb:
 arm32_isb:
 		macro32_isb ip
 		mov pc, lr
+
+
+/**
+ * function arm32_random
+ * Shuffle and Return Random Value
+ * This function uses a type of pseudorandom generation, Linear-feedback Shift Register (LFSR)
+ *
+ * Parameters
+ * r0: Start of Range (0-255)
+ * r1: End of Range (0-255)
+ *
+ * Return: r0 (Random Value)
+ */
+.globl arm32_random
+arm32_random:
+	/* Auto (Local) Variables, but just Aliases */
+	range_start     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	range_end       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	byte            .req r2
+	temp            .req r3
+	temp2           .req r4
+	memorymap_base  .req r5
+
+	push {r4-r5}
+
+	/**
+	 * Fibonacci LFSRs
+	 */
+
+	ldrb byte, arm32_random_value
+
+	arm32_random_loop:
+		and temp, byte, #0x1             @ X^8
+
+		and temp2, byte, #0x4            @ X^6
+		lsr temp2, temp2, #2
+		eor temp, temp, temp2
+
+		and temp2, byte, #0x8            @ X^5
+		lsr temp2, temp2, #3
+		eor temp, temp, temp2
+
+		and temp2, byte, #0x10           @ X^4
+		lsr temp2, temp2, #4
+		eor temp, temp, temp2
+
+		lsl temp, #7                     @ MSB
+		lsr byte, #1
+		orr byte, byte, temp
+
+		/* Subtract Value of System Timer (Lowest 1 Byte, Max. 0xFF micro seconds) for Randomness */
+
+		mov memorymap_base, #equ32_peripherals_base
+		add memorymap_base, memorymap_base, #equ32_systemtimer_base
+		ldrb temp, [memorymap_base, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
+
+		sub byte, byte, temp
+		and byte, byte, #0xFF
+
+		cmp byte, range_start
+		blo arm32_random_loop
+		cmp byte, range_end
+		bhi arm32_random_loop
+
+	arm32_random_common:
+		strb byte, arm32_random_value
+		mov r0, byte
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq range_start
+.unreq range_end
+.unreq byte
+.unreq temp
+.unreq temp2
+.unreq memorymap_base
+
+arm32_random_value: .byte equ32_arm32_random_value
+.balign 4
+
+
+/**
+ * function arm32_fill_random
+ * Fill Memory Space by Random Value
+ *
+ * Parameters
+ * r0: Start of Range (0-255)
+ * r1: End of Range (0-255)
+ * r2: Start of Memory
+ * r3: Size of Memory
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl arm32_fill_random
+arm32_fill_random:
+	/* Auto (Local) Variables, but just Aliases */
+	range_start     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	range_end       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	memory_start    .req r2
+	memory_size     .req r3
+	random          .req r4
+
+	push {r4}
+
+	add memory_size, memory_start, memory_size
+
+	arm32_fill_random_loop:
+		cmp memory_start, memory_size
+		bhs arm32_fill_random_common
+
+		push {r0-r3,lr}
+		bl arm32_random
+		mov random, r0
+		pop {r0-r3,lr}
+
+		strb random, [memory_start]
+		add memory_start, memory_start, #1
+		b arm32_fill_random_loop
+
+	arm32_fill_random_common:
+		mov r0, #0
+		pop {r4}
+		mov pc, lr
+
+.unreq range_start
+.unreq range_end
+.unreq memory_start
+.unreq memory_size
+.unreq random
 
 
 /**

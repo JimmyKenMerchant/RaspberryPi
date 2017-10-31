@@ -6,9 +6,9 @@
 
 **Output/Input**
 
-* GPIO12 as Output of PWM0 (Only Zero, Zero W), Caution! There is No RC Filter Like Minijack
+* GPIO12 as Output of PWM0, Caution! There is No RC Filter Like Minijack
 
-* GPIO13 as Output of PWM1 (Only Zero, Zero W), Caution! There is No RC Filter Like Minijack
+* GPIO13 as Output of PWM1, Caution! There is No RC Filter Like Minijack
 
 * GPIO40 (3.5mm Minijack) as Output of PWM0 (Except Zero, Zero W)
 

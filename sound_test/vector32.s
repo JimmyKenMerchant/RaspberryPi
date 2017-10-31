@@ -56,11 +56,9 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-.ifdef __ZERO
 	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2         @ Set GPIO 12 PWM0
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
 	str r1, [r0, #equ32_gpio_gpfsel10]
-.endif
 
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7       @ Set GPIO 47 OUTPUT
 .ifndef __ZERO
@@ -68,6 +66,7 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 45 PWM1 (to Minijack)
 .endif
 	str r1, [r0, #equ32_gpio_gpfsel40]
+
 
 	/**
 	 * PWM
@@ -102,17 +101,8 @@ os_reset:
 	mov r1, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
 	str r1, [r0, #equ32_pwm_ctl]
 
-	/**
-	 * DMA
-	 */
+	mov r1, #600
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_dma_base
-
-	mov r1, #1 << 1                         @ DMA Channel1
-	str r1, [r0, #equ32_dma_channel_enable]
-
-	add r0, r0, #equ32_dma_channel_offset   @ For DMA Channel1
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
@@ -131,6 +121,195 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
 
+	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
+	push {r0-r3,lr}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3,lr}
+
+	/* Set Cache Status for HEAP */
+	push {r0-r3,lr}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
+	mov r3, #equ32_system32_datamemory_size
+	bl arm32_set_cache
+	pop {r0-r3,lr}
+
+	/* Set Cache Status for Virtual Address Descriptor */
+	push {r0-r3,lr}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_ARM32_VADESCRIPTOR_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3,lr}
+
+	macro32_dsb ip
+	macro32_invalidate_tlb_all ip
+	macro32_isb ip
+	macro32_dsb ip
+	macro32_invalidate_instruction_all ip
+	macro32_isb ip
+
+	/**
+	 * DMA
+	 */
+
+	push {r0-r3,lr}
+	mov r0, #256                            @ 256 Words Equals 2048 Bytes
+	bl heap32_malloc
+	mov r4, r0
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #0
+	mov r1, #255
+	mov r2, r4
+	mov r3, #2048
+	bl arm32_fill_random
+	pop {r0-r3,lr}
+
+	/*
+	push {r0-r3,lr}
+	mov r0, r4
+	mov r1, #600
+	bl heap32_mfill
+	pop {r0-r3,lr}
+	*/
+
+macro32_debug r4, 300, 300
+
+	mov r0, r4
+	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
+	ldr r1, [r1]
+	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
+	ldr r2, [r2]
+	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
+	ldr r3, [r3]
+	macro32_print_hexa r0, 300, 312, r1, r2, 64, 8, 12, r3
+
+	push {r0-r3,lr}
+	mov r0, r4
+	mov r1, #1                                @ Clean
+	bl arm32_cache_operation_heap
+	pop {r0-r3,lr}
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_dma_base
+
+	mov r1, #1 << 0                         @ DMA Channel0
+	str r1, [r0, #equ32_dma_channel_enable]
+
+	/* DMA Channel1 Reset */
+	mov r1, #equ32_dma_cs_reset
+	str r1, [r0, #equ32_dma_cs]
+
+	/* Channel Block Setting */
+
+	ldr r0, ADDR32_DMA32_CB
+	ldr r0, [r0]
+	macro32_dsb ip
+	mov r1, #5<<equ32_dma_ti_permap
+	orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq
+	macro32_dsb ip
+	str r1, [r0, #0x00]                   @ Transfer Information
+	macro32_dsb ip
+	str r4, [r0, #0x04]                   @ Source Address
+	mov r1, #equ32_dma_peripherals_base
+	add r1, r1, #equ32_pwm_base_lower
+	add r1, r1, #equ32_pwm_base_upper
+	add r1, r1, #equ32_pwm_fif1
+	macro32_dsb ip
+	str r1, [r0, #0x8]                    @ Destination Address
+	mov r1, #2048
+	macro32_dsb ip
+	str r1, [r0, #0x0C]	              @ Transfer Length
+	mov r1, #0
+	macro32_dsb ip
+	str r1, [r0, #0x10]                   @ 2D Stride
+	mov r1, r0
+	macro32_dsb ip
+	str r1, [r0, #0x14]                   @ Next CB Address
+	macro32_dsb ip
+
+	macro32_clean_cache r0, ip
+
+	mov r1, r0
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_dma_base
+	str r1, [r0, #equ32_dma_conblk_ad]
+
+	mov r1, #equ32_dma_cs_active
+	str r1, [r0, #equ32_dma_cs]
+	
+	macro32_dsb ip
+
+ldr r1, [r0, #equ32_dma_cs]
+macro32_debug r1, 0, 0
+
+ldr r1, [r0, #equ32_dma_conblk_ad]
+macro32_debug r1, 0, 12
+
+ldr r1, [r0, #8]
+macro32_debug r1, 0, 24
+
+ldr r1, [r0, #12]
+macro32_debug r1, 0, 36
+
+ldr r1, [r0, #16]
+macro32_debug r1, 0, 48
+
+ldr r1, [r0, #20]
+macro32_debug r1, 0, 60
+
+ldr r1, [r0, #24]
+macro32_debug r1, 0, 72
+
+ldr r1, [r0, #28]
+macro32_debug r1, 0, 84
+
+ldr r1, [r0, #32]
+macro32_debug r1, 0, 96
+
+	os_reset_loop:
+		b os_reset_loop
+	
 	mov pc, lr
 
 os_irq:

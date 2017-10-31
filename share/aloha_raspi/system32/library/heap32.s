@@ -189,13 +189,16 @@ heap32_mfree:
 	add heap_size, heap_start, heap_size
 
 	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bgt heap32_mfree_error                      @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	bhi heap32_mfree_error                      @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+
+	cmp block_start, heap_start
+	blo heap32_mfree_error
 
 	mov zero, #0
 
 	heap32_mfree_loop:
 		cmp block_start, block_size
-		bge heap32_mfree_success
+		bhs heap32_mfree_success
 
 		str zero, [block_start]
 		add block_start, block_start, #4
@@ -318,3 +321,71 @@ heap32_mcopy:
 .unreq heap_start
 .unreq heap_size
 .unreq heap1_dup
+
+
+/**
+ * function heap32_mfill
+ * Fill Memory Space by Random Value
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space
+ * r1: Data to be Filled to Memory Space
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error: Pointer of Start Address is Null (0)
+ */
+.globl heap32_mfill
+heap32_mfill:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	data             .req r1
+	block_size       .req r2
+	heap_start       .req r3
+	heap_size        .req r4
+
+	push {r4}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_mfill_error
+
+	ldr block_size, [block_start, #-4]
+	add block_size, block_start, block_size
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_mfill_error                      @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+
+	cmp block_start, heap_start
+	blo heap32_mfill_error
+
+	heap32_mfill_loop:
+		cmp block_start, block_size
+		bhs heap32_mfill_success
+
+		str data, [block_start]
+		add block_start, block_start, #4
+
+		b heap32_mfill_loop
+
+	heap32_mfill_error:
+		mov r0, #1
+		b heap32_mfill_common
+
+	heap32_mfill_success:
+		mov r0, #0
+
+	heap32_mfill_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4}
+		mov pc, lr
+
+.unreq block_start
+.unreq data
+.unreq block_size
+.unreq heap_start
+.unreq heap_size

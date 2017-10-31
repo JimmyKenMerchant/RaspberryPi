@@ -27,6 +27,7 @@
 	/* BCM2836 and BCM2837 Peripheral Base */
 	.equ equ32_peripherals_base,   0x3F000000
 .endif
+.equ equ32_dma_peripherals_base,   0x7E000000
 .equ equ32_systemtimer_base,   0x00003000
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
@@ -254,15 +255,15 @@
 .equ equ32_dma_channel_offset,        0x00000100 @ Channel 0-14
 .equ equ32_dma_channel_int_status,    0x00000FE0 @ Channel 0-15 Interrupt Status
 .equ equ32_dma_channel_enable,        0x00000FF0 @ Channel 0-15 Global Enable Bits
-.equ equ32_dma_cs,                    0x00000000 @ DMA Channel Control and Status
-.equ equ32_dma_conblk_ad,             0x00000004 @ DMA Channel Control Block (CB) Address
-.equ equ32_dma_ti,                    0x00000008 @ DMA Channel CB Word0 (Transfer Information)
-.equ equ32_dma_source_ad,             0x0000000C @ DMA Channel CB Word1 (Source Address)
-.equ equ32_dma_dest_ad,               0x00000010 @ DMA Channel CB Word2 (Destination Address)
-.equ equ32_dma_txfr_len,              0x00000014 @ DMA Channel CB Word3 (Transfer Length)
-.equ equ32_dma_stride,                0x00000018 @ DMA Channel CB Word4 (2D Stride)
-.equ equ32_dma_nextconbk,             0x0000001C @ DMA Channel CB Word5 (Next CB Address)
-.equ equ32_dma_debug,                 0x00000020 @ DMA Channel Debug
+.equ equ32_dma_cs,                    0x00000000 @ DMA ChannelN Control and Status
+.equ equ32_dma_conblk_ad,             0x00000004 @ DMA ChannelN Control Block (CB) Address
+.equ equ32_dma_ti,                    0x00000008 @ DMA ChannelN CB Word0 (Transfer Information)
+.equ equ32_dma_source_ad,             0x0000000C @ DMA ChannelN CB Word1 (Source Address)
+.equ equ32_dma_dest_ad,               0x00000010 @ DMA ChannelN CB Word2 (Destination Address)
+.equ equ32_dma_txfr_len,              0x00000014 @ DMA ChannelN CB Word3 (Transfer Length)
+.equ equ32_dma_stride,                0x00000018 @ DMA ChannelN CB Word4 (2D Stride)
+.equ equ32_dma_nextconbk,             0x0000001C @ DMA ChannelN CB Word5 (Next CB Address)
+.equ equ32_dma_debug,                 0x00000020 @ DMA ChannelN Debug
 
 .equ equ32_dma_cs_reset,              0x80000000 @ Reset DMA Channel
 .equ equ32_dma_cs_abort,              0x40000000 @ Abort DMA Channel (Forward Next CB)
@@ -291,6 +292,7 @@
 .equ equ32_dma_ti_dst_dreq,           0x00000040 @ Use DREQ in Writing to Destination
 .equ equ32_dma_ti_dst_width,          0x00000020 @ 32-bit(0)/128-bit(1) Destination Width
 .equ equ32_dma_ti_dst_inc,            0x00000010 @ Incremental of Destination Address
+.equ equ32_dma_ti_wait_resp,          0x00000008 @ Wait for a Write Response
 .equ equ32_dma_ti_tdmode,             0x00000002 @ Enable 2D mode
 .equ equ32_dma_ti_inten,              0x00000001 @ Enable Interrupts
 
@@ -323,6 +325,7 @@
 .equ equ32_cm_ctl_src_hdmi,        0x00000007 @ HDMI Auxiliary (216Mhz?)
 
 .equ equ32_cm_div_integer,     12 @ LSL Bit[23:12]
+.equ equ32_cm_div_fraction,    0  @ Bit[11:0] (Valid on [9:0]?)
 
 
 /**

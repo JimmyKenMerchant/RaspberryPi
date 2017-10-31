@@ -7,6 +7,7 @@
  *
  */
 
+.equ dma32_offset,                0x00000020 @ Offset of Each CB (32 Bytes)
 .equ dma32_ti,                    0x00000000 @ Transfer Information
 .equ dma32_source_ad,             0x00000004 @ Source Address
 .equ dma32_dest_ad,               0x00000008 @ Destination Address
@@ -14,8 +15,8 @@
 .equ dma32_stride,                0x00000010 @ 2D Stride
 .equ dma32_nextconbk,             0x00000014 @ Next CB Addres
 
-DMA32_CB0_ADDR:        .word DMA32_CB0_TI
-DMA32_CB1_ADDR:        .word DMA32_CB1_TI
+.globl DMA32_CB
+DMA32_CB:        .word DMA32_CB0_TI
 
 .balign 32                        @ 32 Bytes (8 Words) Aligned
 DMA32_CB0_TI:          .word 0x00

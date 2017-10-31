@@ -45,6 +45,13 @@ ADDR32_ARM32_VADESCRIPTOR_SIZE:   .word ARM32_VADESCRIPTOR_SIZE
 
 
 /**
+ * system32/arm/dma32.s
+ */
+
+ADDR32_DMA32_CB:   .word DMA32_CB
+
+
+/**
  * system32/library/fb32.s
  */
 

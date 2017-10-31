@@ -33,7 +33,7 @@
 .section	.arm_system32
 
 .include "system32/arm/arm32.s"
-
+.include "system32/arm/dma32.s"
 .include "system32/arm/usb2032.s"
 .balign 4
 
