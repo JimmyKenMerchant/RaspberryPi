@@ -71,14 +71,14 @@ os_reset:
 	/**
 	 * PWM
 	 * Makes 19.2Mhz (From Oscillator).
-	 * Sampling Rate 32000hz, Bit Depth 10bit (Max. Range is 1023, but is Actually 600 on This)
+	 * Sampling Rate 16000hz, Bit Depth 10bit (Max. Range is 1023, but is Actually 600 on This)
 	 */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_cm_base_lower
 	add r0, r0, #equ32_cm_base_upper
 
 	mov r1, #equ32_cm_passwd
-	add r1, r1, #1 << equ32_cm_div_integer
+	add r1, r1, #2 << equ32_cm_div_integer
 	str r1, [r0, #equ32_cm_pwmdiv]
 
 	mov r1, #equ32_cm_passwd
@@ -100,8 +100,6 @@ os_reset:
 
 	mov r1, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
 	str r1, [r0, #equ32_pwm_ctl]
-
-	mov r1, #600
 
 
 	/* Obtain Framebuffer from VideoCore IV */
@@ -191,11 +189,12 @@ os_reset:
 	 */
 
 	push {r0-r3,lr}
-	mov r0, #256                            @ 256 Words Equals 2048 Bytes
+	mov r0, #144                            @ 144 Words Equals 576 Bytes
 	bl heap32_malloc
 	mov r4, r0
 	pop {r0-r3,lr}
 
+	/*
 	push {r0-r3,lr}
 	mov r0, #0
 	mov r1, #255
@@ -203,14 +202,15 @@ os_reset:
 	mov r3, #2048
 	bl arm32_fill_random
 	pop {r0-r3,lr}
+	*/
 
-	/*
 	push {r0-r3,lr}
 	mov r0, r4
-	mov r1, #600
+	mov r1, #50
+	mov r2, #72
+	mov r3, #0
 	bl heap32_mfill
 	pop {r0-r3,lr}
-	*/
 
 macro32_debug r4, 300, 300
 
@@ -243,28 +243,21 @@ macro32_debug r4, 300, 300
 
 	ldr r0, ADDR32_DMA32_CB
 	ldr r0, [r0]
-	macro32_dsb ip
 	mov r1, #5<<equ32_dma_ti_permap
 	orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq
-	macro32_dsb ip
 	str r1, [r0, #0x00]                   @ Transfer Information
-	macro32_dsb ip
 	str r4, [r0, #0x04]                   @ Source Address
-	mov r1, #equ32_dma_peripherals_base
+	mov r1, #equ32_bus_peripherals_base
 	add r1, r1, #equ32_pwm_base_lower
 	add r1, r1, #equ32_pwm_base_upper
 	add r1, r1, #equ32_pwm_fif1
-	macro32_dsb ip
 	str r1, [r0, #0x8]                    @ Destination Address
-	mov r1, #2048
-	macro32_dsb ip
+	mov r1, #576
 	str r1, [r0, #0x0C]	              @ Transfer Length
 	mov r1, #0
-	macro32_dsb ip
 	str r1, [r0, #0x10]                   @ 2D Stride
-	mov r1, r0
-	macro32_dsb ip
-	str r1, [r0, #0x14]                   @ Next CB Address
+	str r0, [r0, #0x14]                   @ Next CB Address
+
 	macro32_dsb ip
 
 	macro32_clean_cache r0, ip

@@ -173,18 +173,17 @@ _os_reset:
 	mov pc, lr
 
 _os_svc:
-	push {fp,lr}                             @ Push fp and lr
+	push {lr}                             @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
 	cmp ip, #7                               @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
+	add pc, pc, ip
 
-	ldr fp, _os_svc_base
-	add fp, fp, ip
-	bx fp
+	/* PC indicates the current insturction + 8 Bytes (32-bit ARM) */
 
-	_os_svc_base: .word _os_svc_0
+	_os_svc_offset: .word 0x00
 
 	_os_svc_0:
 		mov r0, r0
@@ -219,7 +218,7 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_common:
-		pop {fp,lr}                         @ Pop fp and lr
+		pop {lr}                         @ Pop fp and lr
 		movs pc, lr
 
 _os_irq:

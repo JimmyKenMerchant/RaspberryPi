@@ -75,33 +75,27 @@ heap32_malloc:
 	heap_bytes     .req r3
 	check_start    .req r4
 	check_size     .req r5
-	heap_start_dup .req r6
 
-	push {r4-r6}
+	push {r4-r5}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
 
 	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE           @ In Bytes
-
-	macro32_dsb ip                              @ Ensure Completion of Instructions Before
-
-	mov heap_start_dup, heap_start
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
 
 	add heap_size, heap_start, heap_size
 
 	heap32_malloc_loop:
 		cmp heap_start, heap_size
 		bhs heap32_malloc_error               @ If Heap Space Overflow
-		cmp heap_start, heap_start_dup
-		blo heap32_malloc_error               @ If Heap Space Underflow
 
 		ldr heap_bytes, [heap_start]
 		cmp heap_bytes, #0
 		beq heap32_malloc_loop_sizecheck      @ If Bytes are Zero
 
 		add heap_start, heap_start, heap_bytes
-		add heap_start, heap_start, #4
 		b heap32_malloc_loop                  @ If Bytes are not Zero
 
 		/* Whether Check Size is Enough or Not */
@@ -113,8 +107,6 @@ heap32_malloc:
 			heap32_malloc_loop_sizecheck_loop:
 				cmp check_start, heap_size
 				bhs heap32_malloc_error               @ If Heap Space Overflow
-				cmp heap_start, heap_start_dup
-				blo heap32_malloc_error               @ If Heap Space Underflow
 
 				cmp check_start, check_size
 				bhi heap32_malloc_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
@@ -126,7 +118,6 @@ heap32_malloc:
 				beq heap32_malloc_loop_sizecheck_loop @ If Bytes are Zero
 
 				add heap_start, check_start, heap_bytes
-				add heap_start, heap_start, #4
 				b heap32_malloc_loop                  @ If Bytes are not Zero
 
 	heap32_malloc_error:
@@ -134,13 +125,14 @@ heap32_malloc:
 		b heap32_malloc_common
 
 	heap32_malloc_success:
+		add size, size, #4                      @ Add Space of Size Indicator Itself
 		str size, [heap_start]                  @ Store Size (Bytes) on Start Address of Memory Minus 4 Bytes
 		mov r0, heap_start
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	heap32_malloc_common:
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
-		pop {r4-r6}
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq size
@@ -149,7 +141,6 @@ heap32_malloc:
 .unreq heap_bytes
 .unreq check_start
 .unreq check_size
-.unreq heap_start_dup
 
 
 /**
@@ -180,9 +171,9 @@ heap32_mfree:
 	cmp block_start, #0
 	beq heap32_mfree_error
 
-	ldr block_size, [block_start, #-4]
+	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	ldr block_size, [block_start]
 	add block_size, block_start, block_size
-	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Erase Size Indicator
 
 	ldr heap_start, HEAP32_ADDR
 	ldr heap_size, HEAP32_SIZE                  @ In Bytes
@@ -262,9 +253,11 @@ heap32_mcopy:
 
 	ldr heap1_size, [heap1, #-4]
 	add heap1_size, heap1_size, heap1
+	sub heap1_size, heap1_size, #4            @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
 	ldr heap2_size, [heap2, #-4]
 	add heap2_size, heap2_size, heap2
+	sub heap2_size, heap2_size, #4            @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
 	ldr heap_start, HEAP32_ADDR
 	ldr heap_size, HEAP32_SIZE                @ In Bytes
@@ -285,9 +278,9 @@ heap32_mcopy:
 
 	heap32_mcopy_loop:
 		cmp heap1, heap1_size
-		bge heap32_mcopy_error
+		bhs heap32_mcopy_error
 		cmp heap2, heap2_size
-		bge heap32_mcopy_error
+		bhs heap32_mcopy_error
 
 		ldrb byte, [heap2]
 		strb byte, [heap1]
@@ -329,7 +322,9 @@ heap32_mcopy:
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space
- * r1: Data to be Filled to Memory Space
+ * r1: Data to be Filled to Memory Space (Word = 4 Byte)
+ * r2: Size to be Filled (Words = 4 Bytes)
+ * r3: Offset from Start Address (Words = 4 Bytes)
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error: Pointer of Start Address is Null (0)
@@ -339,22 +334,36 @@ heap32_mfill:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	data             .req r1
-	block_size       .req r2
-	heap_start       .req r3
-	heap_size        .req r4
+	size             .req r2
+	offset           .req r3
+	block_size       .req r4
+	heap_start       .req r5
+	block_max        .req r6
 
-	push {r4}
+	push {r4-r6}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	cmp block_start, #0
 	beq heap32_mfill_error
 
-	ldr block_size, [block_start, #-4]
-	add block_size, block_start, block_size
+	ldr block_max, [block_start, #-4]           @ Maximam Size of Allocated Space (Bytes)
+	add block_max, block_start, block_max
+	sub block_max, block_max, #4                @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+
+	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
+	lsl offset, offset, #2                      @ Substitution of Multiplication by 4, Words to Bytes
+	add block_start, block_start, offset        @ Ordered Start Address
+	add block_size, block_start, size           @ Ordered Size
+
+	cmp block_size, block_max                   @ Compare Ordered Size and Maximam Size of Allocated Space
+	bhi heap32_mfill_error
+
+	.unreq block_max
+	heap_size .req r6
 
 	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
 	add heap_size, heap_start, heap_size
 
 	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
@@ -386,6 +395,8 @@ heap32_mfill:
 
 .unreq block_start
 .unreq data
+.unreq size
+.unreq offset
 .unreq block_size
 .unreq heap_start
 .unreq heap_size

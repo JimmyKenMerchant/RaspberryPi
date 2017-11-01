@@ -20,14 +20,15 @@
 /**
  * Standard Peripherals
  */
-
 .ifdef __BCM2835
-	.equ equ32_peripherals_base,   0x20000000
+	.equ equ32_peripherals_base,   0x20000000 @ For ARM Physical Address
 .else
 	/* BCM2836 and BCM2837 Peripheral Base */
-	.equ equ32_peripherals_base,   0x3F000000
+	.equ equ32_peripherals_base,   0x3F000000 @ For ARM Physical Address
 .endif
-.equ equ32_dma_peripherals_base,   0x7E000000
+
+.equ equ32_bus_peripherals_base,   0x7E000000 @ For DMA and VideoCore Address
+
 .equ equ32_systemtimer_base,   0x00003000
 .equ equ32_interrupt_base,     0x0000B200
 .equ equ32_armtimer_base,      0x0000B400
