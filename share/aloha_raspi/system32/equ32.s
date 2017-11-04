@@ -36,12 +36,18 @@
 .equ equ32_dma_base,           0x00007000 @ Channel 0-14
 .equ equ32_usb20_otg_base,     0x00980000
 
+.equ equ32_aux_base_upper,     0x00210000 @ UART1, SPI1, SPI2
+.equ equ32_aux_base_lower,     0x00005000
+.equ equ32_spi0_base_upper,    0x00200000 @ SPI Master
+.equ equ32_spi0_base_lower,    0x00004000
 .equ equ32_i2c0_base_upper,    0x00200000
 .equ equ32_i2c0_base_lower,    0x00005000
 .equ equ32_i2c1_base_upper,    0x00800000
 .equ equ32_i2c1_base_lower,    0x00004000
 .equ equ32_i2c2_base_upper,    0x00800000
 .equ equ32_i2c2_base_lower,    0x00005000
+.equ equ32_pcm_base_upper,     0x00200000
+.equ equ32_pcm_base_lower,     0x00003000
 .equ equ32_pwm_base_upper,     0x00200000
 .equ equ32_pwm_base_lower,     0x0000C000
 .equ equ32_dma15_base_upper,   0x00E00000 @ Channel 15 Only
@@ -209,6 +215,43 @@
 .equ equ32_gpio51,   0b1 << 19 @ Bit High
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
+
+.equ equ32_spi0_cs,      0x00000000
+.equ equ32_spi0_fifo,    0x00000004 @ Tx and Rx
+.equ equ32_spi0_clk,     0x00000008 @ Clock Divider
+.equ equ32_spi0_dlen,    0x0000000C @ Data Length in DMA Mode
+.equ equ32_spi0_ltoh,    0x00000010 @ LoSSI mode TOH (Time of Output Hold Duration)
+.equ equ32_spi0_dc,      0x00000010 @ DMA DREQ Controls (Panic and Request Threshold)
+
+.equ equ32_spi0_cs_len_long,   0x02000000 @ Enable Long Data in LoSSI Mode
+.equ equ32_spi0_cs_dma_len,    0x01000000 @ Enable DMA in LoSSI Mode
+.equ equ32_spi0_cs_cspol2,     0x00800000 @ Polarity of Chip Select 2 (0:Low/1:High in Active)
+.equ equ32_spi0_cs_cspol1,     0x00400000 @ Polarity of Chip Select 1 (0:Low/1:High in Active)
+.equ equ32_spi0_cs_cspol0,     0x00200000 @ Polarity of Chip Select 0 (0:Low/1:High in Active)
+.equ equ32_spi0_cs_rxf,        0x00100000 @ RxFIFO is Full
+.equ equ32_spi0_cs_rxr,        0x00080000 @ RxFIFO Needs Reading (Means Full)
+.equ equ32_spi0_cs_txd,        0x00040000 @ TxFIFO Has Space
+.equ equ32_spi0_cs_rxd,        0x00020000 @ RxFIFO Contains Data
+.equ equ32_spi0_cs_done,       0x00010000 @ Done Transfer
+.equ equ32_spi0_cs_te_en,      0x00008000
+.equ equ32_spi0_cs_lmono,      0x00004000
+.equ equ32_spi0_cs_len,        0x00002000 @ LoSSI Mode Enable
+.equ equ32_spi0_cs_ren,        0x00001000 @ Read Enable in SPI Bidirectional Mode
+.equ equ32_spi0_cs_adcs,       0x00000800 @ Automatically Deassert Chip Select in DMA Mode
+.equ equ32_spi0_cs_intr,       0x00000400 @ Interrupt on RXR
+.equ equ32_spi0_cs_intd,       0x00000200 @ Interrupt on Done
+.equ equ32_spi0_cs_dmaen,      0x00000100 @ DMA Enable
+.equ equ32_spi0_cs_ta,         0x00000080 @ Transfer Active
+.equ equ32_spi0_cs_cspol,      0x00000040 @ Polarity of Chip Select (0:Low/1:High in Active)
+.equ equ32_spi0_cs_clear,      4          @ Bit[5:4] (x1b:TxFIFO, 1xb:RxFIFO)
+.equ equ32_spi0_cs_cpol,       0x00000008 @ Polarity of Clock (0:Low/1:High in Rest State)
+.equ equ32_spi0_cs_cpha,       0x00000004 @ Clock Phase (0:Middle of Data/ 1: Beginning of Data)
+.equ equ32_spi0_cs_cs,         0x00000000 @ Chip Select Bit[1:0]
+
+.equ equ32_spi0_dc_rpanic,     24         @ Read Panic
+.equ equ32_spi0_dc_rdreq,      16         @ Read Request
+.equ equ32_spi0_dc_tpanic,     8          @ Write Panic
+.equ equ32_spi0_dc_tdreq,      0          @ Write Request
 
 .equ equ32_pwm_ctl,      0x00000000
 .equ equ32_pwm_sta,      0x00000004
