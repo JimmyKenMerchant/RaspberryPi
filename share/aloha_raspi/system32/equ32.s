@@ -221,7 +221,7 @@
 .equ equ32_spi0_clk,     0x00000008 @ Clock Divider
 .equ equ32_spi0_dlen,    0x0000000C @ Data Length in DMA Mode
 .equ equ32_spi0_ltoh,    0x00000010 @ LoSSI mode TOH (Time of Output Hold Duration)
-.equ equ32_spi0_dc,      0x00000010 @ DMA DREQ Controls (Panic and Request Threshold)
+.equ equ32_spi0_dc,      0x00000014 @ DMA DREQ Controls (Panic and Request Threshold)
 
 .equ equ32_spi0_cs_len_long,   0x02000000 @ Enable Long Data in LoSSI Mode
 .equ equ32_spi0_cs_dma_len,    0x01000000 @ Enable DMA in LoSSI Mode
