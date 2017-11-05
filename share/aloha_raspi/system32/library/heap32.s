@@ -390,7 +390,7 @@ heap32_mfill:
 
 	heap32_mfill_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4}
+		pop {r4-r6}
 		mov pc, lr
 
 .unreq block_start
@@ -400,3 +400,125 @@ heap32_mfill:
 .unreq block_size
 .unreq heap_start
 .unreq heap_size
+
+
+/**
+ * function heap32_mweave
+ * Weave Values (32-bit Words) of Two Memory Space into Another Memory Space Alternatively
+ *
+ * Parameters
+ * r1: Pointer of Start Address of Memory Space to be Wove
+ * r1: Pointer of Start Address of Memory Space to be Odd, Needed to Have the Same Length to Even
+ * r2: Pointer of Start Address of Memory Space to be Even, Needed to Have the Same Length to Odd
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0)
+ * Error(2): Sizing is Wrong in Any Memory Space
+ */
+.globl heap32_mweave
+heap32_mweave:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start_target .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	block_start_odd    .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	block_start_even   .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	block_size_target  .req r3
+	block_size_odd     .req r4
+	block_size_even    .req r5
+	heap_start         .req r6
+	heap_size          .req r7
+	temp               .req r8
+
+	push {r4-r8}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start_target, #0
+	beq heap32_mweave_error1
+	cmp block_start_odd, #0
+	beq heap32_mweave_error1
+	cmp block_start_even, #0
+	beq heap32_mweave_error1
+
+	ldr block_size_target, [block_start_target, #-4]             @ Maximam Size of Allocated Space (Bytes)
+	sub block_size_target, block_size_target, #4                 @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+
+	ldr block_size_odd, [block_start_odd, #-4]
+	sub block_size_odd, block_size_odd, #4
+
+	ldr block_size_even, [block_start_even, #-4]
+	sub block_size_even, block_size_even, #4
+
+	cmp block_size_odd, block_size_even                          @ Check the Same Memory Spaces of Odd and Even
+	bne heap32_mweave_error2
+
+	add temp, block_size_odd, block_size_even
+	cmp temp, block_size_target                                  @ Check Overflow of Memory Space to Be Wove
+	bhi heap32_mweave_error2
+
+	add block_size_target, block_start_target, block_size_target
+	add block_size_odd, block_start_odd, block_size_odd
+	add block_size_even, block_start_even, block_size_even
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                                   @ Maximam Size of Heap Overall (Bytes)
+	add heap_size, heap_start, heap_size
+
+	cmp block_size_target, heap_size        @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_mweave_error2                @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+
+	cmp block_size_odd, heap_size
+	bhi heap32_mweave_error2
+
+	cmp block_size_even, heap_size
+	bhi heap32_mweave_error2
+
+	cmp block_start_target, heap_start
+	blo heap32_mweave_error2
+
+	cmp block_start_odd, heap_start
+	blo heap32_mweave_error2
+
+	cmp block_start_even, heap_start
+	blo heap32_mweave_error2
+
+	heap32_mweave_loop:
+		cmp block_start_odd, block_size_odd
+		bhs heap32_mweave_success
+
+		ldr temp, [block_start_odd]
+		str temp, [block_start_target]
+		add block_start_target, block_start_target, #4
+		ldr temp, [block_start_even]
+		str temp, [block_start_target]
+		add block_start_target, block_start_target, #4
+
+		add block_start_odd, block_start_odd, #4
+		add block_start_even, block_start_even, #4
+
+		b heap32_mweave_loop
+
+	heap32_mweave_error1:
+		mov r0, #1
+		b heap32_mweave_common
+
+	heap32_mweave_error2:
+		mov r0, #2
+		b heap32_mweave_common
+
+	heap32_mweave_success:
+		mov r0, #0
+
+	heap32_mweave_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4-r8}
+		mov pc, lr
+
+.unreq block_start_target
+.unreq block_start_odd
+.unreq block_start_even
+.unreq block_size_target
+.unreq block_size_odd
+.unreq block_size_even
+.unreq heap_start
+.unreq heap_size
+.unreq temp

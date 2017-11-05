@@ -487,7 +487,7 @@ bcm32_mailbox_send:
 .equ bcm32_mailbox1_config,      0xBC
 .equ bcm32_mailbox1_write,       0x80 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
 .equ bcm32_mailbox_gpuconfirm,   0x04
-.equ bcm32_mailbox_gpuoffset,    0x40000000
+.equ bcm32_mailbox_gpuoffset,    0x40000000 @ If L2 Cache Disabled by `disable_l2cache=1` in config.txt, 0xC0000000
 .equ bcm32_mailbox_armmask,      0x3FFFFFFF
 
 .equ bcm32_cores_base,                  0x40000000

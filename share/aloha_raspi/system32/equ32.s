@@ -19,6 +19,7 @@
 
 /**
  * Standard Peripherals
+ * In ARM Instructions: On `MOV`, You Can Use the 16-bit Immediate with No-rotated.
  */
 .ifdef __BCM2835
 	.equ equ32_peripherals_base,   0x20000000 @ For ARM Physical Address
