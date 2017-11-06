@@ -585,7 +585,7 @@ heap32_wave_square:
 	cmp length, #2                              @ If Not 2 and More
 	blo heap32_wave_square_error2
 
-	/* Examine Length to know Odd/Even on Half and Quarter */
+	/* Examine Length to know Odd/Even on Half */
 
 	tst length, #1                              @ If Half is Odd
 	movne flag_odd, #1
@@ -598,9 +598,9 @@ heap32_wave_square:
 
 	/* direction: Plus at First Half(0), Last half (-1) */
 
-	mov direction, #0                           @ Define Direction to Plus at First Quarter
+	mov direction, #0                           @ Define Direction to Plus at First Half
 
-	add block_point, block_start, length        @ Make First Quarter
+	add block_point, block_start, length        @ Make First Half
 
 	heap32_wave_square_loop:
 		cmp direction, #-1
@@ -620,12 +620,12 @@ heap32_wave_square:
 
 		heap32_wave_square_loop_common:
 
-			add block_point, block_point, length       @ Make New Quarter
+			add block_point, block_point, length       @ Make Next Half
 
 			tst flag_odd, #1
 			subne block_point, block_point, #4         @ If Odd
 
-			sub direction, direction, #1               @ Make New Direction for New Quarter
+			sub direction, direction, #1               @ Make New Direction for Next Half
 
 			b heap32_wave_square_loop
 
@@ -686,7 +686,7 @@ heap32_wave_random:
 	flag_odd         .req r8
 	temp             .req r9
 	temp2            .req r10
-	random_digit     .req r11	
+	temp3            .req r11
 
 	push {r4-r11}
 
@@ -721,7 +721,7 @@ heap32_wave_random:
 	cmp length, #2                              @ If Not 2 and More
 	blo heap32_wave_random_error2
 
-	/* Examine Length to know Odd/Even on Half and Quarter */
+	/* Examine Length to know Odd/Even on Half */
 
 	tst length, #1                              @ If Half is Odd
 	movne flag_odd, #1
@@ -734,9 +734,9 @@ heap32_wave_random:
 
 	/* direction: Plus at First Half(0), Last half (-1) */
 
-	mov direction, #0                           @ Define Direction to Plus at First Quarter
+	mov direction, #0                           @ Define Direction to Plus at First Half
 
-	add block_point, block_start, length        @ Make First Quarter
+	add block_point, block_start, length        @ Make First Half
 
 	heap32_wave_random_loop:
 		cmp direction, #-1
@@ -744,40 +744,42 @@ heap32_wave_random:
 		cmp direction, #0
 		addeq temp, medium, height
 		subne temp, medium, height
-
-		cmp temp, #0x100                       @ 8-bit or 16-bit
-		movhs random_digit, #1                 @ 16-bit
-		movlo random_digit, #0                 @ 8-bit
 		
 		heap32_wave_random_loop_half:
 			cmp block_start, block_point
 			bhs heap32_wave_random_loop_common
 
-			cmp random_digit, #1
-			movhs temp2, #255
-			movlo temp2, temp
+			heap32_wave_random_loop_half_jump1:
+				cmp temp, #0x100
+				movhs temp3, #255                     @ If 16-bit
+				movlo temp3, temp                     @ If 8-bit
 
-			push {r0-r3,lr}
-			mov r0, #0
-			mov r1, temp2
-			bl arm32_random
-			mov temp2, r0
-			pop {r0-r3,lr}
+				push {r0-r3,lr}
+				mov r0, #0
+				mov r1, temp3
+				bl arm32_random
+				mov temp2, r0
+				pop {r0-r3,lr}
 
-			cmp random_digit, #1
-			blo heap32_wave_random_loop_half_jump
+				cmp temp, #0x100
+				blo heap32_wave_random_loop_half_jump2 @ If 8-bit
 
-			lsr temp2, temp, #8
+				/* If 16-bit */
 
-			push {r0-r3,lr}
-			mov r0, #0
-			mov r1, temp2
-			bl arm32_random
-			lsl r0, r0, #8
-			add temp2, temp2, r0
-			pop {r0-r3,lr}
+				lsr temp3, temp, #8
 
-			heap32_wave_random_loop_half_jump:
+				push {r0-r3,lr}
+				mov r0, #0
+				mov r1, temp3
+				bl arm32_random
+				lsl r0, r0, #8
+				add temp2, temp2, r0
+				pop {r0-r3,lr}
+
+				cmp temp2, temp                        @ Ensure Inside of Intended Value
+				bhi heap32_wave_random_loop_half_jump1
+
+			heap32_wave_random_loop_half_jump2:
 				str temp2, [block_start]
 				add block_start, block_start, #4
 
@@ -785,12 +787,12 @@ heap32_wave_random:
 
 		heap32_wave_random_loop_common:
 
-			add block_point, block_point, length       @ Make New Quarter
+			add block_point, block_point, length       @ Make Next Half
 
 			tst flag_odd, #1
 			subne block_point, block_point, #4         @ If Odd
 
-			sub direction, direction, #1               @ Make New Direction for New Quarter
+			sub direction, direction, #1               @ Make New Direction for Next Half
 
 			b heap32_wave_random_loop
 
@@ -821,7 +823,7 @@ heap32_wave_random:
 .unreq flag_odd
 .unreq temp
 .unreq temp2
-.unreq random_digit
+.unreq temp3
 
 
 /**
@@ -861,9 +863,10 @@ heap32_wave_triangle:
 	vfp_base         .req s5
 	vfp_value        .req s6
 	vfp_one          .req s7
+	vfp_zero         .req s8
 
 	push {r4-r9}
-	vpush {s0-s7}
+	vpush {s0-s8}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
@@ -921,8 +924,8 @@ heap32_wave_triangle:
 	/* Preparation for Usage of VFP Registers */
 
 	mov temp, #0
-	vmov vfp_omega, temp
-	vcvt.f32.u32 vfp_omega, vfp_omega
+	vmov vfp_zero, temp
+	vcvt.f32.u32 vfp_zero, vfp_zero
 	mov temp, #1
 	vmov vfp_one, temp
 	vcvt.f32.u32 vfp_one, vfp_one
@@ -938,6 +941,7 @@ heap32_wave_triangle:
 	vdiv.f32 vfp_delta, vfp_height, vfp_quarter
 
 	vmov vfp_base, vfp_medium                   @ Base of First Quarter
+	vmov vfp_omega, vfp_zero                    @ Reset Omega
 
 	add block_point, block_start, length        @ Make First Quarter
 
@@ -954,7 +958,7 @@ heap32_wave_triangle:
 			vaddne.f32 vfp_value, vfp_base, vfp_value  @ If High on Bit[1] of direction, Plus
 			vsubeq.f32 vfp_value, vfp_base, vfp_value  @ If Low on Bit[1] of direction, Minus
 
-			vcvt.u32.f32 vfp_value, vfp_value
+			vcvtr.u32.f32 vfp_value, vfp_value
 			vmov temp, vfp_value
 			str temp, [block_start]
 			add block_start, block_start, #4
@@ -968,19 +972,17 @@ heap32_wave_triangle:
 			vaddne.f32 vfp_base, vfp_base, vfp_height  @ If High on Bit[1] of direction, Plus
 			vsubeq.f32 vfp_base, vfp_base, vfp_height  @ If Low on Bit[1] of direction, Minus
 
-			mov temp, #0
-			vmov vfp_omega, temp
-			vcvt.f32.u32 vfp_omega, vfp_omega          @ Reset Omega
+			vmov vfp_omega, vfp_zero                   @ Reset Omega         
 
-			add block_point, block_point, length       @ Make New Quarter
+			add block_point, block_point, length       @ Make Next Quarter
 
-			tst direction, #1                          @ Check Bit[0] of direction to Know Whether Half(High) or Quarter(Low)
+			tst direction, #1                          @ Check Bit[0] of direction to Know Whether Half(High) or Quarter(Low) at Each End
 			tstne flag_odd, #1                         @ If Half
 			tsteq flag_odd, #2                         @ If Quarter
-			subne block_start, block_start, #4         @ If Odd, Correct Positions
+			vaddne.f32 vfp_omega, vfp_omega, vfp_one   @ If Odd, Correct Positions
 			subne block_point, block_point, #4
 
-			sub direction, direction, #1               @ Make New Direction for New Quarter
+			sub direction, direction, #1               @ Make New Direction for Next Quarter
 
 			b heap32_wave_triangle_loop
 
@@ -998,7 +1000,7 @@ heap32_wave_triangle:
 	heap32_wave_triangle_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
 		pop {r4-r9}
-		vpop {s0-s7}
+		vpop {s0-s8}
 		mov pc, lr
 
 .unreq block_start
@@ -1020,3 +1022,4 @@ heap32_wave_triangle:
 .unreq vfp_base
 .unreq vfp_value
 .unreq vfp_one
+.unreq vfp_zero

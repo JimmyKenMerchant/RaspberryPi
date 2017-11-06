@@ -185,31 +185,37 @@ os_reset:
 	macro32_isb ip
 
 	/**
+	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
+	 * Each 0b01 is for Enable in Previlege Mode
+	 * Each 0b11 is for Enable in Previlege and User Mode
+	 */
+	mov r0, #0b1111
+	lsl r0, r0, #20
+
+	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
+
+	macro32_dsb ip
+	macro32_isb ip                            @ Must Need When You Renew CPACR
+
+	mov r0, #0x40000000                       @ Enable NEON/VFP
+	vmsr fpexc, r0
+
+	/**
 	 * DMA
 	 */
 
 	push {r0-r3,lr}
-	mov r0, #144                            @ 144 Words Equals 576 Bytes
+	mov r0, #72                            @ 72 Words Equals 288 Bytes
 	bl heap32_malloc
 	mov r4, r0
 	pop {r0-r3,lr}
 
-	/*
-	push {r0-r3,lr}
-	mov r0, #0
-	mov r1, #255
-	mov r2, r4
-	mov r3, #2048
-	bl arm32_fill_random
-	pop {r0-r3,lr}
-	*/
-
 	push {r0-r3,lr}
 	mov r0, r4
-	mov r1, #50
-	mov r2, #72
-	mov r3, #0
-	bl heap32_mfill
+	mov r1, #72
+	mov r2, #127
+	mov r3, #64
+	bl heap32_wave_triangle
 	pop {r0-r3,lr}
 
 macro32_debug r4, 300, 300
@@ -252,7 +258,7 @@ macro32_debug r4, 300, 300
 	add r1, r1, #equ32_pwm_base_upper
 	add r1, r1, #equ32_pwm_fif1
 	str r1, [r0, #0x8]                    @ Destination Address
-	mov r1, #576
+	mov r1, #288
 	str r1, [r0, #0x0C]	              @ Transfer Length
 	mov r1, #0
 	str r1, [r0, #0x10]                   @ 2D Stride
