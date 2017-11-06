@@ -525,17 +525,152 @@ heap32_mweave:
 
 
 /**
- * function heap32_wave_triangle
+ * function heap32_wave_square
  * Make Triangle Wave on Memory Space
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
- * r1: Length of Wave (32-bit Words, Must Be Multiplies of 4)
+ * r1: Length of Wave (32-bit Words, Must Be 2 and More)
  * r2: Height of Wave (32-bit)
  * r3: Medium of Wave (32-bit)
  *
- * Return: r0 (0 as Success, 1 as Error)
- * Error: Pointer of Start Address is Null (0)
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0)
+ * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 5
+ */
+.globl heap32_wave_square
+heap32_wave_square:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	length           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	height           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	medium           .req r3
+	block_point      .req r4
+	block_size       .req r5
+	heap_start       .req r6
+	heap_size        .req r7
+	flag_odd         .req r8
+	temp             .req r9	
+
+	push {r4-r9}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_wave_square_error1
+
+	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
+	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+
+	lsl temp, length, #2                        @ Substitution of Multiplication by 2
+	cmp temp, block_size
+	bhi heap32_wave_square_error2               @ If Overflow is Expected
+
+	add block_size, block_start, block_size
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_wave_square_error2               @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	cmp block_start, heap_start
+	blo heap32_wave_square_error2
+
+	.unreq heap_start
+	.unreq heap_size
+	half      .req r6
+	direction .req r7
+
+	cmp length, #2                              @ If Not 2 and More
+	blo heap32_wave_square_error2
+
+	/* Examine Length to know Odd/Even on Half and Quarter */
+
+	tst length, #1                              @ If Half is Odd
+	movne flag_odd, #1
+	addne length, length, #1
+	moveq flag_odd, #0
+
+	lsr half, length, #1                        @ Substitution of Division by 2
+
+	lsl length, half, #2                        @ Substitution of Multiplication by 4, Reassume Length to Be Corrected
+
+	/* direction: Plus at First Half(0), Last half (-1) */
+
+	mov direction, #0                           @ Define Direction to Plus at First Quarter
+
+	add block_point, block_start, length        @ Make First Quarter
+
+	heap32_wave_square_loop:
+		cmp direction, #-1
+		blt heap32_wave_square_success
+		cmp direction, #0
+		addeq temp, medium, height
+		subne temp, medium, height
+		
+		heap32_wave_square_loop_half:
+			cmp block_start, block_point
+			bhs heap32_wave_square_loop_common
+
+			str temp, [block_start]
+			add block_start, block_start, #4
+
+			b heap32_wave_square_loop_half
+
+		heap32_wave_square_loop_common:
+
+			add block_point, block_point, length       @ Make New Quarter
+
+			tst flag_odd, #1
+			subne block_point, block_point, #4         @ If Odd
+
+			sub direction, direction, #1               @ Make New Direction for New Quarter
+
+			b heap32_wave_square_loop
+
+	heap32_wave_square_error1:
+		mov r0, #1
+		b heap32_wave_square_common
+
+	heap32_wave_square_error2:
+		mov r0, #2
+		b heap32_wave_square_common
+
+	heap32_wave_square_success:
+		mov r0, #0
+
+	heap32_wave_square_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4-r9}
+		mov pc, lr
+
+.unreq block_start
+.unreq length
+.unreq height
+.unreq medium
+.unreq block_point
+.unreq block_size
+.unreq half
+.unreq direction
+.unreq flag_odd
+.unreq temp
+
+
+/**
+ * function heap32_wave_triangle
+ * Make Triangle Wave on Memory Space
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r1: Length of Wave (32-bit Words, Must Be 5 and More)
+ * r2: Height of Wave (32-bit)
+ * r3: Medium of Wave (32-bit)
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0)
+ * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 5
  */
 .globl heap32_wave_triangle
 heap32_wave_triangle:
@@ -548,7 +683,8 @@ heap32_wave_triangle:
 	block_size       .req r5
 	heap_start       .req r6
 	heap_size        .req r7
-	temp             .req r8	
+	flag_odd         .req r8
+	temp             .req r9	
 
 	vfp_omega        .req s0 @ d0
 	vfp_delta        .req s1
@@ -559,41 +695,70 @@ heap32_wave_triangle:
 	vfp_value        .req s6
 	vfp_one          .req s7
 
-	push {r4-r8}
+	push {r4-r9}
 	vpush {s0-s7}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	cmp block_start, #0
-	beq heap32_wave_triangle_error
+	beq heap32_wave_triangle_error1
 
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
-	lsl temp, length, #2
+	lsl temp, length, #2                        @ Substitution of Multiplication by 2
 	cmp temp, block_size
-	bhi heap32_wave_triangle_error
+	bhi heap32_wave_triangle_error2             @ If Overflow is Expected
+
+	add block_size, block_start, block_size
 
 	ldr heap_start, HEAP32_ADDR
 	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
 	add heap_size, heap_start, heap_size
 
 	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bhi heap32_wave_triangle_error              @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	bhi heap32_wave_triangle_error2             @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
 	cmp block_start, heap_start
-	blo heap32_wave_triangle_error
+	blo heap32_wave_triangle_error2
 
 	.unreq heap_start
 	.unreq heap_size
 	quarter   .req r5
 	direction .req r6
 
-	tst length, #3                              @ If Not Multiplies of 4
-	bne heap32_wave_triangle_error
-	
-	lsr quarter, length, #2                     @ Substitution of Division by 4
+	cmp length, #5                              @ If Not 5 and More
+	blo heap32_wave_triangle_error2
 
-	mov direction, #2                           @ Plus at First Quarter
+	/* Examine Length to know Odd/Even on Half and Quarter */
+
+	tst length, #1                              @ If Half is Odd
+	movne flag_odd, #1
+	addne length, length, #1
+	moveq flag_odd, #0
+
+	lsr quarter, length, #1                     @ Substitution of Division by 2
+
+	tst quarter, #1                             @ If Quarter is Odd
+	orrne flag_odd, flag_odd, #2
+	addne quarter, quarter, #1
+	
+	lsr quarter, quarter, #1                    @ Substitution of Division by 2
+	lsl length, quarter, #2                     @ Substitution of Multiplication by 4, Reassume Length to Be Corrected
+
+	sub quarter, quarter, #1                    @ To Get Delta, Subtract 1
+
+	/* direction: Plus at First Quarter(2), Minus at Second Quarter(1), Minus at Third Quarter(0), Plus at Fourth Quarter(-1) */
+
+	mov direction, #2                           @ Define Direction to Plus at First Quarter
+
+	/* Preparation for Usage of VFP Registers */
+
+	mov temp, #0
+	vmov vfp_omega, temp
+	vcvt.f32.u32 vfp_omega, vfp_omega
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
 
 	vmov vfp_quarter, quarter
 	vmov vfp_medium, medium
@@ -603,18 +768,11 @@ heap32_wave_triangle:
 	vcvt.f32.u32 vfp_medium, vfp_medium
 	vcvt.f32.u32 vfp_height, vfp_height
 
-	add block_point, block_start, length        @ Make First Quarter
-
 	vdiv.f32 vfp_delta, vfp_height, vfp_quarter
 
-	mov temp, #0
-	vmov vfp_omega, temp
-	vcvt.f32.u32 vfp_omega, vfp_omega
-	mov temp, #1
-	vmov vfp_one, temp
-	vcvt.f32.u32 vfp_one, vfp_one
-
 	vmov vfp_base, vfp_medium                   @ Base of First Quarter
+
+	add block_point, block_start, length        @ Make First Quarter
 
 	heap32_wave_triangle_loop:
 		cmp direction, #-1
@@ -645,16 +803,26 @@ heap32_wave_triangle:
 
 			mov temp, #0
 			vmov vfp_omega, temp
-			vcvt.f32.u32 vfp_omega, vfp_omega
+			vcvt.f32.u32 vfp_omega, vfp_omega          @ Reset Omega
 
-			add block_point, block_point, length
+			add block_point, block_point, length       @ Make New Quarter
 
-			sub direction, direction, #1
+			tst direction, #1                          @ Check Bit[1] of direction to Know Whether Half(High) or Quarter(Low)
+			tstne flag_odd, #1                         @ If Half
+			tsteq flag_odd, #2                         @ If Quarter
+			subne block_start, block_start, #4         @ If Odd, Correct Positions
+			subne block_point, block_point, #4
+
+			sub direction, direction, #1               @ Make New Direction for New Quarter
 
 			b heap32_wave_triangle_loop
 
-	heap32_wave_triangle_error:
+	heap32_wave_triangle_error1:
 		mov r0, #1
+		b heap32_wave_triangle_common
+
+	heap32_wave_triangle_error2:
+		mov r0, #2
 		b heap32_wave_triangle_common
 
 	heap32_wave_triangle_success:
@@ -662,7 +830,7 @@ heap32_wave_triangle:
 
 	heap32_wave_triangle_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r8}
+		pop {r4-r9}
 		vpop {s0-s7}
 		mov pc, lr
 
@@ -674,6 +842,7 @@ heap32_wave_triangle:
 .unreq block_size
 .unreq quarter
 .unreq direction 
+.unreq flag_odd
 .unreq temp
 
 .unreq vfp_omega
@@ -684,5 +853,3 @@ heap32_wave_triangle:
 .unreq vfp_base
 .unreq vfp_value
 .unreq vfp_one
-
-
