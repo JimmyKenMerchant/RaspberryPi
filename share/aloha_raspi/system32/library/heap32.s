@@ -526,7 +526,7 @@ heap32_mweave:
 
 /**
  * function heap32_wave_square
- * Make Triangle Wave on Memory Space
+ * Make Square Wave on Memory Space
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
@@ -536,7 +536,7 @@ heap32_mweave:
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Pointer of Start Address is Null (0)
- * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 5
+ * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 2
  */
 .globl heap32_wave_square
 heap32_wave_square:
@@ -655,6 +655,173 @@ heap32_wave_square:
 .unreq direction
 .unreq flag_odd
 .unreq temp
+
+
+/**
+ * function heap32_wave_random
+ * Make Random Wave on Memory Space
+ * Caution! The Value of Addition of Height and Medium Must Be Within 16-bit (0-65535)
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r1: Length of Wave (32-bit Words, Must Be 2 and More)
+ * r2: Height of Wave (32-bit)
+ * r3: Medium of Wave (32-bit)
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0)
+ * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 2
+ */
+.globl heap32_wave_random
+heap32_wave_random:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	length           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	height           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	medium           .req r3
+	block_point      .req r4
+	block_size       .req r5
+	heap_start       .req r6
+	heap_size        .req r7
+	flag_odd         .req r8
+	temp             .req r9
+	temp2            .req r10
+	random_digit     .req r11	
+
+	push {r4-r11}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_wave_random_error1
+
+	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
+	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+
+	lsl temp, length, #2                        @ Substitution of Multiplication by 2
+	cmp temp, block_size
+	bhi heap32_wave_random_error2               @ If Overflow is Expected
+
+	add block_size, block_start, block_size
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_wave_random_error2               @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	cmp block_start, heap_start
+	blo heap32_wave_random_error2
+
+	.unreq heap_start
+	.unreq heap_size
+	half      .req r6
+	direction .req r7
+
+	cmp length, #2                              @ If Not 2 and More
+	blo heap32_wave_random_error2
+
+	/* Examine Length to know Odd/Even on Half and Quarter */
+
+	tst length, #1                              @ If Half is Odd
+	movne flag_odd, #1
+	addne length, length, #1
+	moveq flag_odd, #0
+
+	lsr half, length, #1                        @ Substitution of Division by 2
+
+	lsl length, half, #2                        @ Substitution of Multiplication by 4, Reassume Length to Be Corrected
+
+	/* direction: Plus at First Half(0), Last half (-1) */
+
+	mov direction, #0                           @ Define Direction to Plus at First Quarter
+
+	add block_point, block_start, length        @ Make First Quarter
+
+	heap32_wave_random_loop:
+		cmp direction, #-1
+		blt heap32_wave_random_success
+		cmp direction, #0
+		addeq temp, medium, height
+		subne temp, medium, height
+
+		cmp temp, #0x100                       @ 8-bit or 16-bit
+		movhs random_digit, #1                 @ 16-bit
+		movlo random_digit, #0                 @ 8-bit
+		
+		heap32_wave_random_loop_half:
+			cmp block_start, block_point
+			bhs heap32_wave_random_loop_common
+
+			cmp random_digit, #1
+			movhs temp2, #255
+			movlo temp2, temp
+
+			push {r0-r3,lr}
+			mov r0, #0
+			mov r1, temp2
+			bl arm32_random
+			mov temp2, r0
+			pop {r0-r3,lr}
+
+			cmp random_digit, #1
+			blo heap32_wave_random_loop_half_jump
+
+			lsr temp2, temp, #8
+
+			push {r0-r3,lr}
+			mov r0, #0
+			mov r1, temp2
+			bl arm32_random
+			lsl r0, r0, #8
+			add temp2, temp2, r0
+			pop {r0-r3,lr}
+
+			heap32_wave_random_loop_half_jump:
+				str temp2, [block_start]
+				add block_start, block_start, #4
+
+				b heap32_wave_random_loop_half
+
+		heap32_wave_random_loop_common:
+
+			add block_point, block_point, length       @ Make New Quarter
+
+			tst flag_odd, #1
+			subne block_point, block_point, #4         @ If Odd
+
+			sub direction, direction, #1               @ Make New Direction for New Quarter
+
+			b heap32_wave_random_loop
+
+	heap32_wave_random_error1:
+		mov r0, #1
+		b heap32_wave_random_common
+
+	heap32_wave_random_error2:
+		mov r0, #2
+		b heap32_wave_random_common
+
+	heap32_wave_random_success:
+		mov r0, #0
+
+	heap32_wave_random_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4-r11}
+		mov pc, lr
+
+.unreq block_start
+.unreq length
+.unreq height
+.unreq medium
+.unreq block_point
+.unreq block_size
+.unreq half
+.unreq direction
+.unreq flag_odd
+.unreq temp
+.unreq temp2
+.unreq random_digit
 
 
 /**
@@ -807,7 +974,7 @@ heap32_wave_triangle:
 
 			add block_point, block_point, length       @ Make New Quarter
 
-			tst direction, #1                          @ Check Bit[1] of direction to Know Whether Half(High) or Quarter(Low)
+			tst direction, #1                          @ Check Bit[0] of direction to Know Whether Half(High) or Quarter(Low)
 			tstne flag_odd, #1                         @ If Half
 			tsteq flag_odd, #2                         @ If Quarter
 			subne block_start, block_start, #4         @ If Odd, Correct Positions
