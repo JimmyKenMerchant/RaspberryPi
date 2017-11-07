@@ -1257,13 +1257,13 @@ arm32_random:
 
 	push {r4-r5}
 
+	/**
+	 * Fibonacci LFSRs
+	 */
+
+	ldrb byte, arm32_random_value
+
 	arm32_random_loop:
-
-		/**
-		 * Fibonacci LFSRs
-		 */
-
-		ldrb byte, arm32_random_value
 
 		and temp, byte, #0x1             @ X^8
 
@@ -1292,14 +1292,13 @@ arm32_random:
 		sub byte, byte, temp
 		and byte, byte, #0xFF
 
-		strb byte, arm32_random_value
-
 		cmp byte, range_start
 		blo arm32_random_loop
 		cmp byte, range_end
 		bhi arm32_random_loop
 
 	arm32_random_common:
+		strb byte, arm32_random_value
 		mov r0, byte
 		pop {r4-r5}
 		mov pc, lr

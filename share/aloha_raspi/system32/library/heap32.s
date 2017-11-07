@@ -999,8 +999,8 @@ heap32_wave_triangle:
 
 	heap32_wave_triangle_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r9}
 		vpop {s0-s8}
+		pop {r4-r9}
 		mov pc, lr
 
 .unreq block_start

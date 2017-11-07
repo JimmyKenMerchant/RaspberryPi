@@ -38,7 +38,7 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
+	mov r1, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
 	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
@@ -46,11 +46,11 @@ os_reset:
 	str r1, [r0, #equ32_armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes
-	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 100K
+	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 120K
 	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
 	str r1, [r0, #equ32_armtimer_control]
 
-	/* So We can get a 10hz Timer Interrupt (100000/10000) */
+	/* So We can get a 12hz Timer Interrupt (120000/10000) */
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
@@ -71,7 +71,7 @@ os_reset:
 	/**
 	 * PWM
 	 * Makes 19.2Mhz (From Oscillator).
-	 * Sampling Rate 16000hz, Bit Depth 10bit (Max. Range is 1023, but is Actually 600 on This)
+	 * Sampling Rate 32000hz, Bit Depth 8bit (Max. Range is 300, but is Actually 255 on This)
 	 */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_cm_base_lower
@@ -90,7 +90,7 @@ os_reset:
 	add r0, r0, #equ32_pwm_base_lower
 	add r0, r0, #equ32_pwm_base_upper
 
-	mov r1, #600
+	mov r1, #300
 	str r1, [r0, #equ32_pwm_rng1]
 
 	mov r1, #equ32_pwm_dmac_enable
@@ -205,16 +205,16 @@ os_reset:
 	 */
 
 	push {r0-r3,lr}
-	mov r0, #72                            @ 72 Words Equals 288 Bytes
+	mov r0, #144                            @ 144 Words Equals 576 Bytes
 	bl heap32_malloc
 	mov r4, r0
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
 	mov r0, r4
-	mov r1, #72
-	mov r2, #127
-	mov r3, #64
+	mov r1, #144                           @ Length in Words, Intended that 3.2KHz/144 Equals 222.2Hz
+	mov r2, #63                            @ Height in Bytes
+	mov r3, #128                           @ Medium in Bytes
 	bl heap32_wave_triangle
 	pop {r0-r3,lr}
 
@@ -227,7 +227,7 @@ macro32_debug r4, 300, 300
 	ldr r2, [r2]
 	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
 	ldr r3, [r3]
-	macro32_print_hexa r0, 300, 312, r1, r2, 64, 8, 12, r3
+	macro32_print_hexa r0, 0, 312, r1, r2, 288, 8, 12, r3
 
 	push {r0-r3,lr}
 	mov r0, r4
@@ -258,7 +258,7 @@ macro32_debug r4, 300, 300
 	add r1, r1, #equ32_pwm_base_upper
 	add r1, r1, #equ32_pwm_fif1
 	str r1, [r0, #0x8]                    @ Destination Address
-	mov r1, #288
+	mov r1, #576
 	str r1, [r0, #0x0C]	              @ Transfer Length
 	mov r1, #0
 	str r1, [r0, #0x10]                   @ 2D Stride
@@ -305,9 +305,6 @@ macro32_debug r1, 0, 84
 
 ldr r1, [r0, #32]
 macro32_debug r1, 0, 96
-
-	os_reset_loop:
-		b os_reset_loop
 	
 	mov pc, lr
 
