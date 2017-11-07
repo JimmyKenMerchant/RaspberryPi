@@ -171,7 +171,7 @@ bcm32_get_framebuffer:
 		macro32_invalidate_cache memorymap_base, ip
 		add memorymap_base, memorymap_base, #4
 		cmp memorymap_base, temp
-		blt bcm32_get_framebuffer_loop
+		blo bcm32_get_framebuffer_loop
 
 	macro32_dsb ip
 
@@ -260,7 +260,7 @@ bcm32_set_powerstate:
 		macro32_clean_cache memorymap_base, ip
 		add memorymap_base, memorymap_base, #4
 		cmp memorymap_base, temp
-		blt bcm32_set_powerstate_loop1
+		blo bcm32_set_powerstate_loop1
 
 	macro32_dsb ip
 	
@@ -285,7 +285,7 @@ bcm32_set_powerstate:
 		macro32_invalidate_cache memorymap_base, ip
 		add memorymap_base, memorymap_base, #4
 		cmp memorymap_base, temp
-		blt bcm32_set_powerstate_loop2
+		blo bcm32_set_powerstate_loop2
 
 	macro32_dsb ip
 

@@ -34,9 +34,7 @@ arm32_core_call:
 	and number_core, number_core, #0b11      @ Prevet Memory Overflow
 
 	cmp number_core, #3                      @ 0 <= number_core <= 3
-	bgt arm32_core_call_error
-	cmp number_core, #0
-	blt arm32_core_call_error
+	bhi arm32_core_call_error
 
 	lsl number_core, number_core, #2         @ Substitution of Multiplication by 4
 
@@ -148,7 +146,7 @@ arm32_core_handle:
 
 	arm32_core_handle_loop2:
 		cmp num_arg, #20
-		ble arm32_core_handle_branch
+		bls arm32_core_handle_branch
 		ldr temp, [heap, num_arg]
 		push {temp}
 		sub num_arg, num_arg, #4
@@ -486,7 +484,7 @@ arm32_cache_operation_heap:
 
 	arm32_cache_operation_heap_loop:
 		cmp block_start, block_size
-		bgt arm32_cache_operation_heap_success
+		bhi arm32_cache_operation_heap_success
 
 		cmp flag, #0
 		mcreq p15, 0, block_start, c7, c6, 1     @ Invalidate Data Cache
@@ -548,7 +546,7 @@ arm32_convert_endianness:
 
 	arm32_convert_endianness_loop:
 		cmp data_point, size
-		bge arm32_convert_endianness_success
+		bhs arm32_convert_endianness_success
 
 		cmp align_bytes, #4
 		ldreq swap_1, [data_point]
@@ -638,8 +636,8 @@ arm32_sleep:
 		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower] @ In Case of Interrupt, Load Lower Bits First
 		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
 		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
-		cmple count_low, time_low                                   @ Compare Lower 32 Bits
-		bgt arm32_sleep_loop
+		cmpls count_low, time_low                                   @ Compare Lower 32 Bits
+		bhi arm32_sleep_loop
 
 	arm32_sleep_common:
 		pop {r4-r5}
@@ -946,7 +944,7 @@ arm32_lineup_basic_va:
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
-		blt arm32_lineup_basic_va_securememory
+		blo arm32_lineup_basic_va_securememory
 
 	mov size, #0x00F
 	add size, size, #0xFF0                  @ Make 0xFFF
@@ -963,7 +961,7 @@ arm32_lineup_basic_va:
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
-		ble arm32_lineup_basic_va_securedevice
+		bls arm32_lineup_basic_va_securedevice
 
 	/* Non-secure */
 
@@ -983,7 +981,7 @@ arm32_lineup_basic_va:
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
-		blt arm32_lineup_basic_va_nonsecurememory
+		blo arm32_lineup_basic_va_nonsecurememory
 
 	mov size, #0x00F
 	add size, size, #0xFF0                  @ Make 0xFFF
@@ -1001,7 +999,7 @@ arm32_lineup_basic_va:
 		add descriptor, descriptor, #0x00100000
 		add offset_addr, offset_addr, #4
 		cmp offset_addr, size
-		ble arm32_lineup_basic_va_nonsecuredevice
+		bls arm32_lineup_basic_va_nonsecuredevice
 
 	/* Hyp mode, offset is 0x8000, Long Description Translation Table May Be Needed */
 
@@ -1158,7 +1156,7 @@ arm32_set_cache:
 
 	arm32_set_cache_loop:
 		cmp memorymap_base, size
-		bgt arm32_set_cache_success               @ Inclusive Loop Because of Cut Off by 0xFFF00000
+		bhi arm32_set_cache_success                  @ Inclusive Loop Because of Cut Off by 0xFFF00000
 		ldr temp, [base_addr]
 		macro32_dsb ip
 		bic temp, temp, #0x000000FF                  @ Clear Except Destination Address
