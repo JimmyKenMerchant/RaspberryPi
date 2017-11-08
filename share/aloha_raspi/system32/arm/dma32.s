@@ -166,7 +166,7 @@ dma32_clear_channel:
  * r3: Destination Address
  * r4: Transfer Length
  * r5: 2D Stride
- * r6: Next CB Addres
+ * r6: Number of Next CB
  *
  * Return: r0 (Pointer of Control Block, If -1, Number of CB is Overflow)
  */
@@ -192,10 +192,13 @@ dma32_set_cb:
 	cmp number_cb, #9
 	bhi dma32_set_cb_error
 
-	ldr addr_cb, DMA32_CB
-	mov mul_number, #32
-	mul number_cb, mul_number, number_cb
-	add addr_cb, addr_cb, number_cb
+	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
+	mov mul_number, #32                            @ 32-bit Align
+	mul nextconbk, mul_number, nextconbk           @ Offset of Next CB
+	mul number_cb, mul_number, number_cb           @ Offset of Targeted CB
+	add nextconbk, addr_cb, nextconbk              @ Address of Next CB
+	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB
+
 	
 	/* Channel Block Setting */
 

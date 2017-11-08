@@ -218,66 +218,41 @@ os_reset:
 	bl heap32_wave_triangle
 	pop {r0-r3,lr}
 
-macro32_debug r4, 300, 300
-
-	mov r0, r4
-	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
-	ldr r1, [r1]
-	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r3, [r3]
-	macro32_print_hexa r0, 0, 312, r1, r2, 288, 8, 12, r3
-
 	push {r0-r3,lr}
 	mov r0, r4
 	mov r1, #1                                @ Clean
 	bl arm32_cache_operation_heap
 	pop {r0-r3,lr}
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_dma_base
-
-	mov r1, #1 << 0                         @ DMA Channel0
-	str r1, [r0, #equ32_dma_channel_enable]
-
-	/* DMA Channel1 Reset */
-	mov r1, #equ32_dma_cs_reset
-	str r1, [r0, #equ32_dma_cs]
-
 	/* Channel Block Setting */
 
-	ldr r0, ADDR32_DMA32_CB
-	ldr r0, [r0]
+	push {r0-r6,lr}
+	mov r0, #0                                              @ CB Number
 	mov r1, #5<<equ32_dma_ti_permap
-	orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq
-	str r1, [r0, #0x00]                   @ Transfer Information
-	str r4, [r0, #0x04]                   @ Source Address
-	mov r1, #equ32_bus_peripherals_base
-	add r1, r1, #equ32_pwm_base_lower
-	add r1, r1, #equ32_pwm_base_upper
-	add r1, r1, #equ32_pwm_fif1
-	str r1, [r0, #0x8]                    @ Destination Address
-	mov r1, #576
-	str r1, [r0, #0x0C]	              @ Transfer Length
-	mov r1, #0
-	str r1, [r0, #0x10]                   @ 2D Stride
-	str r0, [r0, #0x14]                   @ Next CB Address
+	orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+	mov r2, r4                                              @ Source Address
+	mov r3, #equ32_bus_peripherals_base
+	add r3, r3, #equ32_pwm_base_lower
+	add r3, r3, #equ32_pwm_base_upper
+	add r3, r3, #equ32_pwm_fif1                             @ Destination Address
+	mov r4, #576	                                        @ Transfer Length
+	mov r5, #0                                              @ 2D Stride
+	mov r6, #0                                              @ Next CB Number
+	push {r4-r6}
+	bl dma32_set_cb
+	mov r7, r0
+	add sp, sp, #12
+	pop {r0-r6,lr}
 
-	macro32_dsb ip
-
-	macro32_clean_cache r0, ip
-
-	mov r1, r0
+	push {r0-r3,lr}
+	mov r0, #1
+	mov r1, r7
+	bl dma32_set_channel
+	pop {r0-r3,lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_dma_base
-	str r1, [r0, #equ32_dma_conblk_ad]
-
-	mov r1, #equ32_dma_cs_active
-	str r1, [r0, #equ32_dma_cs]
-	
-	macro32_dsb ip
+	add r0, r0, #equ32_dma_channel_offset
 
 ldr r1, [r0, #equ32_dma_cs]
 macro32_debug r1, 0, 0
@@ -316,58 +291,30 @@ os_irq:
 os_fiq:
 	push {r0-r7}
 
+	/* Clear Timer Interrupt */
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	/* Blinker */
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, gpio_toggle
+	ldrb r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, gpio_toggle
+	strb r1, os_fiq_gpio_toggle
 
-	cmp r1, #0
+	tst r1, #0b00000001
 	addeq r0, r0, #equ32_gpio_gpclr1
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_systemtimer_base
-
-	ldr r0, [r0, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
-	ldr r1, sys_timer_previous
-	sub r2, r0, r1
-	str r0, sys_timer_previous
-
-	push {lr}
-	mov r0, r2
-	bl math32_hexa_to_deci32
-	pop {lr}
-
-	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r4, [r4]
-	macro32_print_number_double r0, r1, 80, 388, r2, r3, 16, 8, 12, r4
-
-	ldr r0, timer_sub
-	ldr r1, timer_main
-
-	add r0, r0, #1
-	cmp r0, #10
-	addge r1, #1
-	movge r0, #0
-
-	str r0, timer_sub
-	str r1, timer_main
-
-	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
+	macro32_dsb ip
 
 	pop {r0-r7}
 	mov pc, lr
@@ -375,27 +322,14 @@ os_fiq:
 /**
  * Variables
  */
-.balign 4
-gpio_toggle:       .byte 0b00000000
+os_fiq_gpio_toggle:       .byte 0b00000000
 .balign 4
 _string_hello:
 	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
 string_hello:
 	.word _string_hello
-_string_test:
-	.ascii "Sytem Timer Interval\n\t100K? 100K by 10 Equals 1M!\n\tSystem Timer is 1M Hz!\0"
-.balign 4
-string_test:
-	.word _string_test
-timer_main:
-	.word 0x00000000
-timer_sub:
-	.word 0x00000000
-sys_timer_previous:
-	.word 0x00000000
-.balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`
-.balign 4
+
 /* End of Line is Needed */
