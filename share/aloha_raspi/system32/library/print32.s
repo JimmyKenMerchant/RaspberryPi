@@ -174,14 +174,14 @@ print32_strindex:
 
 	print32_strindex_loop:
 		cmp string_point2, string_size2
-		subge increment, increment, string_length2     @ string_length2 May Have Zero
-		bge print32_strindex_common
+		subhs increment, increment, string_length2     @ string_length2 May Have Zero
+		bhs print32_strindex_common
 
 		add temp, string_point1, increment
 
 		cmp temp, string_size1
-		mvnge increment, #0
-		bge print32_strindex_common
+		mvnhs increment, #0
+		bhs print32_strindex_common
 
 		ldrb char_search, [string_point2]
 
@@ -698,8 +698,8 @@ print32_number_double:
 
 	print32_number_double_loop:
 		cmp length, #8
-		subgt length_lower, length, #8
-		movgt length, #8
+		subhi length_lower, length, #8
+		movhi length, #8
 
 		/* Print Upper Half */
 
@@ -843,8 +843,8 @@ print32_number:
 		and bitmask, number, bitmask
 		lsr bitmask, bitmask, shift              @ Make One Digit Number
 		cmp bitmask, #9
-		addle bitmask, bitmask, #0x30            @ Ascii Table Number Offset
-		addgt bitmask, bitmask, #0x37            @ Ascii Table Alphabet Offset - 9
+		addls bitmask, bitmask, #0x30            @ Ascii Table Number Offset
+		addhi bitmask, bitmask, #0x37            @ Ascii Table Alphabet Offset - 9
 		lsl bitmask, bitmask, #2                 @ Substitute of Multiplication by #4 (mul)
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
@@ -1002,7 +1002,7 @@ print32_char:
 		ble print32_char_success
 
 		cmp f_buffer, size                           @ Check Overflow of Framebuffer Memory
-		bge print32_char_error1
+		bhs print32_char_error1
 
 		ldrb char_byte, [char_point]                 @ Load Horizontal Byte
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
@@ -1032,7 +1032,7 @@ print32_char:
 				addeq f_buffer, f_buffer, #4       @ Framebuffer Address Shift
 
 				cmp f_buffer, width_check          @ Check Overflow of Width
-				blt print32_char_loop_horizontal
+				blo print32_char_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                     @ substitution of Multiplication by 2

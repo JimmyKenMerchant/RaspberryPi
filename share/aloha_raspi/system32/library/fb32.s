@@ -560,7 +560,7 @@ fb32_draw_line:
 		fb32_draw_line_loop_common:
 			add i, i, #1
 			cmp i, y_diff
-			bgt fb32_draw_line_success
+			bhi fb32_draw_line_success
 			moveq char_width, dup_char_width           @ To hide Width Overflow on End Point (Except Original char_width)
 
 			add y_current, y_current, y_direction
@@ -807,7 +807,7 @@ fb32_draw_image:
 		ble fb32_draw_image_success
 
 		cmp f_buffer, size                           @ Check Overflow of Buffer Memory
-		bge fb32_draw_image_error1
+		bhs fb32_draw_image_error1
 
 		add image_point, image_point, x_offset_char  @ Add X Offset Bytes
 
@@ -970,7 +970,7 @@ fb32_draw_image:
 				addeq image_point, image_point, #4   @ Image Pointer Shift
 
 				cmp f_buffer, width_check            @ Check Overflow of Width
-				blt fb32_draw_image_loop_horizontal
+				blo fb32_draw_image_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                       @ substitution of Multiplication by 2
@@ -1147,7 +1147,7 @@ fb32_clear_color_block:
 		ble fb32_clear_color_block_success
 
 		cmp f_buffer, size                           @ Check Overflow of Buffer Memory
-		bge fb32_clear_color_block_error1
+		bhs fb32_clear_color_block_error1
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
@@ -1168,7 +1168,7 @@ fb32_clear_color_block:
 			fb32_clear_color_block_loop_horizontal_common:
 
 				cmp f_buffer, width_check             @ Check Overflow of Width
-				blt fb32_clear_color_block_loop_horizontal
+				blo fb32_clear_color_block_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                        @ substitution of Multiplication by 2
@@ -1343,7 +1343,7 @@ fb32_flush_doublebuffer:
 		addeq r_buffer, r_buffer, #4
 		addeq f_buffer, f_buffer, #4
 		cmp f_buffer, size
-		blt fb32_flush_doublebuffer_loop
+		blo fb32_flush_doublebuffer_loop
 
 	push {r0-r3,lr}
 	mov r0, buffer_front

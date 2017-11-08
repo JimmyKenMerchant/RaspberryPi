@@ -86,10 +86,10 @@ draw32_antialias:
 		add result_addr, result_addr, #4
 
 		cmp base_addr, size_base
-		bgt draw32_antialias_success
+		bhi draw32_antialias_success
 
 		cmp result_addr, size_result
-		bge draw32_antialias_error1
+		bhs draw32_antialias_error1
 
 		cmp base_addr, size_base
 		ldreq color, [base_addr]           @ Last Pixel of Base
@@ -105,7 +105,7 @@ draw32_antialias:
 
 		draw32_antialias_loop_color:
 			cmp shift, #32
-			bge draw32_antialias_loop_common
+			bhs draw32_antialias_loop_common
 			mov bitmask, #0xFF
 			mov bitmask_before, #0xFF
 			mov bitmask_after, #0xFF
@@ -225,7 +225,7 @@ draw32_fill_color:
 		ble draw32_fill_color_success
 
 		cmp base_addr, size                          @ Check Overflow of Buffer Memory
-		bge draw32_fill_color_error1
+		bhs draw32_fill_color_error1
 
 		mov j, width                                 @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
 
@@ -276,7 +276,7 @@ draw32_fill_color:
 					streq color, [addr_pick]
 					addeq addr_pick, addr_pick, #4
 					cmp addr_pick, base_addr
-					blt draw32_fill_color_loop_horizontal_flag2_loop
+					blo draw32_fill_color_loop_horizontal_flag2_loop
 
 					mov flag, #3
 					b draw32_fill_color_loop_horizontal_common
@@ -431,7 +431,7 @@ draw32_mask_image:
 		ble draw32_mask_image_success
 
 		cmp base_addr, size                          @ Check Overflow of Buffer Memory
-		bge draw32_mask_image_error1
+		bhs draw32_mask_image_error1
 
 		mov j, mask_width                            @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
 
@@ -456,7 +456,7 @@ draw32_mask_image:
 				add mask_addr, mask_addr, #4            @ Buffer Address Shift
 
 				cmp base_addr, width_check              @ Check Overflow of Width
-				blt draw32_mask_image_loop_horizontal
+				blo draw32_mask_image_loop_horizontal
 
 				lsl j, j, #2                            @ substitution of Multiplication by 4
 				add base_addr, base_addr, j             @ Buffer Offset
@@ -766,7 +766,7 @@ draw32_change_alpha_argb:
 
 	draw32_change_alpha_argb_loop:
 		cmp data_point, size
-		bge draw32_change_alpha_argb_success
+		bhs draw32_change_alpha_argb_success
 
 		ldr swap, [data_point]
 		bic swap, swap, #0xFF000000
@@ -810,7 +810,7 @@ draw32_rgba_to_argb:
 
 	draw32_rgba_to_argb_loop:
 		cmp data_point, size
-		bge draw32_rgba_to_argb_success
+		bhs draw32_rgba_to_argb_success
 
 		ldr swap, [data_point]
 		ror swap, #8                    @ Rotate Right 8 Bits

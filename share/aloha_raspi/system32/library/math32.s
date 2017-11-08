@@ -16,6 +16,90 @@ MATH32_PI_PER_DEGREE32: .float 0.01745329252
 .balign 8
 
 
+
+/**
+ * function math32_round_degree32
+ * Return Rounded Degree Between 0 to 360
+ *
+ * Parameters
+ * r0: Degrees, Must Be Type of Signed Integer
+ *
+ * Return: r0
+ */
+.globl math32_round_degree32
+math32_round_degree32:
+	/* Auto (Local) Variables, but just Aliases */
+	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	full           .req r1
+
+	mov full, #360
+
+	cmp degree, full
+	bgt math32_round_degree32_over
+
+	cmp degree, #0
+	blt math32_round_degree32_under
+
+	math32_round_degree32_over:
+		subs degree, degree, full
+		bgt math32_round_degree32_over
+		b math32_round_degree32_common
+
+	math32_round_degree32_under:
+		add degree, degree, full
+		cmp degree, #0
+		blt math32_round_degree32_under
+
+	math32_round_degree32_common:
+		mov pc, lr
+
+.unreq degree
+.unreq full
+
+
+/**
+ * function math32_degree_to_cradian32
+ * Return Corrected Radian (Translates to Between -pi and pi) from Degrees to This with Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Degrees, Must Be Type of Signed Integer (Must Be 0 to 360)
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_degree_to_cradian32
+math32_degree_to_cradian32:
+	/* Auto (Local) Variables, but just Aliases */
+	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP Registers */
+	vfp_degree     .req s0
+	vfp_radian     .req s1
+	vfp_pi_per_deg .req s2
+
+	vpush {s0-s2}
+
+	sub degree, degree, #180
+
+	/**
+	 * Radian = degrees X (pi Div by 180)
+	 */
+	vmov vfp_degree, degree
+	vcvt.f32.s32 vfp_degree, vfp_degree
+	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
+	vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
+
+	math32_degree_to_cradian32_common:
+		vmov r0, vfp_radian
+		vpop {s0-s2}
+		mov pc, lr
+
+.unreq degree
+.unreq vfp_degree
+.unreq vfp_radian
+.unreq vfp_pi_per_deg
+
+
 /**
  * function math32_degree_to_radian32
  * Return Radian from Degrees
@@ -1116,8 +1200,8 @@ math32_int32_to_string_hexa:
 		and mask, integer, mask
 		lsr mask, count
 		cmp mask, #9
-		addle mask, mask, #0x30                     @ Ascii Table Number Offset
-		addgt mask, mask, #0x37                     @ Ascii Table Alphabet Offset - 9
+		addls mask, mask, #0x30                     @ Ascii Table Number Offset
+		addhi mask, mask, #0x37                     @ Ascii Table Alphabet Offset - 9
 		strb mask, [heap]
 		add heap, heap, #1
 		lsr count, #2                               @ Substitution of Division by 4
@@ -1288,7 +1372,7 @@ math32_hexa_to_deci32:
 
 			add i, i, #1
 			cmp i, #8
-			blt math32_hexa_to_deci32_loop
+			blo math32_hexa_to_deci32_loop
 
 	math32_hexa_to_deci32_common:
 		pop {r4-r8}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
@@ -1369,7 +1453,7 @@ math32_decimal_adder64:
 		mul shift, i, mul_number
 
 		cmp i, #8
-		bge math32_decimal_adder64_loop_uppernumber
+		bhs math32_decimal_adder64_loop_uppernumber
 
 		/* Lower Number */
 		lsl bitmask_1, bitmask_1, shift
@@ -1400,10 +1484,10 @@ math32_decimal_adder64:
 			add bitmask_1, bitmask_1, carry_flag
 
 			cmp bitmask_1, #0x10
-			bge math32_decimal_adder64_loop_adder_hexacarry
+			bhs math32_decimal_adder64_loop_adder_hexacarry
 
 			cmp bitmask_1, #0x0A
-			bge math32_decimal_adder64_loop_adder_decicarry
+			bhs math32_decimal_adder64_loop_adder_decicarry
 
 			mov carry_flag, #0                      @ Clear Carry
 
@@ -1426,7 +1510,7 @@ math32_decimal_adder64:
 			lsl bitmask_1, bitmask_1, shift
 
 			cmp i, #8
-			bge math32_decimal_adder64_loop_common_uppernumber
+			bhs math32_decimal_adder64_loop_common_uppernumber
 
 			/* Lower Number */
 			add lower_1, lower_1, bitmask_1
@@ -1442,7 +1526,7 @@ math32_decimal_adder64:
 
 				add i, i, #1
 				cmp i, #16
-				blt math32_decimal_adder64_loop
+				blo math32_decimal_adder64_loop
 
 				cmp carry_flag, #1
 				beq math32_decimal_adder64_error
