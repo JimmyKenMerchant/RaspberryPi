@@ -62,3 +62,8 @@ __attribute__((noinline)) int32 _load_32( int32* address )
 	asm volatile ("svc #0x7");
 	return result;
 }
+
+__attribute__((noinline)) void _soundtest()
+{
+	asm volatile ("svc #0x8");
+}

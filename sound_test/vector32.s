@@ -118,168 +118,6 @@ os_reset:
 	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
-
-	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	/* Set Cache Status for HEAP */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
-	mov r3, #equ32_system32_datamemory_size
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	/* Set Cache Status for Virtual Address Descriptor */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_ARM32_VADESCRIPTOR_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	macro32_dsb ip
-	macro32_invalidate_tlb_all ip
-	macro32_isb ip
-	macro32_dsb ip
-	macro32_invalidate_instruction_all ip
-	macro32_isb ip
-
-	/**
-	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
-	 * Each 0b01 is for Enable in Previlege Mode
-	 * Each 0b11 is for Enable in Previlege and User Mode
-	 */
-	mov r0, #0b1111
-	lsl r0, r0, #20
-
-	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
-
-	macro32_dsb ip
-	macro32_isb ip                            @ Must Need When You Renew CPACR
-
-	mov r0, #0x40000000                       @ Enable NEON/VFP
-	vmsr fpexc, r0
-
-	/**
-	 * DMA
-	 */
-
-	push {r0-r3,lr}
-	mov r0, #144                            @ 144 Words Equals 576 Bytes
-	bl heap32_malloc
-	mov r4, r0
-	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	mov r0, r4
-	mov r1, #144                           @ Length in Words, Intended that 3.2KHz/144 Equals 222.2Hz
-	mov r2, #63                            @ Height in Bytes
-	mov r3, #128                           @ Medium in Bytes
-	bl heap32_wave_triangle
-	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	mov r0, r4
-	mov r1, #1                                @ Clean
-	bl arm32_cache_operation_heap
-	pop {r0-r3,lr}
-
-	/* Channel Block Setting */
-
-	push {r0-r6,lr}
-	mov r0, #0                                              @ CB Number
-	mov r1, #5<<equ32_dma_ti_permap
-	orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
-	mov r2, r4                                              @ Source Address
-	mov r3, #equ32_bus_peripherals_base
-	add r3, r3, #equ32_pwm_base_lower
-	add r3, r3, #equ32_pwm_base_upper
-	add r3, r3, #equ32_pwm_fif1                             @ Destination Address
-	mov r4, #576	                                        @ Transfer Length
-	mov r5, #0                                              @ 2D Stride
-	mov r6, #0                                              @ Next CB Number
-	push {r4-r6}
-	bl dma32_set_cb
-	mov r7, r0
-	add sp, sp, #12
-	pop {r0-r6,lr}
-
-	push {r0-r3,lr}
-	mov r0, #1
-	mov r1, r7
-	bl dma32_set_channel
-	pop {r0-r3,lr}
-
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_dma_base
-	add r0, r0, #equ32_dma_channel_offset
-
-ldr r1, [r0, #equ32_dma_cs]
-macro32_debug r1, 0, 0
-
-ldr r1, [r0, #equ32_dma_conblk_ad]
-macro32_debug r1, 0, 12
-
-ldr r1, [r0, #8]
-macro32_debug r1, 0, 24
-
-ldr r1, [r0, #12]
-macro32_debug r1, 0, 36
-
-ldr r1, [r0, #16]
-macro32_debug r1, 0, 48
-
-ldr r1, [r0, #20]
-macro32_debug r1, 0, 60
-
-ldr r1, [r0, #24]
-macro32_debug r1, 0, 72
-
-ldr r1, [r0, #28]
-macro32_debug r1, 0, 84
-
-ldr r1, [r0, #32]
-macro32_debug r1, 0, 96
 	
 	mov pc, lr
 
@@ -290,6 +128,10 @@ os_irq:
 
 os_fiq:
 	push {r0-r7}
+
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+.endif
 
 	/* Clear Timer Interrupt */
 

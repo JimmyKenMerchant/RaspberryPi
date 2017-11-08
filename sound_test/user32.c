@@ -12,7 +12,9 @@
 
 void _user_start()
 {
-	
+
+	_soundtest();
+
 	while(1) {
 
 		_sleep( 1000000 );

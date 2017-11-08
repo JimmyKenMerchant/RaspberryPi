@@ -53,6 +53,8 @@ __attribute__((noinline)) void _store_32( int32* address, int32 data );
 
 __attribute__((noinline)) int32 _load_32( int32* address );
 
+__attribute__((noinline)) void _soundtest();
+
 /********************************
  * system32/arm/arm32.s
  ********************************/

@@ -59,11 +59,11 @@ math32_round_degree32:
 
 /**
  * function math32_degree_to_cradian32
- * Return Corrected Radian (Translates to Between -pi and pi) from Degrees to This with Maclaurin (Taylor) Series
+ * Return Corrected Radian (Translates to Between -pi and pi) from Degrees to Calculate with Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
- * r0: Degrees, Must Be Type of Signed Integer (Must Be 0 to 360)
+ * r0: Degrees, Must Be Type of Signed Integer
  *
  * Return: r0 (Value by Single Precision Float)
  */
@@ -71,6 +71,7 @@ math32_round_degree32:
 math32_degree_to_cradian32:
 	/* Auto (Local) Variables, but just Aliases */
 	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	full           .req r1
 
 	/* VFP Registers */
 	vfp_degree     .req s0
@@ -79,15 +80,26 @@ math32_degree_to_cradian32:
 
 	vpush {s0-s2}
 
-	sub degree, degree, #180
+	push {lr}
+	bl math32_round_degree32
+	pop {lr}
 
-	/**
-	 * Radian = degrees X (pi Div by 180)
-	 */
-	vmov vfp_degree, degree
-	vcvt.f32.s32 vfp_degree, vfp_degree
-	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
-	vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
+	cmp degree, #180
+
+	ble math32_degree_to_cradian32_jump
+
+	mov full, #360
+	sub degree, degree, full
+
+	math32_degree_to_cradian32_jump:
+
+		/**
+		 * Radian = degrees X (pi Div by 180)
+		 */
+		vmov vfp_degree, degree
+		vcvt.f32.s32 vfp_degree, vfp_degree
+		vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
+		vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
 
 	math32_degree_to_cradian32_common:
 		vmov r0, vfp_radian
@@ -95,6 +107,7 @@ math32_degree_to_cradian32:
 		mov pc, lr
 
 .unreq degree
+.unreq full
 .unreq vfp_degree
 .unreq vfp_radian
 .unreq vfp_pi_per_deg
