@@ -58,7 +58,7 @@ SYSTEM32_DATAMEMORY:
 .balign 4
 .include "system32/library/draw32.s"
 .balign 4
-.include "system32/library/sound32.s"
+.include "system32/library/snd32.s"
 .balign 4
 .include "system32/library/math32.s"
 .balign 4

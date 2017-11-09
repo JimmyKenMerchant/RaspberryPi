@@ -16,6 +16,9 @@
 .equ equ32_usb2032_timeout,           0x0000FF00
 .equ equ32_print32_hexa_length_max,   0x000000FF
 .equ equ32_print32_string_tab_length, 4
+.equ equ32_snd32_dma_channel,       0
+.equ equ32_snd32_dma_cb_front,      0
+.equ equ32_snd32_dma_cb_back,       1
 
 /**
  * Standard Peripherals

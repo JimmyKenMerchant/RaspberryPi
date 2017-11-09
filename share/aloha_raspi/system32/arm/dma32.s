@@ -22,7 +22,7 @@
  *
  * Parameters
  * r0: Channel of DMA
- * r1: Pointer of Control Block (CB)
+ * r1: Number of Control Block (CB)
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error: Channel of DMA is Overflow
@@ -31,15 +31,21 @@
 dma32_set_channel:
 	/* Auto (Local) Variables, but just Aliases */
 	channel    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	addr_cb    .req r1
+	number_cb  .req r1
 	addr_dma   .req r2
 	temp       .req r3
 	temp2      .req r4
+	addr_cb    .req r5
 
-	push {r4}
+	push {r4-r5}
 
 	cmp channel, #14
 	bhi dma32_set_channel_error
+
+	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
+	mov temp, #32                                  @ 32-bit Align
+	mul number_cb, temp, number_cb                 @ Offset of Targeted CB
+	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB
 
 	mov addr_dma, #equ32_peripherals_base
 	add addr_dma, addr_dma, #equ32_dma_base
@@ -74,14 +80,15 @@ dma32_set_channel:
 		mov r0, #0
 
 	dma32_set_channel_common:
-		pop {r4}
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq channel
-.unreq addr_cb
+.unreq number_cb
 .unreq addr_dma
 .unreq temp
 .unreq temp2
+.unreq addr_cb
 
 
 /**
@@ -118,15 +125,12 @@ dma32_clear_channel:
 	mul temp, channel, temp
 	add addr_dma, addr_dma, temp
 
-	/* Deactivate CB */
+	/* Deactivate and Reset CB */
+
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	bic temp, temp, #equ32_dma_cs_active
-	str temp, [addr_dma, #equ32_dma_cs]
-
-	/* DMA ChannelN Reset */
-	ldr temp, [addr_dma, #equ32_dma_cs]
 	orr temp, temp, #equ32_dma_cs_reset
-	str temp, [addr_dma, #equ32_dma_cs] 
+	str temp, [addr_dma, #equ32_dma_cs]
 
 	mov addr_dma, #equ32_peripherals_base
 	add addr_dma, addr_dma, #equ32_dma_base

@@ -218,7 +218,7 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x8:
-		bl sound32_soundtest
+		bl snd32_soundtest
 		b _os_svc_common
 
 	_os_svc_common:
