@@ -172,10 +172,12 @@ snd32_sounddecode:
 			and wave_type, code, #0xC000
 			lsr wave_type, wave_type, #14
 
-			push {r0-r3,lr}
 			tst status, #2
-			ldreq r0, SND32_DMA_CB_BACK_MEMORY    @ If Active is Front
-			ldrne r0, SND32_DMA_CB_FRONT_MEMORY   @ If Active is Back
+			ldreq temp, SND32_DMA_CB_BACK_MEMORY  @ If Active is Front
+			ldrne temp, SND32_DMA_CB_FRONT_MEMORY @ If Active is Back
+
+			push {r0-r3,lr}
+			mov r0, temp
 			mov r1, wave_length
 			cmp wave_volume, #3
 			moveq r2, #17
@@ -191,7 +193,6 @@ snd32_sounddecode:
 			bleq heap32_wave_square
 			cmp wave_type, #0
 			bleq heap32_wave_triangle
-			mov temp, r0
 			pop {r0-r3,lr}
 
 			push {r0-r3,lr}
