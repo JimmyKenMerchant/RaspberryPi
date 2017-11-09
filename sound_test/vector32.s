@@ -118,6 +118,10 @@ os_reset:
 	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	bl snd32_soundinit
+	pop {r0-r3,lr}
 	
 	mov pc, lr
 
@@ -155,6 +159,14 @@ os_fiq:
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+
+	push {r0-r3,lr}
+	bl snd32_soundplay
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	bl snd32_sounddecode
+	pop {r0-r3,lr}
 
 	macro32_dsb ip
 

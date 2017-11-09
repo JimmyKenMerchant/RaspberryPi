@@ -10,10 +10,12 @@
 #include "system32.h"
 #include "system32.c"
 
+int16 music_code[] = {144, 144, 144, 144, 144, 144, 288, 288, 288, 288, 288, 288};
+
 void _user_start()
 {
 
-	_soundtest();
+	_soundset( music_code, 12, 0, -1 );
 
 	while(1) {
 

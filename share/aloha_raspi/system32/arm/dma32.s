@@ -25,7 +25,7 @@
  * r1: Number of Control Block (CB)
  *
  * Return: r0 (0 as Success, 1 as Error)
- * Error: Channel of DMA is Overflow
+ * Error: Channel of DMA or Number of Next CB is Overflow
  */
 .globl dma32_set_channel
 dma32_set_channel:
@@ -40,6 +40,9 @@ dma32_set_channel:
 	push {r4-r5}
 
 	cmp channel, #14
+	bhi dma32_set_channel_error
+
+	cmp number_cb, #9
 	bhi dma32_set_channel_error
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
@@ -157,6 +160,79 @@ dma32_clear_channel:
 .unreq addr_dma
 .unreq temp
 .unreq temp2
+
+
+/**
+ * function dma32_change_nextcb
+ * Set Control Block
+ *
+ * Parameters
+ * r0: Channel of DMA
+ * r1: Number of Next CB
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error: Channel of DMA or Number of Next CB is Overflow
+ */
+.globl dma32_change_nextcb
+dma32_change_nextcb:
+	/* Auto (Local) Variables, but just Aliases */
+	channel      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	nextconbk    .req r1 @ Parameter, Register for Argument
+	addr_dma     .req r2
+	addr_nextcb  .req r3
+	temp         .req r4
+
+	push {r4}
+
+	cmp channel, #14
+	bhi dma32_change_nextcb_error
+
+	cmp nextconbk, #9
+	bhi dma32_change_nextcb_error
+
+	mov addr_dma, #equ32_peripherals_base
+	add addr_dma, addr_dma, #equ32_dma_base
+	mov temp, #equ32_dma_channel_offset
+	mul temp, channel, temp
+	add addr_dma, addr_dma, temp
+
+	ldr addr_nextcb, DMA32_CB                         @ Base Address of CBs
+	mov temp, #32                                     @ 32-bit Align
+	mul temp, nextconbk, temp                         @ Offset of Next CB
+	add addr_nextcb, addr_nextcb, temp                @ Address of Next CB
+
+	ldr temp, [addr_dma, #equ32_dma_cs]
+	bic temp, temp, #equ32_dma_cs_active
+	str temp, [addr_dma, #equ32_dma_cs]
+
+	macro32_dsb ip
+
+	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk] @ Next CB Address
+
+	ldr temp, [addr_dma, #equ32_dma_cs]
+	orr temp, temp, #equ32_dma_cs_active|equ32_dma_cs_abort
+	str temp, [addr_dma, #equ32_dma_cs]
+
+	macro32_dsb ip
+
+	b dma32_change_nextcb_success
+
+	dma32_change_nextcb_error:
+		mvn r0, #0                             @ -1
+		b dma32_change_nextcb_common
+
+	dma32_change_nextcb_success:
+		mov r0, addr_nextcb
+
+	dma32_change_nextcb_common:
+		pop {r4}
+		mov pc, lr
+
+.unreq channel
+.unreq nextconbk
+.unreq addr_dma
+.unreq addr_nextcb
+.unreq temp
 
 
 /**

@@ -67,3 +67,10 @@ __attribute__((noinline)) void _soundtest()
 {
 	asm volatile ("svc #0x8");
 }
+
+__attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uint32 count, int32 repeat )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x9");
+	return result;
+}

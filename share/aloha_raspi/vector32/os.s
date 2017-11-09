@@ -173,10 +173,10 @@ _os_reset:
 	mov pc, lr
 
 _os_svc:
-	push {lr}                             @ Push fp and lr
+	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #8                               @ Prevent Overflow SVC Table
+	cmp ip, #9                               @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -221,8 +221,12 @@ _os_svc:
 		bl snd32_soundtest
 		b _os_svc_common
 
+	_os_svc_0x9:
+		bl snd32_soundset
+		b _os_svc_common
+
 	_os_svc_common:
-		pop {lr}                         @ Pop fp and lr
+		pop {lr}                         @ Pop lr
 		movs pc, lr
 
 _os_irq:

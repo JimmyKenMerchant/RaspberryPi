@@ -16,7 +16,15 @@ SND32_CODE:                .word 0x00 @ Pointer of Music Code, If End, Automatic
 SND32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared
 SND32_COUNT:               .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
 SND32_REPEAT:              .word 0x00 @ -1 is Infinite Loop
-SND32_STATUS:              .word 0x00 @ Bit[0] Started, Bit[1] CB Back is Active, Bit[2] Same Value Before, Bit[31] Initialized
+
+/**
+ * Bit[0] Started (1)
+ * Bit[1] CB Back is Active (1)
+ * Bit[2] Same Value Before (1)
+ * Bit[3] First of Music Code (0) / Continue of Music Code (1)
+ * Bit[31] Initialized
+ */
+SND32_STATUS:              .word 0x00
 
 /**
  * Usage
@@ -24,7 +32,7 @@ SND32_STATUS:              .word 0x00 @ Bit[0] Started, Bit[1] CB Back is Active
  * 2. Place `snd32_soundplay` and `snd32_sounddecode` on FIQ/IRQ Handler which will be triggered with any timer.
  * 3. Make sure `snd32_soundplay` is forward, `snd32_sounddecode` is backward on placing.
  * 4. Place `snd32_soundset` with needed arguments in `user32.c` as a C Lang function.
- * 5. Music code automatically plays the sound with the assgined values.  
+ * 5. Music code automatically plays the sound with the assigned values.  
  */
 
 /**
@@ -160,8 +168,7 @@ snd32_sounddecode:
 		ldrh temp2, [addr_code, temp]              @ Prior Value
 
 		cmp code, temp2
-		orreq status, #4                           @ If Same Value Between Current and Prior, Set Bit[2]
-		streq status, SND32_STATUS
+		orreq status, status, #4                   @ If Same Value Between Current and Prior, Set Bit[2]
 		beq snd32_sounddecode_main_common
 
 		snd32_sounddecode_main_jump:
@@ -226,6 +233,9 @@ snd32_sounddecode:
 
 			add count, count, #1
 			str count, SND32_COUNT
+			str repeat, SND32_REPEAT
+			orr status, status, #1                @ Active Bit[0]
+			str status, SND32_STATUS
 
 			b snd32_sounddecode_success
 
@@ -234,7 +244,7 @@ snd32_sounddecode:
 		mov length, #0
 		mov count, #0
 		mov repeat, #0
-		bic status, status, #5                     @ Clear Bit[2] and Bit[0]
+		bic status, status, #0xD                   @ Clear Bit[3], Bit[2], and Bit[0]
 
 		str addr_code, SND32_CODE
 		str length, SND32_LENGTH
@@ -253,6 +263,7 @@ snd32_sounddecode:
 		b snd32_sounddecode_common
 
 	snd32_sounddecode_success:
+		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
@@ -282,6 +293,7 @@ snd32_sounddecode:
 snd32_soundplay:
 	/* Auto (Local) Variables, but just Aliases */
 	status .req r0 @ Register for Result, Scratch Register
+	count  .req r1 @ Scratch Register
 
 	ldr status, SND32_STATUS
 
@@ -291,6 +303,9 @@ snd32_soundplay:
 	tst status, #4
 	bicne status, status, #4              @ If Same Value Between Current and Prior
 	bne snd32_soundplay_success
+	
+	tst status, #8
+	bne snd32_soundplay_contine           @ If Continue of Music Code
 
 	push {r0-r3,lr}
 	mov r0, #equ32_snd32_dma_channel
@@ -305,16 +320,34 @@ snd32_soundplay:
 	bl dma32_set_channel
 	pop {r0-r3,lr}
 
-	eor status, #2                        @ Flip Front/Back
+	orr status, status, #8
+
+	b snd32_soundplay_flip
+
+	snd32_soundplay_contine:
+
+		push {r0-r3,lr}
+		mov r0, #equ32_snd32_dma_channel
+		tst status, #2
+		moveq r1, #equ32_snd32_dma_cb_back    @ If Active is Front, Alternate
+		movne r1, #equ32_snd32_dma_cb_front   @ If Active is Back, Alternate
+		bl dma32_change_nextcb
+		pop {r0-r3,lr}
+
+	snd32_soundplay_flip:
+
+		eor status, status, #2                @ Flip Front/Back
 
 	snd32_soundplay_success:
-		str status, SND32_STATUS 
+		str status, SND32_STATUS
+		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
 	snd32_soundplay_common:
 		mov pc, lr
 
 .unreq status
+.unreq count
 
 
 /**
@@ -327,9 +360,7 @@ snd32_soundplay:
  * r2: Count (Offset)
  * r3: Number of Repeat, If -1, Infinite Loop
  *
- * Return: r0 (0 as success, 1 and 2 as error)
- * Error(1): There is No Assigned Music Code
- * Error(2): Not Initialized for These Functions
+ * Return: r0 (0 as success)
  */
 .globl snd32_soundset
 snd32_soundset:
@@ -349,7 +380,7 @@ snd32_soundset:
 	str temp, SND32_COUNT
 	str temp, SND32_REPEAT
 	ldr temp, SND32_STATUS
-	bic temp, temp, #5        @ Clear Active Bit[0] and Same Value Bit[2]
+	bic temp, temp, #0xD      @ Clear Bit[3], Bit[2], and Bit[0]
 	str temp, SND32_STATUS
 
 	macro32_dsb ip

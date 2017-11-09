@@ -55,6 +55,8 @@ __attribute__((noinline)) int32 _load_32( int32* address );
 
 __attribute__((noinline)) void _soundtest();
 
+__attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uint32 count, int32 repeat );
+
 /********************************
  * system32/arm/arm32.s
  ********************************/
