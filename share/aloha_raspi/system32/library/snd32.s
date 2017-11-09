@@ -292,8 +292,9 @@ snd32_sounddecode:
 .globl snd32_soundplay
 snd32_soundplay:
 	/* Auto (Local) Variables, but just Aliases */
-	status .req r0 @ Register for Result, Scratch Register
-	count  .req r1 @ Scratch Register
+	status .req r1 @ Register for Result, Scratch Register
+
+	/* Make sure to take status to r1, otherwise, missing in `tst` occurs */
 
 	ldr status, SND32_STATUS
 
@@ -347,7 +348,6 @@ snd32_soundplay:
 		mov pc, lr
 
 .unreq status
-.unreq count
 
 
 /**

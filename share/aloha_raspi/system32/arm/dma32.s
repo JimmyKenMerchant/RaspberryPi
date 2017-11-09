@@ -210,7 +210,7 @@ dma32_change_nextcb:
 	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk] @ Next CB Address
 
 	ldr temp, [addr_dma, #equ32_dma_cs]
-	orr temp, temp, #equ32_dma_cs_active|equ32_dma_cs_abort
+	orr temp, temp, #equ32_dma_cs_active              @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
 
 	macro32_dsb ip
