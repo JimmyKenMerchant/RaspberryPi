@@ -27,7 +27,7 @@ void _user_start()
 	float32 end_radian = math32_degree_to_radian32( 180 );
 	float32 start_sin = math32_sin32( start_radian );
 	float32 end_sin = math32_sin32( end_radian );
-	uchar8 random = _random( 0, 255 );
+	uchar8 random = _random( 127 );
 
 	int32* renderbuffer0 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
@@ -164,7 +164,7 @@ void _user_start()
 		draw32_copy( FB32_DOUBLEBUFFER_FRONT, renderbuffer4 );
 		fb32_draw_image( renderbuffer4_addr, 0, 0, renderbuffer4_width, renderbuffer4_height, 0, 10, 10, 0 );
 		print32_number( (uint32)random, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII );
-		random = _random( 0, 255 );
+		random = _random( 127 );
 		_sleep( 1000000 );
 	}
 }

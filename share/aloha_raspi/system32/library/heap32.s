@@ -10,6 +10,7 @@
 .globl HEAP32_ADDR
 .globl HEAP32_SIZE
 HEAP32_ADDR:         .word SYSTEM32_HEAP
+HEAP32_MALLOC_SIZE:  .word SYSTEM32_NONCACHE - SYSTEM32_HEAP
 HEAP32_SIZE:         .word SYSTEM32_HEAP_END - SYSTEM32_HEAP
 
 /**
@@ -83,7 +84,7 @@ heap32_malloc:
 	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
 
 	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	ldr heap_size, HEAP32_MALLOC_SIZE           @ In Bytes
 
 	add heap_size, heap_start, heap_size
 
@@ -176,7 +177,7 @@ heap32_mfree:
 	add block_size, block_start, block_size
 
 	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	ldr heap_size, HEAP32_MALLOC_SIZE           @ In Bytes
 	add heap_size, heap_start, heap_size
 
 	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
@@ -559,6 +560,9 @@ heap32_wave_square:
 	cmp block_start, #0
 	beq heap32_wave_square_error1
 
+	cmp length, #2                              @ If Less than 2
+	blo heap32_wave_square_error2
+
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
@@ -581,9 +585,6 @@ heap32_wave_square:
 	.unreq heap_size
 	half      .req r6
 	direction .req r7
-
-	cmp length, #2                              @ If Not 2 and More
-	blo heap32_wave_square_error2
 
 	/* Examine Length to know Odd/Even on Half */
 
@@ -665,8 +666,8 @@ heap32_wave_square:
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
- * r2: Height of Wave (32-bit)
- * r3: Medium of Wave (32-bit)
+ * r2: Value of First Half (32-bit)
+ * r3: Value of Last Half (32-bit)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Pointer of Start Address is Null (0)
@@ -677,8 +678,8 @@ heap32_wave_random:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	length           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	height           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	medium           .req r3
+	first_half       .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	last_half        .req r3
 	block_point      .req r4
 	block_size       .req r5
 	heap_start       .req r6
@@ -694,6 +695,9 @@ heap32_wave_random:
 
 	cmp block_start, #0
 	beq heap32_wave_random_error1
+
+	cmp length, #2                              @ If Less than 2
+	blo heap32_wave_random_error2
 
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
@@ -718,9 +722,6 @@ heap32_wave_random:
 	half      .req r6
 	direction .req r7
 
-	cmp length, #2                              @ If Not 2 and More
-	blo heap32_wave_random_error2
-
 	/* Examine Length to know Odd/Even on Half */
 
 	tst length, #1                              @ If Half is Odd
@@ -742,21 +743,28 @@ heap32_wave_random:
 		cmp direction, #-1
 		blt heap32_wave_random_success
 		cmp direction, #0
-		addeq temp, medium, height
-		subne temp, medium, height
+		moveq temp, first_half          @ Max. Value of First Half
+		movne temp, last_half           @ Max. Value of Last Half
 		
 		heap32_wave_random_loop_half:
 			cmp block_start, block_point
 			bhs heap32_wave_random_loop_common
 
 			heap32_wave_random_loop_half_jump1:
+
+				/**
+				 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
+				 * Decimal 255/127/63/31/15/7/3/1 is prefered.
+				 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
+				 */
+
 				cmp temp, #0x100
-				movhs temp3, #255                     @ If 16-bit
+				bichs temp2, temp, #0xFF              @ If 16-bit, Clear Bit[7:0]
+				subhs temp3, temp, temp2              @ If 16-bit, Get Max. Value in Bit[7:0]
 				movlo temp3, temp                     @ If 8-bit
 
 				push {r0-r3,lr}
-				mov r0, #0
-				mov r1, temp3
+				mov r0, temp3
 				bl arm32_random
 				mov temp2, r0
 				pop {r0-r3,lr}
@@ -769,14 +777,13 @@ heap32_wave_random:
 				lsr temp3, temp, #8
 
 				push {r0-r3,lr}
-				mov r0, #0
-				mov r1, temp3
+				mov r0, temp3
 				bl arm32_random
 				lsl r0, r0, #8
 				add temp2, temp2, r0
 				pop {r0-r3,lr}
 
-				cmp temp2, temp                        @ Ensure Inside of Intended Value
+				cmp temp2, temp                        @ Ensure Range in Intended Value
 				bhi heap32_wave_random_loop_half_jump1
 
 			heap32_wave_random_loop_half_jump2:
@@ -814,8 +821,8 @@ heap32_wave_random:
 
 .unreq block_start
 .unreq length
-.unreq height
-.unreq medium
+.unreq first_half
+.unreq last_half
 .unreq block_point
 .unreq block_size
 .unreq half
@@ -873,6 +880,9 @@ heap32_wave_triangle:
 	cmp block_start, #0
 	beq heap32_wave_triangle_error1
 
+	cmp length, #5                              @ If Less than 5
+	blo heap32_wave_triangle_error2
+
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
@@ -895,9 +905,6 @@ heap32_wave_triangle:
 	.unreq heap_size
 	quarter   .req r5
 	direction .req r6
-
-	cmp length, #5                              @ If Not 5 and More
-	blo heap32_wave_triangle_error2
 
 	/* Examine Length to know Odd/Even on Half and Quarter */
 

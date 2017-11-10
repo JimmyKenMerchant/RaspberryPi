@@ -77,6 +77,9 @@ SYSTEM32_DATAMEMORY:
 
 SYSTEM32_HEAP:
 .space 16777216                       @ Filled With Zero in Default, 16M Bytes
+SYSTEM32_NONCACHE:
+.space 1048576                        @ 1M Bytes
+SYSTEM32_NONCACHE_END:
 SYSTEM32_HEAP_END:
 
 /**

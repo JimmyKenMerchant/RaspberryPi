@@ -44,7 +44,7 @@ __attribute__((noinline)) void _sleep( uint32 u_seconds )
 	asm volatile ("svc #0x4");
 }
 
-__attribute__((noinline)) uchar8 _random( uchar8 range_start, uchar8 range_end )
+__attribute__((noinline)) uchar8 _random( uchar8 range_end )
 {
 	register uchar8 result asm("r0");
 	asm volatile ("svc #0x5");

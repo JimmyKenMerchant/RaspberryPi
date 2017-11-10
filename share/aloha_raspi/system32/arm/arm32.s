@@ -1198,6 +1198,11 @@ arm32_set_cache:
 ARM32_VADESCRIPTOR_ADDR: .word SYSTEM32_VADESCRIPTOR
 ARM32_VADESCRIPTOR_SIZE: .word SYSTEM32_VADESCRIPTOR_END - SYSTEM32_VADESCRIPTOR
 
+.globl ARM32_NONCACHE_ADDR
+.globl ARM32_NONCACHE_SIZE
+ARM32_NONCACHE_ADDR: .word SYSTEM32_NONCACHE
+ARM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
+
 
 /**
  * function arm32_dsb
@@ -1238,22 +1243,17 @@ arm32_isb:
  * This function uses a type of pseudorandom generation, Linear-feedback Shift Register (LFSR)
  *
  * Parameters
- * r0: Start of Range (0-255)
- * r1: End of Range (0-255)
+ * r0: End of Range (0-255)
  *
  * Return: r0 (Random Value)
  */
 .globl arm32_random
 arm32_random:
 	/* Auto (Local) Variables, but just Aliases */
-	range_start     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	range_end       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	byte            .req r2
-	temp            .req r3
-	temp2           .req r4
-	memorymap_base  .req r5
-
-	push {r4-r5}
+	range_end       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	byte            .req r1
+	temp            .req r2
+	temp2           .req r3
 
 	/**
 	 * Fibonacci LFSRs
@@ -1283,29 +1283,65 @@ arm32_random:
 
 		/* Subtract Value of System Timer (Lowest 1 Byte, Max. 0xFF micro seconds) for Randomness */
 
+		.unreq temp2
+		memorymap_base .req r3
+
 		mov memorymap_base, #equ32_peripherals_base
 		add memorymap_base, memorymap_base, #equ32_systemtimer_base
 		ldrb temp, [memorymap_base, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
-
 		sub byte, byte, temp
-		and byte, byte, #0xFF
 
-		cmp byte, range_start
-		blo arm32_random_loop
-		cmp byte, range_end
-		bhi arm32_random_loop
+		/**
+		 * Mask diffrently to increase hit ratio
+		 * Checking Range may make this loop again. This causes unpredictable usage of CPU cycles.
+		 * To Avoid this, set the end of range to decimal 255/127/31/15/7/3/1.
+		 */
+
+		cmp range_end, #0b10000000       @ 128 
+		andhs byte, byte, #0xFF
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b01000000       @ 64 
+		andhs byte, byte, #0x7F
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b00100000       @ 32 
+		andhs byte, byte, #0x3F
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b00010000       @ 16 
+		andhs byte, byte, #0x1F
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b00001000       @ 8 
+		andhs byte, byte, #0xF
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b00000100       @ 4 
+		andhs byte, byte, #0x7
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b00000010       @ 2 
+		andhs byte, byte, #0x3
+		bhs arm32_random_loop_common
+
+		cmp range_end, #0b00000001       @ 1 
+		andhs byte, byte, #0x1
+		movlo byte, #0
+
+		arm32_random_loop_common:
+
+			cmp byte, range_end
+			bhi arm32_random_loop
 
 	arm32_random_common:
 		strb byte, arm32_random_value
 		mov r0, byte
-		pop {r4-r5}
 		mov pc, lr
 
-.unreq range_start
 .unreq range_end
 .unreq byte
 .unreq temp
-.unreq temp2
 .unreq memorymap_base
 
 arm32_random_value: .byte equ32_arm32_random_value
@@ -1327,13 +1363,10 @@ arm32_random_value: .byte equ32_arm32_random_value
 .globl arm32_fill_random
 arm32_fill_random:
 	/* Auto (Local) Variables, but just Aliases */
-	range_start     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	range_end       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	memory_start    .req r2
-	memory_size     .req r3
-	random          .req r4
-
-	push {r4}
+	range_end       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	memory_start    .req r1
+	memory_size     .req r2
+	random          .req r3
 
 	add memory_size, memory_start, memory_size
 
@@ -1352,10 +1385,8 @@ arm32_fill_random:
 
 	arm32_fill_random_common:
 		mov r0, #0
-		pop {r4}
 		mov pc, lr
 
-.unreq range_start
 .unreq range_end
 .unreq memory_start
 .unreq memory_size

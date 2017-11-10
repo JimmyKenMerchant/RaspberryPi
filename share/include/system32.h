@@ -47,7 +47,7 @@ __attribute__((noinline)) uint32 _attach_buffer( int32* buffer );
 
 __attribute__((noinline)) void _sleep( uint32 u_seconds );
 
-__attribute__((noinline)) uchar8 _random( uchar8 range_start, uchar8 range_end );
+__attribute__((noinline)) uchar8 _random( uchar8 range_end );
 
 __attribute__((noinline)) void _store_32( int32* address, int32 data );
 

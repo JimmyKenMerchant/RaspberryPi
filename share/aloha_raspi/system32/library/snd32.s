@@ -8,9 +8,8 @@
  */
 
 
-SND32_DMA_CB_FRONT_MEMORY: .word 0x00 @ Max. 4095
-SND32_DMA_CB_BACK_MEMORY:  .word 0x00 @ Max. 4095
-SND32_DMA_CB_NOISE:        .word 0x00
+SND32_DMA_CB_FRONT_MEMORY: .word SYSTEM32_NONCACHE        @ Max. 4095
+SND32_DMA_CB_BACK_MEMORY:  .word SYSTEM32_NONCACHE + 4096 @ Max. 4095
 
 SND32_CODE:                .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
 SND32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared
@@ -38,72 +37,51 @@ SND32_STATUS:              .word 0x00
 /**
  * Music Code is made off 16-bit Blocks. One Block means one beat.
  * Bit[11:0]: Length of Wave, 0 to 4095
- * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is 0.
- * Bit[15:14]: Type of Wave, 0 is Triangle, 1 is Square, 2 is Random, 3 is Noise (On 3, Length and Volume will be ignored)
+ * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
+ * Bit[15:14]: Type of Wave, 0 is Triangle, 1 is Square, 2/3 is Noise
  */
 
 /**
  * function snd32_soundinit
  * Initialize For Functions in snd32.s
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Memory Space is Not Allocated
+ * Return: r0 (0 as success)
  */
 .globl snd32_soundinit
 snd32_soundinit:
 	/* Auto (Local) Variables, but just Aliases */
-	status        .req r0
-	addr_memory   .req r4 @ Register for Result, Scratch Register
+	temp           .req r0
+	memorymap_base .req r1
 
-	push {r4}
+	ldr temp, SND32_STATUS
+	tst temp, #0x80000000
+	bne snd32_soundinit_success                        @ If Already Initialized
 
-	ldr status, SND32_STATUS
-	tst status, #0x80000000
-	bne snd32_soundinit_success                 @ If Already Initialized
+	orr temp, temp, #0x80000000
+	str temp, SND32_STATUS
 
-	push {r0-r3,lr}
-	mov r0, #0xF00
-	add r0, r0, #0xFF                           @ 4095
-	bl heap32_malloc
-	cmp r0, #0
-	beq snd32_soundinit_error
-	mov addr_memory, r0
-	pop {r0-r3,lr}
+	ldr memorymap_base, SND32_DMA_CB_FRONT_MEMORY
+	mov temp, #4096
+	str temp, [memorymap_base]
+	add memorymap_base, memorymap_base, #4
+	str memorymap_base, SND32_DMA_CB_FRONT_MEMORY
 
-	str addr_memory, SND32_DMA_CB_FRONT_MEMORY
-
-	push {r0-r3,lr}
-	mov r0, #0xF00
-	add r0, r0, #0xFF                           @ 4095
-	bl heap32_malloc
-	cmp r0, #0
-	beq snd32_soundinit_error
-	mov addr_memory, r0
-	pop {r0-r3,lr}
-
-	str addr_memory, SND32_DMA_CB_BACK_MEMORY
-
-	orr status, status, #0x80000000
-	str status, SND32_STATUS
+	ldr memorymap_base, SND32_DMA_CB_BACK_MEMORY
+	mov temp, #4096
+	str temp, [memorymap_base]
+	add memorymap_base, memorymap_base, #4
+	str memorymap_base, SND32_DMA_CB_BACK_MEMORY
 
 	macro32_dsb ip
-
-	b snd32_soundinit_success	
-
-	snd32_soundinit_error:
-		mov r0, #1                                 @ Return with Error 1
-		b snd32_soundinit_common
 
 	snd32_soundinit_success:
 		mov r0, #0                                 @ Return with Success
 
 	snd32_soundinit_common:
-		pop {r4}
 		mov pc, lr
 
-.unreq status
-.unreq addr_memory
-
+.unreq temp
+.unreq memorymap_base
 
 /**
  * function snd32_sounddecode
@@ -139,21 +117,23 @@ snd32_sounddecode:
 	ldr repeat, SND32_REPEAT
 	ldr status, SND32_STATUS
 
+	macro32_dsb ip
+
 	tst status, #0x80000000                   @ If Not Initialized
 	beq snd32_sounddecode_error2
 
 	cmp count, length
 	blo snd32_sounddecode_main
 
+	mov count, #0
+
 	cmp repeat, #-1
-	moveq count, #0
 	beq snd32_sounddecode_main
 
 	cmp repeat, #0
 	beq snd32_sounddecode_free
 
 	sub repeat, repeat, #1
-	mov count, #0
 
 	snd32_sounddecode_main:
 
@@ -162,16 +142,14 @@ snd32_sounddecode:
 		ldrh code, [addr_code, temp]
 
 		cmp temp, #0
-		beq snd32_sounddecode_main_jump            @ If First Block of Music Code
+		orreq status, status, #1                   @ If First Block of Music Code, Active Bit[0]
+		moveq temp2, #0                            @ If First Block of Music Code, Prior Value is Nothing
+		beq snd32_sounddecode_main_wave            @ If First Block of Music Code
 
 		sub temp, temp, #2
 		ldrh temp2, [addr_code, temp]              @ Prior Value
 
-		cmp code, temp2
-		orreq status, status, #4                   @ If Same Value Between Current and Prior, Set Bit[2]
-		beq snd32_sounddecode_main_common
-
-		snd32_sounddecode_main_jump:
+		snd32_sounddecode_main_wave:
 
 			bic wave_length, code, #0xF000
 			and wave_volume, code, #0x3000
@@ -179,62 +157,113 @@ snd32_sounddecode:
 			and wave_type, code, #0xC000
 			lsr wave_type, wave_type, #14
 
-			tst status, #2
-			ldreq temp, SND32_DMA_CB_BACK_MEMORY  @ If Active is Front
-			ldrne temp, SND32_DMA_CB_FRONT_MEMORY @ If Active is Back
+			cmp wave_type, #2
+			bhs snd32_sounddecode_main_wave_noise     @ If Noise
 
+			/* Triangle or Square Wave */
+
+			cmp code, temp2
+			orreq status, status, #4                   @ If Same Value Between Current and Prior, Set Bit[2]
+			beq snd32_sounddecode_main_common
+
+			tst status, #2
+			ldreq temp, SND32_DMA_CB_BACK_MEMORY       @ If Active is Front
+			ldrne temp, SND32_DMA_CB_FRONT_MEMORY      @ If Active is Back
+
+			cmp wave_type, #1
+			beq snd32_sounddecode_main_wave_square
+
+			/* Triangle Wave */
+	
 			push {r0-r3,lr}
 			mov r0, temp
 			mov r1, wave_length
 			cmp wave_volume, #3
-			moveq r2, #17
+			moveq r2, #0
 			cmp wave_volume, #2
-			moveq r2, #33
+			moveq r2, #31
 			cmp wave_volume, #1
-			moveq r2, #65
-			movlo r2, #127                        @ Height in Bytes
-			mov r3, #128                          @ Medium in Bytes
-			cmp wave_type, #2
-			bleq heap32_wave_random
-			cmp wave_type, #1
-			bleq heap32_wave_square
-			cmp wave_type, #0
-			bleq heap32_wave_triangle
+			moveq r2, #63
+			movlo r2, #127                             @ Height in Bytes
+			mov r3, #128                               @ Medium in Bytes
+			bl heap32_wave_triangle
 			pop {r0-r3,lr}
 
-			push {r0-r3,lr}
-			mov r0, temp
-			mov r1, #1                                @ Clean
-			bl arm32_cache_operation_heap
-			pop {r0-r3,lr}
+			b snd32_sounddecode_main_wave_setcb
 
-			tst status, #2
-			moveq temp2, #equ32_snd32_dma_cb_back  @ If Active is Front
-			movne temp2, #equ32_snd32_dma_cb_front @ If Active is Back
+			snd32_sounddecode_main_wave_square:
 
-			push {r0-r6,lr}
-			mov r0, temp2                                           @ CB Number
-			mov r1, #5<<equ32_dma_ti_permap
-			orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
-			mov r2, temp                                            @ Source Address
-			mov r3, #equ32_bus_peripherals_base
-			add r3, r3, #equ32_pwm_base_lower
-			add r3, r3, #equ32_pwm_base_upper
-			add r3, r3, #equ32_pwm_fif1                             @ Destination Address
-			lsl r4, wave_length, #2	                                @ Transfer Length
-			mov r5, #0                                              @ 2D Stride
-			mov r6, temp2                                           @ Next CB Number
-			push {r4-r6}
-			bl dma32_set_cb
-			add sp, sp, #12
-			pop {r0-r6,lr}
+				/* Square Wave */
+
+				push {r0-r3,lr}
+				mov r0, temp
+				mov r1, wave_length
+				cmp wave_volume, #3
+				moveq r2, #0
+				cmp wave_volume, #2
+				moveq r2, #31
+				cmp wave_volume, #1
+				moveq r2, #63
+				movlo r2, #127                             @ Height in Bytes
+				mov r3, #128                               @ Medium in Bytes
+				bl heap32_wave_square
+				pop {r0-r3,lr}
+
+				b snd32_sounddecode_main_wave_setcb
+
+			snd32_sounddecode_main_wave_noise:
+
+				tst status, #2
+				ldreq temp, SND32_DMA_CB_BACK_MEMORY  @ If Active is Front
+				ldrne temp, SND32_DMA_CB_FRONT_MEMORY @ If Active is Back
+
+				push {r0-r3,lr}
+				mov r0, temp
+				mov r1, wave_length
+				cmp wave_volume, #3
+				moveq r2, #31
+				moveq r3, #31
+				cmp wave_volume, #2
+				moveq r2, #63
+				moveq r3, #63
+				cmp wave_volume, #1
+				moveq r2, #127
+				moveq r3, #127
+				movlo r2, #255
+				movlo r3, #255
+				bl heap32_wave_random
+				pop {r0-r3,lr}
+
+			snd32_sounddecode_main_wave_setcb:
+
+				macro32_dsb ip
+
+				tst status, #2
+				moveq temp2, #equ32_snd32_dma_cb_back  @ If Active is Front
+				movne temp2, #equ32_snd32_dma_cb_front @ If Active is Back
+
+				push {r0-r6,lr}
+				mov r0, temp2
+				mov r1, #5<<equ32_dma_ti_permap
+				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+				mov r2, temp                                            @ Source Address
+				mov r3, #equ32_bus_peripherals_base
+				add r3, r3, #equ32_pwm_base_lower
+				add r3, r3, #equ32_pwm_base_upper
+				add r3, r3, #equ32_pwm_fif1                             @ Destination Address
+				lsl r4, wave_length, #2	                                @ Transfer Length
+				mov r5, #0                                              @ 2D Stride
+				mov r6, temp2                                           @ Next CB Number
+				push {r4-r6}
+				bl dma32_set_cb
+				add sp, sp, #12
+				pop {r0-r6,lr}
 
 		snd32_sounddecode_main_common:
 
 			add count, count, #1
 			str count, SND32_COUNT
 			str repeat, SND32_REPEAT
-			orr status, status, #1                @ Active Bit[0]
 			str status, SND32_STATUS
 
 			b snd32_sounddecode_success
@@ -251,6 +280,11 @@ snd32_sounddecode:
 		str count, SND32_COUNT
 		str repeat, SND32_REPEAT
 		str status, SND32_STATUS
+
+		push {r0-r3,lr}
+		mov r0, #equ32_snd32_dma_channel
+		bl dma32_clear_channel
+		pop {r0-r3,lr}
 
 		b snd32_sounddecode_success
 

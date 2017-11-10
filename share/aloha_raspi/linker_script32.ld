@@ -58,6 +58,7 @@ SECTIONS {
 		system32.o(.data)
 		*(.data)
 	}
+	. = ALIGN(0x00100000);
 	.bss : {
 		*(.bss)
 	}
@@ -65,5 +66,4 @@ SECTIONS {
 	.va_system32 : {
 		system32.o(.va_system32)
 	}
-
 }
