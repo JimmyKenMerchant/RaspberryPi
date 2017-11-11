@@ -133,7 +133,7 @@ _os_reset:
 	bl arm32_set_cache
 	pop {r0-r3}
 
-	/* Set Cache Status for HEAP */
+	/* Set Cache Status for Data Memory */
 	push {r0-r3}
 .ifndef __ARMV6
 	mov r0, #1
@@ -146,8 +146,10 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
-	mov r3, #equ32_system32_datamemory_size
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_DATAMEMORY_SIZE
+	ldr r3, [r3]
 	bl arm32_set_cache
 	pop {r0-r3}
 

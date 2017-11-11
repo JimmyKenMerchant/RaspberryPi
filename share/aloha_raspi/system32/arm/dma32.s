@@ -209,9 +209,15 @@ dma32_change_nextcb:
 
 	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk] @ Next CB Address
 
+ldr temp, [addr_dma, #equ32_dma_source_ad]
+macro32_debug temp, 100, 188
+
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	orr temp, temp, #equ32_dma_cs_active              @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
+
+ldr temp, [addr_dma, #equ32_dma_source_ad]
+macro32_debug temp, 100, 200
 
 	macro32_dsb ip
 
@@ -279,7 +285,6 @@ dma32_set_cb:
 	add nextconbk, addr_cb, nextconbk              @ Address of Next CB
 	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB
 
-	
 	/* Channel Block Setting */
 
 	str ti, [addr_cb, #dma32_ti]                   @ Transfer Information
@@ -291,9 +296,11 @@ dma32_set_cb:
 
 	macro32_dsb ip
 
-	macro32_clean_cache addr_cb, ip
+ldr source_ad, [addr_cb, #dma32_source_ad]
 
-	macro32_dsb ip
+macro32_debug source_ad, 100, 150
+
+macro32_clean_cache addr_cb, ip
 
 	b dma32_set_cb_success
 
@@ -320,8 +327,4 @@ dma32_set_cb:
 
 
 .globl DMA32_CB
-DMA32_CB:        .word DMA32_CB0_TI
-
-.balign 32                        @ 32 Bytes (8 Words) Aligned
-DMA32_CB0_TI:
-.space 320                        @ 10 Control Blocks
+DMA32_CB:        .word SYSTEM32_CB

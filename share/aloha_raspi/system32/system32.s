@@ -42,9 +42,10 @@
  */
 
 .section	.data
-.globl SYSTEM32_DATAMEMORY
+.globl SYSTEM32_DATAMEMORY_ADDR
 .globl SYSTEM32_DATAMEMORY_SIZE
-SYSTEM32_DATAMEMORY:      .word 0x00                                          @ First of Data Memory
+SYSTEM32_DATAMEMORY:                                         @ First of Data Memory
+SYSTEM32_DATAMEMORY_ADDR: .word SYSTEM32_DATAMEMORY
 SYSTEM32_DATAMEMORY_SIZE: .word SYSTEM32_DATAMEMORY_END - SYSTEM32_DATAMEMORY
 
 .globl SYSTEM32_HEAP_NONCACHE_ADDR
@@ -121,5 +122,7 @@ SYSTEM32_VADESCRIPTOR_END:
 .section	.noncache_system32
 
 SYSTEM32_NONCACHE:
-.space 1048576                        @ 1M Bytes
+.balign 32                        @ 32 Bytes (8 Words) Aligned
+SYSTEM32_CB:
+.space 320                        @ 10 Control Blocks
 SYSTEM32_NONCACHE_END:

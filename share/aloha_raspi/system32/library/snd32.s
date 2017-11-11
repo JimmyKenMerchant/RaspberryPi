@@ -242,10 +242,13 @@ snd32_sounddecode:
 				moveq temp2, #equ32_snd32_dma_cb_back  @ If Active is Front
 				movne temp2, #equ32_snd32_dma_cb_front @ If Active is Back
 
+macro32_debug temp, 0, 100
+
 				push {r0-r6,lr}
 				mov r0, temp2
 				mov r1, #5<<equ32_dma_ti_permap
 				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+
 				mov r2, temp                                            @ Source Address
 				mov r3, #equ32_bus_peripherals_base
 				add r3, r3, #equ32_pwm_base_lower

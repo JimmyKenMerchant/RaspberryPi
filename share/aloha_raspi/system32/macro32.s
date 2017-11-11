@@ -98,6 +98,20 @@
 
 
 /**
+ * Print Hexadecimal Value of Pointer for Debug
+ */
+.macro macro32_debug_hexa reg0_pointer x_coord y_coord length:req
+	push {r0-r3,lr}
+	mov r0, \reg0_pointer
+	mov r1, #\x_coord
+	mov r2, #\y_coord
+	mov r3, #\length
+	bl print32_debug_hexa
+	pop {r0-r3,lr}
+.endm
+
+
+/**
  * Print Value of Register for Debug
  */
 .macro macro32_debug reg0_number x_coord y_coord:req

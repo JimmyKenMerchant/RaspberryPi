@@ -80,6 +80,7 @@ _os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
 	ldr r2, [r2]
@@ -101,8 +102,52 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_DATAMEMORY
-	mov r3, #equ32_system32_datamemory_size
+	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_DATAMEMORY_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3}
+
+	/* Set Cache Status for HEAP with Non-cache */
+	push {r0-r3}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_section_shareable
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_HEAP_NONCACHE_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_HEAP_NONCACHE_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3}
+
+	/* Set Cache Status for Memory with Non-cache */
+	push {r0-r3}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_section_shareable
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_NONCACHE_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_NONCACHE_SIZE
+	ldr r3, [r3]
 	bl arm32_set_cache
 	pop {r0-r3}
 

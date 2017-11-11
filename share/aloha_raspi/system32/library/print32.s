@@ -17,6 +17,65 @@
  */
 
 
+
+
+
+/**
+ * function print32_debug_hexa
+ * Print Hexadecimal Values in Pointer for Debug Use
+ *
+ * Parameters
+ * r0: Register to Be Shown
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Length
+ *
+ * Return: r0 (0 as sucess)
+ */
+.globl print32_debug_hexa
+print32_debug_hexa:
+	/* Auto (Local) Variables, but just Aliases */
+	pointer           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
+	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
+	color             .req r3 @ Parameter, Register for Argument, Scratch Register
+	color_back        .req r4
+	length            .req r5
+	char_width        .req r6
+	char_height       .req r7
+	font              .req r8
+
+	push {r4-r8,lr}
+	
+	mov length, color
+
+	mvn color, #0
+	mov color_back, #0xFF000000
+	mov char_width, #8
+	mov char_height, #12
+	ldr font, print32_debug_hexa_addr_font
+	ldr font, [font]
+	push {r4-r8}
+	bl print32_hexa
+	add sp, sp, #20
+
+	pop {r4-r8,lr}
+
+	mov pc, lr
+
+print32_debug_hexa_addr_font: .word FONT_MONO_12PX_ASCII
+
+.unreq pointer
+.unreq x_coord
+.unreq y_coord
+.unreq color
+.unreq color_back
+.unreq length
+.unreq char_width
+.unreq char_height
+.unreq font
+
+
 /**
  * function print32_debug
  * Print Number in Register for Debug Use
