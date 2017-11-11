@@ -126,26 +126,6 @@ _os_reset:
 	bl arm32_set_cache
 	pop {r0-r3}
 
-	/* Set Cache Status for Memory with Non-cache */
-	push {r0-r3}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_ARM32_NONCACHE_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_ARM32_NONCACHE_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3}
-
 	macro32_dsb ip
 	macro32_invalidate_tlb_all ip
 	macro32_isb ip

@@ -66,4 +66,8 @@ SECTIONS {
 	.va_system32 : {
 		system32.o(.va_system32)
 	}
+	. = ALIGN(0x00100000);
+	.noncache_system32 : {
+		system32.o(.noncache_system32)
+	}
 }

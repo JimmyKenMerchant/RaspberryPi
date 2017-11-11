@@ -1131,10 +1131,17 @@ arm32_set_cache:
 	cmp size, #0
 	beq arm32_set_cache_error
 
-	add size, size, memorymap_base
+	mov temp, #0x0FF00000
+	orr temp, #0xF0000000
 
-	mov temp, #0xFF00000
-	add temp, #0xF0000000
+	bic temp, size, temp                         @ Clear Bit[31:20]
+	cmp temp, #0
+	addhi size, size, #0x00F00000                @ If Size Overs 1M Bytes Align
+
+	mov temp, #0x0FF00000
+	orr temp, #0xF0000000
+
+	add size, size, memorymap_base
 
 	and memorymap_base, memorymap_base, temp     @ Mask Other than Bit[31:20]
 	and size, size, temp                         @ Mask Other than Bit[31:20]
@@ -1156,7 +1163,7 @@ arm32_set_cache:
 
 	arm32_set_cache_loop:
 		cmp memorymap_base, size
-		bhi arm32_set_cache_success                  @ Inclusive Loop Because of Cut Off by 0xFFF00000
+		bhs arm32_set_cache_success
 		ldr temp, [base_addr]
 		macro32_dsb ip
 		bic temp, temp, #0x000000FF                  @ Clear Except Destination Address
@@ -1197,11 +1204,6 @@ arm32_set_cache:
 .globl ARM32_VADESCRIPTOR_SIZE
 ARM32_VADESCRIPTOR_ADDR: .word SYSTEM32_VADESCRIPTOR
 ARM32_VADESCRIPTOR_SIZE: .word SYSTEM32_VADESCRIPTOR_END - SYSTEM32_VADESCRIPTOR
-
-.globl ARM32_NONCACHE_ADDR
-.globl ARM32_NONCACHE_SIZE
-ARM32_NONCACHE_ADDR: .word SYSTEM32_NONCACHE
-ARM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 
 
 /**

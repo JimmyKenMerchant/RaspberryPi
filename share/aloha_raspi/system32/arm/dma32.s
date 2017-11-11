@@ -293,6 +293,8 @@ dma32_set_cb:
 
 	macro32_clean_cache addr_cb, ip
 
+	macro32_dsb ip
+
 	b dma32_set_cb_success
 
 	dma32_set_cb_error:

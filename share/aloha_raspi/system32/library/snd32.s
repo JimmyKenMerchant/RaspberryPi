@@ -8,8 +8,8 @@
  */
 
 
-SND32_DMA_CB_FRONT_MEMORY: .word SYSTEM32_NONCACHE        @ Max. 4095
-SND32_DMA_CB_BACK_MEMORY:  .word SYSTEM32_NONCACHE + 4096 @ Max. 4095
+SND32_DMA_CB_FRONT_MEMORY: .word SYSTEM32_HEAP_NONCACHE        @ Max. 4095
+SND32_DMA_CB_BACK_MEMORY:  .word SYSTEM32_HEAP_NONCACHE + 4096 @ Max. 4095
 
 SND32_CODE:                .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
 SND32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared

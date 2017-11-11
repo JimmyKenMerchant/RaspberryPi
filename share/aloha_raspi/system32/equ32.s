@@ -581,7 +581,7 @@
 .equ equ32_mmu_section_access_rw_r,       0b0000100000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_rw_rw,      0b0000110000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_r_none,     0b1000010000000000     @ APX[15] and AP[11:10], Privilege Access Only
-.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Memory, Seems Outer (Devices)
+.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Memory, Seems Outer Blocks (DMA and Devices)
 .equ equ32_mmu_section_nonglobal,         0b100000000000000000   @ nG[17], Non-global
 .equ equ32_mmu_supersection,              0b1000000000000000000  @ [18], Bit[8:5] are PA[39:36], Bit[23:20] are PA[35:32]
 .equ equ32_mmu_section_nonsecure,         0b10000000000000000000 @ NS[19]
