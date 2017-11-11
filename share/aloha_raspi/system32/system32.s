@@ -123,6 +123,7 @@ SYSTEM32_VADESCRIPTOR_END:
 
 SYSTEM32_NONCACHE:
 .balign 32                        @ 32 Bytes (8 Words) Aligned
-SYSTEM32_CB:
-.space 320                        @ 10 Control Blocks
+_DMA32_CB:
+.space 32 * equ32_dma32_cb_max
+
 SYSTEM32_NONCACHE_END:

@@ -478,6 +478,7 @@ arm32_cache_operation_heap:
 
 	ldr block_size, [block_start, #-4]
 	add block_size, block_start, block_size
+	sub block_size, block_size, #4
 
 	bic block_start, block_start, #0x1F
 	bic block_size, block_size, #0x1F
@@ -806,7 +807,10 @@ arm32_change_descriptor:
 
 	macro32_dsb ip                                  @ Ensure Completion of Instructions Before
 
-	/* Cache Cleaning by MVA to Point of Coherency (PoC) L1, Not Point of Unification (PoU) L2 */
+	/**
+	 * Cache Cleaning by MVA to Point of Coherency (PoC) Main Memory, Not Point of Unification (PoU) L2
+	 * `..c7, c11, 1` is PoU (L2) by MVA
+	 */
 	bic temp, base_addr, #0x1F                      @ If You Want Cache Operation by Modifier Virtual Address (MVA),
 	mcr p15, 0, temp, c7, c10, 1                    @ Bit[5:0] Should Be Zeros
 
@@ -1141,10 +1145,10 @@ arm32_set_cache:
 	mov temp, #0x0FF00000
 	orr temp, #0xF0000000
 
-	add size, size, memorymap_base
-
 	and memorymap_base, memorymap_base, temp     @ Mask Other than Bit[31:20]
 	and size, size, temp                         @ Mask Other than Bit[31:20]
+
+	add size, size, memorymap_base
 
 	macro32_multicore_id number_core
 

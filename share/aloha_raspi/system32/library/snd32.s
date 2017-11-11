@@ -169,11 +169,6 @@ snd32_sounddecode:
 			tst status, #2
 			ldreq temp, SND32_DMA_CB_BACK_MEMORY       @ If Active is Front
 			ldrne temp, SND32_DMA_CB_FRONT_MEMORY      @ If Active is Back
-
-			cmp wave_type, #1
-			beq snd32_sounddecode_main_wave_square
-
-			/* Triangle Wave */
 	
 			push {r0-r3,lr}
 			mov r0, temp
@@ -186,30 +181,13 @@ snd32_sounddecode:
 			moveq r2, #63
 			movlo r2, #127                             @ Height in Bytes
 			mov r3, #128                               @ Medium in Bytes
-			bl heap32_wave_triangle
+			cmp wave_type, #1
+			bleq heap32_wave_square
+			cmp wave_type, #0
+			bleq heap32_wave_triangle
 			pop {r0-r3,lr}
 
 			b snd32_sounddecode_main_wave_setcb
-
-			snd32_sounddecode_main_wave_square:
-
-				/* Square Wave */
-
-				push {r0-r3,lr}
-				mov r0, temp
-				mov r1, wave_length
-				cmp wave_volume, #3
-				moveq r2, #0
-				cmp wave_volume, #2
-				moveq r2, #31
-				cmp wave_volume, #1
-				moveq r2, #63
-				movlo r2, #127                             @ Height in Bytes
-				mov r3, #128                               @ Medium in Bytes
-				bl heap32_wave_square
-				pop {r0-r3,lr}
-
-				b snd32_sounddecode_main_wave_setcb
 
 			snd32_sounddecode_main_wave_noise:
 
@@ -238,17 +216,23 @@ snd32_sounddecode:
 
 				macro32_dsb ip
 
+				push {r0-r3,lr}
+				mov r0, temp
+				mov r1, #1                                @ Clean
+				bl arm32_cache_operation_heap
+				pop {r0-r3,lr}
+
 				tst status, #2
 				moveq temp2, #equ32_snd32_dma_cb_back  @ If Active is Front
 				movne temp2, #equ32_snd32_dma_cb_front @ If Active is Back
 
-macro32_debug temp, 0, 100
-
 				push {r0-r6,lr}
 				mov r0, temp2
 				mov r1, #5<<equ32_dma_ti_permap
+				orr r1, r1, #equ32_dma_ti_no_wide_bursts
+				orr r1, r1, #0<<equ32_dma_ti_waits
+				orr r1, r1, #0<<equ32_dma_ti_burst_length
 				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
-
 				mov r2, temp                                            @ Source Address
 				mov r3, #equ32_bus_peripherals_base
 				add r3, r3, #equ32_pwm_base_lower
@@ -301,6 +285,7 @@ macro32_debug temp, 0, 100
 
 	snd32_sounddecode_success:
 		macro32_dsb ip
+		macro32_isb ip
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
@@ -329,7 +314,8 @@ macro32_debug temp, 0, 100
 .globl snd32_soundplay
 snd32_soundplay:
 	/* Auto (Local) Variables, but just Aliases */
-	status .req r1 @ Register for Result, Scratch Register
+	temp   .req r0 @ Register for Result, Scratch Register
+	status .req r1 @ Scratch Register
 
 	/* Make sure to take status to r1, otherwise, missing in `tst` occurs */
 
@@ -384,6 +370,7 @@ snd32_soundplay:
 	snd32_soundplay_common:
 		mov pc, lr
 
+.unreq temp
 .unreq status
 
 

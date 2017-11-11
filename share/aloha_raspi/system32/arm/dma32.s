@@ -42,7 +42,7 @@ dma32_set_channel:
 	cmp channel, #14
 	bhi dma32_set_channel_error
 
-	cmp number_cb, #9
+	cmp number_cb, #equ32_dma32_cb_max
 	bhi dma32_set_channel_error
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
@@ -63,12 +63,25 @@ dma32_set_channel:
 	mul temp, channel, temp
 	add addr_dma, addr_dma, temp
 
+	/* Reset DMA */	
+
+	ldr temp, [addr_dma, #equ32_dma_cs]
+	orr temp, temp, #equ32_dma_cs_reset
+	str temp, [addr_dma, #equ32_dma_cs]
+
+	macro32_dsb ip
+
 	/* Load CB */
 	str addr_cb, [addr_dma, #equ32_dma_conblk_ad]
+
+	macro32_dsb ip
 
 	/* Activate CB */
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	orr temp, temp, #equ32_dma_cs_active
+	orr temp, temp, #equ32_dma_cs_wait_writes
+	orr temp, temp, #15<<equ32_dma_cs_panic_priority
+	orr temp, temp, #15<<equ32_dma_cs_priority
 	str temp, [addr_dma, #equ32_dma_cs]
 
 	macro32_dsb ip
@@ -128,23 +141,51 @@ dma32_clear_channel:
 	mul temp, channel, temp
 	add addr_dma, addr_dma, temp
 
-	/* Deactivate and Reset CB */
+	/* Stop Current Control Block */
 
 	ldr temp, [addr_dma, #equ32_dma_cs]
-	bic temp, temp, #equ32_dma_cs_active
-	orr temp, temp, #equ32_dma_cs_reset
+	tst temp, #equ32_dma_cs_active
+	beq dma32_clear_channel_jump                    @ If Not Active
+	bic temp, temp, #equ32_dma_cs_active            @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
 
-	mov addr_dma, #equ32_peripherals_base
-	add addr_dma, addr_dma, #equ32_dma_base
+	dma32_clear_channel_loop1:
+		ldr temp, [addr_dma, #equ32_dma_cs]
+		tst temp, #equ32_dma_cs_paused
+		beq dma32_clear_channel_loop1
 
-	ldr temp, [addr_dma, #equ32_dma_channel_enable]
-	bic temp, temp, temp2, lsl channel              @ Disable DMA ChannelN
-	str temp, [addr_dma, #equ32_dma_channel_enable]
+	mov temp, #0
+
+	str temp, [addr_dma, #equ32_dma_nextconbk]      @ Next CB Address to Zero
 
 	macro32_dsb ip
 
-	b dma32_clear_channel_success
+	ldr temp, [addr_dma, #equ32_dma_cs]
+	orr temp, temp, #equ32_dma_cs_active
+	str temp, [addr_dma, #equ32_dma_cs]
+
+	dma32_clear_channel_loop2:
+		ldr temp, [addr_dma, #equ32_dma_cs]
+		tst temp, #equ32_dma_cs_active
+		bne dma32_clear_channel_loop2
+
+	orr temp, temp, #equ32_dma_cs_reset
+	str temp, [addr_dma, #equ32_dma_cs]
+
+	macro32_dsb ip
+
+	dma32_clear_channel_jump:
+
+		mov addr_dma, #equ32_peripherals_base
+		add addr_dma, addr_dma, #equ32_dma_base
+
+		ldr temp, [addr_dma, #equ32_dma_channel_enable]
+		bic temp, temp, temp2, lsl channel              @ Disable DMA ChannelN
+		str temp, [addr_dma, #equ32_dma_channel_enable]
+
+		macro32_dsb ip
+
+		b dma32_clear_channel_success
 
 	dma32_clear_channel_error:
 		mov r0, #1
@@ -187,7 +228,7 @@ dma32_change_nextcb:
 	cmp channel, #14
 	bhi dma32_change_nextcb_error
 
-	cmp nextconbk, #9
+	cmp nextconbk, #equ32_dma32_cb_max
 	bhi dma32_change_nextcb_error
 
 	mov addr_dma, #equ32_peripherals_base
@@ -201,25 +242,38 @@ dma32_change_nextcb:
 	mul temp, nextconbk, temp                         @ Offset of Next CB
 	add addr_nextcb, addr_nextcb, temp                @ Address of Next CB
 
+	/* Stop Current Control Block */
+
 	ldr temp, [addr_dma, #equ32_dma_cs]
-	bic temp, temp, #equ32_dma_cs_active
+	bic temp, temp, #equ32_dma_cs_active              @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
 
 	macro32_dsb ip
 
 	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk] @ Next CB Address
 
-ldr temp, [addr_dma, #equ32_dma_source_ad]
-macro32_debug temp, 100, 188
+	macro32_dsb ip
 
+	/* Activate CB */
 	ldr temp, [addr_dma, #equ32_dma_cs]
-	orr temp, temp, #equ32_dma_cs_active              @ equ32_dma_cs_abort Cuts Wave
+	orr temp, temp, #equ32_dma_cs_active
 	str temp, [addr_dma, #equ32_dma_cs]
 
-ldr temp, [addr_dma, #equ32_dma_source_ad]
-macro32_debug temp, 100, 200
-
 	macro32_dsb ip
+/*
+ldr temp, [addr_dma, #equ32_dma_ti]            @ Transfer Information
+macro32_debug temp, 200, 300
+ldr temp, [addr_dma, #equ32_dma_source_ad]     @ Source Address
+macro32_debug temp, 200, 312
+ldr temp, [addr_dma, #equ32_dma_dest_ad]       @ Destination Address
+macro32_debug temp, 200, 324
+ldr temp, [addr_dma, #equ32_dma_txfr_len]      @ Transfer Length
+macro32_debug temp, 200, 336
+ldr temp, [addr_dma, #equ32_dma_stride]        @ 2D Stride
+macro32_debug temp, 200, 348
+ldr temp, [addr_dma, #equ32_dma_nextconbk]     @ Next CB Address
+macro32_debug temp, 200, 360
+*/
 
 	b dma32_change_nextcb_success
 
@@ -275,7 +329,7 @@ dma32_set_cb:
 	pop {r4-r6}                                    @ Get Fifth to Seventh Arguments
 	sub sp, sp, #32  
 
-	cmp number_cb, #9
+	cmp number_cb, #equ32_dma32_cb_max
 	bhi dma32_set_cb_error
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
@@ -296,11 +350,12 @@ dma32_set_cb:
 
 	macro32_dsb ip
 
+/*
 ldr source_ad, [addr_cb, #dma32_source_ad]
-
 macro32_debug source_ad, 100, 150
+*/
 
-macro32_clean_cache addr_cb, ip
+	macro32_clean_cache addr_cb, ip
 
 	b dma32_set_cb_success
 
@@ -327,4 +382,5 @@ macro32_clean_cache addr_cb, ip
 
 
 .globl DMA32_CB
-DMA32_CB:        .word SYSTEM32_CB
+DMA32_CB:        .word _DMA32_CB
+

@@ -94,8 +94,8 @@ os_reset:
 	str r1, [r0, #equ32_pwm_rng1]
 
 	mov r1, #equ32_pwm_dmac_enable
-	orr r1, r1, #7<<equ32_pwm_dmac_panic
-	orr r1, r1, #7<<equ32_pwm_dmac_dreq
+	orr r1, r1, #8<<equ32_pwm_dmac_panic
+	orr r1, r1, #8<<equ32_pwm_dmac_dreq
 	str r1, [r0, #equ32_pwm_dmac]
 
 	mov r1, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
