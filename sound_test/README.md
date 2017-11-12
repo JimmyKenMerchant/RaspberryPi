@@ -24,8 +24,13 @@ UNDER CONSTRUCTION!! PLEASE WAIT FOR...
 
 **DMA Transfer to PWM **
 
-* DMA depends on Peripheral Bus of SoC (e.g. Advanced Peripheral Bus: APB), so long transfer length may cause a issue on PWM, such as noisy wave. To avoid this, we need to consider of length of transfer by DMA. Peripheral Bus is used by a lot of peripheral blocks to access CPU or other blocks, which may have more dominance than DMA.
+* DMA mainly depends on Peripheral Bus of SoC (e.g. Advanced Peripheral Bus: APB), so long transfer length may cause a issue on PWM, such as noisy wave. To avoid this, we need to consider of length of transfer by DMA. Peripheral Bus is used by a lot of peripheral blocks to access CPU or other blocks, which may have more dominance than DMA.
 
-* We should NOT use DMA with non-cache region on Control Block (CB) and Source/Destination. Because DMA is not CPU which is made for using with any cache to have speed. Note that DMA is a peripheral block which is made for using with physical memory. This means we may need of any cache operation to Point of Coherency (PoC) to ensure that intended data is stored in physical memory.
+* We should NOT use DMA with cached region for Control Block (CB) and Source/Destination. Because DMA is not CPU which is made for using with any cache to have quick speed. Note that DMA is a peripheral block which is made for using with physical main memory. This means we may need of any cache operation to Point of Coherency (PoC) to ensure that intended data is stored in physical main memory.
 
-* If you use cache on your system, you need to assign any `shareable` attribute on the cache table to memory region which is used by DMA. DMA is a peripheral block, but strongly access physical memory. To ensure data you want to transfer by DMA in physical memory, make sure to set the `shareable` attribute.
+* If you use cache on your system, you need to assign any `shareable` attribute on the cache table to some memory region which is used by DMA. Again, DMA is a peripheral block, but strongly accesses physical main memory. To ensure data you want to transfer by DMA in physical main memory, make sure to set the `shareable` attribute.
+
+* Don't forget that DMA transfer may be missed by inappropriate voltage. Check its voltage supply. If you watch a lightning mark on the right top corner of your output display. It may cause some odd sound.  
+
+* See Application Note (AN) 228, "Implementing DMA on ARM SMP Systems" in Application Notes and Tutorial of ARM website. This article describes relationship between DMA and ARM well.
+

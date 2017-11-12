@@ -29,6 +29,22 @@
 #define float32 float
 #define float64 double
 
+#ifndef bool
+#define bool unsigned char
+#endif
+#ifndef true
+#define true 1
+#endif
+#ifndef false
+#define false 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 void _user_start();
 
 /**
@@ -39,11 +55,8 @@ void _user_start();
 
 __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
 
-__attribute__((noinline)) uint32 _flush_doublebuffer();
 
-__attribute__((noinline)) uint32 _set_doublebuffer( int32* buffer_front, int32* buffer_back );
-
-__attribute__((noinline)) uint32 _attach_buffer( int32* buffer );
+/* system32/arm/arm32.s */
 
 __attribute__((noinline)) void _sleep( uint32 u_seconds );
 
@@ -53,9 +66,94 @@ __attribute__((noinline)) void _store_32( int32* address, int32 data );
 
 __attribute__((noinline)) int32 _load_32( int32* address );
 
+
+/* system32/library/fb32.s */
+
+/**
+ * Flush Back Buffer to Framebuffer and Swap Front and Back
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When buffer is not defined
+ */
+__attribute__((noinline)) uint32 _flush_doublebuffer();
+
+
+/**
+ * Set Buffer for Double Buffer Operation
+ *
+ * Parameters
+ * r0: Pointer of Buffer to Front
+ * r1: Pointer of Buffer to Back
+ *
+ * Return: 0 as success, 1 as error
+ * Error(1): When buffer is not Defined
+ */
+__attribute__((noinline)) uint32 _set_doublebuffer( int32* buffer_front, int32* buffer_back );
+
+
+/**
+ * Attach Buffer to Draw on It
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): Buffer In is not Defined
+ */
+__attribute__((noinline)) uint32 _attach_buffer( int32* buffer );
+
+
+/* system32/library/snd32.s */
+
 __attribute__((noinline)) void _soundtest();
 
 __attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uint32 count, int32 repeat );
+
+
+/**
+ * GPIO Control and Status (Limited Between 0-29)
+ */
+#ifdef __BCM2835
+	#define _gpio_base   0x20200000
+#else
+	/* BCM2836 and BCM2837 Peripheral Base */
+	#define _gpio_base   0x3F200000
+#endif
+
+#define _gpio_gpfsel00     0x00 // GPIO 0-9   Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
+#define _gpio_gpfsel10     0x04 // GPIO 10-19 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
+#define _gpio_gpfsel20     0x08 // GPIO 20-29 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
+
+#define _gpio_gpfsel_0     0 // LSL
+#define _gpio_gpfsel_1     3 // LSL
+#define _gpio_gpfsel_2     6 // LSL
+#define _gpio_gpfsel_3     9 // LSL
+#define _gpio_gpfsel_4     12 // LSL
+#define _gpio_gpfsel_5     15 // LSL
+#define _gpio_gpfsel_6     18 // LSL
+#define _gpio_gpfsel_7     21 // LSL
+#define _gpio_gpfsel_8     24 // LSL
+#define _gpio_gpfsel_9     27 // LSL
+
+#define _gpio_gpfsel_input    0b000
+#define _gpio_gpfsel_output   0b001
+#define _gpio_gpfsel_alt0     0b100
+#define _gpio_gpfsel_alt1     0b101
+#define _gpio_gpfsel_alt2     0b110
+#define _gpio_gpfsel_alt3     0b111
+#define _gpio_gpfsel_alt4     0b011
+#define _gpio_gpfsel_alt5     0b010
+#define _gpio_gpfsel_clear    0b111 // Use With Bit Clear
+
+#define _gpio_gpset0      0x1C // GPIO 0-31, Output Set, each 1 bit, 0 no effect, 1 set Pin
+#define _gpio_gpclr0      0x28 // GPIO 0-31, Output Clear, 0 no effect, 1 clear Pin
+#define _gpio_gplev0      0x34 // GPIO 0-31, Actual Pin Level, 0 law, 1 high
+#define _gpio_gpeds0      0x40 // GPIO 0-31, Event Detect Status, 0 not detect, 1 detect, write 1 to clear
+#define _gpio_gpren0      0x4C // GPIO 0-31, Rising Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
+#define _gpio_gpfen0      0x58 // GPIO 0-31, Falling Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
+#define _gpio_gphen0      0x64 // GPIO 0-31, High Detect, 0 disable, 1 detection corresponds to gpeds_n
+#define _gpio_gplen0      0x70 // GPIO 0-31, Low Detect, 0 disable, 1 detection corresponds to gpeds_n
+#define _gpio_gparen0     0x7C // GPIO 0-31, Async Rising Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
+#define _gpio_gpafen0     0x88 // GPIO 0-31, Async Falling Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
+
+bool _gpio_detect( uchar8 gpio_number );
 
 /********************************
  * system32/arm/arm32.s
@@ -75,22 +173,6 @@ extern uint32 arm32_convert_endianness
 );
 
 extern void arm32_no_op();
-
-extern void arm32_sleep( uint32 u_seconds );
-
-extern uchar8 arm32_random( uchar8 range_start, uchar8 range_end );
-
-extern void arm32_store_32( int32* address, int32 data);
-
-extern void arm32_store_16( int16* address, int16 data);
-
-extern void arm32_store_8( char8* address, char8 data);
-
-extern int32 arm32_load_32( int32* address );
-
-extern int16 arm32_load_16( int16* address );
-
-extern char8 arm32_load_8( char8* address );
 
 extern void arm32_dsb();
 
@@ -220,45 +302,6 @@ extern uint32 fb32_clear_color_block
 extern uint32 fb32_clear_color
 (
 	uint32 color
-);
-
-
-/**
- * Flush Back Buffer to Framebuffer and Swap Front and Back
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): When buffer is not defined
- */
-extern uint32 fb32_flush_doublebuffer();
-
-
-/**
- * Set Buffer for Double Buffer Operation
- *
- * Parameters
- * r0: Pointer of Buffer to Front
- * r1: Pointer of Buffer to Back
- *
- * Return: 0 as success, 1 as error
- * Error(1): When buffer is not Defined
- */
-extern uint32 fb32_set_doublebuffer
-(
-	int32* buffer_front,
-	int32* buffer_back
-
-);
-
-
-/**
- * Attach Buffer to Draw on It
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): Buffer In is not Defined
- */
-extern uint32 fb32_attach_buffer
-(
-	int32* buffer
 );
 
 
@@ -560,9 +603,9 @@ extern float32 math32_tan32
 extern char8* math32_float32_to_string
 (
 	float32 float_number,
-	uint32 min_integer,  // 16 Digits Max
-	uint32 max_decimal,  // Default 8 Digits
-	uint32 min_exponent  // 16 Digits Max
+	uint32 min_integer, // 16 Digits Max
+	uint32 max_decimal, // Default 8 Digits
+	uint32 min_exponent // 16 Digits Max
 );
 
 
@@ -573,7 +616,7 @@ extern char8* math32_float32_to_string
  */
 extern char8* math32_int32_to_string_deci
 (
-	int32 number,      // If You Use This for uint32, You Need to Cast It to int32 
+	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
 	uint32 bool_signed
 );
@@ -586,7 +629,7 @@ extern char8* math32_int32_to_string_deci
  */
 extern char8* math32_int32_to_string_hexa
 (
-	int32 number,      // If You Use This for uint32, You Need to Cast It to int32 
+	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
 	uint32 bool_signed,
 	uint32 bool_basemark

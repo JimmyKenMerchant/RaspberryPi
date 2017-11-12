@@ -106,7 +106,7 @@ snd32_sounddecode:
 	temp        .req r9
 	temp2       .req r10
 
-	push {r4-r10}
+	push {r4-r10,lr}                          @ Style of Enter/Return (2017 Winter)
 
 	ldr addr_code, SND32_CODE
 	cmp addr_code, #0
@@ -116,8 +116,6 @@ snd32_sounddecode:
 	ldr count, SND32_COUNT
 	ldr repeat, SND32_REPEAT
 	ldr status, SND32_STATUS
-
-	macro32_dsb ip
 
 	tst status, #0x80000000                   @ If Not Initialized
 	beq snd32_sounddecode_error2
@@ -130,10 +128,10 @@ snd32_sounddecode:
 	cmp repeat, #-1
 	beq snd32_sounddecode_main
 
+	sub repeat, repeat, #1
+
 	cmp repeat, #0
 	beq snd32_sounddecode_free
-
-	sub repeat, repeat, #1
 
 	snd32_sounddecode_main:
 
@@ -157,11 +155,6 @@ snd32_sounddecode:
 			and wave_type, code, #0xC000
 			lsr wave_type, wave_type, #14
 
-			cmp wave_type, #2
-			bhs snd32_sounddecode_main_wave_noise     @ If Noise
-
-			/* Triangle or Square Wave */
-
 			cmp code, temp2
 			orreq status, status, #4                   @ If Same Value Between Current and Prior, Set Bit[2]
 			beq snd32_sounddecode_main_common
@@ -169,8 +162,13 @@ snd32_sounddecode:
 			tst status, #2
 			ldreq temp, SND32_DMA_CB_BACK_MEMORY       @ If Active is Front
 			ldrne temp, SND32_DMA_CB_FRONT_MEMORY      @ If Active is Back
-	
-			push {r0-r3,lr}
+
+			cmp wave_type, #2
+			bhs snd32_sounddecode_main_wave_noise      @ If Noise
+
+			/* Triangle or Square Wave */
+
+			push {r0-r3}
 			mov r0, temp
 			mov r1, wave_length
 			cmp wave_volume, #3
@@ -185,17 +183,13 @@ snd32_sounddecode:
 			bleq heap32_wave_square
 			cmp wave_type, #0
 			bleq heap32_wave_triangle
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			b snd32_sounddecode_main_wave_setcb
 
 			snd32_sounddecode_main_wave_noise:
 
-				tst status, #2
-				ldreq temp, SND32_DMA_CB_BACK_MEMORY  @ If Active is Front
-				ldrne temp, SND32_DMA_CB_FRONT_MEMORY @ If Active is Back
-
-				push {r0-r3,lr}
+				push {r0-r3}
 				mov r0, temp
 				mov r1, wave_length
 				cmp wave_volume, #3
@@ -210,26 +204,24 @@ snd32_sounddecode:
 				movlo r2, #255
 				movlo r3, #255
 				bl heap32_wave_random
-				pop {r0-r3,lr}
+				pop {r0-r3}
 
 			snd32_sounddecode_main_wave_setcb:
 
-				macro32_dsb ip
-
-				push {r0-r3,lr}
+				push {r0-r3}
 				mov r0, temp
 				mov r1, #1                                @ Clean
 				bl arm32_cache_operation_heap
-				pop {r0-r3,lr}
+				pop {r0-r3}
 
 				tst status, #2
 				moveq temp2, #equ32_snd32_dma_cb_back  @ If Active is Front
 				movne temp2, #equ32_snd32_dma_cb_front @ If Active is Back
 
-				push {r0-r6,lr}
+				push {r0-r6}
 				mov r0, temp2
 				mov r1, #5<<equ32_dma_ti_permap
-				orr r1, r1, #equ32_dma_ti_no_wide_bursts
+				orr r1, r1, #equ32_dma_ti_no_wide_bursts                @ For Periodical Transfer
 				orr r1, r1, #0<<equ32_dma_ti_waits
 				orr r1, r1, #0<<equ32_dma_ti_burst_length
 				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
@@ -244,7 +236,7 @@ snd32_sounddecode:
 				push {r4-r6}
 				bl dma32_set_cb
 				add sp, sp, #12
-				pop {r0-r6,lr}
+				pop {r0-r6}
 
 		snd32_sounddecode_main_common:
 
@@ -259,19 +251,18 @@ snd32_sounddecode:
 		mov addr_code, #0
 		mov length, #0
 		mov count, #0
-		mov repeat, #0
 		bic status, status, #0xD                   @ Clear Bit[3], Bit[2], and Bit[0]
 
 		str addr_code, SND32_CODE
 		str length, SND32_LENGTH
 		str count, SND32_COUNT
-		str repeat, SND32_REPEAT
+		str repeat, SND32_REPEAT                   @ Repeat is Already Zero
 		str status, SND32_STATUS
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
 		bl dma32_clear_channel
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		b snd32_sounddecode_success
 
@@ -285,12 +276,10 @@ snd32_sounddecode:
 
 	snd32_sounddecode_success:
 		macro32_dsb ip
-		macro32_isb ip
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
-		pop {r4-r10}
-		mov pc, lr
+		pop {r4-r10,pc}                            @ Style of Enter/Return (2017 Winter)
 
 .unreq addr_code
 .unreq length

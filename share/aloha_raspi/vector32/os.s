@@ -68,7 +68,10 @@ _os_reset:
 	bl os_reset
 	pop {r0-r3}
 
-	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
+	/**
+	 * Set Cache Status for Memory Using as Framebuffer (By Section)
+	 * VideoCore seemes to connect with ARM closely, but make sure to add `shareable` attribute just in case.
+	 */
 	push {r0-r3}
 .ifndef __ARMV6
 	mov r0, #1
@@ -80,6 +83,7 @@ _os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
 	ldr r2, [r2]
@@ -108,7 +112,11 @@ _os_reset:
 	bl arm32_set_cache
 	pop {r0-r3}
 
-	/* Set Cache Status for HEAP with Non-cache */
+	/**
+	 * Set Cache Status for HEAP with Non-cache
+	 * Non-cache HEAP is used for peripheral blocks.
+	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
+	 */
 	push {r0-r3}
 .ifndef __ARMV6
 	mov r0, #1
@@ -129,7 +137,11 @@ _os_reset:
 	bl arm32_set_cache
 	pop {r0-r3}
 
-	/* Set Cache Status for Memory with Non-cache */
+	/**
+	 * Set Cache Status for Memory with Non-cache
+	 * Non-cache memory is used for peripheral blocks.
+	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
+	 */
 	push {r0-r3}
 .ifndef __ARMV6
 	mov r0, #1

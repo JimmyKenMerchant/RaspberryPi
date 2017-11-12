@@ -74,3 +74,16 @@ __attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uin
 	asm volatile ("svc #0x9");
 	return result;
 }
+
+bool _gpio_detect( uchar8 gpio_number )
+{
+	int32 value = _load_32( (int32*)(_gpio_base|_gpio_gpeds0) );
+	if (value & 1 << gpio_number ) {
+		value = 1 << gpio_number;
+		_store_32( (int32*)(_gpio_base|_gpio_gpeds0), value );
+		return true;
+	} else {
+		return false;
+	}
+}
+

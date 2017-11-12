@@ -80,8 +80,8 @@ dma32_set_channel:
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	orr temp, temp, #equ32_dma_cs_active
 	orr temp, temp, #equ32_dma_cs_wait_writes
-	orr temp, temp, #15<<equ32_dma_cs_panic_priority
-	orr temp, temp, #15<<equ32_dma_cs_priority
+	orr temp, temp, #0<<equ32_dma_cs_panic_priority
+	orr temp, temp, #0<<equ32_dma_cs_priority
 	str temp, [addr_dma, #equ32_dma_cs]
 
 	macro32_dsb ip
