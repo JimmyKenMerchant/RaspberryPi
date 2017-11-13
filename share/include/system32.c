@@ -25,14 +25,14 @@ __attribute__((noinline)) uint32 _flush_doublebuffer()
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_doublebuffer( int32* buffer_front, int32* buffer_back )
+__attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front, uint32 address_buffer_back )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x2");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _attach_buffer( int32* buffer )
+__attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x3");
@@ -51,12 +51,12 @@ __attribute__((noinline)) uchar8 _random( uchar8 range_end )
 	return result;
 }
 
-__attribute__((noinline)) void _store_32( int32* address, int32 data )
+__attribute__((noinline)) void _store_32( uint32 address, int32 data )
 {
 	asm volatile ("svc #0x6");
 }
 
-__attribute__((noinline)) int32 _load_32( int32* address )
+__attribute__((noinline)) int32 _load_32( uint32 address )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x7");
@@ -68,7 +68,7 @@ __attribute__((noinline)) void _soundtest()
 	asm volatile ("svc #0x8");
 }
 
-__attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uint32 count, int32 repeat )
+__attribute__((noinline)) int32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x9");
@@ -77,10 +77,10 @@ __attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uin
 
 bool _gpio_detect( uchar8 gpio_number )
 {
-	int32 value = _load_32( (int32*)(_gpio_base|_gpio_gpeds0) );
+	int32 value = _load_32( _gpio_base|_gpio_gpeds0 );
 	if (value & 1 << gpio_number ) {
 		value = 1 << gpio_number;
-		_store_32( (int32*)(_gpio_base|_gpio_gpeds0), value );
+		_store_32( _gpio_base|_gpio_gpeds0, value );
 		return true;
 	} else {
 		return false;

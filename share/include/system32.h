@@ -28,6 +28,7 @@
 #define int64 long long int
 #define float32 float
 #define float64 double
+#define music_code int16
 
 #ifndef bool
 #define bool unsigned char
@@ -44,6 +45,10 @@
 #ifndef FALSE
 #define FALSE 0
 #endif
+
+/* Pointers, Array of Address of Data */
+
+#define String char8*
 
 void _user_start();
 
@@ -62,9 +67,9 @@ __attribute__((noinline)) void _sleep( uint32 u_seconds );
 
 __attribute__((noinline)) uchar8 _random( uchar8 range_end );
 
-__attribute__((noinline)) void _store_32( int32* address, int32 data );
+__attribute__((noinline)) void _store_32( uint32 address, int32 data );
 
-__attribute__((noinline)) int32 _load_32( int32* address );
+__attribute__((noinline)) int32 _load_32( uint32 address );
 
 
 /* system32/library/fb32.s */
@@ -88,7 +93,7 @@ __attribute__((noinline)) uint32 _flush_doublebuffer();
  * Return: 0 as success, 1 as error
  * Error(1): When buffer is not Defined
  */
-__attribute__((noinline)) uint32 _set_doublebuffer( int32* buffer_front, int32* buffer_back );
+__attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front, uint32 address_buffer_back );
 
 
 /**
@@ -97,14 +102,14 @@ __attribute__((noinline)) uint32 _set_doublebuffer( int32* buffer_front, int32* 
  * Return: 0 as sucess, 1 as error
  * Error(1): Buffer In is not Defined
  */
-__attribute__((noinline)) uint32 _attach_buffer( int32* buffer );
+__attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
 
 
 /* system32/library/snd32.s */
 
 __attribute__((noinline)) void _soundtest();
 
-__attribute__((noinline)) int32 _soundset( int16* music_code, uint32 length, uint32 count, int32 repeat );
+__attribute__((noinline)) int32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
 
 
 /**
@@ -167,7 +172,7 @@ bool _gpio_detect( uchar8 gpio_number );
  */
 extern uint32 arm32_convert_endianness
 (
-	int32* data,
+	uint32 address_word,
 	uint32 size,
 	uint32 align_bytes
 );
@@ -185,9 +190,9 @@ extern void arm32_isb();
  * system32/library/fb32.s
  ********************************/
 
-extern int32* FB32_FRAMEBUFFER;
-extern int32* FB32_DOUBLEBUFFER_BACK;
-extern int32* FB32_DOUBLEBUFFER_FRONT;
+extern uint32 FB32_FRAMEBUFFER;
+extern uint32 FB32_DOUBLEBUFFER_BACK;
+extern uint32 FB32_DOUBLEBUFFER_FRONT;
 
 extern uint32 FB32_ADDR;
 extern uint32 FB32_WIDTH;
@@ -264,7 +269,7 @@ extern uint64 fb32_draw_line
  */
 extern uint32 fb32_draw_image
 (
-	int32* image_point,
+	uint32 address_image,
 	int32 x_coord,
 	int32 y_coord,
 	uint32 width,
@@ -327,8 +332,8 @@ extern uint32 print32_set_caret
  */
 extern int32 print32_strindex
 (
-	char8* string,
-	char8* string_key
+	String string,
+	String string_key
 );
 
 
@@ -339,7 +344,7 @@ extern int32 print32_strindex
  */
 extern int32 print32_charindex
 (
-	char8* string,
+	String string,
 	char8 character_key
 );
 
@@ -353,10 +358,10 @@ extern int32 print32_charindex
  *
  * Return: Pointer of Concatenated String
  */
-extern char8* print32_strcat
+extern String print32_strcat
 (
-	char8* string1,
-	char8* string2
+	String string1,
+	String string2
 );
 
 
@@ -367,7 +372,7 @@ extern char8* print32_strcat
  */
 extern uint32 print32_strlen
 (
-	char8* string
+	String string
 );
 
 
@@ -379,7 +384,7 @@ extern uint32 print32_strlen
  */
 extern uint64 print32_string
 (
-	char8* string,
+	String string,
 	int32 x_coord,
 	int32 y_coord,
 	uint32 color,
@@ -387,7 +392,7 @@ extern uint64 print32_string
 	uint32 length,
 	uint32 width,
 	uint32 height,
-	int32* font_base
+	uint32 address_font_base
 );
 
 
@@ -407,7 +412,7 @@ extern uint64 print32_number_double
 	uint32 length,
 	uint32 width,
 	uint32 height,
-	int32* font_base
+	uint32 address_font_base
 );
 
 
@@ -427,7 +432,7 @@ extern uint64 print32_number
 	uint32 length,
 	uint32 width,
 	uint32 height,
-	int32* font_base
+	uint32 address_font_base
 );
 
 
@@ -447,8 +452,8 @@ extern uint64 print32_number
 
 extern uint32 draw32_antialias
 (
-	int32* buffer_result,
-	int32* buffer_base
+	uint32 address_buffer_result,
+	uint32 address_buffer_base
 );
 
 /**
@@ -460,7 +465,7 @@ extern uint32 draw32_antialias
  */
 extern uint32 draw32_fill_color
 (
-	int32* buffer
+	uint32 address_buffer
 );
 
 
@@ -473,8 +478,8 @@ extern uint32 draw32_fill_color
  */
 extern uint32 draw32_mask_image
 (
-	int32* buffer_mask,
-	int32* buffer_base,
+	uint32 address_buffer_mask,
+	uint32 address_buffer_base,
 	int32 x_coord, // Mask
 	int32 y_coord // Mask
 );
@@ -488,7 +493,7 @@ extern uint32 draw32_mask_image
  */
 extern uint32 draw32_change_alpha_argb
 (
-	int32* data,
+	uint32 address_image,
 	uint32 size,
 	uint32 alpha // 0-7 bits
 );
@@ -501,7 +506,7 @@ extern uint32 draw32_change_alpha_argb
  */
 extern uint32 draw32_rgba_to_argb
 (
-	int32* data,
+	uint32 address_image,
 	uint32 size
 );
 
@@ -514,8 +519,8 @@ extern uint32 draw32_rgba_to_argb
  */
 extern uint32 draw32_copy
 (
-	int32* buffer_in,
-	int32* buffer_out
+	uint32 address_buffer_in,
+	uint32 address_buffer_out
 );
 
 
@@ -531,12 +536,32 @@ extern uint32 draw32_copy
  */
 extern uint32 draw32_set_renderbuffer
 (
-	int32* buffer,
+	uint32 address_buffer,
 	uint32 width,
 	uint32 height,
 	uint32 depth
 );
 
+
+/********************************
+ * system32/library/snd32.s
+ ********************************/
+
+/**
+ * function snd32_musiclen
+ * Count 2-Bytes Beats of Music Code
+ *
+ * Parameters
+ * r0: Pointer of Array of Music Code
+ *
+ * Usage: r0-r2
+ * Return: r0 (Number of Beats in Music Code) Maximum of 4,294,967,295 Beats
+ */
+
+extern uint32 snd32_musiclen
+(
+	music_code* music
+);
 
 
 /********************************
@@ -600,7 +625,7 @@ extern float32 math32_tan32
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern char8* math32_float32_to_string
+extern String math32_float32_to_string
 (
 	float32 float_number,
 	uint32 min_integer, // 16 Digits Max
@@ -614,7 +639,7 @@ extern char8* math32_float32_to_string
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern char8* math32_int32_to_string_deci
+extern String math32_int32_to_string_deci
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
@@ -627,7 +652,7 @@ extern char8* math32_int32_to_string_deci
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern char8* math32_int32_to_string_hexa
+extern String math32_int32_to_string_hexa
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
@@ -640,20 +665,20 @@ extern char8* math32_int32_to_string_hexa
  * system32/library/heap32.s
  ********************************/
 
-extern int32* heap32_malloc( uint32 block_size );
+extern uint32 heap32_malloc( uint32 block_size );
 
 
-extern uint32 heap32_mfree( int32* address );
+extern uint32 heap32_mfree( uint32 address );
 
 
-extern int32* heap32_mcopy( int32* address_dst, int32* address_src, uint32 offset, uint32 size );
+extern uint32 heap32_mcopy( uint32 address_dst, uint32 address_src, uint32 offset, uint32 size );
 
 
 /********************************
  * system32/library/font_mono_12px.s
  ********************************/
 
-extern int32* FONT_MONO_12PX_ASCII;
+extern uint32 FONT_MONO_12PX_ASCII;
 
 
 /**
@@ -677,7 +702,7 @@ extern uint16 COLOR16_WHITE;
 extern uint16 COLOR16_LIGHTGRAY;
 extern uint16 COLOR16_GRAY;
 extern uint16 COLOR16_BLACK;
-extern int32* COLOR16_SAMPLE_IMAGE;
+extern uint32 COLOR16_SAMPLE_IMAGE;
 
 extern uint32 COLOR32_RED;
 extern uint32 COLOR32_GREEN;
@@ -702,7 +727,7 @@ extern uint32 COLOR32_BLACK;
  * system32/library/data.s
  ********************************/
 
-extern int32* DATA_COLOR32_SAMPLE_IMAGE0;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE0;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
-extern int32* DATA_COLOR32_SAMPLE_IMAGE1;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE1;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;

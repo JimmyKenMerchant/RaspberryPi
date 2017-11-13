@@ -13,9 +13,9 @@
 void _user_start()
 {
 
-	char8 string1[] = "ALOHA!\n\tHello World, Everyone!\0";
-	char8 string2[] = "Konnichiwa!\n\tSekai No Minasan!\0";
-	char8 newline[] = "\n\0";
+	String string1 = "ALOHA!\n\tHello World, Everyone!\0";
+	String string2 = "Konnichiwa!\n\tSekai No Minasan!\0";
+	String newline = "\n\0";
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
 	uint32 color = COLOR32_WHITE;
@@ -35,7 +35,7 @@ void _user_start()
 
 	int32 search_string = print32_strindex( string1, "HA!" );
 
-	char8* copy_string1 = (char8*)heap32_malloc(7); // 28 Bytes
+	String copy_string1 = (String)heap32_malloc(7); // 28 Bytes
 
 	copy_string1[0] = 0x56; // "V"
 	copy_string1[1] = 0x57; // "W"
@@ -44,9 +44,9 @@ void _user_start()
 	copy_string1[4] = 0x5A; // "Z"
 	copy_string1[5] = 0x0; // "\0"
 
-	char8* copy_string2 = (char8*)heap32_malloc(7); // 28 Bytes
+	String copy_string2 = (String)heap32_malloc(7); // 28 Bytes
 
-	int32* error = heap32_mcopy( (int32*)copy_string2, (int32*)copy_string1, 1, 3);
+	uint32 error = heap32_mcopy( (uint32)copy_string2, (uint32)copy_string1, 1, 3);
 
 	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -63,9 +63,9 @@ void _user_start()
 	print32_set_caret( print32_number( (uint32)error, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	heap32_mfree( (int32*)copy_string1 );
+	heap32_mfree( (uint32)copy_string1 );
 
-	heap32_mfree( (int32*)copy_string2 );
+	heap32_mfree( (uint32)copy_string2 );
 
 	_sleep( 10000000 );
 

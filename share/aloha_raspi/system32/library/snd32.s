@@ -422,6 +422,43 @@ snd32_soundset:
 
 
 /**
+ * function snd32_musiclen
+ * Count 2-Bytes Beats of Music Code
+ *
+ * Parameters
+ * r0: Pointer of Array of Music Code
+ *
+ * Usage: r0-r2
+ * Return: r0 (Number of Beats in Music Code) Maximum of 4,294,967,295 Beats
+ */
+.globl snd32_musiclen
+snd32_musiclen:
+	/* Auto (Local) Variables, but just Aliases */
+	music_point       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	music_hword       .req r1
+	length            .req r2
+
+	mov length, #0
+
+	snd32_musiclen_loop:
+		ldrh music_hword, [music_point]           @ Load Half Word (16-bit)
+		cmp music_hword, #0                       @ NULL Character (End of String) Checker
+		beq snd32_musiclen_common                 @ Break Loop if Null Character
+
+		add music_point, music_point, #2
+		add length, length, #1
+		b snd32_musiclen_loop
+
+	snd32_musiclen_common:
+		mov r0, length
+		mov pc, lr
+
+.unreq music_point
+.unreq music_hword
+.unreq length
+
+
+/**
  * function snd32_soundtest
  *
  * Parameters

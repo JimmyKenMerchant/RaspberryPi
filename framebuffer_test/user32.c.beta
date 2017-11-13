@@ -13,8 +13,8 @@
 void _user_start()
 {
 
-	char8 string[] = "ALOHA!\n\tHello World, Everyone!\0";
-	char8 newline[] = "\n\0";
+	String string = "ALOHA!\n\tHello World, Everyone!\0";
+	String newline = "\n\0";
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	uint32 number = 0x80000000;
@@ -29,11 +29,11 @@ void _user_start()
 	float32 end_sin = math32_sin32( end_radian );
 	uchar8 random = _random( 127 );
 
-	int32* renderbuffer0 = heap32_malloc(5);
+	uint32 renderbuffer0 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 	_attach_buffer( renderbuffer0 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
-	int32* renderbuffer1 = heap32_malloc(5);
+	uint32 renderbuffer1 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer1, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 	_attach_buffer( renderbuffer1 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
@@ -52,35 +52,35 @@ void _user_start()
 	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 	fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 520, 64, 64, 0, 0, 0, 0 );
 
-	char8* float_string1 = math32_float32_to_string( start_sin, 0, 10, 0 );
+	String float_string1 = math32_float32_to_string( start_sin, 0, 10, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( float_string1, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( float_string1 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* float_string2 = math32_float32_to_string( end_sin, 0, 10, 0 );
+	String float_string2 = math32_float32_to_string( end_sin, 0, 10, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( float_string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( float_string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* float_string3 = math32_float32_to_string( float_number3, 0, 20, 0 );
+	String float_string3 = math32_float32_to_string( float_number3, 0, 20, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( float_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( float_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* num_string = math32_int32_to_string_deci( number, 0, 1 );
+	String num_string = math32_int32_to_string_deci( number, 0, 1 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_number( (uint32)num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* num_string3 = math32_int32_to_string_hexa( number3, 6, 1, 0 );
+	String num_string3 = math32_int32_to_string_hexa( number3, 6, 1, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_number( (uint32)num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* num_string2 = math32_int32_to_string_hexa( number2, 6, 1, 1 );
+	String num_string2 = math32_int32_to_string_hexa( number2, 6, 1, 1 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	char8* num_cat = print32_strcat( num_string, num_string2 );
+	String num_cat = print32_strcat( num_string, num_string2 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( num_cat, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( num_cat ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
@@ -103,29 +103,29 @@ void _user_start()
 	//fb32_draw_circle( COLOR32_BLUE, 300, 300, 150, 200 );
 	//fb32_draw_circle( COLOR32_CYAN, -100, 500, 200, 175 );
 
-	int32* renderbuffer2 = heap32_malloc(5);
+	uint32 renderbuffer2 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer2, 300, 300, 32 );
-	int32* renderbuffer2_addr = (int32*)arm32_load_32( renderbuffer2 );
-	uint32 renderbuffer2_width = arm32_load_32( renderbuffer2 + 1 ); // 4 bytes offset
-	uint32 renderbuffer2_height = arm32_load_32( renderbuffer2 + 2 ); // 8 bytes offset
+	uint32 renderbuffer2_addr = _load_32( renderbuffer2 );
+	uint32 renderbuffer2_width = _load_32( renderbuffer2 + 4 ); // 4 bytes offset
+	uint32 renderbuffer2_height = _load_32( renderbuffer2 + 8 ); // 8 bytes offset
 
-	int32* renderbuffer3 = heap32_malloc(5);
+	uint32 renderbuffer3 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer3, 300, 300, 32 );
-	int32* renderbuffer3_addr = (int32*)arm32_load_32( renderbuffer3 );
-	uint32 renderbuffer3_width = arm32_load_32( renderbuffer3 + 1 ); // 4 bytes offset
-	uint32 renderbuffer3_height = arm32_load_32( renderbuffer3 + 2 ); // 8 bytes offset
+	uint32 renderbuffer3_addr = _load_32( renderbuffer3 );
+	uint32 renderbuffer3_width = _load_32( renderbuffer3 + 4 ); // 4 bytes offset
+	uint32 renderbuffer3_height = _load_32( renderbuffer3 + 8 ); // 8 bytes offset
 
-	int32* renderbuffer4 = heap32_malloc(5);
+	uint32 renderbuffer4 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer4, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	int32* renderbuffer4_addr = (int32*)arm32_load_32( renderbuffer4 );
-	uint32 renderbuffer4_width = arm32_load_32( renderbuffer4 + 1 ); // 4 bytes offset
-	uint32 renderbuffer4_height = arm32_load_32( renderbuffer4 + 2 ); // 8 bytes offset
+	uint32 renderbuffer4_addr = _load_32( renderbuffer4 );
+	uint32 renderbuffer4_width = _load_32( renderbuffer4 + 4 ); // 4 bytes offset
+	uint32 renderbuffer4_height = _load_32( renderbuffer4 + 8 ); // 8 bytes offset
 
-	int32* renderbuffer5 = heap32_malloc(5);
+	uint32 renderbuffer5 = heap32_malloc(5);
 	draw32_set_renderbuffer( renderbuffer5, 300, 300, 32 );
-	int32* renderbuffer5_addr = (int32*)arm32_load_32( renderbuffer5 );
-	uint32 renderbuffer5_width = arm32_load_32( renderbuffer5 + 1 ); // 4 bytes offset
-	uint32 renderbuffer5_height = arm32_load_32( renderbuffer5 + 2 ); // 8 bytes offset
+	uint32 renderbuffer5_addr = _load_32( renderbuffer5 );
+	uint32 renderbuffer5_width = _load_32( renderbuffer5 + 4 ); // 4 bytes offset
+	uint32 renderbuffer5_height = _load_32( renderbuffer5 + 8 ); // 8 bytes offset
 
 	_attach_buffer( renderbuffer2 );
 	fb32_clear_color( 0x66FFFFFF );
