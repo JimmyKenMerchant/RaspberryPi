@@ -28,7 +28,8 @@
 #define int64 long long int
 #define float32 float
 #define float64 double
-#define music_code int16
+#define music_code uint16
+#define gpio_sequence uint32
 
 #ifndef bool
 #define bool unsigned char
@@ -109,7 +110,12 @@ __attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
 
 __attribute__((noinline)) void _soundtest();
 
-__attribute__((noinline)) int32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
+__attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
+
+
+/* system32/library/gpio32.s */
+
+__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
 
 
 /**
@@ -548,19 +554,37 @@ extern uint32 draw32_set_renderbuffer
  ********************************/
 
 /**
- * function snd32_musiclen
  * Count 2-Bytes Beats of Music Code
  *
- * Parameters
- * r0: Pointer of Array of Music Code
- *
- * Usage: r0-r2
- * Return: r0 (Number of Beats in Music Code) Maximum of 4,294,967,295 Beats
+ * Return: Number of Beats in Music Code, Maximum of 4,294,967,295 Beats
  */
-
 extern uint32 snd32_musiclen
 (
 	music_code* music
+);
+
+
+/********************************
+ * system32/library/gpio32.s
+ ********************************/
+
+/**
+ * Play GPIO Sequence
+ *
+ * Return: 0 as success, 1 as error
+ * Error: GPIO Sequence is not assigned
+ */
+extern uint32 gpio32_gpioplay();
+
+
+/**
+ * Count 4-Bytes Beats of GPIO Sequence
+ *
+ * Return: Number of Beats in GPIO Sequence, Maximum of 4,294,967,295 Beats
+ */
+extern uint32 gpio32_gpiolen
+(
+	gpio_sequence* gpio
 );
 
 

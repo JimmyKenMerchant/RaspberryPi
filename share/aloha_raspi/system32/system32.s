@@ -73,6 +73,8 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 4
 .include "system32/library/snd32.s"
 .balign 4
+.include "system32/library/gpio32.s"
+.balign 4
 .include "system32/library/math32.s"
 .balign 4
 .include "system32/library/heap32.s"

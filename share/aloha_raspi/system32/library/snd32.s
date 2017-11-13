@@ -35,7 +35,7 @@ SND32_STATUS:              .word 0x00
  */
 
 /**
- * Music Code is made off 16-bit Blocks. One Block means one beat.
+ * Music Code is made of 16-bit Blocks. One Block means one beat.
  * Bit[11:0]: Length of Wave, 0 to 4095
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
  * Bit[15:14]: Type of Wave, 0 is Triangle, 1 is Square, 2/3 is Noise
@@ -250,13 +250,12 @@ snd32_sounddecode:
 	snd32_sounddecode_free:
 		mov addr_code, #0
 		mov length, #0
-		mov count, #0
 		bic status, status, #0xD                   @ Clear Bit[3], Bit[2], and Bit[0]
 
 		str addr_code, SND32_CODE
 		str length, SND32_LENGTH
-		str count, SND32_COUNT
-		str repeat, SND32_REPEAT                   @ Repeat is Already Zero
+		str count, SND32_COUNT                     @ count is Already Zero
+		str repeat, SND32_REPEAT                   @ repeat is Already Zero
 		str status, SND32_STATUS
 
 		push {r0-r3}
@@ -428,7 +427,6 @@ snd32_soundset:
  * Parameters
  * r0: Pointer of Array of Music Code
  *
- * Usage: r0-r2
  * Return: r0 (Number of Beats in Music Code) Maximum of 4,294,967,295 Beats
  */
 .globl snd32_musiclen

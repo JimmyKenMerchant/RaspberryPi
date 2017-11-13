@@ -232,7 +232,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #9                               @ Prevent Overflow SVC Table
+	cmp ip, #0xA                             @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -281,12 +281,16 @@ _os_svc:
 		bl snd32_soundset
 		b _os_svc_common
 
+	_os_svc_0xA:
+		bl gpio32_gpioset
+		b _os_svc_common
+
 	_os_svc_common:
 		pop {lr}                         @ Pop lr
 		movs pc, lr
 
 _os_irq:
-	cpsid i                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+	/*cpsid i*/                                  @ Disable IRQ(i) Automatically (IRQ Will be Disabled on Every Exceptions)
 	push {lr}
 
 	/*push {r0-r12,lr}*/                         @ Equals to stmfd (stack pointer full, decrement order)
@@ -295,26 +299,26 @@ _os_irq:
 
 	/*pop {r0-r12,lr}*/                          @ Equals to ldmfd (stack pointer full, decrement order)
 	pop {lr}
-	cpsie i                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
+	/*cpsie i*/                                  @ Enable IRQ(i) Automatically by SPSR to CPSR
 
 	subs pc, lr, #4
 
 
 _os_fiq:
-	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+	/*cpsid fi*/                                 @ Disable FIQ(f) and IRQ(i) Automatically
 	push {lr}
 
 	/*push {r0-r7,lr}*/                          @ Equals to stmfd (stack pointer full, decrement order)
-	/*mrs r0, spsr*/                         @ No Need of Save Status Flags in Interrupts of ARM
+	/*mrs r0, spsr*/                             @ No Need of Save Status Flags in Interrupts of ARM
 	/*push {r0}*/
 
 	bl os_fiq
 
 	/*pop {r0}*/
-	/*msr spsr, r0*/                         @ No Need of Load Status Flags in Interrupts of ARM
+	/*msr spsr, r0*/                             @ No Need of Load Status Flags in Interrupts of ARM
 	/*pop {r0-r7,lr}*/                           @ Equals to ldmfd (stack pointer full, decrement order)
 
 	pop {lr}
-	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
+	/*cpsie fi*/                                 @ Enable FIQ(f) and IRQ(i) Automatically by SPSR to CPSR
 
 	subs pc, lr, #4
