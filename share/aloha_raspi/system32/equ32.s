@@ -19,7 +19,7 @@
 .equ equ32_snd32_dma_channel,         0
 .equ equ32_snd32_dma_cb_front,        0
 .equ equ32_snd32_dma_cb_back,         1
-.equ equ32_gpio32_gpiomask,       0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
+.equ equ32_gpio32_gpiomask,           0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 
 /**
  * Standard Peripherals

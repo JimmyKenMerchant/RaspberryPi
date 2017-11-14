@@ -28,6 +28,7 @@
 #define int64 long long int
 #define float32 float
 #define float64 double
+#define obj uint32
 #define music_code uint16
 #define gpio_sequence uint32
 
@@ -197,6 +198,14 @@ extern void arm32_isb();
 /********************************
  * system32/library/fb32.s
  ********************************/
+
+enum fb32 {
+	fb32_renderbuffer_addr   = 0,
+	fb32_renderbuffer_width  = 4,
+	fb32_renderbuffer_height = 8,
+	fb32_renderbuffer_size   = 12,
+	fb32_renderbuffer_depth  = 16
+};
 
 extern uint32 FB32_FRAMEBUFFER;
 extern uint32 FB32_DOUBLEBUFFER_BACK;

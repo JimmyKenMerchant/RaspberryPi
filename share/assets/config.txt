@@ -35,9 +35,6 @@ disable_overscan=1
 #CPU 900Mhz, GPU 250Mhz, SDRAM 450Mhz Need 0 (Raspi2)
 #over_voltage=2
 
-#1 is no sound, 2 is with soud if possible
-hdmi_drive=2
-
 #0 means Auto Detect from EDID, 1 means CEA Table, 2 means DMT Table
 hdmi_group=0
 
@@ -48,4 +45,4 @@ hdmi_group=0
 #Seems It's just FAKE, but in case of Strict Coding in Video, you may need of ISR.
 #I mean, VideoCoreIV has other strategies for Vertical Sync,
 #probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller.
-fake_vsync_isr=1
+#fake_vsync_isr=1
