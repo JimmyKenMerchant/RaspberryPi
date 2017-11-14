@@ -199,14 +199,6 @@ extern void arm32_isb();
  * system32/library/fb32.s
  ********************************/
 
-enum fb32 {
-	fb32_renderbuffer_addr   = 0,
-	fb32_renderbuffer_width  = 4,
-	fb32_renderbuffer_height = 8,
-	fb32_renderbuffer_size   = 12,
-	fb32_renderbuffer_depth  = 16
-};
-
 extern uint32 FB32_FRAMEBUFFER;
 extern uint32 FB32_DOUBLEBUFFER_BACK;
 extern uint32 FB32_DOUBLEBUFFER_FRONT;
@@ -528,6 +520,48 @@ extern uint32 draw32_rgba_to_argb
 );
 
 
+/* Object of Renderbuffer, `draw32_renderbuffer` */
+enum draw32 {
+	draw32_renderbuffer_addr   = 0,
+	draw32_renderbuffer_width  = 4,
+	draw32_renderbuffer_height = 8,
+	draw32_renderbuffer_size   = 12,
+	draw32_renderbuffer_depth  = 16
+};
+
+
+/**
+ * Initialize Renderbuffer
+ *
+ * Render Buffer Will Be Set with Heap.
+ * Content of Render Buffer is Same as Framebuffer.
+ * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
+ * So, Block Size is 5 (20 Bytes).
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 draw32_init_renderbuffer
+(
+	uint32 address_buffer,
+	uint32 width,
+	uint32 height,
+	uint32 depth
+);
+
+
+/**
+ * function draw32_free_renderbuffer
+ * Clear Renderbuffer with Freeing Memory
+ *
+ * Return: 0 as success, 1 as error
+ * Error: Pointer of Buffer is Null (0)
+ */
+extern uint32 draw32_free_renderbuffer
+(
+	uint32 address_buffer
+);
+
+
 /**
  * Copy Framebuffer to Renderbuffer
  *
@@ -538,25 +572,6 @@ extern uint32 draw32_copy
 (
 	uint32 address_buffer_in,
 	uint32 address_buffer_out
-);
-
-
-/**
- * Set Renderbuffer
- *
- * Render Buffer Will Be Set with Heap.
- * Content of Render Buffer is Same as Framebuffer.
- * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
- * So, Block Size is 5 (20 Bytes).
- *
- * Return: 0 as sucess
- */
-extern uint32 draw32_set_renderbuffer
-(
-	uint32 address_buffer,
-	uint32 width,
-	uint32 height,
-	uint32 depth
 );
 
 
