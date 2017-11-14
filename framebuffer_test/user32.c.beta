@@ -29,14 +29,18 @@ void _user_start()
 	float32 end_sin = math32_sin32( end_radian );
 	uchar8 random = _random( 127 );
 
-	obj renderbuffer0 = heap32_malloc(5);
-	draw32_init_renderbuffer( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	obj renderbuffer0 = heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer0, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+
 	_attach_buffer( renderbuffer0 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
-	obj renderbuffer1 = heap32_malloc(5);
-	draw32_init_renderbuffer( renderbuffer1, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+
+	obj renderbuffer1 = heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer1, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+
 	_attach_buffer( renderbuffer1 );
 	fb32_clear_color( COLOR32_NAVYBLUE );
+
 	_set_doublebuffer( renderbuffer0, renderbuffer1 );
 
 	fb32_draw_arc( COLOR32_WHITE, 500, 200, 300, 300, start_radian, end_radian, 1, 1 );
@@ -103,26 +107,26 @@ void _user_start()
 	//fb32_draw_circle( COLOR32_BLUE, 300, 300, 150, 200 );
 	//fb32_draw_circle( COLOR32_CYAN, -100, 500, 200, 175 );
 
-	obj renderbuffer2 = heap32_malloc(5);
-	draw32_init_renderbuffer( renderbuffer2, 300, 300, 32 );
+	obj renderbuffer2 = heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer2, 300, 300, 32 );
 	uint32 renderbuffer2_addr = _load_32( renderbuffer2 + draw32_renderbuffer_addr );
 	uint32 renderbuffer2_width = _load_32( renderbuffer2 + draw32_renderbuffer_width );
 	uint32 renderbuffer2_height = _load_32( renderbuffer2 + draw32_renderbuffer_height );
 
-	obj renderbuffer3 = heap32_malloc(5);
-	draw32_init_renderbuffer( renderbuffer3, 300, 300, 32 );
+	obj renderbuffer3 = heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer3, 300, 300, 32 );
 	uint32 renderbuffer3_addr = _load_32( renderbuffer3 + draw32_renderbuffer_addr );
 	uint32 renderbuffer3_width = _load_32( renderbuffer3 + draw32_renderbuffer_width );
 	uint32 renderbuffer3_height = _load_32( renderbuffer3 + draw32_renderbuffer_height );
 
-	obj renderbuffer4 = heap32_malloc(5);
-	draw32_init_renderbuffer( renderbuffer4, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	obj renderbuffer4 = heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer4, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 	uint32 renderbuffer4_addr = _load_32( renderbuffer4 + draw32_renderbuffer_addr );
 	uint32 renderbuffer4_width = _load_32( renderbuffer4 + draw32_renderbuffer_width );
 	uint32 renderbuffer4_height = _load_32( renderbuffer4 + draw32_renderbuffer_height );
 
-	obj renderbuffer5 = heap32_malloc(5);
-	draw32_init_renderbuffer( renderbuffer5, 300, 300, 32 );
+	obj renderbuffer5 = heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer5, 300, 300, 32 );
 	uint32 renderbuffer5_addr = _load_32( renderbuffer5 + draw32_renderbuffer_addr );
 	uint32 renderbuffer5_width = _load_32( renderbuffer5 + draw32_renderbuffer_width );
 	uint32 renderbuffer5_height = _load_32( renderbuffer5 + draw32_renderbuffer_height );

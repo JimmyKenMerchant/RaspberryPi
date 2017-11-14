@@ -520,15 +520,14 @@ extern uint32 draw32_rgba_to_argb
 );
 
 
-/* Object of Renderbuffer, `draw32_renderbuffer` */
-enum draw32 {
+enum Object_draw32_renderbuffer {
+	draw32_renderbuffer        = 5, // Size
 	draw32_renderbuffer_addr   = 0,
 	draw32_renderbuffer_width  = 4,
 	draw32_renderbuffer_height = 8,
 	draw32_renderbuffer_size   = 12,
 	draw32_renderbuffer_depth  = 16
 };
-
 
 /**
  * Initialize Renderbuffer
@@ -540,7 +539,7 @@ enum draw32 {
  *
  * Return: 0 as sucess
  */
-extern uint32 draw32_init_renderbuffer
+extern uint32 draw32_renderbuffer_init
 (
 	uint32 address_buffer,
 	uint32 width,
@@ -548,18 +547,18 @@ extern uint32 draw32_init_renderbuffer
 	uint32 depth
 );
 
-
 /**
- * function draw32_free_renderbuffer
  * Clear Renderbuffer with Freeing Memory
  *
  * Return: 0 as success, 1 as error
  * Error: Pointer of Buffer is Null (0)
  */
-extern uint32 draw32_free_renderbuffer
+extern uint32 draw32_renderbuffer_free
 (
 	uint32 address_buffer
 );
+
+/* End Object_draw32_renderbuffer */
 
 
 /**

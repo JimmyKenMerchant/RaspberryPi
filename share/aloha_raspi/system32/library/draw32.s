@@ -505,7 +505,7 @@ draw32_mask_image:
 
 
 /**
- * function draw32_init_renderbuffer
+ * function draw32_renderbuffer_init
  * Set Renderbuffer
  *
  * Render Buffer Will Be Set with Heap.
@@ -523,8 +523,8 @@ draw32_mask_image:
  * Return: r0 (0 as success, 1 as error)
  * Error: Memory Space for Buffer Can't Be Allocated
  */
-.globl draw32_init_renderbuffer
-draw32_init_renderbuffer:
+.globl draw32_renderbuffer_init
+draw32_renderbuffer_init:
 	/* Auto (Local) Variables, but just Aliases */
 	buffer    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	width     .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -556,7 +556,7 @@ draw32_init_renderbuffer:
 	pop {r0-r3,lr}
 
 	cmp addr, #0
-	beq draw32_init_renderbuffer_error
+	beq draw32_renderbuffer_init_error
 
 	str addr, [buffer]
 	str width, [buffer, #4]
@@ -564,16 +564,16 @@ draw32_init_renderbuffer:
 	str size, [buffer, #12]
 	str depth, [buffer, #16]
 	
-	b draw32_init_renderbuffer_success
+	b draw32_renderbuffer_init_success
 
-	draw32_init_renderbuffer_error:
+	draw32_renderbuffer_init_error:
 		mov r0, #1
-		b draw32_init_renderbuffer_common
+		b draw32_renderbuffer_init_common
 
-	draw32_init_renderbuffer_success:
+	draw32_renderbuffer_init_success:
 		mov r0, #0
 
-	draw32_init_renderbuffer_common:
+	draw32_renderbuffer_init_common:
 		macro32_dsb ip                   @ Ensure Completion of Instructions Before
 		macro32_isb ip                   @ Flush Data in Pipeline to Cache
 		pop {r4-r5}
@@ -588,7 +588,7 @@ draw32_init_renderbuffer:
 
 
 /**
- * function draw32_free_renderbuffer
+ * function draw32_renderbuffer_free
  * Clear Renderbuffer with Freeing Memory
  *
  * Parameters
@@ -598,8 +598,8 @@ draw32_init_renderbuffer:
  * Return: r0 (0 as success, 1 as error)
  * Error: Pointer of Buffer is Null (0)
  */
-.globl draw32_free_renderbuffer
-draw32_free_renderbuffer:
+.globl draw32_renderbuffer_free
+draw32_renderbuffer_free:
 	/* Auto (Local) Variables, but just Aliases */
 	buffer    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	addr      .req r1 @ Scratch Register
@@ -610,7 +610,7 @@ draw32_free_renderbuffer:
 	mov r0, addr
 	bl heap32_mfree
 	cmp r0, #0
-	bne draw32_free_renderbuffer_error
+	bne draw32_renderbuffer_free_error
 	pop {r0-r3,lr}
 
 	mov addr, #0
@@ -620,16 +620,16 @@ draw32_free_renderbuffer:
 	str addr, [buffer, #12]
 	str addr, [buffer, #16]
 
-	b draw32_free_renderbuffer_success
+	b draw32_renderbuffer_free_success
 
-	draw32_free_renderbuffer_error:
+	draw32_renderbuffer_free_error:
 		mov r0, #1
-		b draw32_free_renderbuffer_common
+		b draw32_renderbuffer_free_common
 
-	draw32_free_renderbuffer_success:
+	draw32_renderbuffer_free_success:
 		mov r0, #0
 
-	draw32_free_renderbuffer_common:
+	draw32_renderbuffer_free_common:
 		macro32_dsb ip                   @ Ensure Completion of Instructions Before
 		macro32_isb ip                   @ Flush Data in Pipeline to Cache
 		mov pc, lr
