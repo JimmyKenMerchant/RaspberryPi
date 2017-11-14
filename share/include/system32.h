@@ -108,14 +108,16 @@ __attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
 
 /* system32/library/snd32.s */
 
-__attribute__((noinline)) void _soundtest();
-
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _soundclear();
 
 
 /* system32/library/gpio32.s */
 
 __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
 
 
 /**

@@ -22,7 +22,7 @@ UNDER CONSTRUCTION!! PLEASE WAIT FOR...
 
 ## Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
 
-**DMA Transfer to PWM **
+**Memorandum of DMA Transfer to PWM **
 
 * DMA mainly depends on Peripheral Bus of SoC (e.g. Advanced Peripheral Bus: APB), so long transfer length may cause a issue on PWM, such as noisy wave. To avoid this, we need to consider of length of transfer by DMA. Peripheral Bus is used by a lot of peripheral blocks to access CPU or other blocks, which may have more dominance than DMA.
 
@@ -30,7 +30,8 @@ UNDER CONSTRUCTION!! PLEASE WAIT FOR...
 
 * If you use cache on your system, you need to assign any `shareable` attribute on the cache table to some memory region which is used by DMA. Again, DMA is a peripheral block, but strongly accesses physical main memory. To ensure data you want to transfer by DMA in physical main memory, make sure to set the `shareable` attribute.
 
-* Don't forget that DMA transfer may be missed by inappropriate voltage. Check its voltage supply. If you watch a lightning mark on the right top corner of your output display. It may cause some odd sound.  
+* Don't forget that DMA transfer may be missed by inappropriate voltage. Check its voltage supply. If you watch a lightning mark on the right top corner of your output display. It may cause some odd sound.
 
 * See Application Note (AN) 228, "Implementing DMA on ARM SMP Systems" in Application Notes and Tutorial of ARM website. This article describes relationship between DMA and ARM well.
 
+* On some implementations, coherency of ARM, Physical Main Memory which is accessed by DMA may be needed to handle more technically. Difference of speed between ARM and Physical Main Memory may cause odd coherency of ARM and Physical Main Memory even if you have several settings just as things above. (e.g. Clock down of ARM, etc.)

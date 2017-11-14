@@ -294,6 +294,46 @@ snd32_sounddecode:
 
 
 /**
+ * function snd32_soundclear
+ * Clear Music Code
+ *
+ * Return: r0 (0 as success)
+ */
+.globl snd32_soundclear
+snd32_soundclear:
+	/* Auto (Local) Variables, but just Aliases */
+	temp   .req r0 @ Register for Result, Scratch Register
+
+	mov temp, #0
+
+	str temp, SND32_CODE
+	str temp, SND32_LENGTH
+	str temp, SND32_COUNT
+	str temp, SND32_REPEAT
+
+	ldr temp, SND32_STATUS	
+	bic temp, temp, #0xD                   @ Clear Bit[3], Bit[2], and Bit[0]
+	str temp, SND32_STATUS
+
+	macro32_dsb ip
+
+	push {r0-r3}
+	mov r0, #equ32_snd32_dma_channel
+	bl dma32_clear_channel
+	pop {r0-r3}
+
+	macro32_dsb ip
+
+	snd32_soundclear_success:
+		mov r0, #0                            @ Return with Success
+
+	snd32_soundclear_common:
+		mov pc, lr
+
+.unreq temp
+
+
+/**
  * function snd32_soundplay
  * Play Sound
  *

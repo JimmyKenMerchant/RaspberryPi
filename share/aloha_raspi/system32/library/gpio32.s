@@ -187,6 +187,52 @@ gpio32_gpioset:
 
 
 /**
+ * function gpio32_gpioclear
+ * Clear GPIO Sequence
+ *
+ * Parameters
+ * r0: Clear All (0) / Stay GPIO Current Status (1)
+ *
+ * Return: r0 (0 as success)
+ */
+.globl gpio32_gpioclear
+gpio32_gpioclear:
+	/* Auto (Local) Variables, but just Aliases */
+	stay        .req r0
+	temp        .req r1
+	temp2       .req r2
+
+	mov temp, #0
+
+	str temp, GPIO32_SEQUENCE
+	str temp, GPIO32_LENGTH
+	str temp, GPIO32_COUNT
+	str temp, GPIO32_REPEAT
+
+	macro32_dsb ip
+
+	cmp stay, #0
+	bhi gpio32_gpioclear_success
+
+	ldr temp2, GPIO32_MASK
+	mov temp, #equ32_peripherals_base
+	add temp, temp, #equ32_gpio_base
+	str temp2, [temp, #equ32_gpio_gpclr0]      @ Clear All
+
+	macro32_dsb ip
+
+	gpio32_gpioclear_success:
+		mov r0, #0                                 @ Return with Success
+
+	gpio32_gpioclear_common:
+		mov pc, lr
+
+.unreq stay
+.unreq temp
+.unreq temp2
+
+
+/**
  * function gpio32_gpiolen
  * Count 4-Bytes Beats of GPIO Sequence
  *

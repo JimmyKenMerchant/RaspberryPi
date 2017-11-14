@@ -232,7 +232,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0xA                             @ Prevent Overflow SVC Table
+	cmp ip, #0xB                             @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -274,15 +274,19 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x8:
-		bl snd32_soundtest
+		bl snd32_soundset
 		b _os_svc_common
 
 	_os_svc_0x9:
-		bl snd32_soundset
+		bl snd32_soundclear
 		b _os_svc_common
 
 	_os_svc_0xA:
 		bl gpio32_gpioset
+		b _os_svc_common
+
+	_os_svc_0xB:
+		bl gpio32_gpioclear
 		b _os_svc_common
 
 	_os_svc_common:

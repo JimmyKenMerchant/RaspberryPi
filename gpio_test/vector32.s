@@ -85,12 +85,14 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 24 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 25 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 27 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7      @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7       @ Set GPIO 47 OUTPUT
+	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7         @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
+	mov r1, #equ32_gpio27                                            @ Set GPIO21 Rising Edge Detect
+	str r1, [r0, #equ32_gpio_gpren0]
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32

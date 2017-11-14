@@ -10,6 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 
+/* Output gpio2-gpio5 */
 gpio_sequence gpio[] =
 {
 	0b10000000000000000000000000111100,
@@ -28,11 +29,11 @@ gpio_sequence gpio[] =
 
 void _user_start()
 {
-
-	_gpioset( gpio, gpio32_gpiolen( gpio ) , 0, -1 );
-
-	while(1) {
-
+	while(true) {
+		_gpioset( gpio, gpio32_gpiolen( gpio ) , 0, -1 );
+		while( ! _gpio_detect( 27 ) ) {
+		}
+		_gpioclear( 1 );
 		_sleep( 1000000 );
 	}
 }

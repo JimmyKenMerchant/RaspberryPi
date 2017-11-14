@@ -63,12 +63,14 @@ __attribute__((noinline)) int32 _load_32( uint32 address )
 	return result;
 }
 
-__attribute__((noinline)) void _soundtest()
+__attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat )
 {
+	register uint32 result asm("r0");
 	asm volatile ("svc #0x8");
+	return result;
 }
 
-__attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat )
+__attribute__((noinline)) uint32 _soundclear()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x9");
@@ -79,6 +81,13 @@ __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, u
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0xA");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _gpioclear( bool stay )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0xB");
 	return result;
 }
 
@@ -93,4 +102,3 @@ bool _gpio_detect( uchar8 gpio_number )
 		return false;
 	}
 }
-
