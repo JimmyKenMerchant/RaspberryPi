@@ -24,6 +24,8 @@
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
 
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+
 **Specification**
 
 * Range: 0 Hz to 5 MHz (On Raspberry Pi Zero W V.1.1)

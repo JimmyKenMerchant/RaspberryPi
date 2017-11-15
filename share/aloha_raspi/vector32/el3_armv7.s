@@ -32,6 +32,14 @@ _el3_mon:
 	sub fp, fp, ip
 	mov sp, fp
 
+	/* SMP Enable, Before Cache and MMU Enable */
+.ifdef __ARMV8
+	mrrc p15, 1, r0, r1, c15                  @ CPU Extended Control Register (CPUECTLR) 64-bit
+	orr r0, r0, #0b01000000                   @ SMPEN Bit[6], SMP Enable
+	mcrr p15, 1, r0, r1, c15
+	macro32_dsb ip
+.endif
+
 	/* Clear Heap to All Zero */
 	push {r0-r3,lr}
 	bl heap32_clear_heap
@@ -97,7 +105,7 @@ _el3_mon:
 
 	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
 	orr r0, r0, #0x30                         @ F Bit Changeable (FW Bit[4]) and A Bit Changeable (AW Bit[5]) in Non-secure
-	orr r0, r0, #0x100                        @ HCE Bit (Hypervisor Call Enable)
+	/*orr r0, r0, #0x100*/                        @ HCE Bit (Hypervisor Call Enable)
 	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure state, Secure Configuration Register (SCR)
 	macro32_dsb ip
 
