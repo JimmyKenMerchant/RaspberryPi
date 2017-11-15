@@ -15,8 +15,10 @@
 
 
 /********************************
- * Unique Difinition
+ * Unique Definitions
  ********************************/
+
+/* Constants */
 
 #define uchar8 unsigned char
 #define uint16 unsigned short int
@@ -28,9 +30,6 @@
 #define int64 long long int
 #define float32 float
 #define float64 double
-#define obj uint32
-#define music_code uint16
-#define gpio_sequence uint32
 
 #ifndef bool
 #define bool unsigned char
@@ -48,78 +47,11 @@
 #define FALSE 0
 #endif
 
+#define obj uint32
+
 /* Pointers, Array of Address of Data */
-
 #define String char8*
-
-void _user_start();
-
-/**
- * System calls
- * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed.
- * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
- */
-
-__attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
-
-
-/* system32/arm/arm32.s */
-
-__attribute__((noinline)) void _sleep( uint32 u_seconds );
-
-__attribute__((noinline)) uchar8 _random( uchar8 range_end );
-
-__attribute__((noinline)) void _store_32( uint32 address, int32 data );
-
-__attribute__((noinline)) int32 _load_32( uint32 address );
-
-
-/* system32/library/fb32.s */
-
-/**
- * Flush Back Buffer to Framebuffer and Swap Front and Back
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): When buffer is not defined
- */
-__attribute__((noinline)) uint32 _flush_doublebuffer();
-
-
-/**
- * Set Buffer for Double Buffer Operation
- *
- * Parameters
- * r0: Pointer of Buffer to Front
- * r1: Pointer of Buffer to Back
- *
- * Return: 0 as success, 1 as error
- * Error(1): When buffer is not Defined
- */
-__attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front, uint32 address_buffer_back );
-
-
-/**
- * Attach Buffer to Draw on It
- *
- * Return: 0 as sucess, 1 as error
- * Error(1): Buffer In is not Defined
- */
-__attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
-
-
-/* system32/library/snd32.s */
-
-__attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
-
-__attribute__((noinline)) uint32 _soundclear();
-
-
-/* system32/library/gpio32.s */
-
-__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
-
-__attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
-
+#define ObjArray obj*
 
 /**
  * GPIO Control and Status (Limited Between 0-29)
@@ -167,11 +99,39 @@ __attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) o
 #define _gpio_gparen0     0x7C // GPIO 0-31, Async Rising Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
 #define _gpio_gpafen0     0x88 // GPIO 0-31, Async Falling Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
 
+
+/**
+ * System calls
+ * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed.
+ * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
+ */
+
+__attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
+
+
+/* Regular Functions */
+
+void _user_start();
+
 bool _gpio_detect( uchar8 gpio_number );
+
 
 /********************************
  * system32/arm/arm32.s
  ********************************/
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) void _sleep( uint32 u_seconds );
+
+__attribute__((noinline)) uchar8 _random( uchar8 range_end );
+
+__attribute__((noinline)) void _store_32( uint32 address, int32 data );
+
+__attribute__((noinline)) int32 _load_32( uint32 address );
+
+
+/* Regular Functions */
 
 /**
  * Convert Endianness
@@ -199,6 +159,8 @@ extern void arm32_isb();
  * system32/library/fb32.s
  ********************************/
 
+/* Constants */
+
 extern uint32 FB32_FRAMEBUFFER;
 extern uint32 FB32_DOUBLEBUFFER_BACK;
 extern uint32 FB32_DOUBLEBUFFER_FRONT;
@@ -210,6 +172,42 @@ extern uint32 FB32_SIZE;
 extern uint32 FB32_DEPTH;
 extern int32 FB32_X_CARET;
 extern int32 FB32_Y_CARET;
+
+
+/* Relative System Calls  */
+
+/**
+ * Flush Back Buffer to Framebuffer and Swap Front and Back
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): When buffer is not defined
+ */
+__attribute__((noinline)) uint32 _flush_doublebuffer();
+
+
+/**
+ * Set Buffer for Double Buffer Operation
+ *
+ * Parameters
+ * r0: Pointer of Buffer to Front
+ * r1: Pointer of Buffer to Back
+ *
+ * Return: 0 as success, 1 as error
+ * Error(1): When buffer is not Defined
+ */
+__attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front, uint32 address_buffer_back );
+
+
+/**
+ * Attach Buffer to Draw on It
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error(1): Buffer In is not Defined
+ */
+__attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
+
+
+/* Regular Functions */
 
 /**
  * Draw Arc
@@ -578,6 +576,20 @@ extern uint32 draw32_copy
  * system32/library/snd32.s
  ********************************/
 
+/* Constants */
+
+#define music_code uint16
+
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _soundclear();
+
+
+/* Regular Functions */
+
 /**
  * Count 2-Bytes Beats of Music Code
  *
@@ -592,6 +604,20 @@ extern uint32 snd32_musiclen
 /********************************
  * system32/library/gpio32.s
  ********************************/
+
+/* Constants */
+
+#define gpio_sequence uint32
+
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
+
+
+/* Regular Functions */
 
 /**
  * Play GPIO Sequence
