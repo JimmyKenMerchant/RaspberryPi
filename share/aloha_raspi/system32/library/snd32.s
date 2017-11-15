@@ -274,7 +274,6 @@ snd32_sounddecode:
 		b snd32_sounddecode_common
 
 	snd32_sounddecode_success:
-		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
@@ -315,14 +314,10 @@ snd32_soundclear:
 	bic temp, temp, #0xD                   @ Clear Bit[3], Bit[2], and Bit[0]
 	str temp, SND32_STATUS
 
-	macro32_dsb ip
-
 	push {r0-r3}
 	mov r0, #equ32_snd32_dma_channel
 	bl dma32_clear_channel
 	pop {r0-r3}
-
-	macro32_dsb ip
 
 	snd32_soundclear_success:
 		mov r0, #0                            @ Return with Success
@@ -392,7 +387,6 @@ snd32_soundplay:
 
 	snd32_soundplay_success:
 		str status, SND32_STATUS
-		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
 	snd32_soundplay_common:
@@ -435,14 +429,10 @@ snd32_soundset:
 	bic temp, temp, #0xD      @ Clear Bit[3], Bit[2], and Bit[0]
 	str temp, SND32_STATUS
 
-	macro32_dsb ip
-
 	str length, SND32_LENGTH
 	str count, SND32_COUNT
 	str repeat, SND32_REPEAT
 	str addr_code, SND32_CODE @ Should Set Music Code at End for Polling Functions, `snb32_sounddecode`, `snd32_soundplay`
-
-	macro32_dsb ip
 
 	b snd32_soundset_success
 

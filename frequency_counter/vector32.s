@@ -58,8 +58,10 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
+.ifndef __RASPI3B
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 AlT0 (GPCLK0)
 	str r1, [r0, #equ32_gpio_gpfsel00]
@@ -264,14 +266,15 @@ _os_render:
 	add r0, r0, #equ32_gpio_base
 	mov r1, #equ32_gpio21
 
-	correction     .req r5
+	multiply       .req r5
 	basement       .req r6
 	freq_count     .req r7
 	vfp_correction .req s0
 	vfp_freq_count .req s1
 
-	ldr correction, mem_correction
-	vmov vfp_correction, correction
+	ldr r4, mem_correction
+	vmov vfp_correction, r4
+	ldr multiply, mem_multiply
 	ldr basement, mem_basement
 	mov freq_count, #0
 
@@ -309,6 +312,7 @@ os_fiq:
 
 	macro32_dsb ip                            @ Ensure to Disable Timer
 
+.ifndef __RASPI3B
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
@@ -323,7 +327,8 @@ os_fiq:
 	str r1, [r0]
 
 	macro32_dsb ip                            @ Data Synchronization Barrier is Needed
-
+.endif
+ 
 	/* Correct and Set Basement */
 
 	vmov vfp_freq_count, freq_count
@@ -331,6 +336,7 @@ os_fiq:
 	vmul.f32 vfp_freq_count, vfp_freq_count, vfp_correction
 	vcvtr.u32.f32 vfp_freq_count, vfp_freq_count
 	vmov r0, vfp_freq_count
+	mul r0, r0, multiply
 	add r0, r0, basement
 
 	push {lr}
@@ -365,7 +371,7 @@ os_fiq:
 	pop {r0-r4}
 	mov pc, lr
 
-.unreq correction
+.unreq multiply
 .unreq basement
 .unreq freq_count
 .unreq vfp_correction
@@ -401,6 +407,9 @@ string_copy2:
 .balign 4
 mem_correction:
 	.float 0.999991
+.balign 4
+mem_multiply:
+	.word 1
 .balign 4
 mem_basement:
 	.word 0

@@ -56,17 +56,22 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
+.ifdef __ZERO
 	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2         @ Set GPIO 12 PWM0
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
 	str r1, [r0, #equ32_gpio_gpfsel10]
-
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7       @ Set GPIO 47 OUTPUT
-.ifndef __ZERO
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0     @ Set GPIO 40 PWM0 (to Minijack)
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 45 PWM1 (to Minijack)
 .endif
-	str r1, [r0, #equ32_gpio_gpfsel40]
 
+.ifndef __ZERO
+	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 45 PWM1 (to Minijack)
+	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
+
+.ifndef __RASPI3B
+	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7        @ Set GPIO 47 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	/**
 	 * PWM
@@ -137,8 +142,6 @@ os_fiq:
 	macro32_invalidate_instruction_all ip
 .endif
 
-	macro32_dsb ip
-
 	/* Clear Timer Interrupt */
 
 	mov r0, #equ32_peripherals_base
@@ -147,6 +150,9 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	macro32_dsb ip
+
+.ifndef __RASPI3B
 	/* Blinker */
 
 	mov r0, #equ32_peripherals_base
@@ -162,9 +168,14 @@ os_fiq:
 	mov r1, #equ32_gpio47
 	str r1, [r0]
 
+	macro32_dsb ip
+.endif
+
 	push {r0-r3,lr}
 	bl snd32_soundplay
 	pop {r0-r3,lr}
+
+	macro32_dsb ip
 
 	push {r0-r3,lr}
 	bl snd32_sounddecode

@@ -88,8 +88,10 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7      @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
+.ifndef __RASPI3B
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7         @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	mov r1, #equ32_gpio27                                            @ Set GPIO21 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
@@ -129,8 +131,6 @@ os_fiq:
 	macro32_invalidate_instruction_all ip
 .endif
 
-	macro32_dsb ip
-
 	/* Clear Timer Interrupt */
 
 	mov r0, #equ32_peripherals_base
@@ -139,6 +139,9 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	macro32_dsb ip
+
+.ifndef __RASPI3B
 	/* Blinker */
 
 	mov r0, #equ32_peripherals_base
@@ -153,6 +156,9 @@ os_fiq:
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+
+	macro32_dsb ip
+.endif
 
 	push {r0-r3,lr}
 	bl gpio32_gpioplay

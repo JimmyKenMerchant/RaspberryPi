@@ -76,11 +76,13 @@ _el01_reset:
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 	macro32_isb ip                            @ Flush Instructions in Pipelines
 
+.ifndef __ARMV8
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000000                   @ Enable SMP Bit[6] (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And This Bit is deprecated on Cortex-A53 (ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Writeable on Non-Secure only on [6]SMP, if NS_SMP of NSACR is Set
 	macro32_dsb ip
+.endif
 
 	macro32_multicore_id r0
 

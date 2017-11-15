@@ -163,14 +163,10 @@ gpio32_gpioset:
 	str temp, GPIO32_COUNT
 	str temp, GPIO32_REPEAT
 
-	macro32_dsb ip
-
 	str length, GPIO32_LENGTH
 	str count, GPIO32_COUNT
 	str repeat, GPIO32_REPEAT
 	str addr_seq, GPIO32_SEQUENCE @ Should Set at End for Polling Function, `gpio32_gpioplay`
-
-	macro32_dsb ip
 
 	gpio32_gpioset_success:
 		mov r0, #0                                 @ Return with Success
@@ -209,8 +205,6 @@ gpio32_gpioclear:
 	str temp, GPIO32_COUNT
 	str temp, GPIO32_REPEAT
 
-	macro32_dsb ip
-
 	cmp stay, #0
 	bhi gpio32_gpioclear_success
 
@@ -218,8 +212,6 @@ gpio32_gpioclear:
 	mov temp, #equ32_peripherals_base
 	add temp, temp, #equ32_gpio_base
 	str temp2, [temp, #equ32_gpio_gpclr0]      @ Clear All
-
-	macro32_dsb ip
 
 	gpio32_gpioclear_success:
 		mov r0, #0                                 @ Return with Success

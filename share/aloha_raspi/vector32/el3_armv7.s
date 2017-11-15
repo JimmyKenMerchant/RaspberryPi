@@ -79,15 +79,19 @@ _el3_mon:
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 	macro32_isb ip                            @ Flush Instructions in Pipelines
 
+.ifndef __ARMV8
 	mrc p15, 0, r0, c1, c0, 1                 @ Auxiliary Control Register (ACTLR)
 	orr r0, r0, #0b01000000                   @ Enable SMP Bit[6] (Symmetric Multi Processing), Shares Memory on Each Core,
                                                   @ And This Bit is deprecated on Cortex-A53 (ARMv8)
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
 	macro32_dsb ip
+.endif
 
 	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
+.ifndef __ARMV8
 	orr r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18],
                                                   @ And This Bit is deprecated on Cortex-A53 (ARMv8)
+.endif
 	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
 	macro32_dsb ip
 

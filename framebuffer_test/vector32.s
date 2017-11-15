@@ -52,12 +52,14 @@ os_reset:
 
 	/* So We can get a 10hz Timer Interrupt (100000/10000) */
 
+.ifndef __RASPI3B
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
 	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
@@ -92,6 +94,7 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+.ifndef __RASPI3B
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
@@ -104,6 +107,7 @@ os_fiq:
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+.endif
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_systemtimer_base

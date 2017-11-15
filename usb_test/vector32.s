@@ -56,11 +56,15 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
 .ifndef __ARMV6
-	add r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4 @ Set GPIO 44 AlT0 (GPCLK1)
-.endif
+	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4    @ Set GPIO 44 AlT0 (GPCLK1)
 	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
+
+.ifndef __RASPI3B
+	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7  @ Set GPIO 47 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
@@ -249,6 +253,7 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+.ifndef __RASPI3B
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
@@ -261,6 +266,7 @@ os_fiq:
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+.endif
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_systemtimer_base

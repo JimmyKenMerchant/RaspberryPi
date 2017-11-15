@@ -31,17 +31,17 @@ void _user_start()
 
 	ObjArray renderbuffer = (ObjArray)heap32_malloc( 6 );
 
-	renderbuffer[0] = heap32_malloc( draw32_renderbuffer );
+	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[1] = heap32_malloc( draw32_renderbuffer );
+	renderbuffer[1] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[2] = heap32_malloc( draw32_renderbuffer );
+	renderbuffer[2] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[2], 300, 300, 32 );
-	renderbuffer[3] = heap32_malloc( draw32_renderbuffer );
+	renderbuffer[3] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[3], 300, 300, 32 );
-	renderbuffer[4] = heap32_malloc( draw32_renderbuffer );
+	renderbuffer[4] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[4], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[5] = heap32_malloc( draw32_renderbuffer );
+	renderbuffer[5] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[5], 300, 300, 32 );
 
 	_attach_buffer( renderbuffer[0] );
@@ -146,8 +146,6 @@ void _user_start()
 			0,
 			0
 	);
-
-	//fb32_draw_image( renderbuffer3_addr, 100, 100, renderbuffer3_width, renderbuffer3_height, 0, 0, 0, 0 );
 
 	draw32_antialias( renderbuffer[5], renderbuffer[3] );
 
