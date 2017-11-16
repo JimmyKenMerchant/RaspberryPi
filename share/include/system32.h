@@ -578,10 +578,13 @@ extern uint32 draw32_copy
 
 /* Constants */
 
-#define music_code uint16
+#define sound_index uint16
+#define music_code uchar8
 
 
 /* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _sounddecode( sound_index* sound );
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
 

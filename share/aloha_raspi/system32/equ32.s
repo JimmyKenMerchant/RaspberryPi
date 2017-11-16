@@ -17,7 +17,7 @@
 .equ equ32_print32_string_tab_length, 4
 .equ equ32_dma32_cb_max,              1000
 .equ equ32_dma32_cb_snd32_start,      0
-.equ equ32_dma32_cb_snd32_end,        40
+.equ equ32_dma32_cb_snd32_end,        100
 .equ equ32_snd32_dma_channel,         0
 .equ equ32_gpio32_gpiomask,           0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 

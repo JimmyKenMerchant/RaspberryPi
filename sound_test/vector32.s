@@ -125,10 +125,6 @@ os_reset:
 	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	bl snd32_soundinit
-	pop {r0-r3,lr}
 	
 	mov pc, lr
 
@@ -140,25 +136,8 @@ os_irq:
 os_fiq:
 	push {r0-r7}
 
-	/* Invalidate Cache Because DMA Engine Accesses Cache at First, Then Watch Physical Memory */
 .ifdef __ARMV6
 	macro32_invalidate_both_all ip
-	macro32_dsb ip
-.else
-	push {r0-r3,lr}
-	mov r0, #1                                @ L1
-	mov r1, #0                                @ Invalidate
-	bl arm32_cache_operation_all
-	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	mov r0, #2                                @ L2
-	mov r1, #0                                @ Invalidate
-	bl arm32_cache_operation_all
-	pop {r0-r3,lr}
-
-	macro32_invalidate_instruction_all ip
-	macro32_dsb ip
 .endif
 
 	/* Clear Timer Interrupt */
@@ -192,12 +171,6 @@ os_fiq:
 
 	push {r0-r3,lr}
 	bl snd32_soundplay
-	pop {r0-r3,lr}
-
-	macro32_dsb ip
-
-	push {r0-r3,lr}
-	bl snd32_sounddecode
 	pop {r0-r3,lr}
 
 	macro32_dsb ip
