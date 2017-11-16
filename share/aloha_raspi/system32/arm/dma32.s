@@ -149,11 +149,6 @@ dma32_clear_channel:
 	bic temp, temp, #equ32_dma_cs_active            @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
 
-	dma32_clear_channel_loop1:
-		ldr temp, [addr_dma, #equ32_dma_cs]
-		tst temp, #equ32_dma_cs_paused
-		beq dma32_clear_channel_loop1
-
 	mov temp, #0
 
 	str temp, [addr_dma, #equ32_dma_nextconbk]      @ Next CB Address to Zero
@@ -164,10 +159,10 @@ dma32_clear_channel:
 	orr temp, temp, #equ32_dma_cs_active
 	str temp, [addr_dma, #equ32_dma_cs]
 
-	dma32_clear_channel_loop2:
+	dma32_clear_channel_loop1:
 		ldr temp, [addr_dma, #equ32_dma_cs]
 		tst temp, #equ32_dma_cs_active
-		bne dma32_clear_channel_loop2
+		bne dma32_clear_channel_loop1
 
 	orr temp, temp, #equ32_dma_cs_reset
 	str temp, [addr_dma, #equ32_dma_cs]
@@ -244,22 +239,12 @@ dma32_change_nextcb:
 
 	/* Stop Current Control Block */
 
+	macro32_dsb ip
+
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	bic temp, temp, #equ32_dma_cs_active              @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
 
-	macro32_dsb ip
-
-	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk] @ Next CB Address
-
-	macro32_dsb ip
-
-	/* Activate CB */
-	ldr temp, [addr_dma, #equ32_dma_cs]
-	orr temp, temp, #equ32_dma_cs_active
-	str temp, [addr_dma, #equ32_dma_cs]
-
-	macro32_dsb ip
 /*
 ldr temp, [addr_dma, #equ32_dma_ti]            @ Transfer Information
 macro32_debug temp, 200, 300
@@ -274,6 +259,15 @@ macro32_debug temp, 200, 348
 ldr temp, [addr_dma, #equ32_dma_nextconbk]     @ Next CB Address
 macro32_debug temp, 200, 360
 */
+
+	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk]      @ Next CB Address to Zero
+
+	/* Activate CB */
+	ldr temp, [addr_dma, #equ32_dma_cs]
+	orr temp, temp, #equ32_dma_cs_active
+	str temp, [addr_dma, #equ32_dma_cs]
+
+	macro32_dsb ip
 
 	b dma32_change_nextcb_success
 
@@ -339,8 +333,6 @@ dma32_set_cb:
 	add nextconbk, addr_cb, nextconbk              @ Address of Next CB
 	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB
 
-	/* Channel Block Setting */
-
 	str ti, [addr_cb, #dma32_ti]                   @ Transfer Information
 	str source_ad, [addr_cb, #dma32_source_ad]     @ Source Address
 	str dest_ad, [addr_cb, #dma32_dest_ad]         @ Destination Address
@@ -351,11 +343,27 @@ dma32_set_cb:
 	macro32_dsb ip
 
 /*
+ldr temp, [addr_cb, #dma32_ti]            @ Transfer Information
+macro32_debug temp, 200, 300
+ldr temp, [addr_cb, #dma32_source_ad]     @ Source Address
+macro32_debug temp, 200, 312
+ldr temp, [addr_cb, #dma32_dest_ad]       @ Destination Address
+macro32_debug temp, 200, 324
+ldr temp, [addr_cb, #dma32_txfr_len]      @ Transfer Length
+macro32_debug temp, 200, 336
+ldr temp, [addr_cb, #dma32_stride]        @ 2D Stride
+macro32_debug temp, 200, 348
+ldr temp, [addr_cb, #dma32_nextconbk]     @ Next CB Address
+macro32_debug temp, 200, 360
+*/
+
+/*
 ldr source_ad, [addr_cb, #dma32_source_ad]
 macro32_debug source_ad, 100, 150
 */
 
 	macro32_clean_cache addr_cb, ip
+	macro32_dsb ip
 
 	b dma32_set_cb_success
 

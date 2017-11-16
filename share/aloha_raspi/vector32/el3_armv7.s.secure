@@ -46,8 +46,8 @@ _el3_mon:
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_none
-	orr r0, r0, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_r
+	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
+	orr r0, r0, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
 	orr r0, r0, #equ32_mmu_domain00
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
@@ -58,7 +58,7 @@ _el3_mon:
 
 	push {r0-r3,lr}
 	mov r0, #0
-	mov r1, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
+	mov r1, #equ32_ttbr_inner_wb_wa|equ32_ttbr_outer_wb_wa
 	bl arm32_activate_va
 	pop {r0-r3,lr}
 
@@ -94,29 +94,5 @@ _el3_mon:
 	mcr p15, 0, r0, c1, c0, 1                 @ Common on Secure/Non-secure, Writeable on Secure
 	macro32_dsb ip
 .endif
-
-	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
-.ifndef __ARMV8
-	orr r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18],
-                                                  @ And This Bit is deprecated on Cortex-A53 (ARMv8)
-.endif
-	mcr p15, 0, r0, c1, c1, 2                 @ Non-secure Access Control Register (NSACR)
-	macro32_dsb ip
-
-	mov r0, #0x1                              @ NS Bit (Effective on EL0 and EL1)
-	orr r0, r0, #0x30                         @ F Bit Changeable (FW Bit[4]) and A Bit Changeable (AW Bit[5]) in Non-secure
-	/*orr r0, r0, #0x100*/                        @ HCE Bit (Hypervisor Call Enable)
-	mcr p15, 0, r0, c1, c1, 0                 @ Change to Non-secure state, Secure Configuration Register (SCR)
-	macro32_dsb ip
-
-	/* Non-secure State Below */
-
-	mov r0, #0x0                              @ VBAR(User Mode, EL0, and Privileged Mode, EL1), IVT Base Vector Address
-	mcr p15, 0, r0, c12, c0, 0                @ VBAR is Banked by Secure/Non-secure state
-	macro32_dsb ip
-
-	mov r0, #0x1000
-	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
-	macro32_dsb ip
 
 	movs pc, lr                               @ Return to SVC Mode

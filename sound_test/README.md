@@ -34,4 +34,7 @@ UNDER CONSTRUCTION!! PLEASE WAIT FOR...
 
 * See Application Note (AN) 228, "Implementing DMA on ARM SMP Systems" in Application Notes and Tutorial of ARM website. This article describes relationship between DMA and ARM well.
 
-* On some implementations, coherency of ARM, Physical Main Memory which is accessed by DMA may be needed to handle more technically. Difference of speed between ARM and Physical Main Memory may cause odd coherency of ARM and Physical Main Memory even if you have several settings just as things above. (e.g. Clock down of ARM, etc.)
+* DMA watches data cache for the source at first, then if it's invalidated, watch physical main memory. This function is independent from settings of ARM. So on the side of ARM, you need to make sure of storing data to physical main memory, and invalidating cache at all.
+
+* DMA seems to have its own buffer for CB. On the side of DMA, this performs like data cache. If you want to reuse memory space for CB, CB structure will stay the prior state to the intended state ARM intended. To prevent this, you need to make new memory space for CB.
+

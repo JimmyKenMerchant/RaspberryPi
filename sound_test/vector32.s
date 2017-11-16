@@ -101,8 +101,8 @@ os_reset:
 	str r1, [r0, #equ32_pwm_rng1]
 
 	mov r1, #equ32_pwm_dmac_enable
-	orr r1, r1, #9<<equ32_pwm_dmac_panic
-	orr r1, r1, #9<<equ32_pwm_dmac_dreq
+	orr r1, r1, #7<<equ32_pwm_dmac_panic
+	orr r1, r1, #7<<equ32_pwm_dmac_dreq
 	str r1, [r0, #equ32_pwm_dmac]
 
 	mov r1, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
@@ -140,8 +140,25 @@ os_irq:
 os_fiq:
 	push {r0-r7}
 
+	/* Invalidate Cache Because DMA Engine Accesses Cache at First, Then Watch Physical Memory */
 .ifdef __ARMV6
+	macro32_invalidate_both_all ip
+	macro32_dsb ip
+.else
+	push {r0-r3,lr}
+	mov r0, #1                                @ L1
+	mov r1, #0                                @ Invalidate
+	bl arm32_cache_operation_all
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #2                                @ L2
+	mov r1, #0                                @ Invalidate
+	bl arm32_cache_operation_all
+	pop {r0-r3,lr}
+
 	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
 .endif
 
 	/* Clear Timer Interrupt */

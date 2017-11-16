@@ -10,6 +10,7 @@
 
 SND32_DMA_CB_FRONT_MEMORY: .word SYSTEM32_HEAP_NONCACHE        @ Max. 4095
 SND32_DMA_CB_BACK_MEMORY:  .word SYSTEM32_HEAP_NONCACHE + 4096 @ Max. 4095
+SND32_DMA_CB_NEXT:         .word equ32_dma32_cb_snd32_start
 
 SND32_CODE:                .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
 SND32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared
@@ -135,6 +136,8 @@ snd32_sounddecode:
 
 	snd32_sounddecode_main:
 
+		macro32_dsb ip
+
 		lsl temp, count, #1                        @ Substitution of Multiplication by 2
 
 		ldrh code, [addr_code, temp]
@@ -214,17 +217,16 @@ snd32_sounddecode:
 				bl arm32_cache_operation_heap
 				pop {r0-r3}
 
-				tst status, #2
-				moveq temp2, #equ32_snd32_dma_cb_back  @ If Active is Front
-				movne temp2, #equ32_snd32_dma_cb_front @ If Active is Back
+				ldr temp2, SND32_DMA_CB_NEXT
 
 				push {r0-r6}
 				mov r0, temp2
 				mov r1, #5<<equ32_dma_ti_permap
-				orr r1, r1, #equ32_dma_ti_no_wide_bursts                @ For Periodical Transfer
+				bic r1, r1, #equ32_dma_ti_no_wide_bursts
 				orr r1, r1, #0<<equ32_dma_ti_waits
 				orr r1, r1, #0<<equ32_dma_ti_burst_length
 				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+				orr r1, r1, #equ32_dma_ti_wait_resp
 				mov r2, temp                                            @ Source Address
 				mov r3, #equ32_bus_peripherals_base
 				add r3, r3, #equ32_pwm_base_lower
@@ -361,9 +363,7 @@ snd32_soundplay:
 
 	push {r0-r3,lr}
 	mov r0, #equ32_snd32_dma_channel
-	tst status, #2
-	moveq r1, #equ32_snd32_dma_cb_back    @ If Active is Front, Alternate
-	movne r1, #equ32_snd32_dma_cb_front   @ If Active is Back, Alternate
+	ldr r1, SND32_DMA_CB_NEXT
 	bl dma32_set_channel
 	pop {r0-r3,lr}
 
@@ -372,16 +372,18 @@ snd32_soundplay:
 	b snd32_soundplay_flip
 
 	snd32_soundplay_contine:
-
 		push {r0-r3,lr}
 		mov r0, #equ32_snd32_dma_channel
-		tst status, #2
-		moveq r1, #equ32_snd32_dma_cb_back    @ If Active is Front, Alternate
-		movne r1, #equ32_snd32_dma_cb_front   @ If Active is Back, Alternate
+		ldr r1, SND32_DMA_CB_NEXT
 		bl dma32_change_nextcb
 		pop {r0-r3,lr}
 
 	snd32_soundplay_flip:
+		ldr temp, SND32_DMA_CB_NEXT
+		add temp, temp, #1
+		cmp temp, #equ32_dma32_cb_snd32_end
+		movhi temp, #equ32_dma32_cb_snd32_start
+		str temp, SND32_DMA_CB_NEXT
 
 		eor status, status, #2                @ Flip Front/Back
 
@@ -529,7 +531,7 @@ snd32_soundtest:
 	push {r0-r6,lr}
 	mov r0, #0                                              @ CB Number
 	mov r1, #5<<equ32_dma_ti_permap
-	orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+	orr r1, r1, #equ32_dma_ti_src_dreq|equ32_dma_ti_src_inc @ Transfer Information
 	mov r2, r4                                              @ Source Address
 	mov r3, #equ32_bus_peripherals_base
 	add r3, r3, #equ32_pwm_base_lower

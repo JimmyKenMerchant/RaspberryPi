@@ -26,7 +26,7 @@ void _user_start()
 
 	_sleep( 1000000 );
 
-	_soundset( music, snd32_musiclen( music ) , 0, 3 );
+	_soundset( music, snd32_musiclen( music ) , 0, -1 );
 
 	while(1) {
 

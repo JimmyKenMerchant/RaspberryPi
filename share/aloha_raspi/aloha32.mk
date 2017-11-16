@@ -19,6 +19,7 @@ ifeq ($(type), 3b)
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 	BASE := __B=1
+	GPU := __GPU400=1
 endif
 
 ifeq ($(type), new2b)
@@ -27,6 +28,7 @@ ifeq ($(type), new2b)
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 	BASE := __B=1
+	GPU := __GPU400=1
 endif
 
 ifeq ($(type), 2b)
@@ -35,6 +37,7 @@ ifeq ($(type), 2b)
 	ARCH := __ARMV7=1
 	CPU := __BCM2836=1
 	BASE := __B=1
+	GPU := __GPU250=1
 endif
 
 ifeq ($(type), zero)
@@ -43,6 +46,7 @@ ifeq ($(type), zero)
 	ARCH := __ARMV6=1
 	CPU := __BCM2835=1
 	BASE := __ZERO=1
+	GPU := __GPU400=1
 endif
 
 ifeq ($(type), zerow)
@@ -51,6 +55,7 @@ ifeq ($(type), zerow)
 	ARCH := __ARMV6=1
 	CPU := __BCM2835=1
 	BASE := __ZERO=1
+	GPU := __GPU400=1
 endif
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
@@ -60,11 +65,11 @@ BIT := __AARCH32=1
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
-CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(BIT)
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(BIT)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
-ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(BIT)
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(BIT)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy
