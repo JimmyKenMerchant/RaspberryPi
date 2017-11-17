@@ -112,10 +112,6 @@ os_reset:
 	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
-
-	push {r0-r3,lr}
-	bl snd32_soundinit
-	pop {r0-r3,lr}
 	
 	mov pc, lr
 

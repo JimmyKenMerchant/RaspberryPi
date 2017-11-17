@@ -15,8 +15,8 @@ GPIO32_MASK:                .word equ32_gpio32_gpiomask
 
 /**
  * Usage
- * 1. Place `gpio32_gpioplay` on FIQ/IRQ Handler which will be triggered with any timer or other loops.
- * 2. Place `gpio32_gpioset` with needed arguments in `user32.c` as a C Lang function.
+ * 1. Place `gpio32_gpioplay` on FIQ/IRQ Handler which will be triggered with any timer, or a loop in `user32.c`.
+ * 2. Place `gpio32_gpioset` with needed arguments in `user32.c`.
  * 3. GPIO Sequence automatically runs with the assigned values.  
  */
 

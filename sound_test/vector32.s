@@ -75,6 +75,12 @@ os_reset:
 
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
+	mov r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7        @ Set GPIO 27 INPUT
+	str r1, [r0, #equ32_gpio_gpfsel20]
+
+	mov r1, #equ32_gpio27                                          @ Set GPIO21 Rising Edge Detect
+	str r1, [r0, #equ32_gpio_gpren0]
+
 	/**
 	 * PWM
 	 * Makes 19.2Mhz (From Oscillator).
@@ -137,7 +143,7 @@ os_fiq:
 	push {r0-r7}
 
 .ifdef __ARMV6
-	macro32_invalidate_both_all ip
+	macro32_invalidate_instruction_all ip
 .endif
 
 	/* Clear Timer Interrupt */

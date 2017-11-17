@@ -23,24 +23,30 @@ SND32_STATUS:              .word 0x00
 
 /**
  * Usage
- * 1. Place `snd32_soundplay` on FIQ/IRQ Handler which will be triggered with any timer.
- * 2. Place `snd32_sounddecode` with an array of Sound Index in `user32.c` as a C Lang function
- * 3. Place `snd32_soundset` with needed arguments in `user32.c` as a C Lang function.
+ * 1. Place `snd32_soundplay` on FIQ/IRQ Handler which will be triggered with any timer, or a loop in `user32.c`.
+ * 2. Place `snd32_sounddecode` with Sound Index as an argument in `user32.c` before `snd32_soundset`.
+ * 3. Place `snd32_soundset` with needed arguments in `user32.c`.
  * 4. Music code automatically plays the sound with the assigned values.  
  */
 
 /**
- * Sound Index is made of 16-bit Blocks.
+ * Sound Index is made of an array of 16-bit Blocks.
  * Bit[11:0]: Length of Wave, 0 to 4095.
+ *             If Bit[11:0] is 0, Long (0x1800, Decimal 6144).
+ *             If Bit[11:0] is 1, Super Long (0x2000, Decimal 8192).
+ *             If Bit[11:0] is 2, Extra Long (0x3E00, Decimal 15872).
+ *             If Bit[11:0] is 3, Ultra Long (0x7D00, Decimal 32000).
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
- * Bit[15:14]: Type of Wave, 0 is Triangle, 1 is Square, 2/3 is Noise.
- * Maximum number of blocks is 256.
+ * Bit[15:14]: Type of Wave, 0 is Triangle, 1 is Square, 2 is Noise, 3 is Reserved.
+ *
+ * Maximum number of blocks is 255.
  * 0 means End of Sound Index
  */
 
 /**
- * Music Code is 8-bit Blocks. Select 255 sounds indexed by Sound Index.
- * 0 means End of Music Code. Index is 1-256
+ * Music Code is 8-bit Blocks. Select 254 sounds indexed by Sound Index.
+ * 0xFF(255) means End of Music Code.
+ * Index is 0-254
  */
 
 
@@ -81,8 +87,7 @@ snd32_sounddecode:
 
 		ldrh snd, [snd_index, i]
 
-		cmp snd, #0
-
+		cmp snd, #0                               @ 0 is End of Sound Index
 		beq snd32_sounddecode_success 
 
 		snd32_sounddecode_main_wave:
@@ -93,14 +98,23 @@ snd32_sounddecode:
 			and wave_type, snd, #0xC000
 			lsr wave_type, wave_type, #14
 
-			cmp wave_type, #2
-			bhs snd32_sounddecode_main_wave_noise      @ If Noise
+			cmp wave_length, #0
+			moveq wave_length, #0x1800
+			cmp wave_length, #1
+			moveq wave_length, #0x2000
+			cmp wave_length, #2
+			moveq wave_length, #0x3E00
+			cmp wave_length, #3
+			moveq wave_length, #0x7D00
 
 			push {r0-r3}
-			mov r0, wave_length                        @ 4 Bytes by 2 Words Equals 8 Bytes
+			mov r0, wave_length                        @ Words
 			bl heap32_malloc_noncache
 			mov mem_alloc, r0
 			pop {r0-r3}
+
+			cmp wave_type, #2
+			bhs snd32_sounddecode_main_wave_noise      @ If Noise
 
 			/* Triangle or Square Wave */
 
@@ -124,12 +138,6 @@ snd32_sounddecode:
 			b snd32_sounddecode_main_wave_setcb
 
 			snd32_sounddecode_main_wave_noise:
-
-				push {r0-r3}
-				mov r0, wave_length                    @ 4 Bytes by 2 Words Equals 8 Bytes
-				bl heap32_malloc_noncache
-				mov mem_alloc, r0
-				pop {r0-r3}
 
 				push {r0-r3}
 				mov r0, mem_alloc
@@ -202,10 +210,7 @@ snd32_sounddecode:
 		macro32_dsb ip
 
 		/* Invalidate Cache Because DMA Engine Accesses Cache at First, Then Watch Physical Memory */
-.ifdef __ARMV6
-		macro32_invalidate_both_all ip
-		macro32_dsb ip
-.else
+.ifndef __ARMV6
 		push {r0-r3}
 		mov r0, #1                                @ L1
 		mov r1, #0                                @ Invalidate
@@ -259,10 +264,10 @@ snd32_soundclear:
 	bic temp, temp, #0x1                          @ Clear Bit[0]
 	str temp, SND32_STATUS
 
-	push {r0-r3}
+	push {r0-r3,lr}
 	mov r0, #equ32_snd32_dma_channel
 	bl dma32_clear_channel
-	pop {r0-r3}
+	pop {r0-r3,lr}
 
 	snd32_soundclear_success:
 		mov r0, #0                            @ Return with Success
@@ -341,7 +346,6 @@ snd32_soundplay:
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
 		mov r1, code
-		sub r1, r1, #1
 		bl dma32_set_channel
 		pop {r0-r3}
 
@@ -357,7 +361,6 @@ snd32_soundplay:
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
 		mov r1, code
-		sub r1, r1, #1
 		bl dma32_change_nextcb
 		pop {r0-r3}
 
@@ -476,14 +479,14 @@ snd32_soundset:
 snd32_musiclen:
 	/* Auto (Local) Variables, but just Aliases */
 	music_point       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	music_hword       .req r1
+	music_byte        .req r1
 	length            .req r2
 
 	mov length, #0
 
 	snd32_musiclen_loop:
-		ldrb music_hword, [music_point]           @ Load Half Word (16-bit)
-		cmp music_hword, #0                       @ NULL Character (End of String) Checker
+		ldrb music_byte, [music_point]           @ Load Half Word (16-bit)
+		cmp music_byte, #0xFF                    @ 0xFF is End of Music Code
 		beq snd32_musiclen_common                 @ Break Loop if Null Character
 
 		add music_point, music_point, #1
@@ -495,7 +498,7 @@ snd32_musiclen:
 		mov pc, lr
 
 .unreq music_point
-.unreq music_hword
+.unreq music_byte
 .unreq length
 
 
