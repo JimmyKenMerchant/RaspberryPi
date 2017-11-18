@@ -12,12 +12,18 @@ SND32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatica
 SND32_COUNT:               .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
 SND32_REPEAT:              .word 0x00 @ -1 is Infinite Loop
 
+SND32_SUSPEND_CODE:        .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
+SND32_SUSPEND_LENGTH:      .word 0x00 @ Length of Music Code, If End, Automatically Cleared
+SND32_SUSPEND_COUNT:       .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
+SND32_SUSPEND_REPEAT:      .word 0x00 @ -1 is Infinite Loop
+SND32_INTERRUPT_COUNT:     .word 0x00
+
 /**
- * Bit[0] Started (1)
- * Bit[1] Reserved
+ * Bit[0] Not Started(0)/ Started (1)
+ * Bit[1] Regular State(0)/ Interrupt State(1)
  * Bit[2] Reserved
  * Bit[3] Reserved
- * Bit[31] Initialized
+ * Bit[31] Not Initialized(0)/ Initialized(1)
  */
 SND32_STATUS:              .word 0x00
 
@@ -37,7 +43,7 @@ SND32_STATUS:              .word 0x00
  *             If Bit[11:0] is 2, Extra Long (0x3E00, Decimal 15872).
  *             If Bit[11:0] is 3, Ultra Long (0x7D00, Decimal 32000).
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
- * Bit[15:14]: Type of Wave, 0 is Triangle, 1 is Square, 2 is Noise, 3 is Reserved.
+ * Bit[15:14]: Type of Wave, 0 is Triangle, 1/2 is Square, 3 is Noise.
  *
  * Maximum number of blocks is 255.
  * 0 means End of Sound Index
@@ -113,7 +119,7 @@ snd32_sounddecode:
 			mov mem_alloc, r0
 			pop {r0-r3}
 
-			cmp wave_type, #2
+			cmp wave_type, #3
 			bhs snd32_sounddecode_main_wave_noise      @ If Noise
 
 			/* Triangle or Square Wave */
@@ -129,6 +135,8 @@ snd32_sounddecode:
 			moveq r2, #63
 			movlo r2, #127                             @ Height in Bytes
 			mov r3, #128                               @ Medium in Bytes
+			cmp wave_type, #2
+			bleq heap32_wave_square
 			cmp wave_type, #1
 			bleq heap32_wave_square
 			cmp wave_type, #0
@@ -208,24 +216,6 @@ snd32_sounddecode:
 		str status, SND32_STATUS
 
 		macro32_dsb ip
-
-		/* Invalidate Cache Because DMA Engine Accesses Cache at First, Then Watch Physical Memory */
-.ifndef __ARMV6
-		push {r0-r3}
-		mov r0, #1                                @ L1
-		mov r1, #0                                @ Invalidate
-		bl arm32_cache_operation_all
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, #2                                @ L2
-		mov r1, #0                                @ Invalidate
-		bl arm32_cache_operation_all
-		pop {r0-r3}
-
-		macro32_invalidate_instruction_all ip
-		macro32_dsb ip
-.endif
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
@@ -256,13 +246,18 @@ snd32_soundclear:
 	mov temp, #0
 
 	str temp, SND32_CODE
+
+	macro32_dsb ip
+
 	str temp, SND32_LENGTH
 	str temp, SND32_COUNT
 	str temp, SND32_REPEAT
 
 	ldr temp, SND32_STATUS	
-	bic temp, temp, #0x1                          @ Clear Bit[0]
+	bic temp, temp, #0x3                          @ Clear Bit[1] and Bit[0]
 	str temp, SND32_STATUS
+
+	macro32_dsb ip
 
 	push {r0-r3,lr}
 	mov r0, #equ32_snd32_dma_channel
@@ -270,6 +265,7 @@ snd32_soundclear:
 	pop {r0-r3,lr}
 
 	snd32_soundclear_success:
+		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
 	snd32_soundclear_common:
@@ -295,8 +291,8 @@ snd32_soundplay:
 	repeat      .req r3 @ Scratch Register
 	status      .req r4
 	code        .req r5
-	code_prior  .req r6
-	temp        .req r7
+	temp        .req r6
+	temp2       .req r7
 
 	push {r4-r7,lr}
 
@@ -329,12 +325,8 @@ snd32_soundplay:
 
 		ldrb code, [addr_code, count]
 
-		tst status, #1
-		beq snd32_soundplay_first                  @ If Start of Music Code
-
-		sub temp, count, #1
-		ldrb code_prior, [addr_code, temp]         @ Prior Value
-		b snd32_soundplay_contine
+		tst status, #0x1
+		bne snd32_soundplay_contine                @ If Continue of Music Code
 
 	snd32_soundplay_first:
 
@@ -349,14 +341,11 @@ snd32_soundplay:
 		bl dma32_set_channel
 		pop {r0-r3}
 
-		orr status, status, #1
+		orr status, status, #0x1
 
 		b snd32_soundplay_countup
 
 	snd32_soundplay_contine:
-
-		cmp code, code_prior
-		beq snd32_soundplay_countup
 
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
@@ -370,9 +359,19 @@ snd32_soundplay:
 		str repeat, SND32_REPEAT
 		str status, SND32_STATUS
 
+		tst status, #0x2                           @ Check Regular/Interrupt State
+		beq snd32_soundplay_success
+
+		ldr temp, SND32_INTERRUPT_COUNT
+		add temp, temp, #1
+		str temp, SND32_INTERRUPT_COUNT
+
 		b snd32_soundplay_success
 
 	snd32_soundplay_free:
+		tst status, #0x2
+		bne snd32_soundplay_free_interrupt         @ Check Regular/Interrupt State
+
 		mov addr_code, #0
 		mov length, #0
 		bic status, status, #0x1                   @ Clear Bit[0]
@@ -389,6 +388,43 @@ snd32_soundplay:
 		pop {r0-r3}
 
 		b snd32_soundplay_success
+
+		snd32_soundplay_free_interrupt:
+			.unreq code
+			temp3 .req r5
+
+			ldr temp, SND32_SUSPEND_LENGTH
+			str temp, SND32_LENGTH
+
+			ldr temp2, SND32_SUSPEND_COUNT
+			ldr temp3, SND32_INTERRUPT_COUNT           @ Count of Interrupt Throughout
+			add temp2, temp2, temp3
+
+			cmp temp2, temp
+			bls snd32_soundplay_free_interrupt_jump
+
+			snd32_soundplay_free_interrupt_loop:
+				subs temp2, temp2, temp
+				bhi snd32_soundplay_free_interrupt_loop
+
+			snd32_soundplay_free_interrupt_jump:
+
+				str temp2, SND32_COUNT
+
+				ldr temp, SND32_SUSPEND_REPEAT
+				str temp, SND32_REPEAT
+				bic status, status, #0x2                   @ Clear Interrupt State Bit[1]
+				str status, SND32_STATUS
+				ldr temp, SND32_SUSPEND_CODE
+				str temp, SND32_CODE
+
+				macro32_dsb ip
+
+				push {r0-r3}
+				bl snd32_soundplay                         @ Execute Itself
+				pop {r0-r3}
+
+				b snd32_soundplay_success
 
 	snd32_soundplay_error1:
 		mov r0, #1                            @ Return with Error 1
@@ -409,9 +445,9 @@ snd32_soundplay:
 .unreq count
 .unreq repeat
 .unreq status
-.unreq code
-.unreq code_prior
+.unreq temp3
 .unreq temp
+.unreq temp2
 
 
 /**
@@ -439,20 +475,24 @@ snd32_soundset:
 
 	mov temp, #0
 
-	str temp, SND32_CODE
-	str temp, SND32_LENGTH
-	str temp, SND32_COUNT
-	str temp, SND32_REPEAT
+	str temp, SND32_CODE      @ Reset to Prevent Odd Playing Sound
+
+	macro32_dsb ip
+
 	ldr temp, SND32_STATUS
-	bic temp, temp, #0x1      @ Clear Bit[0]
+	bic temp, temp, #0x3      @ Clear Bit[1] and Bit[0]
 	str temp, SND32_STATUS
 
 	str length, SND32_LENGTH
 	str count, SND32_COUNT
 	str repeat, SND32_REPEAT
+
+	macro32_dsb ip
+
 	str addr_code, SND32_CODE @ Should Set Music Code at End for Polling Functions, `snd32_soundplay`
 
 	snd32_soundset_success:
+		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
 	snd32_soundset_common:
@@ -464,6 +504,92 @@ snd32_soundset:
 .unreq count
 .unreq repeat
 .unreq temp
+
+
+/**
+ * function snd32_soundinterrupt
+ * Interrupt Sound to Main Sound
+ *
+ * Parameters
+ * r0: Music Code
+ * r1: Length
+ * r2: Count (Offset)
+ * r3: Number of Repeat, If -1, Infinite Loop
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Main Sound Has Not Been Set
+ */
+.globl snd32_soundinterrupt
+snd32_soundinterrupt:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_code   .req r0 @ Register for Result, Scratch Register
+	length      .req r1 @ Scratch Register
+	count       .req r2 @ Scratch Register
+	repeat      .req r3 @ Scratch Register
+	temp        .req r4
+	temp2       .req r5
+
+	push {r4-r5}
+
+	ldr temp, SND32_STATUS
+	tst temp, #0x2
+	bne snd32_soundinterrupt_already
+
+	mov temp, #0
+
+	ldr temp2, SND32_CODE
+	cmp temp2, #0
+	beq snd32_soundinterrupt_error
+	str temp2, SND32_SUSPEND_CODE
+	str temp, SND32_CODE                 @ Reset to Prevent Odd Playing Sound
+
+	macro32_dsb ip
+
+	ldr temp2, SND32_LENGTH
+	str temp2, SND32_SUSPEND_LENGTH
+
+	ldr temp2, SND32_COUNT
+	str temp2, SND32_SUSPEND_COUNT
+
+	ldr temp2, SND32_REPEAT
+	str temp2, SND32_SUSPEND_REPEAT
+
+	str temp, SND32_INTERRUPT_COUNT      @ Reset Interrupt Counter
+
+	ldr temp, SND32_STATUS
+	orr temp, temp, #0x2                 @ Set Interrupt State Bit[1]
+	str temp, SND32_STATUS
+
+	snd32_soundinterrupt_already:
+
+		str length, SND32_LENGTH
+		str count, SND32_COUNT
+		str repeat, SND32_REPEAT
+
+		macro32_dsb ip
+
+		str addr_code, SND32_CODE            @ Should Set Music Code at End for Polling Functions, `snd32_soundplay`
+
+		b snd32_soundinterrupt_success
+
+	snd32_soundinterrupt_error:
+		mov r1, #1
+		b snd32_soundinterrupt_common        @ Return with Error
+
+	snd32_soundinterrupt_success:
+		macro32_dsb ip
+		mov r0, #0                           @ Return with Success
+
+	snd32_soundinterrupt_common:
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq addr_code
+.unreq length
+.unreq count
+.unreq repeat
+.unreq temp
+.unreq temp2
 
 
 /**

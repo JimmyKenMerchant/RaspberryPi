@@ -25,11 +25,11 @@ sound_index sound[] =
 	1<<14|1<<12|144, // 9
 	1<<14|1<<12|288, // 10
 	1<<14|1<<12|576, // 11
-	2<<14|1<<12|36,  // 12 Noise
-	2<<14|1<<12|72,  // 13
-	2<<14|1<<12|144, // 14
-	2<<14|1<<12|288, // 15
-	2<<14|1<<12|576, // 16
+	3<<14|1<<12|36,  // 12 Noise
+	3<<14|1<<12|72,  // 13
+	3<<14|1<<12|144, // 14
+	3<<14|1<<12|288, // 15
+	3<<14|1<<12|576, // 16
 	0                // End of Index
 };
 
@@ -43,6 +43,12 @@ music_code music[] =
 	0xFF
 };
 
+music_code interrupt[] =
+{
+	7,8,9,7,8,9,7,8,9,7,8,9,
+	0xFF
+};
+
 void _user_start()
 {
 
@@ -51,6 +57,7 @@ void _user_start()
 	while(true) {
 		_soundset( music, snd32_musiclen( music ) , 0, -1 );
 		while( ! _gpio_detect( 27 ) ) {
+			if ( _gpio_detect( 26 ) ) _soundinterrupt( interrupt, snd32_musiclen( interrupt ) , 0, 1 );
 		}
 		_soundclear();
 		_sleep( 1000 );

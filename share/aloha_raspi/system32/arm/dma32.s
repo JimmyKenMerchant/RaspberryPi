@@ -361,7 +361,6 @@ macro32_debug temp, 200, 360
 ldr source_ad, [addr_cb, #dma32_source_ad]
 macro32_debug source_ad, 100, 150
 */
-
 	macro32_clean_cache addr_cb, ip
 	macro32_dsb ip
 
