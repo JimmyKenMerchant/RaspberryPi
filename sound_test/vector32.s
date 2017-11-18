@@ -146,6 +146,7 @@ os_fiq:
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
 .endif
 
 	/* Clear Timer Interrupt */
