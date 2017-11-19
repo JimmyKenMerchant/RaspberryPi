@@ -12,11 +12,11 @@
 
 * GPIO13 as Output of PWM1
 
-* GPIO25-27 as Input of GPIO for Buttons (Up to 3.3V)
+* GPIO20-27 as Input of GPIO for Buttons (Up to 3.3V)
 
 * HDMI as VIDEO Output
 
-## GPIO 25-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+## GPIO 20-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
 ## Don't use a minijack on Raspberry Pi as a sound output on this project, because an analogue circuit affects a digital circuit, and vice versa. The minijack does not assume usage on this project. This affection causes possible break of your Raspberry Pi.
 
