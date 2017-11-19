@@ -62,10 +62,16 @@ os_reset:
 
 	mov r1, #0
 
+	/**
+	 * Don't use a minijack on Raspberry Pi as a sound output on this project,
+	 * The minijack don't assume usage on this project.
+	 */
+/*
 .ifndef __ZERO
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0     @ Set GPIO 40 PWM0 (to Minijack)
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 45 PWM1 (to Minijack)
 .endif
+*/
 
 .ifndef __RASPI3B
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
