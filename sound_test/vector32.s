@@ -64,7 +64,7 @@ os_reset:
 
 	/**
 	 * Don't use a minijack on Raspberry Pi as a sound output on this project,
-	 * The minijack don't assume usage on this project.
+	 * The minijack does not assume usage on this project.
 	 */
 /*
 .ifndef __ZERO
@@ -79,12 +79,22 @@ os_reset:
 
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
-	mov r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5        @ Set GPIO 25 INPUT
+	mov r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0        @ Set GPIO 20 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_3    @ Set GPIO 23 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 25 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-	mov r1, #equ32_gpio25                                          @ Set GPIO25 Rising Edge Detect
+	mov r1, #equ32_gpio20                                          @ Set GPIO20 Rising Edge Detect
+	orr r1, r1, #equ32_gpio21                                      @ Set GPIO21 Rising Edge Detect
+	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
+	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
+	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
+	orr r1, r1, #equ32_gpio25                                      @ Set GPIO25 Rising Edge Detect
 	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 Rising Edge Detect
 	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]

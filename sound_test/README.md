@@ -18,7 +18,7 @@
 
 ## GPIO 25-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
-## Don't use a minijack on Raspberry Pi as a sound output on this project, because an analogue circuit affects a digital circuit, and vice versa. The minijack don't assume usage on this project. This affection causes possible break of your Raspberry Pi.
+## Don't use a minijack on Raspberry Pi as a sound output on this project, because an analogue circuit affects a digital circuit, and vice versa. The minijack does not assume usage on this project. This affection causes possible break of your Raspberry Pi.
 
 **Compatibility**
 

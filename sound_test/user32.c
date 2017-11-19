@@ -32,30 +32,36 @@ sound_index sound[] =
 {
 	2<<14|3<<12|36,  // 0 Silence 
 	3<<14|1<<12|0,   // 1 Long Noise
-	36,              // 2 Sin
-	72,              // 3
-	144,             // 4
-	288,             // 5
-	576,             // 6
-	1<<14|1<<12|36,  // 7 Triangle
-	1<<14|1<<12|72,  // 8
-	1<<14|1<<12|144, // 9
-	1<<14|1<<12|288, // 10
-	1<<14|1<<12|576, // 11
-	2<<14|1<<12|36,  // 12 Square
-	2<<14|1<<12|72,  // 13
-	2<<14|1<<12|144, // 14
-	2<<14|1<<12|288, // 15
-	2<<14|1<<12|576, // 16
-	3<<14|1<<12|36,  // 17 Noise
-	3<<14|1<<12|72,  // 18
-	3<<14|1<<12|144, // 19
-	3<<14|1<<12|288, // 20
-	3<<14|1<<12|576, // 21
+	36,              // 2  888.9hz Appx. A5 Sin
+	51,              // 3  627.5hz Appx. D#5
+	55,              // 4  581.8hz Appx. D5
+	58,              // 5  551.7hz Appx. C#5
+	61,              // 6  524.6hz Appx. C5
+	65,              // 7  492.3hz Appx. B4
+	68,              // 8  470.6hz Appx. A#4
+	72,              // 9  444.4hz Appx. A4
+	144,             // 10 222.2hz
+	288,             // 11
+	576,             // 12
+	1<<14|1<<12|36,  // 13 Triangle
+	1<<14|1<<12|72,  // 14
+	1<<14|1<<12|144, // 15
+	1<<14|1<<12|288, // 16
+	1<<14|1<<12|576, // 17
+	2<<14|1<<12|36,  // 18 Square
+	2<<14|1<<12|72,  // 19
+	2<<14|1<<12|144, // 20
+	2<<14|1<<12|288, // 21
+	2<<14|1<<12|576, // 22
+	3<<14|1<<12|36,  // 23 Noise
+	3<<14|1<<12|72,  // 24
+	3<<14|1<<12|144, // 25
+	3<<14|1<<12|288, // 26
+	3<<14|1<<12|576, // 27
 	0                // End of Index
 };
 
-music_code music[] =
+music_code music1[] =
 {
 	4,3,2,4,3,2,4,3,2,4,3,2,
 	6,5,4,6,5,4,6,5,4,6,5,4,
@@ -67,7 +73,25 @@ music_code music[] =
 	0xFF
 };
 
-music_code interrupt[] =
+music_code music2[] =
+{
+	9,8,7,6,5,4,3,4,5,6,7,8,
+	9,9,9,9,9,9,8,8,8,8,8,8,
+	7,7,7,7,7,7,6,6,6,6,6,6,
+	5,5,4,4,3,3,3,3,4,4,5,5,
+	0xFF
+};
+
+music_code music3[] =
+{
+	9,8,7,6,5,4,3,4,5,6,7,8,
+	9,9,9,9,9,9,8,8,8,8,8,8,
+	7,7,7,7,7,7,6,6,6,6,6,6,
+	5,5,4,4,3,3,3,3,4,4,5,5,
+	0xFF
+};
+
+music_code interrupt1[] =
 {
 	7,8,9,7,8,9,7,8,9,7,8,9,
 	0xFF
@@ -80,19 +104,35 @@ void _user_start()
 
 	while(true) {
 		while( true ) {
-			if ( _gpio_detect( 27 ) ) {
-				_soundset( music, snd32_musiclen( music ) , 0, -1 );
-				continue;
+			if ( _gpio_detect( 20 ) ) {
+				_soundclear();
+				break;
 			}
-			if ( _gpio_detect( 26 ) ) {
-				_soundinterrupt( interrupt, snd32_musiclen( interrupt ) , 0, 1 );
-				continue;
+			if ( _gpio_detect( 21 ) ) {
+				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
+				break;
+			}
+			if ( _gpio_detect( 22 ) ) {
+				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
+				break;
+			}
+			if ( _gpio_detect( 23 ) ) {
+				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
+				break;
+			}
+			if ( _gpio_detect( 24 ) ) {
+				break;
 			}
 			if ( _gpio_detect( 25 ) ) {
-				_soundclear();
-				continue;
+				break;
 			}
-
+			if ( _gpio_detect( 26 ) ) {
+				break;
+			}
+			if ( _gpio_detect( 27 ) ) {
+				_soundinterrupt( interrupt1, snd32_musiclen( interrupt1 ) , 0, 1 );
+				break;
+			}
 		}
 	}
 }
