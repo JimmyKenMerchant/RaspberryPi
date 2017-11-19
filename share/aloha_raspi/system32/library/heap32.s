@@ -637,7 +637,7 @@ heap32_wave_square:
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
-	lsl temp, length, #2                        @ Substitution of Multiplication by 2
+	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_square_error2               @ If Overflow is Expected
 
@@ -666,7 +666,7 @@ heap32_wave_square:
 
 	lsr half, length, #1                        @ Substitution of Division by 2
 
-	lsl length, half, #2                        @ Substitution of Multiplication by 4, Reassume Length to Be Corrected
+	lsl length, half, #2                        @ Substitution of Multiplication by 4, Words to Bytes
 
 	/* direction: Plus at First Half(0), Last half (-1) */
 
@@ -775,7 +775,7 @@ heap32_wave_random:
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
-	lsl temp, length, #2                        @ Substitution of Multiplication by 2
+	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_random_error2               @ If Overflow is Expected
 
@@ -804,7 +804,7 @@ heap32_wave_random:
 
 	lsr half, length, #1                        @ Substitution of Division by 2
 
-	lsl length, half, #2                        @ Substitution of Multiplication by 4, Reassume Length to Be Corrected
+	lsl length, half, #2                        @ Substitution of Multiplication by 4, Words to Bytes
 
 	/* direction: Plus at First Half(0), Last half (-1) */
 
@@ -961,7 +961,7 @@ heap32_wave_triangle:
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 
-	lsl temp, length, #2                        @ Substitution of Multiplication by 2
+	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_triangle_error2             @ If Overflow is Expected
 
@@ -978,8 +978,8 @@ heap32_wave_triangle:
 
 	.unreq heap_start
 	.unreq heap_size
-	quarter   .req r5
-	direction .req r6
+	quarter   .req r6
+	direction .req r7
 
 	/* Examine Length to know Odd/Even on Half and Quarter */
 
@@ -995,7 +995,8 @@ heap32_wave_triangle:
 	addne quarter, quarter, #1
 	
 	lsr quarter, quarter, #1                    @ Substitution of Division by 2
-	lsl length, quarter, #2                     @ Substitution of Multiplication by 4, Reassume Length to Be Corrected
+
+	lsl length, quarter, #2                     @ Substitution of Multiplication by 4, Words to Bytes
 
 	sub quarter, quarter, #1                    @ To Get Delta, Subtract 1
 
@@ -1107,3 +1108,205 @@ heap32_wave_triangle:
 .unreq vfp_value
 .unreq vfp_one
 .unreq vfp_zero
+
+
+/**
+ * function heap32_wave_sin
+ * Make Sin Wave on Memory Space
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r1: Length of Wave (32-bit Words, Must Be 5 and More)
+ * r2: Height of Wave (32-bit)
+ * r3: Medium of Wave (32-bit)
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0)
+ * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 5
+ */
+.globl heap32_wave_sin
+heap32_wave_sin:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	length           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	height           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	medium           .req r3
+	block_point      .req r4
+	block_size       .req r5
+	heap_start       .req r6
+	heap_size        .req r7
+	flag_odd         .req r8
+	temp             .req r9	
+
+	vfp_omega        .req s0 @ d0
+	vfp_delta        .req s1
+	vfp_half         .req s2 @ d1
+	vfp_medium       .req s3
+	vfp_height       .req s4
+	vfp_value        .req s5
+	vfp_one          .req s6
+	vfp_zero         .req s7
+	vfp_pi           .req s8
+
+	push {r4-r9}
+	vpush {s0-s8}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_wave_sin_error1
+
+	cmp length, #5                              @ If Less than 5
+	blo heap32_wave_sin_error2
+
+	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
+	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+
+	lsl temp, length, #2                        @ Substitution of Multiplication by 4
+	cmp temp, block_size
+	bhi heap32_wave_sin_error2                  @ If Overflow is Expected
+
+	add block_size, block_start, block_size
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_wave_sin_error2                  @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+	cmp block_start, heap_start
+	blo heap32_wave_sin_error2
+
+	.unreq heap_start
+	.unreq heap_size
+	half      .req r6
+	direction .req r7
+
+	/* Examine Length to know Odd/Even on Half and Quarter */
+
+	tst length, #1                              @ If Half is Odd
+	movne flag_odd, #1
+	addne length, length, #1
+	moveq flag_odd, #0
+
+	lsr half, length, #1                        @ Substitution of Division by 2
+
+	lsl length, half, #2                        @ Substitution of Multiplication by 4, Words to Bytes
+
+	sub half, half, #1                          @ To Get Delta, Subtract 1
+
+	/* direction: Plus at First Half(1),  Minus at Last Half(0) */
+
+	mov direction, #1                           @ Define Direction to Plus at First Quarter
+
+	/* Preparation for Usage of VFP Registers */
+
+	mov temp, #0
+	vmov vfp_zero, temp
+	vcvt.f32.u32 vfp_zero, vfp_zero
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+	ldr temp, heap32_wave_sin_pi                @ Already Float
+	vldr vfp_pi, [temp]
+
+	vmov vfp_half, half
+	vmov vfp_medium, medium
+	vmov vfp_height, height 
+
+	vcvt.f32.u32 vfp_half, vfp_half
+	vcvt.f32.u32 vfp_medium, vfp_medium
+	vcvt.f32.u32 vfp_height, vfp_height
+
+	vdiv.f32 vfp_delta, vfp_pi, vfp_half
+
+	vmov vfp_omega, vfp_zero                     @ Reset Omega
+
+	add block_point, block_start, length         @ Make First Quarter
+
+	heap32_wave_sin_loop:
+		cmp direction, #-1
+		ble heap32_wave_sin_success
+		
+		heap32_wave_sin_loop_half:
+			cmp block_start, block_point
+			bhs heap32_wave_sin_loop_common
+
+			vmul.f32 vfp_value, vfp_delta, vfp_omega
+
+			push {r0-r3,lr}
+			vmov r0, vfp_value
+			bl math32_sin32
+			vmov vfp_value, r0
+			pop {r0-r3,lr}
+
+			tst direction, #1                          @ Check Bit[0] of direction
+			vmulne.f32 vfp_value, vfp_height, vfp_value
+			vnmuleq.f32 vfp_value, vfp_height, vfp_value
+
+			vadd.f32 vfp_value, vfp_medium, vfp_value
+
+			vcvtr.u32.f32 vfp_value, vfp_value
+			vmov temp, vfp_value
+
+			str temp, [block_start]
+			add block_start, block_start, #4
+			vadd.f32 vfp_omega, vfp_omega, vfp_one
+
+			macro32_dsb ip
+
+			b heap32_wave_sin_loop_half
+
+		heap32_wave_sin_loop_common:
+			vmov vfp_omega, vfp_zero                   @ Reset Omega         
+
+			add block_point, block_point, length       @ Make Next Quarter
+
+			tst flag_odd, #1
+			vaddne.f32 vfp_omega, vfp_omega, vfp_one   @ If Odd, Correct Positions
+			subne block_point, block_point, #4
+
+			sub direction, direction, #1               @ Make New Direction for Next Quarter
+
+			b heap32_wave_sin_loop
+
+	heap32_wave_sin_error1:
+		mov r0, #1
+		b heap32_wave_sin_common
+
+	heap32_wave_sin_error2:
+		mov r0, #2
+		b heap32_wave_sin_common
+
+	heap32_wave_sin_success:
+		mov r0, #0
+
+	heap32_wave_sin_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		vpop {s0-s8}
+		pop {r4-r9}
+		mov pc, lr
+
+heap32_wave_sin_pi: .word MATH32_PI32
+
+.unreq block_start
+.unreq length
+.unreq height
+.unreq medium
+.unreq block_point
+.unreq block_size
+.unreq half
+.unreq direction 
+.unreq flag_odd
+.unreq temp
+
+.unreq vfp_omega
+.unreq vfp_delta
+.unreq vfp_half
+.unreq vfp_medium
+.unreq vfp_height
+.unreq vfp_value
+.unreq vfp_one
+.unreq vfp_zero
+.unreq vfp_pi

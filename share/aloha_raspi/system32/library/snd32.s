@@ -32,18 +32,17 @@ SND32_STATUS:              .word 0x00
  * 1. Place `snd32_soundplay` on FIQ/IRQ Handler which will be triggered with any timer, or a loop in `user32.c`.
  * 2. Place `snd32_sounddecode` with Sound Index as an argument in `user32.c` before `snd32_soundset`.
  * 3. Place `snd32_soundset` with needed arguments in `user32.c`.
- * 4. Music code automatically plays the sound with the assigned values.  
+ * 4. Music code automatically plays the sound with the assigned values.
+ * 5. If you want to interrupt the playing sound to play another, use 'snd32_soundinterrupt'.   
  */
 
 /**
  * Sound Index is made of an array of 16-bit Blocks.
  * Bit[11:0]: Length of Wave, 0 to 4095.
- *             If Bit[11:0] is 0, Long (0x1800, Decimal 6144).
- *             If Bit[11:0] is 1, Super Long (0x2000, Decimal 8192).
- *             If Bit[11:0] is 2, Extra Long (0x3E00, Decimal 15872).
- *             If Bit[11:0] is 3, Ultra Long (0x7D00, Decimal 32000).
+ *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
+ *             If Bit[11:0] is 1, Super Long (0x3E80, Decimal 16000).
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
- * Bit[15:14]: Type of Wave, 0 is Triangle, 1/2 is Square, 3 is Noise.
+ * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
  * Maximum number of blocks is 255.
  * 0 means End of Sound Index
@@ -51,8 +50,8 @@ SND32_STATUS:              .word 0x00
 
 /**
  * Music Code is 8-bit Blocks. Select 254 sounds indexed by Sound Index.
+ * Index is 0-254.
  * 0xFF(255) means End of Music Code.
- * Index is 0-254
  */
 
 
@@ -105,13 +104,9 @@ snd32_sounddecode:
 			lsr wave_type, wave_type, #14
 
 			cmp wave_length, #0
-			moveq wave_length, #0x1800
+			moveq wave_length, #0x1F40
 			cmp wave_length, #1
-			moveq wave_length, #0x2000
-			cmp wave_length, #2
-			moveq wave_length, #0x3E00
-			cmp wave_length, #3
-			moveq wave_length, #0x7D00
+			moveq wave_length, #0x3E80
 
 			push {r0-r3}
 			mov r0, wave_length                        @ Words
@@ -138,9 +133,9 @@ snd32_sounddecode:
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
-			bleq heap32_wave_square
-			cmp wave_type, #0
 			bleq heap32_wave_triangle
+			cmp wave_type, #0
+			bleq heap32_wave_sin
 			pop {r0-r3}
 
 			b snd32_sounddecode_main_wave_setcb

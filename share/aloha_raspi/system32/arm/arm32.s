@@ -1104,7 +1104,7 @@ arm32_change_address:
 
 /**
  * function arm32_set_cache
- * Change Cache Status for HEAP
+ * Change Cache Status
  *
  * Parameters
  * r0: Secure state (0) or Non-secure state (1), Use in Inner Function
