@@ -579,7 +579,7 @@ extern uint32 draw32_copy
 /* Constants */
 
 #define sound_index uint16
-#define music_code uchar8
+#define music_code uint16
 
 
 /* Relative System Calls  */

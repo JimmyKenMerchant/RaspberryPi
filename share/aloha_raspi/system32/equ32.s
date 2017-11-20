@@ -17,13 +17,13 @@
 .equ equ32_print32_string_tab_length, 4
 .equ equ32_dma32_cb_max,              1000
 .equ equ32_dma32_cb_snd32_start,      0
-.equ equ32_dma32_cb_snd32_end,        254
+.equ equ32_dma32_cb_snd32_end,        65534
 .equ equ32_snd32_dma_channel,         0
 .equ equ32_gpio32_gpiomask,           0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 
 /**
  * Standard Peripherals
- * In ARM Instructions: On `MOV`, You Can Use the 16-bit Immediate with No-rotated.
+ * In ARM Instructions: On `MOVW`, You Can Use the 16-bit Immediate with No-rotated.
  */
 .ifdef __BCM2835
 	.equ equ32_peripherals_base,   0x20000000 @ For ARM Physical Address

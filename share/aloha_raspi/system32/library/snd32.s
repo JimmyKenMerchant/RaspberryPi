@@ -29,11 +29,12 @@ SND32_STATUS:              .word 0x00
 
 /**
  * Usage
- * 1. Place `snd32_soundplay` on FIQ/IRQ Handler which will be triggered with any timer, or a loop in `user32.c`.
- * 2. Place `snd32_sounddecode` with Sound Index as an argument in `user32.c` before `snd32_soundset`.
- * 3. Place `snd32_soundset` with needed arguments in `user32.c`.
+ * 1. Place `snd32_soundplay` on FIQ/IRQ Handler which will be triggered with any timer.
+ * 2. Place `_sounddecode` with Sound Index as an argument in `user32.c` before `snd32_soundset`.
+ * 3. Place `_soundset` with needed arguments in `user32.c`.
  * 4. Music code automatically plays the sound with the assigned values.
- * 5. If you want to interrupt the playing sound to play another, use 'snd32_soundinterrupt'.   
+ * 5. If you want to interrupt the playing sound to play another, use '_soundinterrupt'.
+ * 6. If you want to stop the playing sound, use '_soundclear'.
  */
 
 /**
@@ -44,14 +45,14 @@ SND32_STATUS:              .word 0x00
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
  * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
- * Maximum number of blocks is 255.
+ * Maximum number of blocks is 65535.
  * 0 means End of Sound Index
  */
 
 /**
- * Music Code is 8-bit Blocks. Select 254 sounds indexed by Sound Index.
- * Index is 0-254.
- * 0xFF(255) means End of Music Code.
+ * Music Code is 16-bit Blocks. Select up to 65535 sounds indexed by Sound Index.
+ * Index is 0-65534.
+ * 0xFFFF(65535) means End of Music Code.
  */
 
 
@@ -78,8 +79,9 @@ snd32_sounddecode:
 	wave_type   .req r6
 	mem_alloc   .req r7
 	cb          .req r8
+	max_cb      .req r9
 
-	push {r4-r8,lr}                           @ Style of Enter/Return (2017 Winter)
+	push {r4-r9,lr}                           @ Style of Enter/Return (2017 Winter)
 
 	ldr status, SND32_STATUS
 	tst status, #0x80000000
@@ -87,6 +89,7 @@ snd32_sounddecode:
 
 	mov i, #0
 	mov cb, #equ32_dma32_cb_snd32_start
+	movw max_cb, #equ32_dma32_cb_snd32_end    @ Explicitly Declearing MOV with Wide Immediate, `MOVW`
 
 	snd32_sounddecode_main:
 
@@ -193,7 +196,7 @@ snd32_sounddecode:
 			macro32_dsb ip
 			add i, i, #2
 			add cb, cb, #1
-			cmp cb, #equ32_dma32_cb_snd32_end
+			cmp cb, max_cb
 			bhi snd32_sounddecode_error2
 
 			b snd32_sounddecode_main
@@ -214,7 +217,7 @@ snd32_sounddecode:
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
-		pop {r4-r8,pc}                             @ Style of Enter/Return (2017 Winter)
+		pop {r4-r9,pc}                             @ Style of Enter/Return (2017 Winter)
 
 .unreq snd_index
 .unreq snd
@@ -225,6 +228,7 @@ snd32_sounddecode:
 .unreq wave_type
 .unreq mem_alloc
 .unreq cb
+.unreq max_cb
 
 
 /**
@@ -318,7 +322,8 @@ snd32_soundplay:
 
 	snd32_soundplay_jump:
 
-		ldrb code, [addr_code, count]
+		lsl temp, count, #1                        @ Substitute of Multiplication by 2
+		ldrh code, [addr_code, temp]
 
 		tst status, #0x1
 		bne snd32_soundplay_contine                @ If Continue of Music Code
@@ -430,6 +435,7 @@ snd32_soundplay:
 		b snd32_soundplay_common
 
 	snd32_soundplay_success:
+		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
 	snd32_soundplay_common:
@@ -589,7 +595,7 @@ snd32_soundinterrupt:
 
 /**
  * function snd32_musiclen
- * Count 1-Bytes Beats of Music Code
+ * Count 2-Bytes Beats of Music Code
  *
  * Parameters
  * r0: Pointer of Array of Music Code
@@ -600,17 +606,19 @@ snd32_soundinterrupt:
 snd32_musiclen:
 	/* Auto (Local) Variables, but just Aliases */
 	music_point       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	music_byte        .req r1
+	music_hword       .req r1
 	length            .req r2
+	end               .req r3
 
 	mov length, #0
+	movw end, #0xFFFF                             @ 0xFFFF is End of Music Code
 
 	snd32_musiclen_loop:
-		ldrb music_byte, [music_point]           @ Load Half Word (16-bit)
-		cmp music_byte, #0xFF                    @ 0xFF is End of Music Code
+		ldrh music_hword, [music_point]           @ Load Half Word (16-bit)
+		cmp music_hword, end
 		beq snd32_musiclen_common                 @ Break Loop if Null Character
 
-		add music_point, music_point, #1
+		add music_point, music_point, #2
 		add length, length, #1
 		b snd32_musiclen_loop
 
@@ -619,8 +627,9 @@ snd32_musiclen:
 		mov pc, lr
 
 .unreq music_point
-.unreq music_byte
+.unreq music_hword
 .unreq length
+.unreq end
 
 
 /**
