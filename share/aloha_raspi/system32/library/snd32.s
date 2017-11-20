@@ -45,13 +45,13 @@ SND32_STATUS:              .word 0x00
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
  * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
- * Maximum number of blocks is 65535.
+ * Maximum number of blocks is 65280.
  * 0 means End of Sound Index
  */
 
 /**
  * Music Code is 16-bit Blocks. Select up to 65535 sounds indexed by Sound Index.
- * Index is 0-65534.
+ * Index is 0-65279.
  * 0xFFFF(65535) means End of Music Code.
  */
 
@@ -79,7 +79,7 @@ snd32_sounddecode:
 	wave_type   .req r6
 	mem_alloc   .req r7
 	cb          .req r8
-	max_cb      .req r9
+	size_cb     .req r9
 
 	push {r4-r9,lr}                           @ Style of Enter/Return (2017 Winter)
 
@@ -89,7 +89,8 @@ snd32_sounddecode:
 
 	mov i, #0
 	mov cb, #equ32_dma32_cb_snd32_start
-	movw max_cb, #equ32_dma32_cb_snd32_end    @ Explicitly Declearing MOV with Wide Immediate, `MOVW`
+	mov size_cb, #equ32_dma32_cb_snd32_size
+	add size_cb, cb, size_cb
 
 	snd32_sounddecode_main:
 
@@ -196,8 +197,8 @@ snd32_sounddecode:
 			macro32_dsb ip
 			add i, i, #2
 			add cb, cb, #1
-			cmp cb, max_cb
-			bhi snd32_sounddecode_error2
+			cmp cb, size_cb
+			bhs snd32_sounddecode_error2
 
 			b snd32_sounddecode_main
 
@@ -228,7 +229,7 @@ snd32_sounddecode:
 .unreq wave_type
 .unreq mem_alloc
 .unreq cb
-.unreq max_cb
+.unreq size_cb
 
 
 /**
@@ -611,7 +612,8 @@ snd32_musiclen:
 	end               .req r3
 
 	mov length, #0
-	movw end, #0xFFFF                             @ 0xFFFF is End of Music Code
+	mov end, #0xFF00                             @ 0xFFFF is End of Music Code
+	orr end, end, #0x00FF
 
 	snd32_musiclen_loop:
 		ldrh music_hword, [music_point]           @ Load Half Word (16-bit)

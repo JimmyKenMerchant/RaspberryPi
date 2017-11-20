@@ -25,13 +25,13 @@
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
  * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
- * Maximum number of blocks is 65535.
+ * Maximum number of blocks is 65280.
  * 0 means End of Sound Index
  */
 
 /**
  * Music Code is 16-bit Blocks. Select up to 65535 sounds indexed by Sound Index.
- * Index is 0-65534.
+ * Index is 0-65279.
  * 0xFFFF(65535) means End of Music Code.
  */
 
