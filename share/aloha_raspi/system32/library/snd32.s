@@ -50,7 +50,7 @@ SND32_STATUS:              .word 0x00
  */
 
 /**
- * Music Code is 16-bit Blocks. Select up to 65535 sounds indexed by Sound Index.
+ * Music Code is 16-bit Blocks. Select up to 65280 sounds indexed by Sound Index.
  * Index is 0-65279.
  * 0xFFFF(65535) means End of Music Code.
  */

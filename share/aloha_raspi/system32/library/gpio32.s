@@ -15,16 +15,19 @@ GPIO32_MASK:                .word equ32_gpio32_gpiomask
 
 /**
  * Usage
- * 1. Place `gpio32_gpioplay` on FIQ/IRQ Handler which will be triggered with any timer, or a loop in `user32.c`.
- * 2. Place `gpio32_gpioset` with needed arguments in `user32.c`.
- * 3. GPIO Sequence automatically runs with the assigned values.  
+ * 1. Place `gpio32_gpioplay` on FIQ/IRQ Handler which will be triggered with any timer.
+ * 2. Place `_gpioset` with needed arguments in `user32.c`.
+ * 3. GPIO sequence automatically runs with the assigned values.
+ * 4. If you want to stop the GPIO sequence, use `_gpioclear`. Constant 1 of its argument will stay current status of GPIO.
  */
 
 /**
- * GPIO Sequence is made of 32-bit Blocks. One Block means one beat.
+ * GPIO sequence is made of 32-bit Blocks. One Block means one beat.
  * Bit[0]: GPIO 0 Output Low(0)/High(1)
+ * Bit[1]: GPIO 1 Output Low(0)/High(1)
  * ...
- * Bit[30]: GPIO 30 Output Low(0)/High(1)
+ * Bit[29]: GPIO 29 Output Low(0)/High(1)
+ * Bit[30]: Stay Prior Status of GPIO Which Are Assigned as Zero in the Block
  * Bit[31]: Always Need of Set(1)
  * Note that if a beat is all zero, this beat means the end of sequence.  
  */
@@ -47,9 +50,10 @@ gpio32_gpioplay:
 	mask          .req r4
 	sequence      .req r5
 	sequence_flip .req r6
-	temp          .req r7
+	gpio_base     .req r7
+	temp          .req r8
 
-	push {r4-r7}
+	push {r4-r8}
 
 	ldr addr_seq, GPIO32_SEQUENCE
 	cmp addr_seq, #0
@@ -75,22 +79,26 @@ gpio32_gpioplay:
 
 	gpio32_gpioplay_main:
 
+		mov gpio_base, #equ32_peripherals_base
+		add gpio_base, gpio_base, #equ32_gpio_base
+
 		lsl temp, count, #2                        @ Substitution of Multiplication by 4
 
 		ldr sequence, [addr_seq, temp]
 
-		and sequence, sequence, mask
+		tst sequence, #0x40000000                  @ Check Stay Status Bit[30]
+		ldrne temp, [gpio_base, #equ32_gpio_gplev0]
+		orrne sequence, sequence, temp
 
-		mov temp, #equ32_peripherals_base
-		add temp, temp, #equ32_gpio_base
+		and sequence, sequence, mask               @ Mask For Available GPIO Bit[29-0]
 
 		mvn sequence_flip, sequence
 
-		str sequence_flip, [temp, #equ32_gpio_gpclr0]
+		str sequence_flip, [gpio_base, #equ32_gpio_gpclr0]
 
 		macro32_dsb ip
 
-		str sequence, [temp, #equ32_gpio_gpset0]
+		str sequence, [gpio_base, #equ32_gpio_gpset0]
 
 		macro32_dsb ip
 
@@ -120,7 +128,7 @@ gpio32_gpioplay:
 		mov r0, #0                            @ Return with Success
 
 	gpio32_gpioplay_common:
-		pop {r4-r7}
+		pop {r4-r8}
 		mov pc, lr
 
 .unreq addr_seq
@@ -130,6 +138,7 @@ gpio32_gpioplay:
 .unreq mask
 .unreq sequence
 .unreq sequence_flip
+.unreq gpio_base
 .unreq temp
 
 
@@ -158,14 +167,16 @@ gpio32_gpioset:
 
 	mov temp, #0
 
-	str temp, GPIO32_SEQUENCE
-	str temp, GPIO32_LENGTH
-	str temp, GPIO32_COUNT
-	str temp, GPIO32_REPEAT
+	str temp, GPIO32_SEQUENCE     @ Prevent Odd Functions
+
+	macro32_dsb ip
 
 	str length, GPIO32_LENGTH
 	str count, GPIO32_COUNT
 	str repeat, GPIO32_REPEAT
+
+	macro32_dsb ip
+
 	str addr_seq, GPIO32_SEQUENCE @ Should Set at End for Polling Function, `gpio32_gpioplay`
 
 	gpio32_gpioset_success:
@@ -200,7 +211,10 @@ gpio32_gpioclear:
 
 	mov temp, #0
 
-	str temp, GPIO32_SEQUENCE
+	str temp, GPIO32_SEQUENCE                  @ Prevent Odd Functions
+
+	macro32_dsb ip
+
 	str temp, GPIO32_LENGTH
 	str temp, GPIO32_COUNT
 	str temp, GPIO32_REPEAT
