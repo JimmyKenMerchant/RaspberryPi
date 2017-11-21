@@ -25,13 +25,13 @@
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
  * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
- * Maximum number of blocks is 65280.
+ * Maximum number of blocks is 4096.
  * 0 means End of Sound Index
  */
 
 /**
- * Music Code is 16-bit Blocks. Select up to 65280 sounds indexed by Sound Index.
- * Index is 0-65279.
+ * Music Code is 16-bit Blocks. Select up to 4096 sounds indexed by Sound Index.
+ * Index is 0-4096.
  * 0xFFFF(65535) means End of Music Code.
  */
 
@@ -40,52 +40,61 @@
 
 sound_index sound[] =
 {
-	2<<14|3<<12|36,  // 0 Silence 
-	3<<14|1<<12|0,   // 1 Long Noise
-	576,             // 2   55.6hz Sin
-	288,             // 3   111.1hz Sin
-	144,             // 4   222.2hz Sin
-	72,              // 5   444.4hz Appx. A4  Sin
-	68,              // 6   470.6hz Appx. A#4 Sin
-	64,              // 7   500.0hz Appx. B4  Sin
-	61,              // 8   524.6hz Appx. C5  Sin
-	57,              // 9   561.4hz Appx. C#5 Sin
-	54,              // 10  592.6hz Appx. D5  Sin
-	51,              // 11  627.5hz Appx. D#5 Sin
-	48,              // 12  666.7hz Appx. E5  Sin
-	46,              // 13  695.7hz Appx. F5  Sin
-	43,              // 14  744.2hz Appx. F#5 Sin
-	41,              // 15  780.5hz Appx. G5  Sin
-	38,              // 16  842.1hz Appx. G#5 Sin
-	36,              // 17  888.9hz Appx. A5  Sin
-	34,              // 18  941.2hz Appx. A#5 Sin
-	32,              // 19 1000.0hz Appx. B5  Sin
-	30,              // 20 1066.3hz Appx. C6  Sin
-	1<<14|1<<12|576, // 21 Triangle
-	1<<14|1<<12|288, // 22 Triangle
-	1<<14|1<<12|144, // 23 Triangle
-	1<<14|1<<12|72,  // 24 Triangle
-	1<<14|1<<12|36,  // 25 Triangle
-	2<<14|1<<12|576, // 26 Square
-	2<<14|1<<12|288, // 27 Square
-	2<<14|1<<12|144, // 28 Square
-	2<<14|1<<12|72,  // 29 Square
-	2<<14|1<<12|36,  // 30 Square
-	3<<14|1<<12|576, // 31 Noise
-	3<<14|1<<12|288, // 32 Noise
-	3<<14|1<<12|144, // 33 Noise
-	3<<14|1<<12|72,  // 34 Noise
-	3<<14|1<<12|36,  // 35 Noise
+	144,             // 0   222.2hz Appx. A3  Sin
+	136,             // 1   235.3hz Appx. A#3 Sin
+	129,             // 2   248.1hz Appx. B3  Sin
+	121,             // 3   264.5hz Appx. C4  Sin
+	114,             // 4   280.7hz Appx. C#4 Sin
+	108,             // 5   296.3hz Appx. D4  Sin
+	102,             // 6   313.7hz Appx. D#4 Sin
+	96,              // 7   333.3hz Appx. E4  Sin
+	91,              // 8   351.6hz Appx. F4  Sin
+	86,              // 9   372.1hz Appx. F#4 Sin
+	81,              // 10  395.1hz Appx. G4  Sin
+	76,              // 11  421.1hz Appx. G#4 Sin
+	72,              // 12  444.4hz Appx. A4  Sin
+	68,              // 13  470.6hz Appx. A#4 Sin
+	64,              // 14  500.0hz Appx. B4  Sin
+	61,              // 15  524.6hz Appx. C5  Sin
+	57,              // 16  561.4hz Appx. C#5 Sin
+	54,              // 17  592.6hz Appx. D5  Sin
+	51,              // 18  627.5hz Appx. D#5 Sin
+	48,              // 19  666.7hz Appx. E5  Sin
+	46,              // 20  695.7hz Appx. F5  Sin
+	43,              // 21  744.2hz Appx. F#5 Sin
+	41,              // 22  780.5hz Appx. G5  Sin
+	38,              // 23  842.1hz Appx. G#5 Sin
+	36,              // 24  888.9hz Appx. A5  Sin
+	34,              // 25  941.2hz Appx. A#5 Sin
+	32,              // 26 1000.0hz Appx. B5  Sin
+	30,              // 27 1066.3hz Appx. C6  Sin
+	1<<14|1<<12|576, // 28 Triangle
+	1<<14|1<<12|288, // 29 Triangle
+	1<<14|1<<12|144, // 30 Triangle
+	1<<14|1<<12|72,  // 31 Triangle
+	1<<14|1<<12|36,  // 32 Triangle
+	2<<14|1<<12|576, // 33 Square
+	2<<14|1<<12|288, // 34 Square
+	2<<14|1<<12|144, // 35 Square
+	2<<14|1<<12|72,  // 36 Square
+	2<<14|1<<12|36,  // 37 Square
+	3<<14|1<<12|576, // 38 Noise
+	3<<14|1<<12|288, // 39 Noise
+	3<<14|1<<12|144, // 40 Noise
+	3<<14|1<<12|72,  // 41 Noise
+	3<<14|1<<12|36,  // 42 Noise
+	2<<14|3<<12|36,  // 43 Silence 
+	3<<14|1<<12|0,   // 44 Long Noise
 	0                // End of Index
 };
 
 music_code music1[] =
 {
-	 4, 3, 2, 4, 3, 2, 4, 3, 2, 4, 3, 2,
-	 8,10,12,13,15,17,19,20,20,15,12, 8,
-	 8, 8, 8, 8,12,12,12,12,15,15,15,15,
-	20,20,20,20,20,20,20,20, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	 3, 5, 7, 8,10,12,14,15,10,10,10,10,
+	43,43,10, 7, 3,10, 7, 3, 8,10,12,14,
+	15,15,15,15,10,10,10,10, 7, 7, 7, 7,
+	 3, 3, 3, 3, 3, 3, 3, 3,43,43,43,43,
+	43,43,43,43,43,43,43,43,43,43,43,43,
 	0xFFFF
 };
 
@@ -116,6 +125,10 @@ music_code interrupt1[] =
 void _user_start()
 {
 
+	String str_music1 = "Music 1\0";
+	String str_music2 = "Music 2\0";
+	String str_music3 = "Music 3\0";
+
 	_sounddecode( sound );
 
 	while(true) {
@@ -126,14 +139,17 @@ void _user_start()
 			}
 			if ( _gpio_detect( 21 ) ) {
 				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
+				print32_string( str_music1, 300, 300, COLOR32_BLUE, COLOR32_WHITE, print32_strlen( str_music1 ), 8, 12, FONT_MONO_12PX_ASCII );
 				break;
 			}
 			if ( _gpio_detect( 22 ) ) {
 				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
+				print32_string( str_music2, 300, 300, COLOR32_BLUE, COLOR32_WHITE, print32_strlen( str_music2 ), 8, 12, FONT_MONO_12PX_ASCII );
 				break;
 			}
 			if ( _gpio_detect( 23 ) ) {
 				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
+				print32_string( str_music3, 300, 300, COLOR32_BLUE, COLOR32_WHITE, print32_strlen( str_music3 ), 8, 12, FONT_MONO_12PX_ASCII );
 				break;
 			}
 			if ( _gpio_detect( 24 ) ) {

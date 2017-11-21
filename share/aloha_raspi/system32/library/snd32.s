@@ -45,13 +45,13 @@ SND32_STATUS:              .word 0x00
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
  * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
- * Maximum number of blocks is 65280.
+ * Maximum number of blocks is 4096.
  * 0 means End of Sound Index
  */
 
 /**
- * Music Code is 16-bit Blocks. Select up to 65280 sounds indexed by Sound Index.
- * Index is 0-65279.
+ * Music Code is 16-bit Blocks. Select up to 4096 sounds indexed by Sound Index.
+ * Index is 0-4095.
  * 0xFFFF(65535) means End of Music Code.
  */
 
@@ -65,7 +65,7 @@ SND32_STATUS:              .word 0x00
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Already Initialized
- * Error(2): Index Overflow
+ * Error(2): Index Overflow or Failure of Memory Allocation
  */
 .globl snd32_sounddecode
 snd32_sounddecode:
@@ -117,6 +117,9 @@ snd32_sounddecode:
 			bl heap32_malloc_noncache
 			mov mem_alloc, r0
 			pop {r0-r3}
+
+			cmp mem_alloc, #0
+			beq snd32_sounddecode_error2
 
 			cmp wave_type, #3
 			bhs snd32_sounddecode_main_wave_noise      @ If Noise
@@ -305,6 +308,8 @@ snd32_soundplay:
 	ldr repeat, SND32_REPEAT
 	ldr status, SND32_STATUS
 
+	macro32_dsb ip
+
 	tst status, #0x80000000                   @ If Not Initialized
 	beq snd32_soundplay_error2
 
@@ -325,6 +330,8 @@ snd32_soundplay:
 
 		lsl temp, count, #1                        @ Substitute of Multiplication by 2
 		ldrh code, [addr_code, temp]
+
+		macro32_dsb ip
 
 		tst status, #0x1
 		bne snd32_soundplay_contine                @ If Continue of Music Code

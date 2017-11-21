@@ -33,7 +33,10 @@ gpu_freq=240
 sdram_freq=250
 
 #GPU Memory Mbytes
-gpu_mem=128
+#Tese setting causes a possible conflict between DMA and VideoCore
+gpu_mem_256=16
+gpu_mem_512=32
+gpu_mem_1024=64
 
 #Black Border (0) or Not (1)
 disable_overscan=1

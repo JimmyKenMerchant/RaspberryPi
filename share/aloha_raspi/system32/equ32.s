@@ -15,9 +15,9 @@
 .equ equ32_usb2032_timeout,           0x0000FF00
 .equ equ32_print32_hexa_length_max,   0x00000FF0
 .equ equ32_print32_string_tab_length, 4
-.equ equ32_dma32_cb_max,              1000
+.equ equ32_dma32_cb_max,              0x1400     @ Decimal 5000
 .equ equ32_dma32_cb_snd32_start,      0
-.equ equ32_dma32_cb_snd32_size,       0xFF00
+.equ equ32_dma32_cb_snd32_size,       0x1000     @ Decimal 4096
 .equ equ32_snd32_dma_channel,         0
 .equ equ32_gpio32_gpiomask,           0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 

@@ -59,6 +59,8 @@ dma32_set_channel:
 	orr temp, temp, temp2, lsl channel              @ Enable DMA ChannelN
 	str temp, [addr_dma, #equ32_dma_channel_enable]
 
+	macro32_dsb ip
+
 	mov temp, #equ32_dma_channel_offset
 	mul temp, channel, temp
 	add addr_dma, addr_dma, temp
@@ -83,8 +85,6 @@ dma32_set_channel:
 	orr temp, temp, #0<<equ32_dma_cs_panic_priority
 	orr temp, temp, #0<<equ32_dma_cs_priority
 	str temp, [addr_dma, #equ32_dma_cs]
-
-	macro32_dsb ip
 
 	b dma32_set_channel_success
 
@@ -149,6 +149,8 @@ dma32_clear_channel:
 	bic temp, temp, #equ32_dma_cs_active            @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
 
+	macro32_dsb ip
+
 	mov temp, #0
 
 	str temp, [addr_dma, #equ32_dma_nextconbk]      @ Next CB Address to Zero
@@ -164,12 +166,12 @@ dma32_clear_channel:
 		tst temp, #equ32_dma_cs_active
 		bne dma32_clear_channel_loop1
 
-	orr temp, temp, #equ32_dma_cs_reset
-	str temp, [addr_dma, #equ32_dma_cs]
-
-	macro32_dsb ip
-
 	dma32_clear_channel_jump:
+
+		orr temp, temp, #equ32_dma_cs_reset
+		str temp, [addr_dma, #equ32_dma_cs]
+
+		macro32_dsb ip
 
 		mov addr_dma, #equ32_peripherals_base
 		add addr_dma, addr_dma, #equ32_dma_base
@@ -177,8 +179,6 @@ dma32_clear_channel:
 		ldr temp, [addr_dma, #equ32_dma_channel_enable]
 		bic temp, temp, temp2, lsl channel              @ Disable DMA ChannelN
 		str temp, [addr_dma, #equ32_dma_channel_enable]
-
-		macro32_dsb ip
 
 		b dma32_clear_channel_success
 
@@ -239,8 +239,6 @@ dma32_change_nextcb:
 
 	/* Stop Current Control Block */
 
-	macro32_dsb ip
-
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	bic temp, temp, #equ32_dma_cs_active              @ equ32_dma_cs_abort Cuts Wave
 	str temp, [addr_dma, #equ32_dma_cs]
@@ -260,14 +258,16 @@ ldr temp, [addr_dma, #equ32_dma_nextconbk]     @ Next CB Address
 macro32_debug temp, 200, 360
 */
 
+	macro32_dsb ip
+
 	str addr_nextcb, [addr_dma, #equ32_dma_nextconbk]      @ Next CB Address to Zero
+
+	macro32_dsb ip
 
 	/* Activate CB */
 	ldr temp, [addr_dma, #equ32_dma_cs]
 	orr temp, temp, #equ32_dma_cs_active
 	str temp, [addr_dma, #equ32_dma_cs]
-
-	macro32_dsb ip
 
 	b dma32_change_nextcb_success
 
