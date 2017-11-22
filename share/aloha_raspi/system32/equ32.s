@@ -15,7 +15,7 @@
 .equ equ32_usb2032_timeout,           0x0000FF00
 .equ equ32_print32_hexa_length_max,   0x00000FF0
 .equ equ32_print32_string_tab_length, 4
-.equ equ32_dma32_cb_max,              0x1400     @ Decimal 5000
+.equ equ32_dma32_cb_max,              0x1400     @ Decimal 5120
 .equ equ32_dma32_cb_snd32_start,      0
 .equ equ32_dma32_cb_snd32_size,       0x1000     @ Decimal 4096
 .equ equ32_snd32_dma_channel,         0
@@ -251,7 +251,7 @@
 .equ equ32_spi0_cs_clear,      4          @ Bit[5:4] (x1b:TxFIFO, 1xb:RxFIFO)
 .equ equ32_spi0_cs_cpol,       0x00000008 @ Polarity of Clock (0:Low/1:High in Rest State)
 .equ equ32_spi0_cs_cpha,       0x00000004 @ Clock Phase (0:Middle of Data/ 1: Beginning of Data)
-.equ equ32_spi0_cs_cs,         0x00000000 @ Chip Select Bit[1:0]
+.equ equ32_spi0_cs_cs,         0          @ Chip Select Bit[1:0]
 
 .equ equ32_spi0_dc_rpanic,     24         @ Read Panic
 .equ equ32_spi0_dc_rdreq,      16         @ Read Request
