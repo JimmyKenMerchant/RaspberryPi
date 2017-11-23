@@ -104,7 +104,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r7,lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
@@ -116,9 +116,9 @@ os_fiq:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, gpio_toggle
+	ldr r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, gpio_toggle
+	str r1, os_fiq_gpio_toggle
 
 	cmp r1, #0
 	addeq r0, r0, #equ32_gpio_gpclr1
@@ -127,74 +127,113 @@ os_fiq:
 	str r1, [r0]
 .endif
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_systemtimer_base
+	bl spi_test_fiqhandler
 
-	ldr r0, [r0, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
-	ldr r1, sys_timer_previous
-	sub r2, r0, r1
-	str r0, sys_timer_previous
+	pop {r0-r7,pc}
 
-	push {lr}
-	mov r0, r2
-	bl math32_hexa_to_deci32
-	pop {lr}
 
-	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r4, [r4]
-	macro32_print_number_double r0, r1, 80, 388, r2, r3, 16, 8, 12, r4
+/**
+ * Handler to Use in FIQ
+ */
+spi_test_fiqhandler:
+	temp         .req r0
+	horizon      .req r1
+	previous     .req r2
+	horizon_next .req r3
+	current      .req r4
+	resolution   .req r5
 
-	ldr r0, timer_sub
-	ldr r1, timer_main
+	push {r4-r5,lr}
 
-	add r0, r0, #1
-	cmp r0, #10
-	addge r1, #1
-	movge r0, #0
+	bl spi32_spirx                        @ Return Data to r0
+	mov current, r0
 
-	str r0, timer_sub
-	str r1, timer_main
+	lsr current, current, #16             @ Get Only Higher 16-bit
 
-	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
+	/* Convert 10-bit (0x3FF) to 9-bit (0x1FF) */
+	lsr current, current, #1              @ Substitute of Division by 2
 
-	push {lr}
+	/* Reverse Value for Drawing Line with This Value as Height */
+	mov temp, #0x100                      @ 0x1FF
+	add temp, temp, #0x0FF
+	and current, current, temp
+	sub current, current, temp
+	mvn current, current                  @ Logical Not to Convert Minus to Plus
+	add current, current, #1              @ Add 1 to Convert Minus to Plus
+	and current, current, temp
+	
+	ldr previous, spi_test_fiqhandler_previous
+	ldr horizon, spi_test_fiqhandler_horizon
+	ldr resolution, spi_test_fiqhandler_resolution
+	str current, spi_test_fiqhandler_previous
+
+macro32_debug current, 200, 200
+macro32_debug previous, 200, 212
+
+	add horizon_next, horizon, resolution
+	cmp horizon_next, #equ32_bcm32_width
+	movhs horizon_next, #0
+
+	str horizon_next, spi_test_fiqhandler_horizon
+
+macro32_debug horizon, 200, 224
+
+	push {r0-r3}
+	mov r0, #equ32_bcm32_height
+	push {r0}
+	ldr r0, ADDR32_COLOR32_BLUE
+	ldr r0, [r0]
+	mov r1, horizon
+	mov r2, #0
+	mov r3, resolution
+	bl fb32_clear_color_block
+	add sp, sp, #4
+	pop {r0-r3}
+
+	push {r0-r4}
+	ldr r0, ADDR32_COLOR32_YELLOW
+	ldr r0, [r0]                  @ Color (16-bit or 32-bit)
+	mov r1, horizon               @ X Coordinate1
+	mov r2, previous              @ Y Coordinate1
+	sub r3, horizon_next, #1      @ X Coordinate2
+	mov r4, current               @ Y Coordinate2
+	mov r5, #1                    @ Point Width in Pixels
+	mov r6, #1                    @ Point Height in Pixels
+	push {r4-r6}
+	bl fb32_draw_line
+	add sp, sp, #12
+	pop {r0-r4}  
+
 	mov r0, #0b11<<equ32_spi0_cs_clear
 	mov r1, #0b01100000<<24
+	/*mov r2, #80*/                        @ 240Mhz/80, 3Mhz
 	mov r2, #200
-	bl spi32_spitransaction
-	pop {lr}
+	bl spi32_spitx
 
-macro32_debug r0, 200, 200
+	pop {r4-r5,pc}
 
-	pop {r0-r7}
-	mov pc, lr
+.unreq temp
+.unreq horizon
+.unreq previous
+.unreq horizon_next
+.unreq current
+.unreq resolution
+
+spi_test_fiqhandler_previous:    .word 0x00
+spi_test_fiqhandler_horizon:     .word 0x00
+spi_test_fiqhandler_resolution:  .word 0x01
+
 
 /**
  * Variables
  */
 .balign 4
-gpio_toggle:       .byte 0b00000000
-.balign 4
 _string_hello:
-	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+	.ascii "\nAloha! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
 string_hello:
 	.word _string_hello
-_string_test:
-	.ascii "Sytem Timer Interval\n\t100K? 100K by 10 Equals 1M!\n\tSystem Timer is 1M Hz!\0"
-.balign 4
-string_test:
-	.word _string_test
-timer_main:
-	.word 0x00000000
-timer_sub:
-	.word 0x00000000
-sys_timer_previous:
-	.word 0x00000000
+os_fiq_gpio_toggle: .byte 0b00000000
 .balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`

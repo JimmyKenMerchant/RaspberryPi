@@ -26,23 +26,23 @@ bcm32_mail_framebuffer:
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 BCM32_DISPLAY_WIDTH:
-	.word 800               @ Value Buffer, Width in Pixels
+	.word equ32_bcm32_display_width  @ Value Buffer, Width in Pixels
 BCM32_DISPLAY_HEIGHT:
-	.word 640               @ Value Buffer, Height in Pixels
+	.word equ32_bcm32_display_height @ Value Buffer, Height in Pixels
 .balign 4
 	.word 0x00048004        @ Tag Identifier, Set Virtual Width/Height (Actual Buffer Size just like Viewport in OpenGL)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 BCM32_WIDTH:
-	.word 800               @ Value Buffer, Width in Pixels
+	.word equ32_bcm32_width  @ Value Buffer, Width in Pixels
 BCM32_HEIGHT:
-	.word 640               @ Value Buffer, Height in Pixels
+	.word equ32_bcm32_height @ Value Buffer, Height in Pixels
 .balign 4
 	.word 0x00048005        @ Tag Identifier, Set Depth
 	.word 0x00000004        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 BCM32_DEPTH:
-	.word 16                @ Value Buffer, Bits per Pixel, 32 would be 32 ARGB
+	.word equ32_bcm32_alpha @ Value Buffer, Bits per Pixel, 32 would be 32 ARGB
 .balign 4
 	.word 0x00048006        @ Tag Identifier, Set Pixel Order
 	.word 0x00000004        @ Value Buffer Size in Bytes
