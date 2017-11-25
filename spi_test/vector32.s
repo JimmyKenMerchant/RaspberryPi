@@ -200,7 +200,7 @@ macro32_debug horizon, 200, 224
 	mov r5, #1                    @ Point Width in Pixels
 	mov r6, #1                    @ Point Height in Pixels
 	push {r4-r6}
-	bl fb32_draw_line
+	bl draw32_line
 	add sp, sp, #12
 	pop {r0-r4}  
 

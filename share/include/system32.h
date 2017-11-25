@@ -210,71 +210,13 @@ __attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
 /* Regular Functions */
 
 /**
- * Draw Arc
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
- *
- * Return: Lower32 bits (0 as success, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
- */
-extern uint64 fb32_draw_arc
-(
-	uint32 color,
-	int32 x_coord,
-	int32 y_coord,
-	uint32 x_radius,
-	uint32 y_radius,
-	float32 start_radian,
-	float32 end_radian,
-	uint32 width,
-	uint32 height
-);
-
-/**
- * Draw Circle Filled with Color
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- *
- * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
- */
-extern uint64 fb32_draw_circle
-(
-	uint32 color,
-	int32 x_coord,
-	int32 y_coord,
-	uint32 x_radius,
-	uint32 y_radius
-);
-
-
-/**
- * Draw Line
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- *
- * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Framebuffer Overflow
- */
-
-extern uint64 fb32_draw_line
-(
-	uint32 color,
-	int32 x_coord_1,
-	int32 y_coord_1,
-	int32 x_coord_2,
-	int32 y_coord_2,
-	uint32 width,
-	uint32 height
-);
-
-
-/**
  * Draw Image
  *
  * Return: 0 as sucess, 1 and 2 as error
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
-extern uint32 fb32_draw_image
+extern uint32 fb32_image
 (
 	uint32 address_image,
 	int32 x_coord,
@@ -572,6 +514,87 @@ extern uint32 draw32_copy
 );
 
 
+/**
+ * Draw Arc by Degree with Single Precision Float
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * Range is -360 to 360 degrees inclusively, otherwise, value will be cut off by the limit.
+ *
+ * Return: 0 as success, 1 as error
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
+ */
+extern uint32 draw32_arc_fdegree
+(
+	uint32 color,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 x_radius,
+	uint32 y_radius,
+	float32 start_fdegree,
+	float32 end_fdegree,
+	uint32 width,
+	uint32 height
+);
+
+
+/**
+ * Draw Arc by Radian with Single Precision Float
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
+ *
+ * Return: Lower32 bits (0 as success, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Buffer is Not Defined
+ */
+extern uint64 draw32_arc
+(
+	uint32 color,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 x_radius,
+	uint32 y_radius,
+	float32 start_radian,
+	float32 end_radian,
+	uint32 width,
+	uint32 height
+);
+
+
+/**
+ * Draw Circle Filled with Color
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Buffer is Not Defined
+ */
+extern uint64 draw32_circle
+(
+	uint32 color,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 x_radius,
+	uint32 y_radius
+);
+
+
+/**
+ * Draw Line
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Buffer is Not Defined
+ */
+
+extern uint64 draw32_line
+(
+	uint32 color,
+	int32 x_coord_1,
+	int32 y_coord_1,
+	int32 x_coord_2,
+	int32 y_coord_2,
+	uint32 width,
+	uint32 height
+);
+
+
 /********************************
  * system32/library/snd32.s
  ********************************/
@@ -647,6 +670,20 @@ extern uint32 gpio32_gpiolen
 /********************************
  * system32/library/math32.s
  ********************************/
+
+extern bool math32_fgt
+(
+	float32 value1,
+	float32 value2
+);
+
+
+extern float32 math32_fadd
+(
+	float32 value1,
+	float32 value2
+);
+
 
 /**
  * Return Radian from Degrees

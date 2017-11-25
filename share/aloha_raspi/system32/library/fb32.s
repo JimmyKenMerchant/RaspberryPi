@@ -9,483 +9,6 @@
 
 
 /**
- * function fb32_draw_arc_fdegree
- * Draw Arc by Degree with Single Precision Float
- * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
- * Range is -360 to 360 degrees inclusively, otherwise, value will be cut off by the limit.
- *
- * Parameters
- * r0: Color (16-bit or 32-bit)
- * r1: X Coordinate of Center
- * r2: Y Coordinate of Center
- * r3: X Radius
- * r4: Y Radius
- * r5: Float Degree on Start of Arc
- * r6: Float Degree on End of Arc
- * r7: Width of Arc Line
- * r8: Height of Arc Line
- *
- * Return: r0 (0 as success, 1 as error)
- * Error: Part of Circle from Last Coordinate was Not Drawn, aused by Not Defined Buffer
- */
-.globl fb32_draw_arc_fdegree
-fb32_draw_arc_fdegree:
-	/* Auto (Local) Variables, but just Aliases */
-	color             .req r0   @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1   @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord           .req r2   @ Parameter, Register for Argument, Scratch Register
-	x_radius          .req r3   @ Parameter, Register for Argument, Scratch Register
-	y_radius          .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	start_fdegree     .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	end_fdegree       .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width        .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height       .req r8   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	temp              .req r9
-	neg_flag          .req r10
-
-	/* VFP Registers */
-	vfp_d_fdegree     .req d0 @ q0[0]
-	vfp_start_fdegree .req s0 @ Lower 32 Bits of d0
-	vfp_end_fdegree   .req s1 @ Upper 32 Bits of d0
-	vfp_zero          .req s2
-	vfp_full          .req s3
-	vfp_half          .req s4
-	vfp_temp          .req s5
-
-	push {r4-r10,lr}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                   @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	add sp, sp, #32                                   @ r4-r10 and lr offset 32 bytes
-	pop {y_radius, start_fdegree, end_fdegree, char_width, char_height} @ Get Fifth to Ninth Arguments
-	sub sp, sp, #52                                   @ Retrieve SP
-
-	vpush {s0-s5}
-
-	vmov vfp_d_fdegree, start_fdegree, end_fdegree
-
-	mov temp, #0
-	vmov vfp_zero, temp
-	vcvt.f32.s32 vfp_zero, vfp_zero
-
-	mov temp, #360
-	vmov vfp_full, temp
-	vcvt.f32.s32 vfp_full, vfp_full
-
-	mov temp, #180
-	vmov vfp_half, temp
-	vcvt.f32.s32 vfp_half, vfp_half
-
-	/* Ensure Start Is Less than End */
-
-	vcmp.f32 vfp_start_fdegree, vfp_end_fdegree
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_temp, vfp_start_fdegree
-	vmovgt vfp_start_fdegree, vfp_end_fdegree
-	vmovgt vfp_end_fdegree, vfp_temp
-
-	/* Arrange -360.0 to 360.0 Degrees by Cutting off Exceeded Values */
-
-	vcmp.f32 vfp_start_fdegree, vfp_full
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_start_fdegree, vfp_full
-
-	vcmp.f32 vfp_end_fdegree, vfp_full
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_end_fdegree, vfp_full
-
-	vneg.f32 vfp_temp, vfp_full
-	
-	vcmp.f32 vfp_start_fdegree, vfp_temp
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovlt vfp_start_fdegree, vfp_temp
-
-	vcmp.f32 vfp_end_fdegree, vfp_temp
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovlt vfp_end_fdegree, vfp_temp
-
-	/* Mirror Regular Registers and VFP Registers */
-	vmov start_fdegree, vfp_start_fdegree
-	vmov end_fdegree, vfp_end_fdegree
-
-	fb32_draw_arc_fdegree_minus180:
-		/* -360 to -180.0 Degrees */
-		vneg.f32 vfp_temp, vfp_half
-		vcmp.f32 vfp_start_fdegree, vfp_temp
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		bge fb32_draw_arc_fdegree_0
-
-		vcmp.f32 vfp_end_fdegree, vfp_temp
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovgt end_fdegree, vfp_temp
-
-		push {r0-r3}
-		mov r0, start_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r5, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, end_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r6, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		push {r4-r8}
-		bl fb32_draw_arc
-		add sp, sp, #20
-		cmp r0, #1
-		pop {r0-r3}
-		beq fb32_draw_arc_fdegree_error                   @ If Error
-
-		vcmp.f32 vfp_end_fdegree, vfp_temp
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		ble fb32_draw_arc_fdegree_success
-
-		/* Mirror Regular Registers and VFP Registers */
-		vmov start_fdegree, vfp_start_fdegree
-		vmov end_fdegree, vfp_end_fdegree
-
-	fb32_draw_arc_fdegree_0:
-		/* Over -180 to 0.0 Degrees */
-		vcmp.f32 vfp_start_fdegree, vfp_zero
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		bge fb32_draw_arc_fdegree_plus180
-
-		vneg.f32 vfp_temp, vfp_half
-		vcmp.f32 vfp_start_fdegree, vfp_temp
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovlt start_fdegree, vfp_temp
-		movle neg_flag, #1
-
-		vcmp.f32 vfp_end_fdegree, vfp_zero
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovgt end_fdegree, vfp_zero
-
-		push {r0-r3}
-		mov r0, start_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r5, r0
-		pop {r0-r3}
-
-		/* Make Sure Value of PI Negative */
-		cmp neg_flag, #1
-		vmoveq vfp_temp, r5
-		vnegeq.f32 vfp_temp, vfp_temp
-		vmoveq r5, vfp_temp
-
-		push {r0-r3}
-		mov r0, end_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r6, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		push {r4-r8}
-		bl fb32_draw_arc
-		add sp, sp, #20
-		cmp r0, #1
-		pop {r0-r3}
-		beq fb32_draw_arc_fdegree_error                       @ If Error
-
-		vcmp.f32 vfp_end_fdegree, vfp_zero
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		ble fb32_draw_arc_fdegree_success
-
-		/* Mirror Regular Registers and VFP Registers */
-		vmov start_fdegree, vfp_start_fdegree
-		vmov end_fdegree, vfp_end_fdegree
-	
-	fb32_draw_arc_fdegree_plus180:
-		/* Over 0.0 to 180.0 Degrees */
-		vcmp.f32 vfp_start_fdegree, vfp_half
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		bge fb32_draw_arc_fdegree_plus360
-
-		vcmp.f32 vfp_start_fdegree, vfp_zero
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovlt start_fdegree, vfp_zero
-
-		vcmp.f32 vfp_end_fdegree, vfp_half
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovgt end_fdegree, vfp_half
-
-		push {r0-r3}
-		mov r0, start_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r5, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, end_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r6, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		push {r4-r8}
-		bl fb32_draw_arc
-		add sp, sp, #20
-		cmp r0, #1
-		pop {r0-r3}
-		beq fb32_draw_arc_fdegree_error                       @ If Error
-
-		vcmp.f32 vfp_end_fdegree, vfp_half
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		ble fb32_draw_arc_fdegree_success
-
-		/* Mirror Regular Registers and VFP Registers */
-		vmov start_fdegree, vfp_start_fdegree
-		vmov end_fdegree, vfp_end_fdegree
-
-	fb32_draw_arc_fdegree_plus360:
-		/* Over 180.0 to 360.0 Degrees */
-		vcmp.f32 vfp_start_fdegree, vfp_half
-		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovlt start_fdegree, vfp_half
-		movle neg_flag, #1
-
-		push {r0-r3}
-		mov r0, start_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r5, r0
-		pop {r0-r3}
-
-		/* Make Sure Value of PI Negative */
-		cmp neg_flag, #1
-		vmoveq vfp_temp, r5
-		vnegeq.f32 vfp_temp, vfp_temp
-		vmoveq r5, vfp_temp
-
-		push {r0-r3}
-		mov r0, end_fdegree
-		bl math32_fdegree_to_cradian32
-		mov r6, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		push {r4-r8}
-		bl fb32_draw_arc
-		add sp, sp, #20
-		cmp r0, #1
-		pop {r0-r3}
-		beq fb32_draw_arc_fdegree_error                       @ If Error
-
-		b fb32_draw_arc_fdegree_success
-
-	fb32_draw_arc_fdegree_error:
-		mov r0, #1
-		b fb32_draw_arc_fdegree_common
-
-	fb32_draw_arc_fdegree_success:
-		mov r0, #0
-
-	fb32_draw_arc_fdegree_common:
-		vpop {s0-s5}
-		pop {r4-r10,pc}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-
-.unreq color
-.unreq x_coord
-.unreq y_coord
-.unreq x_radius
-.unreq y_radius
-.unreq start_fdegree
-.unreq end_fdegree
-.unreq char_width
-.unreq char_height
-.unreq temp
-.unreq neg_flag
-.unreq vfp_d_fdegree
-.unreq vfp_start_fdegree
-.unreq vfp_end_fdegree
-.unreq vfp_zero
-.unreq vfp_full
-.unreq vfp_half
-.unreq vfp_temp
-
-
-/**
- * function fb32_draw_arc
- * Draw Arc
- * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
- * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
- *
- * Parameters
- * r0: Color (16-bit or 32-bit)
- * r1: X Coordinate of Center
- * r2: Y Coordinate of Center
- * r3: X Radius
- * r4: Y Radius
- * r5: Radian on Start of Arc
- * r6: Radian on End of Arc
- * r7: Width of Arc Line
- * r8: Height of Arc Line
- *
- * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
- */
-.globl fb32_draw_arc
-fb32_draw_arc:
-	/* Auto (Local) Variables, but just Aliases */
-	color            .req r0   @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
-	x_radius         .req r3   @ Parameter, Register for Argument, Scratch Register
-	y_radius         .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	start_radian     .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	end_radian       .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width       .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height      .req r8   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	x_current        .req r9
-	y_current        .req r10
-	flag             .req r11
-
-	/* VFP Registers */
-	vfp_d_radian     .req d0 @ q0[0]
-	vfp_start_radian .req s0 @ Lower 32 Bits of d0
-	vfp_end_radian   .req s1 @ Upper 32 Bits of d0
-	vfp_xy_position  .req d1
-	vfp_x_position   .req s2 @ Lower 32 Bits of d1
-	vfp_y_position   .req s3 @ Upper 32 Bits of d1
-	vfp_d_radius     .req d2
-	vfp_x_radius     .req s4
-	vfp_y_radius     .req s5
-	vfp_add          .req s6
-	vfp_temp         .req s7
-
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                   @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	add sp, sp, #32                                   @ r4-r11 offset 32 bytes
-	pop {y_radius, start_radian, end_radian, char_width, char_height} @ Get Fifth to Ninth Arguments
-	sub sp, sp, #52                                   @ Retrieve SP
-
-	vpush {s0-s7}
-
-	vmov vfp_d_radian, start_radian, end_radian
-	vcmp.f32 vfp_start_radian, vfp_end_radian
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovgt vfp_temp, vfp_start_radian
-	vmovgt vfp_start_radian, vfp_end_radian
-	vmovgt vfp_end_radian, vfp_temp
-
-	vmov vfp_d_radius, x_radius, y_radius
-	.unreq x_radius
-	temp .req r3
-	vcvt.f32.s32 vfp_x_radius, vfp_x_radius
-	vcvt.f32.s32 vfp_y_radius, vfp_y_radius
-
-	mov temp, #1
-	vmov vfp_add, temp
-	vcvt.f32.s32 vfp_add, vfp_add
-
-	vcmp.f32 vfp_x_radius, vfp_y_radius
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovge vfp_temp, vfp_x_radius
-	vmovlt vfp_temp, vfp_y_radius
-	vdiv.f32 vfp_add, vfp_add, vfp_temp
-
-	.unreq temp
-	.unreq y_radius
-	x_current_before .req r3
-	y_current_before .req r4
-
-	mov flag, #0                                      @ To Hide to Compare Before/After at First Time
-
-	fb32_draw_arc_loop:
-		vcmp.f32 vfp_start_radian, vfp_end_radian
-		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		bgt fb32_draw_arc_success
-		vmov start_radian, vfp_start_radian
-
-		push {r0-r3,lr}
-		mov r0, start_radian
-		bl math32_cos32
-		mov x_current, r0
-		pop {r0-r3,lr}
-
-		push {r0-r3,lr}
-		mov r0, start_radian
-		bl math32_sin32
-		mov y_current, r0
-		pop {r0-r3,lr}
-
-		vmov vfp_xy_position, x_current, y_current
-		vmul.f32 vfp_x_position, vfp_x_position, vfp_x_radius
-		vmul.f32 vfp_y_position, vfp_y_position, vfp_y_radius
-		vcvtr.s32.f32 vfp_x_position, vfp_x_position
-		vcvtr.s32.f32 vfp_y_position, vfp_y_position
-		vmov x_current, y_current, vfp_xy_position
-
-		add x_current, x_coord, x_current
-		sub y_current, y_coord, y_current                   @ Y Coord is Reversal to Real Y Axis
-
-		cmp flag, #1
-		cmpeq x_current, x_current_before
-		cmpeq y_current, y_current_before
-		beq fb32_draw_arc_loop_common
-
-		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
-		mov r1, x_current
-		mov r2, y_current
-		mov r3, char_width
-		push {char_height} 
-		bl fb32_clear_color_block
-		add sp, sp, #4
-		cmp r0, #2                                          @ Compare Return 2
-		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
-		beq fb32_draw_arc_error
-
-		fb32_draw_arc_loop_common:
-			mov flag, #1
-			mov x_current_before, x_current
-			mov y_current_before, y_current
-			vadd.f32 vfp_start_radian, vfp_start_radian, vfp_add
-
-			b fb32_draw_arc_loop
-
-	fb32_draw_arc_error:
-		mov r0, #1
-		b fb32_draw_arc_common
-
-	fb32_draw_arc_success:
-		mov r0, #0
-
-	fb32_draw_arc_common:
-		vpop {s0-s7}
-		lsl x_current, x_current, #16
-		add r1, x_current, y_current
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-		mov pc, lr
-
-.unreq color
-.unreq x_coord
-.unreq y_coord
-.unreq x_current_before
-.unreq y_current_before
-.unreq start_radian
-.unreq end_radian
-.unreq char_width
-.unreq char_height
-.unreq x_current
-.unreq y_current
-.unreq flag
-.unreq vfp_d_radian
-.unreq vfp_start_radian
-.unreq vfp_end_radian
-.unreq vfp_xy_position
-.unreq vfp_x_position
-.unreq vfp_y_position
-.unreq vfp_d_radius
-.unreq vfp_x_radius
-.unreq vfp_y_radius
-.unreq vfp_add
-.unreq vfp_temp
-
-
-/**
  * Frame Buffer Physical
  * To get speed, these variables are accessed directly from functions in fb32.s and print32.s,
  * therefore, the functions are needed to be placed close to these variables
@@ -505,395 +28,7 @@ FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits
 
 
 /**
- * function fb32_draw_circle
- * Draw Circle Filled with Color
- * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
- *
- * Parameters
- * r0: Color (16-bit or 32-bit)
- * r1: X Coordinate of Center
- * r2: Y Coordinate of Center
- * r3: X Radius
- * r4: Y Radius
- *
- * Usage: r0-r9
- * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
- */
-.globl fb32_draw_circle
-fb32_draw_circle:
-	/* Auto (Local) Variables, but just Aliases */
-	color            .req r0   @ Parameter, Register for Argument, Scratch Register
-	x_coord          .req r1   @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord          .req r2   @ Parameter, Register for Argument, Scratch Register
-	x_radius         .req r3   @ Parameter, Register for Argument and Result, Scratch Register
-	y_radius         .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width       .req r5
-	char_height      .req r6
-	x_current        .req r7
-	y_current        .req r8
-	y_max            .req r9
-
-	/* VFP Registers */
-	vfp_xy_coord     .req d0 @ q0[0]
-	vfp_y_coord      .req s0 @ Lower 32 Bits of d0
-	vfp_x_coord      .req s1 @ Upper 32 Bits of d0
-	vfp_xy_radius    .req d1 @ q0[1]
-	vfp_y_radius     .req s2
-	vfp_x_radius     .req s3
-	vfp_cal_a        .req s4
-	vfp_cal_b        .req s5
-	vfp_cal_c        .req s6
-	vfp_x_start      .req s7
-	vfp_diff_radius  .req s8
-	vfp_radius       .req s9
-	vfp_tri_height   .req s10
-	vfp_one          .req s11
-
-	push {r4-r9}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                   @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	add sp, sp, #24                                   @ r4-r9 offset 24 bytes
-	pop {y_radius}                                    @ Get Fifth
-	sub sp, sp, #28                                   @ Retrieve SP
-
-	vpush {s0-s11}
-
-	sub y_current, y_coord, y_radius                  @ First Y Coordinate to Draw
-	mov char_height, #1
-
-	add y_max, y_coord, y_radius                      @ As Counter
-	sub y_max, y_max, #1                              @ Have Minus One
-
-	vmov vfp_xy_coord, y_coord, x_coord               @ Lower Bits from y_coord, Upper Bits x_coord, q0[0]
-	vmov vfp_xy_radius, y_radius, x_radius            @ Lower Bits from y_radius, Upper Bits x_radius, q0[1]
-	vcvt.f32.s32 vfp_y_coord, vfp_y_coord             @ Convert Signed Integer to Single Precision Floating Point
-	vcvt.f32.s32 vfp_x_coord, vfp_x_coord             @ Convert Signed Integer to Single Precision Floating Point
-	vcvt.f32.u32 vfp_y_radius, vfp_y_radius           @ Convert Unsigned Integer to Single Precision Floating Point
-	vcvt.f32.u32 vfp_x_radius, vfp_x_radius           @ Convert Unsigned Integer to Single Precision Floating Point
-
-	.unreq y_coord
-	x_diff .req r2
-
-	vmov vfp_x_start, vfp_x_coord
-
-	vmov vfp_radius, vfp_y_radius
-	vmov vfp_tri_height, vfp_y_radius
-	
-	mov x_diff, #1
-	vmov vfp_one, x_diff
-	vcvt.f32.s32 vfp_one, vfp_one
-
-	cmp x_radius, y_radius
-	beq fb32_draw_circle_loop
-
-	vsub.f32 vfp_diff_radius, vfp_y_radius, vfp_x_radius
-
-	/**
-	 * The difference of Ellipse's radius seems Like a parabola, so It can make an approximation formula by X = Y^2. It show as a line on X axis.
-	 * Besides, the difference of position in Free Fall of Physics show as a line on Y axis, and its proportion show as Y = X^2
-	 */
-
-	fb32_draw_circle_loop:
-		/* Pythagorean theorem C^2 = A^2 + B^2  */
-		vmul.f32 vfp_cal_c, vfp_radius, vfp_radius          @ C^2, Hypotenuse
-		vmul.f32 vfp_cal_b, vfp_tri_height, vfp_tri_height  @ B^2, Leg, (Height)
-		vsub.f32 vfp_cal_a, vfp_cal_c, vfp_cal_b            @ A^2, Leg, (Width)
-		vsqrt.f32 vfp_cal_a, vfp_cal_a                      @ A
-		
-		vsub.f32 vfp_cal_b, vfp_x_start, vfp_cal_a          @ X Current Coordinate
-		vcvtr.s32.f32 vfp_cal_b, vfp_cal_b
-
-		vmov x_current, vfp_cal_b
-
-		sub x_diff, x_coord, x_current
-		lsl char_width, x_diff, #1                          @ Substitute of Multiplication by 2
-
-		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
-		mov r1, x_current
-		mov r2, y_current
-		mov r3, char_width
-		push {char_height} 
-		bl fb32_clear_color_block
-		add sp, sp, #4
-		cmp r0, #2                                          @ Compare Return 2
-		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
-		beq fb32_draw_circle_error
-
-		cmp y_current,  y_max                               @ Already, y_max Has Been Minus One Before Loop
-		bge fb32_draw_circle_success
-
-		add y_current, y_current, #1
-
-		vsub.f32 vfp_tri_height, vfp_tri_height, vfp_one
-
-		cmp x_radius, y_radius
-		beq fb32_draw_circle_loop_jump
-
-		/* Add Difference to vfp_x_radius in Case of Ellipse */
-
-		vmov vfp_cal_a, vfp_tri_height
-		vabs.f32 vfp_cal_a, vfp_cal_a
-		vdiv.f32 vfp_cal_a, vfp_cal_a, vfp_y_radius                @ Compress Range Within 0.0-1.0
-		vmul.f32 vfp_cal_a, vfp_cal_a, vfp_cal_a                   @ The Second Power of vfp_cal_a
-		vmul.f32 vfp_cal_a, vfp_diff_radius, vfp_cal_a
-		vadd.f32 vfp_radius, vfp_x_radius, vfp_cal_a
-
-		fb32_draw_circle_loop_jump:
-
-			b fb32_draw_circle_loop
-
-	fb32_draw_circle_error:
-		mov r0, #1
-		b fb32_draw_circle_common
-
-	fb32_draw_circle_success:
-		mov r0, #0
-
-	fb32_draw_circle_common:
-		vpop {s0-s11}
-		lsl x_current, x_current, #16
-		add r1, x_current, y_current
-		pop {r4-r9}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-		mov pc, lr
-
-.unreq color
-.unreq x_coord
-.unreq x_diff
-.unreq x_radius
-.unreq y_radius
-.unreq char_width
-.unreq char_height
-.unreq x_current
-.unreq y_current
-.unreq y_max
-.unreq vfp_xy_coord
-.unreq vfp_y_coord
-.unreq vfp_x_coord
-.unreq vfp_xy_radius
-.unreq vfp_y_radius
-.unreq vfp_x_radius
-.unreq vfp_cal_a
-.unreq vfp_cal_b
-.unreq vfp_cal_c
-.unreq vfp_x_start
-.unreq vfp_diff_radius
-.unreq vfp_radius
-.unreq vfp_tri_height
-.unreq vfp_one
-
-
-/**
- * function fb32_draw_line
- * Draw Line
- * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
- *
- * Parameters
- * r0: Color (16-bit or 32-bit)
- * r1: X Coordinate1
- * r2: Y Coordinate1
- * r3: X Coordinate2
- * r4: Y Coordinate2
- * r5: Point Width in Pixels, Origin is Upper Left Corner
- * r6: Point Height in Pixels, Origin is Upper Left Corner
- *
- * Usage: r0-r11
- * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
- */
-.globl fb32_draw_line
-fb32_draw_line:
-	/* Auto (Local) Variables, but just Aliases */
-	color            .req r0   @ Parameter, Register for Argument, Scratch Register
-	x_coord_1        .req r1   @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord_1        .req r2   @ Parameter, Register for Argument, Scratch Register
-	x_coord_2        .req r3   @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord_2        .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width       .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height      .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	x_current        .req r7
-	y_current        .req r8
-	y_diff           .req r9   @ Counter
-	dup_char_width   .req r10
-	y_direction      .req r11  @ 1 is to Lower Right (Y Increment), -1 is to Upper Right (Y Decrement)
-
-	/* VFP Registers */
-	vfp_xy_coord_1   .req d0 @ q0[0]
-	vfp_y_coord_1    .req s0 @ Lower 32 Bits of d0
-	vfp_x_coord_1    .req s1 @ Upper 32 Bits of d0
-	vfp_xy_coord_2   .req d1 @ q0[1]
-	vfp_y_coord_2    .req s2
-	vfp_x_coord_2    .req s3
-	vfp_y_coord_3    .req s4
-	vfp_x_coord_3    .req s5
-	vfp_char_width   .req s6
-	vfp_x_per_y      .req s7 @ Uses to Determine char_width
-	vfp_x_start      .req s8
-	vfp_x_current    .req s9
-	vfp_i            .req s10
-	vfp_one          .req s11
-
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
-	pop {y_coord_2,char_width,char_height}           @ Get Fifth to Seventh Arguments
-	sub sp, sp, #44                                  @ Retrieve SP
-
-	vpush {s0-s11}
-
-	mov dup_char_width, char_width                 @ Use on the Last Point
-
-	cmp y_coord_1, y_coord_2
-	bge fb32_draw_line_coordge
-	blt fb32_draw_line_coordlt
-
-	fb32_draw_line_coordge:                     @ `If ( y_coord_1 >= y_coord_2 )`
-		sub y_diff, y_coord_1, y_coord_2
-		cmp x_coord_1, x_coord_2
-
-		movge x_current, x_coord_2               @ `If ( x_coord_1 >= x_coord_2 )`, Get X Start Point
-		movge y_current, y_coord_2               @ Get Y Start Point
-		movge y_direction, #1                    @ Draw to Lower Right
-
-		movlt x_current, x_coord_1               @ `If ( x_coord_1 < x_coord_2 )`, Get X Start Point
-		movlt y_current, y_coord_1               @ Get Y Start Point
-		movlt y_direction, #-1                   @ Draw to Upper Right
-		b fb32_draw_line_coord
-
-	fb32_draw_line_coordlt:                      @ `If ( y_coord_1 < y_coord_2 )`
-		sub y_diff, y_coord_2, y_coord_1
-		cmp x_coord_1, x_coord_2
-
-		movge x_current, x_coord_2               @ `If ( x_coord_1 >= x_coord_2 )`, Get X Start Point
-		movge y_current, y_coord_2               @ Get Y Start Point
-		movge y_direction, #-1                   @ Draw to Upper Right
-
-		movlt x_current, x_coord_1               @ `If ( x_coord_1 < x_coord_2 )`, Get X Start Point
-		movlt y_current, y_coord_1               @ Get Y Start Point
-		movlt y_direction, #1                    @ Draw to Lower Right
-
-	fb32_draw_line_coord:
-		vmov vfp_xy_coord_1, y_coord_1, x_coord_1     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[0]
-		vmov vfp_xy_coord_2, y_coord_2, x_coord_2     @ Lower Bits from y_coord_n, Upper Bits x_coord_n, q0[1]
-		vcvt.f32.s32 vfp_y_coord_1, vfp_y_coord_1     @ Convert Signed Integer to Single Precision Floating Point
-		vcvt.f32.s32 vfp_x_coord_1, vfp_x_coord_1     @ Convert Signed Integer to Single Precision Floating Point
-		vcvt.f32.s32 vfp_y_coord_2, vfp_y_coord_2     @ Convert Signed Integer to Single Precision Floating Point
-		vcvt.f32.s32 vfp_x_coord_2, vfp_x_coord_2     @ Convert Signed Integer to Single Precision Floating Point
-
-		/* Subtract Each 32-Bit Lane as Single Precision */
-		vsub.f32 vfp_y_coord_3, vfp_y_coord_1, vfp_y_coord_2
-		vsub.f32 vfp_x_coord_3, vfp_x_coord_1, vfp_x_coord_2
-
-		vcmp.f32 vfp_y_coord_3, #0
-		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		vmoveq vfp_x_per_y, vfp_x_coord_3             @ If difference of Y is Zero, Just X per Y is X Difference
-		vdivne.f32 vfp_x_per_y, vfp_x_coord_3, vfp_y_coord_3
-		vabs.f32 vfp_x_per_y, vfp_x_per_y             @ Calculate Absolute Value of X Width per One Y Pixel
-
-		vcmp.f32 vfp_x_coord_1, vfp_x_coord_2
-		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		vmovge vfp_x_start, vfp_x_coord_2             @ Get X Start Point to Calculate in VFP
-		vmovlt vfp_x_start, vfp_x_coord_1             @ Get X Start Point to Calculate in VFP
-
-		/* Add Character Width to Calculated Value to Draw */
-		vmov vfp_char_width, char_width
-		vcvt.f32.s32 vfp_char_width, vfp_char_width
-		vadd.f32 vfp_char_width, vfp_char_width, vfp_x_per_y
-		vcvtr.s32.f32 vfp_char_width, vfp_char_width
-		vmov char_width, vfp_char_width
-
-		/*cmp char_width, #0*/
-		/*moveq char_width, #1*/
-
-		.unreq x_coord_1
-		i      .req r1
-
-		mov i, #0
-		vmov vfp_i, i
-		vcvt.f32.s32 vfp_i, vfp_i
-
-		mov i, #1
-		vmov vfp_one, i
-		vcvt.f32.s32 vfp_one, vfp_one
-
-	fb32_draw_line_loop:
-
-		push {r0-r3,lr}                                @ Equals to stmfd (stack pointer full, decrement order)
-		mov r1, x_current
-		mov r2, y_current
-		mov r3, char_width
-		push {char_height} 
-		bl fb32_clear_color_block
-		add sp, sp, #4
-		cmp r0, #2                                     @ Compare Return 2
-		pop {r0-r3,lr}                                 @ Retrieve Registers Before Error Check, POP does not flags-update
-
-		beq fb32_draw_line_error
-
-		fb32_draw_line_loop_common:
-			add i, i, #1
-			cmp i, y_diff
-			bhi fb32_draw_line_success
-			moveq char_width, dup_char_width           @ To hide Width Overflow on End Point (Except Original char_width)
-
-			add y_current, y_current, y_direction
-
-			vadd.f32 vfp_i, vfp_i, vfp_one
-			vmov vfp_x_current, vfp_x_start
-			vmla.f32 vfp_x_current, vfp_x_per_y, vfp_i    @ Multiply and Accumulate Fd = Fd + (Fn * Fm)
-			vcvtr.s32.f32 vfp_x_current, vfp_x_current    @ In VFP Instructions, You Can Convert with Rounding Mode
-
-			vmov x_current, vfp_x_current
-
-			b fb32_draw_line_loop
-
-	fb32_draw_line_error:
-		mov r0, #1
-		b fb32_draw_line_common
-
-	fb32_draw_line_success:
-		mov r0, #0
-
-	fb32_draw_line_common:
-		vpop {s0-s11}
-		lsl x_current, x_current, #16
-		add r1, x_current, y_current
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-		mov pc, lr
-
-.unreq color
-.unreq i
-.unreq y_coord_1
-.unreq x_coord_2
-.unreq y_coord_2
-.unreq char_width
-.unreq char_height
-.unreq x_current
-.unreq y_current
-.unreq y_diff
-.unreq dup_char_width
-.unreq y_direction
-.unreq vfp_xy_coord_1
-.unreq vfp_y_coord_1
-.unreq vfp_x_coord_1
-.unreq vfp_xy_coord_2
-.unreq vfp_y_coord_2
-.unreq vfp_x_coord_2
-.unreq vfp_y_coord_3
-.unreq vfp_x_coord_3
-.unreq vfp_char_width
-.unreq vfp_x_per_y
-.unreq vfp_x_start
-.unreq vfp_x_current
-.unreq vfp_i
-.unreq vfp_one
-
-
-/**
- * function fb32_draw_image
+ * function fb32_image
  * Draw Image
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -913,8 +48,8 @@ fb32_draw_line:
  * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
-.globl fb32_draw_image
-fb32_draw_image:
+.globl fb32_image
+fb32_image:
 	/* Auto (Local) Variables, but just Aliases */
 	image_point      .req r0  @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord          .req r1  @ Parameter, Register for Argument and Result, Scratch Register
@@ -967,22 +102,22 @@ fb32_draw_image:
 
 	ldr f_buffer, FB32_ADDR
 	cmp f_buffer, #0
-	beq fb32_draw_image_error2
+	beq fb32_image_error2
 
 	ldr width, FB32_WIDTH
 	cmp width, #0
-	beq fb32_draw_image_error2
+	beq fb32_image_error2
 
 	ldr depth, FB32_DEPTH
 	cmp depth, #0
-	beq fb32_draw_image_error2
+	beq fb32_image_error2
 	cmp depth, #32
 	cmpne depth, #16
-	bne fb32_draw_image_error2
+	bne fb32_image_error2
 
 	ldr size, FB32_SIZE
 	cmp size, #0
-	beq fb32_draw_image_error2
+	beq fb32_image_error2
 	add size, f_buffer, size
 
 	cmp depth, #16
@@ -1024,7 +159,7 @@ fb32_draw_image:
 	add width_check, width
 
 	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
-	blt fb32_draw_image_xminus
+	blt fb32_image_xminus
 
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
@@ -1035,9 +170,9 @@ fb32_draw_image:
 	x_offset_char .req r1
 
 	mov x_offset_char, #0                            @ X Minus Offset Bytes
-	b fb32_draw_image_xoffset
+	b fb32_image_xoffset
 
-	fb32_draw_image_xminus:
+	fb32_image_xminus:
 		add char_width, char_width, x_coord      @ Subtract x_coord Value from char_width
 
 		.unreq x_coord
@@ -1050,10 +185,10 @@ fb32_draw_image:
 		cmp depth, #32
 		lsleq x_offset_char, x_offset_char, #2   @ X Minus Coord Bytes, substitution of Multiplication by 2 (No Minus)
 
-	fb32_draw_image_xoffset:
+	fb32_image_xoffset:
 		ldr ip, [sp, #104]                       @ Load X Offset, Arm 36 Bytes + VFP 68 Bytes Away From Current SP
 		cmp ip, #0
-		ble fb32_draw_image_xcrop
+		ble fb32_image_xcrop
 
 		sub char_width, char_width, ip           @ Subtract X Offset (ip) value from char_width
 
@@ -1064,11 +199,11 @@ fb32_draw_image:
 
 		add x_offset_char, x_offset_char, ip
 
-	fb32_draw_image_xcrop:
+	fb32_image_xcrop:
 		ldr ip, [sp, #112]                       @ Load X Crop, Arm 44 Bytes + VFP 68 Bytes Away From Current SP
 		cmp ip, #0
 		movle x_crop_char, #0
-		ble fb32_draw_image_loop
+		ble fb32_image_loop
 
 		sub char_width, char_width, ip           @ Subtract X Crop (ip) value from char_width
 
@@ -1077,30 +212,30 @@ fb32_draw_image:
 		cmp depth, #32
 		lsleq x_crop_char, ip, #2                @ X Crop Bytes, substitution of Multiplication by 4 (No Minus)
 
-	fb32_draw_image_loop:
+	fb32_image_loop:
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
-		ble fb32_draw_image_success
+		ble fb32_image_success
 
 		cmp f_buffer, size                           @ Check Overflow of Buffer Memory
-		bhs fb32_draw_image_error1
+		bhs fb32_image_error1
 
 		add image_point, image_point, x_offset_char  @ Add X Offset Bytes
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
-		fb32_draw_image_loop_horizontal:
+		fb32_image_loop_horizontal:
 			sub j, j, #1                                 @ For Bit Allocation (Horizontal Character Bit)
 			cmp j, #0                                    @ Horizontal Counter, Check
-			blt fb32_draw_image_loop_common
+			blt fb32_image_loop_common
 
 			/* The Picture Process of Depth 16 Bits */
 			cmp depth, #16
-			bne fb32_draw_image_loop_horizontal_depth32
+			bne fb32_image_loop_horizontal_depth32
 			ldrh color, [image_point]                    @ Load half word
 			strh color, [f_buffer]                       @ Store half word
-			b fb32_draw_image_loop_horizontal_common
+			b fb32_image_loop_horizontal_common
 
-			fb32_draw_image_loop_horizontal_depth32:
+			fb32_image_loop_horizontal_depth32:
 				/* The Picture Process of Depth 32 Bits */
 				ldr color, [image_point]                     @ Load word
 
@@ -1115,10 +250,10 @@ fb32_draw_image:
 				 */
 
 				cmp color, #0xFF000000                             @ If SRC_Alpha is Fully Opaque
-				bhs fb32_draw_image_loop_horizontal_depth32_common @ Unsigned Higher or Same
+				bhs fb32_image_loop_horizontal_depth32_common      @ Unsigned Higher or Same
 
 				cmp color, #0x01000000                             @ If SRC_Alpha is Fully Transparent
-				blo fb32_draw_image_loop_horizontal_common         @ Unsigned Less (Lower)
+				blo fb32_image_loop_horizontal_common              @ Unsigned Less (Lower)
 
 				/* SRC */
 				and depth, color, #0xFF
@@ -1188,7 +323,7 @@ fb32_draw_image:
 				/* Compare OUT_Alpha to Zero */
 				vcmp.f32 vfp_out_alpha, #0
 				vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV Flags (APSR)
-				beq fb32_draw_image_loop_horizontal_depth32_alphablend  @ If OUT_Alpha is 0.0, OUT_ARGB Becomes all 0.0
+				beq fb32_image_loop_horizontal_depth32_alphablend  @ If OUT_Alpha is 0.0, OUT_ARGB Becomes all 0.0
 
 				/* DST_RGB x (DST_Alpha x (1 - SRC_Alpha)) to vfp_dst */
 				vmul.f32 vfp_dst_blue, vfp_dst_blue, vfp_cal_a
@@ -1214,7 +349,7 @@ fb32_draw_image:
 				/* Retrieve OUT_Alpha to Range within 0 to 255 */
 				vmul.f32 vfp_out_alpha, vfp_out_alpha, vfp_divisor
 
-				fb32_draw_image_loop_horizontal_depth32_alphablend:
+				fb32_image_loop_horizontal_depth32_alphablend:
 					vcvtr.u32.f32 vfp_out_blue, vfp_out_blue            @ Convert Single Precision Floating Point to Unsinged Integer
 					vcvtr.u32.f32 vfp_out_green, vfp_out_green          @ Convert Single Precision Floating Point to Unsinged Integer
 					vcvtr.u32.f32 vfp_out_red, vfp_out_red              @ Convert Single Precision Floating Point to Unsinged Integer
@@ -1233,10 +368,10 @@ fb32_draw_image:
 
 					mov depth, #32
 
-				fb32_draw_image_loop_horizontal_depth32_common:
+				fb32_image_loop_horizontal_depth32_common:
 					str color, [f_buffer]                    @ Store word
 
-			fb32_draw_image_loop_horizontal_common:
+			fb32_image_loop_horizontal_common:
 				cmp depth, #16
 				addeq f_buffer, f_buffer, #2         @ Buffer Address Shift
 				addeq image_point, image_point, #2   @ Image Pointer Shift
@@ -1245,7 +380,7 @@ fb32_draw_image:
 				addeq image_point, image_point, #4   @ Image Pointer Shift
 
 				cmp f_buffer, width_check            @ Check Overflow of Width
-				blo fb32_draw_image_loop_horizontal
+				blo fb32_image_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                       @ substitution of Multiplication by 2
@@ -1253,7 +388,7 @@ fb32_draw_image:
 				lsleq j, j, #2                       @ substitution of Multiplication by 4
 				add f_buffer, f_buffer, j            @ Buffer Offset
 
-		fb32_draw_image_loop_common:
+		fb32_image_loop_common:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
@@ -1268,20 +403,20 @@ fb32_draw_image:
 
 			add image_point, image_point, x_crop_char @ Add X Crop Bytes
 
-			b fb32_draw_image_loop
+			b fb32_image_loop
 
-	fb32_draw_image_error1:
+	fb32_image_error1:
 		mov r0, #1                                   @ Return with Error 1
-		b fb32_draw_image_common
+		b fb32_image_common
 
-	fb32_draw_image_error2:
+	fb32_image_error2:
 		mov r0, #2                                   @ Return with Error 2
-		b fb32_draw_image_common
+		b fb32_image_common
 
-	fb32_draw_image_success:
+	fb32_image_success:
 		mov r0, #0                                   @ Return with Success
 
-	fb32_draw_image_common:
+	fb32_image_common:
 		vpop {s0-s16}
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number

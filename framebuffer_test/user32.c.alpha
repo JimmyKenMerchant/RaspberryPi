@@ -21,8 +21,8 @@ void _user_start()
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	uint32 clear_color = COLOR32_NAVYBLUE;
-	float32 start_radian = math32_degree_to_radian32( -180 );
-	float32 end_radian = math32_degree_to_radian32( 179 );
+	float32 start_fdegree = -90.0;
+	float32 end_fdegree = 20.0;
 
 	print32_set_caret( print32_string( string1, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string1 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -78,12 +78,16 @@ void _user_start()
 	
 	while(1) {
 		fb32_clear_color( clear_color );
-		fb32_draw_line( COLOR32_BLUE, -50, 800, 100, 100, 20, 20 );
-		fb32_draw_circle( COLOR32_CYAN, -100, 500, 200, 175 );
-		fb32_draw_arc( COLOR32_WHITE, 500, 200, 500, 100, start_radian, end_radian, 10, 1 );
-		fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
-		fb32_draw_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
-		clear_color = clear_color + 20;
-		_sleep( 2000000 );
+		draw32_line( COLOR32_BLUE, -50, 800, 100, 100, 20, 20 );
+		draw32_circle( COLOR32_CYAN, -100, 500, 200, 175 );
+		draw32_arc_fdegree( COLOR32_WHITE, 200, 200, 200, 200, start_fdegree, end_fdegree, 10, 1 );
+		fb32_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
+		fb32_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
+		//clear_color += 20;
+		start_fdegree = math32_fadd( start_fdegree, 3.0 );
+		if ( math32_fgt( start_fdegree, 360.0 ) ) start_fdegree = -360.0;
+		end_fdegree = math32_fadd( end_fdegree, 3.0 );
+		if ( math32_fgt( end_fdegree, 360.0 ) ) end_fdegree = -360.0;
+		_sleep( 100000 );
 	}
 }
