@@ -18,97 +18,128 @@ MATH32_PI_PER_DEGREE32: .float 0.01745329252
 
 
 /**
- * function math32_round_degree32
- * Return Rounded Degree Between 0 to 360
+ * function math32_round_fdegree32
+ * Return Rounded Float Degree Between 0 to 360
  *
  * Parameters
- * r0: Degrees, Must Be Type of Signed Integer
- *
- * Return: r0
- */
-.globl math32_round_degree32
-math32_round_degree32:
-	/* Auto (Local) Variables, but just Aliases */
-	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	full           .req r1
-
-	mov full, #360
-
-	cmp degree, full
-	bgt math32_round_degree32_over
-
-	cmp degree, #0
-	blt math32_round_degree32_under
-
-	math32_round_degree32_over:
-		subs degree, degree, full
-		bgt math32_round_degree32_over
-		b math32_round_degree32_common
-
-	math32_round_degree32_under:
-		add degree, degree, full
-		cmp degree, #0
-		blt math32_round_degree32_under
-
-	math32_round_degree32_common:
-		mov pc, lr
-
-.unreq degree
-.unreq full
-
-
-/**
- * function math32_degree_to_cradian32
- * Return Corrected Radian (Translates to Between -pi and pi) from Degrees to Calculate with Maclaurin (Taylor) Series
- * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
- *
- * Parameters
- * r0: Degrees, Must Be Type of Signed Integer
+ * r0: Degrees, Must Be Type of Float
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_degree_to_cradian32
-math32_degree_to_cradian32:
+.globl math32_round_fdegree32
+math32_round_fdegree32:
 	/* Auto (Local) Variables, but just Aliases */
 	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	full           .req r1
 
 	/* VFP Registers */
-	vfp_degree     .req s0
-	vfp_radian     .req s1
-	vfp_pi_per_deg .req s2
+	vdegree        .req s0
+	vfull          .req s1
 
-	vpush {s0-s2}
+	vpush {s0-s1}
 
-	push {lr}
-	bl math32_round_degree32
-	pop {lr}
-
-	cmp degree, #180
-
-	ble math32_degree_to_cradian32_jump
+	vmov vdegree, degree
 
 	mov full, #360
-	sub degree, degree, full
+	vmov vfull, full
+	vcvt.f32.u32 vfull, vfull
 
-	math32_degree_to_cradian32_jump:
+	vcmp.f32 vdegree, vfull
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	bgt math32_round_fdegree32_over
 
-		/**
-		 * Radian = degrees X (pi Div by 180)
-		 */
-		vmov vfp_degree, degree
-		vcvt.f32.s32 vfp_degree, vfp_degree
-		vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
-		vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
+	vcmp.f32 vdegree, #0
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	blt math32_round_fdegree32_under
 
-	math32_degree_to_cradian32_common:
-		vmov r0, vfp_radian
-		vpop {s0-s2}
+	b math32_round_fdegree32_common
+
+	math32_round_fdegree32_over:
+		vsub.f32 vdegree, vdegree, vfull
+		vcmp.f32 vdegree, vfull
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		bgt math32_round_fdegree32_over
+		b math32_round_fdegree32_common
+
+	math32_round_fdegree32_under:
+		vadd.f32 vdegree, vdegree, vfull
+		vcmp.f32 vdegree, #0
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		blt math32_round_fdegree32_under
+
+	math32_round_fdegree32_common:
+		vmov degree, vdegree
+		vpop {s0-s1}
 		mov pc, lr
 
 .unreq degree
 .unreq full
+.unreq vdegree
+.unreq vfull
+
+
+/**
+ * function math32_fdegree_to_cradian32
+ * Return Corrected Radian (Translates to Between -pi and pi) from Degrees to Calculate with Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Degrees, Must Be Type of Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_fdegree_to_cradian32
+math32_fdegree_to_cradian32:
+	/* Auto (Local) Variables, but just Aliases */
+	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	temp           .req r1
+
+	/* VFP Registers */
+	vfp_degree     .req s0
+	vfp_half       .req s1
+	vfp_full       .req s2
+	vfp_radian     .req s3
+	vfp_pi_per_deg .req s4
+
+	vpush {s0-s4}
+
+	push {lr}
+	bl math32_round_fdegree32
+	pop {lr}
+
+	vmov vfp_degree, degree
+
+	mov temp, #180
+	vmov vfp_half, temp
+	mov temp, #360
+	vmov vfp_full, temp
+	vcvt.f32.s32 vfp_half, vfp_half
+	vcvt.f32.s32 vfp_full, vfp_full
+
+	vcmp.f32 vfp_degree, vfp_half
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	ble math32_fdegree_to_cradian32_jump
+
+	vsub.f32 vfp_degree, vfp_degree, vfp_full       @ -180 to 0 Exclusively
+
+	math32_fdegree_to_cradian32_jump:
+
+		/**
+		 * Radian = degrees X (pi Div by 180)
+		 */
+		vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
+		vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
+
+	math32_fdegree_to_cradian32_common:
+		vmov r0, vfp_radian
+		vpop {s0-s4}
+		mov pc, lr
+
+.unreq degree
+.unreq temp
 .unreq vfp_degree
+.unreq vfp_half
+.unreq vfp_full
 .unreq vfp_radian
 .unreq vfp_pi_per_deg
 

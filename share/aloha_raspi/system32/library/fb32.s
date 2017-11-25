@@ -7,47 +7,303 @@
  *
  */
 
-/* Frame Buffer Physical */
-.globl FB32_ADDR
-.globl FB32_WIDTH
-.globl FB32_HEIGHT
-.globl FB32_SIZE
-.globl FB32_DEPTH
-
-FB32_ADDR:           .word 0x00
-FB32_WIDTH:          .word 0x00
-FB32_HEIGHT:         .word 0x00
-FB32_SIZE:           .word 0x00
-FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB).
-
 
 /**
- * Buffers
- * Render Buffer Will Be Set with Heap.
- * Content of Render Buffer is Same as Framebuffer.
- * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
- * So, Block Size is 5 (20 Bytes).
+ * function fb32_draw_arc_fdegree
+ * Draw Arc by Degree with Single Precision Float
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ * Range is -360 to 360 degrees inclusively, otherwise, value will be cut off by the limit.
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ * r1: X Coordinate of Center
+ * r2: Y Coordinate of Center
+ * r3: X Radius
+ * r4: Y Radius
+ * r5: Float Degree on Start of Arc
+ * r6: Float Degree on End of Arc
+ * r7: Width of Arc Line
+ * r8: Height of Arc Line
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Part of Circle from Last Coordinate was Not Drawn, aused by Not Defined Buffer
  */
+.globl fb32_draw_arc_fdegree
+fb32_draw_arc_fdegree:
+	/* Auto (Local) Variables, but just Aliases */
+	color             .req r0   @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1   @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord           .req r2   @ Parameter, Register for Argument, Scratch Register
+	x_radius          .req r3   @ Parameter, Register for Argument, Scratch Register
+	y_radius          .req r4   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	start_fdegree     .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	end_fdegree       .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_width        .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_height       .req r8   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	temp              .req r9
+	neg_flag          .req r10
 
-.globl FB32_FRAMEBUFFER
-.globl FB32_FRAMEBUFFER_ADDR
-.globl FB32_FRAMEBUFFER_WIDTH
-.globl FB32_FRAMEBUFFER_HEIGHT
-.globl FB32_FRAMEBUFFER_SIZE
-.globl FB32_FRAMEBUFFER_DEPTH
-FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
-FB32_FRAMEBUFFER_ADDR:     .word 0x00
-FB32_FRAMEBUFFER_WIDTH:    .word 0x00
-FB32_FRAMEBUFFER_HEIGHT:   .word 0x00
-FB32_FRAMEBUFFER_SIZE:     .word 0x00
-FB32_FRAMEBUFFER_DEPTH:    .word 0x00
+	/* VFP Registers */
+	vfp_d_fdegree     .req d0 @ q0[0]
+	vfp_start_fdegree .req s0 @ Lower 32 Bits of d0
+	vfp_end_fdegree   .req s1 @ Upper 32 Bits of d0
+	vfp_zero          .req s2
+	vfp_full          .req s3
+	vfp_half          .req s4
+	vfp_temp          .req s5
 
-.globl FB32_DOUBLEBUFFER_BACK
-.globl FB32_DOUBLEBUFFER_FRONT
-FB32_DOUBLEBUFFER_BACK:    .word 0x00
-FB32_DOUBLEBUFFER_FRONT:   .word 0x00
+	push {r4-r10,lr}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                   @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-.balign 4
+	add sp, sp, #32                                   @ r4-r10 and lr offset 32 bytes
+	pop {y_radius, start_fdegree, end_fdegree, char_width, char_height} @ Get Fifth to Ninth Arguments
+	sub sp, sp, #52                                   @ Retrieve SP
+
+	vpush {s0-s5}
+
+	vmov vfp_d_fdegree, start_fdegree, end_fdegree
+
+	mov temp, #0
+	vmov vfp_zero, temp
+	vcvt.f32.s32 vfp_zero, vfp_zero
+
+	mov temp, #360
+	vmov vfp_full, temp
+	vcvt.f32.s32 vfp_full, vfp_full
+
+	mov temp, #180
+	vmov vfp_half, temp
+	vcvt.f32.s32 vfp_half, vfp_half
+
+	/* Ensure Start Is Less than End */
+
+	vcmp.f32 vfp_start_fdegree, vfp_end_fdegree
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovgt vfp_temp, vfp_start_fdegree
+	vmovgt vfp_start_fdegree, vfp_end_fdegree
+	vmovgt vfp_end_fdegree, vfp_temp
+
+	/* Arrange -360.0 to 360.0 Degrees by Cutting off Exceeded Values */
+
+	vcmp.f32 vfp_start_fdegree, vfp_full
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovgt vfp_start_fdegree, vfp_full
+
+	vcmp.f32 vfp_end_fdegree, vfp_full
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovgt vfp_end_fdegree, vfp_full
+
+	vneg.f32 vfp_temp, vfp_full
+	
+	vcmp.f32 vfp_start_fdegree, vfp_temp
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovlt vfp_start_fdegree, vfp_temp
+
+	vcmp.f32 vfp_end_fdegree, vfp_temp
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovlt vfp_end_fdegree, vfp_temp
+
+	/* Mirror Regular Registers and VFP Registers */
+	vmov start_fdegree, vfp_start_fdegree
+	vmov end_fdegree, vfp_end_fdegree
+
+	fb32_draw_arc_fdegree_minus180:
+		/* -360 to -180.0 Degrees */
+		vneg.f32 vfp_temp, vfp_half
+		vcmp.f32 vfp_start_fdegree, vfp_temp
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		bge fb32_draw_arc_fdegree_0
+
+		vcmp.f32 vfp_end_fdegree, vfp_temp
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovgt end_fdegree, vfp_temp
+
+		push {r0-r3}
+		mov r0, start_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r5, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, end_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r6, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		push {r4-r8}
+		bl fb32_draw_arc
+		add sp, sp, #20
+		cmp r0, #1
+		pop {r0-r3}
+		beq fb32_draw_arc_fdegree_error                   @ If Error
+
+		vcmp.f32 vfp_end_fdegree, vfp_temp
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		ble fb32_draw_arc_fdegree_success
+
+		/* Mirror Regular Registers and VFP Registers */
+		vmov start_fdegree, vfp_start_fdegree
+		vmov end_fdegree, vfp_end_fdegree
+
+	fb32_draw_arc_fdegree_0:
+		/* Over -180 to 0.0 Degrees */
+		vcmp.f32 vfp_start_fdegree, vfp_zero
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		bge fb32_draw_arc_fdegree_plus180
+
+		vneg.f32 vfp_temp, vfp_half
+		vcmp.f32 vfp_start_fdegree, vfp_temp
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovlt start_fdegree, vfp_temp
+		movle neg_flag, #1
+
+		vcmp.f32 vfp_end_fdegree, vfp_zero
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovgt end_fdegree, vfp_zero
+
+		push {r0-r3}
+		mov r0, start_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r5, r0
+		pop {r0-r3}
+
+		/* Make Sure Value of PI Negative */
+		cmp neg_flag, #1
+		vmoveq vfp_temp, r5
+		vnegeq.f32 vfp_temp, vfp_temp
+		vmoveq r5, vfp_temp
+
+		push {r0-r3}
+		mov r0, end_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r6, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		push {r4-r8}
+		bl fb32_draw_arc
+		add sp, sp, #20
+		cmp r0, #1
+		pop {r0-r3}
+		beq fb32_draw_arc_fdegree_error                       @ If Error
+
+		vcmp.f32 vfp_end_fdegree, vfp_zero
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		ble fb32_draw_arc_fdegree_success
+
+		/* Mirror Regular Registers and VFP Registers */
+		vmov start_fdegree, vfp_start_fdegree
+		vmov end_fdegree, vfp_end_fdegree
+	
+	fb32_draw_arc_fdegree_plus180:
+		/* Over 0.0 to 180.0 Degrees */
+		vcmp.f32 vfp_start_fdegree, vfp_half
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		bge fb32_draw_arc_fdegree_plus360
+
+		vcmp.f32 vfp_start_fdegree, vfp_zero
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovlt start_fdegree, vfp_zero
+
+		vcmp.f32 vfp_end_fdegree, vfp_half
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovgt end_fdegree, vfp_half
+
+		push {r0-r3}
+		mov r0, start_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r5, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, end_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r6, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		push {r4-r8}
+		bl fb32_draw_arc
+		add sp, sp, #20
+		cmp r0, #1
+		pop {r0-r3}
+		beq fb32_draw_arc_fdegree_error                       @ If Error
+
+		vcmp.f32 vfp_end_fdegree, vfp_half
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		ble fb32_draw_arc_fdegree_success
+
+		/* Mirror Regular Registers and VFP Registers */
+		vmov start_fdegree, vfp_start_fdegree
+		vmov end_fdegree, vfp_end_fdegree
+
+	fb32_draw_arc_fdegree_plus360:
+		/* Over 180.0 to 360.0 Degrees */
+		vcmp.f32 vfp_start_fdegree, vfp_half
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovlt start_fdegree, vfp_half
+		movle neg_flag, #1
+
+		push {r0-r3}
+		mov r0, start_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r5, r0
+		pop {r0-r3}
+
+		/* Make Sure Value of PI Negative */
+		cmp neg_flag, #1
+		vmoveq vfp_temp, r5
+		vnegeq.f32 vfp_temp, vfp_temp
+		vmoveq r5, vfp_temp
+
+		push {r0-r3}
+		mov r0, end_fdegree
+		bl math32_fdegree_to_cradian32
+		mov r6, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		push {r4-r8}
+		bl fb32_draw_arc
+		add sp, sp, #20
+		cmp r0, #1
+		pop {r0-r3}
+		beq fb32_draw_arc_fdegree_error                       @ If Error
+
+		b fb32_draw_arc_fdegree_success
+
+	fb32_draw_arc_fdegree_error:
+		mov r0, #1
+		b fb32_draw_arc_fdegree_common
+
+	fb32_draw_arc_fdegree_success:
+		mov r0, #0
+
+	fb32_draw_arc_fdegree_common:
+		vpop {s0-s5}
+		pop {r4-r10,pc}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+.unreq color
+.unreq x_coord
+.unreq y_coord
+.unreq x_radius
+.unreq y_radius
+.unreq start_fdegree
+.unreq end_fdegree
+.unreq char_width
+.unreq char_height
+.unreq temp
+.unreq neg_flag
+.unreq vfp_d_fdegree
+.unreq vfp_start_fdegree
+.unreq vfp_end_fdegree
+.unreq vfp_zero
+.unreq vfp_full
+.unreq vfp_half
+.unreq vfp_temp
+
 
 /**
  * function fb32_draw_arc
@@ -67,7 +323,7 @@ FB32_DOUBLEBUFFER_FRONT:   .word 0x00
  * r8: Height of Arc Line
  *
  * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
  */
 .globl fb32_draw_arc
 fb32_draw_arc:
@@ -230,6 +486,25 @@ fb32_draw_arc:
 
 
 /**
+ * Frame Buffer Physical
+ * To get speed, these variables are accessed directly from functions in fb32.s and print32.s,
+ * therefore, the functions are needed to be placed close to these variables
+ * within plus/minus 0x1000 bytes of the memory address.
+ */
+.globl FB32_ADDR
+.globl FB32_WIDTH
+.globl FB32_HEIGHT
+.globl FB32_SIZE
+.globl FB32_DEPTH
+
+FB32_ADDR:           .word 0x00
+FB32_WIDTH:          .word 0x00
+FB32_HEIGHT:         .word 0x00
+FB32_SIZE:           .word 0x00
+FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB).
+
+
+/**
  * function fb32_draw_circle
  * Draw Circle Filled with Color
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
@@ -243,7 +518,7 @@ fb32_draw_arc:
  *
  * Usage: r0-r9
  * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Buffer Overflow
+ * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
  */
 .globl fb32_draw_circle
 fb32_draw_circle:
@@ -425,7 +700,7 @@ fb32_draw_circle:
  *
  * Usage: r0-r11
  * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Buffer Overflow
+ * Error: Part of Line from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
  */
 .globl fb32_draw_line
 fb32_draw_line:
@@ -1490,6 +1765,35 @@ fb32_attach_buffer:
 .unreq height
 .unreq size
 .unreq depth
+
+
+/**
+ * Buffers
+ * Render Buffer Will Be Set with Heap.
+ * Contents of Render Buffer is Same as Framebuffer.
+ * First is Address of Buffer, Second is Width, Third is Height, Fourth is Size, Fifth is Depth.
+ * So, Block Size is 5 (20 Bytes).
+ */
+
+.globl FB32_FRAMEBUFFER
+.globl FB32_FRAMEBUFFER_ADDR
+.globl FB32_FRAMEBUFFER_WIDTH
+.globl FB32_FRAMEBUFFER_HEIGHT
+.globl FB32_FRAMEBUFFER_SIZE
+.globl FB32_FRAMEBUFFER_DEPTH
+FB32_FRAMEBUFFER:          .word FB32_FRAMEBUFFER_ADDR
+FB32_FRAMEBUFFER_ADDR:     .word 0x00
+FB32_FRAMEBUFFER_WIDTH:    .word 0x00
+FB32_FRAMEBUFFER_HEIGHT:   .word 0x00
+FB32_FRAMEBUFFER_SIZE:     .word 0x00
+FB32_FRAMEBUFFER_DEPTH:    .word 0x00
+
+.globl FB32_DOUBLEBUFFER_BACK
+.globl FB32_DOUBLEBUFFER_FRONT
+FB32_DOUBLEBUFFER_BACK:    .word 0x00
+FB32_DOUBLEBUFFER_FRONT:   .word 0x00
+
+.balign 4
 
 .section	.data
 
