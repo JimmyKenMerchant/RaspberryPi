@@ -1253,7 +1253,7 @@ draw32_arc:
 		mov r2, y_current
 		mov r3, char_width
 		push {char_height} 
-		bl fb32_clear_color_block
+		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #2                                          @ Compare Return 2
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
@@ -1417,7 +1417,7 @@ draw32_circle:
 		mov r2, y_current
 		mov r3, char_width
 		push {char_height} 
-		bl fb32_clear_color_block
+		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #2                                          @ Compare Return 2
 		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
@@ -1628,7 +1628,7 @@ draw32_line:
 		mov r2, y_current
 		mov r3, char_width
 		push {char_height} 
-		bl fb32_clear_color_block
+		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #2                                     @ Compare Return 2
 		pop {r0-r3,lr}                                 @ Retrieve Registers Before Error Check, POP does not flags-update

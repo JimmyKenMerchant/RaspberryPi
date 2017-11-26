@@ -9,25 +9,6 @@
 
 
 /**
- * Frame Buffer Physical
- * To get speed, these variables are accessed directly from functions in fb32.s,
- * therefore, the functions are needed to be placed close to these variables
- * within plus/minus 0x1000 (4K) bytes of the memory address.
- */
-.globl FB32_ADDR
-.globl FB32_WIDTH
-.globl FB32_HEIGHT
-.globl FB32_SIZE
-.globl FB32_DEPTH
-
-FB32_ADDR:           .word 0x00
-FB32_WIDTH:          .word 0x00
-FB32_HEIGHT:         .word 0x00
-FB32_SIZE:           .word 0x00
-FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB).
-
-
-/**
  * function fb32_char
  * Picture a Character
  *
@@ -645,8 +626,8 @@ fb32_image:
 
 
 /**
- * function fb32_clear_color_block
- * Clear Block by Color
+ * function fb32_block_color
+ * Place Colored Block
  *
  * Parameters
  * r0: Color (16-bit or 32-bit)
@@ -661,8 +642,8 @@ fb32_image:
  * Error(2): When Buffer is not Defined
  * Global Enviromental Variable(s): FB32_ADDR, FB32_WIDTH, FB32_SIZE, FB32_DEPTH
  */
-.globl fb32_clear_color_block
-fb32_clear_color_block:
+.globl fb32_block_color
+fb32_block_color:
 	/* Auto (Local) Variables, but just Aliases */
 	color       .req r0  @ Parameter, Register for Argument, Scratch Register
 	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
@@ -685,25 +666,25 @@ fb32_clear_color_block:
 
 	ldr f_buffer, FB32_ADDR
 	cmp f_buffer, #0
-	beq fb32_clear_color_block_error2
+	beq fb32_block_color_error2
 
 	ldr width, FB32_WIDTH
 	cmp width, #0
-	beq fb32_clear_color_block_error2
+	beq fb32_block_color_error2
 
 	cmp x_coord, width                               @ If Value of x_coord is Over Width
-	bge fb32_clear_color_block_success
+	bge fb32_block_color_success
 
 	ldr depth, FB32_DEPTH
 	cmp depth, #0
-	beq fb32_clear_color_block_error2
+	beq fb32_block_color_error2
 	cmp depth, #32
 	cmpne depth, #16
-	bne fb32_clear_color_block_error2
+	bne fb32_block_color_error2
 
 	ldr size, FB32_SIZE
 	cmp size, #0
-	beq fb32_clear_color_block_error2
+	beq fb32_block_color_error2
 	add size, f_buffer, size
 
 	cmp depth, #16
@@ -726,7 +707,7 @@ fb32_clear_color_block:
 
 	cmp x_coord, #0                                  @ If Value of x_coord is Signed Minus
 	addlt char_width, char_width, x_coord            @ Subtract x_coord Value from char_width
-	blt fb32_clear_color_block_loop
+	blt fb32_block_color_loop
 
 	cmp depth, #16
 	lsleq x_coord, x_coord, #1                       @ Horizontal Offset Bytes, substitution of Multiplication by 2
@@ -734,20 +715,20 @@ fb32_clear_color_block:
 	lsleq x_coord, x_coord, #2                       @ Horizontal Offset Bytes, substitution of Multiplication by 4
 	add f_buffer, f_buffer, x_coord                  @ Horizontal Offset Bytes
 
-	fb32_clear_color_block_loop:
+	fb32_block_color_loop:
 
 		cmp char_height, #0                          @ Vertical Counter `(; char_height > 0; char_height--)`
-		ble fb32_clear_color_block_success
+		ble fb32_block_color_success
 
 		cmp f_buffer, size                           @ Check Overflow of Buffer Memory
-		bhs fb32_clear_color_block_error1
+		bhs fb32_block_color_error1
 
 		mov j, char_width                            @ Horizontal Counter `(int j = char_width; j >= 0; --j)`
 
-		fb32_clear_color_block_loop_horizontal:
+		fb32_block_color_loop_horizontal:
 			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
 			cmp j, #0                                @ Horizontal Counter, Check
-			blt fb32_clear_color_block_loop_common
+			blt fb32_block_color_loop_common
 
 			/* The Picture Process */
 			cmp depth, #16
@@ -758,10 +739,10 @@ fb32_clear_color_block:
 			streq color, [f_buffer]                  @ Store word
 			addeq f_buffer, f_buffer, #4             @ Buffer Address Shift
 
-			fb32_clear_color_block_loop_horizontal_common:
+			fb32_block_color_loop_horizontal_common:
 
 				cmp f_buffer, width_check             @ Check Overflow of Width
-				blo fb32_clear_color_block_loop_horizontal
+				blo fb32_block_color_loop_horizontal
 
 				cmp depth, #16
 				lsleq j, j, #1                        @ substitution of Multiplication by 2
@@ -769,7 +750,7 @@ fb32_clear_color_block:
 				lsleq j, j, #2                        @ substitution of Multiplication by 4
 				add f_buffer, f_buffer, j             @ Buffer Offset
 
-		fb32_clear_color_block_loop_common:
+		fb32_block_color_loop_common:
 			sub char_height, char_height, #1
 
 			cmp depth, #16
@@ -782,20 +763,20 @@ fb32_clear_color_block:
 
 			add width_check, width_check, width      @ Store the Limitation of Width on the Next Y Coordinate
 
-			b fb32_clear_color_block_loop
+			b fb32_block_color_loop
 
-	fb32_clear_color_block_error1:
+	fb32_block_color_error1:
 		mov r0, #1                                   @ Return with Error 1
-		b fb32_clear_color_block_common
+		b fb32_block_color_common
 
-	fb32_clear_color_block_error2:
+	fb32_block_color_error2:
 		mov r0, #2                                   @ Return with Error 2
-		b fb32_clear_color_block_common
+		b fb32_block_color_common
 
-	fb32_clear_color_block_success:
+	fb32_block_color_success:
 		mov r0, #0                                   @ Return with Success
 
-	fb32_clear_color_block_common:
+	fb32_block_color_common:
 		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
@@ -1083,6 +1064,25 @@ fb32_attach_buffer:
 .unreq height
 .unreq size
 .unreq depth
+
+
+/**
+ * Frame Buffer Physical
+ * To get speed, these variables are accessed directly from functions in fb32.s,
+ * therefore, the functions are needed to be placed close to these variables
+ * within plus/minus 0x1000 (4K) bytes of the memory address.
+ */
+.globl FB32_ADDR
+.globl FB32_WIDTH
+.globl FB32_HEIGHT
+.globl FB32_SIZE
+.globl FB32_DEPTH
+
+FB32_ADDR:           .word 0x00
+FB32_WIDTH:          .word 0x00
+FB32_HEIGHT:         .word 0x00
+FB32_SIZE:           .word 0x00
+FB32_DEPTH:          .word 0x00 @ 16/32. In 16 (Bits), RGB Oredered. In 32 (Bits), ARGB Ordered. (MSB to LSB).
 
 
 /**

@@ -186,7 +186,7 @@ macro32_debug horizon, 200, 224
 	mov r1, horizon
 	mov r2, #0
 	mov r3, resolution
-	bl fb32_clear_color_block
+	bl fb32_block_color
 	add sp, sp, #4
 	pop {r0-r3}
 

@@ -9,81 +9,64 @@
 
 
 /**
- * function math32_fgt
- * Compare Two Values and Return True if Greater Than
+ * function math32_round_fpi32
+ * Return Rounded Degrees Between 0 to 360 with Single Precision Float
  *
  * Parameters
- * r0: Value1, Must Be Type of Float
- * r1: Value2, Must Be Type of Float
- *
- * Return: r0 (Value by Integer, 0 as False and 1 as True)
- */
-.globl math32_fgt
-math32_fgt:
-	/* Auto (Local) Variables, but just Aliases */
-	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
-
-	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
-
-	vpush {s0-s1}
-
-	vmov vvalue1, value1
-	vmov vvalue2, value2
-	mov value1, #0
-
-	vcmp.f32 vvalue1, vvalue2
-	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	movgt value1, #1
-
-	math32_fgt_common:
-		vpop {s0-s1}
-		mov pc, lr
-
-.unreq value1
-.unreq value2
-.unreq vvalue1
-.unreq vvalue2
-
-
-/**
- * function math32_fadd
- * Add Two Values with Single Precision Float
- *
- * Parameters
- * r0: Value1, Must Be Type of Float
- * r1: Value2, Must Be Type of Float
+ * r0: Degrees, Must Be Type of Float
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_fadd
-math32_fadd:
+.globl math32_round_fpi32
+math32_round_fpi32:
 	/* Auto (Local) Variables, but just Aliases */
-	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	full           .req r1
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vdegree        .req s0
+	vfull          .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vdegree, degree
 
-	vadd.f32 vvalue1, vvalue1, vvalue2
+	mov full, #360
+	vmov vfull, full
+	vcvt.f32.u32 vfull, vfull
 
-	math32_fadd_common:
-		vmov value1, vvalue1
+	vcmp.f32 vdegree, vfull
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	bgt math32_round_fpi32_over
+
+	vcmp.f32 vdegree, #0
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	blt math32_round_fpi32_under
+
+	b math32_round_fpi32_common
+
+	math32_round_fpi32_over:
+		vsub.f32 vdegree, vdegree, vfull
+		vcmp.f32 vdegree, vfull
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		bgt math32_round_fpi32_over
+		b math32_round_fpi32_common
+
+	math32_round_fpi32_under:
+		vadd.f32 vdegree, vdegree, vfull
+		vcmp.f32 vdegree, #0
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		blt math32_round_fpi32_under
+
+	math32_round_fpi32_common:
+		vmov degree, vdegree
 		vpop {s0-s1}
 		mov pc, lr
 
-.unreq value1
-.unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq degree
+.unreq full
+.unreq vdegree
+.unreq vfull
 
 
 /**

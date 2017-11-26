@@ -101,9 +101,9 @@ void _user_start()
 	//fb32_image( COLOR32_SAMPLE_IMAGE, 300, 632, 8, 12, 0, 0, 0, 0 );
 	//fb32_image( COLOR32_SAMPLE_IMAGE, 400, 400, 8, 12, 5, 8, 0, 0 );
 
-	fb32_clear_color_block( COLOR32_WHITE, -300, 600, 600, 50 );
-	fb32_clear_color_block( COLOR32_WHITE, 700, -25, 600, 50 );
-	fb32_clear_color_block( COLOR32_WHITE, 700, 620, 50, 100 );
+	fb32_block_color( COLOR32_WHITE, -300, 600, 600, 50 );
+	fb32_block_color( COLOR32_WHITE, 700, -25, 600, 50 );
+	fb32_block_color( COLOR32_WHITE, 700, 620, 50, 100 );
 
 	draw32_line( COLOR32_WHITE, 0, 0, 300, 600, 1, 1 );
 	draw32_line( COLOR32_RED, 300, 100, 0, 0, 4, 4 );

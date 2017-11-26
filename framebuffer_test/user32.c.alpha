@@ -84,10 +84,10 @@ void _user_start()
 		fb32_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
 		fb32_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 		//clear_color += 20;
-		start_fdegree = math32_fadd( start_fdegree, 3.0 );
-		if ( math32_fgt( start_fdegree, 360.0 ) ) start_fdegree = -360.0;
-		end_fdegree = math32_fadd( end_fdegree, 3.0 );
-		if ( math32_fgt( end_fdegree, 360.0 ) ) end_fdegree = -360.0;
+		start_fdegree = vfp32_fadd( start_fdegree, 3.0 );
+		if ( vfp32_fgt( start_fdegree, 360.0 ) ) start_fdegree = -360.0;
+		end_fdegree = vfp32_fadd( end_fdegree, 3.0 );
+		if ( vfp32_fgt( end_fdegree, 360.0 ) ) end_fdegree = -360.0;
 		_sleep( 100000 );
 	}
 }

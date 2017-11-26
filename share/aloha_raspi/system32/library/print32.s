@@ -638,7 +638,7 @@ print32_string:
 		mov r0, back_color
 		mov r3, char_width
 		push {char_height} 
-		bl fb32_clear_color_block
+		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
@@ -888,7 +888,7 @@ print32_number:
 		mov r0, back_color
 		mov r3, char_width
 		push {char_height} 
-		bl fb32_clear_color_block
+		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
 		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update

@@ -231,13 +231,13 @@ extern uint32 fb32_image
 
 
 /**
- * Clear Block by Color
+ * Place Colored Block
  *
  * Return: 0 as sucess, 1 and 2 as error
  * Error(1): When Framebuffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Framebuffer is not Defined
  */
-extern uint32 fb32_clear_color_block
+extern uint32 fb32_block_color
 (
 	uint32 color,
 	int32 x_coord,
@@ -671,20 +671,6 @@ extern uint32 gpio32_gpiolen
  * system32/library/math32.s
  ********************************/
 
-extern bool math32_fgt
-(
-	float32 value1,
-	float32 value2
-);
-
-
-extern float32 math32_fadd
-(
-	float32 value1,
-	float32 value2
-);
-
-
 /**
  * Return Radian from Degrees
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
@@ -775,6 +761,24 @@ extern String math32_int32_to_string_hexa
 	uint32 min_length,
 	uint32 bool_signed,
 	uint32 bool_basemark
+);
+
+
+/********************************
+ * system32/library/vfp32.s
+ ********************************/
+
+extern bool vfp32_fgt
+(
+	float32 value1,
+	float32 value2
+);
+
+
+extern float32 vfp32_fadd
+(
+	float32 value1,
+	float32 value2
 );
 
 
