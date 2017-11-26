@@ -831,6 +831,256 @@ draw32_rgba_to_argb:
 
 
 /**
+ * function draw32_bezier
+ * Draw Cubic Bezier Curve
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ * r1: X Coordinate of Point 0
+ * r2: Y Coordinate of Point 0
+ * r3: X Coordinate of Point 1
+ * r4: Y Coordinate of Point 1
+ * r5: X Coordinate of Point 2
+ * r6: Y Coordinate of Point 2
+ * r7: X Coordinate of Point 3
+ * r8: Y Coordinate of Point 3
+ * r9: Width of Bezier Curve
+ * r10: Height of Bezier Curve
+ *
+ * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Buffer is Not Defined
+ */
+.globl draw32_bezier
+draw32_bezier:
+	/* Auto (Local) Variables, but just Aliases */
+	color       .req r0
+	x_point0    .req r1   @ Parameter, Register for Argument and Result, Scratch Register
+	y_point0    .req r2   @ Parameter, Register for Argument and Result, Scratch Register
+	x_point1    .req r3   @ Parameter, Register for Argument, Scratch Register
+	y_point1    .req r4   @ Parameter, Register for Argument, Scratch Register
+	x_point2    .req r5   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	y_point2    .req r6   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	x_point3    .req r7   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	y_point3    .req r8   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_width  .req r9   @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	char_height .req r10  @ Parameter, have to PUSH/POP in ARM C lang Regulation
+
+	/* VFP Registers */
+	vpoint0     .req d0
+	x_vpoint0   .req s0
+	y_vpoint0   .req s1
+	vpoint1     .req d1
+	x_vpoint1   .req s2
+	y_vpoint1   .req s3
+	vpoint2     .req d2
+	x_vpoint2   .req s4
+	y_vpoint2   .req s5
+	vpoint3     .req d3
+	x_vpoint3   .req s6
+	y_vpoint3   .req s7
+	vpoint4     .req d4
+	x_vpoint4   .req s8
+	y_vpoint4   .req s9
+	vpoint5     .req d5
+	x_vpoint5   .req s10
+	y_vpoint5   .req s11
+	vpoint6     .req d6
+	x_vpoint6   .req s12
+	y_vpoint6   .req s13
+	vpoint7     .req d7
+	x_vpoint7   .req s14
+	y_vpoint7   .req s15
+	vpoint8     .req d8
+	x_vpoint8   .req s16
+	y_vpoint8   .req s17
+	vpoint9     .req d9
+	x_vpoint9   .req s18
+	y_vpoint9   .req s19
+	vdiff       .req d10
+	x_vdiff     .req s20
+	y_vdiff     .req s21
+	vn          .req s22
+	delta_vn    .req s23
+	vone        .req s24
+
+	push {r4-r10}
+
+	add sp, sp, #28                                   @ r4-r9 offset 32 bytes
+	pop {y_point1, x_point2, y_point2, x_point3, y_point3, char_width, char_height} @ Get Fifth to Eleventh Arguments
+	sub sp, sp, #56                                   @ Retrieve SP
+
+	vpush {s0-s24}
+
+	vmov vpoint0, x_point0, y_point0
+	vcvt.f32.s32 x_vpoint0, x_vpoint0
+	vcvt.f32.s32 y_vpoint0, y_vpoint0
+
+	vmov vpoint1, x_point1, y_point1
+	vcvt.f32.s32 x_vpoint1, x_vpoint1
+	vcvt.f32.s32 y_vpoint1, y_vpoint1
+
+	vmov vpoint2, x_point2, y_point2
+	vcvt.f32.s32 x_vpoint2, x_vpoint2
+	vcvt.f32.s32 y_vpoint2, y_vpoint2
+
+	vmov vpoint3, x_point3, y_point3
+	vcvt.f32.s32 x_vpoint3, x_vpoint3
+	vcvt.f32.s32 y_vpoint3, y_vpoint3
+
+	.unreq x_point0
+	.unreq y_point0
+	.unreq x_point1
+	x_current   .req r1
+	y_current   .req r2
+	temp        .req r3
+
+	vsub.f32 x_vdiff, x_vpoint0, x_vpoint3
+	vabs.f32 x_vdiff, x_vdiff
+	vsub.f32 y_vdiff, y_vpoint0, y_vpoint3
+	vabs.f32 y_vdiff, y_vdiff
+
+	vcmp.f32 x_vdiff, y_vdiff
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovlt x_vdiff, y_vdiff
+	mov temp, #1
+	vmov vone, temp
+	vcvt.f32.s32 vone, vone
+	vdiv.f32 delta_vn, vone, x_vdiff
+	vdiv.f32 delta_vn, delta_vn, x_vdiff
+
+	mov temp, #0
+	vmov vn, temp
+	vcvt.f32.s32 vn, vn
+
+	draw32_bezier_loop:
+		vcmp.f32 vn, vone
+		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+		bgt draw32_bezier_success
+
+		vsub.f32 x_vdiff, x_vpoint0, x_vpoint1
+		vsub.f32 y_vdiff, y_vpoint0, y_vpoint1
+		vmul.f32 x_vdiff, x_vdiff, vn
+		vmul.f32 y_vdiff, y_vdiff, vn
+		vadd.f32 x_vpoint4, x_vpoint0, x_vdiff
+		vadd.f32 y_vpoint4, x_vpoint0, y_vdiff
+
+		vsub.f32 x_vdiff, x_vpoint1, x_vpoint2
+		vsub.f32 y_vdiff, y_vpoint1, y_vpoint2
+		vmul.f32 x_vdiff, x_vdiff, vn
+		vmul.f32 y_vdiff, y_vdiff, vn
+		vadd.f32 x_vpoint5, x_vpoint1, x_vdiff
+		vadd.f32 y_vpoint5, x_vpoint1, y_vdiff
+
+		vsub.f32 x_vdiff, x_vpoint2, x_vpoint3
+		vsub.f32 y_vdiff, y_vpoint2, y_vpoint3
+		vmul.f32 x_vdiff, x_vdiff, vn
+		vmul.f32 y_vdiff, y_vdiff, vn
+		vadd.f32 x_vpoint6, x_vpoint2, x_vdiff
+		vadd.f32 y_vpoint6, x_vpoint2, y_vdiff
+
+		vsub.f32 x_vdiff, x_vpoint4, x_vpoint5
+		vsub.f32 y_vdiff, y_vpoint4, y_vpoint5
+		vmul.f32 x_vdiff, x_vdiff, vn
+		vmul.f32 y_vdiff, y_vdiff, vn
+		vadd.f32 x_vpoint7, x_vpoint4, x_vdiff
+		vadd.f32 y_vpoint7, x_vpoint4, y_vdiff
+
+		vsub.f32 x_vdiff, x_vpoint5, x_vpoint6
+		vsub.f32 y_vdiff, y_vpoint5, y_vpoint6
+		vmul.f32 x_vdiff, x_vdiff, vn
+		vmul.f32 y_vdiff, y_vdiff, vn
+		vadd.f32 x_vpoint8, x_vpoint5, x_vdiff
+		vadd.f32 y_vpoint8, x_vpoint5, y_vdiff
+
+		vsub.f32 x_vdiff, x_vpoint7, x_vpoint8
+		vsub.f32 y_vdiff, y_vpoint7, y_vpoint8
+		vmul.f32 x_vdiff, x_vdiff, vn
+		vmul.f32 y_vdiff, y_vdiff, vn
+		vadd.f32 x_vpoint9, x_vpoint7, x_vdiff
+		vadd.f32 y_vpoint9, x_vpoint7, y_vdiff
+
+		vcvt.s32.f32 x_vpoint9, x_vpoint9
+		vcvt.s32.f32 y_vpoint9, y_vpoint9
+		vmov x_current, y_current, vpoint9
+
+		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
+		mov r3, char_width
+		push {char_height} 
+		bl fb32_block_color
+		add sp, sp, #4
+		cmp r0, #2                                          @ Compare Return 2
+		pop {r0-r3,lr}                                      @ Retrieve Registers Before Error Check, POP does not flags-update
+		beq draw32_bezier_error
+
+		draw32_bezier_loop_common:
+			vadd.f32 vn, vn, delta_vn
+			b draw32_bezier_loop
+
+	draw32_bezier_error:
+		mov r0, #1
+		b draw32_bezier_common
+
+	draw32_bezier_success:
+		mov r0, #0
+
+	draw32_bezier_common:
+		vpop {s0-s24}
+		lsl x_current, x_current, #16
+		add r1, x_current, y_current
+		pop {r4-r10}
+		mov pc, lr
+
+.unreq color
+.unreq x_current
+.unreq y_current
+.unreq temp
+.unreq y_point1
+.unreq x_point2
+.unreq y_point2
+.unreq x_point3
+.unreq y_point3
+.unreq char_width
+.unreq char_height
+.unreq vpoint0
+.unreq x_vpoint0
+.unreq y_vpoint0
+.unreq vpoint1
+.unreq x_vpoint1
+.unreq y_vpoint1
+.unreq vpoint2
+.unreq x_vpoint2
+.unreq y_vpoint2
+.unreq vpoint3
+.unreq x_vpoint3
+.unreq y_vpoint3
+.unreq vpoint4
+.unreq x_vpoint4
+.unreq y_vpoint4
+.unreq vpoint5
+.unreq x_vpoint5
+.unreq y_vpoint5
+.unreq vpoint6
+.unreq x_vpoint6
+.unreq y_vpoint6
+.unreq vpoint7
+.unreq x_vpoint7
+.unreq y_vpoint7
+.unreq vpoint8
+.unreq x_vpoint8
+.unreq y_vpoint8
+.unreq vpoint9
+.unreq x_vpoint9
+.unreq y_vpoint9
+.unreq vdiff
+.unreq x_vdiff
+.unreq y_vdiff
+.unreq vn
+.unreq delta_vn
+.unreq vone
+
+
+/**
  * function draw32_arc
  * Draw Arc by Radian with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable

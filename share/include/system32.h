@@ -515,6 +515,29 @@ extern uint32 draw32_copy
 
 
 /**
+ * Draw Cubic Bezier Curve
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: Lower32 bits (0 as success, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Buffer is Not Defined
+ */
+extern uint64 draw32_bezier
+(
+	uint32 color,
+	int32 x_point0,
+	int32 y_point0,
+	int32 x_point1,
+	int32 y_point1,
+	int32 x_point2,
+	int32 y_point2,
+	int32 x_point3,
+	int32 y_point3,
+	uint32 width,
+	uint32 height
+);
+
+
+/**
  * Draw Arc by Radian with Single Precision Float
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
@@ -649,6 +672,15 @@ extern uint32 gpio32_gpiolen
  * system32/library/math32.s
  ********************************/
 
+/* Constants */
+
+extern float32 MATH32_PI32;
+extern float32 MATH32_PI_DOUBLE32;
+extern float32 MATH32_PI_HALF32;
+extern float32 MATH32_PI_PER_DEGREE32;
+
+
+/* Regular Functions */
 
 /**
  * Return Radian from Degrees

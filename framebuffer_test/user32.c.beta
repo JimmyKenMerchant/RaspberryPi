@@ -165,6 +165,8 @@ void _user_start()
 	draw32_line( COLOR32_MAGENTA, -50, 800, 100, 100, 20, 20 );
 
 	draw32_line( COLOR32_GREEN, 1000, 800, 100, 100, 20, 20 );
+
+	draw32_bezier( COLOR32_RED, 300, 300,  0, 400, 1000, 500, 600, 600, 10, 10 );
 	
 	while(1) {
 		_flush_doublebuffer();
