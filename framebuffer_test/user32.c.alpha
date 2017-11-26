@@ -80,7 +80,7 @@ void _user_start()
 		fb32_clear_color( clear_color );
 		draw32_line( COLOR32_BLUE, -50, 800, 100, 100, 20, 20 );
 		draw32_circle( COLOR32_CYAN, -100, 500, 200, 175 );
-		draw32_arc_fdegree( COLOR32_WHITE, 200, 200, 200, 200, start_fdegree, end_fdegree, 10, 1 );
+		draw32_arc( COLOR32_WHITE, 200, 200, 200, 200, math32_degree_to_radian32( start_fdegree ), math32_degree_to_radian32( end_fdegree ), 10, 1 );
 		fb32_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
 		fb32_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 		//clear_color += 20;

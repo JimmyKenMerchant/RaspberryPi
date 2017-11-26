@@ -515,28 +515,6 @@ extern uint32 draw32_copy
 
 
 /**
- * Draw Arc by Degree with Single Precision Float
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- * Range is -360 to 360 degrees inclusively, otherwise, value will be cut off by the limit.
- *
- * Return: 0 as success, 1 as error
- * Error: Part of Circle from Last Coordinate was Not Drawn, Caused by Not Defined Buffer
- */
-extern uint32 draw32_arc_fdegree
-(
-	uint32 color,
-	int32 x_coord,
-	int32 y_coord,
-	uint32 x_radius,
-	uint32 y_radius,
-	float32 start_fdegree,
-	float32 end_fdegree,
-	uint32 width,
-	uint32 height
-);
-
-
-/**
  * Draw Arc by Radian with Single Precision Float
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  * |Radius| <= PI is Preferred. If you want a circle, use -180 degrees to 180 degrees, i.e., -PI to PI.
@@ -671,6 +649,7 @@ extern uint32 gpio32_gpiolen
  * system32/library/math32.s
  ********************************/
 
+
 /**
  * Return Radian from Degrees
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
@@ -679,7 +658,7 @@ extern uint32 gpio32_gpiolen
  */
 extern float32 math32_degree_to_radian32
 (
-	int32 degree
+	float32 degree
 );
 
 

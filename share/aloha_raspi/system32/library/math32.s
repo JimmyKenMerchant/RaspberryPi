@@ -10,63 +10,64 @@
 
 /**
  * function math32_round_fpi32
- * Return Rounded Degrees Between 0 to 360 with Single Precision Float
+ * Return Rounded Radian Between -Pi to Pi with Single Precision Float
  *
  * Parameters
- * r0: Degrees, Must Be Type of Float
+ * r0: Radian, Must Be Type of Float
  *
  * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_round_fpi32
 math32_round_fpi32:
 	/* Auto (Local) Variables, but just Aliases */
-	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	full           .req r1
+	radian         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vdegree        .req s0
-	vfull          .req s1
+	vradian        .req s0
+	vpi            .req s1
+	vpi_neg        .req s2
+	vpi_double     .req s3
 
-	vpush {s0-s1}
+	vpush {s0-s3}
 
-	vmov vdegree, degree
+	vmov vradian, radian
+	vldr vpi, MATH32_PI32
+	vneg.f32 vpi_neg, vpi
+	vldr vpi_double, MATH32_PI_DOUBLE32
 
-	mov full, #360
-	vmov vfull, full
-	vcvt.f32.u32 vfull, vfull
-
-	vcmp.f32 vdegree, vfull
+	vcmp.f32 vradian, vpi
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	bgt math32_round_fpi32_over
 
-	vcmp.f32 vdegree, #0
+	vcmp.f32 vradian, vpi_neg
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	blt math32_round_fpi32_under
 
 	b math32_round_fpi32_common
 
 	math32_round_fpi32_over:
-		vsub.f32 vdegree, vdegree, vfull
-		vcmp.f32 vdegree, vfull
+		vsub.f32 vradian, vradian, vpi_double
+		vcmp.f32 vradian, vpi
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		bgt math32_round_fpi32_over
 		b math32_round_fpi32_common
 
 	math32_round_fpi32_under:
-		vadd.f32 vdegree, vdegree, vfull
-		vcmp.f32 vdegree, #0
+		vadd.f32 vradian, vradian, vpi_double
+		vcmp.f32 vradian, vpi_neg
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		blt math32_round_fpi32_under
 
 	math32_round_fpi32_common:
-		vmov degree, vdegree
-		vpop {s0-s1}
+		vmov radian, vradian
+		vpop {s0-s3}
 		mov pc, lr
 
-.unreq degree
-.unreq full
-.unreq vdegree
-.unreq vfull
+.unreq radian
+.unreq vradian
+.unreq vpi
+.unreq vpi_neg
+.unreq vpi_double
 
 
 /**
@@ -74,7 +75,7 @@ math32_round_fpi32:
  * Return Rounded Degrees Between 0 to 360 with Single Precision Float
  *
  * Parameters
- * r0: Degrees, Must Be Type of Float
+ * r0: Degrees, Must Be Type of Single Precision Float
  *
  * Return: r0 (Value by Single Precision Float)
  */
@@ -134,75 +135,17 @@ math32_round_fdegree32:
 MATH32_PI32: .float 3.14159265359
 .balign 8
 
+.globl MATH32_PI_DOUBLE32
+MATH32_PI_DOUBLE32: .float 6.28318530718
+.balign 8
+
+.globl MATH32_PI_HALF32
+MATH32_PI_HALF32: .float 1.57079632679
+.balign 8
+
 .globl MATH32_PI_PER_DEGREE32
 MATH32_PI_PER_DEGREE32: .float 0.01745329252
 .balign 8
-
-
-/**
- * function math32_fdegree_to_cradian32
- * Return Corrected Radian (Translates to Between -pi and pi) from Degrees to Calculate with Maclaurin (Taylor) Series
- * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
- *
- * Parameters
- * r0: Degrees, Must Be Type of Float
- *
- * Return: r0 (Value by Single Precision Float)
- */
-.globl math32_fdegree_to_cradian32
-math32_fdegree_to_cradian32:
-	/* Auto (Local) Variables, but just Aliases */
-	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	temp           .req r1
-
-	/* VFP Registers */
-	vfp_degree     .req s0
-	vfp_half       .req s1
-	vfp_full       .req s2
-	vfp_radian     .req s3
-	vfp_pi_per_deg .req s4
-
-	vpush {s0-s4}
-
-	push {lr}
-	bl math32_round_fdegree32
-	pop {lr}
-
-	vmov vfp_degree, degree
-
-	mov temp, #180
-	vmov vfp_half, temp
-	mov temp, #360
-	vmov vfp_full, temp
-	vcvt.f32.s32 vfp_half, vfp_half
-	vcvt.f32.s32 vfp_full, vfp_full
-
-	vcmp.f32 vfp_degree, vfp_half
-	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	ble math32_fdegree_to_cradian32_jump
-
-	vsub.f32 vfp_degree, vfp_degree, vfp_full       @ -180 to 0 Exclusively
-
-	math32_fdegree_to_cradian32_jump:
-
-		/**
-		 * Radian = degrees X (pi Div by 180)
-		 */
-		vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
-		vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
-
-	math32_fdegree_to_cradian32_common:
-		vmov r0, vfp_radian
-		vpop {s0-s4}
-		mov pc, lr
-
-.unreq degree
-.unreq temp
-.unreq vfp_degree
-.unreq vfp_half
-.unreq vfp_full
-.unreq vfp_radian
-.unreq vfp_pi_per_deg
 
 
 /**
@@ -211,7 +154,7 @@ math32_fdegree_to_cradian32:
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
- * r0: Degrees, Must Be Type of Signed Integer
+ * r0: Degrees, Must Be Type of Single Precision Float
  *
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
@@ -232,7 +175,6 @@ math32_degree_to_radian32:
 	 * Radian = degrees X (pi Div by 180)
 	 */
 	vmov vfp_degree, degree
-	vcvt.f32.s32 vfp_degree, vfp_degree
 	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
 	vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
 
@@ -249,7 +191,7 @@ math32_degree_to_radian32:
 
 /**
  * function math32_sin32
- * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
@@ -269,75 +211,100 @@ math32_sin32:
 	vfp_divisor   .req s2
 	vfp_temp      .req s3
 	vfp_sum       .req s4
+	vfp_pi        .req s5
+	vfp_pi_half   .req s6
 
-	vpush {s0-s4}
+	vpush {s0-s6}
 
-	/**
-	 * sinx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
-	 * For All x
-	 */
+	/* Ensure Radian is Between -Pi to Pi */
+
+	push {lr}
+	bl math32_round_fpi32
+	pop {lr}
+
 	vmov vfp_radian, radian
-	.unreq radian
-	temp .req r0
+	vldr vfp_pi, MATH32_PI32
+	vldr vfp_pi_half, MATH32_PI_HALF32
+
+	vabs.f32 vfp_temp, vfp_radian
+	vcmp.f32 vfp_temp, vfp_pi_half
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	ble math32_sin32_jump
+
+	vsub.f32 vfp_temp, vfp_pi
 	vcmp.f32 vfp_radian, #0
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	vmov vfp_sum, vfp_radian                        @ n = 0
-	beq math32_sin32_common
+	vneggt.f32 vfp_temp, vfp_temp                   @ If Original Radian is Positive, Make Value Positive
+	vmov vfp_radian, vfp_temp
+	
+	math32_sin32_jump:
 
-	vmov vfp_dividend, vfp_radian                   @ n = 1
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Third Power
-	mov temp, #6
-	vmov vfp_divisor, temp
-	vcvt.f32.s32 vfp_divisor, vfp_divisor
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+		/**
+		 * sinx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
+		 * For All x
+		 */
 
-	vmov vfp_dividend, vfp_radian                   @ n = 2
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fifth Power
-	mov temp, #20
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 120.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+		.unreq radian
+		temp .req r0
+		vcmp.f32 vfp_radian, #0
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		vmov vfp_sum, vfp_radian                        @ n = 0
+		beq math32_sin32_common
 
-	vmov vfp_dividend, vfp_radian                   @ n = 3
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
-	mov temp, #42
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 5040.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+		vmov vfp_dividend, vfp_radian                   @ n = 1
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Third Power
+		mov temp, #6
+		vmov vfp_divisor, temp
+		vcvt.f32.s32 vfp_divisor, vfp_divisor
+		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+		vsub.f32 vfp_sum, vfp_sum, vfp_dividend
 
-	vmov vfp_dividend, vfp_radian                   @ n = 4
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Nineth Power
-	mov temp, #72
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 362880.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+		vmov vfp_dividend, vfp_radian                   @ n = 2
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fifth Power
+		mov temp, #20
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 120.0
+		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+		vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+
+		vmov vfp_dividend, vfp_radian                   @ n = 3
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
+		mov temp, #42
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 5040.0
+		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+		vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+
+		vmov vfp_dividend, vfp_radian                   @ n = 4
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Nineth Power
+		mov temp, #72
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 362880.0
+		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+		vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
 	math32_sin32_common:
 		vmov r0, vfp_sum
-		vpop {s0-s4}
+		vpop {s0-s6}
 		mov pc, lr
 
 .unreq temp
@@ -346,11 +313,13 @@ math32_sin32:
 .unreq vfp_divisor
 .unreq vfp_temp
 .unreq vfp_sum
+.unreq vfp_pi
+.unreq vfp_pi_half
 
 
 /**
  * function math32_cos32
- * Return cos(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Return Cosine by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
@@ -366,94 +335,44 @@ math32_cos32:
 
 	/* VFP Registers */
 	vfp_radian    .req s0
-	vfp_dividend  .req s1
-	vfp_divisor   .req s2
-	vfp_temp      .req s3
-	vfp_sum       .req s4
+	vfp_pi_half   .req s1
 
-	vpush {s0-s4}
+	vpush {s0-s1}
 
 	/**
+	 * Sin( Theta + Pi/2 ) = Cos( Theta )
+	 */
+	vmov vfp_radian, radian
+	vldr vfp_pi_half, MATH32_PI_HALF32
+	vadd.f32 vfp_radian, vfp_radian, vfp_pi_half
+	vmov radian, vfp_radian
+
+	push {lr}
+	bl math32_sin32
+	pop {lr}
+
+	/**
+	 * Not Used, But Cosine's Series is Shown as Below 
 	 * cosx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n) Div by (2n)!
 	 * For All x
 	 */
-	vmov vfp_radian, radian                         @ n = 0
-	.unreq radian
-	temp .req r0
-	mov temp, #1
-	vmov vfp_sum, temp
-	vcvt.f32.s32 vfp_sum, vfp_sum
-	vcmp.f32 vfp_radian, #0
-	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	beq math32_cos32_common
-
-	vmov vfp_dividend, vfp_radian                   @ n = 1
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Second Power
-	mov temp, #2
-	vmov vfp_divisor, temp
-	vcvt.f32.s32 vfp_divisor, vfp_divisor
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
-
-	vmov vfp_dividend, vfp_radian                   @ n = 2
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fourth Power
-	mov temp, #12
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 24.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
-
-	vmov vfp_dividend, vfp_radian                   @ n = 3
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Sixth Power
-	mov temp, #30
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 720.0 
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vsub.f32 vfp_sum, vfp_sum, vfp_dividend
-
-	vmov vfp_dividend, vfp_radian                   @ n = 4
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Eighth Power
-	mov temp, #56
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 40320.0 
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
 	math32_cos32_common:
-		vmov r0, vfp_sum
-		vpop {s0-s4}
+		vpop {s0-s1}
 		mov pc, lr
 
-.unreq temp
+.unreq radian
 .unreq vfp_radian
-.unreq vfp_dividend
-.unreq vfp_divisor
-.unreq vfp_temp
-.unreq vfp_sum
+.unreq vfp_pi_half
 
 
 /**
  * function math32_tan32
- * Return tan(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 5
+ * Return Tangent by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
- * r0: Radian, Must Be Type of Single Precision Float, Must be |Radian| < pi Div by 2, -pi Div by 2 through pi Div by 2 exclusively
+ * r0: Radian, Must Be Type of Single Precision Float
  *
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
@@ -461,104 +380,46 @@ math32_cos32:
 .globl math32_tan32
 math32_tan32:
 	/* Auto (Local) Variables, but just Aliases */
-	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	radian     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vfp_radian    .req s0
-	vfp_dividend  .req s1
-	vfp_divisor   .req s2
-	vfp_temp      .req s3
-	vfp_sum       .req s4
+	vfp_sin    .req s0
+	vfp_cos    .req s1
 
-	vpush {s0-s4}
+	vpush {s0-s1}
+
+	push {r0,lr}
+	bl math32_sin32
+	vmov vfp_sin, r0
+	pop {r0,lr}
+
+	push {r0,lr}
+	bl math32_cos32
+	vmov vfp_cos, r0
+	pop {r0,lr}
+
+	vcmp.f32 vfp_cos, #0
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	moveq r0, #0
+	beq math32_tan32_common
+	
+	vdiv.f32 vfp_sin, vfp_sin, vfp_cos
+	vmov r0, vfp_sin
 
 	/**
+	 * Not Used, But Tangent's Series is Shown as Below 
 	 * tanx = Sigma[n = 1 to Infinity] (B2n X (-4)^n X (1 - 4^n)) X x^(2n - 1) Div by (2n)!
 	 * for |x| < pi Div by 2, because Tangent is 180 degrees cycle unlike Sin and Cosin
 	 * B is Bernoulli Number
 	 */
-	vmov vfp_radian, radian                         @ n = 1
-	.unreq radian
-	temp .req r0
-	vcmp.f32 vfp_radian, #0
-	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	vmov vfp_sum, vfp_radian
-	beq math32_tan32_common
-
-	vmov vfp_dividend, vfp_radian                   @ n = 2
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Third Power
-	mov temp, #3
-	vmov vfp_divisor, temp
-	vcvt.f32.s32 vfp_divisor, vfp_divisor
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
-
-	vmov vfp_dividend, vfp_radian                   @ n = 3
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fifth Power
-	mov temp, #2
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp   @ Multiplication by 2 
-	mov temp, #5
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 15.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
-
-	vmov vfp_dividend, vfp_radian                   @ n = 4
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
-	mov temp, #17
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp   @ Multiplication by 17
-	mov temp, #21
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 315.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
-
-	vmov vfp_dividend, vfp_radian                   @ n = 5
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Ninth Power
-	mov temp, #62
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_dividend, vfp_dividend, vfp_temp   @ Multiplication by 62 (31 by 2)
-	mov temp, #9
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 2835.0
-	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-	vadd.f32 vfp_sum, vfp_sum, vfp_dividend
 
 	math32_tan32_common:
-		vmov r0, vfp_sum
-		vpop {s0-s4}
+		vpop {s0-s1}
 		mov pc, lr
 
-.unreq temp
-.unreq vfp_radian
-.unreq vfp_dividend
-.unreq vfp_divisor
-.unreq vfp_temp
-.unreq vfp_sum
+.unreq radian
+.unreq vfp_sin
+.unreq vfp_cos
 
 
 /**

@@ -23,10 +23,11 @@ void _user_start()
 	float32 float_number1 = -12.75;
 	float32 float_number2 = 0.024;
 	float32 float_number3 = 100000000000000.024;
-	float32 start_radian = math32_degree_to_radian32( -180 );
-	float32 end_radian = math32_degree_to_radian32( 180 );
+	float32 start_radian = math32_degree_to_radian32( -180.0 );
+	float32 end_radian = math32_degree_to_radian32( 120.0 );
 	float32 start_sin = math32_sin32( start_radian );
 	float32 end_sin = math32_sin32( end_radian );
+	float32 tan = math32_tan32( end_radian );
 	uchar8 random = _random( 127 );
 
 	ObjArray renderbuffer = (ObjArray)heap32_malloc( 6 );
@@ -65,7 +66,7 @@ void _user_start()
 	draw32_rgba_to_argb( DATA_COLOR32_SAMPLE_IMAGE1, DATA_COLOR32_SAMPLE_IMAGE1_SIZE );
 	fb32_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 520, 64, 64, 0, 0, 0, 0 );
 
-	String float_string1 = math32_float32_to_string( start_sin, 0, 10, 0 );
+	String float_string1 = math32_float32_to_string( tan, 0, 10, 0 );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( float_string1, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( float_string1 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
