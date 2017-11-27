@@ -9,7 +9,7 @@
 
 
 /**
- * function math32_round_fpi32
+ * function math32_round_pi32
  * Return Rounded Radian Between -Pi to Pi with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -18,8 +18,8 @@
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_round_fpi32
-math32_round_fpi32:
+.globl math32_round_pi32
+math32_round_pi32:
 	/* Auto (Local) Variables, but just Aliases */
 	radian         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -38,28 +38,28 @@ math32_round_fpi32:
 
 	vcmp.f32 vradian, vpi
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	bgt math32_round_fpi32_over
+	bgt math32_round_pi32_over
 
 	vcmp.f32 vradian, vpi_neg
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	blt math32_round_fpi32_under
+	blt math32_round_pi32_under
 
-	b math32_round_fpi32_common
+	b math32_round_pi32_common
 
-	math32_round_fpi32_over:
+	math32_round_pi32_over:
 		vsub.f32 vradian, vradian, vpi_double
 		vcmp.f32 vradian, vpi
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		bgt math32_round_fpi32_over
-		b math32_round_fpi32_common
+		bgt math32_round_pi32_over
+		b math32_round_pi32_common
 
-	math32_round_fpi32_under:
+	math32_round_pi32_under:
 		vadd.f32 vradian, vradian, vpi_double
 		vcmp.f32 vradian, vpi_neg
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		blt math32_round_fpi32_under
+		blt math32_round_pi32_under
 
-	math32_round_fpi32_common:
+	math32_round_pi32_common:
 		vmov radian, vradian
 		vpop {s0-s3}
 		mov pc, lr
@@ -72,7 +72,7 @@ math32_round_fpi32:
 
 
 /**
- * function math32_round_fdegree32
+ * function math32_round_degree32
  * Return Rounded Degrees Between 0 to 360 with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -81,8 +81,8 @@ math32_round_fpi32:
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_round_fdegree32
-math32_round_fdegree32:
+.globl math32_round_degree32
+math32_round_degree32:
 	/* Auto (Local) Variables, but just Aliases */
 	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	full           .req r1
@@ -101,28 +101,28 @@ math32_round_fdegree32:
 
 	vcmp.f32 vdegree, vfull
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	bgt math32_round_fdegree32_over
+	bgt math32_round_degree32_over
 
 	vcmp.f32 vdegree, #0
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	blt math32_round_fdegree32_under
+	blt math32_round_degree32_under
 
-	b math32_round_fdegree32_common
+	b math32_round_degree32_common
 
-	math32_round_fdegree32_over:
+	math32_round_degree32_over:
 		vsub.f32 vdegree, vdegree, vfull
 		vcmp.f32 vdegree, vfull
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		bgt math32_round_fdegree32_over
-		b math32_round_fdegree32_common
+		bgt math32_round_degree32_over
+		b math32_round_degree32_common
 
-	math32_round_fdegree32_under:
+	math32_round_degree32_under:
 		vadd.f32 vdegree, vdegree, vfull
 		vcmp.f32 vdegree, #0
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		blt math32_round_fdegree32_under
+		blt math32_round_degree32_under
 
-	math32_round_fdegree32_common:
+	math32_round_degree32_common:
 		vmov degree, vdegree
 		vpop {s0-s1}
 		mov pc, lr
@@ -221,7 +221,7 @@ math32_sin32:
 	/* Ensure Radian is Between -Pi to Pi */
 
 	push {lr}
-	bl math32_round_fpi32
+	bl math32_round_pi32
 	pop {lr}
 
 	vmov vfp_radian, radian

@@ -755,7 +755,7 @@ extern float32 MATH32_PI_PER_DEGREE32;
  *
  * Return: Value by Single Precision Float
  */
-extern float32 math32_round_fdegree32
+extern float32 math32_round_degree32
 (
 	float32 degree
 );

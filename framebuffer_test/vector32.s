@@ -100,9 +100,9 @@ os_fiq:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, gpio_toggle
+	ldr r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, gpio_toggle
+	str r1, os_fiq_gpio_toggle
 
 	cmp r1, #0
 	addeq r0, r0, #equ32_gpio_gpclr1
@@ -147,15 +147,100 @@ os_fiq:
 	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
 	*/
 
+	push {lr}
+        bl framebuffer_test_fiqhandler
+	pop {lr}
+
 	pop {r0-r7}
 	mov pc, lr
 
 /**
+ * Handler to Use in FIQ
+ */
+framebuffer_test_fiqhandler:
+	vfp_sec  .req s0
+	vfp_min  .req s1
+	vfp_hour .req s2
+	vfp_one  .req s3
+	vfp_zero .req s4
+	vfp_600  .req s5
+	vfp_60   .req s6
+	vfp_12   .req s7
+
+	vpush {s0-s7}
+
+	vldr vfp_sec, os_fiq_sec
+	vldr vfp_min, os_fiq_min
+	vldr vfp_hour, os_fiq_hour
+	vldr vfp_one, os_fiq_one
+	vldr vfp_zero, os_fiq_zero
+	vldr vfp_600, os_fiq_600
+	vldr vfp_60, os_fiq_60
+	vldr vfp_12, os_fiq_12
+
+	macro32_dsb ip
+
+	vadd.f32 vfp_sec, vfp_sec, vfp_one
+	vcmp.f32 vfp_sec, vfp_600
+	vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV
+	blt framebuffer_test_fiqhandler_common
+
+	vmov vfp_sec, vfp_zero
+	vadd.f32 vfp_min, vfp_min, vfp_one
+	vcmp.f32 vfp_min, vfp_60
+	vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV
+	blt framebuffer_test_fiqhandler_common
+
+	vmov vfp_min, vfp_zero
+	vadd.f32 vfp_hour, vfp_hour, vfp_one
+	vcmp.f32 vfp_hour, vfp_12
+	vmrs apsr_nzcv, fpscr                                   @ Transfer FPSCR Flags to CPSR's NZCV
+	blt framebuffer_test_fiqhandler_common
+
+	vmov vfp_hour, vfp_zero
+
+	framebuffer_test_fiqhandler_common:
+		vstr vfp_sec, os_fiq_sec
+		vstr vfp_min, os_fiq_min
+		vstr vfp_hour, os_fiq_hour
+		macro32_dsb ip
+		vpop {s0-s7}
+		mov pc, lr 
+
+.unreq vfp_sec
+.unreq vfp_min
+.unreq vfp_hour
+.unreq vfp_one
+.unreq vfp_zero
+.unreq vfp_600
+.unreq vfp_60
+.unreq vfp_12
+
+
+/**
  * Variables
  */
+.globl os_fiq_sec
+.globl os_fiq_min
+.globl os_fiq_hour
 .balign 4
-gpio_toggle:       .byte 0b00000000
+os_fiq_gpio_toggle: .byte 0b00000000
 .balign 4
+os_fiq_sec:         .float 0.0               @ Max. 600
+.balign 4
+os_fiq_min:         .float 0.0               @ Max. 600
+.balign 4
+os_fiq_hour:        .float 0.0               @ Max. 720
+.balign 4
+os_fiq_one:         .float 1.0
+.balign 4
+os_fiq_zero:        .float 0.0
+.balign 4
+os_fiq_600:         .float 600.0
+.balign 4
+os_fiq_60:          .float 60.0
+.balign 4
+os_fiq_12:          .float 12.0
 _string_hello:
 	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
