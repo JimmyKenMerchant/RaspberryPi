@@ -11,6 +11,7 @@
 /**
  * function math32_round_fpi32
  * Return Rounded Radian Between -Pi to Pi with Single Precision Float
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Radian, Must Be Type of Float
@@ -73,6 +74,7 @@ math32_round_fpi32:
 /**
  * function math32_round_fdegree32
  * Return Rounded Degrees Between 0 to 360 with Single Precision Float
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Degrees, Must Be Type of Single Precision Float
@@ -132,19 +134,19 @@ math32_round_fdegree32:
 
 
 .globl MATH32_PI32
-MATH32_PI32: .float 3.14159265359
+MATH32_PI32:             .word 0x40490fdb @ (.float 3.14159265359)
 .balign 8
 
 .globl MATH32_PI_DOUBLE32
-MATH32_PI_DOUBLE32: .float 6.28318530718
+MATH32_PI_DOUBLE32:      .word 0x40c90fdb @ (.float 6.28318530718)
 .balign 8
 
 .globl MATH32_PI_HALF32
-MATH32_PI_HALF32: .float 1.57079632679
+MATH32_PI_HALF32:        .word 0x3fc90fdb @ (.float 1.57079632679)
 .balign 8
 
 .globl MATH32_PI_PER_DEGREE32
-MATH32_PI_PER_DEGREE32: .float 0.01745329252
+MATH32_PI_PER_DEGREE32:  .word 0x3c8efa35 @ (.float 0.01745329252)
 .balign 8
 
 

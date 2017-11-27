@@ -197,14 +197,63 @@ extern uint32 gpio32_gpiolen
  * system32/library/vfp32.s
  ********************************/
 
+extern float32 vfp32_s32tof32( int32 value );
+
+extern float32 vfp32_u32tof32( uint32 value );
+
+extern int32 vfp32_f32tos32( float32 value );
+
+extern uint32 vfp32_f32tou32( float32 value );
+
+extern bool vfp32_feq
+(
+	float32 value1,
+	float32 value2
+);
+
 extern bool vfp32_fgt
 (
 	float32 value1,
 	float32 value2
 );
 
+extern bool vfp32_flt
+(
+	float32 value1,
+	float32 value2
+);
+
+extern bool vfp32_fge
+(
+	float32 value1,
+	float32 value2
+);
+
+extern bool vfp32_fle
+(
+	float32 value1,
+	float32 value2
+);
 
 extern float32 vfp32_fadd
+(
+	float32 value1,
+	float32 value2
+);
+
+extern float32 vfp32_fsub
+(
+	float32 value1,
+	float32 value2
+);
+
+extern float32 vfp32_fmul
+(
+	float32 value1,
+	float32 value2
+);
+
+extern float32 vfp32_fdiv
 (
 	float32 value1,
 	float32 value2
@@ -699,6 +748,18 @@ extern float32 MATH32_PI_PER_DEGREE32;
 
 
 /* Regular Functions */
+
+/**
+ * Return Rounded Degrees Between 0 to 360 with Single Precision Float
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_round_fdegree32
+(
+	float32 degree
+);
+
 
 /**
  * Return Radian from Degrees

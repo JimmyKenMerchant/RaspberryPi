@@ -111,6 +111,7 @@ os_fiq:
 	str r1, [r0]
 .endif
 
+	/*
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_systemtimer_base
 
@@ -144,6 +145,7 @@ os_fiq:
 	str r1, timer_main
 
 	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
+	*/
 
 	pop {r0-r7}
 	mov pc, lr
