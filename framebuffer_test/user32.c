@@ -95,6 +95,6 @@ void _user_start()
 			4
 		);
 
-		_sleep( 10000 );
+		_sleep( 100000 );
 	}
 }
