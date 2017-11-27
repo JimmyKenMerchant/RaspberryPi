@@ -56,44 +56,76 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2         @ Set GPIO 2 OUTPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 2
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2     @ Set GPIO 2 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 3
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3     @ Set GPIO 3 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 4
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 4 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 5
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 5 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_6      @ Clear GPIO 6
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 6 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7      @ Clear GPIO 7
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 7 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8      @ Clear GPIO 8
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8     @ Set GPIO 8 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_9      @ Clear GPIO 9
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_9     @ Set GPIO 9 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0         @ Set GPIO 10 OUTPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0      @ Clear GPIO 10
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0     @ Set GPIO 10 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1      @ Clear GPIO 11
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1     @ Set GPIO 11 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 12
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2     @ Set GPIO 12 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 13
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3     @ Set GPIO 13 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 14
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 14 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 15
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 15 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_6      @ Clear GPIO 16
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 16 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7      @ Clear GPIO 17
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 17 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8      @ Clear GPIO 18
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8     @ Set GPIO 18 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_9      @ Clear GPIO 19
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_9     @ Set GPIO 19 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0         @ Set GPIO 20 OUTPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0      @ Clear GPIO 20
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0     @ Set GPIO 20 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1      @ Clear GPIO 21
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1     @ Set GPIO 21 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 22
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2     @ Set GPIO 22 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 23
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3     @ Set GPIO 23 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 24
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 24 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 25
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 25 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_6      @ Clear GPIO 26
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7      @ Clear GPIO 27
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7      @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 .ifndef __RASPI3B
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7         @ Set GPIO 47 OUTPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel40]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7      @ Clear GPIO 47
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 
-	mov r1, #equ32_gpio27                                            @ Set GPIO21 Rising Edge Detect
+	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio27                                        @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	/* Obtain Framebuffer from VideoCore IV */

@@ -59,7 +59,7 @@ os_reset:
 .ifndef __RASPI3B
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 

@@ -156,6 +156,62 @@ extern void arm32_isb();
 
 
 /********************************
+ * system32/arm/gpio32.s
+ ********************************/
+
+/* Constants */
+
+#define gpio_sequence uint32
+
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
+
+
+/* Regular Functions */
+
+/**
+ * Play GPIO Sequence
+ *
+ * Return: 0 as success, 1 as error
+ * Error: GPIO Sequence is not assigned
+ */
+extern uint32 gpio32_gpioplay();
+
+
+/**
+ * Count 4-Bytes Beats of GPIO Sequence
+ *
+ * Return: Number of Beats in GPIO Sequence, Maximum of 4,294,967,295 Beats
+ */
+extern uint32 gpio32_gpiolen
+(
+	gpio_sequence* gpio
+);
+
+
+/********************************
+ * system32/library/vfp32.s
+ ********************************/
+
+extern bool vfp32_fgt
+(
+	float32 value1,
+	float32 value2
+);
+
+
+extern float32 vfp32_fadd
+(
+	float32 value1,
+	float32 value2
+);
+
+
+/********************************
  * system32/library/fb32.s
  ********************************/
 
@@ -631,44 +687,6 @@ extern uint32 snd32_musiclen
 
 
 /********************************
- * system32/library/gpio32.s
- ********************************/
-
-/* Constants */
-
-#define gpio_sequence uint32
-
-
-/* Relative System Calls  */
-
-__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
-
-__attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
-
-
-/* Regular Functions */
-
-/**
- * Play GPIO Sequence
- *
- * Return: 0 as success, 1 as error
- * Error: GPIO Sequence is not assigned
- */
-extern uint32 gpio32_gpioplay();
-
-
-/**
- * Count 4-Bytes Beats of GPIO Sequence
- *
- * Return: Number of Beats in GPIO Sequence, Maximum of 4,294,967,295 Beats
- */
-extern uint32 gpio32_gpiolen
-(
-	gpio_sequence* gpio
-);
-
-
-/********************************
  * system32/library/math32.s
  ********************************/
 
@@ -772,24 +790,6 @@ extern String math32_int32_to_string_hexa
 	uint32 min_length,
 	uint32 bool_signed,
 	uint32 bool_basemark
-);
-
-
-/********************************
- * system32/library/vfp32.s
- ********************************/
-
-extern bool vfp32_fgt
-(
-	float32 value1,
-	float32 value2
-);
-
-
-extern float32 vfp32_fadd
-(
-	float32 value1,
-	float32 value2
 );
 
 

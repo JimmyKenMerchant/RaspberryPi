@@ -32,10 +32,18 @@
  */
 .section	.arm_system32
 
+.balign 4
 .include "system32/arm/arm32.s"
+.balign 4
 .include "system32/arm/dma32.s"
+.balign 4
 .include "system32/arm/spi32.s"
+.balign 4
 .include "system32/arm/usb2032.s"
+.balign 4
+.include "system32/arm/gpio32.s"
+.balign 4
+.include "system32/arm/vfp32.s"
 .balign 4
 
 /**
@@ -65,6 +73,7 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
  */
 .section	.library_system32
 
+.balign 4
 .include "system32/library/fb32.s"            @ Having Section .data
 .balign 4
 .include "system32/library/print32.s"
@@ -73,11 +82,7 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 4
 .include "system32/library/snd32.s"
 .balign 4
-.include "system32/library/gpio32.s"
-.balign 4
 .include "system32/library/math32.s"
-.balign 4
-.include "system32/library/vfp32.s"
 .balign 4
 .include "system32/library/heap32.s"
 .balign 4

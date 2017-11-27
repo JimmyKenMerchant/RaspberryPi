@@ -59,20 +59,29 @@ os_reset:
 	add r0, r0, #equ32_gpio_base
 
 .ifndef __RASPI3B
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel40]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7   @ Clear GPIO 47
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7  @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 
-	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 AlT0 (GPCLK0)
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4   @ Clear GPIO 4
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4    @ Set GPIO 4 AlT0 (GPCLK0)
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
-	mov r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 AlT0 (PWM0)
+	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2   @ Clear GPIO 12
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2    @ Set GPIO 12 AlT0 (PWM0)
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
-	mov r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1   @ Clear GPIO 21
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1   @ Set GPIO 21 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-	mov r1, #equ32_gpio21                                      @ Set GPIO21 Rising Edge Detect
+	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio21                                     @ Set GPIO21 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	/**

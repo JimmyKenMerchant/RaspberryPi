@@ -94,7 +94,9 @@ _os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	mov r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1   @ Set GPIO 21 OUTPUT
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1   @ Clear GPIO 21
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1  @ Set GPIO 21 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 
