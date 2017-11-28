@@ -52,11 +52,11 @@ void _user_start()
 		end_sec = vfp32_fadd( start_sec, 60.0 );
 
 		start_min = math32_round_degree32( vfp32_fmul( os_fiq_min, delta_min ) );
-		start_min = vfp32_fadd( start_min, 90.0 );
+		start_min = vfp32_fadd( start_min, 90.3 );
 		end_min = vfp32_fadd( start_min, 30.0 );
 
 		start_hour = math32_round_degree32( vfp32_fmul( os_fiq_hour, delta_hour ) );
-		start_hour = vfp32_fadd( start_hour, 90.0 );
+		start_hour = vfp32_fadd( start_hour, 90.8 );
 		end_hour = vfp32_fadd( start_hour, 15.0 );
 
 		//if ( vfp32_fgt( start_sec, end_sec ) ) start_sec = vfp32_fsub( start_sec, 360.0 );
@@ -93,6 +93,7 @@ void _user_start()
 			12,
 			12
 		);
+		draw32_bezier( COLOR32_YELLOW, 335, 400, 335, 500, 455, 500, 455, 400, 10, 10 );
 		_flush_doublebuffer();
 		_sleep( 100000 );
 	}

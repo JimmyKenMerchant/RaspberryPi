@@ -948,9 +948,6 @@ draw32_bezier:
 	vcmp.f32 x_vdiff, y_vdiff
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
 	vmovlt x_vdiff, y_vdiff
-	vcmp.f32 x_vdiff, #0
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmoveq x_vdiff, vone
 	vmov delta_vn, x_vdiff                            @ Store Value of Diffrence to delta_vn
 
 	vsub.f32 x_vdiff, x_vpoint1, x_vpoint0
@@ -960,9 +957,6 @@ draw32_bezier:
 	vcmp.f32 x_vdiff, y_vdiff
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
 	vmovlt x_vdiff, y_vdiff
-	vcmp.f32 x_vdiff, #0
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmoveq x_vdiff, vone
 	vadd.f32 delta_vn, delta_vn, x_vdiff              @ Add Value of Diffrence to delta_vn
 
 	vsub.f32 x_vdiff, x_vpoint3, x_vpoint2
@@ -972,10 +966,11 @@ draw32_bezier:
 	vcmp.f32 x_vdiff, y_vdiff
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
 	vmovlt x_vdiff, y_vdiff
-	vcmp.f32 x_vdiff, #0
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmoveq x_vdiff, vone
 	vadd.f32 delta_vn, delta_vn, x_vdiff              @ Add Value of Diffrence to delta_vn
+
+	vcmp.f32 delta_vn, #0
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmoveq delta_vn, vone
 
 	vdiv.f32 delta_vn, vone, delta_vn                 @ Calculate Delta
 
