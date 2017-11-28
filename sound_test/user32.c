@@ -40,61 +40,73 @@
 
 sound_index sound[] =
 {
-	144,             // 0   222.2hz Appx. A3  Sin
-	136,             // 1   235.3hz Appx. A#3 Sin
-	129,             // 2   248.1hz Appx. B3  Sin
-	121,             // 3   264.5hz Appx. C4  Sin
-	114,             // 4   280.7hz Appx. C#4 Sin
-	108,             // 5   296.3hz Appx. D4  Sin
-	102,             // 6   313.7hz Appx. D#4 Sin
-	96,              // 7   333.3hz Appx. E4  Sin
-	91,              // 8   351.6hz Appx. F4  Sin
-	86,              // 9   372.1hz Appx. F#4 Sin
-	81,              // 10  395.1hz Appx. G4  Sin
-	76,              // 11  421.1hz Appx. G#4 Sin
-	72,              // 12  444.4hz Appx. A4  Sin
-	68,              // 13  470.6hz Appx. A#4 Sin
-	64,              // 14  500.0hz Appx. B4  Sin
-	61,              // 15  524.6hz Appx. C5  Sin
-	57,              // 16  561.4hz Appx. C#5 Sin
-	54,              // 17  592.6hz Appx. D5  Sin
-	51,              // 18  627.5hz Appx. D#5 Sin
-	48,              // 19  666.7hz Appx. E5  Sin
-	46,              // 20  695.7hz Appx. F5  Sin
-	43,              // 21  744.2hz Appx. F#5 Sin
-	41,              // 22  780.5hz Appx. G5  Sin
-	38,              // 23  842.1hz Appx. G#5 Sin
-	36,              // 24  888.9hz Appx. A5  Sin
-	34,              // 25  941.2hz Appx. A#5 Sin
-	32,              // 26 1000.0hz Appx. B5  Sin
-	30,              // 27 1066.3hz Appx. C6  Sin
-	1<<14|1<<12|576, // 28 Triangle
-	1<<14|1<<12|288, // 29 Triangle
-	1<<14|1<<12|144, // 30 Triangle
-	1<<14|1<<12|72,  // 31 Triangle
-	1<<14|1<<12|36,  // 32 Triangle
-	2<<14|1<<12|576, // 33 Square
-	2<<14|1<<12|288, // 34 Square
-	2<<14|1<<12|144, // 35 Square
-	2<<14|1<<12|72,  // 36 Square
-	2<<14|1<<12|36,  // 37 Square
-	3<<14|1<<12|576, // 38 Noise
-	3<<14|1<<12|288, // 39 Noise
-	3<<14|1<<12|144, // 40 Noise
-	3<<14|1<<12|72,  // 41 Noise
-	3<<14|1<<12|36,  // 42 Noise
-	2<<14|3<<12|36,  // 43 Silence 
-	3<<14|1<<12|0,   // 44 Long Noise
+	288,             // 0   111.1hz Appx. A2  Sin
+	272,             // 1   117.6hz Appx. A#2 Sin
+	257,             // 2   124.5hz Appx. B2  Sin
+	242,             // 3   132.2hz Appx. C3  Sin
+	229,             // 4   139.7hz Appx. C#3 Sin
+	216,             // 5   148.1hz Appx. D3  Sin
+	204,             // 6   156.9hz Appx. D#3 Sin
+	192,             // 7   166.7hz Appx. E3  Sin
+	181,             // 8   176.8hz Appx. F3  Sin
+	171,             // 9   187.1hz Appx. F#3 Sin
+	162,             // 10  197.5hz Appx. G3  Sin
+	153,             // 11  209.2hz Appx. G#3 Sin
+	144,             // 12  222.2hz Appx. A3  Sin
+	136,             // 13  235.3hz Appx. A#3 Sin
+	129,             // 14  248.1hz Appx. B3  Sin
+	121,             // 15  264.5hz Appx. C4  Sin
+	114,             // 16  280.7hz Appx. C#4 Sin
+	108,             // 17  296.3hz Appx. D4  Sin
+	102,             // 18  313.7hz Appx. D#4 Sin
+	96,              // 19  333.3hz Appx. E4  Sin
+	91,              // 20  351.6hz Appx. F4  Sin
+	86,              // 21  372.1hz Appx. F#4 Sin
+	81,              // 22  395.1hz Appx. G4  Sin
+	76,              // 23  421.1hz Appx. G#4 Sin
+	72,              // 24  444.4hz Appx. A4  Sin
+	68,              // 25  470.6hz Appx. A#4 Sin
+	64,              // 26  500.0hz Appx. B4  Sin
+	61,              // 27  524.6hz Appx. C5  Sin
+	57,              // 28  561.4hz Appx. C#5 Sin
+	54,              // 29  592.6hz Appx. D5  Sin
+	51,              // 30  627.5hz Appx. D#5 Sin
+	48,              // 31  666.7hz Appx. E5  Sin
+	46,              // 32  695.7hz Appx. F5  Sin
+	43,              // 33  744.2hz Appx. F#5 Sin
+	41,              // 34  780.5hz Appx. G5  Sin
+	38,              // 35  842.1hz Appx. G#5 Sin
+	36,              // 36  888.9hz Appx. A5  Sin
+	34,              // 37  941.2hz Appx. A#5 Sin
+	32,              // 38 1000.0hz Appx. B5  Sin
+	30,              // 39 1066.3hz Appx. C6  Sin
+	1<<14|1<<12|576, // 40 Triangle
+	1<<14|1<<12|288, // 41 Triangle
+	1<<14|1<<12|144, // 42 Triangle
+	1<<14|1<<12|72,  // 43 Triangle
+	1<<14|1<<12|36,  // 44 Triangle
+	2<<14|1<<12|576, // 45 Square
+	2<<14|1<<12|288, // 46 Square
+	2<<14|1<<12|144, // 47 Square
+	2<<14|1<<12|72,  // 48 Square
+	2<<14|1<<12|36,  // 49 Square
+	3<<14|1<<12|576, // 50 Noise
+	3<<14|1<<12|288, // 51 Noise
+	3<<14|1<<12|144, // 52 Noise
+	3<<14|1<<12|72,  // 53 Noise
+	3<<14|1<<12|36,  // 54 Noise
+	2<<14|3<<12|36,  // 55 Silence 
+	3<<14|1<<12|0,   // 56 Long Noise
 	0                // End of Index
 };
 
 music_code music1[] =
 {
 	 3, 5, 7, 8,10,12,14,15,10,10,10,10,
-	43,43,10, 7, 3,10, 7, 3, 8,10,12,14,
+	55,55,10, 7, 3,10, 7, 3, 8,10,12,14,
 	15,15,15,15,10,10,10,10, 7, 7, 7, 7,
-	 3, 3, 3, 3, 3, 3, 3, 3,43,43,43,43,
-	43,43,43,43,43,43,43,43,43,43,43,43,
+	 3, 3, 3, 3, 3, 3, 3, 3,55,55,55,55,
+	55,55,55,55,55,55,55,55,55,55,55,55,
 	0xFFFF
 };
 
