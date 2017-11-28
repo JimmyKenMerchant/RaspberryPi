@@ -935,19 +935,49 @@ draw32_bezier:
 	y_current   .req r2
 	temp        .req r3
 
-	vsub.f32 x_vdiff, x_vpoint0, x_vpoint3
-	vabs.f32 x_vdiff, x_vdiff
-	vsub.f32 y_vdiff, y_vpoint0, y_vpoint3
-	vabs.f32 y_vdiff, y_vdiff
-
-	vcmp.f32 x_vdiff, y_vdiff
-	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovlt x_vdiff, y_vdiff
 	mov temp, #1
 	vmov vone, temp
 	vcvt.f32.s32 vone, vone
-	vdiv.f32 delta_vn, vone, x_vdiff
-	vdiv.f32 delta_vn, delta_vn, x_vdiff
+
+	/* Decide Delta by Diffrences Between Points */
+
+	vsub.f32 x_vdiff, x_vpoint3, x_vpoint0
+	vabs.f32 x_vdiff, x_vdiff
+	vsub.f32 y_vdiff, y_vpoint3, y_vpoint0
+	vabs.f32 y_vdiff, y_vdiff
+	vcmp.f32 x_vdiff, y_vdiff
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovlt x_vdiff, y_vdiff
+	vcmp.f32 x_vdiff, #0
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmoveq x_vdiff, vone
+	vmov delta_vn, x_vdiff                            @ Store Value of Diffrence to delta_vn
+
+	vsub.f32 x_vdiff, x_vpoint1, x_vpoint0
+	vabs.f32 x_vdiff, x_vdiff
+	vsub.f32 y_vdiff, y_vpoint1, y_vpoint0
+	vabs.f32 y_vdiff, y_vdiff
+	vcmp.f32 x_vdiff, y_vdiff
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovlt x_vdiff, y_vdiff
+	vcmp.f32 x_vdiff, #0
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmoveq x_vdiff, vone
+	vadd.f32 delta_vn, delta_vn, x_vdiff              @ Add Value of Diffrence to delta_vn
+
+	vsub.f32 x_vdiff, x_vpoint3, x_vpoint2
+	vabs.f32 x_vdiff, x_vdiff
+	vsub.f32 y_vdiff, y_vpoint3, y_vpoint2
+	vabs.f32 y_vdiff, y_vdiff
+	vcmp.f32 x_vdiff, y_vdiff
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmovlt x_vdiff, y_vdiff
+	vcmp.f32 x_vdiff, #0
+	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
+	vmoveq x_vdiff, vone
+	vadd.f32 delta_vn, delta_vn, x_vdiff              @ Add Value of Diffrence to delta_vn
+
+	vdiv.f32 delta_vn, vone, delta_vn                 @ Calculate Delta
 
 	mov temp, #0
 	vmov vn, temp
@@ -963,42 +993,42 @@ draw32_bezier:
 		vmul.f32 x_vdiff, x_vdiff, vn
 		vmul.f32 y_vdiff, y_vdiff, vn
 		vadd.f32 x_vpoint4, x_vpoint0, x_vdiff
-		vadd.f32 y_vpoint4, x_vpoint0, y_vdiff
+		vadd.f32 y_vpoint4, y_vpoint0, y_vdiff
 
 		vsub.f32 x_vdiff, x_vpoint2, x_vpoint1
 		vsub.f32 y_vdiff, y_vpoint2, y_vpoint1
 		vmul.f32 x_vdiff, x_vdiff, vn
 		vmul.f32 y_vdiff, y_vdiff, vn
 		vadd.f32 x_vpoint5, x_vpoint1, x_vdiff
-		vadd.f32 y_vpoint5, x_vpoint1, y_vdiff
+		vadd.f32 y_vpoint5, y_vpoint1, y_vdiff
 
 		vsub.f32 x_vdiff, x_vpoint3, x_vpoint2
 		vsub.f32 y_vdiff, y_vpoint3, y_vpoint2
 		vmul.f32 x_vdiff, x_vdiff, vn
 		vmul.f32 y_vdiff, y_vdiff, vn
 		vadd.f32 x_vpoint6, x_vpoint2, x_vdiff
-		vadd.f32 y_vpoint6, x_vpoint2, y_vdiff
+		vadd.f32 y_vpoint6, y_vpoint2, y_vdiff
 
 		vsub.f32 x_vdiff, x_vpoint5, x_vpoint4
 		vsub.f32 y_vdiff, y_vpoint5, y_vpoint4
 		vmul.f32 x_vdiff, x_vdiff, vn
 		vmul.f32 y_vdiff, y_vdiff, vn
 		vadd.f32 x_vpoint7, x_vpoint4, x_vdiff
-		vadd.f32 y_vpoint7, x_vpoint4, y_vdiff
+		vadd.f32 y_vpoint7, y_vpoint4, y_vdiff
 
 		vsub.f32 x_vdiff, x_vpoint6, x_vpoint5
 		vsub.f32 y_vdiff, y_vpoint6, y_vpoint5
 		vmul.f32 x_vdiff, x_vdiff, vn
 		vmul.f32 y_vdiff, y_vdiff, vn
 		vadd.f32 x_vpoint8, x_vpoint5, x_vdiff
-		vadd.f32 y_vpoint8, x_vpoint5, y_vdiff
+		vadd.f32 y_vpoint8, y_vpoint5, y_vdiff
 
 		vsub.f32 x_vdiff, x_vpoint8, x_vpoint7
 		vsub.f32 y_vdiff, y_vpoint8, y_vpoint7
 		vmul.f32 x_vdiff, x_vdiff, vn
 		vmul.f32 y_vdiff, y_vdiff, vn
 		vadd.f32 x_vpoint9, x_vpoint7, x_vdiff
-		vadd.f32 y_vpoint9, x_vpoint7, y_vdiff
+		vadd.f32 y_vpoint9, y_vpoint7, y_vdiff
 
 		vcvtr.s32.f32 x_vpoint9, x_vpoint9
 		vcvtr.s32.f32 y_vpoint9, y_vpoint9

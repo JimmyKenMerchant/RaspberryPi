@@ -45,7 +45,6 @@ void _user_start()
 	_set_doublebuffer( renderbuffer[0], renderbuffer[1] );
 
 	while(1) {
-		_flush_doublebuffer();
 		fb32_clear_color( COLOR32_NAVYBLUE );
 
 		start_sec = math32_round_degree32( vfp32_fmul( os_fiq_sec, delta_sec ) );
@@ -63,10 +62,10 @@ void _user_start()
 		//if ( vfp32_fgt( start_sec, end_sec ) ) start_sec = vfp32_fsub( start_sec, 360.0 );
 		draw32_arc(
 			COLOR32_CYAN,
-			400,
-			320,
-			300,
-			300,
+			398, // 400 - 4/2
+			318, // 320 - 4/2
+			300, // 302 - 4/2, Minute Hand Will Be 302 - 4, 298
+			300, // 302 - 4/2, Minute Hand Will Be 302 - 4, 298
 			math32_degree_to_radian32( start_sec ),
 			math32_degree_to_radian32( end_sec ),
 			4,
@@ -74,27 +73,27 @@ void _user_start()
 		);
 		draw32_arc(
 			COLOR32_GREEN,
-			400,
-			320,
-			296,
-			296,
+			396, // 400 - 8/2
+			316, // 320 - 8/2
+			294, // 298 - 8/2, Minute Hand Will Be 298 - 8, 290
+			294, // 298 - 8/2, Minute Hand Will Be 298 - 8, 290
 			math32_degree_to_radian32( start_min ),
 			math32_degree_to_radian32( end_min ),
-			4,
-			4
+			8,
+			8
 		);
 		draw32_arc(
 			COLOR32_MAGENTA,
-			400,
-			320,
-			292,
-			292,
+			394, // 400 - 12/2
+			314, // 320 - 12/2
+			284, // 290 - 12/2
+			284, // 290 - 12/2
 			math32_degree_to_radian32( start_hour ),
 			math32_degree_to_radian32( end_hour ),
-			4,
-			4
+			12,
+			12
 		);
-
+		_flush_doublebuffer();
 		_sleep( 100000 );
 	}
 }
