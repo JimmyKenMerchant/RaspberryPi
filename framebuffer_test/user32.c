@@ -17,7 +17,6 @@ extern float32 os_fiq_hour;
 void _user_start()
 {
 	float32 start_sec;
-	float32 end_sec;
 
 	float32 start_min;
 	float32 end_min;
@@ -47,16 +46,15 @@ void _user_start()
 	while(1) {
 		fb32_clear_color( COLOR32_NAVYBLUE );
 
-		start_sec = math32_round_degree32( vfp32_fmul( os_fiq_sec, delta_sec ) );
+		start_sec = vfp32_fmul( os_fiq_sec, delta_sec );
 		start_sec = vfp32_fadd( start_sec, 90.0 );
-		end_sec = vfp32_fadd( start_sec, 60.0 );
 
 		start_min = math32_round_degree32( vfp32_fmul( os_fiq_min, delta_min ) );
-		start_min = vfp32_fadd( start_min, 90.3 );
+		start_min = vfp32_fadd( start_min, 90.9 );
 		end_min = vfp32_fadd( start_min, 30.0 );
 
 		start_hour = math32_round_degree32( vfp32_fmul( os_fiq_hour, delta_hour ) );
-		start_hour = vfp32_fadd( start_hour, 90.8 );
+		start_hour = vfp32_fadd( start_hour, 91.4 );
 		end_hour = vfp32_fadd( start_hour, 15.0 );
 
 		//if ( vfp32_fgt( start_sec, end_sec ) ) start_sec = vfp32_fsub( start_sec, 360.0 );
@@ -67,7 +65,7 @@ void _user_start()
 			300, // 302 - 4/2, Minute Hand Will Be 302 - 4, 298
 			300, // 302 - 4/2, Minute Hand Will Be 302 - 4, 298
 			math32_degree_to_radian32( start_sec ),
-			math32_degree_to_radian32( end_sec ),
+			math32_degree_to_radian32( 90.0 ),
 			4,
 			4
 		);

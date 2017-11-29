@@ -23,20 +23,20 @@ vfp32_s32tof32:
 	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vvalue        .req s0
+	vfp_value     .req s0
 
 	vpush {s0}
 
-	vmov vvalue, value
-	vcvt.f32.s32 vvalue, vvalue
-	vmov value, vvalue
+	vmov vfp_value, value
+	vcvt.f32.s32 vfp_value, vfp_value
+	vmov value, vfp_value
 
 	vfp32_s32tof32_common:
 		vpop {s0}
 		mov pc, lr
 
 .unreq value
-.unreq vvalue
+.unreq vfp_value
 
 
 /**
@@ -54,20 +54,20 @@ vfp32_u32tof32:
 	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vvalue        .req s0
+	vfp_value     .req s0
 
 	vpush {s0}
 
-	vmov vvalue, value
-	vcvt.f32.u32 vvalue, vvalue
-	vmov value, vvalue
+	vmov vfp_value, value
+	vcvt.f32.u32 vfp_value, vfp_value
+	vmov value, vfp_value
 
 	vfp32_u32tof32_common:
 		vpop {s0}
 		mov pc, lr
 
 .unreq value
-.unreq vvalue
+.unreq vfp_value
 
 
 /**
@@ -85,20 +85,20 @@ vfp32_f32tos32:
 	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vvalue        .req s0
+	vfp_value     .req s0
 
 	vpush {s0}
 
-	vmov vvalue, value
-	vcvt.s32.f32 vvalue, vvalue
-	vmov value, vvalue
+	vmov vfp_value, value
+	vcvt.s32.f32 vfp_value, vfp_value
+	vmov value, vfp_value
 
 	vfp32_f32tos32_common:
 		vpop {s0}
 		mov pc, lr
 
 .unreq value
-.unreq vvalue
+.unreq vfp_value
 
 
 /**
@@ -116,20 +116,20 @@ vfp32_f32tou32:
 	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vvalue        .req s0
+	vfp_value     .req s0
 
 	vpush {s0}
 
-	vmov vvalue, value
-	vcvt.u32.f32 vvalue, vvalue
-	vmov value, vvalue
+	vmov vfp_value, value
+	vcvt.u32.f32 vfp_value, vfp_value
+	vmov value, vfp_value
 
 	vfp32_f32tou32_common:
 		vpop {s0}
 		mov pc, lr
 
 .unreq value
-.unreq vvalue
+.unreq vfp_value
 
 
 /**
@@ -149,16 +149,16 @@ vfp32_feq:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 	mov value1, #0
 
-	vcmp.f32 vvalue1, vvalue2
+	vcmp.f32 vfp_value1, vfp_value2
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	moveq value1, #1
 
@@ -168,8 +168,8 @@ vfp32_feq:
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -189,16 +189,16 @@ vfp32_fgt:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 	mov value1, #0
 
-	vcmp.f32 vvalue1, vvalue2
+	vcmp.f32 vfp_value1, vfp_value2
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	movgt value1, #1
 
@@ -208,8 +208,8 @@ vfp32_fgt:
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -229,16 +229,16 @@ vfp32_flt:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 	mov value1, #0
 
-	vcmp.f32 vvalue1, vvalue2
+	vcmp.f32 vfp_value1, vfp_value2
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	movlt value1, #1
 
@@ -248,8 +248,8 @@ vfp32_flt:
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -269,16 +269,16 @@ vfp32_fge:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 	mov value1, #0
 
-	vcmp.f32 vvalue1, vvalue2
+	vcmp.f32 vfp_value1, vfp_value2
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	movge value1, #1
 
@@ -288,8 +288,8 @@ vfp32_fge:
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -309,16 +309,16 @@ vfp32_fle:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 	mov value1, #0
 
-	vcmp.f32 vvalue1, vvalue2
+	vcmp.f32 vfp_value1, vfp_value2
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	movle value1, #1
 
@@ -328,8 +328,8 @@ vfp32_fle:
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -349,25 +349,25 @@ vfp32_fadd:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 
-	vadd.f32 vvalue1, vvalue1, vvalue2
+	vadd.f32 vfp_value1, vfp_value1, vfp_value2
 
 	vfp32_fadd_common:
-		vmov value1, vvalue1
+		vmov value1, vfp_value1
 		vpop {s0-s1}
 		mov pc, lr
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -387,25 +387,25 @@ vfp32_fsub:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 
-	vsub.f32 vvalue1, vvalue1, vvalue2
+	vsub.f32 vfp_value1, vfp_value1, vfp_value2
 
 	vfp32_fsub_common:
-		vmov value1, vvalue1
+		vmov value1, vfp_value1
 		vpop {s0-s1}
 		mov pc, lr
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -425,25 +425,25 @@ vfp32_fmul:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 
-	vmul.f32 vvalue1, vvalue1, vvalue2
+	vmul.f32 vfp_value1, vfp_value1, vfp_value2
 
 	vfp32_fmul_common:
-		vmov value1, vvalue1
+		vmov value1, vfp_value1
 		vpop {s0-s1}
 		mov pc, lr
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2
 
 
 /**
@@ -463,22 +463,22 @@ vfp32_fdiv:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
-	vvalue1        .req s0
-	vvalue2        .req s1
+	vfp_value1     .req s0
+	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vvalue1, value1
-	vmov vvalue2, value2
+	vmov vfp_value1, value1
+	vmov vfp_value2, value2
 
-	vdiv.f32 vvalue1, vvalue1, vvalue2
+	vdiv.f32 vfp_value1, vfp_value1, vfp_value2
 
 	vfp32_fdiv_common:
-		vmov value1, vvalue1
+		vmov value1, vfp_value1
 		vpop {s0-s1}
 		mov pc, lr
 
 .unreq value1
 .unreq value2
-.unreq vvalue1
-.unreq vvalue2
+.unreq vfp_value1
+.unreq vfp_value2

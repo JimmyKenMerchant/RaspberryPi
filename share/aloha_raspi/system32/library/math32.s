@@ -24,51 +24,51 @@ math32_round_pi32:
 	radian         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
 	/* VFP Registers */
-	vradian        .req s0
-	vpi            .req s1
-	vpi_neg        .req s2
-	vpi_double     .req s3
+	vfp_radian     .req s0
+	vfp_pi         .req s1
+	vfp_pi_neg     .req s2
+	vfp_pi_double  .req s3
 
 	vpush {s0-s3}
 
-	vmov vradian, radian
-	vldr vpi, MATH32_PI32
-	vneg.f32 vpi_neg, vpi
-	vldr vpi_double, MATH32_PI_DOUBLE32
+	vmov vfp_radian, radian
+	vldr vfp_pi, MATH32_PI32
+	vneg.f32 vfp_pi_neg, vfp_pi
+	vldr vfp_pi_double, MATH32_PI_DOUBLE32
 
-	vcmp.f32 vradian, vpi
+	vcmp.f32 vfp_radian, vfp_pi
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	bgt math32_round_pi32_over
 
-	vcmp.f32 vradian, vpi_neg
+	vcmp.f32 vfp_radian, vfp_pi_neg
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	blt math32_round_pi32_under
 
 	b math32_round_pi32_common
 
 	math32_round_pi32_over:
-		vsub.f32 vradian, vradian, vpi_double
-		vcmp.f32 vradian, vpi
+		vsub.f32 vfp_radian, vfp_radian, vfp_pi_double
+		vcmp.f32 vfp_radian, vfp_pi
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		bgt math32_round_pi32_over
 		b math32_round_pi32_common
 
 	math32_round_pi32_under:
-		vadd.f32 vradian, vradian, vpi_double
-		vcmp.f32 vradian, vpi_neg
+		vadd.f32 vfp_radian, vfp_radian, vfp_pi_double
+		vcmp.f32 vfp_radian, vfp_pi_neg
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		blt math32_round_pi32_under
 
 	math32_round_pi32_common:
-		vmov radian, vradian
+		vmov radian, vfp_radian
 		vpop {s0-s3}
 		mov pc, lr
 
 .unreq radian
-.unreq vradian
-.unreq vpi
-.unreq vpi_neg
-.unreq vpi_double
+.unreq vfp_radian
+.unreq vfp_pi
+.unreq vfp_pi_neg
+.unreq vfp_pi_double
 
 
 /**
@@ -88,49 +88,49 @@ math32_round_degree32:
 	full           .req r1
 
 	/* VFP Registers */
-	vdegree        .req s0
-	vfull          .req s1
+	vfp_degree     .req s0
+	vfp_full       .req s1
 
 	vpush {s0-s1}
 
-	vmov vdegree, degree
+	vmov vfp_degree, degree
 
 	mov full, #360
-	vmov vfull, full
-	vcvt.f32.u32 vfull, vfull
+	vmov vfp_full, full
+	vcvt.f32.u32 vfp_full, vfp_full
 
-	vcmp.f32 vdegree, vfull
+	vcmp.f32 vfp_degree, vfp_full
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	bgt math32_round_degree32_over
 
-	vcmp.f32 vdegree, #0
+	vcmp.f32 vfp_degree, #0
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	blt math32_round_degree32_under
 
 	b math32_round_degree32_common
 
 	math32_round_degree32_over:
-		vsub.f32 vdegree, vdegree, vfull
-		vcmp.f32 vdegree, vfull
+		vsub.f32 vfp_degree, vfp_degree, vfp_full
+		vcmp.f32 vfp_degree, vfp_full
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		bgt math32_round_degree32_over
 		b math32_round_degree32_common
 
 	math32_round_degree32_under:
-		vadd.f32 vdegree, vdegree, vfull
-		vcmp.f32 vdegree, #0
+		vadd.f32 vfp_degree, vfp_degree, vfp_full
+		vcmp.f32 vfp_degree, #0
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		blt math32_round_degree32_under
 
 	math32_round_degree32_common:
-		vmov degree, vdegree
+		vmov degree, vfp_degree
 		vpop {s0-s1}
 		mov pc, lr
 
 .unreq degree
 .unreq full
-.unreq vdegree
-.unreq vfull
+.unreq vfp_degree
+.unreq vfp_full
 
 
 .globl MATH32_PI32

@@ -867,42 +867,42 @@ draw32_bezier:
 	char_height .req r10  @ Parameter, have to PUSH/POP in ARM C lang Regulation
 
 	/* VFP Registers */
-	vpoint0     .req d0
-	x_vpoint0   .req s0
-	y_vpoint0   .req s1
-	vpoint1     .req d1
-	x_vpoint1   .req s2
-	y_vpoint1   .req s3
-	vpoint2     .req d2
-	x_vpoint2   .req s4
-	y_vpoint2   .req s5
-	vpoint3     .req d3
-	x_vpoint3   .req s6
-	y_vpoint3   .req s7
-	vpoint4     .req d4
-	x_vpoint4   .req s8
-	y_vpoint4   .req s9
-	vpoint5     .req d5
-	x_vpoint5   .req s10
-	y_vpoint5   .req s11
-	vpoint6     .req d6
-	x_vpoint6   .req s12
-	y_vpoint6   .req s13
-	vpoint7     .req d7
-	x_vpoint7   .req s14
-	y_vpoint7   .req s15
-	vpoint8     .req d8
-	x_vpoint8   .req s16
-	y_vpoint8   .req s17
-	vpoint9     .req d9
-	x_vpoint9   .req s18
-	y_vpoint9   .req s19
-	vdiff       .req d10
-	x_vdiff     .req s20
-	y_vdiff     .req s21
-	vn          .req s22
-	delta_vn    .req s23
-	vone        .req s24
+	vfp_point0   .req d0
+	vfp_point0_x .req s0
+	vfp_point0_y .req s1
+	vfp_point1   .req d1
+	vfp_point1_x .req s2
+	vfp_point1_y .req s3
+	vfp_point2   .req d2
+	vfp_point2_x .req s4
+	vfp_point2_y .req s5
+	vfp_point3   .req d3
+	vfp_point3_x .req s6
+	vfp_point3_y .req s7
+	vfp_point4   .req d4
+	vfp_point4_x .req s8
+	vfp_point4_y .req s9
+	vfp_point5   .req d5
+	vfp_point5_x .req s10
+	vfp_point5_y .req s11
+	vfp_point6   .req d6
+	vfp_point6_x .req s12
+	vfp_point6_y .req s13
+	vfp_point7   .req d7
+	vfp_point7_x .req s14
+	vfp_point7_y .req s15
+	vfp_point8   .req d8
+	vfp_point8_x .req s16
+	vfp_point8_y .req s17
+	vfp_point9   .req d9
+	vfp_point9_x .req s18
+	vfp_point9_y .req s19
+	vfp_diff     .req d10
+	vfp_diff_x   .req s20
+	vfp_diff_y   .req s21
+	vfp_n        .req s22
+	vfp_n_delta  .req s23
+	vfp_one      .req s24
 
 	push {r4-r10}
 
@@ -912,21 +912,21 @@ draw32_bezier:
 
 	vpush {s0-s24}
 
-	vmov vpoint0, x_point0, y_point0
-	vcvt.f32.s32 x_vpoint0, x_vpoint0
-	vcvt.f32.s32 y_vpoint0, y_vpoint0
+	vmov vfp_point0, x_point0, y_point0
+	vcvt.f32.s32 vfp_point0_x, vfp_point0_x
+	vcvt.f32.s32 vfp_point0_y, vfp_point0_y
 
-	vmov vpoint1, x_point1, y_point1
-	vcvt.f32.s32 x_vpoint1, x_vpoint1
-	vcvt.f32.s32 y_vpoint1, y_vpoint1
+	vmov vfp_point1, x_point1, y_point1
+	vcvt.f32.s32 vfp_point1_x, vfp_point1_x
+	vcvt.f32.s32 vfp_point1_y, vfp_point1_y
 
-	vmov vpoint2, x_point2, y_point2
-	vcvt.f32.s32 x_vpoint2, x_vpoint2
-	vcvt.f32.s32 y_vpoint2, y_vpoint2
+	vmov vfp_point2, x_point2, y_point2
+	vcvt.f32.s32 vfp_point2_x, vfp_point2_x
+	vcvt.f32.s32 vfp_point2_y, vfp_point2_y
 
-	vmov vpoint3, x_point3, y_point3
-	vcvt.f32.s32 x_vpoint3, x_vpoint3
-	vcvt.f32.s32 y_vpoint3, y_vpoint3
+	vmov vfp_point3, x_point3, y_point3
+	vcvt.f32.s32 vfp_point3_x, vfp_point3_x
+	vcvt.f32.s32 vfp_point3_y, vfp_point3_y
 
 	.unreq x_point0
 	.unreq y_point0
@@ -936,98 +936,98 @@ draw32_bezier:
 	temp        .req r3
 
 	mov temp, #1
-	vmov vone, temp
-	vcvt.f32.s32 vone, vone
+	vmov vfp_one, temp
+	vcvt.f32.s32 vfp_one, vfp_one
 
 	/* Decide Delta by Diffrences Between Points */
 
-	vsub.f32 x_vdiff, x_vpoint3, x_vpoint0
-	vabs.f32 x_vdiff, x_vdiff
-	vsub.f32 y_vdiff, y_vpoint3, y_vpoint0
-	vabs.f32 y_vdiff, y_vdiff
-	vcmp.f32 x_vdiff, y_vdiff
+	vsub.f32 vfp_diff_x, vfp_point3_x, vfp_point0_x
+	vabs.f32 vfp_diff_x, vfp_diff_x
+	vsub.f32 vfp_diff_y, vfp_point3_y, vfp_point0_y
+	vabs.f32 vfp_diff_y, vfp_diff_y
+	vcmp.f32 vfp_diff_x, vfp_diff_y
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovlt x_vdiff, y_vdiff
-	vmov delta_vn, x_vdiff                            @ Store Value of Diffrence to delta_vn
+	vmovlt vfp_diff_x, vfp_diff_y
+	vmov vfp_n_delta, vfp_diff_x                      @ Store Value of Diffrence to vfp_n_delta
 
-	vsub.f32 x_vdiff, x_vpoint1, x_vpoint0
-	vabs.f32 x_vdiff, x_vdiff
-	vsub.f32 y_vdiff, y_vpoint1, y_vpoint0
-	vabs.f32 y_vdiff, y_vdiff
-	vcmp.f32 x_vdiff, y_vdiff
+	vsub.f32 vfp_diff_x, vfp_point1_x, vfp_point0_x
+	vabs.f32 vfp_diff_x, vfp_diff_x
+	vsub.f32 vfp_diff_y, vfp_point1_y, vfp_point0_y
+	vabs.f32 vfp_diff_y, vfp_diff_y
+	vcmp.f32 vfp_diff_x, vfp_diff_y
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovlt x_vdiff, y_vdiff
-	vadd.f32 delta_vn, delta_vn, x_vdiff              @ Add Value of Diffrence to delta_vn
+	vmovlt vfp_diff_x, vfp_diff_y
+	vadd.f32 vfp_n_delta, vfp_n_delta, vfp_diff_x     @ Add Value of Diffrence to vfp_n_delta
 
-	vsub.f32 x_vdiff, x_vpoint3, x_vpoint2
-	vabs.f32 x_vdiff, x_vdiff
-	vsub.f32 y_vdiff, y_vpoint3, y_vpoint2
-	vabs.f32 y_vdiff, y_vdiff
-	vcmp.f32 x_vdiff, y_vdiff
+	vsub.f32 vfp_diff_x, vfp_point3_x, vfp_point2_x
+	vabs.f32 vfp_diff_x, vfp_diff_x
+	vsub.f32 vfp_diff_y, vfp_point3_y, vfp_point2_y
+	vabs.f32 vfp_diff_y, vfp_diff_y
+	vcmp.f32 vfp_diff_x, vfp_diff_y
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmovlt x_vdiff, y_vdiff
-	vadd.f32 delta_vn, delta_vn, x_vdiff              @ Add Value of Diffrence to delta_vn
+	vmovlt vfp_diff_x, vfp_diff_y
+	vadd.f32 vfp_n_delta, vfp_n_delta, vfp_diff_x     @ Add Value of Diffrence to vfp_n_delta
 
-	vcmp.f32 delta_vn, #0
+	vcmp.f32 vfp_n_delta, #0
 	vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
-	vmoveq delta_vn, vone
+	vmoveq vfp_n_delta, vfp_one
 
-	vdiv.f32 delta_vn, vone, delta_vn                 @ Calculate Delta
+	vdiv.f32 vfp_n_delta, vfp_one, vfp_n_delta        @ Calculate Delta
 
 	mov temp, #0
-	vmov vn, temp
-	vcvt.f32.s32 vn, vn
+	vmov vfp_n, temp
+	vcvt.f32.s32 vfp_n, vfp_n
 
 	draw32_bezier_loop:
-		vcmp.f32 vn, vone
+		vcmp.f32 vfp_n, vfp_one
 		vmrs apsr_nzcv, fpscr                             @ Transfer FPSCR Flags to CPSR's NZCV
 		bgt draw32_bezier_success
 
-		vsub.f32 x_vdiff, x_vpoint1, x_vpoint0
-		vsub.f32 y_vdiff, y_vpoint1, y_vpoint0
-		vmul.f32 x_vdiff, x_vdiff, vn
-		vmul.f32 y_vdiff, y_vdiff, vn
-		vadd.f32 x_vpoint4, x_vpoint0, x_vdiff
-		vadd.f32 y_vpoint4, y_vpoint0, y_vdiff
+		vsub.f32 vfp_diff_x, vfp_point1_x, vfp_point0_x
+		vsub.f32 vfp_diff_y, vfp_point1_y, vfp_point0_y
+		vmul.f32 vfp_diff_x, vfp_diff_x, vfp_n
+		vmul.f32 vfp_diff_y, vfp_diff_y, vfp_n
+		vadd.f32 vfp_point4_x, vfp_point0_x, vfp_diff_x
+		vadd.f32 vfp_point4_y, vfp_point0_y, vfp_diff_y
 
-		vsub.f32 x_vdiff, x_vpoint2, x_vpoint1
-		vsub.f32 y_vdiff, y_vpoint2, y_vpoint1
-		vmul.f32 x_vdiff, x_vdiff, vn
-		vmul.f32 y_vdiff, y_vdiff, vn
-		vadd.f32 x_vpoint5, x_vpoint1, x_vdiff
-		vadd.f32 y_vpoint5, y_vpoint1, y_vdiff
+		vsub.f32 vfp_diff_x, vfp_point2_x, vfp_point1_x
+		vsub.f32 vfp_diff_y, vfp_point2_y, vfp_point1_y
+		vmul.f32 vfp_diff_x, vfp_diff_x, vfp_n
+		vmul.f32 vfp_diff_y, vfp_diff_y, vfp_n
+		vadd.f32 vfp_point5_x, vfp_point1_x, vfp_diff_x
+		vadd.f32 vfp_point5_y, vfp_point1_y, vfp_diff_y
 
-		vsub.f32 x_vdiff, x_vpoint3, x_vpoint2
-		vsub.f32 y_vdiff, y_vpoint3, y_vpoint2
-		vmul.f32 x_vdiff, x_vdiff, vn
-		vmul.f32 y_vdiff, y_vdiff, vn
-		vadd.f32 x_vpoint6, x_vpoint2, x_vdiff
-		vadd.f32 y_vpoint6, y_vpoint2, y_vdiff
+		vsub.f32 vfp_diff_x, vfp_point3_x, vfp_point2_x
+		vsub.f32 vfp_diff_y, vfp_point3_y, vfp_point2_y
+		vmul.f32 vfp_diff_x, vfp_diff_x, vfp_n
+		vmul.f32 vfp_diff_y, vfp_diff_y, vfp_n
+		vadd.f32 vfp_point6_x, vfp_point2_x, vfp_diff_x
+		vadd.f32 vfp_point6_y, vfp_point2_y, vfp_diff_y
 
-		vsub.f32 x_vdiff, x_vpoint5, x_vpoint4
-		vsub.f32 y_vdiff, y_vpoint5, y_vpoint4
-		vmul.f32 x_vdiff, x_vdiff, vn
-		vmul.f32 y_vdiff, y_vdiff, vn
-		vadd.f32 x_vpoint7, x_vpoint4, x_vdiff
-		vadd.f32 y_vpoint7, y_vpoint4, y_vdiff
+		vsub.f32 vfp_diff_x, vfp_point5_x, vfp_point4_x
+		vsub.f32 vfp_diff_y, vfp_point5_y, vfp_point4_y
+		vmul.f32 vfp_diff_x, vfp_diff_x, vfp_n
+		vmul.f32 vfp_diff_y, vfp_diff_y, vfp_n
+		vadd.f32 vfp_point7_x, vfp_point4_x, vfp_diff_x
+		vadd.f32 vfp_point7_y, vfp_point4_y, vfp_diff_y
 
-		vsub.f32 x_vdiff, x_vpoint6, x_vpoint5
-		vsub.f32 y_vdiff, y_vpoint6, y_vpoint5
-		vmul.f32 x_vdiff, x_vdiff, vn
-		vmul.f32 y_vdiff, y_vdiff, vn
-		vadd.f32 x_vpoint8, x_vpoint5, x_vdiff
-		vadd.f32 y_vpoint8, y_vpoint5, y_vdiff
+		vsub.f32 vfp_diff_x, vfp_point6_x, vfp_point5_x
+		vsub.f32 vfp_diff_y, vfp_point6_y, vfp_point5_y
+		vmul.f32 vfp_diff_x, vfp_diff_x, vfp_n
+		vmul.f32 vfp_diff_y, vfp_diff_y, vfp_n
+		vadd.f32 vfp_point8_x, vfp_point5_x, vfp_diff_x
+		vadd.f32 vfp_point8_y, vfp_point5_y, vfp_diff_y
 
-		vsub.f32 x_vdiff, x_vpoint8, x_vpoint7
-		vsub.f32 y_vdiff, y_vpoint8, y_vpoint7
-		vmul.f32 x_vdiff, x_vdiff, vn
-		vmul.f32 y_vdiff, y_vdiff, vn
-		vadd.f32 x_vpoint9, x_vpoint7, x_vdiff
-		vadd.f32 y_vpoint9, y_vpoint7, y_vdiff
+		vsub.f32 vfp_diff_x, vfp_point8_x, vfp_point7_x
+		vsub.f32 vfp_diff_y, vfp_point8_y, vfp_point7_y
+		vmul.f32 vfp_diff_x, vfp_diff_x, vfp_n
+		vmul.f32 vfp_diff_y, vfp_diff_y, vfp_n
+		vadd.f32 vfp_point9_x, vfp_point7_x, vfp_diff_x
+		vadd.f32 vfp_point9_y, vfp_point7_y, vfp_diff_y
 
-		vcvtr.s32.f32 x_vpoint9, x_vpoint9
-		vcvtr.s32.f32 y_vpoint9, y_vpoint9
-		vmov x_current, y_current, vpoint9
+		vcvtr.s32.f32 vfp_point9_x, vfp_point9_x
+		vcvtr.s32.f32 vfp_point9_y, vfp_point9_y
+		vmov x_current, y_current, vfp_point9
 
 		push {r0-r3,lr}                                     @ Equals to stmfd (stack pointer full, decrement order)
 		mov r3, char_width
@@ -1039,7 +1039,7 @@ draw32_bezier:
 		beq draw32_bezier_error
 
 		draw32_bezier_loop_common:
-			vadd.f32 vn, vn, delta_vn
+			vadd.f32 vfp_n, vfp_n, vfp_n_delta
 			b draw32_bezier_loop
 
 	draw32_bezier_error:
@@ -1067,42 +1067,42 @@ draw32_bezier:
 .unreq y_point3
 .unreq char_width
 .unreq char_height
-.unreq vpoint0
-.unreq x_vpoint0
-.unreq y_vpoint0
-.unreq vpoint1
-.unreq x_vpoint1
-.unreq y_vpoint1
-.unreq vpoint2
-.unreq x_vpoint2
-.unreq y_vpoint2
-.unreq vpoint3
-.unreq x_vpoint3
-.unreq y_vpoint3
-.unreq vpoint4
-.unreq x_vpoint4
-.unreq y_vpoint4
-.unreq vpoint5
-.unreq x_vpoint5
-.unreq y_vpoint5
-.unreq vpoint6
-.unreq x_vpoint6
-.unreq y_vpoint6
-.unreq vpoint7
-.unreq x_vpoint7
-.unreq y_vpoint7
-.unreq vpoint8
-.unreq x_vpoint8
-.unreq y_vpoint8
-.unreq vpoint9
-.unreq x_vpoint9
-.unreq y_vpoint9
-.unreq vdiff
-.unreq x_vdiff
-.unreq y_vdiff
-.unreq vn
-.unreq delta_vn
-.unreq vone
+.unreq vfp_point0
+.unreq vfp_point0_x
+.unreq vfp_point0_y
+.unreq vfp_point1
+.unreq vfp_point1_x
+.unreq vfp_point1_y
+.unreq vfp_point2
+.unreq vfp_point2_x
+.unreq vfp_point2_y
+.unreq vfp_point3
+.unreq vfp_point3_x
+.unreq vfp_point3_y
+.unreq vfp_point4
+.unreq vfp_point4_x
+.unreq vfp_point4_y
+.unreq vfp_point5
+.unreq vfp_point5_x
+.unreq vfp_point5_y
+.unreq vfp_point6
+.unreq vfp_point6_x
+.unreq vfp_point6_y
+.unreq vfp_point7
+.unreq vfp_point7_x
+.unreq vfp_point7_y
+.unreq vfp_point8
+.unreq vfp_point8_x
+.unreq vfp_point8_y
+.unreq vfp_point9
+.unreq vfp_point9_x
+.unreq vfp_point9_y
+.unreq vfp_diff
+.unreq vfp_diff_x
+.unreq vfp_diff_y
+.unreq vfp_n
+.unreq vfp_n_delta
+.unreq vfp_one
 
 
 /**
