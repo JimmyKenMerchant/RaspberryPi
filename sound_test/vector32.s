@@ -180,7 +180,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r12}
+	push {r0-r7}
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -201,15 +201,17 @@ os_fiq:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, os_fiq_gpio_toggle
+	ldrb r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, os_fiq_gpio_toggle
+	strb r1, os_fiq_gpio_toggle
 
-	cmp r1, #0
+	tst r1, #0b00000001
 	addeq r0, r0, #equ32_gpio_gpclr1
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+
+	macro32_dsb ip
 .endif
 
 	push {r0-r3,lr}
@@ -218,7 +220,7 @@ os_fiq:
 
 	macro32_dsb ip
 
-	pop {r0-r12}
+	pop {r0-r7}
 	mov pc, lr
 
 /**
