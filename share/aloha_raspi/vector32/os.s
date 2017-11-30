@@ -19,10 +19,10 @@ _os_start:
 	ldr pc, _os_irq_addr                      @ 0x18 SP 0x7800
 	ldr pc, _os_fiq_addr                      @ 0x1C SP 0x8000
 _os_reset_addr:                 .word _os_reset
-_os_undefined_instruction_addr: .word _os_reset
+_os_undefined_instruction_addr: .word _os_undefined_instruction
 _os_supervisor_addr:            .word _os_svc
-_os_prefetch_abort_addr:        .word _os_reset
-_os_data_abort_addr:            .word _os_reset
+_os_prefetch_abort_addr:        .word _os_prefetch_abort
+_os_data_abort_addr:            .word _os_data_abort
 _os_reserve_addr:               .word _os_reset
 _os_irq_addr:                   .word _os_irq
 _os_fiq_addr:                   .word _os_fiq
@@ -204,8 +204,19 @@ _os_reset:
 	macro32_dsb ip
 	macro32_isb ip                            @ Must Need When You Renew CPACR
 
-	mov r0, #0x40000000                       @ Enable NEON/VFP
+	vmrs r0, fpexc                            @ Floating-point Exception Control Register
+	orr r0, r0, #0x40000000                   @ Enable NEON/VFP
 	vmsr fpexc, r0
+
+	/**
+	 * Denormalized (Subnormalized) number on float-point makes Undefined Exception (Recognized on ARMv6).
+	 * To hide this in VFP, turn on flush-to-zero mode for output operand (FPSCR FZ Bit[24]),
+	 * and turn on IDC Flag for input operand (FPSCR IDC Bit[7]). ID means Input Denormal.
+	 * If IDE Bit[15] is set, the exception occurs. 
+	 */
+	vmrs r0, fpscr                            @ Floating-point Status and Control Register
+	orr r0, r0, #0x01000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible)
+	vmsr fpscr, r0
 
 	mov r0, #equ32_user_mode                  @ Enable FIQ, IRQ, and Abort
 	msr cpsr_c, r0
@@ -227,6 +238,13 @@ _os_reset:
 	mov sp, r0                               @ Retrieve SP
 	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
+
+
+_os_undefined_instruction:
+	macro32_debug lr, 0, 0
+	_os_undefined_instruction_loop:
+		b _os_undefined_instruction_loop
+
 
 _os_svc:
 	push {lr}                                @ Push fp and lr
@@ -300,6 +318,19 @@ _os_svc:
 	_os_svc_common:
 		pop {lr}                         @ Pop lr
 		movs pc, lr
+
+
+_os_prefetch_abort:
+	macro32_debug lr, 0, 240
+	_os_prefetch_abort_loop:
+		b _os_prefetch_abort_loop
+
+
+_os_data_abort:
+	macro32_debug lr, 240, 240
+	_os_data_abort_loop:
+		b _os_data_abort_loop
+
 
 _os_irq:
 	/*cpsid i*/                                  @ Disable IRQ(i) Automatically (IRQ Will be Disabled on Every Exceptions)

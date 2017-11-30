@@ -78,10 +78,16 @@ os_reset:
 .endif
 */
 
+	/**
+	 * Use ACT LED only in debugging to reduce noise.  
+	 */
+
+
 .ifndef __RASPI3B
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 47
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
 .endif
+
 
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
@@ -174,7 +180,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r12}
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -192,22 +198,18 @@ os_fiq:
 	macro32_dsb ip
 
 .ifndef __RASPI3B
-	/* Blinker */
-
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldrb r1, os_fiq_gpio_toggle
+	ldr r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	strb r1, os_fiq_gpio_toggle
+	str r1, os_fiq_gpio_toggle
 
-	tst r1, #0b00000001
+	cmp r1, #0
 	addeq r0, r0, #equ32_gpio_gpclr1
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
-
-	macro32_dsb ip
 .endif
 
 	push {r0-r3,lr}
@@ -216,16 +218,17 @@ os_fiq:
 
 	macro32_dsb ip
 
-	pop {r0-r7}
+	pop {r0-r12}
 	mov pc, lr
 
 /**
  * Variables
  */
-os_fiq_gpio_toggle:       .byte 0b00000000
+.balign 4
+os_fiq_gpio_toggle: .byte 0b00000000
 .balign 4
 _string_hello:
-	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
 string_hello:
 	.word _string_hello
