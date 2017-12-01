@@ -606,6 +606,86 @@ arm32_convert_endianness:
 .unreq j
 
 
+.globl ARM32_STOPWATCH_LOW
+.globl ARM32_STOPWATCH_HIGH
+ARM32_STOPWATCH_LOW:  .word 0x00
+ARM32_STOPWATCH_HIGH: .word 0x00
+
+
+/**
+ * function arm32_stopwatch_start
+ * Start of Stop Watch
+ */
+.globl arm32_stopwatch_start
+arm32_stopwatch_start:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base .req r0
+	count_low      .req r1
+	count_high     .req r2
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+
+	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
+	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+
+	macro32_dsb ip
+
+	str count_low, ARM32_STOPWATCH_LOW
+	str count_high, ARM32_STOPWATCH_HIGH
+
+	arm32_stopwatch_start_common:
+		mov pc, lr
+
+.unreq memorymap_base
+.unreq count_low
+.unreq count_high
+
+
+/**
+ * function arm32_stopwatch_end
+ * End of Stopwatch
+ *
+ * Return: r0 (Lower 32 Bits of Count Time)
+ */
+.globl arm32_stopwatch_end
+arm32_stopwatch_end:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base .req r0
+	count_low      .req r1
+	count_high     .req r2
+	time_low       .req r3
+	time_high      .req ip @ r12
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+
+	ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ In Case of Interrupt, Load Lower Bits First
+	ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
+
+	ldr count_low, ARM32_STOPWATCH_LOW                                 @ Get Lower 32 Bits
+	ldr count_high, ARM32_STOPWATCH_HIGH                               @ Get Higher 32 Bits
+
+	subs time_low, time_low, count_low                                 @ Subtract with Changing Status Flags
+	sbc time_high, time_high, count_high                               @ Subtract with Carry Flag
+
+	macro32_dsb ip
+
+	str time_low, ARM32_STOPWATCH_LOW
+	str time_high, ARM32_STOPWATCH_HIGH
+
+	mov r0, time_low
+
+	arm32_stopwatch_end_common:
+		mov pc, lr
+
+.unreq memorymap_base
+.unreq count_low
+.unreq count_high
+.unreq time_low
+.unreq time_high
+
+
 /**
  * function arm32_sleep
  * Sleep in Micro Seconds

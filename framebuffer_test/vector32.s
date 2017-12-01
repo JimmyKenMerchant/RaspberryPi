@@ -90,25 +90,34 @@ os_irq:
 os_fiq:
 	push {r0-r7}
 
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	macro32_dsb ip
+
 .ifndef __RASPI3B
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, os_fiq_gpio_toggle
+	ldrb r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, os_fiq_gpio_toggle
+	strb r1, os_fiq_gpio_toggle
 
 	cmp r1, #0
 	addeq r0, r0, #equ32_gpio_gpclr1
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+
+	macro32_dsb ip
 .endif
 
 	/*
@@ -145,11 +154,15 @@ os_fiq:
 	str r1, timer_main
 
 	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
+
+	macro32_dsb ip
 	*/
 
 	push {lr}
         bl framebuffer_test_fiqhandler
 	pop {lr}
+
+	macro32_dsb ip
 
 	pop {r0-r7}
 	mov pc, lr

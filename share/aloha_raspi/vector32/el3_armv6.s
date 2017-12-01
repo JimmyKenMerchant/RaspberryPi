@@ -17,13 +17,13 @@
 	_el3_reserve2: .word 0x00
 	ldr pc, _el3_irq_addr                      @ 0x18 IRQ mode (MVBAR), if Set on Secure Configuration Register (SCR)
 	ldr pc, _el3_fiq_addr                      @ 0x1C FIQ mode (MVBAR), if Set on Secure Configuration Register (SCR)
-_el3_monitor_addr:               .word _el3_mon
-_el3_prefetch_abort_addr:        .word _el01_reset
-_el3_data_abort_addr:            .word _el01_reset
-_el3_irq_addr:                   .word _el01_reset
-_el3_fiq_addr:                   .word _el01_reset
+_el3_monitor_addr:               .word _el3_monitor
+_el3_prefetch_abort_addr:        .word _el3_prefetch_abort
+_el3_data_abort_addr:            .word _el3_data_abort
+_el3_irq_addr:                   .word _el3_irq
+_el3_fiq_addr:                   .word _el3_fiq
 
-_el3_mon:
+_el3_monitor:
 
 	mov sp, #0x6000
 
@@ -74,3 +74,23 @@ _el3_mon:
 	 */
 
 	movs pc, lr                               @ Return to SVC Mode
+
+
+_el3_prefetch_abort:
+	_el3_prefetch_abort_loop:
+		b _el3_prefetch_abort_loop
+	subs pc, lr, #4
+
+
+_el3_data_abort:
+	_el3_data_abort_loop:
+		b _el3_data_abort_loop
+	subs pc, lr, #8
+
+
+_el3_irq:
+	subs pc, lr, #4
+
+
+_el3_fiq:
+	subs pc, lr, #4

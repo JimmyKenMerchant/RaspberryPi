@@ -44,6 +44,7 @@ void _user_start()
 	_set_doublebuffer( renderbuffer[0], renderbuffer[1] );
 
 	while(1) {
+		_stopwatch_start();
 		fb32_clear_color( COLOR32_NAVYBLUE );
 
 		start_sec = vfp32_fmul( os_fiq_sec, delta_sec );
@@ -92,6 +93,9 @@ void _user_start()
 			12
 		);
 		draw32_bezier( COLOR32_YELLOW, 335, 400, 335, 500, 455, 500, 455, 400, 10, 10 );
+		uint32 time = _stopwatch_end();
+		String num_string = math32_int32_to_string_deci( time, 0, 0 );
+		print32_string( num_string, 0, 0, COLOR32_YELLOW, COLOR32_BLUE, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII );
 		_flush_doublebuffer();
 		_sleep( 100000 );
 	}

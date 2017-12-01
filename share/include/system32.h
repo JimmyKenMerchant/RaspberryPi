@@ -120,7 +120,14 @@ bool _gpio_detect( uchar8 gpio_number );
  * system32/arm/arm32.s
  ********************************/
 
+extern uint32 ARM32_STOPWATCH_LOW;
+extern uint32 ARM32_STOPWATCH_HIGH;
+
 /* Relative System Calls  */
+
+__attribute__((noinline)) void _stopwatch_start();
+
+__attribute__((noinline)) uint32 _stopwatch_end();
 
 __attribute__((noinline)) void _sleep( uint32 u_seconds );
 

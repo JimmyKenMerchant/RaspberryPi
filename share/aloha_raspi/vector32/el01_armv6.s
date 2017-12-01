@@ -20,13 +20,13 @@ _start:
 	ldr pc, _el01_irq_addr                      @ 0x18 IRQ mode (SP, LR, SPSR) `SUBS PC, LR, #4`
 	ldr pc, _el01_fiq_addr                      @ 0x1C FIQ mode (SP, LR, SPSR) `SUBS PC, LR, #4`
 _el01_reset_addr:                 .word _el01_reset
-_el01_undefined_instruction_addr: .word _el01_reset
+_el01_undefined_instruction_addr: .word _el01_undefined_instruction
 _el01_supervisor_addr:            .word _el01_svc
-_el01_prefetch_abort_addr:        .word _el01_reset
-_el01_data_abort_addr:            .word _el01_reset
+_el01_prefetch_abort_addr:        .word _el01_prefetch_abort
+_el01_data_abort_addr:            .word _el01_data_abort
 _el01_reserve_addr:               .word _el01_reset
-_el01_irq_addr:                   .word _el01_reset
-_el01_fiq_addr:                   .word _el01_reset
+_el01_irq_addr:                   .word _el01_irq
+_el01_fiq_addr:                   .word _el01_fiq
 
 /* From Secure State SVC mode (EL1 Secure state) */
 _el01_reset:
@@ -44,6 +44,32 @@ _el01_reset:
 	_el01_reset_loop:
 		b _el01_reset_loop
 
-_el01_svc:
 
+_el01_undefined_instruction:
+	_el01_undefined_instruction_loop:
+		b _el01_undefined_instruction_loop
 	movs pc, lr
+
+
+_el01_svc:
+	movs pc, lr
+
+
+_el01_prefetch_abort:
+	_el01_prefetch_abort_loop:
+		b _el01_prefetch_abort_loop
+	subs pc, lr, #4
+
+
+_el01_data_abort:
+	_el01_data_abort_loop:
+		b _el01_data_abort_loop
+	subs pc, lr, #8
+
+
+_el01_irq:
+	subs pc, lr, #4
+
+
+_el01_fiq:
+	subs pc, lr, #4
