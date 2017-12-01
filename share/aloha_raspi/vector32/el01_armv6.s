@@ -16,7 +16,7 @@ _start:
 	ldr pc, _el01_supervisor_addr               @ 0x08 Supervisor mode by `SVC` (SP, LR, SPSR) `MOVS PC, LR`
 	ldr pc, _el01_prefetch_abort_addr           @ 0x0C Abort mode (SP, LR, SPSR) `SUBS PC, LR, #4`
 	ldr pc, _el01_data_abort_addr               @ 0x10 Abort mode (SP, LR, SPSR) `SUBS PC, LR, #8`
-	ldr pc, _el01_reserve_addr
+	_el01_reserve0: .word 0x00
 	ldr pc, _el01_irq_addr                      @ 0x18 IRQ mode (SP, LR, SPSR) `SUBS PC, LR, #4`
 	ldr pc, _el01_fiq_addr                      @ 0x1C FIQ mode (SP, LR, SPSR) `SUBS PC, LR, #4`
 _el01_reset_addr:                 .word _el01_reset
@@ -24,7 +24,6 @@ _el01_undefined_instruction_addr: .word _el01_undefined_instruction
 _el01_supervisor_addr:            .word _el01_svc
 _el01_prefetch_abort_addr:        .word _el01_prefetch_abort
 _el01_data_abort_addr:            .word _el01_data_abort
-_el01_reserve_addr:               .word _el01_reset
 _el01_irq_addr:                   .word _el01_irq
 _el01_fiq_addr:                   .word _el01_fiq
 
