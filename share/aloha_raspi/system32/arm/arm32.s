@@ -655,7 +655,9 @@ arm32_stopwatch_end:
 	count_low      .req r1
 	count_high     .req r2
 	time_low       .req r3
-	time_high      .req ip @ r12
+	time_high      .req r4
+
+	push {r4}
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
@@ -677,6 +679,7 @@ arm32_stopwatch_end:
 	mov r0, time_low
 
 	arm32_stopwatch_end_common:
+		pop {r4}
 		mov pc, lr
 
 .unreq memorymap_base

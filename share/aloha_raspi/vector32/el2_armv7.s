@@ -29,6 +29,7 @@ _el2_fiq_addr:                   .word _el2_fiq
 /**
  * Exceptions from Hyp mode stay Hyp mode.
  * To prevent to overwrite elr_hyp and spsr_hyp, store both to the stack.
+ * If you call `HVC` in Hyp mode, it will be translated to `SVC`.
  */
 
 _el2_undefined_instruction:

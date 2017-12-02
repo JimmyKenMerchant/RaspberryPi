@@ -28,6 +28,8 @@ void _user_start()
 	float32 delta_min = vfp32_fdiv( -360.0, 60 );
 	float32 delta_hour = vfp32_fdiv( -360.0, 12 );
 
+	uint32 time = 0;
+
 	ObjArray renderbuffer = (ObjArray)heap32_malloc( 2 );
 
 	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
@@ -44,8 +46,11 @@ void _user_start()
 	_set_doublebuffer( renderbuffer[0], renderbuffer[1] );
 
 	while(1) {
+		String num_string = math32_int32_to_string_deci( time, 0, 0 );
 		_stopwatch_start();
 		fb32_clear_color( COLOR32_NAVYBLUE );
+
+		print32_string( num_string, 0, 0, COLOR32_YELLOW, COLOR32_BLUE, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII );
 
 		start_sec = vfp32_fmul( os_fiq_sec, delta_sec );
 		start_sec = vfp32_fadd( start_sec, 90.0 );
@@ -93,10 +98,11 @@ void _user_start()
 			12
 		);
 		draw32_bezier( COLOR32_YELLOW, 335, 400, 335, 500, 455, 500, 455, 400, 10, 10 );
-		uint32 time = _stopwatch_end();
-		String num_string = math32_int32_to_string_deci( time, 0, 0 );
-		print32_string( num_string, 0, 0, COLOR32_YELLOW, COLOR32_BLUE, print32_strlen( num_string ), 8, 12, FONT_MONO_12PX_ASCII );
 		_flush_doublebuffer();
+
+		heap32_mfree( (obj)num_string );
+		time = _stopwatch_end();
+
 		_sleep( 100000 );
 	}
 }
