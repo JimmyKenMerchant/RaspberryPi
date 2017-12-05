@@ -40,7 +40,7 @@
 
 * Typically, sound outputs made of coils. The coil generate electric surge that breaks your Raspberry Pi. To hide this, there are some solutions. Please search.
 
-**Draft of Description about "DMA Transfer to PWM" **
+**Draft of Description about "DMA Transfer to PWM"**
 
 * We should NOT use DMA with cached region for Control Block (CB) and Source/Destination. Because DMA is not CPU which is made for using with any cache to have quick speed. Note that DMA is a peripheral block which is made for using with physical main memory. This means we may need of any cache operation to Point of Coherency (PoC) to ensure that intended data is stored in physical main memory.
 

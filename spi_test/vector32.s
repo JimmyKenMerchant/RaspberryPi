@@ -81,6 +81,31 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	/* Obtain Framebuffer from VideoCore IV */
+
+	mov r0, #spi_test_fiqhandler_display_width
+	ldr r1, ADDR32_BCM32_DISPLAY_WIDTH
+	str r0, [r1]
+
+	macro32_clean_cache r1, ip
+
+	mov r0, #spi_test_fiqhandler_display_width
+	ldr r1, ADDR32_BCM32_WIDTH
+	str r0, [r1]
+
+	macro32_clean_cache r1, ip
+
+	mov r0, #spi_test_fiqhandler_display_height
+	ldr r1, ADDR32_BCM32_DISPLAY_HEIGHT
+	str r0, [r1]
+
+	macro32_clean_cache r1, ip
+
+	mov r0, #spi_test_fiqhandler_display_height
+	ldr r1, ADDR32_BCM32_HEIGHT
+	str r0, [r1]
+
+	macro32_clean_cache r1, ip
+
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
@@ -155,9 +180,11 @@ spi_test_fiqhandler:
 	previous     .req r2
 	horizon_next .req r3
 	current      .req r4
-	xcount       .req r5
+	resolution   .req r5
+	xcount       .req r6
+	xdivision    .req r7
 
-	push {r4-r5,lr}
+	push {r4-r7,lr}
 
 	/* Get Data from MCP3002 AD Converter */
 	bl spi32_spirx                        @ Return Data to r0
@@ -165,24 +192,28 @@ spi_test_fiqhandler:
 
 	lsr current, current, #16             @ Get Only Higher 16-bit
 
-	/* Convert 10-bit (0x3FF) to 9-bit (0x1FF) */
-	lsr current, current, #1              @ Substitute of Division by 2
+	/* Convert 10-bit (0x3FF) to 8-bit (0xFF) in Default */
+	lsr current, current, #2              @ Substitute of Division by 4
 
 	/* Reverse Value for Drawing Line with This Value as Height */
-	mov temp, #0x100                      @ 0x1FF
-	add temp, temp, #0x0FF
+	mov temp, #0xFF
 	and current, current, temp
 	sub current, current, temp
 	mvn current, current                  @ Logical Not to Convert Minus to Plus
 	add current, current, #1              @ Add 1 to Convert Minus to Plus
 	and current, current, temp
+	add current, current, #spi_test_fiqhandler_ystart
 	
 	ldr previous, spi_test_fiqhandler_previous
 	ldr horizon, spi_test_fiqhandler_horizon
+	ldr resolution, spi_test_fiqhandler_resolution
 	ldr xcount, spi_test_fiqhandler_xcount
+	ldr xdivision, spi_test_fiqhandler_xdivision
+
+	macro32_dsb ip
 
 	add xcount, xcount, #1
-	cmp xcount, #spi_test_fiqhandler_xdivision
+	cmp xcount, xdivision
 	blo spi_test_fiqhandler_common
 
 	mov xcount, #0
@@ -190,29 +221,32 @@ spi_test_fiqhandler:
 /*macro32_debug current, 200, 200*/
 /*macro32_debug previous, 200, 212*/
 
-	add horizon_next, horizon, #spi_test_fiqhandler_resolution
+	add horizon_next, horizon, resolution
 
 /*macro32_debug horizon, 200, 224*/
 
 	push {r0-r3}
-	mov r0, #equ32_bcm32_height
+	mov r0, #0xFF
+	add r0, r0, #1                @ draw32_line draws the end of the point inclusively
 	push {r0}
 	ldr r0, ADDR32_COLOR32_BLUE
 	ldr r0, [r0]
 	mov r1, horizon
-	mov r2, #0
-	mov r3, #spi_test_fiqhandler_resolution
+	mov r2, #spi_test_fiqhandler_ystart
+	mov r3, resolution
 	bl fb32_block_color
 	add sp, sp, #4
 	pop {r0-r3}
+
+	macro32_dsb ip
 
 	push {r0-r4}
 	ldr r0, ADDR32_COLOR32_YELLOW
 	ldr r0, [r0]                  @ Color (16-bit or 32-bit)
 	mov r1, horizon               @ X Coordinate1
 	mov r2, previous              @ Y Coordinate1
-	sub r3, horizon_next, #1      @ X Coordinate2
-	mov r4, current               @ Y Coordinate2
+	sub r3, horizon_next, #1      @ X Coordinate2, draw32_line draws the end of the point inclusively
+	mov r4, current               @ Y Coordinate2, draw32_line draws the end of the point inclusively
 	mov r5, #1                    @ Point Width in Pixels
 	mov r6, #1                    @ Point Height in Pixels
 	push {r4-r6}
@@ -220,8 +254,12 @@ spi_test_fiqhandler:
 	add sp, sp, #12
 	pop {r0-r4}  
 
-	cmp horizon_next, #equ32_bcm32_width
-	movhs horizon_next, #0
+	mov temp, #spi_test_fiqhandler_xend_upper
+	add temp, temp, #spi_test_fiqhandler_xend_lower
+	cmp horizon_next, temp
+	movhs horizon_next, #spi_test_fiqhandler_xstart
+
+	macro32_dsb ip
 
 	str current, spi_test_fiqhandler_previous
 	str horizon_next, spi_test_fiqhandler_horizon
@@ -232,25 +270,47 @@ spi_test_fiqhandler:
 		/* Command to MCP3002 AD Converter */
 		mov r0, #0b11<<equ32_spi0_cs_clear
 		mov r1, #0b01100000<<24
-		/*mov r2, #200*/                      @ 240Mhz/200, 1.2Mhz
 		mov r2, #100                      @ 240Mhz/100, 2.4Mhz
 		/*mov r2, #80*/                       @ 240Mhz/80, 3Mhz
 		bl spi32_spitx
 
-		pop {r4-r5,pc}
+		pop {r4-r7,pc}
 
 .unreq temp
 .unreq horizon
 .unreq previous
 .unreq horizon_next
 .unreq current
+.unreq resolution
 .unreq xcount
+.unreq xdivision
 
-spi_test_fiqhandler_previous:  .word 0x00
-spi_test_fiqhandler_horizon:   .word 0x00
-spi_test_fiqhandler_xcount:    .word 0x00
-.equ spi_test_fiqhandler_resolution, 10
-.equ spi_test_fiqhandler_xdivision,  10
+spi_test_fiqhandler_previous:      .word spi_test_fiqhandler_ystart
+spi_test_fiqhandler_horizon:       .word spi_test_fiqhandler_xstart
+spi_test_fiqhandler_xcount:        .word 0x00
+
+/**
+ * Increasing resolution makes faster horizontal sync. This causes incorrect displaying.
+ * In contrast, increasing xdivision makes slower horizontal sync.
+ * Duration of each horizontal sync seems to be needed at least 80 milliseconds.
+ */
+.globl spi_test_fiqhandler_resolution
+.globl spi_test_fiqhandler_xdivision
+spi_test_fiqhandler_resolution:    .word 1       @ Shorten Seconds in Width of Display
+spi_test_fiqhandler_xdivision:     .word 4       @ Lengthen Seconds in Width of Display
+
+.equ spi_test_fiqhandler_display_width,  0x460  @ Decimal 1120, Multiplies of 8 Seems to Be Preferred
+.equ spi_test_fiqhandler_display_height, 0x280  @ Decimal 640, Multiplies of 8 Seems to Be Preferred
+
+/**
+ * Adjust Width to Fit to 20 Milliseconds per Horizontal Trace (If Resolution Is 1 and X Division Is 1).
+ * 1 Second Divided by 50Khz Equals 20 Micro Seconds.
+ * 20 Micro Seconds Multiplied by 1000 Equals 20 Milliseconds.
+ */
+.equ spi_test_fiqhandler_xstart,         60
+.equ spi_test_fiqhandler_xend_upper,     0x3E0  @ Decimal 1000
+.equ spi_test_fiqhandler_xend_lower,     0x008
+.equ spi_test_fiqhandler_ystart,         100 
 
 /**
  * Variables
