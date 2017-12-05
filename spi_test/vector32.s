@@ -41,8 +41,8 @@ os_reset:
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r1, #0x0000                           @ High 1 Byte of decimal 1 (2 - 1), 16 bits counter on default
+	add r1, r1, #0x01                         @ Low 1 Byte of decimal 1, 16 bits counter on default
 	str r1, [r0, #equ32_armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes
@@ -50,12 +50,13 @@ os_reset:
 	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
 	str r1, [r0, #equ32_armtimer_control]
 
-	/* So We can get a 10hz Timer Interrupt (100000/10000) */
+	/* So We can get a 50Khz Timer Interrupt (100000/2) */
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
+	/* Use ACT LED Only in Debugging to Reduce Noise */
 .ifndef __RASPI3B
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7
@@ -106,28 +107,41 @@ os_irq:
 os_fiq:
 	push {r0-r7,lr}
 
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	macro32_dsb ip
+
+/*
 .ifndef __RASPI3B
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, os_fiq_gpio_toggle
+	ldrb r1, os_fiq_gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, os_fiq_gpio_toggle
+	strb r1, os_fiq_gpio_toggle
 
 	cmp r1, #0
 	addeq r0, r0, #equ32_gpio_gpclr1
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+
+	macro32_dsb ip
 .endif
+*/
 
 	bl spi_test_fiqhandler
+
+	macro32_dsb ip
 
 	pop {r0-r7,pc}
 
@@ -141,10 +155,11 @@ spi_test_fiqhandler:
 	previous     .req r2
 	horizon_next .req r3
 	current      .req r4
-	resolution   .req r5
+	xcount       .req r5
 
 	push {r4-r5,lr}
 
+	/* Get Data from MCP3002 AD Converter */
 	bl spi32_spirx                        @ Return Data to r0
 	mov current, r0
 
@@ -164,19 +179,20 @@ spi_test_fiqhandler:
 	
 	ldr previous, spi_test_fiqhandler_previous
 	ldr horizon, spi_test_fiqhandler_horizon
-	ldr resolution, spi_test_fiqhandler_resolution
-	str current, spi_test_fiqhandler_previous
+	ldr xcount, spi_test_fiqhandler_xcount
 
-macro32_debug current, 200, 200
-macro32_debug previous, 200, 212
+	add xcount, xcount, #1
+	cmp xcount, #spi_test_fiqhandler_xdivision
+	blo spi_test_fiqhandler_common
 
-	add horizon_next, horizon, resolution
-	cmp horizon_next, #equ32_bcm32_width
-	movhs horizon_next, #0
+	mov xcount, #0
 
-	str horizon_next, spi_test_fiqhandler_horizon
+/*macro32_debug current, 200, 200*/
+/*macro32_debug previous, 200, 212*/
 
-macro32_debug horizon, 200, 224
+	add horizon_next, horizon, #spi_test_fiqhandler_resolution
+
+/*macro32_debug horizon, 200, 224*/
 
 	push {r0-r3}
 	mov r0, #equ32_bcm32_height
@@ -185,7 +201,7 @@ macro32_debug horizon, 200, 224
 	ldr r0, [r0]
 	mov r1, horizon
 	mov r2, #0
-	mov r3, resolution
+	mov r3, #spi_test_fiqhandler_resolution
 	bl fb32_block_color
 	add sp, sp, #4
 	pop {r0-r3}
@@ -204,25 +220,37 @@ macro32_debug horizon, 200, 224
 	add sp, sp, #12
 	pop {r0-r4}  
 
-	mov r0, #0b11<<equ32_spi0_cs_clear
-	mov r1, #0b01100000<<24
-	/*mov r2, #80*/                        @ 240Mhz/80, 3Mhz
-	mov r2, #200
-	bl spi32_spitx
+	cmp horizon_next, #equ32_bcm32_width
+	movhs horizon_next, #0
 
-	pop {r4-r5,pc}
+	str current, spi_test_fiqhandler_previous
+	str horizon_next, spi_test_fiqhandler_horizon
+
+	spi_test_fiqhandler_common:
+		str xcount, spi_test_fiqhandler_xcount
+
+		/* Command to MCP3002 AD Converter */
+		mov r0, #0b11<<equ32_spi0_cs_clear
+		mov r1, #0b01100000<<24
+		/*mov r2, #200*/                      @ 240Mhz/200, 1.2Mhz
+		mov r2, #100                      @ 240Mhz/100, 2.4Mhz
+		/*mov r2, #80*/                       @ 240Mhz/80, 3Mhz
+		bl spi32_spitx
+
+		pop {r4-r5,pc}
 
 .unreq temp
 .unreq horizon
 .unreq previous
 .unreq horizon_next
 .unreq current
-.unreq resolution
+.unreq xcount
 
-spi_test_fiqhandler_previous:    .word 0x00
-spi_test_fiqhandler_horizon:     .word 0x00
-spi_test_fiqhandler_resolution:  .word 0x01
-
+spi_test_fiqhandler_previous:  .word 0x00
+spi_test_fiqhandler_horizon:   .word 0x00
+spi_test_fiqhandler_xcount:    .word 0x00
+.equ spi_test_fiqhandler_resolution, 10
+.equ spi_test_fiqhandler_xdivision,  10
 
 /**
  * Variables

@@ -12,7 +12,7 @@
 
 * GPIO 8 as SPI0 CE0 (Chip Enable 0)
 
-* GPIO 9 as SPI0 MISO
+* GPIO 9 as SPI0 MISO: Make sure to take care of input voltage, up to 3.3 volts. 
 
 * GPIO 10 as SPI0 MOSI
 
@@ -22,10 +22,12 @@
 
 * HDMI as VIDEO Output
 
+## GPIO PINS ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+
 **Compatibility**
 
 Under Construction
 
 **Hardware**
 
-Under Construction
+* MCP3002-I/P: Check out the Data sheet.
