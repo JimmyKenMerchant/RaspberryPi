@@ -30,6 +30,8 @@
  * 7. HUB seems to be needed to have the duration before transactions.
  */
 
+
+
 /**
  * function usb2032_hub_activate
  * Search and Activate Hub
@@ -58,7 +60,7 @@ usb2032_hub_activate:
 
 	push {r0-r3,lr}
 	mov r0, #1000
-	bl arm32_sleep                  @ For HUB
+	bl arm32_sleep                     @ For HUB
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
@@ -91,7 +93,7 @@ usb2032_hub_activate:
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_req]
 	mov temp, #equ32_usb20_index_device                          @ wIndex
-	orr temp, temp, #64<<16                                      @ wLength
+	orr temp, temp, #18<<16                                      @ wLength
 	str temp, [buffer_req, #4]
 
 	/*
@@ -150,7 +152,7 @@ macro32_debug temp 500 300
 
 	orr character, character, #1<<15              @ In(1)/Out(0)
 
-	mov transfer_size, #0x8                       @ Transfer Size is 8 Bytes
+	mov transfer_size, #18                        @ Transfer Size is 18 Bytes
 	orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
 	orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
@@ -171,7 +173,7 @@ macro32_debug temp 500 324
 
 	bic character, character, #1<<15              @ In(1)/Out(0)
 
-	mov transfer_size, #0                         @ Transfer Size is 8 Bytes
+	mov transfer_size, #0                         @ Transfer Size is 0 Bytes
 	orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
 	orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1 (Status Stage is Always DATA1)
 
@@ -209,6 +211,166 @@ macro32_debug temp 500 324
 .unreq buffer_res
 .unreq split_ctl
 .unreq response
+.unreq temp
+
+
+/**
+ * function usb2032_communication
+ * Communicate with USB Device or Others
+ *
+ * Parameters
+ * r0: Channel 0-15
+ * 
+ * r1: Characteristics (Virtual Register), Reserved Bits expects SBZ (Zeros)
+ *   r1 Bit[10:0]: Maximum Packet Size (in Low Speed, Fixed to 8 bytes)
+ *   r1 Bit[14:11]: Endpoint Number
+ *   r1 Bit[15]: Endpoint Direction, 0 Out, 1, In
+ *   r1 Bit[17:16]: Endpoint Type, 0 Control, 1 Isochronous, 2 Bulk, 3 Interrupt
+ *   r1 Bit[24:18]: Device Address
+ *   r1 Bit[25]: Full and High Speed(0)/Low Speed(1)
+ *   r1 Bit[26]: Even(0)/Odd(1) Frame in Periodic Transactions
+ *
+ * r2: Transfer Size (Virtual Register), Reserved Bits expects SBZ (Zeros)
+ *   r2 Bit[18:0]: Transfer Size
+ *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
+ *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
+ *
+ * r3: Request Buffer
+ *
+ * r4: Channel N Split Control (Virtual Register), Reserved Bits expects SBZ (Zeros)
+ *   r4 Bit[6:0]: Port Address
+ *   r4 Bit[13:7]: Hub Address
+ *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All
+ *   r4 Bit[16]: Complete Split
+ *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
+ *
+ * r5: Receive Buffer
+ *
+ * Return: r0 (0 as success, -1 and -2 as error)
+ * Error(-1): Failure of Communication
+ * Error(-2): Not Activated
+ */
+.globl usb2032_communication
+usb2032_communication:
+	/* Auto (Local) Variables, but just Aliases */
+	channel            .req r0
+	character          .req r1
+	transfer_size      .req r2
+	buffer_rq          .req r3
+	split_ctl          .req r4
+	buffer_rx          .req r5
+	response           .req r6
+	timeout            .req r7
+	temp               .req r8
+
+	push {r4-r8,lr}
+
+	ldr temp, USB2032_STATUS
+	tst temp, #0x1
+	beq usb2032_communication_error2
+
+	/* Setup Stage  */
+
+	mov timeout, #equ32_usb2032_timeout
+	usb2032_communication_setup:
+
+		cmp timeout, #0
+		ble usb2032_communication_error1
+
+		push {r0-r3}
+		bic character, character, #0<<15              @ Out(0)
+		mov transfer_size, #8                         @ Transfer Size is 8 Bytes
+		orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
+		orr transfer_size, transfer_size, #0x60000000 @ Data Type is Setup
+		push {split_ctl}
+		bl usb2032_transaction
+		add sp, sp, #4
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		sub timeout, timeout, #1
+
+		tst response, #0x4                            @ ACK
+		beq usb2032_communication_setup
+
+macro32_debug response 500 288
+macro32_debug temp 500 300
+
+	/* Data Stage */
+
+	mov timeout, #equ32_usb2032_timeout
+	usb2032_communication_data:
+
+		cmp timeout, #0
+		ble usb2032_communication_error1
+
+		push {r0-r3}
+		mov r3, buffer_rx
+		push {split_ctl}
+		bl usb2032_transaction
+		add sp, sp, #4
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		sub timeout, timeout, #1
+
+		tst response, #0x4                            @ ACK
+		beq usb2032_communication_data
+
+macro32_debug response 500 312
+macro32_debug temp 500 324
+
+	/* Status Stage */
+
+	mov timeout, #equ32_usb2032_timeout
+	usb2032_communication_status:
+
+		cmp timeout, #0
+		ble usb2032_communication_error1
+
+		push {r0-r3}
+		bic character, character, #1<<15              @ In(1)/Out(0)
+		mov transfer_size, #0                         @ Transfer Size is 0 Bytes
+		orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
+		orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1 (Status Stage is Always DATA1)
+		push {split_ctl}
+		bl usb2032_transaction
+		add sp, sp, #4
+		mov response, r0
+		pop {r0-r3}
+
+		sub timeout, timeout, #1
+
+		tst response, #0x4                            @ ACK
+		beq usb2032_communication_status
+
+		b usb2032_communication_success
+
+	usb2032_communication_error1:
+		mov r0, #1
+		b usb2032_communication_common
+
+	usb2032_communication_error2:
+		mov r0, #2
+		b usb2032_communication_common
+
+	usb2032_communication_success:
+		mov r0, #0
+
+	usb2032_communication_common:
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {r4-r8,pc}
+
+.unreq channel
+.unreq character
+.unreq transfer_size
+.unreq buffer_rq
+.unreq split_ctl
+.unreq buffer_rx
+.unreq response
+.unreq timeout
 .unreq temp
 
 
@@ -268,7 +430,7 @@ usb2032_transaction:
 	response           .req r8
 	transfer_size_last .req r9
 
-	push {r4-r9}
+	push {r4-r9,lr}
 
 	add sp, sp, #24                                                        @ r4-r8 offset 16 bytes
 	pop {split_ctl}                                                        @ Get Fifth Argument
@@ -278,37 +440,37 @@ usb2032_transaction:
 	ldr exe_sender, USB2032_SENDER
 	ldr exe_receiver, USB2032_RECEIVER
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, buffer
 	mov r1, #1                                @ Clean
 	bl arm32_cache_operation_heap
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	push {split_ctl}
 	blx exe_setter
 	add sp, sp, #4
 	cmp r0, #1
-	pop {r0-r3,lr}
+	pop {r0-r3}
 	beq usb2032_transaction_error2
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	blx exe_sender
 	cmp r0, #1
-	pop {r0-r3,lr}
+	pop {r0-r3}
 	beq usb2032_transaction_error2
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	blx exe_receiver
 	mov response, r0
 	mov transfer_size_last, r1
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, buffer
 	mov r1, #0                                @ Invalidate
 	bl arm32_cache_operation_heap
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	b usb2032_transaction_success
 
@@ -323,8 +485,7 @@ usb2032_transaction:
 
 	usb2032_transaction_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r9}
-		mov pc, lr
+		pop {r4-r9,pc}
 
 .unreq channel
 .unreq character
@@ -844,6 +1005,10 @@ usb2032_otg_host_reset_bcm:
 
 			ldr temp, usb2032_otg_host_receiver_addr
 			str temp, USB2032_RECEIVER
+	
+			ldr temp, USB2032_STATUS
+			orr temp, temp, #0x1
+			str temp, USB2032_STATUS
 
 		b usb2032_otg_host_reset_bcm_success
 
@@ -873,3 +1038,10 @@ USB2032_RECEIVER:    .word 0x00
 usb2032_otg_host_setter_addr:      .word usb2032_otg_host_setter
 usb2032_otg_host_sender_addr:      .word usb2032_otg_host_sender
 usb2032_otg_host_receiver_addr:    .word usb2032_otg_host_receiver
+
+/**
+ * Activated (1) / Deactivated (0) Bit[0]
+ */
+
+USB2032_STATUS:      .word 0x00
+
