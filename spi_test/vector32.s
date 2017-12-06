@@ -175,16 +175,18 @@ os_fiq:
  * Handler to Use in FIQ
  */
 spi_test_fiqhandler:
-	temp         .req r0
-	horizon      .req r1
-	previous     .req r2
-	horizon_next .req r3
-	current      .req r4
-	resolution   .req r5
-	xcount       .req r6
-	xdivision    .req r7
+	temp            .req r0
+	horizon         .req r1
+	previous        .req r2
+	horizon_next    .req r3
+	current         .req r4
+	resolution      .req r5
+	count_xdivision .req r6
+	xdivision       .req r7
+	count_xsync     .req r8
+	interval_xsync  .req r9
 
-	push {r4-r7,lr}
+	push {r4-r9,lr}
 
 	/* Get Data from MCP3002 AD Converter */
 	bl spi32_spirx                        @ Return Data to r0
@@ -207,16 +209,18 @@ spi_test_fiqhandler:
 	ldr previous, spi_test_fiqhandler_previous
 	ldr horizon, spi_test_fiqhandler_horizon
 	ldr resolution, spi_test_fiqhandler_resolution
-	ldr xcount, spi_test_fiqhandler_xcount
+	ldr count_xdivision, spi_test_fiqhandler_count_xdivision
 	ldr xdivision, spi_test_fiqhandler_xdivision
+	ldr count_xsync, spi_test_fiqhandler_count_xsync
+	ldr interval_xsync, spi_test_fiqhandler_interval_xsync
 
 	macro32_dsb ip
 
-	add xcount, xcount, #1
-	cmp xcount, xdivision
-	blo spi_test_fiqhandler_common
+	add count_xdivision, count_xdivision, #1
+	cmp count_xdivision, xdivision
+	blo spi_test_fiqhandler_common @ If Not Reaches Value of X Division, Jump to Common
 
-	mov xcount, #0
+	mov count_xdivision, #0
 
 /*macro32_debug current, 200, 200*/
 /*macro32_debug previous, 200, 212*/
@@ -224,6 +228,9 @@ spi_test_fiqhandler:
 	add horizon_next, horizon, resolution
 
 /*macro32_debug horizon, 200, 224*/
+
+	cmp count_xsync, interval_xsync
+	blo spi_test_fiqhandler_jump  @ If Not Reaches Interval, Jump Over Drawing Line
 
 	push {r0-r3}
 	mov r0, #0xFF
@@ -238,9 +245,7 @@ spi_test_fiqhandler:
 	add sp, sp, #4
 	pop {r0-r3}
 
-	macro32_dsb ip
-
-	push {r0-r4}
+	push {r0-r6}
 	ldr r0, ADDR32_COLOR32_YELLOW
 	ldr r0, [r0]                  @ Color (16-bit or 32-bit)
 	mov r1, horizon               @ X Coordinate1
@@ -252,20 +257,28 @@ spi_test_fiqhandler:
 	push {r4-r6}
 	bl draw32_line
 	add sp, sp, #12
-	pop {r0-r4}  
+	pop {r0-r6}  
 
-	mov temp, #spi_test_fiqhandler_xend_upper
-	add temp, temp, #spi_test_fiqhandler_xend_lower
-	cmp horizon_next, temp
-	movhs horizon_next, #spi_test_fiqhandler_xstart
+	spi_test_fiqhandler_jump:
 
-	macro32_dsb ip
+		mov temp, #spi_test_fiqhandler_xend_upper
+		add temp, temp, #spi_test_fiqhandler_xend_lower
 
-	str current, spi_test_fiqhandler_previous
-	str horizon_next, spi_test_fiqhandler_horizon
+		cmp horizon_next, temp
+		movhs horizon_next, #spi_test_fiqhandler_xstart
+		addhs count_xsync, count_xsync, #1
+
+		cmp count_xsync, interval_xsync
+		movhi count_xsync, #0         @ Reset Count If Reaches Interval
+
+		macro32_dsb ip
+
+		str current, spi_test_fiqhandler_previous
+		str horizon_next, spi_test_fiqhandler_horizon
+		str count_xsync, spi_test_fiqhandler_count_xsync
 
 	spi_test_fiqhandler_common:
-		str xcount, spi_test_fiqhandler_xcount
+		str count_xdivision, spi_test_fiqhandler_count_xdivision
 
 		/* Command to MCP3002 AD Converter */
 		mov r0, #0b11<<equ32_spi0_cs_clear
@@ -274,7 +287,7 @@ spi_test_fiqhandler:
 		/*mov r2, #80*/                       @ 240Mhz/80, 3Mhz
 		bl spi32_spitx
 
-		pop {r4-r7,pc}
+		pop {r4-r9,pc}
 
 .unreq temp
 .unreq horizon
@@ -282,22 +295,28 @@ spi_test_fiqhandler:
 .unreq horizon_next
 .unreq current
 .unreq resolution
-.unreq xcount
+.unreq count_xdivision
 .unreq xdivision
+.unreq count_xsync
+.unreq interval_xsync
 
-spi_test_fiqhandler_previous:      .word spi_test_fiqhandler_ystart
-spi_test_fiqhandler_horizon:       .word spi_test_fiqhandler_xstart
-spi_test_fiqhandler_xcount:        .word 0x00
+spi_test_fiqhandler_previous:        .word spi_test_fiqhandler_ystart
+spi_test_fiqhandler_horizon:         .word spi_test_fiqhandler_xstart
+spi_test_fiqhandler_count_xdivision: .word 0x00
+spi_test_fiqhandler_count_xsync:     .word 0x00
 
 /**
  * Increasing resolution makes faster horizontal sync. This causes incorrect displaying.
  * In contrast, increasing xdivision makes slower horizontal sync.
  * Duration of each horizontal sync seems to be needed at least 80 milliseconds.
+ * To get the sufficient duration, use interval_xsync.
  */
 .globl spi_test_fiqhandler_resolution
 .globl spi_test_fiqhandler_xdivision
-spi_test_fiqhandler_resolution:    .word 1       @ Shorten Seconds in Width of Display
-spi_test_fiqhandler_xdivision:     .word 4       @ Lengthen Seconds in Width of Display
+.globl spi_test_fiqhandler_interval_xsync
+spi_test_fiqhandler_resolution:     .word 1       @ Shorten Seconds in Width of Display
+spi_test_fiqhandler_xdivision:      .word 2       @ Lengthen Seconds in Width of Display
+spi_test_fiqhandler_interval_xsync: .word 10
 
 .equ spi_test_fiqhandler_display_width,  0x460  @ Decimal 1120, Multiplies of 8 Seems to Be Preferred
 .equ spi_test_fiqhandler_display_height, 0x280  @ Decimal 640, Multiplies of 8 Seems to Be Preferred
