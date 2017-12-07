@@ -231,15 +231,6 @@ macro32_debug r0 500 150
 
 macro32_debug r0 500 162
 
-	mov r0, r1
-	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
-	ldr r1, [r1]
-	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r3, [r3]
-	macro32_print_hexa r0, 500, 174, r1, r2, 64, 8, 12, r3
-
 	pop {r0-r8,lr}
 
 	mov pc, lr

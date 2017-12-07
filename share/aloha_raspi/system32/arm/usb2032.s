@@ -55,15 +55,6 @@ usb2032_hub_activate:
 
 	push {r4-r7,lr}
 
-	/* Setup Stage */
-
-	/*
-	push {r0-r3}
-	mov r0, #1000
-	bl arm32_sleep                     @ For HUB
-	pop {r0-r3}
-	*/
-
 	push {r0-r3}
 	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl heap32_malloc
@@ -88,41 +79,59 @@ usb2032_hub_activate:
 	str temp, [buffer_rq]
 	*/
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
-	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
-	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
-	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
-	str temp, [buffer_rq]
-	mov temp, #equ32_usb20_index_device                          @ wIndex
-	orr temp, temp, #18<<16                                      @ wLength
-	str temp, [buffer_rq, #4]
-
 	/*
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
-	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
-	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
-	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
-	str temp, [buffer_rq]
-	mov temp, #equ32_usb20_index_device                          @ wIndex
-	orr temp, temp, #64<<16                                      @ wLength
-	str temp, [buffer_rq, #4]
-	*/
-	
-	/*
-	mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
 	orr temp, temp, #equ32_usb20_val_get_status<<16              @ wValue
 	str temp, [buffer_rq]
-	mov temp, #1                                                 @ wIndex
-	orr temp, temp, #equ32_usb20_len_get_status_port<<16         @ wLength
+	mov temp, #0                                                 @ wIndex
+	orr temp, temp, #equ32_usb20_len_get_status<<16              @ wLength
 	str temp, [buffer_rq, #4]
 	*/
+
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
+	orr temp, temp, #1<<16                                       @ wValue, address
+	str temp, [buffer_rq]
+	mov temp, #0                                                 @ wIndex
+	orr temp, temp, #0<<16                                       @ wLength
+	str temp, [buffer_rq, #4]
+
+	mov character, #64                            @ Maximam Packet Size
+	orr character, character, #0<<11              @ Endpoint Number
+	orr character, character, #0<<15              @ In(1)/Out(0)
+	orr character, character, #0<<16              @ Endpoint Type
+	orr character, character, #0<<18              @ Device Address
+
+	mov transfer_size, #0                         @ Transfer Size is 0 Bytes
+
+	mov split_ctl, #0x0
+
+	push {r0-r3}
+	push {split_ctl,buffer_rx}
+	bl usb2032_communication
+	add sp, sp, #8
+	mov response, r0
+	mov temp, r1
+	pop {r0-r3}
+
+macro32_debug response, 0, 312
+macro32_debug temp, 0, 324
+
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
+	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
+	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
+	str temp, [buffer_rq]
+	mov temp, #0                                                 @ wIndex
+	orr temp, temp, #18<<16                                      @ wLength
+	str temp, [buffer_rq, #4]
 
 	mov character, #64                            @ Maximam Packet Size
 	orr character, character, #0<<11              @ Endpoint Number
 	orr character, character, #1<<15              @ In(1)/Out(0)
 	orr character, character, #0<<16              @ Endpoint Type
-	orr character, character, #0<<18              @ Device Address
+	orr character, character, #1<<18              @ Device Address
 
 	mov transfer_size, #18                        @ Transfer Size is 18 Bytes
 	orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
@@ -145,6 +154,10 @@ usb2032_hub_activate:
 	mov temp, r1
 	pop {r0-r3}
 
+macro32_debug response, 0, 412
+macro32_debug temp, 0, 424
+macro32_debug_hexa buffer_rx, 0, 436, 64
+
 	push {r0-r3}
 	mov r0, buffer_rq
 	bl heap32_mfree
@@ -157,8 +170,7 @@ usb2032_hub_activate:
 		b usb2032_hub_activate_common
 
 	usb2032_hub_activate_success:
-		mov r0, response
-		mov r1, buffer_rx
+		mov r0, #0
 
 	usb2032_hub_activate_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
@@ -207,7 +219,7 @@ usb2032_hub_activate:
  * r5: Receive Buffer
  *
  * Return: r0 (0 as success, 1 as error), r1 (last status of channel)
- * Error(1): Failure of Communication
+ * Error(1): Failure of Communication (Time Out)
  */
 .globl usb2032_communication
 usb2032_communication:
@@ -228,84 +240,90 @@ usb2032_communication:
 	pop {split_ctl,buffer_rx}                                              @ Get Fifth and Sixth Argument
 	sub sp, sp, #32
 
-	/* Setup Stage  */
-
-	mov timeout, #equ32_usb2032_timeout
+	/* Setup Stage */
 	usb2032_communication_setup:
 
-		cmp timeout, #0
-		ble usb2032_communication_error
+		mov timeout, #equ32_usb2032_timeout
 
-		push {r0-r3}
-		bic character, character, #1<<15              @ Out(0)
-		mov transfer_size, #8                         @ Transfer Size is 8 Bytes
-		orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
-		orr transfer_size, transfer_size, #0x60000000 @ Data Type is Setup
-		push {split_ctl}
-		bl usb2032_transaction
-		add sp, sp, #4
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
+		usb2032_communication_setup_loop:
+			cmp timeout, #0
+			ble usb2032_communication_error
 
-		sub timeout, timeout, #1
+			push {r0-r3}
+			bic character, character, #1<<15              @ Out(0)
+			mov transfer_size, #8                         @ Transfer Size is 8 Bytes
+			orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
+			orr transfer_size, transfer_size, #0x60000000 @ Data Type is Setup
+			push {split_ctl}
+			bl usb2032_transaction
+			add sp, sp, #4
+			mov response, r0
+			mov temp, r1
+			pop {r0-r3}
 
-		tst response, #0x4                            @ ACK
-		beq usb2032_communication_setup
+			sub timeout, timeout, #1
+
+			tst response, #0x4                            @ ACK
+			beq usb2032_communication_setup_loop
 
 macro32_debug response 500 288
 macro32_debug temp 500 300
 
 	/* Data Stage */
-
-	mov timeout, #equ32_usb2032_timeout
 	usb2032_communication_data:
 
-		cmp timeout, #0
-		ble usb2032_communication_error
+		cmp transfer_size, #0
+		beq usb2032_communication_status                  @ If No Need of Data Stage
 
-		push {r0-r3}
-		mov r3, buffer_rx
-		push {split_ctl}
-		bl usb2032_transaction
-		add sp, sp, #4
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
+		mov timeout, #equ32_usb2032_timeout
 
-		sub timeout, timeout, #1
+		usb2032_communication_data_loop:
+			cmp timeout, #0
+			ble usb2032_communication_error
 
-		tst response, #0x4                            @ ACK
-		beq usb2032_communication_data
+			push {r0-r3}
+			mov r3, buffer_rx
+			push {split_ctl}
+			bl usb2032_transaction
+			add sp, sp, #4
+			mov response, r0
+			mov temp, r1
+			pop {r0-r3}
+
+			sub timeout, timeout, #1
+
+			tst response, #0x4                            @ ACK
+			beq usb2032_communication_data_loop
 
 macro32_debug response 500 312
 macro32_debug temp 500 324
 
 	/* Status Stage */
-
-	mov timeout, #equ32_usb2032_timeout
 	usb2032_communication_status:
 
-		cmp timeout, #0
-		ble usb2032_communication_error
+		mov timeout, #equ32_usb2032_timeout
 
-		push {r0-r3}
-		bic character, character, #1<<15              @ In(1)/Out(0)
-		mov transfer_size, #0                         @ Transfer Size is 0 Bytes
-		orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
-		orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1 (Status Stage is Always DATA1)
-		push {split_ctl}
-		bl usb2032_transaction
-		add sp, sp, #4
-		mov response, r0
-		pop {r0-r3}
+		usb2032_communication_status_loop:
+			cmp timeout, #0
+			ble usb2032_communication_error
 
-		sub timeout, timeout, #1
+			push {r0-r3}
+			eor character, character, #1<<15              @ Reverse In/Out
+			mov transfer_size, #0                         @ Transfer Size is 0 Bytes
+			orr transfer_size, transfer_size, #0x00080000 @ Transfer Packet is 1 Packet
+			orr transfer_size, transfer_size, #0x40000000 @ Data Type is DATA1 (Status Stage is Always DATA1)
+			push {split_ctl}
+			bl usb2032_transaction
+			add sp, sp, #4
+			mov response, r0
+			pop {r0-r3}
 
-		tst response, #0x4                            @ ACK
-		beq usb2032_communication_status
+			sub timeout, timeout, #1
 
-		b usb2032_communication_success
+			tst response, #0x4                            @ ACK
+			beq usb2032_communication_status_loop
+
+			b usb2032_communication_success
 
 	usb2032_communication_error:
 		mov r0, #1
