@@ -261,9 +261,9 @@ os_fiq:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, gpio_toggle
+	ldrb r1, gpio_toggle
 	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, gpio_toggle
+	strb r1, gpio_toggle
 
 	cmp r1, #0
 	addeq r0, r0, #equ32_gpio_gpclr1

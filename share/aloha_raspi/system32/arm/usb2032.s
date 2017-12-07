@@ -246,9 +246,8 @@ macro32_debug temp 500 324
  *
  * r5: Receive Buffer
  *
- * Return: r0 (0 as success, -1 and -2 as error)
- * Error(-1): Failure of Communication
- * Error(-2): Not Activated
+ * Return: r0 (0 as success, 1 as error), r1 (last status of channel)
+ * Error(1): Failure of Communication
  */
 .globl usb2032_communication
 usb2032_communication:
@@ -265,17 +264,13 @@ usb2032_communication:
 
 	push {r4-r8,lr}
 
-	ldr temp, USB2032_STATUS
-	tst temp, #0x1
-	beq usb2032_communication_error2
-
 	/* Setup Stage  */
 
 	mov timeout, #equ32_usb2032_timeout
 	usb2032_communication_setup:
 
 		cmp timeout, #0
-		ble usb2032_communication_error1
+		ble usb2032_communication_error
 
 		push {r0-r3}
 		bic character, character, #0<<15              @ Out(0)
@@ -303,7 +298,7 @@ macro32_debug temp 500 300
 	usb2032_communication_data:
 
 		cmp timeout, #0
-		ble usb2032_communication_error1
+		ble usb2032_communication_error
 
 		push {r0-r3}
 		mov r3, buffer_rx
@@ -328,7 +323,7 @@ macro32_debug temp 500 324
 	usb2032_communication_status:
 
 		cmp timeout, #0
-		ble usb2032_communication_error1
+		ble usb2032_communication_error
 
 		push {r0-r3}
 		bic character, character, #1<<15              @ In(1)/Out(0)
@@ -348,18 +343,15 @@ macro32_debug temp 500 324
 
 		b usb2032_communication_success
 
-	usb2032_communication_error1:
+	usb2032_communication_error:
 		mov r0, #1
-		b usb2032_communication_common
-
-	usb2032_communication_error2:
-		mov r0, #2
 		b usb2032_communication_common
 
 	usb2032_communication_success:
 		mov r0, #0
 
 	usb2032_communication_common:
+		mov r1, response
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
 		pop {r4-r8,pc}
 
@@ -413,8 +405,9 @@ macro32_debug temp 500 324
  * Bit[5]: NYET
  * Bit[6]: Internal Bus Error
  * Bit[7]: Transaction and Other Errors
- * Error(-1): Time Out
- * Error(-2): Channel is Already Enabled, r1 will be 0
+ * Bit[29]: USB HCD is Not Activated, r1 will be 0
+ * Bit[30]: Channel is Already Enabled, r1 will be 0
+ * Bit[31]: Time Out, r1 will be 0
  */
 .globl usb2032_transaction
 usb2032_transaction:
@@ -424,7 +417,7 @@ usb2032_transaction:
 	transfer_size      .req r2
 	buffer             .req r3
 	split_ctl          .req r4
-	exe_setter         .req r5
+	temp               .req r5
 	exe_sender         .req r6
 	exe_receiver       .req r7
 	response           .req r8
@@ -435,6 +428,13 @@ usb2032_transaction:
 	add sp, sp, #24                                                        @ r4-r8 offset 16 bytes
 	pop {split_ctl}                                                        @ Get Fifth Argument
 	sub sp, sp, #28 	
+
+	ldr temp, USB2032_STATUS
+	tst temp, #0x1
+	beq usb2032_transaction_error1
+
+	.unreq temp
+	exe_setter .req r5
 
 	ldr exe_setter, USB2032_SETTER
 	ldr exe_sender, USB2032_SENDER
@@ -466,6 +466,9 @@ usb2032_transaction:
 	mov transfer_size_last, r1
 	pop {r0-r3}
 
+	tst response, #0x80000000                 @ Time Out Bit[31]
+	bne usb2032_transaction_error3
+
 	push {r0-r3}
 	mov r0, buffer
 	mov r1, #0                                @ Invalidate
@@ -474,8 +477,18 @@ usb2032_transaction:
 
 	b usb2032_transaction_success
 
+	usb2032_transaction_error1:
+		mov r0, #0x20000000               @ USB HCD is Not Activated
+		mov r1, #0
+		b usb2032_transaction_common
+
 	usb2032_transaction_error2:
-		mvn r0, #1
+		mov r0, #0x40000000               @ Channel is Already Enabled
+		mov r1, #0
+		b usb2032_transaction_common
+
+	usb2032_transaction_error3:           @ Time Out
+		mov r0, #0x80000000
 		mov r1, #0
 		b usb2032_transaction_common
 
@@ -506,7 +519,7 @@ usb2032_transaction:
  * Parameters
  * r0: Channel 0-15
  *
- * Return: r0 (Status of Channel, -1 as error), r1 (Current Status of Transfer Register)
+ * Return: r0 (Status of Channel), r1 (Current Status of Transfer Register)
  * Bit[0]: Completed
  * Bit[1]: Halted
  * Bit[2]: ACK
@@ -515,7 +528,7 @@ usb2032_transaction:
  * Bit[5]: NYET
  * Bit[6]: Internal Bus Error
  * Bit[7]: Transaction and Other Errors
- * Error(-1): Time Out
+ * Bit[31]: Time Out
  */
 .globl usb2032_otg_host_receiver
 usb2032_otg_host_receiver:
@@ -593,7 +606,7 @@ usb2032_otg_host_receiver:
 		b usb2032_otg_host_receiver_common
 
 	usb2032_otg_host_receiver_error:
-		mvn r0, #0
+		mov r0, #0x80000000                                               @ Time Out Bit[31]
 
 	usb2032_otg_host_receiver_common:
 		str temp, [memorymap_base, #equ32_usb20_otg_hcintn]               @ write-clear
