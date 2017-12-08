@@ -14,12 +14,12 @@
 	.include "vector32/el01_armv6.s"
 	.include "vector32/el3_armv6.s"
 .else
-	.include "vector32/el01_armv7_secure.s"
+	.include "vector32/el01_armv7.s"
 	.include "vector32/el2_armv7.s"
-	.include "vector32/el3_armv7_secure.s"
+	.include "vector32/el3_armv7.s"
 .endif
 
-.include "vector32/os_secure.s"
+.include "vector32/os.s"
 
 os_reset:
 
@@ -69,6 +69,37 @@ os_reset:
 .endif
 
 	str r1, [r0, #equ32_gpio_gpfsel40]
+
+.ifndef __ARMV6
+	/**
+	 * Set GPCLK1 to 25.00Mhz
+	 * Considering of the latency by instructions,
+	 * The counted value has a minus error toward the right value.
+	 */
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_cm_base_lower
+	add r0, r0, #equ32_cm_base_upper
+
+	ldr r1, [r0, #equ32_cm_gp1ctl]
+	orr r1, r1, #equ32_cm_passwd
+	bic r1, r1, #equ32_cm_ctl_enab
+	str r1, [r0, #equ32_cm_gp1ctl]
+
+	os_reset_loop1:
+		ldr r1, [r0, #equ32_cm_gp1ctl]
+		tst r1, #equ32_cm_ctl_busy
+		bne os_reset_loop1
+
+	mov r1, #equ32_cm_passwd
+	add r1, r1, #20 << equ32_cm_div_integer
+	str r1, [r0, #equ32_cm_gp1div]
+
+	mov r1, #equ32_cm_passwd
+	add r1, r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld       @ 500Mhz
+	str r1, [r0, #equ32_cm_gp1ctl]
+.endif
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
@@ -202,34 +233,45 @@ macro32_debug r0 500 102
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
-	add r1, r1, #equ32_usb20_otg_host_base
-	ldr r0, [r1, #equ32_usb20_otg_hprt]
+	ldr r0, [r1, #equ32_bcm_usb20_vbus_drv]
 
 macro32_debug r0 500 114
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
-	ldr r0, [r1, #equ32_usb20_otg_grxfsiz]
+	add r1, r1, #equ32_usb20_otg_host_base
+	ldr r0, [r1, #equ32_usb20_otg_hprt]
 
 macro32_debug r0 500 126
+
+
+	mov r1, #equ32_peripherals_base
+	add r1, r1, #equ32_usb20_otg_base
+	ldr r0, [r1, #equ32_usb20_otg_grxfsiz]
+
+macro32_debug r0 500 138
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
 	ldr r0, [r1, #equ32_usb20_otg_gnptxfsiz]
 
-macro32_debug r0 500 138
+macro32_debug r0 500 150
 
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
 	add r1, r1, #equ32_usb20_otg_ptxfsiz_base
 	ldr r0, [r1, #equ32_usb20_otg_hptxfsiz]
 
-macro32_debug r0 500 150
+macro32_debug r0 500 162
 
 	mov r0, #2
+.ifndef __ARMV6
+	bl usb2032_hub_inner_activate
+.else
 	bl usb2032_hub_activate
+.endif
 
-macro32_debug r0 500 162
+macro32_debug r0 500 174
 
 	pop {r0-r8,lr}
 
