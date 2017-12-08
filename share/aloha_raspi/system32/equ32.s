@@ -517,21 +517,27 @@
 
 .equ equ32_usb20_val_descriptor_hub,                         0x2900 @ Get By equ32_usb20_val_descriptor_class
 
-.equ equ32_usb20_val_hub_localpower,              0x0000 @ Status of Hub is similar to Value (+0x10 is change status)
+/* Feature for Standard */
+.equ equ32_usb20_val_endpoint_halt,               0x0000 @ To Endpoint at bmRequestType
+.equ equ32_usb20_val_device_remote_wakeup,        0x0001 @ to Device at bmRequestType
+.equ equ32_usb20_val_test_mode,                   0x0002 @ to Device at bmRequestType
+
+/* Feature for Hub (To Device) and Hub port (To Other) */
+.equ equ32_usb20_val_hub_localpower,              0x0000 @ Bit Order of Status of Hub is similar to Value (+0x10 is change status)
 .equ equ32_usb20_val_hub_overcurrent,             0x0001
-.equ equ32_usb20_val_hubport_connection,          0x0000 @ Status of HubPort is similar to Upper 2 Bytes of Value
-.equ equ32_usb20_val_hubport_enable,              0x0001
-.equ equ32_usb20_val_hubport_suspend,             0x0002
-.equ equ32_usb20_val_hubport_overcurrent,         0x0003
-.equ equ32_usb20_val_hubport_reset,               0x0004
-.equ equ32_usb20_val_hubport_power,               0x0008
-.equ equ32_usb20_val_hubport_lowspeed,            0x0009
-.equ equ32_usb20_val_hubport_highspeed,           0x000A
-.equ equ32_usb20_val_hubport_connection_change,   0x0010 @ Connection Status is changed
-.equ equ32_usb20_val_hubport_enable_change,       0x0011
-.equ equ32_usb20_val_hubport_suspend_change,      0x0012
-.equ equ32_usb20_val_hubport_overcurrent_change,  0x0013
-.equ equ32_usb20_val_hubport_reset_change,        0x0014 @ Indicates Completion of Reset
+.equ equ32_usb20_val_hubport_connection,          0x0000 @ Bit Order of Status of HubPort is similar to Value, Bit[0] in Status
+.equ equ32_usb20_val_hubport_enable,              0x0001 @ Bit[1] in Status
+.equ equ32_usb20_val_hubport_suspend,             0x0002 @ Bit[2] in Status
+.equ equ32_usb20_val_hubport_overcurrent,         0x0003 @ Bit[3] in Status
+.equ equ32_usb20_val_hubport_reset,               0x0004 @ Bit[4] in Status
+.equ equ32_usb20_val_hubport_power,               0x0008 @ Bit[8] in Status
+.equ equ32_usb20_val_hubport_lowspeed,            0x0009 @ Bit[9] in Status
+.equ equ32_usb20_val_hubport_highspeed,           0x000A @ Bit[10] in Status
+.equ equ32_usb20_val_hubport_connection_change,   0x0010 @ Connection Status is changed, Bit[16] in Status
+.equ equ32_usb20_val_hubport_enable_change,       0x0011 @ Bit[17] in Status
+.equ equ32_usb20_val_hubport_suspend_change,      0x0012 @ Bit[18] in Status
+.equ equ32_usb20_val_hubport_overcurrent_change,  0x0013 @ Bit[19] in Status
+.equ equ32_usb20_val_hubport_reset_change,        0x0014 @ Indicates Completion of Reset, Bit[20] in Status
 
 .equ equ32_usb20_val_hid_report_input,            0x0100 @ Lower 1 Byte is Index of Report
 .equ equ32_usb20_val_hid_report_output,           0x0200 @ Lower 1 Byte is Index of Report

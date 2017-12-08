@@ -14,12 +14,12 @@
 	.include "vector32/el01_armv6.s"
 	.include "vector32/el3_armv6.s"
 .else
-	.include "vector32/el01_armv7.s"
+	.include "vector32/el01_armv7_secure.s"
 	.include "vector32/el2_armv7.s"
-	.include "vector32/el3_armv7.s"
+	.include "vector32/el3_armv7_secure.s"
 .endif
 
-.include "vector32/os.s"
+.include "vector32/os_secure.s"
 
 os_reset:
 
