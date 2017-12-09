@@ -276,6 +276,21 @@ macro32_debug r0 500 174
 
 macro32_debug r0 500 186
 
+	mov r0, #1                      @ Hub Port #1
+	orr r0, r0, #1<<7               @ Hub Address #1
+	orr r0, r0, #0x80000000         @ Split Enable
+	push {r0}
+
+	mov r0, #2
+	mov r1, #1
+	mov r2, #0
+	mov r3, #1
+
+	bl hid32_hid_activate
+	add sp, sp, #4
+
+macro32_debug r0 500 198
+
 	pop {r0-r8,lr}
 
 	mov pc, lr

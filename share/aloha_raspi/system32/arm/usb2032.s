@@ -28,7 +28,8 @@
  * 6. On Status stage, its PID must be DATA1.
  *
  * 7. December 8, 2017. Trial on HUB. Zero W with External Hub Worked the Enumeration.
- *    2B (V1.1) did not worked. Getting descriptors of LAN9514 was not succeeded (empty string).
+ *    2B (V1.1) did not worked. Getting descriptors of LAN9514 was not succeeded (all descriptors are empty).
+ *    LAN9514 seems to be connecting with an EEPROM, so we probably needed to power the EEPROM on.
  *
  */
 
@@ -327,7 +328,9 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 
 /**
  * function usb2032_hub_search_device
- * Search and Activate Hub
+ * Search and Reset a Device to Be Attached to Any Port of Targeted Hub
+ * This function search and reset one device only.
+ * If you attached multiple devices, call this function again after enumeration of the device prior detected. 
  *
  * Parameters
  * r0: Channel 0-15
@@ -407,7 +410,7 @@ usb2032_hub_search_device:
 
 	ldrb device_class, [buffer_rx, #4]
 	cmp device_class, #9                                 @ Device Class is Hub or Not
-	bne usb2032_hub_activate_error2
+	bne usb2032_hub_search_device_error2
 
 	.unreq device_class
 	num_ports .req r8
@@ -593,8 +596,7 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
-/* Get Port Status  */
-
+/*
 mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
 orr temp, temp, #equ32_usb20_val_get_status<<16              @ wValue
@@ -625,6 +627,7 @@ macro32_debug i, 0, 500
 macro32_debug response, 0, 512
 macro32_debug temp, 0, 524
 macro32_debug_hexa buffer_rx, 0, 536, 64
+*/
 			
 			b usb2032_hub_search_device_success
 
@@ -945,9 +948,10 @@ usb2032_control:
 
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_setup_loop
-
+/*
 macro32_debug response 500 288
 macro32_debug ip 500 300
+*/
 
 	/* Data Stage */
 	usb2032_control_data:
@@ -975,8 +979,10 @@ macro32_debug ip 500 300
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_data_loop
 
+/*
 macro32_debug response 500 312
 macro32_debug ip 500 324
+*/
 
 	/* Status Stage */
 	usb2032_control_status:
@@ -1003,7 +1009,14 @@ macro32_debug ip 500 324
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_status_loop
 
-			b usb2032_control_success
+			tst split_ctl, #0x80000000        @ Test Split Enable Bit[31]
+			beq usb2032_control_success
+
+			tst split_ctl, #0x00010000        @ Test Complete Bit[16] If Split Enable
+			bne usb2032_control_success
+
+			orr split_ctl, #0x00010000        @ Complete Bit[16] High If No Complete
+			b usb2032_control_setup           @ Complete Transaction
 
 	usb2032_control_error:
 		mov r0, #1
