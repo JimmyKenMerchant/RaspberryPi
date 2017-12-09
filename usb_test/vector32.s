@@ -265,13 +265,16 @@ macro32_debug r0 500 150
 macro32_debug r0 500 162
 
 	mov r0, #2
-.ifndef __ARMV6
-	bl usb2032_hub_inner_activate
-.else
 	bl usb2032_hub_activate
-.endif
 
 macro32_debug r0 500 174
+
+	mov r1, r0
+	mov r0, #2
+
+	bl usb2032_hub_search_device
+
+macro32_debug r0 500 186
 
 	pop {r0-r8,lr}
 

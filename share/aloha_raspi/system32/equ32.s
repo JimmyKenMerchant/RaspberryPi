@@ -515,7 +515,7 @@
 .equ equ32_usb20_val_descriptor_hidreport,                   0x2200 @ With `0x81` of bmRequestType
 .equ equ32_usb20_val_descriptor_hidphysical,                 0x2300 @ With `0x81` of bmRequestType
 
-.equ equ32_usb20_val_descriptor_hub,                         0x2900 @ Get By equ32_usb20_val_descriptor_class
+.equ equ32_usb20_val_descriptor_hub,                         0x2900 @ For USB1.1/2.0 Hub, `0x0000` for 1.0 Hub, `0x2A00` for 3.0 Hub
 
 /* Feature for Standard */
 .equ equ32_usb20_val_endpoint_halt,               0x0000 @ To Endpoint at bmRequestType
@@ -557,6 +557,26 @@
 .equ equ32_usb20_len_get_interface,       0x0001
 .equ equ32_usb20_len_set_interface,       0x0000
 .equ equ32_usb20_len_synch_frame,         0x0002
+
+/* Status Values */
+.equ equ32_usb20_status_hub_localpower,              0x1      @ Bit[0] in Status
+.equ equ32_usb20_status_hub_overcurrent,             0x2      @ Bit[1] in Status
+.equ equ32_usb20_status_hub_localpower_change,       0x10000  @ Bit[16] in Status
+.equ equ32_usb20_status_hub_overcurrent_change,      0x20000  @ Bit[17] in Status
+
+.equ equ32_usb20_status_hubport_connection,          0x01     @ Bit[0] in Status
+.equ equ32_usb20_status_hubport_enable,              0x02     @ Bit[1] in Status
+.equ equ32_usb20_status_hubport_suspend,             0x04     @ Bit[2] in Status
+.equ equ32_usb20_status_hubport_overcurrent,         0x08     @ Bit[3] in Status
+.equ equ32_usb20_status_hubport_reset,               0x10     @ Bit[4] in Status
+.equ equ32_usb20_status_hubport_power,               0x0100   @ Bit[8] in Status
+.equ equ32_usb20_status_hubport_lowspeed,            0x0200   @ Bit[9] in Status, Low Speed Device is Attached
+.equ equ32_usb20_status_hubport_highspeed,           0x0400   @ Bit[10] in Status, High Speed Device is Attached
+.equ equ32_usb20_status_hubport_connection_change,   0x010000 @ Bit[16] in Status
+.equ equ32_usb20_status_hubport_enable_change,       0x020000 @ Bit[17] in Status
+.equ equ32_usb20_status_hubport_suspend_change,      0x040000 @ Bit[18] in Status
+.equ equ32_usb20_status_hubport_overcurrent_change,  0x080000 @ Bit[19] in Status
+.equ equ32_usb20_status_hubport_reset_change,        0x100000 @ Bit[20] in Status
 
 
 /**
