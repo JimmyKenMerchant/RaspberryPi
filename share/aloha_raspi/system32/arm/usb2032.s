@@ -186,7 +186,24 @@ macro32_debug temp, 0, 324
 	mov temp, r1
 	pop {r0-r3}
 
+	/* Clear Endpoint Halt */
+	/*
+	mov temp, #equ32_usb20_reqt_recipient_endpoint|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_clear_feature<<8            @ bRequest
+	orr temp, temp, #equ32_usb20_val_endpoint_halt<<16           @ wValue
+	str temp, [buffer_rq]
+
+	push {r0-r3}
+	push {split_ctl,buffer_rx}
+	bl usb2032_control
+	add sp, sp, #8
+	mov response, r0
+	mov temp, r1
+	pop {r0-r3}
+	*/
+
 	/* Remote Wakeup  */
+
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
 	orr temp, temp, #equ32_usb20_val_device_remote_wakeup<<16    @ wValue
@@ -536,7 +553,7 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
-			/* Get Port Status  */
+			/* Get Port Status */
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
@@ -720,6 +737,7 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
  *   r2 Bit[18:0]: Transfer Size
  *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
  *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
+ *   r2 Bit[31]: Do PING to Device
  *
  * r3: Buffer
  *
@@ -813,6 +831,7 @@ usb2032_isochronous:
  *   r2 Bit[18:0]: Transfer Size
  *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
  *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
+ *   r2 Bit[31]: Do PING to Device
  *
  * r3: Buffer
  *
@@ -907,6 +926,7 @@ usb2032_interrupt_bulk:
  *   r2 Bit[18:0]: Transfer Size
  *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
  *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
+ *   r2 Bit[31]: Do PING to Device
  *
  * r3: Request Buffer
  *
@@ -1070,6 +1090,7 @@ macro32_debug ip 500 324
  *   r2 Bit[18:0]: Transfer Size
  *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
  *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
+ *   r2 Bit[31]: Do PING to Device
  *
  * r3: Channel N DMA Address (Buffer)
  *
@@ -1407,6 +1428,7 @@ usb2032_otg_host_sender:
  *   r2 Bit[18:0]: Transfer Size
  *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
  *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
+ *   r2 Bit[31]: Do PING to Device
  *
  * r3: Channel N DMA Address (Buffer)
  *
@@ -1474,8 +1496,6 @@ usb2032_otg_host_setter:
 	orr hcchar, hcchar, #0x00100000                                        @ Multi Count/ Error Count Bit[21:20] in OTG
  
 	str hcchar, [memorymap_base, #equ32_usb20_otg_hccharn]
-
-	bic transfer_size, transfer_size, #0x80000000                          @ Only Validate Bit[30:0]
 
 	str transfer_size, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
