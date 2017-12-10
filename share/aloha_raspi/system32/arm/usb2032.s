@@ -1016,10 +1016,9 @@ macro32_debug ip 500 300
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_data_loop
 
-/*
-macro32_debug response 500 312
+macro32_debug transfer_size 500 312
 macro32_debug ip 500 324
-*/
+
 
 	/* Status Stage */
 	usb2032_control_status:

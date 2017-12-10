@@ -503,7 +503,7 @@
 .equ equ32_usb20_val_get_status,             0x0000
 
 .equ equ32_usb20_val_descriptor_class,                       0x0000 @ With `0xA0` of bmRequestType
-.equ equ32_usb20_val_descriptor_device,                      0x0100 @ Lower 1 Byte is Index of Descriptor
+.equ equ32_usb20_val_descriptor_device,                      0x0100 @ Lower 1 Byte is Index of Descriptor (Used in String Desc.)
 .equ equ32_usb20_val_descriptor_configuration,               0x0200
 .equ equ32_usb20_val_descriptor_string,                      0x0300
 .equ equ32_usb20_val_descriptor_interface,                   0x0400 @ Recipient is Interface
