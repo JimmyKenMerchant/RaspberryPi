@@ -286,6 +286,11 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			cmp i, num_ports
 			ble usb2032_hub_activate_powerport_loop
 
+			push {r0-r3}
+			mov r0, #0x19000                          @ 102.400 ms
+			bl arm32_sleep
+			pop {r0-r3}
+
 			b usb2032_hub_activate_success
 
 	usb2032_hub_activate_error1:
@@ -596,40 +601,52 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
+			/* Get Status Again and Ensure Resetting Process is Completed */
+
+			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
+			orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
+			orr temp, temp, #equ32_usb20_val_get_status<<16              @ wValue
+			str temp, [buffer_rq]
+			mov temp, i                                                  @ wIndex
+			orr temp, temp, #equ32_usb20_len_get_status_port<<16         @ wLength
+			str temp, [buffer_rq, #4]
+
+			mov character, #64                             @ Maximam Packet Size
+			orr character, character, #0<<11               @ Endpoint Number
+			orr character, character, #1<<15               @ In(1)/Out(0)
+			orr character, character, #0<<16               @ Endpoint Type
+			orr character, character, addr_device, lsl #18 @ Device Address
+
+			mov transfer_size, #4                          @ Transfer Size is 4 Bytes
+			orr transfer_size, transfer_size, #0x00080000  @ Transfer Packet is 1 Packet
+			orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+
+			mov timeout, #equ32_usb2032_timeout
+
+			usb2032_hub_search_device_main_loop_completewait:
+				cmp timeout, #0
+				ble usb2032_hub_search_device_error3
+
+				push {r0-r3}
+				push {split_ctl,buffer_rx}
+				bl usb2032_control
+				add sp, sp, #8
+				mov response, r0
+				mov temp, r1
+				pop {r0-r3}
+
+				ldr response, [buffer_rx]                                    @ Get Status
+				tst response, #equ32_usb20_status_hubport_connection_change
+				sub timeout, timeout, #1
+				bne usb2032_hub_search_device_main_loop_completewait 
 /*
-mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
-orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
-orr temp, temp, #equ32_usb20_val_get_status<<16              @ wValue
-str temp, [buffer_rq]
-mov temp, i                                                  @ wIndex
-orr temp, temp, #equ32_usb20_len_get_status_port<<16         @ wLength
-str temp, [buffer_rq, #4]
-
-mov character, #64                             @ Maximam Packet Size
-orr character, character, #0<<11               @ Endpoint Number
-orr character, character, #1<<15               @ In(1)/Out(0)
-orr character, character, #0<<16               @ Endpoint Type
-orr character, character, addr_device, lsl #18 @ Device Address
-
-mov transfer_size, #4                          @ Transfer Size is 4 Bytes
-orr transfer_size, transfer_size, #0x00080000  @ Transfer Packet is 1 Packet
-orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
-
-push {r0-r3}
-push {split_ctl,buffer_rx}
-bl usb2032_control
-add sp, sp, #8
-mov response, r0
-mov temp, r1
-pop {r0-r3}
-
-macro32_debug i, 0, 500
+macro32_debug timeout, 0, 500
 macro32_debug response, 0, 512
 macro32_debug temp, 0, 524
 macro32_debug_hexa buffer_rx, 0, 536, 64
 */
 			
-			b usb2032_hub_search_device_success
+				b usb2032_hub_search_device_success
 
 			usb2032_hub_search_device_main_loop_common:
 				add i, i, #1
@@ -1009,14 +1026,7 @@ macro32_debug ip 500 324
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_status_loop
 
-			tst split_ctl, #0x80000000        @ Test Split Enable Bit[31]
-			beq usb2032_control_success
-
-			tst split_ctl, #0x00010000        @ Test Complete Bit[16] If Split Enable
-			bne usb2032_control_success
-
-			orr split_ctl, #0x00010000        @ Complete Bit[16] High If No Complete
-			b usb2032_control_setup           @ Complete Transaction
+			b usb2032_control_success
 
 	usb2032_control_error:
 		mov r0, #1
@@ -1096,12 +1106,13 @@ usb2032_transaction:
 	exe_receiver       .req r7
 	response           .req r8
 	transfer_size_last .req r9
+	timeout_nyet       .req r10
 
-	push {r4-r9,lr}
+	push {r4-r10,lr}
 
-	add sp, sp, #28                                                        @ r4-r9 and lr offset 28 bytes
+	add sp, sp, #32                                                        @ r4-r10 and lr offset 32 bytes
 	pop {split_ctl}                                                        @ Get Fifth Argument
-	sub sp, sp, #32 	
+	sub sp, sp, #36 	
 
 	ldr temp, USB2032_STATUS
 	tst temp, #0x1
@@ -1114,42 +1125,63 @@ usb2032_transaction:
 	ldr exe_sender, USB2032_SENDER
 	ldr exe_receiver, USB2032_RECEIVER
 
+	mov timeout_nyet, #equ32_usb2032_timeout_nyet
+
 	push {r0-r3}
 	mov r0, buffer
 	mov r1, #1                                @ Clean
 	bl arm32_cache_operation_heap
 	pop {r0-r3}
 
-	push {r0-r3}
-	push {split_ctl}
-	blx exe_setter
-	add sp, sp, #4
-	cmp r0, #1
-	pop {r0-r3}
-	beq usb2032_transaction_error2
+	usb2032_transaction_main:
 
-	push {r0-r3}
-	blx exe_sender
-	cmp r0, #1
-	pop {r0-r3}
-	beq usb2032_transaction_error2
+		cmp timeout_nyet, #0
+		ble usb2032_transaction_success
 
-	push {r0-r3}
-	blx exe_receiver
-	mov response, r0
-	mov transfer_size_last, r1
-	pop {r0-r3}
+		push {r0-r3}
+		push {split_ctl}
+		blx exe_setter
+		add sp, sp, #4
+		cmp r0, #1
+		pop {r0-r3}
+		beq usb2032_transaction_error2
 
-	tst response, #0x80000000                 @ Time Out Bit[31]
-	bne usb2032_transaction_error3
+		push {r0-r3}
+		blx exe_sender
+		cmp r0, #1
+		pop {r0-r3}
+		beq usb2032_transaction_error2
 
-	push {r0-r3}
-	mov r0, buffer
-	mov r1, #0                                @ Invalidate
-	bl arm32_cache_operation_heap
-	pop {r0-r3}
+		push {r0-r3}
+		blx exe_receiver
+		mov response, r0
+		mov transfer_size_last, r1
+		pop {r0-r3}
 
-	b usb2032_transaction_success
+		tst response, #0x80000000             @ Time Out Bit[31]
+		bne usb2032_transaction_error3
+
+		tst split_ctl, #0x80000000            @ Test Split Enable Bit[31]
+		beq usb2032_transaction_main_common
+
+		tst split_ctl, #0x00010000            @ Test Complete Bit[16] If Split Enable
+		bne usb2032_transaction_main_common
+
+		orr split_ctl, #0x00010000            @ Complete Bit[16] High If No Complete
+		b usb2032_transaction_main            @ Complete Transaction
+
+		usb2032_transaction_main_common:
+			tst response, #0x20               @ NYET Bit[5]
+			subne timeout_nyet, timeout_nyet, #1 
+			bne usb2032_transaction_main
+
+			push {r0-r3}
+			mov r0, buffer
+			mov r1, #0                        @ Invalidate
+			bl arm32_cache_operation_heap
+			pop {r0-r3}
+
+			b usb2032_transaction_success
 
 	usb2032_transaction_error1:
 		mov r0, #0x20000000               @ USB HCD is Not Activated
@@ -1161,7 +1193,7 @@ usb2032_transaction:
 		mov r1, #0
 		b usb2032_transaction_common
 
-	usb2032_transaction_error3:           @ Time Out
+	usb2032_transaction_error3:               @ Time Out
 		mov r0, #0x80000000
 		mov r1, #0
 		b usb2032_transaction_common
@@ -1172,7 +1204,7 @@ usb2032_transaction:
 
 	usb2032_transaction_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r9,pc}
+		pop {r4-r10,pc}
 
 .unreq channel
 .unreq character
@@ -1184,6 +1216,7 @@ usb2032_transaction:
 .unreq exe_receiver
 .unreq response
 .unreq transfer_size_last
+.unreq timeout_nyet
 
 
 /**
@@ -1677,7 +1710,16 @@ usb2032_otg_host_reset_bcm:
 			bic temp, #0x4                                         @ Clear Port Enable Bit[2] Because Write-clear
 			str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
-			/* Global OTG Control */
+			/* Power to Good Delay */
+			push {r0-r3,lr}
+			mov r0, #0x2800                                        @ 10.240 ms
+			bl arm32_sleep
+			pop {r0-r3,lr}
+
+			/**
+			 * Global OTG Control ans Status
+			 * Set Host Negotiation Protocol (Change Host Side to Device Side)
+			 */
 			mov memorymap_base, #equ32_peripherals_base
 			add memorymap_base, memorymap_base, #equ32_usb20_otg_base
 			ldr temp, [memorymap_base, #equ32_usb20_otg_gotgctl]       @ Global OTG Control and Status

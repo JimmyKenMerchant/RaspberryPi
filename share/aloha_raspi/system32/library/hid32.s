@@ -99,9 +99,11 @@ hid32_hid_activate:
 	mov temp, r1
 	pop {r0-r3}
 
+/*
 macro32_debug response, 0, 512
 macro32_debug temp, 0, 524
 macro32_debug_hexa buffer_rx, 0, 536, 64
+*/
 
 	/* Set Address  */
 

@@ -18,6 +18,7 @@
 .equ equ32_bcm32_alpha,               16
 .equ equ32_arm32_random_value,        0xFF       @ Initial Value to Be Shuffled
 .equ equ32_usb2032_timeout,           0x0000FF00
+.equ equ32_usb2032_timeout_nyet,      0x00000FF0
 .equ equ32_print32_hexa_length_max,   0x00000FF0
 .equ equ32_print32_string_tab_length, 4
 .equ equ32_dma32_cb_max,              0x1400     @ Decimal 5120
@@ -511,7 +512,7 @@
 .equ equ32_usb20_val_descriptor_other_speed_configuration,   0x0700
 .equ equ32_usb20_val_descriptor_interface_power,             0x0800 @ Recipient is Interface
 .equ equ32_usb20_val_descriptor_otg,                         0x0900 @ Session Request Protocol (SRP) and Host Negotiation Protocol
-.equ equ32_usb20_val_descriptor_hid,                         0x2100
+.equ equ32_usb20_val_descriptor_hid,                         0x2100 @ Class Descriptor
 .equ equ32_usb20_val_descriptor_hidreport,                   0x2200 @ With `0x81` of bmRequestType
 .equ equ32_usb20_val_descriptor_hidphysical,                 0x2300 @ With `0x81` of bmRequestType
 
