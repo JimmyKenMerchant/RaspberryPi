@@ -718,195 +718,6 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 
 
 /**
- * function usb2032_isochronous
- * Interrupt/bulk Communication with USB Device or Others
- *
- * Parameters
- * r0: Channel 0-15
- * 
- * r1: Characteristics (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r1 Bit[10:0]: Maximum Packet Size (in Low Speed, Fixed to 8 bytes)
- *   r1 Bit[14:11]: Endpoint Number
- *   r1 Bit[15]: Endpoint Direction, 0 Out, 1, In
- *   r1 Bit[17:16]: Endpoint Type, 0 Control, 1 Isochronous, 2 Bulk, 3 Interrupt
- *   r1 Bit[24:18]: Device Address
- *   r1 Bit[25]: Full and High Speed(0)/Low Speed(1)
- *   r1 Bit[26]: Even(0)/Odd(1) Frame in Periodic Transactions
- *
- * r2: Transfer Size (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r2 Bit[18:0]: Transfer Size
- *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
- *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
- *   r2 Bit[31]: Do PING to Device
- *
- * r3: Buffer
- *
- * r4: Channel N Split Control (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r4 Bit[6:0]: Port Address
- *   r4 Bit[13:7]: Hub Address
- *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All
- *   r4 Bit[16]: Complete Split
- *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
- *
- * Return: r0 (0 as success, 1 as error), r1 (last status of channel)
- * Error(1): Failure of Communication (Time Out)
- */
-.globl usb2032_isochronous
-usb2032_isochronous:
-	/* Auto (Local) Variables, but just Aliases */
-	channel            .req r0
-	character          .req r1
-	transfer_size      .req r2
-	buffer             .req r3
-	split_ctl          .req r4
-	response           .req r5
-	timeout            .req r6
-
-	push {r4-r6,lr}
-
-	add sp, sp, #16                                                        @ r4-r8 and lr offset 24 bytes
-	pop {split_ctl}                                                        @ Get Fifth and Sixth Argument
-	sub sp, sp, #20
-
-	usb2032_isochronous_data:
-
-		mov timeout, #equ32_usb2032_timeout
-
-		usb2032_isochronous_data_loop:
-			cmp timeout, #0
-			ble usb2032_isochronous_error
-
-			push {r0-r3}
-			push {split_ctl}
-			bl usb2032_transaction
-			add sp, sp, #4
-			mov response, r0
-			pop {r0-r3}
-
-			sub timeout, timeout, #1
-
-			tst response, #0x1                            @ Completed, No Handshake
-			beq usb2032_isochronous_data_loop
-
-			b usb2032_isochronous_success
-
-	usb2032_isochronous_error:
-		mov r0, #1
-		b usb2032_isochronous_common
-
-	usb2032_isochronous_success:
-		mov r0, #0
-
-	usb2032_isochronous_common:
-		mov r1, response
-		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r6,pc}
-
-.unreq channel
-.unreq character
-.unreq transfer_size
-.unreq buffer
-.unreq split_ctl
-.unreq response
-.unreq timeout
-
-
-/**
- * function usb2032_interrupt_bulk
- * Interrupt/bulk Communication with USB Device or Others
- *
- * Parameters
- * r0: Channel 0-15
- * 
- * r1: Characteristics (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r1 Bit[10:0]: Maximum Packet Size (in Low Speed, Fixed to 8 bytes)
- *   r1 Bit[14:11]: Endpoint Number
- *   r1 Bit[15]: Endpoint Direction, 0 Out, 1, In
- *   r1 Bit[17:16]: Endpoint Type, 0 Control, 1 Isochronous, 2 Bulk, 3 Interrupt
- *   r1 Bit[24:18]: Device Address
- *   r1 Bit[25]: Full and High Speed(0)/Low Speed(1)
- *   r1 Bit[26]: Even(0)/Odd(1) Frame in Periodic Transactions
- *
- * r2: Transfer Size (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r2 Bit[18:0]: Transfer Size
- *   r2 Bit[28:19]: Packet Count (Transfer Size divided by Max Packet Size, Round Up)
- *   r2 Bit[30:29]: PID, 00b DATA0, 01b DATA2, 10b DATA1, 11b MDATA (No Control)/SETUP (Control)
- *   r2 Bit[31]: Do PING to Device
- *
- * r3: Buffer
- *
- * r4: Channel N Split Control (Virtual Register), Reserved Bits expects SBZ (Zeros)
- *   r4 Bit[6:0]: Port Address
- *   r4 Bit[13:7]: Hub Address
- *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All
- *   r4 Bit[16]: Complete Split
- *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
- *
- * Return: r0 (0 as success, 1 as error), r1 (last status of channel)
- * Error(1): Failure of Communication (Time Out)
- */
-.globl usb2032_interrupt_bulk
-usb2032_interrupt_bulk:
-	/* Auto (Local) Variables, but just Aliases */
-	channel            .req r0
-	character          .req r1
-	transfer_size      .req r2
-	buffer             .req r3
-	split_ctl          .req r4
-	response           .req r5
-	timeout            .req r6
-
-	push {r4-r6,lr}
-
-	add sp, sp, #16                                                        @ r4-r8 and lr offset 24 bytes
-	pop {split_ctl}                                                        @ Get Fifth and Sixth Argument
-	sub sp, sp, #20
-
-	/* Data Stage */
-	usb2032_interrupt_bulk_data:
-
-		mov timeout, #equ32_usb2032_timeout
-
-		usb2032_interrupt_bulk_data_loop:
-			cmp timeout, #0
-			ble usb2032_interrupt_bulk_error
-
-			push {r0-r3}
-			push {split_ctl}
-			bl usb2032_transaction
-			add sp, sp, #4
-			mov response, r0
-			pop {r0-r3}
-
-			sub timeout, timeout, #1
-
-			tst response, #0x4                            @ ACK
-			beq usb2032_interrupt_bulk_data_loop
-
-			b usb2032_interrupt_bulk_success
-
-	usb2032_interrupt_bulk_error:
-		mov r0, #1
-		b usb2032_interrupt_bulk_common
-
-	usb2032_interrupt_bulk_success:
-		mov r0, #0
-
-	usb2032_interrupt_bulk_common:
-		mov r1, response
-		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r6,pc}
-
-.unreq channel
-.unreq character
-.unreq transfer_size
-.unreq buffer
-.unreq split_ctl
-.unreq response
-.unreq timeout
-
-
-/**
  * function usb2032_control
  * Control Communication with USB Device or Others
  *
@@ -933,7 +744,7 @@ usb2032_interrupt_bulk:
  * r4: Channel N Split Control (Virtual Register), Reserved Bits expects SBZ (Zeros)
  *   r4 Bit[6:0]: Port Address
  *   r4 Bit[13:7]: Hub Address
- *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All
+ *   r4 Bit[15:14]: Position of Transaction, 0 Middle, 1 End, 2 Begin, 3 All (Only in Isochoronous OUT)
  *   r4 Bit[16]: Complete Split
  *   r4 Bit[31]: Disable(0)/Enable(1) Split Control
  *
@@ -990,6 +801,7 @@ macro32_debug response 500 288
 macro32_debug ip 500 300
 */
 
+
 	/* Data Stage */
 	usb2032_control_data:
 
@@ -1016,8 +828,10 @@ macro32_debug ip 500 300
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_data_loop
 
+/*
 macro32_debug transfer_size 500 312
 macro32_debug ip 500 324
+*/
 
 
 	/* Status Stage */
@@ -1072,6 +886,7 @@ macro32_debug ip 500 324
 /**
  * function usb2032_transaction
  * Sequence of USB2.0 OTG Host Transaction
+ * Use in Interrupt/bulk/Isochoronous Communication with USB Devices.
  *
  * Parameters
  * r0: Channel 0-15
@@ -1124,15 +939,16 @@ usb2032_transaction:
 	temp               .req r5
 	exe_sender         .req r6
 	exe_receiver       .req r7
-	response           .req r8
-	transfer_size_last .req r9
+	packet_max         .req r8
+	packet             .req r9
 	timeout_nyet       .req r10
+	transfer_size_rsv  .req r11
 
-	push {r4-r10,lr}
+	push {r4-r11,lr}
 
-	add sp, sp, #32                                                        @ r4-r10 and lr offset 32 bytes
+	add sp, sp, #36                                                        @ r4-r11 and lr offset 36 bytes
 	pop {split_ctl}                                                        @ Get Fifth Argument
-	sub sp, sp, #36 	
+	sub sp, sp, #40 	
 
 	ldr temp, USB2032_STATUS
 	tst temp, #0x1
@@ -1149,9 +965,62 @@ usb2032_transaction:
 
 	push {r0-r3}
 	mov r0, buffer
-	mov r1, #1                                @ Clean
+	mov r1, #1                                   @ Clean
 	bl arm32_cache_operation_heap
 	pop {r0-r3}
+
+	mov transfer_size_rsv, #0
+
+	tst split_ctl, #0x80000000
+	beq usb2032_transaction_main
+
+	/**
+	 * In Split Transaction, we needed to treat each packet manually.
+	 * Caution that if you exceed the transfer size which is intended by device,
+	 * Device Returns STALL.
+	 */
+
+	bic split_ctl, split_ctl, #0x00010000                    @ Clear Complete Bit[16] Just in Case
+	mov transfer_size_rsv, transfer_size
+
+	bic packet, transfer_size_rsv, #0xE0000000               @ Clear PING Bit[31] and PID bit[30:29]
+	lsr packet, packet, #19                                  @ Get Only Value of Packet Count
+	cmp packet, #1
+	movle transfer_size_rsv, #0                              @ If Transfer is Only One Packet
+	ble usb2032_transaction_main
+
+	usb2032_transaction_split:
+
+		lsl packet_max, character, #21
+		lsr packet_max, packet_max, #21                      @ Get Only Value of Max. Packet
+
+		bic packet, transfer_size_rsv, #0xE0000000           @ Clear PING Bit[31] and PID bit[30:29]
+		lsr packet, packet, #19                              @ Get Only Value of Packet Count
+
+		tst split_ctl, #0x00010000                           @ If Already in Multi-packets Sequence of Split
+		bicne split_ctl, split_ctl, #0x00010000              @ Clear Bit[16]
+		addne buffer, buffer, packet_max                     @ Slide Buffer Position
+
+		cmp packet, #1                                       @ If Last Packet
+		movle transfer_size, transfer_size_rsv
+		movle transfer_size_rsv, #0                          @ Clear
+		ble usb2032_transaction_main                         @ If Last Packet in Multi-packets Sequence of Split
+
+		/* Make Transfer One Packet and Size of Max. Packet Size */
+		mov transfer_size, transfer_size_rsv
+		and transfer_size, transfer_size, #0xE0000000        @ Mask PING Bit[31] and PID bit[30:29]
+		orr transfer_size, transfer_size, packet_max
+		orr transfer_size, transfer_size, #1<<19
+
+		sub transfer_size_rsv, transfer_size_rsv, #1<<19     @ Subtract One Packet
+		sub transfer_size_rsv, transfer_size_rsv, packet_max @ Subtract Size of Packet to Transfer Size
+
+		eor transfer_size_rsv, transfer_size_rsv, #1<<30     @ Alternate PID DATA0 and DATA1
+		
+		.unreq packet_max
+		.unreq packet
+		response           .req r8
+		transfer_size_last .req r9
 
 	usb2032_transaction_main:
 
@@ -1187,17 +1056,20 @@ usb2032_transaction:
 		tst split_ctl, #0x00010000            @ Test Complete Bit[16] If Split Enable
 		bne usb2032_transaction_main_common
 
-		orr split_ctl, #0x00010000            @ Complete Bit[16] High If No Complete
+		orr split_ctl, split_ctl, #0x00010000 @ Complete Bit[16] High If No Complete
 		b usb2032_transaction_main            @ Complete Transaction
 
 		usb2032_transaction_main_common:
-			tst response, #0x20               @ NYET Bit[5]
+			tst response, #0x20                  @ NYET Bit[5]
 			subne timeout_nyet, timeout_nyet, #1 
 			bne usb2032_transaction_main
 
+			cmp transfer_size_rsv, #0
+			bne usb2032_transaction_split
+
 			push {r0-r3}
 			mov r0, buffer
-			mov r1, #0                        @ Invalidate
+			mov r1, #0                           @ Invalidate
 			bl arm32_cache_operation_heap
 			pop {r0-r3}
 
@@ -1224,7 +1096,7 @@ usb2032_transaction:
 
 	usb2032_transaction_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r10,pc}
+		pop {r4-r11,pc}
 
 .unreq channel
 .unreq character
@@ -1237,6 +1109,7 @@ usb2032_transaction:
 .unreq response
 .unreq transfer_size_last
 .unreq timeout_nyet
+.unreq transfer_size_rsv
 
 
 /**

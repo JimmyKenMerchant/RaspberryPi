@@ -99,6 +99,10 @@ hid32_hid_activate:
 	mov temp, r1
 	pop {r0-r3}
 
+macro32_debug response, 0, 512
+macro32_debug temp, 0, 524
+macro32_debug_hexa buffer_rx, 0, 536, 64
+
 	ldrb temp, [buffer_rx, #4]
 	cmp temp, #0x00                                @ Device Class is HID (on Device Descriptor) or Not
 	bne hid32_hid_activate_error2
@@ -137,9 +141,6 @@ macro32_debug addr_device, 0, 300
 	mov temp, r1
 	pop {r0-r3}
 
-macro32_debug response, 0, 312
-macro32_debug temp, 0, 324
-
 	cmp response, #1
 	beq hid32_hid_activate_error3
 
@@ -177,10 +178,13 @@ macro32_debug temp, 0, 324
 
 	/* Set Idle */
 
-	mov temp, #equ32_usb20_reqt_recipient_interface|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	mov temp, #equ32_usb20_reqt_recipient_interface|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_hid_set_idle<<8             @ bRequest
 	orr temp, temp, #0<<16                                       @ wValue
 	str temp, [buffer_rq]
+	mov temp, num_interface                                      @ wIndex
+	orr temp, temp, #0<<16                                       @ wLength
+	str temp, [buffer_rq, #4]
 
 	push {r0-r3}
 	push {split_ctl,buffer_rx}
@@ -190,6 +194,9 @@ macro32_debug temp, 0, 324
 	mov temp, r1
 	pop {r0-r3}
 
+macro32_debug response, 0, 312
+macro32_debug temp, 0, 324
+
 	/* Get Device Descriptor Again */
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -198,7 +205,7 @@ macro32_debug temp, 0, 324
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #64<<16                                      @ wLength
+	orr temp, temp, #18<<16                                      @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, #8                              @ Maximam Packet Size
@@ -208,8 +215,8 @@ macro32_debug temp, 0, 324
 	orr character, character, addr_device, lsl #18 @ Device Address
 	orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
 
-	mov transfer_size, #64                         @ Transfer Size is 64 Bytes
-	orr transfer_size, transfer_size, #8<<19       @ Transfer Packet is 8 Packets
+	mov transfer_size, #18                         @ Transfer Size is 18 Bytes
+	orr transfer_size, transfer_size, #3<<19       @ Transfer Packet is 3 Packets
 	orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 	push {r0-r3}
@@ -220,10 +227,6 @@ macro32_debug temp, 0, 324
 	mov temp, r1
 	pop {r0-r3}
 
-macro32_debug response, 0, 512
-macro32_debug temp, 0, 524
-macro32_debug_hexa buffer_rx, 0, 536, 64
-
 	/* Get Configuration, Interface, Endpoint Descriptors  */
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -232,7 +235,7 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 	orr temp, temp, #equ32_usb20_val_descriptor_configuration<<16 @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                  @ wIndex
-	orr temp, temp, #64<<16                                       @ wLength
+	orr temp, temp, #32<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, #8                              @ Maximam Packet Size
@@ -242,8 +245,8 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 	orr character, character, addr_device, lsl #18 @ Device Address
 	orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
 
-	mov transfer_size, #64                         @ Transfer Size is 64 Bytes
-	orr transfer_size, transfer_size, #8<<19       @ Transfer Packet is 8 Packets
+	mov transfer_size, #32                         @ Transfer Size is 64 Bytes
+	orr transfer_size, transfer_size, #4<<19       @ Transfer Packet is 8 Packets
 	orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 	push {r0-r3}
