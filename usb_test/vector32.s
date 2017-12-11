@@ -276,18 +276,14 @@ macro32_debug r0 500 174
 
 macro32_debug r0 500 186
 
-	mov r0, #1                      @ Hub Port #1
-	orr r0, r0, #1<<7               @ Hub Address #1
-	orr r0, r0, #0x80000000         @ Split Enable
-	push {r0}
-
 	mov r0, #2
 	mov r1, #1
 	mov r2, #0
-	mov r3, #1
+	mov r3, #1                      @ Hub Port #1
+	orr r3, r3, #1<<7               @ Hub Address #1
+	orr r3, r3, #0x80000000         @ Split Enable
 
 	bl hid32_hid_activate
-	add sp, sp, #4
 
 macro32_debug r0 500 198
 
@@ -357,6 +353,41 @@ os_fiq:
 
 	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
 
+	/* Get HID IN */
+
+	/* Buffer */
+	push {lr}
+	mov r0, #2                      @ 4 Bytes by 2 Words Equals 8 Bytes
+	bl heap32_malloc
+	mov r3, r0
+	pop {lr}
+
+	mov r0, #2                      @ Channel
+	mov r1, #1                      @ Endpoint
+	mov r2, #2                      @ Device Address
+
+	/* Split Control */
+	mov r4, #1                      @ Hub Port #1
+	orr r4, r4, #1<<7               @ Hub Address #1
+	orr r4, r4, #0x80000000         @ Split Enable
+
+	push {r0-r3,lr}
+	push {r4}
+	bl hid32_hid_get
+	add sp, sp, #4
+	mov r4, r0
+	pop {r0-r3,lr}
+
+macro32_debug r4, 300, 0
+macro32_debug r3, 300, 12
+macro32_debug_hexa r3, 300, 24, 8
+
+	push {lr}
+	mov r0, r3
+	bl heap32_mfree
+	pop {lr}
+
+	macro32_dsb ip
 	pop {r0-r7}
 	mov pc, lr
 

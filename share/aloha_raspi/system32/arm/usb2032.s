@@ -35,6 +35,95 @@
 
 
 /**
+ * function usb2032_clear_halt
+ * Clear Halted Endpoint
+ *
+ * Parameters
+ * r0: Channel 0-15
+ * r1: Character
+ * r2: Endpoint
+ * r3: Split Control
+ *
+ * Return: r0 (Response, -1 as Error)
+ * Error(-1): Failed Memory Allocation
+ */
+.globl usb2032_clear_halt
+usb2032_clear_halt:
+	/* Auto (Local) Variables, but just Aliases */
+	channel         .req r0
+	character       .req r1
+	transfer_size   .req r2
+	buffer_rq       .req r3
+	split_ctl       .req r4
+	buffer_rx       .req r5
+	temp            .req r6
+	response        .req r7
+	num_endpoint    .req r8
+
+	push {r4-r8,lr}
+
+	mov num_endpoint, transfer_size
+	mov split_ctl, buffer_rq
+
+	push {r0-r3}
+	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
+	bl heap32_malloc
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
+	beq usb2032_clear_halt_error1
+	mov buffer_rq, temp
+
+	mov transfer_size, #0
+	mov buffer_rx, #0
+
+	/* Clear Endpoint Halt */
+	mov temp, #equ32_usb20_reqt_recipient_endpoint|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_clear_feature<<8            @ bRequest
+	orr temp, temp, #equ32_usb20_val_endpoint_halt<<16           @ wValue
+	str temp, [buffer_rq]
+	mov temp, num_endpoint                                       @ wIndex
+	orr temp, temp, #0<<16                                       @ wLength
+	str temp, [buffer_rq, #4]
+
+	push {r0-r3}
+	push {split_ctl,buffer_rx}
+	bl usb2032_control
+	add sp, sp, #8
+	mov response, r0
+	mov temp, r1
+	pop {r0-r3}
+
+	b usb2032_clear_halt_success
+
+	usb2032_clear_halt_error1:
+		mvn r0, #0                        @ Return with -1
+		b usb2032_clear_halt_common
+
+	usb2032_clear_halt_success:
+		mov r0, response
+
+	usb2032_clear_halt_common:
+		push {r0-r3}
+		mov r0, buffer_rq
+		bl heap32_mfree
+		pop {r0-r3}
+
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {r4-r8,pc}
+
+.unreq channel
+.unreq character
+.unreq transfer_size
+.unreq buffer_rq
+.unreq split_ctl
+.unreq buffer_rx
+.unreq temp
+.unreq response
+.unreq num_endpoint
+
+
+/**
  * function usb2032_hub_activate
  * Search and Activate Hub
  *
@@ -750,8 +839,9 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
  *
  * r5: Receive Buffer
  *
- * Return: r0 (0 as success, 1 as error), r1 (last status of channel)
+ * Return: r0 (0 as success, 1 and 2 as error), r1 (last status of channel)
  * Error(1): Failure of Communication (Time Out)
+ * Error(2): Failure of Communication (STALL Shake Hand)
  */
 .globl usb2032_control
 usb2032_control:
@@ -778,7 +868,7 @@ usb2032_control:
 
 		usb2032_control_setup_loop:
 			cmp timeout, #0
-			ble usb2032_control_error
+			ble usb2032_control_error1
 
 			push {r0-r3}
 			bic character, character, #1<<15              @ Out(0)
@@ -793,6 +883,9 @@ usb2032_control:
 			pop {r0-r3}
 
 			sub timeout, timeout, #1
+
+			tst response, #0x10                           @ STALL
+			bne usb2032_control_error2
 
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_setup_loop
@@ -812,7 +905,7 @@ macro32_debug ip 500 300
 
 		usb2032_control_data_loop:
 			cmp timeout, #0
-			ble usb2032_control_error
+			ble usb2032_control_error1
 
 			push {r0-r3}
 			mov r3, buffer_rx
@@ -824,6 +917,9 @@ macro32_debug ip 500 300
 			pop {r0-r3}
 
 			sub timeout, timeout, #1
+
+			tst response, #0x10                           @ STALL
+			bne usb2032_control_error2
 
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_data_loop
@@ -841,7 +937,7 @@ macro32_debug ip 500 324
 
 		usb2032_control_status_loop:
 			cmp timeout, #0
-			ble usb2032_control_error
+			ble usb2032_control_error1
 
 			push {r0-r3}
 			eor character, character, #1<<15              @ Reverse In/Out
@@ -856,13 +952,20 @@ macro32_debug ip 500 324
 
 			sub timeout, timeout, #1
 
+			tst response, #0x10                           @ STALL
+			bne usb2032_control_error2
+
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_status_loop
 
 			b usb2032_control_success
 
-	usb2032_control_error:
+	usb2032_control_error1:
 		mov r0, #1
+		b usb2032_control_common
+
+	usb2032_control_error2:
+		mov r0, #2
 		b usb2032_control_common
 
 	usb2032_control_success:
@@ -1566,15 +1669,20 @@ usb2032_otg_host_reset_bcm:
 
 	usb2032_otg_host_reset_bcm_jump:
 
+		/* Power to Good Delay */
+		push {r0-r3,lr}
+		mov r0, #0x19000                                           @ 102.400 ms
+		bl arm32_sleep
+		pop {r0-r3,lr}
+
 		orr temp, #0x00000100                                      @ Port Reset Bit[8]
 		str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
 		macro32_dsb ip
 
+		/* Interval for Set/Clear Reset */
 		push {r0-r3,lr}
-
 		mov r0, #0xEB00                                            @ 60160 us, 60.160 ms
-
 		bl arm32_sleep
 		pop {r0-r3,lr}
 
@@ -1601,12 +1709,6 @@ usb2032_otg_host_reset_bcm:
 			 */
 			bic temp, #0x4                                         @ Clear Port Enable Bit[2] Because Write-clear
 			str temp, [memorymap_base, #equ32_usb20_otg_hprt]
-
-			/* Power to Good Delay */
-			push {r0-r3,lr}
-			mov r0, #0x2800                                        @ 10.240 ms
-			bl arm32_sleep
-			pop {r0-r3,lr}
 
 			/**
 			 * Global OTG Control ans Status

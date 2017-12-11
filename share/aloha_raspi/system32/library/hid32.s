@@ -18,8 +18,7 @@ HID32_USB2032_ADDRESS_LENGTH: .word USB2032_ADDRESS_LENGTH
  * r0: Channel 0-15
  * r1: Number of Configuration for HID on Device (Starting from 1)
  * r2: Number of Interface for HID on Device (Starting from 0)
- * r3: Number of Endpoint for HID on Device (Starting from 1)
- * r4: Split Control
+ * r3: Split Control
  *
  * Return: r0 (Device Address, -1 and -2 as Error)
  * Error(-1): Failed Memory Allocation
@@ -39,18 +38,14 @@ hid32_hid_activate:
 	temp            .req r7
 	num_config      .req r8
 	num_interface   .req r9
-	num_endpoint    .req r10
-	addr_device     .req r11
+	addr_device     .req r10
+	packet_max      .req r11
 
 	push {r4-r11,lr}
 
-	add sp, sp, #36                    @ r4-r11 and lr offset 36 bytes
-	pop {split_ctl}                    @ Get Fifth Arguments
-	sub sp, sp, #40                    @ Retrieve SP
-
 	mov num_config, character
 	mov num_interface, transfer_size
-	mov num_endpoint, buffer_rq
+	mov split_ctl, buffer_rq
 
 	push {r0-r3}
 	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
@@ -107,6 +102,8 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 	cmp temp, #0x00                                @ Device Class is HID (on Device Descriptor) or Not
 	bne hid32_hid_activate_error2
 
+	ldrb packet_max, [buffer_rx, #7]
+
 	/* Set Address  */
 
 	ldr temp, HID32_USB2032_ADDRESS_LENGTH
@@ -124,7 +121,7 @@ macro32_debug addr_device, 0, 300
 	orr temp, temp, #0<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
-	mov character, #8                             @ Maximam Packet Size
+	mov character, packet_max                     @ Maximam Packet Size
 	orr character, character, #0<<11              @ Endpoint Number
 	orr character, character, #0<<15              @ In(1)/Out(0)
 	orr character, character, #0<<16              @ Endpoint Type
@@ -208,7 +205,7 @@ macro32_debug temp, 0, 324
 	orr temp, temp, #18<<16                                      @ wLength
 	str temp, [buffer_rq, #4]
 
-	mov character, #8                              @ Maximam Packet Size
+	mov character, packet_max                      @ Maximam Packet Size
 	orr character, character, #0<<11               @ Endpoint Number
 	orr character, character, #1<<15               @ In(1)/Out(0)
 	orr character, character, #0<<16               @ Endpoint Type
@@ -231,14 +228,14 @@ macro32_debug temp, 0, 324
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_get_descriptor<<8            @ bRequest
-	orr temp, temp, num_config, lsl #16                           @ wValue, Descriptor Index
+	orr temp, temp, #0<<16                                        @ wValue, Descriptor Index
 	orr temp, temp, #equ32_usb20_val_descriptor_configuration<<16 @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                  @ wIndex
 	orr temp, temp, #32<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
-	mov character, #8                              @ Maximam Packet Size
+	mov character, packet_max                      @ Maximam Packet Size
 	orr character, character, #0<<11               @ Endpoint Number
 	orr character, character, #1<<15               @ In(1)/Out(0)
 	orr character, character, #0<<16               @ Endpoint Type
@@ -257,9 +254,68 @@ macro32_debug temp, 0, 324
 	mov temp, r1
 	pop {r0-r3}
 
-macro32_debug response, 0, 548
-macro32_debug temp, 0, 560
-macro32_debug_hexa buffer_rx, 0, 572, 64
+	ldrb response, [buffer_rx, #2]                     @ Total Length
+
+macro32_debug response, 0, 348
+
+	/* Get Configuration, Interface, Endpoint Descriptors Again */
+
+	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_get_descriptor<<8            @ bRequest
+	orr temp, temp, #0<<16                                        @ wValue, Descriptor Index
+	orr temp, temp, #equ32_usb20_val_descriptor_configuration<<16 @ wValue, Descriptor Type
+	str temp, [buffer_rq]
+	mov temp, #0                                                  @ wIndex
+	orr temp, temp, response, lsl #16                             @ wLength
+	str temp, [buffer_rq, #4]
+
+	mov character, packet_max                      @ Maximam Packet Size
+	orr character, character, #0<<11               @ Endpoint Number
+	orr character, character, #1<<15               @ In(1)/Out(0)
+	orr character, character, #0<<16               @ Endpoint Type
+	orr character, character, addr_device, lsl #18 @ Device Address
+	orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
+
+	mov transfer_size, response                    @ Transfer Size
+
+	add response, response, packet_max
+	sub response, response, #1
+	mov temp, #0
+	hid32_hid_activate_loop2:
+		subs response, response, packet_max
+		addge temp, temp, #1
+		bge hid32_hid_activate_loop2
+
+macro32_debug temp, 0, 360
+	
+	orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet is 8 Packets
+	orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+
+	push {r0-r3}
+	push {split_ctl,buffer_rx}
+	bl usb2032_control
+	add sp, sp, #8
+	mov response, r0
+	mov temp, r1
+	pop {r0-r3}
+
+macro32_debug response, 0, 560
+macro32_debug temp, 0, 572
+sub buffer_rx, buffer_rx, #4
+macro32_debug_hexa buffer_rx, 0, 584, 64
+add buffer_rx, buffer_rx, #4
+
+	cmp response, #2
+	bne hid32_hid_activate_success            @ If Not STALL
+
+	push {r0-r3}
+	mov r2, #0
+	mov r3, split_ctl
+	bl usb2032_clear_halt
+	mov response, r0
+	pop {r0-r3}
+
+macro32_debug response, 0, 608
 
 	/* Get HID Report */
 
@@ -304,5 +360,75 @@ macro32_debug_hexa buffer_rx, 0, 572, 64
 .unreq temp
 .unreq num_config
 .unreq num_interface
+.unreq addr_device
+.unreq packet_max
+
+
+/**
+ * function hid32_hid_get
+ * Get Value from IN Endpoint
+ *
+ * Parameters
+ * r0: Channel 0-15
+ * r1: Number of Endpoint (Starting from 1)
+ * r2: Device Address
+ * r3: Buffer
+ * r4: Split Control
+ *
+ * Return: r0 (Status of Channel, -1 and -2 as Error)
+ * Error(-1): Failed Memory Allocation
+ */
+.globl hid32_hid_get
+hid32_hid_get:
+	/* Auto (Local) Variables, but just Aliases */
+	channel         .req r0
+	character       .req r1
+	transfer_size   .req r2
+	buffer          .req r3
+	split_ctl       .req r4
+	response        .req r5
+	temp            .req r6
+	num_endpoint    .req r7
+	addr_device     .req r8
+
+	push {r4-r8,lr}
+
+	add sp, sp, #24                    @ r4-r8 and lr offset 24 bytes
+	pop {split_ctl}                    @ Get Fifth Arguments
+	sub sp, sp, #28                    @ Retrieve SP
+
+	mov num_endpoint, character
+	mov addr_device, transfer_size
+
+	mov character, #8                               @ Maximam Packet Size
+	orr character, character, num_endpoint, lsl #11 @ Endpoint Number
+	orr character, character, #1<<15                @ In(1)/Out(0)
+	orr character, character, #3<<16                @ Endpoint Type
+	orr character, character, addr_device, lsl #18  @ Device Address
+	orr character, character, #1<<25                @ Full and High Speed(0)/Low Speed(1)
+
+	mov transfer_size, #8                          @ Transfer Size is 8 Bytes
+	orr transfer_size, transfer_size, #0x00080000  @ Transfer Packet is 1 Packet
+	orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+
+	push {r0-r3}
+	push {split_ctl}
+	bl usb2032_transaction
+	add sp, sp, #4
+	mov response, r0
+	pop {r0-r3}
+
+	hid32_hid_get_common:
+		mov r0, response
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {r4-r8,pc}
+
+.unreq channel
+.unreq character
+.unreq transfer_size
+.unreq buffer
+.unreq split_ctl
+.unreq response
+.unreq temp
 .unreq num_endpoint
 .unreq addr_device
