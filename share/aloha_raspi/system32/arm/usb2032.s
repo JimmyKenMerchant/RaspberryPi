@@ -27,9 +27,12 @@
  *
  * 6. On Status stage, its PID must be DATA1.
  *
- * 7. December 8, 2017. Trial on HUB. Zero W with External Hub Worked the Enumeration.
- *    2B (V1.1) did not worked. Getting descriptors of LAN9514 was not succeeded (all descriptors are empty).
- *    LAN9514 seems to be connecting with an EEPROM, so we probably needed to power the EEPROM on.
+ * 7. December 8, 2017. Trial on HUB. Zero W with an external hub worked the enumeration.
+ *
+ * 8. December 12, 2017. Trianl on HUB. 2B (V1.1) with LAN9514 can be fully gotten the device descriptor.
+ *    From BCM2836, DMA alignment seems to be 32-bytes.
+ *    But, after the enumeration (SET_ADDRESS), transaction error is issued on the next transaction.
+ *    PING may be needed to hide the transaction error.
  *
  */
 
@@ -66,11 +69,21 @@ usb2032_clear_halt:
 	mov split_ctl, buffer_rq
 
 	push {r0-r3}
-	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
+	mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl heap32_malloc
 	mov temp, r0
 	pop {r0-r3}
-	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
+	cmp temp, #0
+	beq usb2032_clear_halt_error1
+	mov buffer_rq, temp
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rq
+	bl heap32_align_32
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
 	beq usb2032_clear_halt_error1
 	mov buffer_rq, temp
 
@@ -106,6 +119,7 @@ usb2032_clear_halt:
 	usb2032_clear_halt_common:
 		push {r0-r3}
 		mov r0, buffer_rq
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 
@@ -154,20 +168,39 @@ usb2032_hub_activate:
 	mov split_ctl, #0x0
 
 	push {r0-r3}
-	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl heap32_malloc
 	mov temp, r0
 	pop {r0-r3}
-	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
+	cmp temp, #0
+	beq usb2032_hub_activate_error1
+	mov buffer_rq, temp
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rq
+	bl heap32_align_32
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
 	beq usb2032_hub_activate_error1
 	mov buffer_rq, temp
 
 	push {r0-r3}
-	mov r0, #16                        @ 4 Bytes by 16 Words Equals 64 Bytes
+	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
 	bl heap32_malloc
 	mov buffer_rx, r0
 	pop {r0-r3}
-	cmp buffer_rx, #0                  @ DMA Needs DWORD(32bit) aligned
+	cmp buffer_rx, #0
+	beq usb2032_hub_activate_error1
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rx
+	bl heap32_align_32
+	mov buffer_rx, r0
+	pop {r0-r3}
+	cmp buffer_rx, #0
 	beq usb2032_hub_activate_error1
 
 	/*
@@ -413,11 +446,13 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 	usb2032_hub_activate_common:
 		push {r0-r3}
 		mov r0, buffer_rq
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 
 		push {r0-r3}
 		mov r0, buffer_rx
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 
@@ -474,20 +509,39 @@ usb2032_hub_search_device:
 	mov split_ctl, #0x0
 
 	push {r0-r3}
-	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl heap32_malloc
 	mov temp, r0
 	pop {r0-r3}
-	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
+	cmp temp, #0
+	beq usb2032_hub_search_device_error1
+	mov buffer_rq, temp
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rq
+	bl heap32_align_32
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
 	beq usb2032_hub_search_device_error1
 	mov buffer_rq, temp
 
 	push {r0-r3}
-	mov r0, #16                        @ 4 Bytes by 16 Words Equals 64 Bytes
+	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
 	bl heap32_malloc
 	mov buffer_rx, r0
 	pop {r0-r3}
-	cmp buffer_rx, #0                  @ DMA Needs DWORD(32bit) aligned
+	cmp buffer_rx, #0
+	beq usb2032_hub_search_device_error1
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rx
+	bl heap32_align_32
+	mov buffer_rx, r0
+	pop {r0-r3}
+	cmp buffer_rx, #0
 	beq usb2032_hub_search_device_error1
 
 	/* Get Device Descriptor */
@@ -781,11 +835,13 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 	usb2032_hub_search_device_common:
 		push {r0-r3}
 		mov r0, buffer_rq
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 
 		push {r0-r3}
 		mov r0, buffer_rx
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 

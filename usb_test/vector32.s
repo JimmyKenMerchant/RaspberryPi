@@ -357,8 +357,14 @@ os_fiq:
 
 	/* Buffer */
 	push {lr}
-	mov r0, #2                      @ 4 Bytes by 2 Words Equals 8 Bytes
+	mov r0, #10                      @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl heap32_malloc
+	mov r3, r0
+	pop {lr}
+
+	push {lr}
+	mov r0, r3
+	bl heap32_align_32
 	mov r3, r0
 	pop {lr}
 
@@ -384,6 +390,7 @@ macro32_debug_hexa r3, 300, 24, 8
 
 	push {lr}
 	mov r0, r3
+	bl heap32_clear_align
 	bl heap32_mfree
 	pop {lr}
 

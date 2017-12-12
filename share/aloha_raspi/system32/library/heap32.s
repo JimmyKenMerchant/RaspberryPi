@@ -407,6 +407,100 @@ heap32_mcopy:
 
 
 /**
+ * function heap32_align_32
+ * Align Heap By 32 Bytes (8 Words)
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space
+ *
+ * Return: r0 (Aligned Address, 0 as Error)
+ * Error: Alignment Is Not Succeeded
+ */
+.globl heap32_align_32
+heap32_align_32:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	block_size       .req r1
+	heap_start       .req r2
+	heap_size        .req r3
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_align_32_error
+
+	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	ldr block_size, [block_start]
+	add block_size, block_start, block_size
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_align_32_error                   @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+
+	cmp block_start, heap_start
+	blo heap32_align_32_error
+
+	.unreq heap_start
+	block_start_dup .req r2
+
+	add block_start, block_start, #4            @ Retrieve Start Address
+
+	mov block_start_dup, block_start
+
+	heap32_align_32_loop:
+		cmp block_start, block_size
+		bhs heap32_align_32_error
+
+		add block_start, block_start, #4
+		tst block_start, #0x1F                  @ Check If 32 Bytes Align or Not
+
+		bne heap32_align_32_loop
+
+		str block_start_dup, [block_start, #-4] @ Store Start Address of HEAP
+
+		b heap32_align_32_common
+
+	heap32_align_32_error:
+		mov r0, #0
+
+	heap32_align_32_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		mov pc, lr
+
+.unreq block_start
+.unreq block_size
+.unreq block_start_dup
+.unreq heap_size
+
+
+/**
+ * function heap32_clear_align
+ * Clear Alignment
+ *
+ * Parameters
+ * r0: Pointer of Aligned Address of Memory Space by heap32_align_*
+ *
+ * Return: r0 (Start Address of Memory Space)
+ */
+.globl heap32_clear_align
+heap32_clear_align:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Indicator of Start Address of Heap
+	ldr block_start, [block_start]
+
+	heap32_clear_align_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		mov pc, lr
+
+.unreq block_start
+
+
+/**
  * function heap32_mfill
  * Fill Memory Space by Any Value
  *

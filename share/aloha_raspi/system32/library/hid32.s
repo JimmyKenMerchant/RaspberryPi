@@ -48,20 +48,39 @@ hid32_hid_activate:
 	mov split_ctl, buffer_rq
 
 	push {r0-r3}
-	mov r0, #2                         @ 4 Bytes by 2 Words Equals 8 Bytes
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl heap32_malloc
 	mov temp, r0
 	pop {r0-r3}
-	cmp temp, #0                       @ DMA Needs DWORD(32bit) aligned
+	cmp temp, #0
+	beq hid32_hid_activate_error1
+	mov buffer_rq, temp
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rq
+	bl heap32_align_32
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
 	beq hid32_hid_activate_error1
 	mov buffer_rq, temp
 
 	push {r0-r3}
-	mov r0, #16                        @ 4 Bytes by 16 Words Equals 64 Bytes
+	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
 	bl heap32_malloc
 	mov buffer_rx, r0
 	pop {r0-r3}
-	cmp buffer_rx, #0                  @ DMA Needs DWORD(32bit) aligned
+	cmp buffer_rx, #0
+	beq hid32_hid_activate_error1
+
+	/* DMA Needs DWORD(32 Bytes) aligned */
+	push {r0-r3}
+	mov r0, buffer_rx
+	bl heap32_align_32
+	mov buffer_rx, r0
+	pop {r0-r3}
+	cmp buffer_rx, #0
 	beq hid32_hid_activate_error1
 
 	/* Get Device Descriptor  */
@@ -339,11 +358,13 @@ macro32_debug response, 0, 608
 	hid32_hid_activate_common:
 		push {r0-r3}
 		mov r0, buffer_rq
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 
 		push {r0-r3}
 		mov r0, buffer_rx
+		bl heap32_clear_align
 		bl heap32_mfree
 		pop {r0-r3}
 
