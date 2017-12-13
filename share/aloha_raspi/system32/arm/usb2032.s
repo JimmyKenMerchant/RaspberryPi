@@ -29,10 +29,15 @@
  *
  * 7. December 8, 2017. Trial on HUB. Zero W with an external hub worked the enumeration.
  *
- * 8. December 12, 2017. Trianl on HUB. 2B (V1.1) with LAN9514 can be fully gotten the device descriptor.
+ * 8. December 12, 2017. Trial on HUB. 2B (V1.1) with LAN9514 can be fully gotten the device descriptor.
  *    From BCM2836, DMA alignment seems to be 32-bytes.
- *    But, after the enumeration (SET_ADDRESS), transaction error is issued on the next transaction.
- *    PING may be needed to hide the transaction error.
+ *    Plus, each transfer seems to consist with 4-bytes (one word) blocks,
+ *    e.g., if you intended to receive 18 bytes on transfer to get the device descriptor, device returns 20 bytes.
+ *    This may cause overflow of memory space that you assigned.
+ *    Also, from BCM2836, USB HCD seems to have a buffer on the side of the peripheral to store requests of set-up from ARM.
+ *    This buffer is tied with memory address on DMA. So if you re-use same memory address for another request,
+ *    it causes an odd transaction that makes STALL.
+ *    Besides, the amount of issuing transaction error is reduced less than BCM2835.  
  *
  */
 
@@ -945,11 +950,11 @@ usb2032_control:
 
 			tst response, #0x4                            @ ACK
 			beq usb2032_control_setup_loop
+
 /*
 macro32_debug response 500 288
 macro32_debug ip 500 300
 */
-
 
 	/* Data Stage */
 	usb2032_control_data:
@@ -984,7 +989,6 @@ macro32_debug ip 500 300
 macro32_debug transfer_size 500 312
 macro32_debug ip 500 324
 */
-
 
 	/* Status Stage */
 	usb2032_control_status:
@@ -1043,6 +1047,24 @@ macro32_debug ip 500 324
 
 
 /**
+ * Variables to be used in transactions.
+ */
+USB2032_SETTER:                 .word 0x00
+USB2032_SENDER:                 .word 0x00
+USB2032_RECEIVER:               .word 0x00
+
+usb2032_otg_host_setter_addr:   .word usb2032_otg_host_setter
+usb2032_otg_host_sender_addr:   .word usb2032_otg_host_sender
+usb2032_otg_host_receiver_addr: .word usb2032_otg_host_receiver
+
+/**
+ * Activated (1) / Deactivated (0) Bit[0]
+ */
+USB2032_STATUS:                 .word 0x00
+USB2032_ADDRESS_LENGTH:         .word 0x00
+
+
+/**
  * function usb2032_transaction
  * Sequence of USB2.0 OTG Host Transaction
  * Use in Interrupt/bulk/Isochoronous Communication with USB Devices.
@@ -1083,6 +1105,7 @@ macro32_debug ip 500 324
  * Bit[5]: NYET
  * Bit[6]: Internal Bus Error
  * Bit[7]: Transaction and Other Errors
+ * Bit[8] and More May Exist on SoC
  * Bit[29]: USB HCD is Not Activated, r1 will be 0
  * Bit[30]: Channel is Already Enabled, r1 will be 0
  * Bit[31]: Time Out, r1 will be 0
@@ -1124,6 +1147,7 @@ usb2032_transaction:
 
 	push {r0-r3}
 	mov r0, buffer
+	bl heap32_clear_align
 	mov r1, #1                                   @ Clean
 	bl arm32_cache_operation_heap
 	pop {r0-r3}
@@ -1228,6 +1252,7 @@ usb2032_transaction:
 
 			push {r0-r3}
 			mov r0, buffer
+			bl heap32_clear_align
 			mov r1, #0                           @ Invalidate
 			bl arm32_cache_operation_heap
 			pop {r0-r3}
@@ -1287,6 +1312,7 @@ usb2032_transaction:
  * Bit[5]: NYET
  * Bit[6]: Internal Bus Error
  * Bit[7]: Transaction and Other Errors
+ * Bit[8] and More May Exist on SoC
  * Bit[31]: Time Out
  */
 .globl usb2032_otg_host_receiver
@@ -1319,7 +1345,9 @@ usb2032_otg_host_receiver:
 
 
 		/**
+		 * These Interrupts are on BCM2835
 		 * Bit[11] and over may exist in case of some SoC
+		 *
 		 * Data Toggle Error Bit[10]
 		 * Frame Overrun Bit[9]
 		 * Babble Error Bit[8]
@@ -1809,18 +1837,3 @@ usb2032_otg_host_reset_bcm:
 .unreq memorymap_base
 .unreq temp
 .unreq timeout
-
-USB2032_SETTER:                 .word 0x00
-USB2032_SENDER:                 .word 0x00
-USB2032_RECEIVER:               .word 0x00
-
-usb2032_otg_host_setter_addr:   .word usb2032_otg_host_setter
-usb2032_otg_host_sender_addr:   .word usb2032_otg_host_sender
-usb2032_otg_host_receiver_addr: .word usb2032_otg_host_receiver
-
-/**
- * Activated (1) / Deactivated (0) Bit[0]
- */
-
-USB2032_STATUS:                 .word 0x00
-USB2032_ADDRESS_LENGTH:         .word 0x00
