@@ -34,12 +34,162 @@
  *    Plus, each transfer seems to consist with 4-bytes (one word) blocks,
  *    e.g., if you intended to receive 18 bytes on transfer to get the device descriptor, device returns 20 bytes.
  *    This may cause overflow of memory space that you assigned.
- *    Also, from BCM2836, USB HCD seems to have a buffer on the side of the peripheral to store requests of set-up from ARM.
+ *    Also, from BCM2836, USB HCD seems to have a buffer on the side of the peripheral to store OUT data from ARM,
+ *    for example, requests of set-up.
  *    This buffer is tied with memory address on DMA. So if you re-use same memory address for another request,
  *    it causes an odd transaction that makes STALL.
  *    Besides, the amount of issuing transaction error is reduced less than BCM2835.  
  *
  */
+
+
+/**
+ * function usb2032_get_buffer_in
+ * Get Buffer (32 Bytes aligned) for IN
+ *
+ * Parameters
+ * r0: Number of Words, 1 Word means 4 Bytes
+ *
+ * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
+ */
+.globl usb2032_get_buffer_in
+usb2032_get_buffer_in:
+	/* Auto (Local) Variables, but just Aliases */
+	num_words       .req r0
+
+	push {lr}
+
+	add num_words, num_words, #8
+
+	push {r1-r3}
+	bl heap32_malloc
+	pop {r1-r3}
+
+	/* DMA Needs 32 Bytes aligned */
+	push {r1-r3}
+	bl heap32_align_32
+	pop {r1-r3}
+
+	usb2032_get_buffer_in_common:
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq num_words
+
+
+/**
+ * function usb2032_clear_buffer_in
+ * Clear Buffer for IN (32 Bytes aligned)
+ *
+ * Parameters
+ * r0: Address of Memory Space Created by usb2032_get_buffer_in
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error: Pointer of Start Address is Null (0)
+ */
+.globl usb2032_clear_buffer_in
+usb2032_clear_buffer_in:
+	/* Auto (Local) Variables, but just Aliases */
+	address       .req r0
+
+	push {lr}
+
+	bl heap32_clear_align
+	bl heap32_mfree
+
+	usb2032_clear_buffer_in_common:
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq address
+
+
+/**
+ * function usb2032_get_buffer_out
+ * Get Buffer (32 Bytes aligned) for OUT with Rotation
+ * From BCM2836, USB HCD seems to have a buffer on the side of the peripheral to store OUT data from ARM,
+ * for example, requests of set-up.
+ * This buffer is tied with memory address on DMA. So if you re-use same memory address for another request,
+ *
+ * Parameters
+ * r0: Number of Words, 1 Word means 4 Bytes
+ *
+ * Return: r0 (Pointer of Start Address of Memory Space, If Zero, Memory Allocation Fails)
+ */
+.globl usb2032_get_buffer_out
+usb2032_get_buffer_out:
+	/* Auto (Local) Variables, but just Aliases */
+	num_words       .req r0
+	array           .req r1
+	order           .req r2
+	heap            .req r3
+	temp            .req r4
+
+	push {r4,lr}
+
+	ldr array, usb2032_get_buffer_out_array
+	cmp array, #0
+	bne usb2032_get_buffer_out_main
+
+	push {r0-r3}
+	mov r0, #equ32_usb2032_get_buffer_out_array_limit
+	bl heap32_malloc
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	moveq num_words, temp
+	beq usb2032_get_buffer_out_common
+
+	mov array, temp
+	str array, usb2032_get_buffer_out_array
+
+	usb2032_get_buffer_out_main:
+
+		ldr order, usb2032_get_buffer_out_order
+		lsl order, order, #2             @ Substitute of Multiplication by 4
+		ldr heap, [array, order]
+
+		cmp heap, #0
+		beq usb2032_get_buffer_out_main_common
+
+		push {r0-r3}
+		mov r0, heap
+		bl heap32_mfree
+		pop {r0-r3}
+
+		usb2032_get_buffer_out_main_common:
+
+			add num_words, num_words, #8		
+
+			push {r1-r3}
+			bl heap32_malloc
+			pop {r1-r3}
+
+			str num_words, [array, order]
+
+			/* DMA Needs 32 Bytes aligned */
+			push {r1-r3}
+			bl heap32_align_32
+			pop {r1-r3}
+
+			lsr order, order, #2      @ Substitute of Division by 4
+			add order, order, #1
+			cmp order, #equ32_usb2032_get_buffer_out_array_limit
+			movge order, #0
+			str order, usb2032_get_buffer_out_order
+
+	usb2032_get_buffer_out_common:
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {r4,pc}
+
+.unreq num_words
+.unreq array
+.unreq order
+.unreq heap
+.unreq temp
+
+usb2032_get_buffer_out_array: .word 0x00
+usb2032_get_buffer_out_order: .word 0x00
 
 
 /**
@@ -75,17 +225,7 @@ usb2032_clear_halt:
 
 	push {r0-r3}
 	mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-	bl heap32_malloc
-	mov temp, r0
-	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_clear_halt_error1
-	mov buffer_rq, temp
-
-	/* DMA Needs DWORD(32 Bytes) aligned */
-	push {r0-r3}
-	mov r0, buffer_rq
-	bl heap32_align_32
+	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
 	cmp temp, #0
@@ -122,12 +262,6 @@ usb2032_clear_halt:
 		mov r0, response
 
 	usb2032_clear_halt_common:
-		push {r0-r3}
-		mov r0, buffer_rq
-		bl heap32_clear_align
-		bl heap32_mfree
-		pop {r0-r3}
-
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
 		pop {r4-r8,pc}
 
@@ -173,36 +307,8 @@ usb2032_hub_activate:
 	mov split_ctl, #0x0
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-	bl heap32_malloc
-	mov temp, r0
-	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_hub_activate_error1
-	mov buffer_rq, temp
-
-	/* DMA Needs DWORD(32 Bytes) aligned */
-	push {r0-r3}
-	mov r0, buffer_rq
-	bl heap32_align_32
-	mov temp, r0
-	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_hub_activate_error1
-	mov buffer_rq, temp
-
-	push {r0-r3}
 	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
-	bl heap32_malloc
-	mov buffer_rx, r0
-	pop {r0-r3}
-	cmp buffer_rx, #0
-	beq usb2032_hub_activate_error1
-
-	/* DMA Needs DWORD(32 Bytes) aligned */
-	push {r0-r3}
-	mov r0, buffer_rx
-	bl heap32_align_32
+	bl usb2032_get_buffer_in
 	mov buffer_rx, r0
 	pop {r0-r3}
 	cmp buffer_rx, #0
@@ -226,6 +332,15 @@ usb2032_hub_activate:
 	*/
 
 	/* Get Device Descriptor */
+
+	push {r0-r3}
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq usb2032_hub_activate_error1
+	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
@@ -254,6 +369,12 @@ usb2032_hub_activate:
 	mov temp, r1
 	pop {r0-r3}
 
+/*
+macro32_debug response, 0, 62
+macro32_debug temp, 0, 74
+macro32_debug_hexa buffer_rx, 0, 86, 64
+*/
+
 	ldrb device_class, [buffer_rx, #4]
 	cmp device_class, #9                                 @ Device Class is Hub or Not
 	bne usb2032_hub_activate_error2
@@ -263,6 +384,15 @@ usb2032_hub_activate:
 
 	/* Set Address  */
 
+	push {r0-r3}
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq usb2032_hub_activate_error1
+	mov buffer_rq, temp
+
 	ldr addr_device, USB2032_ADDRESS_LENGTH
 	add addr_device, addr_device, #1
 	str addr_device, USB2032_ADDRESS_LENGTH
@@ -271,9 +401,6 @@ usb2032_hub_activate:
 	orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
 	orr temp, temp, addr_device, lsl #16                         @ wValue, address
 	str temp, [buffer_rq]
-	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #0<<16                                       @ wLength
-	str temp, [buffer_rq, #4]
 
 	mov character, #64                            @ Maximam Packet Size
 	orr character, character, #0<<11              @ Endpoint Number
@@ -291,12 +418,17 @@ usb2032_hub_activate:
 	mov temp, r1
 	pop {r0-r3}
 
-/*
-macro32_debug response, 0, 312
-macro32_debug temp, 0, 324
-*/
 
 	/* Set Configuration  */
+
+	push {r0-r3}
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq usb2032_hub_activate_error1
+	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
@@ -313,23 +445,16 @@ macro32_debug temp, 0, 324
 	mov temp, r1
 	pop {r0-r3}
 
-	/* Clear Endpoint Halt */
-	/*
-	mov temp, #equ32_usb20_reqt_recipient_endpoint|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-	orr temp, temp, #equ32_usb20_req_clear_feature<<8            @ bRequest
-	orr temp, temp, #equ32_usb20_val_endpoint_halt<<16           @ wValue
-	str temp, [buffer_rq]
+	/* Remote Wakeup  */
 
 	push {r0-r3}
-	push {split_ctl,buffer_rx}
-	bl usb2032_control
-	add sp, sp, #8
-	mov response, r0
-	mov temp, r1
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
 	pop {r0-r3}
-	*/
-
-	/* Remote Wakeup  */
+	cmp temp, #0
+	beq usb2032_hub_activate_error1
+	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
@@ -362,6 +487,15 @@ macro32_debug temp, 0, 324
 
 	/* Get Hub Descriptor  */
 
+	push {r0-r3}
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq usb2032_hub_activate_error1
+	mov buffer_rq, temp
+
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
 	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
@@ -390,9 +524,9 @@ macro32_debug temp, 0, 324
 	pop {r0-r3}
 
 /*
-macro32_debug response, 0, 512
-macro32_debug temp, 0, 524
-macro32_debug_hexa buffer_rx, 0, 536, 64
+macro32_debug response, 0, 112
+macro32_debug temp, 0, 124
+macro32_debug_hexa buffer_rx, 0, 136, 64
 */
 
 	ldrb num_ports, [buffer_rx, #2]                   @ Get Number of Ports
@@ -409,6 +543,15 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 		mov transfer_size, #0
 
 		usb2032_hub_activate_powerport_loop:
+
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_activate_error1
+			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
@@ -450,15 +593,8 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 
 	usb2032_hub_activate_common:
 		push {r0-r3}
-		mov r0, buffer_rq
-		bl heap32_clear_align
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
 		mov r0, buffer_rx
-		bl heap32_clear_align
-		bl heap32_mfree
+		bl usb2032_clear_buffer_in
 		pop {r0-r3}
 
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
@@ -514,42 +650,23 @@ usb2032_hub_search_device:
 	mov split_ctl, #0x0
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-	bl heap32_malloc
-	mov temp, r0
-	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_hub_search_device_error1
-	mov buffer_rq, temp
-
-	/* DMA Needs DWORD(32 Bytes) aligned */
-	push {r0-r3}
-	mov r0, buffer_rq
-	bl heap32_align_32
-	mov temp, r0
-	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_hub_search_device_error1
-	mov buffer_rq, temp
-
-	push {r0-r3}
 	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
-	bl heap32_malloc
-	mov buffer_rx, r0
-	pop {r0-r3}
-	cmp buffer_rx, #0
-	beq usb2032_hub_search_device_error1
-
-	/* DMA Needs DWORD(32 Bytes) aligned */
-	push {r0-r3}
-	mov r0, buffer_rx
-	bl heap32_align_32
+	bl usb2032_get_buffer_in
 	mov buffer_rx, r0
 	pop {r0-r3}
 	cmp buffer_rx, #0
 	beq usb2032_hub_search_device_error1
 
 	/* Get Device Descriptor */
+
+	push {r0-r3}
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq usb2032_hub_search_device_error1
+	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
@@ -586,6 +703,15 @@ usb2032_hub_search_device:
 	num_ports .req r8
 
 	/* Get Hub Descriptor  */
+
+	push {r0-r3}
+	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq usb2032_hub_search_device_error1
+	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
@@ -633,6 +759,15 @@ usb2032_hub_search_device:
 
 		usb2032_hub_search_device_main_loop:
 
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_search_device_error1
+			mov buffer_rq, temp
+
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
 			orr temp, temp, #equ32_usb20_val_get_status<<16              @ wValue
@@ -658,6 +793,15 @@ usb2032_hub_search_device:
 			 */
 
 			/* Clear Connection Change */
+
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_search_device_error1
+			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_clear_feature<<8              @ bRequest
@@ -685,6 +829,15 @@ usb2032_hub_search_device:
 
 			/* Set Reset Change */
 
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_search_device_error1
+			mov buffer_rq, temp
+
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
 			orr temp, temp, #equ32_usb20_val_hubport_reset<<16           @ wValue
@@ -702,6 +855,15 @@ usb2032_hub_search_device:
 			pop {r0-r3}
 
 			/* Get Port Status */
+
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_search_device_error1
+			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
@@ -742,6 +904,15 @@ usb2032_hub_search_device:
 
 			/* Clear Reset Change */
 
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_search_device_error1
+			mov buffer_rq, temp
+
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_clear_feature<<8            @ bRequest
 			orr temp, temp, #equ32_usb20_val_hubport_reset_change<<16    @ wValue
@@ -767,6 +938,15 @@ usb2032_hub_search_device:
 			pop {r0-r3}
 
 			/* Get Status Again and Ensure Resetting Process is Completed */
+
+			push {r0-r3}
+			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			bl usb2032_get_buffer_out
+			mov temp, r0
+			pop {r0-r3}
+			cmp temp, #0
+			beq usb2032_hub_search_device_error1
+			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
 			orr temp, temp, #equ32_usb20_req_get_status<<8               @ bRequest
@@ -839,15 +1019,8 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 
 	usb2032_hub_search_device_common:
 		push {r0-r3}
-		mov r0, buffer_rq
-		bl heap32_clear_align
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
 		mov r0, buffer_rx
-		bl heap32_clear_align
-		bl heap32_mfree
+		bl usb2032_clear_buffer_in
 		pop {r0-r3}
 
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before

@@ -11,31 +11,34 @@
  * Constants
  */
 
-.equ equ32_bcm32_display_width,       800
-.equ equ32_bcm32_display_height,      640
-.equ equ32_bcm32_width,               800
-.equ equ32_bcm32_height,              640
-.equ equ32_bcm32_alpha,               16
-.equ equ32_arm32_random_value,        0xFF       @ Initial Value to Be Shuffled
-.equ equ32_usb2032_timeout,           0x00000FF0
-.equ equ32_usb2032_timeout_nyet,      0x00000FF0
-.equ equ32_print32_hexa_length_max,   0x00000FF0
-.equ equ32_print32_string_tab_length, 4
-.equ equ32_dma32_cb_max,              0x1400     @ Decimal 5120
-.equ equ32_dma32_cb_snd32_start,      0
-.equ equ32_dma32_cb_snd32_size,       0x1000     @ Decimal 4096
-.equ equ32_snd32_dma_channel,         0
-.equ equ32_gpio32_gpiomask,           0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
+.equ equ32_bcm32_display_width,                800
+.equ equ32_bcm32_display_height,               640
+.equ equ32_bcm32_width,                        800
+.equ equ32_bcm32_height,                       640
+.equ equ32_bcm32_alpha,                        16
+.equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
+.equ equ32_usb2032_get_buffer_out_array_limit, 1
+.equ equ32_usb2032_timeout,                    0x00000FF0
+.equ equ32_usb2032_timeout_nyet,               0x00000FF0
+.equ equ32_print32_hexa_length_max,            0x00000FF0
+.equ equ32_print32_string_tab_length,          4
+.equ equ32_dma32_cb_max,                       0x1400     @ Decimal 5120
+.equ equ32_dma32_cb_snd32_start,               0
+.equ equ32_dma32_cb_snd32_size,                0x1000     @ Decimal 4096
+.equ equ32_snd32_dma_channel,                  0
+.equ equ32_gpio32_gpiomask,                    0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 
 /**
  * Standard Peripherals
  * In ARM Instructions: On `MOVW`, You Can Use the 16-bit Immediate with No-rotated.
  */
 .ifdef __BCM2835
-	.equ equ32_peripherals_base,   0x20000000 @ For ARM Physical Address
+	.equ equ32_peripherals_base,   0x20000000           @ For ARM Physical Address
+	.equ equ32_usb2032_get_buffer_out_array_limit, 1
 .else
 	/* BCM2836 and BCM2837 Peripheral Base */
-	.equ equ32_peripherals_base,   0x3F000000 @ For ARM Physical Address
+	.equ equ32_peripherals_base,   0x3F000000           @ For ARM Physical Address
+	.equ equ32_usb2032_get_buffer_out_array_limit, 100 
 .endif
 
 .equ equ32_bus_peripherals_base,   0x7E000000 @ For DMA and VideoCore Address

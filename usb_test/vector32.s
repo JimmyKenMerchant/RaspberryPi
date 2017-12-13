@@ -274,14 +274,22 @@ macro32_debug r0 500 174
 
 	bl usb2032_hub_search_device
 
+.ifndef __ARMV6
+	mov r1, r0
+	mov r0, #2
+
+	bl usb2032_hub_search_device
+.endif
+
 macro32_debug r0 500 186
+
+	mov r3, r0                      @ Hub Port Number for HID
+	orr r3, r3, #1<<7               @ Hub Address #1
+	orr r3, r3, #0x80000000         @ Split Enable
 
 	mov r0, #2
 	mov r1, #1
 	mov r2, #0
-	mov r3, #1                      @ Hub Port #1
-	orr r3, r3, #1<<7               @ Hub Address #1
-	orr r3, r3, #0x80000000         @ Split Enable
 
 	bl hid32_hid_activate
 
@@ -358,13 +366,7 @@ os_fiq:
 	/* Buffer */
 	push {lr}
 	mov r0, #10                      @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-	bl heap32_malloc
-	mov r3, r0
-	pop {lr}
-
-	push {lr}
-	mov r0, r3
-	bl heap32_align_32
+	bl usb2032_get_buffer_in
 	mov r3, r0
 	pop {lr}
 
@@ -390,8 +392,7 @@ macro32_debug_hexa r3, 300, 24, 8
 
 	push {lr}
 	mov r0, r3
-	bl heap32_clear_align
-	bl heap32_mfree
+	bl usb2032_clear_buffer_in
 	pop {lr}
 
 	macro32_dsb ip
