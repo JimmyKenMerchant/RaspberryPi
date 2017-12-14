@@ -85,11 +85,12 @@ _os_reset:
 	bl arm32_set_cache
 	pop {r0-r3}
 
-	/* Set Cache Status for HEAP */
+	/* Set Cache Status for Whole Area of Data Memory */
 	push {r0-r3}
 	mov r0, #0
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]

@@ -30,14 +30,15 @@
  * 7. December 8, 2017. Trial on HUB. Zero W with an external hub worked the enumeration.
  *
  * 8. December 12, 2017. Trial on HUB. 2B (V1.1) with LAN9514 can be fully gotten the device descriptor.
- *    From BCM2836, DMA alignment seems to be 32-bytes.
+ *    From BCM2836, DMA alignment seems to be 32-bytes (256-bits) from 4-bytes (32-bits) on BCM2835.
+ *    Note that 32-bytes alignment is the same as Control Block (CB) of the DMA unit.
  *    Plus, each transfer seems to consist with 4-bytes (one word) blocks,
  *    e.g., if you intended to receive 18 bytes on transfer to get the device descriptor, device returns 20 bytes.
  *    This may cause overflow of memory space that you assigned.
  *    Also, from BCM2836, USB HCD seems to have a buffer on the side of the peripheral to store OUT data from ARM,
- *    for example, requests of set-up.
+ *    for example, requests of set-up. In my experience, this buffer is the same as CB of the DMA unit.
  *    This buffer is tied with memory address on DMA. So if you re-use same memory address for another request,
- *    it causes an odd transaction that makes STALL.
+ *    it causes an odd transaction that makes STALL or transaction error.
  *    Besides, the amount of issuing transaction error is reduced less than BCM2835.  
  *
  */
@@ -1318,11 +1319,13 @@ usb2032_transaction:
 
 	mov timeout_nyet, #equ32_usb2032_timeout_nyet
 
+	macro32_dsb ip
+
 	push {r0-r3}
 	mov r0, buffer
 	bl heap32_clear_align
-	mov r1, #1                                   @ Clean
-	bl arm32_cache_operation_heap
+	mov r1, #1                                @ Clean
+	bl arm32_cache_operation_heap             @ To PoC
 	pop {r0-r3}
 
 	mov transfer_size_rsv, #0
@@ -1426,8 +1429,8 @@ usb2032_transaction:
 			push {r0-r3}
 			mov r0, buffer
 			bl heap32_clear_align
-			mov r1, #0                           @ Invalidate
-			bl arm32_cache_operation_heap
+			mov r1, #0                                @ Invalidate
+			bl arm32_cache_operation_heap             @ From PoC
 			pop {r0-r3}
 
 			b usb2032_transaction_success

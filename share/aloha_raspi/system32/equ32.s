@@ -17,7 +17,6 @@
 .equ equ32_bcm32_height,                       640
 .equ equ32_bcm32_alpha,                        16
 .equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
-.equ equ32_usb2032_get_buffer_out_array_limit, 1
 .equ equ32_usb2032_timeout,                    0x00000FF0
 .equ equ32_usb2032_timeout_nyet,               0x00000FF0
 .equ equ32_print32_hexa_length_max,            0x00000FF0

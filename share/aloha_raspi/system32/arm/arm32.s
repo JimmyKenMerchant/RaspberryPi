@@ -261,14 +261,14 @@ arm32_cache_operation_all:
 		arm32_cache_operation_all_loop_way:
 			cmp way_size_dup, #0
 			blt arm32_cache_operation_all_loop_common
-			lsl bit_mask, way_size_dup, temp         @ Set Way Bit[31:*]
+			lsl bit_mask, way_size_dup, temp       @ Set Way Bit[31:*]
 			add waysetlevel, setlevel, bit_mask
 			cmp flag, #0
-			mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
+			mcreq p15, 0, waysetlevel, c7, c6, 2   @ Invalidate Data (L1) or Unified (L2) Cache by set/way
 			cmp flag, #1
-			mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
+			mcreq p15, 0, waysetlevel, c7, c10, 2  @ Clean Data (L1) or Unified (L2) Cache by set/way
 			cmp flag, #2
-			mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
+			mcreq p15, 0, waysetlevel, c7, c14, 2  @ Clean and Invalidate Data (L1) or Unified (L2) Cache by set/way
 			sub way_size_dup, way_size_dup, #1
 			b arm32_cache_operation_all_loop_way
 
@@ -375,11 +375,11 @@ arm32_cache_operation:
 		lsl bit_mask, way_size, temp             @ Set Way Bit[31:*]
 		add waysetlevel, setlevel, bit_mask
 		cmp flag, #0
-		mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache
+		mcreq p15, 0, waysetlevel, c7, c6, 2     @ Invalidate Data (L1) or Unified (L2) Cache by set/way
 		cmp flag, #1
-		mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache 
+		mcreq p15, 0, waysetlevel, c7, c10, 2    @ Clean Data (L1) or Unified (L2) Cache by set/way
 		cmp flag, #2
-		mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache
+		mcreq p15, 0, waysetlevel, c7, c14, 2    @ Clean and Invalidate Data (L1) or Unified (L2) Cache by set/way
 		sub way_size, way_size, #1
 		b arm32_cache_operation_loop
 
@@ -461,7 +461,7 @@ arm32_cache_info:
  *
  * Parameters
  * r0: Pointer of Heap Block Allocated
- * r1: Flag, 0(Invalidate)/1(Clean)/2(Clean and Invalidate)
+ * r1: Flag, 0(Invalidate)/1(Clean to PoC)/2(Clean and Invalidate)/3(Clean to PoU: From ARMv7)
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error: Pointer of Start Address is Null (0)
@@ -488,11 +488,15 @@ arm32_cache_operation_heap:
 		bhi arm32_cache_operation_heap_success
 
 		cmp flag, #0
-		mcreq p15, 0, block_start, c7, c6, 1     @ Invalidate Data Cache
+		mcreq p15, 0, block_start, c7, c6, 1     @ Invalidate Data Cache to PoC by MVA
 		cmp flag, #1
-		mcreq p15, 0, block_start, c7, c10, 1    @ Clean Data Cache
+		mcreq p15, 0, block_start, c7, c10, 1    @ Clean Data Cache to PoC by MVA
 		cmp flag, #2
-		mcreq p15, 0, block_start, c7, c14, 1    @ Clean and Invalidate Data Cache
+		mcreq p15, 0, block_start, c7, c14, 1    @ Clean and Invalidate Data Cache to PoC by MVA
+		cmp flag, #3
+		mcreq p15, 0, block_start, c7, c11, 1    @ Clean Data Cache to PoU by MVA (FROM ARMv7)
+
+		macro32_dsb ip
 
 		add block_start, block_start, #0x20      @ 32 Bytes (4 Words) Align
 		b arm32_cache_operation_heap_loop
