@@ -39,7 +39,13 @@
  *    for example, requests of set-up. In my experience, this buffer is the same as CB of the DMA unit.
  *    This buffer is tied with memory address on DMA. So if you re-use same memory address for another request,
  *    it causes an odd transaction that makes STALL or transaction error.
- *    Besides, the amount of issuing transaction error is reduced less than BCM2835.  
+ *    Besides, the amount of issuing transaction error is reduced less than BCM2835.
+ *
+ * 9. December 14, 2017. Reviewed device I/O coherency with DMA of USB HCD of BCM2836.
+ *    Flagging shared memory or strongly ordered memory seems not to make data on the peripheral side evicted from the buffer.
+ *    Adding latency (by a clock counter) after cleaning to Point of Coherency seems not to make it too.
+ *    Anyway, more tests is needed to know this issue, never estimate.
+ *    Application Note 228 "Implementing DMA on ARM SMP Systems" of ARM is the reference.
  *
  */
 

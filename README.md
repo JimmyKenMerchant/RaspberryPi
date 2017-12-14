@@ -83,9 +83,9 @@ e.g. To get kernel.img of Frequency Counter.
 cd ~/Desktop
 git clone https://github.com/JimmyKenMerchant/RaspberryPi.git
 cd RaspberryPi/frequency_counter
-make type=2b
+make type=zerow
 ```
-config.txt in share/assets/raspi* is used with each kernel.img.
+config.txt in share/assets/ is used with "kernel.img" which is made by the command above.
 You need to paste these config.txt and kernel.img to the root directory of your boot media (e.g. FAT32 formatted SD Card).
 You also need to get latest start.elf and bootcode.bin from RasPi Official Repository, and paste these to the root directory of your boot media.
 
@@ -131,13 +131,15 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-**LINKS**
+**Links of References**
 
 * [Official Documentation of RasPi](https://www.raspberrypi.org/documentation/hardware/raspberrypi/)
 
 * [Official RasPi Usage](https://www.raspberrypi.org/documentation/usage/)
 
 * [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/)
+
+* [Chadderz's Simple USB Driver for Raspberry Pi](https://github.com/Chadderz121/csud)
 
 * [PiFox](https://github.com/ICTeam28/PiFox)
 
@@ -147,6 +149,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 * [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
 
-* [ARM Information Center](http://infocenter.arm.com/)
+* [ARM Information Center](http://infocenter.arm.com/): Application Note (AN) 228 "Implementing DMA on ARM SMP Systems"
 
-* [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/)
+* [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/): My Own Site as a Hobbyist

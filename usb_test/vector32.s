@@ -118,7 +118,10 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
 
-	/* Set Cache Status for Memory Using as Framebuffer (By Section) */
+	/**
+	 * Set Cache Status for Memory Using as Framebuffer (By Section)
+	 * VideoCore seemes to connect with ARM closely, but make sure to add `shareable` attribute just in case.
+	 */
 	push {r0-r3,lr}
 .ifndef __ARMV6
 	mov r0, #1
@@ -130,6 +133,7 @@ os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
 	ldr r2, [r2]
@@ -138,7 +142,7 @@ os_reset:
 	bl arm32_set_cache
 	pop {r0-r3,lr}
 
-	/* Set Cache Status for Data Memory */
+	/* Set Cache Status for Whole Area of Data Memory */
 	push {r0-r3,lr}
 .ifndef __ARMV6
 	mov r0, #1
@@ -150,10 +154,61 @@ os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]
 	ldr r3, ADDR32_SYSTEM32_DATAMEMORY_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3,lr}
+
+	/**
+	 * Set Cache Status for HEAP with Non-cache
+	 * Non-cache HEAP is used for peripheral blocks.
+	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
+	 */
+	push {r0-r3,lr}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_section_shareable
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_HEAP_NONCACHE_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_HEAP_NONCACHE_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3,lr}
+
+	/**
+	 * Set Cache Status for Memory with Non-cache
+	 * Non-cache memory is used for peripheral blocks.
+	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
+	 */
+	push {r0-r3,lr}
+.ifndef __ARMV6
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __ARMV6
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_section_shareable
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, ADDR32_SYSTEM32_NONCACHE_ADDR
+	ldr r2, [r2]
+	ldr r3, ADDR32_SYSTEM32_NONCACHE_SIZE
 	ldr r3, [r3]
 	bl arm32_set_cache
 	pop {r0-r3,lr}
@@ -166,7 +221,7 @@ os_reset:
 	mov r0, #0
 .endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif

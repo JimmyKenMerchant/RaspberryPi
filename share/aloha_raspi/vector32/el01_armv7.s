@@ -51,13 +51,13 @@ _el01_reset:
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, #1                                @ L1
+	mov r0, #2                                @ L2
 	mov r1, #0                                @ Invalidate
 	bl arm32_cache_operation_all
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, #2                                @ L2
+	mov r0, #1                                @ L1
 	mov r1, #0                                @ Invalidate
 	bl arm32_cache_operation_all
 	pop {r0-r3}
