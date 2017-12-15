@@ -320,27 +320,28 @@ macro32_debug r0 500 150
 macro32_debug r0 500 162
 
 	mov r0, #2
+	mov r1, #0
 	bl usb2032_hub_activate
 
 macro32_debug r0 500 174
 
+	push {r0-r1}
 	mov r1, r0
 	mov r0, #2
-
 	bl usb2032_hub_search_device
+	mov r3, r0
+	pop {r0-r1}
 
 .ifndef __ARMV6
+	push {r0-r1}
 	mov r1, r0
 	mov r0, #2
-
 	bl usb2032_hub_search_device
+	mov r3, r0
+	pop {r0-r1}
 .endif
 
-macro32_debug r0 500 186
-
-	mov r3, r0                      @ Hub Port Number for HID
-	orr r3, r3, #1<<7               @ Hub Address #1
-	orr r3, r3, #0x80000000         @ Split Enable
+macro32_debug r3 500 186
 
 	mov r0, #2
 	mov r1, #1
@@ -427,7 +428,11 @@ os_fiq:
 
 	mov r0, #2                      @ Channel
 	mov r1, #1                      @ Endpoint
+.ifdef __ARMV6
 	mov r2, #2                      @ Device Address
+.else
+	mov r2, #3                      @ Device Address
+.endif
 
 	/* Split Control */
 	mov r4, #1                      @ Hub Port #1

@@ -70,7 +70,7 @@ _os_reset:
 
 	/**
 	 * Set Cache Status for Memory Using as Framebuffer (By Section)
-	 * VideoCore seemes to connect with ARM closely, but make sure to add `shareable` attribute just in case.
+	 * VideoCore seemes to connect with ARM closely, `shareable` attribute is not needed, so far.
 	 */
 	push {r0-r3}
 .ifndef __ARMV6
