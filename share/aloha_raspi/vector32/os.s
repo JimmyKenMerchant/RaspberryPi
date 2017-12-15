@@ -83,7 +83,6 @@ _os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
 	ldr r2, [r2]
@@ -104,7 +103,6 @@ _os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]
@@ -129,7 +127,6 @@ _os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_HEAP_NONCACHE_ADDR
 	ldr r2, [r2]

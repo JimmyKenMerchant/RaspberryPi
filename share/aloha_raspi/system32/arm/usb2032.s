@@ -1166,7 +1166,7 @@ macro32_debug ip 500 300
 			beq usb2032_control_data_loop
 
 /*
-macro32_debug transfer_size 500 312
+macro32_debug response 500 312
 macro32_debug ip 500 324
 */
 
@@ -1617,7 +1617,9 @@ usb2032_otg_host_sender:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	tst temp, #0x80000000                                                 @ Channel Enable Bit[31]
-	bne usb2032_otg_host_sender_error                                     @ Channel is Already Enabled
+	orrne temp, #0x40000000
+	strne temp, [memorymap_base, #equ32_usb20_otg_hccharn]
+	bne usb2032_otg_host_setter_error                                      @ Channel is Already Enabled
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hcintn]
 	str temp, [memorymap_base, #equ32_usb20_otg_hcintn]                   @ write-clear
@@ -1710,6 +1712,8 @@ usb2032_otg_host_setter:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	tst temp, #0x80000000                                                  @ Channel Enable Bit[31]
+	orrne temp, #0x40000000
+	strne temp, [memorymap_base, #equ32_usb20_otg_hccharn]
 	bne usb2032_otg_host_setter_error                                      @ Channel is Already Enabled
 
 	mov hcchar, #0

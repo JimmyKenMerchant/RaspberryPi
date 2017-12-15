@@ -20,6 +20,8 @@
 
 ## Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
 
-**Memorandum**
+**Memorandum on BCM2835**
 
-* On BCM2835, lacking of the first dot occurs at `fb32_draw_image` on a particular situation, which seems that the little difference between the prior color and the current color on the first dot causes this issue. So far, data memory barriers does not fix this issue.
+* Lacking of the first dot occurs at `fb32_draw_image` on a particular situation, which seems that the little difference between the prior color and the current color on the first dot causes this issue. So far, data memory barriers does not fix this issue.
+
+* Flagging "shareable" to the address translation table makes speed of accessing memory slower. This affects writing speed to the framebuffer.
