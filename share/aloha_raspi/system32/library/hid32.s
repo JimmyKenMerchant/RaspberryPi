@@ -48,15 +48,15 @@ hid32_hid_activate:
 
 	cmp ticket, #0
 	movne addr_device, ticket
-	bicne addr_device, addr_device, #0xFF000000
-	bicne addr_device, addr_device, #0x00E00000
-	lsrne addr_device, addr_device, #14  @ Bit[20:14] Address of Device
+	andne addr_device, addr_device, #0x0000007F @ Device Address
 	moveq addr_device, #0
 
 	mov split_ctl, ticket
-	bic split_ctl, split_ctl, #0x7F000000
-	bic split_ctl, split_ctl, #0x00FF0000
-	bic split_ctl, split_ctl, #0x0000C000
+	bic split_ctl, split_ctl, #0xFF000000       @ Mask Only Bit[20:14]: Address of Hub and Bit[13:7]: Port Number and 
+	bic split_ctl, split_ctl, #0x00E00000
+	lsr split_ctl, split_ctl, #7
+	tst ticket, #0x80000000
+	orrne split_ctl, split_ctl, #0x80000000     @ Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
 
 	.unreq ticket
 	buffer_rq .req r3
@@ -117,6 +117,7 @@ macro32_debug temp, 0, 74
 macro32_debug_hexa buffer_rx, 0, 86, 64
 */
 
+
 	ldrb temp, [buffer_rx, #4]
 	cmp temp, #0                                   @ Device Class is HID or Not
 	bne hid32_hid_activate_error2
@@ -146,6 +147,9 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 	orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
 	orr temp, temp, addr_device, lsl #16                         @ wValue, address
 	str temp, [buffer_rq]
+	mov temp, #0                                                 @ wIndex
+	orr temp, temp, #0<<18                                       @ wLength
+	str temp, [buffer_rq, #4]
 
 	mov character, packet_max                     @ Maximam Packet Size
 	orr character, character, #0<<11              @ Endpoint Number
@@ -184,6 +188,9 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
 		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
 		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #0<<18                                       @ wLength
+		str temp, [buffer_rq, #4]
 
 		mov character, #8                              @ Maximam Packet Size
 		orr character, character, #0<<11               @ Endpoint Number
@@ -455,9 +462,8 @@ macro32_debug response, 0, 608
  * Parameters
  * r0: Channel 0-15
  * r1: Number of Endpoint (Starting from 1)
- * r2: Device Address
+ * r2: Ticket Issued by usb2032_hub_search_device, or Device Address as Direct Connection
  * r3: Buffer
- * r4: Split Control
  *
  * Return: r0 (Status of Channel, -1 and -2 as Error)
  * Error(-1): Failed Memory Allocation
@@ -467,7 +473,7 @@ hid32_hid_get:
 	/* Auto (Local) Variables, but just Aliases */
 	channel         .req r0
 	character       .req r1
-	transfer_size   .req r2
+	ticket          .req r2
 	buffer          .req r3
 	split_ctl       .req r4
 	response        .req r5
@@ -477,12 +483,20 @@ hid32_hid_get:
 
 	push {r4-r8,lr}
 
-	add sp, sp, #24                    @ r4-r8 and lr offset 24 bytes
-	pop {split_ctl}                    @ Get Fifth Arguments
-	sub sp, sp, #28                    @ Retrieve SP
-
 	mov num_endpoint, character
-	mov addr_device, transfer_size
+
+	mov addr_device, ticket
+	and addr_device, addr_device, #0x0000007F   @ Device Address
+
+	mov split_ctl, ticket
+	bic split_ctl, split_ctl, #0xFF000000       @ Mask Only Bit[20:14]: Address of Hub and Bit[13:7]: Port Number and 
+	bic split_ctl, split_ctl, #0x00E00000
+	lsr split_ctl, split_ctl, #7
+	tst ticket, #0x80000000
+	orrne split_ctl, split_ctl, #0x80000000     @ Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
+
+	.unreq ticket
+	transfer_size .req r2
 
 	mov character, #8                               @ Maximam Packet Size
 	orr character, character, num_endpoint, lsl #11 @ Endpoint Number
@@ -491,9 +505,9 @@ hid32_hid_get:
 	orr character, character, addr_device, lsl #18  @ Device Address
 	orr character, character, #1<<25                @ Full and High Speed(0)/Low Speed(1)
 
-	mov transfer_size, #8                          @ Transfer Size is 8 Bytes
-	orr transfer_size, transfer_size, #0x00080000  @ Transfer Packet is 1 Packet
-	orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+	mov transfer_size, #8                           @ Transfer Size is 8 Bytes
+	orr transfer_size, transfer_size, #0x00080000   @ Transfer Packet is 1 Packet
+	orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 	push {r0-r3}
 	push {split_ctl}

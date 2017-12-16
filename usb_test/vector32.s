@@ -133,7 +133,6 @@ os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
 	ldr r2, [r2]
@@ -154,7 +153,6 @@ os_reset:
 .ifndef __ARMV6
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]
@@ -299,7 +297,6 @@ macro32_debug r0 500 114
 
 macro32_debug r0 500 126
 
-
 	mov r1, #equ32_peripherals_base
 	add r1, r1, #equ32_usb20_otg_base
 	ldr r0, [r1, #equ32_usb20_otg_grxfsiz]
@@ -341,11 +338,14 @@ macro32_debug r0 500 174
 	pop {r0-r1}
 .endif
 
+	str r3, os_fiq_usbticket
+
 macro32_debug r3 500 186
 
 	mov r0, #2
 	mov r1, #1
 	mov r2, #0
+	ldr r3, os_fiq_usbticket        @ Ticket
 
 	bl hid32_hid_activate
 
@@ -428,27 +428,17 @@ os_fiq:
 
 	mov r0, #2                      @ Channel
 	mov r1, #1                      @ Endpoint
-.ifdef __ARMV6
-	mov r2, #2                      @ Device Address
-.else
-	mov r2, #3                      @ Device Address
-.endif
-
-	/* Split Control */
-	mov r4, #1                      @ Hub Port #1
-	orr r4, r4, #1<<7               @ Hub Address #1
-	orr r4, r4, #0x80000000         @ Split Enable
+	ldr r2, os_fiq_usbticket        @ Ticket
 
 	push {r0-r3,lr}
-	push {r4}
 	bl hid32_hid_get
-	add sp, sp, #4
 	mov r4, r0
 	pop {r0-r3,lr}
 
-macro32_debug r4, 300, 0
-macro32_debug r3, 300, 12
-macro32_debug_hexa r3, 300, 24, 8
+macro32_debug r2, 300, 0
+macro32_debug r4, 300, 12
+macro32_debug r3, 300, 24
+macro32_debug_hexa r3, 300, 36, 8
 
 	push {lr}
 	mov r0, r3
@@ -482,6 +472,8 @@ timer_sub:
 sys_timer_previous:
 	.word 0x00000000
 .balign 4
+os_fiq_usbticket:
+	.word 0x00000000
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4

@@ -317,9 +317,7 @@ usb2032_hub_activate:
 
 	cmp ticket, #0
 	movne addr_device, ticket
-	bicne addr_device, addr_device, #0xFF000000
-	bicne addr_device, addr_device, #0x00E00000
-	lsrne addr_device, addr_device, #14  @ Bit[20:14] Address of Device
+	andne addr_device, addr_device, #0x0000007F @ Bit[6:0]: Device Address
 	moveq addr_device, #0
 
 	.unreq ticket
@@ -409,6 +407,9 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 	orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
 	orr temp, temp, addr_device, lsl #16                         @ wValue, address
 	str temp, [buffer_rq]
+	mov temp, #0                                                 @ wIndex
+	orr temp, temp, #0<<18                                       @ wLength
+	str temp, [buffer_rq, #4]
 
 	mov character, #64                            @ Maximam Packet Size
 	orr character, character, #0<<11              @ Endpoint Number
@@ -446,6 +447,9 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
 		orr temp, temp, #1<<16                                       @ wValue, Descriptor Index
 		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #0<<18                                       @ wLength
+		str temp, [buffer_rq, #4]
 
 		mov character, #64                             @ Maximam Packet Size
 		orr character, character, #0<<11               @ Endpoint Number
@@ -659,10 +663,10 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
  *
  * Return: r0 (Ticket Described Below, 0 as Not Detected, -1 and -2 as Error)
  * Ticket:
- *    Bit[6:0] Port Number
- *    Bit[13:7] Address of Hub
- *    Bit[20:14] Address of Device, If Zero, Not Allocated Address
- *    Bit[31:20] 00b High Speed,10b Full Speed, 11b Low Speed
+ *    Bit[6:0]: Address of Device, If Zero, Not Allocated Address
+ *    Bit[13:7]: Port Number
+ *    Bit[20:14]: Address of Hub
+ *    Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
  * Error(-1): Failed Memory Allocation
  * Error(-2): No Hub
  * Error(-3): Failure of Reset Process to Detected Device
@@ -846,8 +850,8 @@ usb2032_hub_search_device:
 			orr temp, temp, #equ32_usb20_req_clear_feature<<8              @ bRequest
 			orr temp, temp, #equ32_usb20_val_hubport_connection_change<<16 @ wValue
 			str temp, [buffer_rq]
-			mov temp, i                                                  @ wIndex
-			orr temp, temp, #0<<16                                       @ wLength
+			mov temp, i                                                    @ wIndex
+			orr temp, temp, #0<<16                                         @ wLength
 			str temp, [buffer_rq, #4]
 
 			mov character, #64                              @ Maximam Packet Size
@@ -1049,6 +1053,9 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
 			orr temp, temp, timeout, lsl #16                             @ wValue, address
 			str temp, [buffer_rq]
+			mov temp, #0                                                 @ wIndex
+			orr temp, temp, #0<<18                                       @ wLength
+			str temp, [buffer_rq, #4]
 
 			tst response, #equ32_usb20_status_hubport_lowspeed
 			moveq character, #64                          @ Maximam Packet Size
@@ -1075,12 +1082,12 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			mov temp, r1
 			pop {r0-r3}
 
-			mov r0, i                              @ Hub Port Number
-			orr r0, r0, addr_device, lsl #7        @ Hub Address
+			mov r0, i, lsl #7                         @ Hub Port Number
+			orr r0, r0, addr_device, lsl #14          @ Hub Address
 
 			cmp response, #0
 			ldreq addr_device, USB2032_ADDRESS_LENGTH
-			orreq r0, r0, addr_device, lsl #14
+			orreq r0, r0, addr_device                 @ Device Address
 
 			cmp split_ctl, #0
 			orrne r0, r0, #0x80000000
