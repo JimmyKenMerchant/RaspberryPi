@@ -211,6 +211,18 @@
 
 
 /**
+ * Clean Entire Data Cache
+ * ARMv6 Only
+ */
+.macro macro32_clean_cache_all reg0:vararg
+.ifdef __ARMV6
+	mov \reg0, #0
+	mcr p15, 0, \reg0, c7, c10, 0
+.endif
+.endm
+
+
+/**
  * Invalidate Entire Both Cache and Flush Branch Target Cache
  * ARMv6 Only
  */
