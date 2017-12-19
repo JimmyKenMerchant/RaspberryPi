@@ -229,6 +229,39 @@
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
 
+.equ equ32_i2c_c,          0x00000000 @ Control
+.equ equ32_i2c_s,          0x00000004 @ Status
+.equ equ32_i2c_dlen,       0x00000008 @ Data Length, Bit[15:0]
+.equ equ32_i2c_addr,       0x0000000C @ Address of Device to Be Communicating, Bit[6:0]
+.equ equ32_i2c_fifo,       0x00000010 @ Data of FIFO, Bit[7:0]
+.equ equ32_i2c_cdiv,       0x00000014 @ Clock Divider, Bit[15:0]
+.equ equ32_i2c_delay,      0x00000018 @ Delay of Clock Cycles on SCL Falling Edge and Rising Edge with Data
+.equ equ32_i2c_tout,       0x0000001C @ Holding Clock Cycles untill Making Time Out on Clock Stretch, Bit[15:0]
+
+.equ equ32_i2c_c_i2cen,    0x00008000 @ I2C Enable
+.equ equ32_i2c_c_intr,     0x00000400 @ Generate Interrput on RXR, FIFO is Full and Needed to Read
+.equ equ32_i2c_c_intt,     0x00000200 @ Generate Interrupt on TXW, FIFO is Empty and Needed to Write
+.equ equ32_i2c_c_intd,     0x00000100 @ Generate Interrupt on Done
+.equ equ32_i2c_c_st,       0x00000080 @ Start Transfer, Read is always 0
+.equ equ32_i2c_c_clear1,   0x00000020 @ Clear FIFO, Same as clear2, Read is always 0
+.equ equ32_i2c_c_clear2,   0x00000010 @ Clear FIFO, Same as clear1, Read is always 0
+.equ equ32_i2c_c_read,     0x00000001 @ Read Transfer, if 0, Write Transfer
+
+.equ equ32_i2c_s_clkt,     0x00000200 @ Time Out on Clock Stretch, Set Clear
+.equ equ32_i2c_s_err,      0x00000100 @ ACK Error, Set Clear
+.equ equ32_i2c_s_rxf,      0x00000080 @ FIFO Full on to Receive
+.equ equ32_i2c_s_txe,      0x00000040 @ FIFO Empty on to Transmit
+.equ equ32_i2c_s_rxd,      0x00000020 @ FIFO Has Any Data on to Receive
+.equ equ32_i2c_s_txd,      0x00000010 @ FIFO Can Accept Any Data on to Transmit
+.equ equ32_i2c_s_rxr,      0x00000008 @ FIFO Full on to Receive and Needed to Read, Enable by equ32_i2c_c_intr
+.equ equ32_i2c_s_txw,      0x00000004 @ FIFO Empty on to Transmit and Needed to write, Enable by equ32_i2c_c_intt
+.equ equ32_i2c_s_done,     0x00000002 @ Done, Set Clear, Enable by equ32_i2c_c_intd
+.equ equ32_i2c_s_ta,       0x00000001 @ Transfer Active
+
+.equ equ32_i2c_delay_fedl, 16         @ Delay of Clock Cycles on Falling Edge With Data, Bit[31:16]
+.equ equ32_i2c_delay_redl, 0          @ Delay of Clock Cycles on Rising Edge With Data, Bit[15:0]
+
+
 .equ equ32_spi0_cs,      0x00000000
 .equ equ32_spi0_fifo,    0x00000004 @ Tx and Rx
 .equ equ32_spi0_clk,     0x00000008 @ Clock Divider
