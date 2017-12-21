@@ -62,11 +62,12 @@ i2c32_i2cinit:
  * r0: Device Address
  * r1: Heap for Transmit Data
  * r2: Transfer Size (Bytes)
+ * r3: Clock Counts of Time Out to Wait Completion of Transmission
  *
  * Return: r0 (0 as success, 1 , 2 and 3 as error)
  * Error(1): Device Address Error
  * Error(2): Clock Stretch Timeout
- * Error(3): Receiving Data Error
+ * Error(3): Transaction Error on Checking Process
  */
 .globl i2c32_i2ctx
 i2c32_i2ctx:
@@ -74,11 +75,12 @@ i2c32_i2ctx:
 	addr_device  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	heap         .req r1 @ Parameter, Register for Argument, Scratch Register
 	size_tx      .req r2 @ Parameter, Register for Argument, Scratch Register
-	byte         .req r3
-	temp         .req r4
-	addr_i2c     .req r5
+	timeout      .req r3 @ Parameter, Register for Argument, Scratch Register
+	byte         .req r4
+	temp         .req r5
+	addr_i2c     .req r6
 
-	push {r4-r5}
+	push {r4-r6}
 
 	mov addr_i2c, #equ32_peripherals_base
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
@@ -101,22 +103,23 @@ i2c32_i2ctx:
 		bne i2c32_i2ctx_error2
 
 		tst temp, #equ32_i2c_s_txd
-		ldrbne byte, [heap]
-		strbne byte, [addr_i2c, #equ32_i2c_fifo] @ If Having Data on RxFIFO
+		ldrbne byte, [heap]                      @ If Having Space on FIFO
+		strbne byte, [addr_i2c, #equ32_i2c_fifo]
 		addne heap, heap, #1                     @ Substitute of Multiplication by 8 (Per Byte)
 		subne size_tx, size_tx, #1
 
 		cmp size_tx, #0
-		bne i2c32_i2ctx_fifo
+		bgt i2c32_i2ctx_fifo
 
 		i2c32_i2ctx_fifo_check:
+			cmp timeout, #0
+			ble i2c32_i2ctx_error3
+
+			ldr temp, [addr_i2c, #equ32_i2c_s]       @ Reload Status
 
 			tst temp, #equ32_i2c_s_done
-			beq i2c32_i2ctx_error3                   @ If Not Done Yet
-
-			ldr temp, [addr_i2c, #equ32_i2c_dlen]    @ Make Sure That Transfer Data Is Zero
-			cmp temp, #0
-			bne i2c32_i2ctx_error3
+			subeq timeout, timeout, #1
+			beq i2c32_i2ctx_fifo_check               @ If Not Done Yet
 
 			b i2c32_i2ctx_success
 
@@ -140,12 +143,13 @@ i2c32_i2ctx:
 		ldr temp, [addr_i2c, #equ32_i2c_c]
 		bic temp, temp, #equ32_i2c_c_intd
 		str temp, [addr_i2c, #equ32_i2c_c]
-		pop {r4-r5}
+		pop {r4-r6}
 		mov pc, lr
 
 .unreq addr_device
 .unreq heap
 .unreq size_tx
+.unreq timeout
 .unreq byte
 .unreq temp
 .unreq addr_i2c
@@ -163,7 +167,7 @@ i2c32_i2ctx:
  * Return: r0 (0 as success, 1 , 2 and 3 as error)
  * Error(1): Device Address Error
  * Error(2): Clock Stretch Timeout
- * Error(3): Receiving Data Error
+ * Error(3): Transaction Error on Checking Process
  */
 .globl i2c32_i2crx
 i2c32_i2crx:
@@ -198,22 +202,18 @@ i2c32_i2crx:
 		bne i2c32_i2crx_error2
 
 		tst temp, #equ32_i2c_s_rxd
-		ldrbne byte, [addr_i2c, #equ32_i2c_fifo] @ If Having Data on RxFIFO
+		ldrbne byte, [addr_i2c, #equ32_i2c_fifo] @ If Having Data on FIFO
 		strbne byte, [heap]
 		addne heap, heap, #1                     @ Substitute of Multiplication by 8 (Per Byte)
 		subne size_rx, size_rx, #1
 
 		cmp size_rx, #0
-		bne i2c32_i2crx_fifo
+		bgt i2c32_i2crx_fifo
 
 		i2c32_i2crx_fifo_check:
 
 			tst temp, #equ32_i2c_s_done
 			beq i2c32_i2crx_error3                   @ If Not Done Yet
-
-			ldr temp, [addr_i2c, #equ32_i2c_dlen]    @ Make Sure That Transfer Data Is Zero
-			cmp temp, #0
-			bne i2c32_i2crx_error3
 
 			b i2c32_i2crx_success
 
