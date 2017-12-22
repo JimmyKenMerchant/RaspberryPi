@@ -39,6 +39,8 @@
 .balign 4
 .include "system32/arm/spi32.s"
 .balign 4
+.include "system32/arm/i2c32.s"
+.balign 4
 .include "system32/arm/usb2032.s"
 .balign 4
 .include "system32/arm/gpio32.s"

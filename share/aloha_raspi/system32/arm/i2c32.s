@@ -59,10 +59,9 @@ i2c32_i2cinit:
  * I2C Transmit
  *
  * Parameters
- * r0: Device Address
- * r1: Heap for Transmit Data
+ * r0: Heap for Transmit Data
+ * r1: Device Address
  * r2: Transfer Size (Bytes)
- * r3: Clock Counts of Time Out to Wait Completion of Transmission
  *
  * Return: r0 (0 as success, 1 , 2 and 3 as error)
  * Error(1): Device Address Error
@@ -72,10 +71,10 @@ i2c32_i2cinit:
 .globl i2c32_i2ctx
 i2c32_i2ctx:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_device  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	heap         .req r1 @ Parameter, Register for Argument, Scratch Register
+	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	addr_device  .req r1 @ Parameter, Register for Argument, Scratch Register
 	size_tx      .req r2 @ Parameter, Register for Argument, Scratch Register
-	timeout      .req r3 @ Parameter, Register for Argument, Scratch Register
+	timeout      .req r3
 	byte         .req r4
 	temp         .req r5
 	addr_i2c     .req r6
@@ -86,15 +85,19 @@ i2c32_i2ctx:
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_lower
 
-	str size_tx, [addr_i2c, #equ32_i2c_dlen]
 	str addr_device, [addr_i2c, #equ32_i2c_addr]
+	str size_tx, [addr_i2c, #equ32_i2c_dlen]
 
 	ldr temp, [addr_i2c, #equ32_i2c_c]
-	orr temp, temp, #equ32_i2c_c_intd|equ32_i2c_c_st|equ32_i2c_c_clear1
+	orr temp, temp, #equ32_i2c_c_st|equ32_i2c_c_clear1
 	str temp, [addr_i2c, #equ32_i2c_c]
+
+	mov timeout, #equ32_i2c32_timeout
 
 	i2c32_i2ctx_fifo:
 		ldr temp, [addr_i2c, #equ32_i2c_s]
+
+macro32_debug temp, 0, 100
 
 		tst temp, #equ32_i2c_s_err
 		bne i2c32_i2ctx_error1
@@ -103,8 +106,8 @@ i2c32_i2ctx:
 		bne i2c32_i2ctx_error2
 
 		tst temp, #equ32_i2c_s_txd
-		ldrbne byte, [heap]                      @ If Having Space on FIFO
-		strbne byte, [addr_i2c, #equ32_i2c_fifo]
+		ldrneb byte, [heap]                      @ If Having Space on FIFO
+		strneb byte, [addr_i2c, #equ32_i2c_fifo]
 		addne heap, heap, #1                     @ Substitute of Multiplication by 8 (Per Byte)
 		subne size_tx, size_tx, #1
 
@@ -140,14 +143,11 @@ i2c32_i2ctx:
 
 	i2c32_i2ctx_common:
 		str temp, [addr_i2c, #equ32_i2c_s]                   @ For Write Clear
-		ldr temp, [addr_i2c, #equ32_i2c_c]
-		bic temp, temp, #equ32_i2c_c_intd
-		str temp, [addr_i2c, #equ32_i2c_c]
 		pop {r4-r6}
 		mov pc, lr
 
-.unreq addr_device
 .unreq heap
+.unreq addr_device
 .unreq size_tx
 .unreq timeout
 .unreq byte
@@ -160,8 +160,8 @@ i2c32_i2ctx:
  * I2C Receive
  *
  * Parameters
- * r0: Device Address
- * r1: Heap for Receive Data
+ * r0: Heap for Receive Data
+ * r1: Device Address
  * r2: Transfer Size (Bytes)
  *
  * Return: r0 (0 as success, 1 , 2 and 3 as error)
@@ -172,28 +172,33 @@ i2c32_i2ctx:
 .globl i2c32_i2crx
 i2c32_i2crx:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_device  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	heap         .req r1 @ Parameter, Register for Argument, Scratch Register
+	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	addr_device  .req r1 @ Parameter, Register for Argument, Scratch Register
 	size_rx      .req r2 @ Parameter, Register for Argument, Scratch Register
-	byte         .req r3
-	temp         .req r4
-	addr_i2c     .req r5
+	timeout      .req r3
+	byte         .req r4
+	temp         .req r5
+	addr_i2c     .req r6
 
-	push {r4-r5}
+	push {r4-r6}
 
 	mov addr_i2c, #equ32_peripherals_base
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_lower
 
-	str size_rx, [addr_i2c, #equ32_i2c_dlen]
 	str addr_device, [addr_i2c, #equ32_i2c_addr]
+	str size_rx, [addr_i2c, #equ32_i2c_dlen]
 
 	ldr temp, [addr_i2c, #equ32_i2c_c]
-	orr temp, temp, #equ32_i2c_c_intd|equ32_i2c_c_st|equ32_i2c_c_clear1|equ32_i2c_c_read
+	orr temp, temp, #equ32_i2c_c_st|equ32_i2c_c_clear1|equ32_i2c_c_read
 	str temp, [addr_i2c, #equ32_i2c_c]
+
+	mov timeout, #equ32_i2c32_timeout
 
 	i2c32_i2crx_fifo:
 		ldr temp, [addr_i2c, #equ32_i2c_s]
+
+macro32_debug temp, 0, 112
 
 		tst temp, #equ32_i2c_s_err
 		bne i2c32_i2crx_error1
@@ -202,8 +207,8 @@ i2c32_i2crx:
 		bne i2c32_i2crx_error2
 
 		tst temp, #equ32_i2c_s_rxd
-		ldrbne byte, [addr_i2c, #equ32_i2c_fifo] @ If Having Data on FIFO
-		strbne byte, [heap]
+		ldrneb byte, [addr_i2c, #equ32_i2c_fifo] @ If Having Data on FIFO
+		strneb byte, [heap]
 		addne heap, heap, #1                     @ Substitute of Multiplication by 8 (Per Byte)
 		subne size_rx, size_rx, #1
 
@@ -212,8 +217,14 @@ i2c32_i2crx:
 
 		i2c32_i2crx_fifo_check:
 
+			cmp timeout, #0
+			ble i2c32_i2crx_error3
+
+			ldr temp, [addr_i2c, #equ32_i2c_s]       @ Reload Status
+
 			tst temp, #equ32_i2c_s_done
-			beq i2c32_i2crx_error3                   @ If Not Done Yet
+			subeq timeout, timeout, #1
+			beq i2c32_i2crx_fifo_check               @ If Not Done Yet
 
 			b i2c32_i2crx_success
 
@@ -235,14 +246,15 @@ i2c32_i2crx:
 	i2c32_i2crx_common:
 		str temp, [addr_i2c, #equ32_i2c_s]                   @ For Write Clear
 		ldr temp, [addr_i2c, #equ32_i2c_c]
-		bic temp, temp, #equ32_i2c_c_intd|equ32_i2c_c_read
+		bic temp, temp, #equ32_i2c_c_read
 		str temp, [addr_i2c, #equ32_i2c_c]
-		pop {r4-r5}
+		pop {r4-r6}
 		mov pc, lr
 
-.unreq addr_device
 .unreq heap
+.unreq addr_device
 .unreq size_rx
+.unreq timeout
 .unreq byte
 .unreq temp
 .unreq addr_i2c

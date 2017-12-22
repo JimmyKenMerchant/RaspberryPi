@@ -30,7 +30,7 @@ _os_fiq_addr:                   .word _os_fiq
 _os_reset:
 	mov r0, sp                                @ Store Previous Stack Pointer
 	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
-	mov sp, #0x7400                           @ Stack Pointer to 0x8000
+	mov sp, #0x7400                           @ Stack Pointer to 0x7400 for SVC mode
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
 	push {r0-r1,lr}
 
@@ -183,6 +183,15 @@ _os_reset:
 	vmrs r0, fpscr                            @ Floating-point Status and Control Register
 	orr r0, r0, #0x01000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible)
 	vmsr fpscr, r0
+
+	/**
+	 * Debug by SVC mode
+	 */
+.ifdef __DEBUG
+	push {r0-r3}
+	bl os_debug
+	pop {r0-r3}
+.endif
 
 	mov r0, #equ32_user_mode                  @ Enable FIQ, IRQ, and Abort
 	msr cpsr_c, r0

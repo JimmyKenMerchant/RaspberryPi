@@ -19,6 +19,7 @@
 .equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
 .equ equ32_usb2032_timeout,                    0x00000FF0
 .equ equ32_usb2032_timeout_nyet,               0x00000FF0
+.equ equ32_i2c32_timeout,                      0x00FF0000
 .equ equ32_print32_hexa_length_max,            0x00000FF0
 .equ equ32_print32_string_tab_length,          4
 .equ equ32_dma32_cb_max,                       0x1400     @ Decimal 5120
