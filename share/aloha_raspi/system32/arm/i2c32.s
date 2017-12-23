@@ -97,7 +97,9 @@ i2c32_i2ctx:
 	i2c32_i2ctx_fifo:
 		ldr temp, [addr_i2c, #equ32_i2c_s]
 
+/*
 macro32_debug temp, 0, 100
+*/
 
 		tst temp, #equ32_i2c_s_err
 		bne i2c32_i2ctx_error1
@@ -198,7 +200,9 @@ i2c32_i2crx:
 	i2c32_i2crx_fifo:
 		ldr temp, [addr_i2c, #equ32_i2c_s]
 
+/*
 macro32_debug temp, 0, 112
+*/
 
 		tst temp, #equ32_i2c_s_err
 		bne i2c32_i2crx_error1

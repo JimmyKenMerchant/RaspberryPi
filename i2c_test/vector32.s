@@ -145,7 +145,7 @@ os_debug:
 	push {lr}
 
 	push {r0-r3}
-	mov r0, #0x960          @ Divisor of Clock to Decimal 2400
+	mov r0, #0xF0           @ Divisor of Clock to Decimal 240 for 1MHz
 	mov r1, #0x0030         @ Delay
 	orr r1, r1, #0x00300000 @ Delay
 	mov r2, #0x40           @ Clock Stretch Timeout
@@ -157,10 +157,10 @@ os_debug:
 	bl heap32_malloc
 	pop {r1-r3}
 
-	mov addr, #0x0011       @ Most Significant at First, Little Endian
-	orr addr, addr, #0x2200 @ Least Significant at Second, Little Endian
+	mov addr, #0x0034       @ Most Significant at First, Little Endian
+	orr addr, addr, #0x1200 @ Least Significant at Second, Little Endian
 
-	mov data, #0x99
+	mov data, #0xAB
 	orr addr, addr, data, lsl #16
 	
 	str addr, [heap]
@@ -177,8 +177,9 @@ macro32_debug r0, 100, 100
 
 	pop {r0-r3}
 
+	/* Wait for 5ms to write */
 	push {r0-r3}
-	mov r0, #0xFF00
+	mov r0, #0x1400         @ Decimal 5120
 	bl arm32_sleep
 	pop {r0-r3}
 
@@ -192,8 +193,9 @@ macro32_debug r0, 100, 112
 
 	pop {r0-r3}
 
+	/* Wait for 5ms to write */
 	push {r0-r3}
-	mov r0, #0xFF00
+	mov r0, #0x1400         @ Decimal 5120
 	bl arm32_sleep
 	pop {r0-r3}
 
