@@ -41,8 +41,8 @@ os_reset:
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
-	mov r1, #0x0000                           @ High 1 Byte of decimal 4 (5 - 1), 16 bits counter on default
-	add r1, r1, #0x04                         @ Low 1 Byte of decimal 4, 16 bits counter on default
+	mov r1, #0x0000                           @ High 1 Byte of decimal 3 (4 - 1), 16 bits counter on default
+	add r1, r1, #0x03                         @ Low 1 Byte of decimal 3, 16 bits counter on default
 	str r1, [r0, #equ32_armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes
@@ -50,7 +50,7 @@ os_reset:
 	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
 	str r1, [r0, #equ32_armtimer_control]
 
-	/* So We can get a 20Khz Timer Interrupt (100000/5) */
+	/* So We can get a 25Khz Timer Interrupt (100000/4) */
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
@@ -323,9 +323,9 @@ spi_test_fiqhandler_count_xsync:     .word 0x00
 .globl spi_test_fiqhandler_resolution
 .globl spi_test_fiqhandler_xdivision
 .globl spi_test_fiqhandler_interval_xsync
-spi_test_fiqhandler_resolution:     .word 1       @ Shorten Seconds in Width of Display
+spi_test_fiqhandler_resolution:     .word 4       @ Shorten Seconds in Width of Display
 spi_test_fiqhandler_xdivision:      .word 2       @ Lengthen Seconds in Width of Display
-spi_test_fiqhandler_interval_xsync: .word 10
+spi_test_fiqhandler_interval_xsync: .word 8
 
 .equ spi_test_fiqhandler_display_width,  0x460  @ Decimal 1120, Multiplies of 8 Seems to Be Preferred
 .equ spi_test_fiqhandler_display_height, 0x280  @ Decimal 640, Multiplies of 8 Seems to Be Preferred
