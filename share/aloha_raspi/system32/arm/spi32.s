@@ -41,35 +41,23 @@ spi32_spiclk:
 
 
 /**
- * function spi32_spitx
- * SPI Activate and Transfer
+ * function spi32_spistart
+ * Activate SPI
  *
  * Parameters
  * r0: Control and Status
- * r1: Data to Be Send
- * r2: Length of Send Data (Bytes, Up to 4)
  *
  * Return: r0 (0 as Success)
  */
-.globl spi32_spitx
-spi32_spitx:
+.globl spi32_spistart
+spi32_spistart:
 	/* Auto (Local) Variables, but just Aliases */
-	cs         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	data_send  .req r1
-	i          .req r2
-	addr_spi   .req r3
-	byte       .req r4
-	temp       .req r5
-
-	push {r4-r5}
+	cs         .req r0
+	addr_spi   .req r1
 
 	mov addr_spi, #equ32_peripherals_base
 	add addr_spi, addr_spi, #equ32_spi0_base_upper
 	add addr_spi, addr_spi, #equ32_spi0_base_lower
-
-	ldr temp, [addr_spi, #equ32_spi0_cs]
-	tst temp, #equ32_spi0_cs_ta
-	bne spi32_spitx_txfifo_jump                 @ If TA has Been Already Set
 
 	bic cs, cs, #equ32_spi0_cs_ta
 	str cs, [addr_spi, #equ32_spi0_cs]          @ Set Except TA
@@ -80,18 +68,116 @@ spi32_spitx:
 	str cs, [addr_spi, #equ32_spi0_cs]          @ Start of Transfer
 	macro32_dsb ip
 
-	spi32_spitx_txfifo_jump:
-		cmp i, #4
-		movgt i, #4
-		sub i, i, #1
+	spi32_spistart_success:
+		mov r0, #0
+
+	spi32_spistart_common:
+		mov pc, lr
+
+.unreq cs 
+.unreq addr_spi
+
+
+/**
+ * function spi32_spistop
+ * Stop SPI
+ *
+ * Return: r0 (0 as success)
+ */
+.globl spi32_spistop
+spi32_spistop:
+	/* Auto (Local) Variables, but just Aliases */
+	cs           .req r0
+	addr_spi     .req r1
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	ldr cs, [addr_spi, #equ32_spi0_cs]
+	bic cs, cs, #equ32_spi0_cs_ta
+	str cs, [addr_spi, #equ32_spi0_cs]
+	macro32_dsb ip
+
+	spi32_spistop_success:
+		mov r0, #0
+
+	spi32_spistop_common:
+		mov pc, lr
+
+.unreq cs
+.unreq addr_spi
+
+
+/**
+ * function spi32_spidone
+ * Check Done or Not
+ *
+ * Return: r0 (0 as Done, 1 as Not Done)
+ */
+.globl spi32_spidone
+spi32_spidone:
+	/* Auto (Local) Variables, but just Aliases */
+	cs           .req r0
+	addr_spi     .req r1
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	ldr cs, [addr_spi, #equ32_spi0_cs]
+	tst cs, #equ32_spi0_cs_done             @ Check If Done, End of Transer
+	bne spi32_spidone_success
+
+	spi32_spidone_error:
+		mov r0, #1
+		b spi32_spidone_common
+
+	spi32_spidone_success:
+		mov r0, #0
+
+	spi32_spidone_common:
+		mov pc, lr
+
+.unreq cs
+.unreq addr_spi
+
+
+/**
+ * function spi32_spitx
+ * SPI Transfer
+ *
+ * Parameters
+ * r0: Data to Be Send
+ * r1: Length of Send Data (Bytes, Up to 4)
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl spi32_spitx
+spi32_spitx:
+	/* Auto (Local) Variables, but just Aliases */
+	data_send  .req r0
+	i          .req r1
+	addr_spi   .req r2
+	byte       .req r3
+	temp       .req r4
+
+	push {r4}
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	cmp i, #4
+	movgt i, #4
+	sub i, i, #1
 
 	spi32_spitx_txfifo:
-		ldr cs, [addr_spi, #equ32_spi0_cs]
-		tst cs, #equ32_spi0_cs_txd              @ If Having Space on TxFIFO
-		lslne temp, i, #3                       @ Substitute of Multiplication by 8 (Per Byte)
+		ldr temp, [addr_spi, #equ32_spi0_cs]
+		tst temp, #equ32_spi0_cs_txd              @ If Having Space on TxFIFO
+		lslne temp, i, #3                         @ Substitute of Multiplication by 8 (Per Byte)
 		lsrne byte, data_send, temp
-		andne byte, byte, #0xFF
-		strne byte, [addr_spi, #equ32_spi0_fifo]
+		strneb byte, [addr_spi, #equ32_spi0_fifo]
 		subne i, i, #1
 		cmp i, #0
 		bge spi32_spitx_txfifo
@@ -100,10 +186,9 @@ spi32_spitx:
 		mov r0, #0
 
 	spi32_spitx_common:
-		pop {r4-r5}
+		pop {r4}
 		mov pc, lr
 
-.unreq cs
 .unreq data_send
 .unreq i
 .unreq addr_spi
@@ -113,7 +198,7 @@ spi32_spitx:
 
 /**
  * function spi32_spirx
- * SPI Receive and Deactivate If Done
+ * SPI Receive
  *
  * Parameters
  * r0: Length of Data Received (Bytes, Up to 4)
@@ -125,12 +210,11 @@ spi32_spirx:
 	/* Auto (Local) Variables, but just Aliases */
 	i            .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	data_receive .req r1
-	cs           .req r2
-	addr_spi     .req r3
-	byte         .req r4
-	temp         .req r5
+	addr_spi     .req r2
+	byte         .req r3
+	temp         .req r4
 
-	push {r4-r5}
+	push {r4}
 
 	mov addr_spi, #equ32_peripherals_base
 	add addr_spi, addr_spi, #equ32_spi0_base_upper
@@ -143,38 +227,29 @@ spi32_spirx:
 	sub i, i, #1
 
 	spi32_spirx_rxfifo:
-		ldr cs, [addr_spi, #equ32_spi0_cs]
-		tst cs, #equ32_spi0_cs_rxd
-		beq spi32_spirx_deactivate               @ If Having No Data on RxFIFO
-		ldrne byte, [addr_spi, #equ32_spi0_fifo] @ If Having Data on RxFIFO
-		lslne temp, i, #3                        @ Substitute of Multiplication by 8 (Per Byte)
-		lslne byte, byte, temp
-		addne data_receive, data_receive, byte
-		subne i, i, #1
+		ldr temp, [addr_spi, #equ32_spi0_cs]
+
+		tst temp, #equ32_spi0_cs_rxd
+		beq spi32_spirx_success                 @ If Having No Data on RxFIFO
+
+		ldrb byte, [addr_spi, #equ32_spi0_fifo] @ If Having Data on RxFIFO
+		lsl temp, i, #3                         @ Substitute of Multiplication by 8 (Per Byte)
+		lsl byte, byte, temp
+		add data_receive, data_receive, byte
+		sub i, i, #1
 		cmp i, #0
+
 		bge spi32_spirx_rxfifo
-
-	spi32_spirx_deactivate:
-		ldr cs, [addr_spi, #equ32_spi0_cs]
-		tst cs, #equ32_spi0_cs_done             @ Check If Done, End of Transer
-		beq spi32_spirx_success
-
-		bic cs, cs, #equ32_spi0_cs_ta
-		str cs, [addr_spi, #equ32_spi0_cs]
-		macro32_dsb ip
-
-		b spi32_spirx_success
 
 	spi32_spirx_success:
 		mov r0, data_receive
 
 	spi32_spirx_common:
-		pop {r4-r5}
+		pop {r4}
 		mov pc, lr
 
 .unreq i
 .unreq data_receive
-.unreq cs
 .unreq addr_spi
 .unreq byte
 .unreq temp
