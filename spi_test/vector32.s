@@ -41,8 +41,8 @@ os_reset:
 	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
-	mov r1, #0x0000                           @ High 1 Byte of decimal 1 (2 - 1), 16 bits counter on default
-	add r1, r1, #0x01                         @ Low 1 Byte of decimal 1, 16 bits counter on default
+	mov r1, #0x0000                           @ High 1 Byte of decimal 4 (5 - 1), 16 bits counter on default
+	add r1, r1, #0x04                         @ Low 1 Byte of decimal 4, 16 bits counter on default
 	str r1, [r0, #equ32_armtimer_load]
 
 	mov r1, #0x3E0000                         @ High 2 Bytes
@@ -50,7 +50,7 @@ os_reset:
 	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
 	str r1, [r0, #equ32_armtimer_control]
 
-	/* So We can get a 50Khz Timer Interrupt (100000/2) */
+	/* So We can get a 20Khz Timer Interrupt (100000/5) */
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
@@ -120,6 +120,11 @@ os_reset:
 
 	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
+	pop {r0-r3,lr}
+
+	push {r0-r3,lr}
+	mov r0, #100                      @ 240Mhz/100, 2.4Mhz
+	bl spi32_spiclk
 	pop {r0-r3,lr}
 
 	mov pc, lr
@@ -283,8 +288,6 @@ spi_test_fiqhandler:
 		/* Command to MCP3002 AD Converter */
 		mov r0, #0b11<<equ32_spi0_cs_clear
 		mov r1, #0b01100000<<24
-		mov r2, #100                      @ 240Mhz/100, 2.4Mhz
-		/*mov r2, #80*/                       @ 240Mhz/80, 3Mhz
 		bl spi32_spitx
 
 		pop {r4-r9,pc}
