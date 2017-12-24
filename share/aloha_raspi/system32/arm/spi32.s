@@ -47,6 +47,7 @@ spi32_spiclk:
  * Parameters
  * r0: Control and Status
  * r1: Data to Be Send
+ * r2: Length of Send Data (Bytes, Up to 4)
  *
  * Return: r0 (0 as Success)
  */
@@ -80,7 +81,9 @@ spi32_spitx:
 	macro32_dsb ip
 
 	spi32_spitx_txfifo_jump:
-		mov i, #3
+		cmp i, #4
+		movgt i, #4
+		sub i, i, #1
 
 	spi32_spitx_txfifo:
 		ldr cs, [addr_spi, #equ32_spi0_cs]
@@ -112,14 +115,17 @@ spi32_spitx:
  * function spi32_spirx
  * SPI Receive and Deactivate If Done
  *
+ * Parameters
+ * r0: Length of Data Received (Bytes, Up to 4)
+ *
  * Return: r0 (Data to Be Received)
  */
 .globl spi32_spirx
 spi32_spirx:
 	/* Auto (Local) Variables, but just Aliases */
-	cs           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	i            .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	data_receive .req r1
-	i            .req r2
+	cs           .req r2
 	addr_spi     .req r3
 	byte         .req r4
 	temp         .req r5
@@ -132,7 +138,10 @@ spi32_spirx:
 
 	mov data_receive, #0
 
-	mov i, #3
+	cmp i, #4
+	movgt i, #4
+	sub i, i, #1
+
 	spi32_spirx_rxfifo:
 		ldr cs, [addr_spi, #equ32_spi0_cs]
 		tst cs, #equ32_spi0_cs_rxd
@@ -163,9 +172,9 @@ spi32_spirx:
 		pop {r4-r5}
 		mov pc, lr
 
-.unreq cs
-.unreq data_receive
 .unreq i
+.unreq data_receive
+.unreq cs
 .unreq addr_spi
 .unreq byte
 .unreq temp

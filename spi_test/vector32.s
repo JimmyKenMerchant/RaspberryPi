@@ -194,6 +194,7 @@ spi_test_fiqhandler:
 	push {r4-r9,lr}
 
 	/* Get Data from MCP3002 AD Converter */
+	mov r0, #4
 	bl spi32_spirx                        @ Return Data to r0
 	mov current, r0
 
@@ -288,6 +289,7 @@ spi_test_fiqhandler:
 		/* Command to MCP3002 AD Converter */
 		mov r0, #0b11<<equ32_spi0_cs_clear
 		mov r1, #0b01100000<<24
+		mov r2, #4
 		bl spi32_spitx
 
 		pop {r4-r9,pc}
