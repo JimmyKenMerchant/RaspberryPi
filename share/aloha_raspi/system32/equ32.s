@@ -52,6 +52,8 @@
 
 .equ equ32_aux_base_upper,     0x00210000 @ UART1, SPI1, SPI2
 .equ equ32_aux_base_lower,     0x00005000
+.equ equ32_uart0_base_upper,   0x00200000 @ UART0 (PL011, One of ARM's CoreLink IP)
+.equ equ32_uart0_base_lower,   0x00001000
 .equ equ32_spi0_base_upper,    0x00200000 @ SPI Master
 .equ equ32_spi0_base_lower,    0x00004000
 .equ equ32_i2c0_base_upper,    0x00200000
@@ -229,6 +231,93 @@
 .equ equ32_gpio51,   0b1 << 19 @ Bit High
 .equ equ32_gpio52,   0b1 << 20 @ Bit High
 .equ equ32_gpio53,   0b1 << 21 @ Bit High
+
+
+.equ equ32_uart0_dr,        0x00      @ Data
+.equ equ32_uart0_rsrecr,    0x04      @ Receive Status/ Error Clear, Renewed by Reading DR, Cleared by Write Any
+.equ equ32_uart0_fr,        0x18      @ Flag
+.equ equ32_uart0_ilpr,      0x20      @ IrDA, N/A
+.equ equ32_uart0_ibrd,      0x24      @ Integer Baud Rate Divisor, Bit[15:0]
+.equ equ32_uart0_fbrd,      0x28      @ Fractional Baud Rate Divisor, Bit[5:0]
+.equ equ32_uart0_lcrh,      0x2C      @ Line Control
+.equ equ32_uart0_cr,        0x30      @ Control
+.equ equ32_uart0_ifls,      0x34      @ Interrupt FIFO Level Select
+.equ equ32_uart0_imsc,      0x38      @ Interrupt Mask Set (1)/ Clear(0)
+.equ equ32_uart0_ris,       0x3C      @ Raw Interrupt Status
+.equ equ32_uart0_mis,       0x40      @ Masked Interrupt Status
+.equ equ32_uart0_icr,       0x44      @ Interrupt Clear by Set (1)
+.equ equ32_uart0_dmacr,     0x48      @ DMA Control, N/A
+.equ equ32_uart0_tcr,       0x80      @ Test Control
+.equ equ32_uart0_itip,      0x84      @ Integration Test Input Read/ Set
+.equ equ32_uart0_itop,      0x88      @ Integration Test Output Read/ Set
+.equ equ32_uart0_tdr,       0x8C      @ Test Data Bit[10:0]
+
+.equ equ32_uart0_dr_oe,     0x0800    @ Overrun Error
+.equ equ32_uart0_dr_be,     0x0400    @ Break Error, Received Too Long Low (UART is Low Active)
+.equ equ32_uart0_dr_pe,     0x0200    @ Parity Error
+.equ equ32_uart0_dr_fe,     0x0100    @ Framing Error, No Valid Stop Bit
+
+.equ equ32_uart0_rsrecr_oe, 0x08      @ Overrun Error
+.equ equ32_uart0_rsrecr_be, 0x04      @ Break Error, Received Too Long Low (UART is Low Active)
+.equ equ32_uart0_rsrecr_pe, 0x02      @ Parity Error
+.equ equ32_uart0_rsrecr_fe, 0x01      @ Framing Error, No Valid Stop Bit
+
+.equ equ32_uart0_fr_ri,     0x100     @ Ring Indicator (RI), N/A
+.equ equ32_uart0_fr_txfe,   0x080     @ Transmit FIFO Empty
+.equ equ32_uart0_fr_rxff,   0x040     @ Receive FIFO Full
+.equ equ32_uart0_fr_txff,   0x020     @ Transmit FIFO Full
+.equ equ32_uart0_fr_rxfe,   0x010     @ Receive FIFO Empty
+.equ equ32_uart0_fr_busy,   0x008     @ Busy
+.equ equ32_uart0_fr_dcd,    0x004     @ Data Carrier Detect (DCD), N/A
+.equ equ32_uart0_fr_dsr,    0x002     @ Data Set Ready (DSR), N/A
+.equ equ32_uart0_fr_cts,    0x001     @ Clear to Send (CTS) from Another
+
+.equ equ32_uart0_lcrh_sps,  0x80      @ Stick Parity Select
+.equ equ32_uart0_lcrh_sps,  5         @ Word Length Bit[6:5], 11b is 8 Bits, 00b is 5 Bits
+.equ equ32_uart0_lcrh_fen,  0x10      @ Enable TxFIFO and RxFIFO
+.equ equ32_uart0_lcrh_stp2, 0x08      @ Two Stop Bits Select
+.equ equ32_uart0_lcrh_eps,  0x04      @ Even Parity Select
+.equ equ32_uart0_lcrh_pen,  0x02      @ Parity Enable
+.equ equ32_uart0_lcrh_brk,  0x01      @ Send Break
+
+.equ equ32_uart0_cr_ctsen,  0x8000    @ CTS Enable
+.equ equ32_uart0_cr_rtsen,  0x4000    @ RTS Enable
+.equ equ32_uart0_cr_out2,   0x2000    @ N/A
+.equ equ32_uart0_cr_out1,   0x1000    @ N/A
+.equ equ32_uart0_cr_rts,    0x0800    @ Request to Send (RTS) to Another
+.equ equ32_uart0_cr_dtr,    0x0400    @ Data Transmit Ready, N/A
+.equ equ32_uart0_cr_rxe,    0x0200    @ Receive Enable
+.equ equ32_uart0_cr_txe,    0x0100    @ Transmit Enable
+.equ equ32_uart0_cr_lbe,    0x0080    @ Loopback Enable
+.equ equ32_uart0_cr_sirlp,  0x0004    @ IrDA SIR Low Power Mode, N/A
+.equ equ32_uart0_cr_siren,  0x0002    @ SIR Enable, N/A
+.equ equ32_uart0_cr_uarten, 0x0001    @ UART Enable
+
+/* 000b 1/8 Full, 001b 1/4, 010b 1/2, 011b 3/4, 100b 7/8 */
+.equ equ32_uart0_ifls_rxiflsel, 3     @ Receive Interrupt FIFO Level Select Bit[5:3]
+.equ equ32_uart0_ifls_txiflsel, 0     @ Transmit Interrupt FIFO Level Select Bit[2:0]
+
+/* Interrupts used in equ32_uart0_imsc, equ32_uart0_ris, equ32_uart0_mis, equ32_uart0_icr */
+.equ equ32_uart0_intr_oe,       0x400 @ Overrun Error
+.equ equ32_uart0_intr_be,       0x200 @ Break Error
+.equ equ32_uart0_intr_pe,       0x100 @ Parity Error
+.equ equ32_uart0_intr_fe,       0x080 @ Framing Error
+.equ equ32_uart0_intr_rt,       0x040 @ Receive Timeout
+.equ equ32_uart0_intr_tx,       0x020 @ Transmit with equ32_uart0_ifls_txiflsel
+.equ equ32_uart0_intr_rx,       0x010 @ Receive with equ32_uart0_ifls_rxiflsel
+.equ equ32_uart0_intr_dsrm,     0x008 @ DSR, N/A
+.equ equ32_uart0_intr_dcdm,     0x004 @ DCD, N/A
+.equ equ32_uart0_intr_ctsm,     0x002 @ CTS
+.equ equ32_uart0_intr_rim,      0x001 @ RI, N/A
+
+.equ equ32_uart0_dmacr_dmaonerr, 0x04 @ Stops DMA When UART Error, N/A
+.equ equ32_uart0_dmacr_txdmae,   0x02 @ Tx DMA Enable, N/A
+.equ equ32_uart0_dmacr_rxdmae,   0x01 @ Rx DMA Enable, N/A
+
+.equ equ32_uart0_tcr_sirtest,    0x04 @ N/A
+.equ equ32_uart0_tcr_testfifo,   0x02 @ Test FIFO Enable, Direct Write/Read through equ32_uart0_tdr
+.equ equ32_uart0_tcr_iten,       0x01 @ Integration Test Enable for equ32_uart0_itip and equ32_uart0_itop
+
 
 .equ equ32_i2c_c,          0x00000000 @ Control
 .equ equ32_i2c_s,          0x00000004 @ Status
