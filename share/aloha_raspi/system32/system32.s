@@ -37,6 +37,8 @@
 .balign 4
 .include "system32/arm/dma32.s"
 .balign 4
+.include "system32/arm/uart32.s"
+.balign 4
 .include "system32/arm/spi32.s"
 .balign 4
 .include "system32/arm/i2c32.s"
