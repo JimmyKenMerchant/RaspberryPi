@@ -51,6 +51,9 @@ hdmi_group=0
 #Number depends on CEA or DMT Table
 #hdmi_mode=1
 
+#PL011, UART0 Reference Clock. Besides, UART1 Reference Clock is core_freq
+init_uart_clock=4915200
+
 #Signal IRQ for Interrupt Service Routine (ISR) from VideoCoreIV for Vertical Sync
 #Seems It's just FAKE, but in case of Strict Coding in Video, you may need of ISR.
 #I mean, VideoCoreIV has other strategies for Vertical Sync,
