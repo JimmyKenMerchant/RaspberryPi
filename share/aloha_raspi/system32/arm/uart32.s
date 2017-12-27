@@ -64,6 +64,78 @@ uart32_uartinit:
 
 
 /**
+ * function uart32_uartsetint
+ * Set UART Interrupt
+ * Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx)
+ *
+ * Parameters
+ * r0: Interrupt FIFO Level Select
+ * r1: Interrupt Mask Set (1)/ Clear(0)
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl uart32_uartsetint
+uart32_uartsetint:
+	/* Auto (Local) Variables, but just Aliases */
+	int_fifo        .req r0
+	int_mask        .req r1
+	addr_uart       .req r2
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	str int_fifo, [addr_uart, #equ32_uart0_ifls]
+
+	.unreq int_fifo
+	temp .req r0
+	mov temp, #0
+
+	str temp, [addr_uart, #equ32_uart0_imsc]     @ Clear All Mask
+
+	macro32_dsb ip
+
+	str int_mask, [addr_uart, #equ32_uart0_imsc]
+
+	macro32_dsb ip
+
+	uart32_uartsetint_common:
+		mov pc, lr
+
+.unreq temp
+.unreq int_mask
+.unreq addr_uart
+
+
+/**
+ * function uart32_uartclrint
+ * Clear UART Interrupt
+ *
+ * Return: r0 (Cleared Interrupt Bits)
+ */
+.globl uart32_uartclrint
+uart32_uartclrint:
+	/* Auto (Local) Variables, but just Aliases */
+	int_mis         .req r0
+	addr_uart       .req r1
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	ldr int_mis, [addr_uart, #equ32_uart0_mis]
+	str int_mis, [addr_uart, #equ32_uart0_icr]
+
+	macro32_dsb ip
+
+	uart32_uartclrint_common:
+		mov pc, lr
+
+.unreq int_mis
+.unreq addr_uart
+
+
+/**
  * function uart32_uarttx
  * UART Transmit
  *

@@ -45,7 +45,9 @@ sudo stty -F /dev/serial0 speed
 # Verify changed baud
 
 # To Read
-sudo cat -vA < /dev/serial0
+sudo minicom -D /dev/serial0
+# sudo apt-get install minicom
+# sudo cat -vA < /dev/serial0
 
 # To Write on another terminal (Write Once per Word, 4 Bytes)
 sudo echo -ne 'GOOD' > /dev/serial0

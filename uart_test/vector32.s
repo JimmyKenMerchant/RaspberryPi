@@ -31,9 +31,15 @@ os_reset:
 
 	mvn r1, #0                                       @ Whole Inverter
 
-	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All IRQs
+	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
+
+	macro32_dsb ip
+
+	/* Enable UART IRQ */
+	mov r1, #1<<25                                   @ UART IRQ #57
+	str r1, [r0, #equ32_interrupt_enable_irqs2]
 
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
@@ -101,11 +107,24 @@ os_reset:
 	bl uart32_uartinit
 	pop {r0-r3,lr}
 
+	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
+	/* The Setting Below Triggers Interrupt on Reaching 4 Bytes of RxFIFO (0b000 is 2 Bytes Though) */
+	push {r0-r3,lr}
+	mov r0, #0b001<<equ32_uart0_ifls_rxiflsel|0b001<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
+	mov r1, #equ32_uart0_intr_rx @ equ32_uart0_intr_rt When Exceeding Trigger Point of RxFIFO
+	bl uart32_uartsetint
+	pop {r0-r3,lr}
+
 	mov pc, lr
 
 os_irq:
-	push {r0-r12}
-	pop {r0-r12}
+	push {r0-r12,lr}
+
+	bl uart32_uartclrint
+
+macro32_debug r0, 100, 60
+
+	pop {r0-r12,lr}
 	mov pc, lr
 
 os_fiq:
@@ -150,7 +169,11 @@ os_debug:
 
 	push {lr}
 
-	mov heap, #1
+	/* Enable FIQ and IRQ */
+	mov heap, #equ32_svc_mode|equ32_fiq_disable
+	msr cpsr_c, heap
+
+	mov heap, #2
 	bl heap32_malloc
 
 macro32_debug r0, 100, 88
@@ -165,7 +188,7 @@ macro32_debug r0, 100, 100
 
 		pop {r0}
 
-macro32_debug_hexa r0, 100, 112, 4
+macro32_debug_hexa r0, 100, 112, 8
 
 		push {r0}
 		mov r1, #4
@@ -173,6 +196,9 @@ macro32_debug_hexa r0, 100, 112, 4
 		pop {r0}
 
 		/*b os_debug_loop*/
+
+	mov heap, #equ32_svc_mode
+	msr cpsr_c, heap
 	
 	pop {pc}
 
