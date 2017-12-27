@@ -92,9 +92,9 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
 
-	/* UART 9600 Baud */
+	/* UART 115200 Baud */
 	push {r0-r3,lr}
-	mov r0, #32                                              @ Integer Divisor, 4915200 / 16 Multiplies by 9600 Equals 32
+	mov r0, #10                                              @ Integer Divisor, 18432000 / 16 Multiplies by 115200 Equals 10
 	mov r1, #0                                               @ Fractional Divisor
 	mov r2, #0b11<<equ32_uart0_lcrh_sps|equ32_uart0_lcrh_fen @ Line Control
 	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe           @ Coontrol
@@ -145,18 +145,38 @@ os_fiq:
 	pop {r0-r7,pc}
 
 os_debug:
+	/* Auto (Local) Variables, but just Aliases */
+	heap .req r0
+
 	push {lr}
 
-	push {r1-r3}
 	mov heap, #1
 	bl heap32_malloc
-	pop {r1-r3}
+
+macro32_debug r0, 100, 88
 
 	os_debug_loop:
+		push {r0}
 
-		b os_debug_loop
+		mov r1, #4        @ Per One Word (4 Bytes)
+		bl uart32_uartrx
+
+macro32_debug r0, 100, 100
+
+		pop {r0}
+
+macro32_debug_hexa r0, 100, 112, 4
+
+		push {r0}
+		mov r1, #4
+		bl uart32_uarttx
+		pop {r0}
+
+		/*b os_debug_loop*/
 	
 	pop {pc}
+
+.unreq heap
 
 
 /**

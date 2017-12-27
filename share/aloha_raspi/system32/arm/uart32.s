@@ -120,7 +120,7 @@ macro32_debug temp, 0, 100
 
 /**
  * function uart32_uartrx
- * UART Receive
+ * UART Wait and Receive
  *
  * Parameters
  * r0: Heap for Receive Data

@@ -23,3 +23,32 @@ Under Construction
 **Hardware**
 
 Under Construction
+
+**Settings for Another Raspberry Pi to Check This Test**
+
+```bash
+#This Example is for Raspberry Pi 3B with Raspbian Stretch 
+
+sudo raspi-config
+# 5 Interfacing Options > P6 Serial > No (serial login shell) > Yes (serial interface) > OK > Finish (Reboot)
+
+sudo less /boot/config.txt
+# Make Sure of comment "enable_uart=1" if RasPi 3B which uses UART1 for the interface
+
+sudo stty -F /dev/serial0 speed
+# Check current baud
+
+# Set UART rate to 115200 baud
+sudo stty -F /dev/serial0 115200
+
+sudo stty -F /dev/serial0 speed
+# Verify changed baud
+
+# To Read
+sudo cat -vA < /dev/serial0
+
+# To Write on another terminal (Write Once per Word, 4 Bytes)
+sudo echo -ne 'GOOD' > /dev/serial0
+
+# https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
+```
