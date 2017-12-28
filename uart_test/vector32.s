@@ -118,14 +118,59 @@ os_reset:
 	mov pc, lr
 
 os_irq:
+	/* Auto (Local) Variables, but just Aliases */
+	heap .req r0
+
 	push {r0-r12,lr}
 
 	bl uart32_uartclrint
 
-macro32_debug r0, 100, 60
+macro32_debug heap, 100, 60
 
-	pop {r0-r12,lr}
-	mov pc, lr
+	mov heap, #4      @ 1 Words, 4 Bytes
+	bl heap32_malloc
+
+macro32_debug heap, 100, 88
+
+	push {r0}
+
+	mov r1, #16        @ Max. 16 Bytes
+	bl uart32_uartrx
+
+macro32_debug r0, 100, 100
+
+	tst r0, #0x8
+
+	pop {r0}
+
+	beq os_irq_common
+
+	bl uart32_uartclrrx
+	ldr heap, os_irq_warn_overrun
+
+	os_irq_common:
+
+macro32_debug_hexa heap, 100, 112, 16
+
+		/* Mirror Received Data to Another */
+		push {r0}
+		mov r1, #16
+		bl uart32_uarttx
+		pop {r0}
+
+		bl heap32_mfree
+
+		pop {r0-r12,lr}
+		mov pc, lr
+
+.unreq heap
+
+.balign 4
+_os_irq_warn_overrun:
+	.ascii "Overrun Error!\n\0" @ Add Null Escape Character on The End
+.balign 4
+os_irq_warn_overrun:
+	.word _os_irq_warn_overrun
 
 os_fiq:
 	push {r0-r7,lr}
@@ -164,45 +209,8 @@ os_fiq:
 	pop {r0-r7,pc}
 
 os_debug:
-	/* Auto (Local) Variables, but just Aliases */
-	heap .req r0
-
 	push {lr}
-
-	/* Enable FIQ and IRQ */
-	mov heap, #equ32_svc_mode|equ32_fiq_disable
-	msr cpsr_c, heap
-
-	mov heap, #2
-	bl heap32_malloc
-
-macro32_debug r0, 100, 88
-
-	os_debug_loop:
-		push {r0}
-
-		mov r1, #4        @ Per One Word (4 Bytes)
-		bl uart32_uartrx
-
-macro32_debug r0, 100, 100
-
-		pop {r0}
-
-macro32_debug_hexa r0, 100, 112, 8
-
-		push {r0}
-		mov r1, #4
-		bl uart32_uarttx
-		pop {r0}
-
-		/*b os_debug_loop*/
-
-	mov heap, #equ32_svc_mode
-	msr cpsr_c, heap
-	
 	pop {pc}
-
-.unreq heap
 
 
 /**

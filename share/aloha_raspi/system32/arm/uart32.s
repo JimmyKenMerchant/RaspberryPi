@@ -192,13 +192,14 @@ macro32_debug temp, 0, 100
 
 /**
  * function uart32_uartrx
- * UART Wait and Receive
+ * UART Receive
  *
  * Parameters
  * r0: Heap for Receive Data
  * r1: Transfer Size (Bytes)
  *
  * Return: r0 (0 as success, not 0 as error)
+ * Bit[4]: Less Data than Expected by Second Parameter
  * Bit[3]: Overrun Error
  * Bit[2]: Break Error
  * Bit[1]: Parity Error
@@ -227,16 +228,16 @@ macro32_debug temp, 0, 112
 */
 
 		tst temp, #equ32_uart0_fr_rxfe
-		bne uart32_uartrx_fifo                      @ If Empty on RxFIFO
+		bne uart32_uartrx_error2                    @ If Empty on RxFIFO
 
-		ldrb byte, [addr_uart, #equ32_uart0_dr]     @ If Having Data on RxFIFO
+		ldr byte, [addr_uart, #equ32_uart0_dr]      @ If Having Data on RxFIFO (12-bit Word, 8-bit is Data)
 		strb byte, [heap]
 
 		ldrb temp, [addr_uart, #equ32_uart0_rsrecr] @ Get Received Status
 		strb temp, [addr_uart, #equ32_uart0_rsrecr] @ Clear by Write Any
 
 		tst temp, #0b1111
-		bne uart32_uartrx_error
+		bne uart32_uartrx_error1
 	
 		add heap, heap, #1
 		sub size_rx, size_rx, #1
@@ -246,9 +247,13 @@ macro32_debug temp, 0, 112
 
 		b uart32_uartrx_success
 
-	uart32_uartrx_error:
+	uart32_uartrx_error1:
 		and temp, temp, #0b1111
 		mov r0, temp
+		b uart32_uartrx_common
+
+	uart32_uartrx_error2:
+		mov r0, #0x10
 		b uart32_uartrx_common
 
 	uart32_uartrx_success:
@@ -261,5 +266,41 @@ macro32_debug temp, 0, 112
 .unreq heap
 .unreq size_rx
 .unreq byte
+.unreq temp
+.unreq addr_uart
+
+
+/**
+ * function uart32_uartclrrx
+ * Clear RxFIFO
+ *
+ * Return: r0 (0 as success)
+ */
+.globl uart32_uartclrrx
+uart32_uartclrrx:
+	/* Auto (Local) Variables, but just Aliases */
+	temp         .req r0
+	addr_uart    .req r1
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	uart32_uartclrrx_fifo:
+		ldr temp, [addr_uart, #equ32_uart0_fr]
+
+		tst temp, #equ32_uart0_fr_rxfe
+		bne uart32_uartclrrx_success                @ If Empty on RxFIFO
+
+		ldr temp, [addr_uart, #equ32_uart0_dr]      @ If Having Data on RxFIFO
+
+		b uart32_uartclrrx_fifo
+
+	uart32_uartclrrx_success:
+		mov r0, #0
+
+	uart32_uartclrrx_common:
+		mov pc, lr
+
 .unreq temp
 .unreq addr_uart
