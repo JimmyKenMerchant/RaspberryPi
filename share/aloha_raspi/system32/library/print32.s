@@ -130,7 +130,7 @@ print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
 
 /**
  * function print32_set_caret
- * Set Caret Position from Return Vlue of `print_number*` or `print_string*` functions
+ * Set Caret Position from Return Value of `print32_number*` or `print32_string*` functions
  *
  * Parameters
  * r0: Lower of Return
@@ -844,7 +844,7 @@ print32_number_double:
  * r7: Character Height in Pixels
  * r8: Font Set Base to Picture Numbers
  *
- * Usage: r0-r12
+ * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
@@ -863,7 +863,6 @@ print32_number:
 	width           .req r9
 	i               .req r10
 	bitmask         .req r11
-	shift           .req r12
 
 	push {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			 @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
@@ -897,14 +896,15 @@ print32_number:
 		/* Picture Number */
 
 		mov bitmask, #0xF                        @ 0b1111
-		lsl shift, i, #2                         @ Substitute of Multiplication by #4 (mul)
-		lsl bitmask, bitmask, shift              @ Make bitmask
+		lsl i, i, #2                             @ Substitute of Multiplication by 4
+		lsl bitmask, bitmask, i                  @ Make bitmask
 		and bitmask, number, bitmask
-		lsr bitmask, bitmask, shift              @ Make One Digit Number
+		lsr bitmask, bitmask, i                  @ Make One Digit Number
 		cmp bitmask, #9
 		addls bitmask, bitmask, #0x30            @ Ascii Table Number Offset
 		addhi bitmask, bitmask, #0x37            @ Ascii Table Alphabet Offset - 9
-		lsl bitmask, bitmask, #2                 @ Substitute of Multiplication by #4 (mul)
+		lsl bitmask, bitmask, #2                 @ Substitute of Multiplication by 4
+		lsr i, i, #2                             @ Substitute of Division by 4
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [font_ascii_base, bitmask]       @ Character Pointer
@@ -960,7 +960,5 @@ print32_number:
 .unreq width
 .unreq i
 .unreq bitmask
-.unreq shift
-
 
 PRINT32_FB32_WIDTH: .word FB32_WIDTH

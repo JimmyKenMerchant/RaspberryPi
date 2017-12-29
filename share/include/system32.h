@@ -861,6 +861,54 @@ extern String math32_int32_to_string_hexa
 );
 
 
+/**
+ * Convert Hexadecimal Bases (0-F) to Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
+ */
+extern uint64 math32_hexa_to_deci32
+(
+	uint32 number_hexa
+);
+
+
+/**
+ * Addition with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 math32_deci_add64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
+ *
+ * Return: Hexadecimal Number
+ */
+extern uint32 math32_deci_to_hexa32
+(
+	uint64 number_deci
+);
+
+
+/**
+ * Subtraction with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 math32_deci_sub64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
 /********************************
  * system32/library/heap32.s
  ********************************/

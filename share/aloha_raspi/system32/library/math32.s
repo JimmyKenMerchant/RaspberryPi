@@ -1247,14 +1247,12 @@ math32_count_zero32:
 
 /**
  * function math32_hexa_to_deci32
- * Convert Hexadecimal Bases (0-f) to Decimal Bases (0-9) of a Register
+ * Convert Hexadecimal Bases (0-F) to Decimal Bases (0-9)
  *
  * Parameters
- * r0: Register to Be Converted
+ * r0: Hexadecimal Number to Be Converted
  *
- * Usage: r0-r8, r0 reused
- * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
- * Error(r0:0x0, r1:0x0): This function could not calculate because of digit-overflow.
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
  */
 .globl math32_hexa_to_deci32
 math32_hexa_to_deci32:
@@ -1264,12 +1262,11 @@ math32_hexa_to_deci32:
 	power_lower .req r2
 	power_upper .req r3
 	dup_hexa    .req r4
-	mul_number  .req r5
-	i           .req r6
-	shift       .req r7
-	bitmask     .req r8
+	i           .req r5
+	shift       .req r6
+	bitmask     .req r7
 
-	push {r4-r8}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r7}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                     @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov dup_hexa, hexa
@@ -1282,11 +1279,10 @@ math32_hexa_to_deci32:
 	mov power_upper, #0
 
 	mov i, #0
-	mov mul_number, #4
 
 	math32_hexa_to_deci32_loop:
-		mov bitmask, #0xf                         @ 0b1111
-		mul shift, i, mul_number
+		mov bitmask, #0xF                         @ 0b1111
+		lsl shift, i, #2                          @ Substitute of Multiplication by 4
 		lsl bitmask, bitmask, shift               @ Make bitmask
 		and bitmask, dup_hexa, bitmask
 		lsr bitmask, bitmask, shift               @ Make One Digit Number
@@ -1329,7 +1325,7 @@ math32_hexa_to_deci32:
 			ble math32_hexa_to_deci32_loop_common
 
 			push {lr}
-			bl math32_decimal_adder64
+			bl math32_deci_add64
 			pop {lr}
 
 			sub bitmask, bitmask, #1
@@ -1343,7 +1339,7 @@ math32_hexa_to_deci32:
 			blo math32_hexa_to_deci32_loop
 
 	math32_hexa_to_deci32_common:
-		pop {r4-r8}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r7}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 		mov pc, lr
@@ -1366,14 +1362,13 @@ math32_hexa_to_deci32_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 .unreq power_lower
 .unreq power_upper
 .unreq dup_hexa
-.unreq mul_number
 .unreq i
 .unreq shift
 .unreq bitmask
 
 
 /**
- * function math32_decimal_adder64
+ * function math32_deci_add64
  * Addition with Decimal Bases (0-9)
  *
  * Parameters
@@ -1382,12 +1377,11 @@ math32_hexa_to_deci32_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  * r2: Lower Bits of Second Number, needed between 0-9 in all digits
  * r3: Upper Bits of Second Number, needed between 0-9 in all digits
  *
- * Usage: r0-r11
- * Return: r0 (Lower Bits of Return Number), r1 (Upper Bits of Return Number), if all zero, may be error
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because of digit-overflow.
  */
-.globl math32_decimal_adder64
-math32_decimal_adder64:
+.globl math32_deci_add64
+math32_deci_add64:
 	/* Auto (Local) Variables, but just Aliases */
 	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
@@ -1395,14 +1389,13 @@ math32_decimal_adder64:
 	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
 	dup_lower_1    .req r4 @ Duplication of lower_1
 	dup_upper_1    .req r5 @ Duplication of upper_1
-	mul_number     .req r6
-	i              .req r7
-	shift          .req r8
-	bitmask_1      .req r9
-	bitmask_2      .req r10
-	carry_flag     .req r11
+	i              .req r6
+	shift          .req r7
+	bitmask_1      .req r8
+	bitmask_2      .req r9
+	carry_flag     .req r10
 
-	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov dup_lower_1, lower_1
@@ -1412,16 +1405,15 @@ math32_decimal_adder64:
 	mov carry_flag, #0
 
 	mov i, #0
-	mov mul_number, #4
 
-	math32_decimal_adder64_loop:
-		mov bitmask_1, #0xf                            @ 0b1111
-		mov bitmask_2, #0xf
+	math32_deci_add64_loop:
+		mov bitmask_1, #0xF                            @ 0b1111
+		mov bitmask_2, #0xF
 
-		mul shift, i, mul_number
+		lsl shift, i, #2                               @ Substitute of Multiplication by 4
 
 		cmp i, #8
-		bhs math32_decimal_adder64_loop_uppernumber
+		bhs math32_deci_add64_loop_uppernumber
 
 		/* Lower Number */
 		lsl bitmask_1, bitmask_1, shift
@@ -1430,10 +1422,10 @@ math32_decimal_adder64:
 		and bitmask_1, dup_lower_1, bitmask_1
 		and bitmask_2, lower_2, bitmask_2
 
-		b math32_decimal_adder64_loop_adder
+		b math32_deci_add64_loop_cal
 
 		/* Upper Number */
-		math32_decimal_adder64_loop_uppernumber:
+		math32_deci_add64_loop_uppernumber:
 
 			sub shift, shift, #32
 
@@ -1443,7 +1435,7 @@ math32_decimal_adder64:
 			and bitmask_1, dup_upper_1, bitmask_1
 			and bitmask_2, upper_2, bitmask_2
 
-		math32_decimal_adder64_loop_adder:
+		math32_deci_add64_loop_cal:
 		
 			lsr bitmask_1, bitmask_1, shift
 			lsr bitmask_2, bitmask_2, shift
@@ -1452,62 +1444,62 @@ math32_decimal_adder64:
 			add bitmask_1, bitmask_1, carry_flag
 
 			cmp bitmask_1, #0x10
-			bhs math32_decimal_adder64_loop_adder_hexacarry
+			bhs math32_deci_add64_loop_cal_hexacarry
 
 			cmp bitmask_1, #0x0A
-			bhs math32_decimal_adder64_loop_adder_decicarry
+			bhs math32_deci_add64_loop_cal_decicarry
 
 			mov carry_flag, #0                      @ Clear Carry
 
-			b math32_decimal_adder64_loop_common	
+			b math32_deci_add64_loop_common	
 
-			math32_decimal_adder64_loop_adder_hexacarry:
+			math32_deci_add64_loop_cal_hexacarry:
 
 				sub bitmask_1, #0x10
 				add bitmask_1, #0x06 
 				mov carry_flag, #1              @ Set Carry
 
-				b math32_decimal_adder64_loop_common
+				b math32_deci_add64_loop_common
 
-			math32_decimal_adder64_loop_adder_decicarry:
+			math32_deci_add64_loop_cal_decicarry:
 
 				sub bitmask_1, #0x0A
 				mov carry_flag, #1              @ Set Carry
 
-		math32_decimal_adder64_loop_common:
+		math32_deci_add64_loop_common:
 			lsl bitmask_1, bitmask_1, shift
 
 			cmp i, #8
-			bhs math32_decimal_adder64_loop_common_uppernumber
+			bhs math32_deci_add64_loop_common_uppernumber
 
 			/* Lower Number */
 			add lower_1, lower_1, bitmask_1
 
-			b math32_decimal_adder64_loop_common_common
+			b math32_deci_add64_loop_common_common
 
 			/* Upper Number */
-			math32_decimal_adder64_loop_common_uppernumber:
+			math32_deci_add64_loop_common_uppernumber:
 
 				add upper_1, upper_1, bitmask_1
 
-			math32_decimal_adder64_loop_common_common:
+			math32_deci_add64_loop_common_common:
 
 				add i, i, #1
 				cmp i, #16
-				blo math32_decimal_adder64_loop
+				blo math32_deci_add64_loop
 
 				cmp carry_flag, #1
-				beq math32_decimal_adder64_error
+				beq math32_deci_add64_error
 
-	math32_decimal_adder64_success:
-		b math32_decimal_adder64_common
+	math32_deci_add64_success:
+		b math32_deci_add64_common
 
-	math32_decimal_adder64_error:
-		mov r0, #0                                      @ Return with Error
-		mov r1, #0
+	math32_deci_add64_error:
+		mvn r0, #0                                      @ Return with Error
+		mvn r1, #0
 
-	math32_decimal_adder64_common:
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	math32_deci_add64_common:
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 		mov pc, lr
@@ -1518,7 +1510,286 @@ math32_decimal_adder64:
 .unreq upper_2
 .unreq dup_lower_1
 .unreq dup_upper_1
-.unreq mul_number
+.unreq i
+.unreq shift
+.unreq bitmask_1
+.unreq bitmask_2
+.unreq carry_flag
+
+
+/**
+ * function math32_deci_to_hexa32
+ * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
+ *
+ * Parameters
+ * r0: Lower Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
+ * r1: Upper Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
+ *
+ * Return: r0 (Hexadecimal Number)
+ */
+.globl math32_deci_to_hexa32
+math32_deci_to_hexa32:
+	/* Auto (Local) Variables, but just Aliases */
+	deci_lower     .req r0
+	deci_upper     .req r1
+	power_lower    .req r2
+	power_upper    .req r3
+	hexa           .req r4
+	i              .req r5
+	shift          .req r6
+	deci_lower_dup .req r7
+	deci_upper_dup .req r8
+
+	push {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                 @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	mov hexa, #0
+
+	mov i, #7
+
+	math32_deci_to_hexa32_loop:
+
+		cmp i, #0
+		ldreq power_lower, math32_deci_to_hexa32_0                @ 16^1
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_0
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #1
+		ldreq power_lower, math32_deci_to_hexa32_1                @ 16^1
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_1
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #2
+		ldreq power_lower, math32_deci_to_hexa32_2                @ 16^2
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_2
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #3
+		ldreq power_lower, math32_deci_to_hexa32_3                @ 16^3
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_3
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #4
+		ldreq power_lower, math32_deci_to_hexa32_4                @ 16^4
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_4
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #5
+		ldreq power_lower, math32_deci_to_hexa32_5                @ 16^5
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_5
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #6
+		ldreq power_lower, math32_deci_to_hexa32_6                @ 16^6
+		moveq power_upper, #0
+		ldreq shift, math32_deci_to_hexa32_shift_6
+		beq math32_deci_to_hexa32_loop_loop
+
+		cmp i, #7
+		ldreq power_lower, math32_deci_to_hexa32_7_lower          @ 16^7 Lower Bits
+		ldreq power_upper, math32_deci_to_hexa32_7_upper          @ 16^7 Upper Bits
+		ldreq shift, math32_deci_to_hexa32_shift_7
+
+		math32_deci_to_hexa32_loop_loop:
+
+			push {r0-r3,lr}
+			bl math32_deci_sub64
+			mov deci_lower_dup, r0
+			mov deci_upper_dup, r1
+			cmp r0, #-1
+			cmpeq r1, #-1
+			pop {r0-r3,lr}
+			beq math32_deci_to_hexa32_loop_common
+
+			mov deci_lower, deci_lower_dup
+			mov deci_upper, deci_upper_dup
+			add hexa, hexa, shift
+
+			b math32_deci_to_hexa32_loop_loop
+
+		math32_deci_to_hexa32_loop_common:
+
+			sub i, i, #1
+			cmp i, #0
+			bge math32_deci_to_hexa32_loop
+
+	math32_deci_to_hexa32_common:
+		mov r0, hexa
+		pop {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		mov pc, lr
+
+/* Variables */
+.balign 4
+math32_deci_to_hexa32_0:       .word 0x00000001 @ 16^0
+math32_deci_to_hexa32_1:       .word 0x00000016 @ 16^1
+math32_deci_to_hexa32_2:       .word 0x00000256 @ 16^2
+math32_deci_to_hexa32_3:       .word 0x00004096 @ 16^3
+math32_deci_to_hexa32_4:       .word 0x00065536 @ 16^4
+math32_deci_to_hexa32_5:       .word 0x01048576 @ 16^5
+math32_deci_to_hexa32_6:       .word 0x16777216 @ 16^6
+math32_deci_to_hexa32_7_lower: .word 0x68435456 @ 16^7 Lower Bits
+math32_deci_to_hexa32_7_upper: .word 0x00000002 @ 16^7 Upper Bits
+math32_deci_to_hexa32_shift_0: .word 0x00000001 @ 16^0
+math32_deci_to_hexa32_shift_1: .word 0x00000010 @ 16^1
+math32_deci_to_hexa32_shift_2: .word 0x00000100 @ 16^2
+math32_deci_to_hexa32_shift_3: .word 0x00001000 @ 16^3
+math32_deci_to_hexa32_shift_4: .word 0x00010000 @ 16^4
+math32_deci_to_hexa32_shift_5: .word 0x00100000 @ 16^5
+math32_deci_to_hexa32_shift_6: .word 0x01000000 @ 16^6
+math32_deci_to_hexa32_shift_7: .word 0x10000000 @ 16^7
+.balign 4
+
+.unreq deci_lower
+.unreq deci_upper
+.unreq power_lower
+.unreq power_upper
+.unreq hexa
+.unreq i
+.unreq shift
+.unreq deci_lower_dup
+.unreq deci_upper_dup
+
+
+/**
+ * function math32_deci_sub64
+ * Subtraction with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because the result is signed minus.
+ */
+.globl math32_deci_sub64
+math32_deci_sub64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4 @ Duplication of lower_1
+	dup_upper_1    .req r5 @ Duplication of upper_1
+	i              .req r6
+	shift          .req r7
+	bitmask_1      .req r8
+	bitmask_2      .req r9
+	carry_flag     .req r10
+
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	mov dup_lower_1, lower_1
+	mov dup_upper_1, upper_1
+	mov lower_1, #0
+	mov upper_1, #0
+	mov carry_flag, #0
+
+	mov i, #0
+
+	math32_deci_sub64_loop:
+		mov bitmask_1, #0xF                            @ 0b1111
+		mov bitmask_2, #0xF
+
+		lsl shift, i, #2                               @ Substitute of Multiplication by 4
+
+		cmp i, #8
+		bhs math32_deci_sub64_loop_uppernumber
+
+		/* Lower Number */
+		lsl bitmask_1, bitmask_1, shift
+		lsl bitmask_2, bitmask_2, shift
+
+		and bitmask_1, dup_lower_1, bitmask_1
+		and bitmask_2, lower_2, bitmask_2
+
+		b math32_deci_sub64_loop_cal
+
+		/* Upper Number */
+		math32_deci_sub64_loop_uppernumber:
+
+			sub shift, shift, #32
+
+			lsl bitmask_1, bitmask_1, shift
+			lsl bitmask_2, bitmask_2, shift
+
+			and bitmask_1, dup_upper_1, bitmask_1
+			and bitmask_2, upper_2, bitmask_2
+
+		math32_deci_sub64_loop_cal:
+	
+			lsr bitmask_1, bitmask_1, shift
+			lsr bitmask_2, bitmask_2, shift
+
+			sub bitmask_1, bitmask_1, bitmask_2
+			sub bitmask_1, bitmask_1, carry_flag
+
+			cmp bitmask_1, #0x0
+			blt math32_deci_sub64_loop_cal_carry
+
+			mov carry_flag, #0                      @ Clear Carry
+
+			b math32_deci_sub64_loop_common	
+
+			math32_deci_sub64_loop_cal_carry:
+
+				add bitmask_1, bitmask_1, #10        @ Value of bitmask_1 is minus
+				mov carry_flag, #1                   @ Set Carry
+
+		math32_deci_sub64_loop_common:
+			lsl bitmask_1, bitmask_1, shift
+
+			cmp i, #8
+			bhs math32_deci_sub64_loop_common_uppernumber
+
+			/* Lower Number */
+			add lower_1, lower_1, bitmask_1
+
+			b math32_deci_sub64_loop_common_common
+
+			/* Upper Number */
+			math32_deci_sub64_loop_common_uppernumber:
+
+				add upper_1, upper_1, bitmask_1
+
+			math32_deci_sub64_loop_common_common:
+
+				add i, i, #1
+				cmp i, #16
+				blo math32_deci_sub64_loop
+
+				cmp carry_flag, #1
+				beq math32_deci_sub64_error
+
+	math32_deci_sub64_success:
+		b math32_deci_sub64_common
+
+	math32_deci_sub64_error:
+		mvn r0, #0                                      @ Return with Error
+		mvn r1, #0
+
+	math32_deci_sub64_common:
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		mov pc, lr
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
 .unreq i
 .unreq shift
 .unreq bitmask_1
