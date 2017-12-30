@@ -26,16 +26,16 @@ void _user_start()
 	print32_set_caret( print32_number( number2, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	uint64 number1_deci = math32_hexa_to_deci32( number1 );
-	uint64 number2_deci = math32_hexa_to_deci32( number2 );
+	uint64 number1_deci = deci32_hexa_to_deci32( number1 );
+	uint64 number2_deci = deci32_hexa_to_deci32( number2 );
 
 	print32_set_caret( print32_number_double( number1_deci, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_number_double( number2_deci, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	uint32 number1_hexa = math32_deci_to_hexa32( number1_deci );
-	uint32 number2_hexa = math32_deci_to_hexa32( number2_deci );
+	uint32 number1_hexa = deci32_deci_to_hexa32( number1_deci );
+	uint32 number2_hexa = deci32_deci_to_hexa32( number2_deci );
 
 	print32_set_caret( print32_number( number1_hexa, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -44,8 +44,8 @@ void _user_start()
 
 	uint64 number3_deci = 0x1234123412341234;
 	uint64 number4_deci = 0x0000432143214321;
-	uint64 result1 = math32_deci_add64( number3_deci, number4_deci );
-	uint64 result2 = math32_deci_sub64( number3_deci, number4_deci );
+	uint64 result1 = deci32_deci_add64( number3_deci, number4_deci );
+	uint64 result2 = deci32_deci_sub64( number3_deci, number4_deci );
 
 	print32_set_caret( print32_number_double( result1, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );

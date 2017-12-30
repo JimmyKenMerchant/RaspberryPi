@@ -16,6 +16,8 @@
 
 **Version Information**
 
-* 0.9.1 Beta on December 25, 2017
+* 0.9.1 Beta on December 30, 2017:
+Assembler: GNU assembler (2.27-9+9) 2.27
+Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
 
 * 0.9 Beta on September 27, 2017

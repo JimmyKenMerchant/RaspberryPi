@@ -364,7 +364,7 @@ _os_fiq_handler:
 
 	push {lr}
 	mov r0, r2
-	bl math32_hexa_to_deci32
+	bl deci32_hexa_to_deci32
 	pop {lr}
 
 	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)

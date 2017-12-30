@@ -817,6 +817,10 @@ extern float32 math32_tan32
 );
 
 
+/********************************
+ * system32/library/deci32.s
+ ********************************/
+
 /**
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
@@ -825,7 +829,7 @@ extern float32 math32_tan32
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String math32_float32_to_string
+extern String deci32_float32_to_string
 (
 	float32 float_number,
 	uint32 min_integer, // 16 Digits Max
@@ -839,7 +843,7 @@ extern String math32_float32_to_string
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String math32_int32_to_string_deci
+extern String deci32_int32_to_string_deci
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
@@ -852,7 +856,7 @@ extern String math32_int32_to_string_deci
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String math32_int32_to_string_hexa
+extern String deci32_int32_to_string_hexa
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
@@ -866,7 +870,7 @@ extern String math32_int32_to_string_hexa
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
  */
-extern uint64 math32_hexa_to_deci32
+extern uint64 deci32_hexa_to_deci32
 (
 	uint32 number_hexa
 );
@@ -878,7 +882,7 @@ extern uint64 math32_hexa_to_deci32
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because of digit-overflow.
  */
-extern uint64 math32_deci_add64
+extern uint64 deci32_deci_add64
 (
 	uint64 number_deci1,
 	uint64 number_deci2
@@ -890,7 +894,7 @@ extern uint64 math32_deci_add64
  *
  * Return: Hexadecimal Number
  */
-extern uint32 math32_deci_to_hexa32
+extern uint32 deci32_deci_to_hexa32
 (
 	uint64 number_deci
 );
@@ -900,9 +904,9 @@ extern uint32 math32_deci_to_hexa32
  * Subtraction with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
- * Error: This function could not calculate because of digit-overflow.
+ * Error: This function could not calculate because the result is signed minus.
  */
-extern uint64 math32_deci_sub64
+extern uint64 deci32_deci_sub64
 (
 	uint64 number_deci1,
 	uint64 number_deci2
