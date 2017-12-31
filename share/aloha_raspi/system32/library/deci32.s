@@ -830,6 +830,116 @@ deci32_int32_to_string_hexa:
 
 
 /**
+ * function deci32_string_to_int32
+ * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Otherwise, you'll get zero to return.
+ *
+ * Parameters
+ * r0: Heap of String
+ * r1: Length of String (Max. 10 if Unsigned, 11 if Signed)
+ *
+ * Return: r0 (32-bit Unsigned/Signed Integer)
+ */
+.globl deci32_string_to_int32
+deci32_string_to_int32:
+	/* Auto (Local) Variables, but just Aliases */
+	heap        .req r0
+	length      .req r1
+	signed      .req r2
+	byte        .req r3
+	i           .req r4
+	deci_lower  .req r5
+	deci_upper  .req r6
+	shift       .req r7
+
+	push {r4-r7}
+
+	sub length, length, #1
+
+	mov i, #0
+	mov deci_lower, #0
+	mov deci_upper, #0
+
+	ldrb byte, [heap]
+	cmp byte, #0x2D                   @ Minus
+	moveq signed, #1
+	movne signed, #0
+	cmpne byte, #0x2B                 @ Plus
+	bne deci32_string_to_int32_length @ If Neither Minus nor Plus
+
+	/* If Signed */
+	add i, i, #1
+	sub length, length, #1
+
+	deci32_string_to_int32_length:
+
+		cmp length, #9
+		bgt deci32_string_to_int32_success
+
+	deci32_string_to_int32_loop:
+
+		ldrb byte, [heap, i]
+		sub byte, byte, #0x30                     @ Ascii Table Number Offset
+
+		lsl shift, length, #2                     @ Substitute of Multiplication by 4
+
+		cmp length, #8
+		bhs deci32_string_to_int32_loop_upper
+
+		/* Lower Number */
+		lsl byte, byte, shift
+
+		add deci_lower, deci_lower, byte
+
+		b deci32_string_to_int32_loop_common
+
+		/* Upper Number */
+		deci32_string_to_int32_loop_upper:
+
+			sub shift, shift, #32
+
+			lsl byte, byte, shift
+
+			add deci_upper, deci_upper, byte
+
+		deci32_string_to_int32_loop_common:
+
+			add i, i, #1
+			sub length, length, #1
+
+			cmp length, #0
+			bge deci32_string_to_int32_loop
+
+			push {r0-r3,lr}
+			mov r0, deci_lower
+			mov r1, deci_upper
+			bl deci32_deci_to_hexa32
+			mov deci_lower, r0
+			pop {r0-r3,lr}
+
+			cmp signed, #1
+			mvneq deci_lower, deci_lower          @ Logical Not to Convert Plus to Minus
+			addeq deci_lower, deci_lower, #1      @ Add 1 to Convert Plus to Minus
+
+	deci32_string_to_int32_success:
+		mov r0, deci_lower
+
+	deci32_string_to_int32_common:
+		pop {r4-r7}
+		mov pc, lr
+
+.unreq heap
+.unreq length
+.unreq signed
+.unreq byte
+.unreq i
+.unreq deci_lower
+.unreq deci_upper
+.unreq shift
+
+
+/**
  * function deci32_hexa_to_deci32
  * Convert Hexadecimal Bases (0-F) to Decimal Bases (0-9)
  *
@@ -1104,6 +1214,7 @@ deci32_deci_add64:
 /**
  * function deci32_deci_to_hexa32
  * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295.
  *
  * Parameters
  * r0: Lower Bits of Decimal Number to Be Converted, needed between 0-9 in all digits

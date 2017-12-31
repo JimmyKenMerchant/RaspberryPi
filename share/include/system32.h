@@ -866,6 +866,20 @@ extern String deci32_int32_to_string_hexa
 
 
 /**
+ * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Otherwise, you'll get zero to return.
+ *
+ * Return: 32-bit Unsigned/Signed Integer
+ */
+extern int32 deci32_string_to_int32
+(
+	String string,
+	uint32 length_string // Max. 10 if Unsigned, 11 if Signed
+);
+
+
+/**
  * Convert Hexadecimal Bases (0-F) to Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
@@ -891,6 +905,7 @@ extern uint64 deci32_deci_add64
 
 /**
  * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295.
  *
  * Return: Hexadecimal Number
  */
