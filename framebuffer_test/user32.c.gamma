@@ -18,6 +18,7 @@ void _user_start()
 	String newline = "\n\0";
 	String string_num1 = "1234567890\0";
 	String string_num2 = "-1234567890\0";
+	String string_num3 = "-123.123456789123e-03\0"; // float32's Expected Value is Untill 7th Decimal Digit on 10 Base (IEEE754)
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	uint32 number1 = 0xFFFFFFFF;
@@ -70,9 +71,19 @@ void _user_start()
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( number6_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( number6_str ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	heap32_mfree( (obj)number5_str );
 	heap32_mfree( (obj)number6_str );
+
+	float32 number7 = deci32_string_to_float32( string_num3 );
+	print32_set_caret( print32_number( vfp32_f32tos32( number7 ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	String number7_str = deci32_float32_to_string( number7, 0, 20, 0 );
+	print32_set_caret( print32_string( number7_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( number7_str ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	heap32_mfree( (obj)number7_str );
 
 	while(1) {
 		_sleep( 100000 );

@@ -1001,7 +1001,6 @@ deci32_string_to_float32:
 		pop {r0-r3}
 
 		sub length_exponent, length_exponent, exponent
-		sub length_exponent, length_exponent, #1
 
 	deci32_string_to_float32_int:
 
@@ -1100,6 +1099,8 @@ deci32_string_to_float32:
 	deci32_string_to_float32_expo:
 		cmp exponent, #-1
 		beq deci32_string_to_float32_success
+
+		/* Exponential Part */
 
 		add heap, heap, #1                       @ To Next of "E"/"e" Sign
 		sub length_exponent, length_exponent, #1 @ Subtract "E"/"e" Sign
