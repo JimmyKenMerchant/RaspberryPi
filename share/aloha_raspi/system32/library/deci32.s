@@ -833,7 +833,7 @@ deci32_int32_to_string_hexa:
  * function deci32_string_to_int32
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Otherwise, you'll get zero to return.
+ * Otherwise, You'll Get Zero to Return.
  *
  * Parameters
  * r0: Heap of String
@@ -937,6 +937,221 @@ deci32_string_to_int32:
 .unreq deci_lower
 .unreq deci_upper
 .unreq shift
+
+
+/**
+ * function deci32_string_to_float32
+ * Make 32-bit Float From String (Decimal System)
+ * Caution! The Range of Integer Part is -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Otherwise, You'll Get Zero on Integer Part to Return.
+ *
+ * Parameters
+ * r0: Heap of String
+ *
+ * Return: r0 (32-bit Float, -1 as error)
+ * Error(-1): String Could Not Be Converted
+ */
+.globl deci32_string_to_float32
+deci32_string_to_float32:
+	/* Auto (Local) Variables, but just Aliases */
+	heap               .req r0
+	temp               .req r1
+	minus              .req r2
+	temp2              .req r3
+	length_integer     .req r4
+	integer            .req r5
+	frac_offset        .req r6
+	length_exponent    .req r7
+	exponent           .req r8
+
+	vfp_float          .req s0
+	vfp_float_frac     .req s1
+	vfp_float_cal      .req s2
+	vfp_ten            .req s3
+
+	push {r4-r8,lr}
+	vpush {s0-s3}
+
+	/* Check Existing of Exponential Part */
+
+	push {r0-r3}
+	mov r1, #0x45                     @ Ascii Code of E
+	bl print32_charindex
+	mov exponent, r0
+	pop {r0-r3}
+
+	cmp exponent, #-1
+	bne deci32_string_to_float32_preexpo
+
+	push {r0-r3}
+	mov r1, #0x65                     @ Ascii Code of e
+	bl print32_charindex
+	mov exponent, r0
+	pop {r0-r3}
+
+	cmp exponent, #-1
+	moveq length_exponent, #0
+	beq deci32_string_to_float32_int
+
+	deci32_string_to_float32_preexpo:
+
+		push {r0-r3}
+		bl print32_strlen
+		mov length_exponent, r0
+		pop {r0-r3}
+
+		sub length_exponent, length_exponent, exponent
+		sub length_exponent, length_exponent, #1
+
+	deci32_string_to_float32_int:
+
+		/* Integer Part */
+
+		push {r0-r3}
+		mov r1, #0x2E                     @ Ascii Code for Period
+		bl print32_charindex
+		mov length_integer, r0
+		pop {r0-r3}
+
+		cmp length_integer, #-1
+		beq deci32_string_to_float32_error
+
+		push {r0-r3}
+		mov r1, length_integer
+		bl deci32_string_to_int32
+		mov integer, r0
+		pop {r0-r3}
+
+		cmp integer, #0
+		movlt minus, #1
+		movge minus, #0
+
+		vmov vfp_float, integer
+		vcvt.f32.s32 vfp_float, vfp_float
+
+		/* Fractional Part */
+
+		add heap, heap, length_integer    @ To Period
+		add heap, heap, #1                @ To Next of Period
+
+		.unreq length_integer
+		.unreq integer
+
+		length_frac .req r4
+		frac        .req r5
+
+		push {r0-r3}
+		bl print32_strlen
+		mov length_frac, r0
+		pop {r0-r3}
+
+		sub length_frac, length_frac, length_exponent
+
+		mov frac_offset, #0
+
+		mov temp2, #0
+		vmov vfp_float_frac, temp2
+		vcvt.f32.s32 vfp_float_frac, vfp_float_frac
+
+		mov temp2, #10
+		vmov vfp_ten, temp2
+		vcvt.f32.s32 vfp_ten, vfp_ten
+
+		.unreq temp2
+		length_dup .req r3
+
+	deci32_string_to_float32_frac:
+		cmp length_frac, #8
+		movge length_dup, #8
+		movlt length_dup, length_frac
+
+		push {r0-r3}
+		mov r1, length_dup
+		bl deci32_string_to_int32
+		mov frac, r0
+		pop {r0-r3}
+
+		vmov vfp_float_cal, frac
+		vcvt.f32.s32 vfp_float_cal, vfp_float_cal
+
+		add heap, heap, length_dup               @ Offset of Heap, Next Fractional Places or "E"/"e" Sign
+
+		add length_dup, length_dup, frac_offset
+
+		deci32_string_to_float32_frac_loop:
+
+			vdiv.f32 vfp_float_cal, vfp_float_cal, vfp_ten
+
+			sub length_dup, length_dup, #1
+			cmp length_dup, #0
+			bgt deci32_string_to_float32_frac_loop
+
+		vadd.f32 vfp_float_frac, vfp_float_frac, vfp_float_cal
+
+		subge length_frac, length_frac, #8
+		cmp length_frac, #0
+		addgt frac_offset, frac_offset, #8
+		bgt deci32_string_to_float32_frac
+
+		cmp minus, #1
+		vnegeq.f32 vfp_float_frac, vfp_float_frac
+		vadd.f32 vfp_float, vfp_float, vfp_float_frac
+
+	deci32_string_to_float32_expo:
+		cmp exponent, #-1
+		beq deci32_string_to_float32_success
+
+		add heap, heap, #1                       @ To Next of "E"/"e" Sign
+		sub length_exponent, length_exponent, #1 @ Subtract "E"/"e" Sign
+
+		push {r0-r3}
+		mov r1, length_exponent
+		bl deci32_string_to_int32
+		mov exponent, r0
+		pop {r0-r3}
+
+		cmp exponent, #0
+		movge minus, #0
+		movlt minus, #1
+		mvnlt exponent, exponent                 @ Logical Not to Convert Plus to Minus
+		addlt exponent, exponent, #1             @ Add 1 to Convert Plus to Minus
+
+	deci32_string_to_float32_expo_loop:
+		cmp exponent, #0
+		ble deci32_string_to_float32_success
+
+		cmp minus, #1
+		vdiveq.f32 vfp_float, vfp_float, vfp_ten
+		vmulne.f32 vfp_float, vfp_float, vfp_ten
+
+		sub exponent, exponent, #1
+
+		b deci32_string_to_float32_expo_loop
+
+	deci32_string_to_float32_error:
+		mvn r0, #0
+		b deci32_string_to_float32_common
+
+	deci32_string_to_float32_success:
+		vmov r0, vfp_float
+
+	deci32_string_to_float32_common:
+		vpop {s0-s3}
+		pop {r4-r8,pc}
+
+.unreq heap
+.unreq temp
+.unreq minus
+.unreq length_dup
+.unreq length_frac
+.unreq frac
+.unreq frac_offset
+.unreq length_exponent
+.unreq exponent
+.unreq vfp_float
+.unreq vfp_float_frac
+.unreq vfp_float_cal
+.unreq vfp_ten
 
 
 /**

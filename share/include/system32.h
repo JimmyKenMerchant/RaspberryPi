@@ -868,7 +868,7 @@ extern String deci32_int32_to_string_hexa
 /**
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Otherwise, you'll get zero to return.
+ * Otherwise, You'll Get Zero to Return.
  *
  * Return: 32-bit Unsigned/Signed Integer
  */
@@ -876,6 +876,19 @@ extern int32 deci32_string_to_int32
 (
 	String string,
 	uint32 length_string // Max. 10 if Unsigned, 11 if Signed
+);
+
+
+/**
+ * Make 32-bit Float From String (Decimal System)
+ * Caution! The Range of Integer Part is -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Otherwise, You'll Get Zero on Integer Part to Return.
+ *
+ * Return: 32-bit Float
+ */
+extern float32 deci32_string_to_float32
+(
+	String string
 );
 
 
