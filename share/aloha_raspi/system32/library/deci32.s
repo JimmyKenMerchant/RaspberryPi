@@ -88,7 +88,7 @@ deci32_float32_to_string:
 	vfp_temp       .req s3
 	vfp_ten        .req s4
 
-	push {r4-r11}
+	push {r4-r11,lr}
 	vpush {s0-s4}
 
 	/* Sanitize Pointers */
@@ -163,12 +163,12 @@ deci32_float32_to_string:
 		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
 		vmov integer, vfp_integer
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, integer
 		mov r2, #1
 		bl deci32_int32_to_string_deci
 		mov string_integer, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		.unreq min_integer
 		temp2 .req r1
@@ -176,11 +176,11 @@ deci32_float32_to_string:
 		cmp string_integer, #0
 		beq deci32_float32_to_string_error
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, #1
 		bl heap32_malloc
 		mov string_decimal, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_decimal, #0
 		beq deci32_float32_to_string_error
@@ -190,25 +190,25 @@ deci32_float32_to_string:
 		mov temp, #0x00
 		strb temp, [string_decimal, #1]               @ Store Null Character
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer
 		mov r1, string_decimal
 		bl print32_strcat
 		mov string_cmp, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_cmp, #0
 		beq deci32_float32_to_string_error
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer 
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_decimal
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov string_integer, string_cmp
 
@@ -246,33 +246,33 @@ deci32_float32_to_string:
 			vcvtne.s32.f32 vfp_temp, vfp_temp
 			vmov decimal, vfp_temp
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, decimal
 			mov r1, temp
 			mov r2, #0
 			bl deci32_int32_to_string_deci
 			mov string_decimal, r0
-			pop {r0-r3,lr}
+			pop {r0-r3}
 			
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_integer
 			mov r1, string_decimal
 			bl print32_strcat
 			mov string_cmp, r0
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			cmp string_cmp, #0
 			beq deci32_float32_to_string_error
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_integer 
 			bl heap32_mfree
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_decimal
 			bl heap32_mfree
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			mov string_integer, string_cmp
 
@@ -285,17 +285,17 @@ deci32_float32_to_string:
 
 			b deci32_float32_to_string_decimal
 
-	/* Exponent Part */
+	/* Exponential Part */
 
 	deci32_float32_to_string_exponent:
 		cmp exponent, #0
 		beq deci32_float32_to_string_success
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, #1
 		bl heap32_malloc
 		mov string_decimal, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov temp, #0x45
 		strb temp, [string_decimal]                      @ Store `E`
@@ -306,25 +306,25 @@ deci32_float32_to_string:
 		mov temp, #0x00
 		strb temp, [string_decimal, #2]                  @ Store Null Character
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer
 		mov r1, string_decimal
 		bl print32_strcat
 		mov string_cmp, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_cmp, #0
 		beq deci32_float32_to_string_error
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer 
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_decimal
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov string_integer, string_cmp
 
@@ -332,52 +332,52 @@ deci32_float32_to_string:
 		mvnlt exponent, exponent              @ If Minus, Make Absolute Value
 		addlt exponent, #1
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, exponent
 		mov r1, min_exponent
 		mov r2, #0
 		bl deci32_int32_to_string_deci
 		mov string_decimal, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer
 		mov r1, string_decimal
 		bl print32_strcat
 		mov string_cmp, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_cmp, #0
 		beq deci32_float32_to_string_error
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer 
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_decimal
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov string_integer, string_cmp
 		b deci32_float32_to_string_success
 
 	deci32_float32_to_string_error:
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_integer 
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_decimal
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_cmp
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov r0, #0
 		b deci32_float32_to_string_common
@@ -387,8 +387,7 @@ deci32_float32_to_string:
 
 	deci32_float32_to_string_common:
 		vpop {s0-s4}
-		pop {r4-r11}
-		mov pc, lr
+		pop {r4-r11,pc}
 
 .unreq float
 .unreq temp2
@@ -437,7 +436,7 @@ deci32_int32_to_string_deci:
 	integer_lower .req r10
 	integer_upper .req r11
 
-	push {r4-r11}
+	push {r4-r11,lr}
 
 	cmp min_length, #16
 	movgt min_length, #16
@@ -448,10 +447,10 @@ deci32_int32_to_string_deci:
 	mov string_minus, #0
 	mov string_cmp, #0
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl deci32_count_zero32
 	mov count_lower, r0
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	cmp signed, #1
 	cmpeq count_lower, #0                   @ Whether Top Bit is One or Zero
@@ -463,23 +462,23 @@ deci32_int32_to_string_deci:
 	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
 
 	deci32_int32_to_string_deci_jumpunsigned:
-		push {r0-r3,lr}
+		push {r0-r3}
 		bl deci32_hexa_to_deci32
 		mov integer_lower, r0
 		mov integer_upper, r1
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, integer_lower
 		bl deci32_count_zero32
 		mov count_lower, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, integer_upper
 		bl deci32_count_zero32
 		mov count_upper, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov temp, count_lower
 		mov count_lower, #0
@@ -514,14 +513,14 @@ deci32_int32_to_string_deci:
 		movlt count_upper, temp
 
 	deci32_int32_to_string_deci_upper:
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, integer_upper
 		mov r1, count_upper
 		mov r2, #0
 		mov r3, #0
 		bl deci32_int32_to_string_hexa
 		mov string_upper, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_upper, #0
 		beq deci32_int32_to_string_deci_error
@@ -529,14 +528,14 @@ deci32_int32_to_string_deci:
 		mov count_lower, #8
 
 	deci32_int32_to_string_deci_lower:
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, integer_lower
 		mov r1, count_lower
 		mov r2, #0
 		mov r3, #0
 		bl deci32_int32_to_string_hexa
 		mov string_lower, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_lower, #0
 		beq deci32_int32_to_string_deci_error
@@ -544,11 +543,11 @@ deci32_int32_to_string_deci:
 		cmp signed, #1
 		bne deci32_int32_to_string_deci_cat         @ If Unsigned, Jump to Next
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, #1
 		bl heap32_malloc
 		mov string_minus, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_minus, #0
 		beq deci32_int32_to_string_deci_error
@@ -566,48 +565,48 @@ deci32_int32_to_string_deci:
 		cmp signed, #1
 		bne deci32_int32_to_string_deci_cat_jump   @ If Unsigned, Jump to Next
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_minus 
 		mov r1, string_upper
 		bl print32_strcat
 		mov string_cmp, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp string_cmp, #0
 		beq deci32_int32_to_string_deci_error
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_minus 
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_upper
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov string_upper, string_cmp
 
 		deci32_int32_to_string_deci_cat_jump:
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_upper
 			mov r1, string_lower
 			bl print32_strcat
 			mov string_cmp, r0
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			cmp string_cmp, #0
 			beq deci32_int32_to_string_deci_error
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_upper 
 			bl heap32_mfree
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_lower
 			bl heap32_mfree
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			b deci32_int32_to_string_deci_success 
 
@@ -616,45 +615,45 @@ deci32_int32_to_string_deci:
 			movne string_cmp, string_lower
 			bne deci32_int32_to_string_deci_success         @ If Unsigned, Jump to Next
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_minus 
 			mov r1, string_lower
 			bl print32_strcat
 			mov string_cmp, r0
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			cmp string_cmp, #0
 			beq deci32_int32_to_string_deci_error
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_minus 
 			bl heap32_mfree
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			mov r0, string_lower
 			bl heap32_mfree
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			b deci32_int32_to_string_deci_success 
 
 	deci32_int32_to_string_deci_error:
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, string_lower
 		bl heap32_mfree
-		pop {r0-r3,lr}
-		push {r0-r3,lr}
+		pop {r0-r3}
+		push {r0-r3}
 		mov r0, string_upper
 		bl heap32_mfree
-		pop {r0-r3,lr}
-		push {r0-r3,lr}
+		pop {r0-r3}
+		push {r0-r3}
 		mov r0, string_minus 
 		bl heap32_mfree
-		pop {r0-r3,lr}
-		push {r0-r3,lr}
+		pop {r0-r3}
+		push {r0-r3}
 		mov r0, string_cmp 
 		bl heap32_mfree
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		mov r0, #0
 		b deci32_int32_to_string_deci_common
@@ -663,7 +662,7 @@ deci32_int32_to_string_deci:
 		mov r0, string_cmp
 
 	deci32_int32_to_string_deci_common:
-		pop {r4-r11}
+		pop {r4-r11,pc}
 		mov pc, lr
 
 .unreq integer
@@ -707,15 +706,15 @@ deci32_int32_to_string_hexa:
 	heap_size   .req r8
 	count       .req r9
 
-	push {r4-r9}
+	push {r4-r9,lr}
 
 	cmp min_length, #8
 	movgt min_length, #8
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl deci32_count_zero32
 	mov count, r0
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	cmp signed, #1
 	cmpeq count, #0                         @ Whether Top Bit is One or Zero
@@ -725,10 +724,10 @@ deci32_int32_to_string_hexa:
 	/* Process for Minus Signed */
 	mvn integer, integer                    @ All Inverter
 	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl deci32_count_zero32
 	mov count, r0
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	deci32_int32_to_string_hexa_jumpunsigned:
 		mov temp, count
@@ -757,11 +756,11 @@ deci32_int32_to_string_hexa:
 		addgt heap_size, #1
 		bgt deci32_int32_to_string_hexa_countsize
 
-		push {r0-r3,lr}
+		push {r0-r3}
 		mov r0, heap_size
 		bl heap32_malloc
 		mov heap_origin, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
 
 		cmp heap_origin, #0
 		beq deci32_int32_to_string_hexa_error
@@ -814,7 +813,7 @@ deci32_int32_to_string_hexa:
 		mov r0, heap_origin
 
 	deci32_int32_to_string_hexa_common:
-		pop {r4-r9}
+		pop {r4-r9,pc}
 		mov pc, lr
 
 .unreq integer
