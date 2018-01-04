@@ -115,38 +115,59 @@ os_reset:
 	bl uart32_uartsetint
 	pop {r0-r3,lr}
 
+	push {r0-r3,lr}
+	mov r0, #5      @ 5 Words, 40 Bytes
+	bl heap32_malloc
+	str r0, os_irq_heap
+	pop {r0-r3,lr}
+
 	mov pc, lr
 
 os_irq:
 	/* Auto (Local) Variables, but just Aliases */
 	heap .req r0
+	temp .req r1
 
 	push {r0-r12,lr}
 
-	bl uart32_uartclrint
+	bl uart32_uartclrint     @ Clear All Flags of Interrupt
 
-macro32_debug heap, 100, 60
+	ldr temp, os_irq_busy
+	tst temp, #0x1
+	bne os_irq_error1        @ If Busy
 
-	mov heap, #4      @ 1 Words, 4 Bytes
-	bl heap32_malloc
+	ldr heap, os_irq_heap
 
 macro32_debug heap, 100, 88
 
 	push {r0}
 
-	mov r1, #16        @ Max. 16 Bytes
+	mov r1, #16              @ Max. 16 Bytes
 	bl uart32_uartrx
 
 macro32_debug r0, 100, 100
 
-	tst r0, #0x8
+	tst r0, #0x8             @ Whether Overrun or Not
 
 	pop {r0}
 
-	beq os_irq_common
+	bne os_irq_error2        @ If Overrun
 
-	bl uart32_uartclrrx
-	ldr heap, os_irq_warn_overrun
+	/* If Succeed to Receive */
+	mov temp, #1
+	str temp, os_irq_busy
+	b os_irq_common
+
+	os_irq_error1:
+		/* If Busy (Not Yet Proceeded on Previous Command) */
+		bl uart32_uartclrrx
+		ldr heap, os_irq_warn_busy
+		b os_irq_common
+
+	os_irq_error2:
+		/* If Overrun to Receive */
+		bl uart32_uartclrrx
+		ldr heap, os_irq_warn_overrun
 
 	os_irq_common:
 
@@ -158,19 +179,31 @@ macro32_debug_hexa heap, 100, 112, 16
 		bl uart32_uarttx
 		pop {r0}
 
-		bl heap32_mfree
-
 		pop {r0-r12,lr}
 		mov pc, lr
 
 .unreq heap
+.unreq temp
+
+.globl os_irq_heap
+.globl os_irq_busy
+.balign 4
+os_irq_heap: .word 0x00
+os_irq_busy: .word 0x00
 
 .balign 4
 _os_irq_warn_overrun:
-	.ascii "Overrun Error!\n\0" @ Add Null Escape Character on The End
+	.ascii "Overrun Error! \0"    @ Add Null Escape Character on The End
 .balign 4
 os_irq_warn_overrun:
 	.word _os_irq_warn_overrun
+
+.balign 4
+_os_irq_warn_busy:
+	.ascii "Busy Error!    \0" @ Add Null Escape Character on The End
+.balign 4
+os_irq_warn_busy:
+	.word _os_irq_warn_busy
 
 os_fiq:
 	push {r0-r7,lr}
