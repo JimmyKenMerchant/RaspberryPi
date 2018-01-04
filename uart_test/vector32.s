@@ -108,15 +108,15 @@ os_reset:
 	pop {r0-r3,lr}
 
 	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting Below Triggers Interrupt on Reaching 4 Bytes of RxFIFO (0b000 is 2 Bytes Though) */
+	/* The Setting Below Triggers Interrupt on Reaching 14 Bytes of RxFIFO (0b000 is 2 Bytes Though) */
 	push {r0-r3,lr}
-	mov r0, #0b001<<equ32_uart0_ifls_rxiflsel|0b001<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
+	mov r0, #0b100<<equ32_uart0_ifls_rxiflsel|0b100<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 7/8
 	mov r1, #equ32_uart0_intr_rx @ equ32_uart0_intr_rt When Exceeding Trigger Point of RxFIFO
 	bl uart32_uartsetint
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #5      @ 5 Words, 40 Bytes
+	mov r0, #5      @ 5 Words, 20 Bytes
 	bl heap32_malloc
 	str r0, os_irq_heap
 	pop {r0-r3,lr}
@@ -132,7 +132,7 @@ os_irq:
 
 	bl uart32_uartclrint     @ Clear All Flags of Interrupt
 
-	ldr temp, os_irq_busy
+	ldrb temp, _os_irq_busy
 	tst temp, #0x1
 	bne os_irq_error1        @ If Busy
 
@@ -155,7 +155,7 @@ macro32_debug r0, 100, 100
 
 	/* If Succeed to Receive */
 	mov temp, #1
-	str temp, os_irq_busy
+	strb temp, _os_irq_busy
 	b os_irq_common
 
 	os_irq_error1:
@@ -188,19 +188,24 @@ macro32_debug_hexa heap, 100, 112, 16
 .globl os_irq_heap
 .globl os_irq_busy
 .balign 4
-os_irq_heap: .word 0x00
-os_irq_busy: .word 0x00
+os_irq_heap:  .word 0x00
+os_irq_busy:  .word _os_irq_busy
+_os_irq_busy: .byte 0x00
+.balign 4
+
 
 .balign 4
 _os_irq_warn_overrun:
-	.ascii "Overrun Error! \0"    @ Add Null Escape Character on The End
+	.ascii "Overrun Error!\0"    @ Add Null Escape Character on The End
+	.space 1
 .balign 4
 os_irq_warn_overrun:
 	.word _os_irq_warn_overrun
 
 .balign 4
 _os_irq_warn_busy:
-	.ascii "Busy Error!    \0" @ Add Null Escape Character on The End
+	.ascii "Busy Error!\0" @ Add Null Escape Character on The End
+	.space 4
 .balign 4
 os_irq_warn_busy:
 	.word _os_irq_warn_busy

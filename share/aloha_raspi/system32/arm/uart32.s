@@ -192,14 +192,13 @@ macro32_debug temp, 0, 100
 
 /**
  * function uart32_uartrx
- * UART Receive
+ * UART Receive and Wait for Reaching Sufficient Size
  *
  * Parameters
  * r0: Heap for Receive Data
  * r1: Transfer Size (Bytes)
  *
  * Return: r0 (0 as success, not 0 as error)
- * Bit[4]: Less Data than Expected by Second Parameter
  * Bit[3]: Overrun Error
  * Bit[2]: Break Error
  * Bit[1]: Parity Error
@@ -228,7 +227,7 @@ macro32_debug temp, 0, 112
 */
 
 		tst temp, #equ32_uart0_fr_rxfe
-		bne uart32_uartrx_error2                    @ If Empty on RxFIFO
+		bne uart32_uartrx_fifo                      @ If Empty on RxFIFO
 
 		ldr byte, [addr_uart, #equ32_uart0_dr]      @ If Having Data on RxFIFO (12-bit Word, 8-bit is Data)
 		strb byte, [heap]
@@ -237,7 +236,7 @@ macro32_debug temp, 0, 112
 		strb temp, [addr_uart, #equ32_uart0_rsrecr] @ Clear by Write Any
 
 		tst temp, #0b1111
-		bne uart32_uartrx_error1
+		bne uart32_uartrx_error
 	
 		add heap, heap, #1
 		sub size_rx, size_rx, #1
@@ -247,13 +246,9 @@ macro32_debug temp, 0, 112
 
 		b uart32_uartrx_success
 
-	uart32_uartrx_error1:
+	uart32_uartrx_error:
 		and temp, temp, #0b1111
 		mov r0, temp
-		b uart32_uartrx_common
-
-	uart32_uartrx_error2:
-		mov r0, #0x10
 		b uart32_uartrx_common
 
 	uart32_uartrx_success:
