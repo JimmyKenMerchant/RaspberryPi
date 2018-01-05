@@ -378,7 +378,8 @@ extern uint32 fb32_clear_color
 /**
  * Set Caret Position from Return Vlue of `print_*` functions
  *
- * Return: Number of Characters Which Were Not Drawn
+ * Return: 0 as success, 1 as error
+ * Error: Y Caret Reaches Value of Height
  */
 extern uint32 print32_set_caret
 (
@@ -949,6 +950,9 @@ extern uint32 heap32_malloc( uint32 block_size );
 
 
 extern uint32 heap32_mfree( uint32 address );
+
+
+extern uint32 heap32_mfill( uint32 address, uint32 data );
 
 
 extern uint32 heap32_mcopy( uint32 address_dst, uint32 address_src, uint32 offset, uint32 size );

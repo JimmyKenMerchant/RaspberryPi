@@ -108,9 +108,9 @@ os_reset:
 	pop {r0-r3,lr}
 
 	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting Below Triggers Interrupt on Reaching 14 Bytes of RxFIFO (0b000 is 2 Bytes Though) */
+	/* The Setting Below Triggers Interrupt on Reaching 4 Bytes of RxFIFO (0b000 is 2 Bytes Though) */
 	push {r0-r3,lr}
-	mov r0, #0b100<<equ32_uart0_ifls_rxiflsel|0b100<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 7/8
+	mov r0, #0b001<<equ32_uart0_ifls_rxiflsel|0b001<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
 	mov r1, #equ32_uart0_intr_rx @ equ32_uart0_intr_rt When Exceeding Trigger Point of RxFIFO
 	bl uart32_uartsetint
 	pop {r0-r3,lr}
@@ -125,14 +125,14 @@ os_reset:
 
 os_irq:
 	/* Auto (Local) Variables, but just Aliases */
-	heap .req r0
-	temp .req r1
+	heap  .req r0
+	temp  .req r1
 
 	push {r0-r12,lr}
 
 	bl uart32_uartclrint     @ Clear All Flags of Interrupt
 
-	ldrb temp, _os_irq_busy
+	ldr temp, _os_irq_busy
 	tst temp, #0x1
 	bne os_irq_error1        @ If Busy
 
@@ -141,8 +141,9 @@ os_irq:
 macro32_debug heap, 100, 88
 
 	push {r0}
-
-	mov r1, #16              @ Max. 16 Bytes
+	ldr r1, _os_irq_count    @ Add Offset
+	add r0, r1
+	mov r1, #4               @ 4 Bytes
 	bl uart32_uartrx
 
 macro32_debug r0, 100, 100
@@ -154,8 +155,23 @@ macro32_debug r0, 100, 100
 	bne os_irq_error2        @ If Overrun
 
 	/* If Succeed to Receive */
-	mov temp, #1
-	strb temp, _os_irq_busy
+	ldr temp, _os_irq_count
+	add temp, temp, #4
+	cmp temp, #16
+	movge temp, #0
+	str temp, _os_irq_count
+
+	push {r0}
+	mov r1, #0x0A                     @ Ascii Code of Line Feed
+	bl print32_charindex
+	mov temp, r0
+	pop {r0}
+
+	cmp temp, #-1
+
+	movne temp, #1
+	strne temp, _os_irq_busy
+
 	b os_irq_common
 
 	os_irq_error1:
@@ -171,7 +187,7 @@ macro32_debug r0, 100, 100
 
 	os_irq_common:
 
-macro32_debug_hexa heap, 100, 112, 16
+macro32_debug_hexa heap, 100, 112, 4
 
 		/* Mirror Received Data to Another */
 		push {r0}
@@ -186,12 +202,14 @@ macro32_debug_hexa heap, 100, 112, 16
 .unreq temp
 
 .globl os_irq_heap
+.globl os_irq_count
 .globl os_irq_busy
 .balign 4
-os_irq_heap:  .word 0x00
-os_irq_busy:  .word _os_irq_busy
-_os_irq_busy: .byte 0x00
-.balign 4
+os_irq_heap:   .word 0x00
+os_irq_count:  .word _os_irq_count
+_os_irq_count: .word 0x00
+os_irq_busy:   .word _os_irq_busy
+_os_irq_busy:  .word 0x00
 
 
 .balign 4

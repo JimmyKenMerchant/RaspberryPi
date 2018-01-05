@@ -136,7 +136,8 @@ print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
  * r0: Lower of Return
  * r1: Upper of Return 
  *
- * Return: r0 (Number of Characters Which Were Not Drawn)
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Y Caret Reaches Value of Height
  */
 .globl print32_set_caret
 print32_set_caret:
@@ -144,29 +145,43 @@ print32_set_caret:
 	chars             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	xy_coord          .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	width             .req r2
-	x_coord           .req r3
-	y_coord           .req r4
+	height            .req r3
+	x_coord           .req r4
+	y_coord           .req r5
 
-	push {r4} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r5} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 	ldr width, PRINT32_FB32_WIDTH
 	ldr width, [width]
 
-	mov x_coord, xy_coord
-	lsr x_coord, x_coord, #16
-	mov y_coord, xy_coord
-	lsl y_coord, y_coord, #16
+	ldr height, PRINT32_FB32_HEIGHT
+	ldr height, [height]
+
+	mov x_coord, xy_coord, lsr #16
+	mov y_coord, xy_coord, lsl #16
 	lsr y_coord, y_coord, #16
 
-	cmp x_coord, width
-	blt print32_set_caret_common
-
 	print32_set_caret_loop:
+		cmp x_coord, width
+		blt print32_set_caret_height
 		sub x_coord, width
 		add y_coord, #1 
-		cmp x_coord, width
-		bge print32_set_caret_loop
-		
+		b print32_set_caret_loop
+
+	print32_set_caret_height:
+		cmp y_coord, height
+		movge y_coord, height
+		bge print32_set_caret_error
+
+		b print32_set_caret_success
+
+	print32_set_caret_error:
+		mov r0, #1
+		b print32_set_caret_common
+
+	print32_set_caret_success:
+		mov r0, #0
+
 	print32_set_caret_common:
 		.unreq width
 		temp .req r2
@@ -174,13 +189,14 @@ print32_set_caret:
 		str x_coord, [temp]
 		ldr temp, print32_set_caret_addr_y_caret
 		str y_coord, [temp]
-		pop {r4} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+		pop {r4-r5} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 		mov pc, lr
 
 .unreq chars
 .unreq xy_coord
 .unreq temp
+.unreq height
 .unreq x_coord
 .unreq y_coord
 
@@ -961,4 +977,5 @@ print32_number:
 .unreq i
 .unreq bitmask
 
-PRINT32_FB32_WIDTH: .word FB32_WIDTH
+PRINT32_FB32_WIDTH:  .word FB32_WIDTH
+PRINT32_FB32_HEIGHT: .word FB32_HEIGHT

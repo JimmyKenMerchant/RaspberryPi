@@ -44,7 +44,7 @@ sudo stty -F /dev/serial0 115200
 sudo stty -F /dev/serial0 speed
 # Verify changed baud
 
-# To Read
+# To Read and Write (Ctrl+j Sends Line Feed)
 sudo minicom -D /dev/serial0
 # sudo apt-get install minicom
 # sudo cat -vA < /dev/serial0
