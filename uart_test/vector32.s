@@ -130,11 +130,11 @@ os_irq:
 
 	push {r0-r12,lr}
 
-	bl uart32_uartclrint     @ Clear All Flags of Interrupt
-
 	ldr temp, _os_irq_busy
 	tst temp, #0x1
 	bne os_irq_error1        @ If Busy
+
+	bl uart32_uartclrint     @ Clear All Flags of Interrupt
 
 	ldr heap, os_irq_heap
 
@@ -185,12 +185,9 @@ macro32_debug r0, 100, 100
 
 	os_irq_error1:
 		/* If Busy (Not Yet Proceeded on Previous Command) */
-		bl uart32_uartclrrx
-		ldr heap, os_irq_warn_busy
-
 		push {r0}
-		mov r1, #9
-		bl uart32_uarttx
+		mov r0, #0xFF00
+		bl arm32_sleep
 		pop {r0}
 		b os_irq_common
 
@@ -234,13 +231,6 @@ _os_irq_warn_overrun:
 .balign 4
 os_irq_warn_overrun:
 	.word _os_irq_warn_overrun
-
-.balign 4
-_os_irq_warn_busy:
-	.ascii "Er:Busy\r\n\0"       @ Add Null Escape Character on The End
-.balign 4
-os_irq_warn_busy:
-	.word _os_irq_warn_busy
 
 os_fiq:
 	push {r0-r7,lr}

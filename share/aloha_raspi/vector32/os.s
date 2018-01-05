@@ -258,7 +258,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0xF                             @ Prevent Overflow SVC Table
+	cmp ip, #0x15                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -271,64 +271,88 @@ _os_svc:
 		mov r0, r0
 		b _os_svc_common
 
-	_os_svc_0x1:
+	_os_svc_0x01:
 		bl fb32_flush_doublebuffer
 		b _os_svc_common
 
-	_os_svc_0x2:
+	_os_svc_0x02:
 		bl fb32_set_doublebuffer
 		b _os_svc_common
 
-	_os_svc_0x3:
+	_os_svc_0x03:
 		bl fb32_attach_buffer
 		b _os_svc_common
 
-	_os_svc_0x4:
+	_os_svc_0x04:
 		bl arm32_stopwatch_start
 		b _os_svc_common
 
-	_os_svc_0x5:
+	_os_svc_0x05:
 		bl arm32_stopwatch_end
 		b _os_svc_common
 
-	_os_svc_0x6:
+	_os_svc_0x06:
 		bl arm32_sleep
 		b _os_svc_common
 
-	_os_svc_0x7:
+	_os_svc_0x07:
 		bl arm32_random
 		b _os_svc_common
 
-	_os_svc_0x8:
+	_os_svc_0x08:
 		bl arm32_store_32
 		b _os_svc_common
 
-	_os_svc_0x9:
+	_os_svc_0x09:
 		bl arm32_load_32
 		b _os_svc_common
 
-	_os_svc_0xA:
+	_os_svc_0x0A:
 		bl snd32_sounddecode
 		b _os_svc_common
 
-	_os_svc_0xB:
+	_os_svc_0x0B:
 		bl snd32_soundset
 		b _os_svc_common
 
-	_os_svc_0xC:
+	_os_svc_0x0C:
 		bl snd32_soundinterrupt
 		b _os_svc_common
 
-	_os_svc_0xD:
+	_os_svc_0x0D:
 		bl snd32_soundclear
 		b _os_svc_common
 
-	_os_svc_0xE:
+	_os_svc_0x0E:
 		bl gpio32_gpioset
 		b _os_svc_common
 
-	_os_svc_0xF:
+	_os_svc_0x0F:
 		bl gpio32_gpioclear
+		b _os_svc_common
+
+	_os_svc_0x10:
+		bl uart32_uartinit
+		b _os_svc_common
+
+	_os_svc_0x11:
+		bl uart32_uartsetint
+		b _os_svc_common
+
+	_os_svc_0x12:
+		bl uart32_uartclrint
+		b _os_svc_common
+
+	_os_svc_0x13:
+		bl uart32_uarttx
+		b _os_svc_common
+
+	_os_svc_0x14:
+		bl uart32_uartrx
+		b _os_svc_common
+
+	_os_svc_0x15:
+		bl uart32_uartclrrx
 		b _os_svc_common
 
 	_os_svc_common:

@@ -50,7 +50,7 @@ sudo minicom -D /dev/serial0
 # sudo cat -vA < /dev/serial0
 
 # To Write on another terminal (Write Once per Word, 4 Bytes)
-sudo echo -ne 'GOOD' > /dev/serial0
+sudo echo -e 'GOOD' > /dev/serial0
 
 # https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
 ```

@@ -18,13 +18,58 @@ void _user_start()
 {
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
+	uint32 pipe = 0;
+	uint32 type = 0;
+	float32 var_a = 0.0;
+	float32 var_b = 0.0;
+	float32 response = 0.0;
 
 	while (true) {
 		if ( _load_32( os_irq_busy ) ) {
 			if ( print32_set_caret( print32_string( os_irq_heap, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( os_irq_heap ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
-			_store_32( os_irq_busy, 0 );
-			_store_32( os_irq_count, 0 );
+
+			switch ( pipe ) {
+				case 0:
+					if ( print32_strindex( os_irq_heap, "fadd" ) != -1 ) {
+						_uarttx( "0: Float ADD\r\n1: VAR_FIRST?\r\n\0", 30 );
+						type = 0;
+						pipe = 1;
+					} else if ( print32_strindex( os_irq_heap, "fsub" ) != -1 ) {
+						_uarttx( "0: Float SUB\r\n1: VAR_FIRST?\r\n\0", 30 );
+						type = 1;
+						pipe = 1;
+					} else if ( print32_strindex( os_irq_heap, "fmul" ) != -1 ) {
+						_uarttx( "0: Float MUL\r\n1: VAR_FIRST?\r\n\0", 30 );
+						type = 2;
+						pipe = 1;
+					} else if ( print32_strindex( os_irq_heap, "fdiv" ) != -1 ) {
+						_uarttx( "0: Float MUL\r\n1: VAR_FIRST?\r\n\0", 30 );
+						type = 3;
+						pipe = 1;
+					}
+
+					break;
+
+				case 1:
+					_uarttx( "2: VAR_SECOND?\r\n\0", 17 );
+
+					pipe = 2;
+
+					break;
+
+				case 2:
+
+					pipe = 0;
+
+					break;
+
+				default:
+					break;
+			}
+
 			heap32_mfill( (obj)os_irq_heap, 0 );
+			_store_32( os_irq_count, 0 );
+			_store_32( os_irq_busy, 0 );
 		}
 	}
 }

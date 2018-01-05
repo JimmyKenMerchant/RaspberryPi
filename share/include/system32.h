@@ -163,6 +163,41 @@ extern void arm32_isb();
 
 
 /********************************
+ * system32/arm/uart32.s
+ ********************************/
+
+__attribute__((noinline)) uint32 _uartinit
+(
+	uint32 div_int,
+	uint32 div_frac,
+	uint32 line_ctl,
+	uint32 ctl
+);
+
+__attribute__((noinline)) uint32 _uartsetint
+(
+	uint32 int_fifo,
+	uint32 int_mask
+);
+
+__attribute__((noinline)) uint32 _uartclrint();
+
+__attribute__((noinline)) uint32 _uarttx
+(
+	String address_heap,
+	uint32 size
+);
+
+__attribute__((noinline)) uint32 _uartrx
+(
+	String address_heap,
+	uint32 size
+);
+
+__attribute__((noinline)) uint32 _uartclrrx();
+
+
+/********************************
  * system32/arm/gpio32.s
  ********************************/
 
