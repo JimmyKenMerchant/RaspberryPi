@@ -648,6 +648,9 @@ print32_string:
 		cmp string_byte, #0x0A
 		beq print32_string_loop_linefeed
 
+		cmp string_byte, #0x0D
+		beq print32_string_loop_carriagereturn
+
 		/* Clear the Block by Color */
 
 		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
@@ -680,6 +683,10 @@ print32_string:
 		print32_string_loop_linefeed:
 			mov x_coord, #0
 			add y_coord, y_coord, char_height
+			b print32_string_loop_common
+
+		print32_string_loop_carriagereturn:
+			mov x_coord, #0
 			b print32_string_loop_common
 
 		print32_string_loop_tab:

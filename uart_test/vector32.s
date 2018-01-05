@@ -108,15 +108,15 @@ os_reset:
 	pop {r0-r3,lr}
 
 	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting Below Triggers Interrupt on Reaching 4 Bytes of RxFIFO (0b000 is 2 Bytes Though) */
+	/* The Setting Below Triggers Interrupt on Reaching 2 Bytes of RxFIFO (0b000) */
 	push {r0-r3,lr}
-	mov r0, #0b001<<equ32_uart0_ifls_rxiflsel|0b001<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
+	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
 	mov r1, #equ32_uart0_intr_rx @ equ32_uart0_intr_rt When Exceeding Trigger Point of RxFIFO
 	bl uart32_uartsetint
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #5      @ 5 Words, 20 Bytes
+	mov r0, #8      @ 8 Words, 32 Bytes
 	bl heap32_malloc
 	str r0, os_irq_heap
 	pop {r0-r3,lr}
@@ -143,7 +143,7 @@ macro32_debug heap, 100, 88
 	push {r0}
 	ldr r1, _os_irq_count    @ Add Offset
 	add r0, r1
-	mov r1, #4               @ 4 Bytes
+	mov r1, #2               @ 2 Bytes
 	bl uart32_uartrx
 
 macro32_debug r0, 100, 100
@@ -156,21 +156,30 @@ macro32_debug r0, 100, 100
 
 	/* If Succeed to Receive */
 	ldr temp, _os_irq_count
-	add temp, temp, #4
-	cmp temp, #16
-	movge temp, #0
+	add temp, temp, #2
+	cmp temp, #32
+	movge temp, #0           @ If Exceeds 32 Bytes
 	str temp, _os_irq_count
 
 	push {r0}
-	mov r1, #0x0A                     @ Ascii Code of Line Feed
-	bl print32_charindex
+	ldr r1, #os_irq_crlf     @ Ascii Codes of Carriage Return and Line Feed
+	bl print32_strindex
 	mov temp, r0
 	pop {r0}
 
 	cmp temp, #-1
+	beq os_irq_common
 
-	movne temp, #1
-	strne temp, _os_irq_busy
+	/* If Newline is Indicated (To Run Command) */
+
+	mov temp, #1
+	str temp, _os_irq_busy
+
+	/* Mirror Received Data to Another */
+	push {r0}
+	mov r1, #32
+	bl uart32_uarttx
+	pop {r0}
 
 	b os_irq_common
 
@@ -178,6 +187,11 @@ macro32_debug r0, 100, 100
 		/* If Busy (Not Yet Proceeded on Previous Command) */
 		bl uart32_uartclrrx
 		ldr heap, os_irq_warn_busy
+
+		push {r0}
+		mov r1, #9
+		bl uart32_uarttx
+		pop {r0}
 		b os_irq_common
 
 	os_irq_error2:
@@ -185,15 +199,14 @@ macro32_debug r0, 100, 100
 		bl uart32_uartclrrx
 		ldr heap, os_irq_warn_overrun
 
-	os_irq_common:
-
-macro32_debug_hexa heap, 100, 112, 4
-
-		/* Mirror Received Data to Another */
 		push {r0}
-		mov r1, #16
+		mov r1, #12
 		bl uart32_uarttx
 		pop {r0}
+
+	os_irq_common:
+
+macro32_debug_hexa heap, 100, 112, 32
 
 		pop {r0-r12,lr}
 		mov pc, lr
@@ -210,20 +223,21 @@ os_irq_count:  .word _os_irq_count
 _os_irq_count: .word 0x00
 os_irq_busy:   .word _os_irq_busy
 _os_irq_busy:  .word 0x00
+os_irq_crlf:   .word _os_irq_crlf
+_os_irq_crlf:  .ascii "\r\n\0"
+.balign 4
 
 
 .balign 4
 _os_irq_warn_overrun:
-	.ascii "Overrun Error!\0"    @ Add Null Escape Character on The End
-	.space 1
+	.ascii "Er:Overrun\r\n\0"    @ Add Null Escape Character on The End
 .balign 4
 os_irq_warn_overrun:
 	.word _os_irq_warn_overrun
 
 .balign 4
 _os_irq_warn_busy:
-	.ascii "Busy Error!\0" @ Add Null Escape Character on The End
-	.space 4
+	.ascii "Er:Busy\r\n\0"       @ Add Null Escape Character on The End
 .balign 4
 os_irq_warn_busy:
 	.word _os_irq_warn_busy
