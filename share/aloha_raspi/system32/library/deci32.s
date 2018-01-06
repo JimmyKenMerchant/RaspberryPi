@@ -829,7 +829,7 @@ deci32_int32_to_string_hexa:
 
 
 /**
- * function deci32_string_to_int32
+ * function deci32_vfp32_feq_int32
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
  * Otherwise, You'll Get Zero to Return.
@@ -947,8 +947,8 @@ deci32_string_to_int32:
  * Parameters
  * r0: Heap of String
  *
- * Return: r0 (32-bit Float, -1 as error)
- * Error(-1): String Could Not Be Converted
+ * Return: r0 (32-bit Float, -0 Negative Zero as error)
+ * Error(-0): String Could Not Be Converted
  */
 .globl deci32_string_to_float32
 deci32_string_to_float32:
@@ -1129,7 +1129,7 @@ deci32_string_to_float32:
 		b deci32_string_to_float32_expo_loop
 
 	deci32_string_to_float32_error:
-		mvn r0, #0
+		mov r0, #0x80000000                      @ Error With Negative Zero (IEEE754)
 		b deci32_string_to_float32_common
 
 	deci32_string_to_float32_success:

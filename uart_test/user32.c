@@ -66,6 +66,10 @@ void _user_start()
 					_store_8( os_irq_heap_offset, 0 ); // Carriage Return to Null Character
 					
 					var_a = deci32_string_to_float32( os_irq_heap );
+					if ( vfp32_feq( var_a, -0.0 ) ) {
+						_uarttx( "1: No Float: VAR_FIRST?\r\n\0", 26 );
+						break;
+					}
 
 					String str_var_a = deci32_float32_to_string( var_a, 0, 20, 0 );
 					print32_set_caret( print32_string( str_var_a, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( str_var_a ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -83,6 +87,10 @@ void _user_start()
 					_store_8( os_irq_heap_offset, 0 ); // Carriage Return to Null Character
 
 					var_b = deci32_string_to_float32( os_irq_heap );
+					if ( vfp32_feq( var_b, -0.0 ) ) {
+						_uarttx( "2: No Float: VAR_SECOND?\r\n\0", 27 );
+						break;
+					}
 
 					String str_var_b = deci32_float32_to_string( var_b, 0, 20, 0 );
 					print32_set_caret( print32_string( str_var_b, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( str_var_b ), 8, 12, FONT_MONO_12PX_ASCII ) );

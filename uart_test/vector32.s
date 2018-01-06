@@ -173,8 +173,8 @@ macro32_debug r0, 100, 100
 	str temp, _os_irq_count
 
 	push {r0}
-	ldr r1, #os_irq_crlf     @ Ascii Codes of Carriage Return and Line Feed
-	bl print32_strindex
+	mov r1, #0x0D            @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+	bl print32_charindex
 	mov temp, r0
 	pop {r0}
 
@@ -225,8 +225,6 @@ os_irq_count:  .word _os_irq_count
 _os_irq_count: .word 0x00
 os_irq_busy:   .word _os_irq_busy
 _os_irq_busy:  .word 0x00
-os_irq_crlf:   .word _os_irq_crlf
-_os_irq_crlf:  .ascii "\r\n\0"
 .balign 4
 
 
