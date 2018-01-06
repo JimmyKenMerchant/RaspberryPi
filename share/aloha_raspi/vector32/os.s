@@ -258,7 +258,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x15                            @ Prevent Overflow SVC Table
+	cmp ip, #0x19                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -300,58 +300,74 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x08:
-		bl arm32_store_32
+		bl arm32_store_8
 		b _os_svc_common
 
 	_os_svc_0x09:
-		bl arm32_load_32
+		bl arm32_load_8
 		b _os_svc_common
 
 	_os_svc_0x0A:
-		bl snd32_sounddecode
+		bl arm32_store_16
 		b _os_svc_common
 
 	_os_svc_0x0B:
-		bl snd32_soundset
+		bl arm32_load_16
 		b _os_svc_common
 
 	_os_svc_0x0C:
-		bl snd32_soundinterrupt
+		bl arm32_store_32
 		b _os_svc_common
 
 	_os_svc_0x0D:
-		bl snd32_soundclear
+		bl arm32_load_32
 		b _os_svc_common
 
 	_os_svc_0x0E:
-		bl gpio32_gpioset
+		bl snd32_sounddecode
 		b _os_svc_common
 
 	_os_svc_0x0F:
-		bl gpio32_gpioclear
+		bl snd32_soundset
 		b _os_svc_common
 
 	_os_svc_0x10:
-		bl uart32_uartinit
+		bl snd32_soundinterrupt
 		b _os_svc_common
 
 	_os_svc_0x11:
-		bl uart32_uartsetint
+		bl snd32_soundclear
 		b _os_svc_common
 
 	_os_svc_0x12:
-		bl uart32_uartclrint
+		bl gpio32_gpioset
 		b _os_svc_common
 
 	_os_svc_0x13:
-		bl uart32_uarttx
+		bl gpio32_gpioclear
 		b _os_svc_common
 
 	_os_svc_0x14:
-		bl uart32_uartrx
+		bl uart32_uartinit
 		b _os_svc_common
 
 	_os_svc_0x15:
+		bl uart32_uartsetint
+		b _os_svc_common
+
+	_os_svc_0x16:
+		bl uart32_uartclrint
+		b _os_svc_common
+
+	_os_svc_0x17:
+		bl uart32_uarttx
+		b _os_svc_common
+
+	_os_svc_0x18:
+		bl uart32_uartrx
+		b _os_svc_common
+
+	_os_svc_0x19:
 		bl uart32_uartclrrx
 		b _os_svc_common
 

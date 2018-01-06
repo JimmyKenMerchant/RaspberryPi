@@ -63,99 +63,123 @@ __attribute__((noinline)) uchar8 _random( uchar8 range_end )
 	return result;
 }
 
-__attribute__((noinline)) void _store_32( uint32 address, int32 data )
+__attribute__((noinline)) void _store_8( uint32 address, char8 data )
 {
 	asm volatile ("svc #0x08");
 }
 
+__attribute__((noinline)) char8 _load_8( uint32 address )
+{
+	register char8 result asm("r0");
+	asm volatile ("svc #0x09");
+	return result;
+}
+
+__attribute__((noinline)) void _store_16( uint32 address, int16 data )
+{
+	asm volatile ("svc #0x0A");
+}
+
+__attribute__((noinline)) int16 _load_16( uint32 address )
+{
+	register int16 result asm("r0");
+	asm volatile ("svc #0x0B");
+	return result;
+}
+
+__attribute__((noinline)) void _store_32( uint32 address, int32 data )
+{
+	asm volatile ("svc #0x0C");
+}
+
 __attribute__((noinline)) int32 _load_32( uint32 address )
 {
-	register uint32 result asm("r0");
-	asm volatile ("svc #0x09");
+	register int32 result asm("r0");
+	asm volatile ("svc #0x0D");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _sounddecode( sound_index* sound )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x0A");
+	asm volatile ("svc #0x0E");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x0B");
+	asm volatile ("svc #0x0F");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _soundinterrupt( music_code* music, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x0C");
+	asm volatile ("svc #0x10");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _soundclear()
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x0D");
+	asm volatile ("svc #0x11");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x0E");
+	asm volatile ("svc #0x12");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _gpioclear( bool stay )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x0F");
+	asm volatile ("svc #0x13");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _uartinit( uint32 div_int, uint32 div_frac, uint32 line_ctl, uint32 ctl )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x10");
+	asm volatile ("svc #0x14");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x11");
+	asm volatile ("svc #0x15");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _uartclrint()
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x12");
+	asm volatile ("svc #0x16");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x13");
+	asm volatile ("svc #0x17");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x14");
+	asm volatile ("svc #0x18");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _uartclrrx()
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x15");
+	asm volatile ("svc #0x19");
 	return result;
 }
 

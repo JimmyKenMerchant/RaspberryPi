@@ -133,6 +133,14 @@ __attribute__((noinline)) void _sleep( uint32 u_seconds );
 
 __attribute__((noinline)) uchar8 _random( uchar8 range_end );
 
+__attribute__((noinline)) void _store_8( uint32 address, char8 data );
+
+__attribute__((noinline)) char8 _load_8( uint32 address );
+
+__attribute__((noinline)) void _store_16( uint32 address, int16 data );
+
+__attribute__((noinline)) int16 _load_16( uint32 address );
+
 __attribute__((noinline)) void _store_32( uint32 address, int32 data );
 
 __attribute__((noinline)) int32 _load_32( uint32 address );
