@@ -829,7 +829,7 @@ deci32_int32_to_string_hexa:
 
 
 /**
- * function deci32_vfp32_feq_int32
+ * function deci32_string_to_int32
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
  * Otherwise, You'll Get Zero to Return.
