@@ -108,10 +108,11 @@ os_reset:
 	pop {r0-r3,lr}
 
 	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting Below Triggers Interrupt on Reaching 2 Bytes of RxFIFO (0b000) */
+	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
+	/* But Now on Only Using Rx Timeout */
 	push {r0-r3,lr}
 	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
-	mov r1, #equ32_uart0_intr_rx @ equ32_uart0_intr_rt When Exceeding Trigger Point of RxFIFO
+	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
 	bl uart32_uartsetint
 	pop {r0-r3,lr}
 
@@ -134,7 +135,7 @@ os_irq:
 	tst temp, #0x1
 	bne os_irq_error1        @ If Busy
 
-	bl uart32_uartclrint     @ Clear All Flags of Interrupt
+	/*bl uart32_uartclrint*/     @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
 
 	ldr heap, os_irq_heap
 
@@ -143,7 +144,7 @@ macro32_debug heap, 100, 88
 	push {r0}
 	ldr r1, _os_irq_count    @ Add Offset
 	add r0, r1
-	mov r1, #2               @ 2 Bytes
+	mov r1, #1               @ 1 Bytes
 	bl uart32_uartrx
 
 macro32_debug r0, 100, 100
@@ -155,8 +156,18 @@ macro32_debug r0, 100, 100
 	bne os_irq_error2        @ If Overrun
 
 	/* If Succeed to Receive */
+
+	/* Mirror Received Data to Another */
+	push {r0}
+	ldr r1, _os_irq_count    @ Add Offset
+	add r0, r1
+	mov r1, #1               @ 1 Bytes
+	bl uart32_uarttx
+	pop {r0}
+
+	/* Slide Offset Count */
 	ldr temp, _os_irq_count
-	add temp, temp, #2
+	add temp, temp, #1
 	cmp temp, #32
 	movge temp, #0           @ If Exceeds 32 Bytes
 	str temp, _os_irq_count
@@ -174,12 +185,6 @@ macro32_debug r0, 100, 100
 
 	mov temp, #1
 	str temp, _os_irq_busy
-
-	/* Mirror Received Data to Another */
-	push {r0}
-	mov r1, #32
-	bl uart32_uarttx
-	pop {r0}
 
 	b os_irq_common
 

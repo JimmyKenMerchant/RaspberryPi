@@ -44,13 +44,14 @@ sudo stty -F /dev/serial0 115200
 sudo stty -F /dev/serial0 speed
 # Verify changed baud
 
-# To Read and Write (Ctrl+m and Ctrl+j Send CR and LF)
+# To Read and Write
+# Ctrl+m Sends CR, Ctrl+j Sends LF, Ctrl+@ Sends Null Character, Similar to Macros of TeraTerm
 sudo minicom -D /dev/serial0
 # sudo apt-get install minicom
 # sudo cat -vA < /dev/serial0
 
 # To Write on another terminal (Write Once per Word, 4 Bytes)
-sudo echo -e 'GOOD' > /dev/serial0
+sudo echo -ne 'GOOD\r\n' > /dev/serial0
 
 # https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
 ```
