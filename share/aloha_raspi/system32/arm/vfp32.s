@@ -9,6 +9,46 @@
 
 
 /**
+ * function vfp32_f32tohexa
+ * Convert Float32 to Hexadecimal Raw Binaries (as a Dummy Code for a C Language Function)
+ *
+ * Parameters
+ * r0: Value, Must Be Single Precision Float
+ *
+ * Return: r0 (Value by Unsigned Integer)
+ */
+.globl vfp32_f32tohexa
+vfp32_f32tohexa:
+	/* Auto (Local) Variables, but just Aliases */
+	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	vfp32_f32tohexa_common:
+		mov pc, lr
+
+.unreq value
+
+
+/**
+ * function vfp32_hexatof32
+ * Convert Hexadecimal Raw Binaries to Float32 (as a Dummy Code for a C Language Function)
+ *
+ * Parameters
+ * r0: Value, Must Be Unsigned Integer
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_hexatof32
+vfp32_hexatof32:
+	/* Auto (Local) Variables, but just Aliases */
+	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	vfp32_hexatof32_common:
+		mov pc, lr
+
+.unreq value
+
+
+/**
  * function vfp32_s32tof32
  * Convert From Signed Integer to Single Precision Float
  *
@@ -72,7 +112,7 @@ vfp32_u32tof32:
 
 /**
  * function vfp32_f32tos32
- * Convert From Single Precision Float to Signed Integer
+ * Convert From Single Precision Float to Signed Integer, Rounded Off
  *
  * Parameters
  * r0: Value, Must Be Single Precision Float
@@ -90,7 +130,7 @@ vfp32_f32tos32:
 	vpush {s0}
 
 	vmov vfp_value, value
-	vcvt.s32.f32 vfp_value, vfp_value
+	vcvtr.s32.f32 vfp_value, vfp_value
 	vmov value, vfp_value
 
 	vfp32_f32tos32_common:
@@ -103,7 +143,7 @@ vfp32_f32tos32:
 
 /**
  * function vfp32_f32tou32
- * Convert From Single Precision Float to Unsigned Integer
+ * Convert From Single Precision Float to Unsigned Integer, Rounded Off
  *
  * Parameters
  * r0: Value, Must Be Single Precision Float
@@ -121,7 +161,7 @@ vfp32_f32tou32:
 	vpush {s0}
 
 	vmov vfp_value, value
-	vcvt.u32.f32 vfp_value, vfp_value
+	vcvtr.u32.f32 vfp_value, vfp_value
 	vmov value, vfp_value
 
 	vfp32_f32tou32_common:

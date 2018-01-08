@@ -157,7 +157,7 @@ macro32_debug r0, 100, 100
 
 	/* If Succeed to Receive */
 
-	/* Mirror Received Data to Another */
+	/* Mirror Received Data to Teletype */
 	push {r0}
 	ldr r1, _os_irq_count    @ Add Offset
 	add r0, r1

@@ -59,7 +59,7 @@ deci32_count_zero32:
  * Parameters
  * r0: Float Value, Must Be Type of Single Precision Float
  * r1: Minimam Length of Digits in Integer Places, 16 Digits Max
- * r2: Maximam Length of Digits in Decimal Places, Default 8 Digits
+ * r2: Maximam Length of Digits in Decimal Places, Default 8 Digits, If Exceeds, Round Down
  * r3: Minimam Length of Digits in Exponent Places, 16 Digits Max
  *
  * Usage: r0-r11
@@ -160,7 +160,9 @@ deci32_float32_to_string:
 	deci32_float32_to_string_integer:
 
 		vmov vfp_integer, float                       @ Signed
-		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
+		cmp max_decimal, #0
+		vcvtgt.s32.f32 vfp_integer, vfp_integer       @ Round Down If Decimal Places Are Assigned
+		vcvtrle.s32.f32 vfp_integer, vfp_integer      @ Round Off If No Decimal Place
 		vmov integer, vfp_integer
 
 		push {r0-r3}
@@ -241,9 +243,7 @@ deci32_float32_to_string:
 			sub temp, temp2, temp
 
 			vmov vfp_temp, vfp_decimal
-			cmp max_decimal, #0
-			vcvtreq.s32.f32 vfp_temp, vfp_temp       @ Round If Maximam Length Reaches Zero
-			vcvtne.s32.f32 vfp_temp, vfp_temp
+			vcvt.s32.f32 vfp_temp, vfp_temp
 			vmov decimal, vfp_temp
 
 			push {r0-r3}
@@ -947,8 +947,8 @@ deci32_string_to_int32:
  * Parameters
  * r0: Heap of String
  *
- * Return: r0 (32-bit Float, -0 Negative Zero as error)
- * Error(-0): String Could Not Be Converted
+ * Return: r0 (32-bit Float, -1 as error)
+ * Error(-1): String Could Not Be Converted
  */
 .globl deci32_string_to_float32
 deci32_string_to_float32:
@@ -1129,7 +1129,7 @@ deci32_string_to_float32:
 		b deci32_string_to_float32_expo_loop
 
 	deci32_string_to_float32_error:
-		mov r0, #0x80000000                      @ Error With Negative Zero (IEEE754)
+		mvn r0, #0x00                            @ Error With -1
 		b deci32_string_to_float32_common
 
 	deci32_string_to_float32_success:

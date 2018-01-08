@@ -247,6 +247,10 @@ extern uint32 gpio32_gpiolen
  * system32/library/vfp32.s
  ********************************/
 
+extern uint32 vfp32_f32tohexa( float32 value );
+
+extern float32 vfp32_hexatof32( uint32 value );
+
 extern float32 vfp32_s32tof32( int32 value );
 
 extern float32 vfp32_u32tof32( uint32 value );
