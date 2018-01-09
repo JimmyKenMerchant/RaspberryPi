@@ -946,6 +946,7 @@ deci32_string_to_int32:
  *
  * Parameters
  * r0: Heap of String
+ * r1: Length of String
  *
  * Return: r0 (32-bit Float, -1 as error)
  * Error(-1): String Could Not Be Converted
@@ -954,9 +955,9 @@ deci32_string_to_int32:
 deci32_string_to_float32:
 	/* Auto (Local) Variables, but just Aliases */
 	heap               .req r0
-	temp               .req r1
+	length             .req r1
 	minus              .req r2
-	temp2              .req r3
+	temp               .req r3
 	length_integer     .req r4
 	integer            .req r5
 	frac_offset        .req r6
@@ -994,12 +995,7 @@ deci32_string_to_float32:
 
 	deci32_string_to_float32_preexpo:
 
-		push {r0-r3}
-		bl print32_strlen
-		mov length_exponent, r0
-		pop {r0-r3}
-
-		sub length_exponent, length_exponent, exponent
+		sub length_exponent, length, exponent
 
 	deci32_string_to_float32_int:
 
@@ -1029,8 +1025,11 @@ deci32_string_to_float32:
 
 		/* Fractional Part */
 
-		add heap, heap, length_integer    @ To Period
-		add heap, heap, #1                @ To Next of Period
+		add heap, heap, length_integer     @ To Period
+		add heap, heap, #1                 @ To Next of Period
+
+		sub length, length, length_integer @ Length of Fractional Part and Exponential Part
+		sub length, length, #1
 
 		.unreq length_integer
 		.unreq integer
@@ -1038,24 +1037,19 @@ deci32_string_to_float32:
 		length_frac .req r4
 		frac        .req r5
 
-		push {r0-r3}
-		bl print32_strlen
-		mov length_frac, r0
-		pop {r0-r3}
-
-		sub length_frac, length_frac, length_exponent
+		sub length_frac, length, length_exponent
 
 		mov frac_offset, #0
 
-		mov temp2, #0
-		vmov vfp_float_frac, temp2
+		mov temp, #0
+		vmov vfp_float_frac, temp
 		vcvt.f32.s32 vfp_float_frac, vfp_float_frac
 
-		mov temp2, #10
-		vmov vfp_ten, temp2
+		mov temp, #10
+		vmov vfp_ten, temp
 		vcvt.f32.s32 vfp_ten, vfp_ten
 
-		.unreq temp2
+		.unreq temp
 		length_dup .req r3
 
 	deci32_string_to_float32_frac:
@@ -1086,7 +1080,7 @@ deci32_string_to_float32:
 
 		vadd.f32 vfp_float_frac, vfp_float_frac, vfp_float_cal
 
-		subge length_frac, length_frac, #8
+		sub length_frac, length_frac, #8
 		cmp length_frac, #0
 		addgt frac_offset, frac_offset, #8
 		bgt deci32_string_to_float32_frac
@@ -1140,7 +1134,7 @@ deci32_string_to_float32:
 		pop {r4-r8,pc}
 
 .unreq heap
-.unreq temp
+.unreq length
 .unreq minus
 .unreq length_dup
 .unreq length_frac

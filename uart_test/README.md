@@ -18,11 +18,7 @@
 
 **Compatibility**
 
-Under Construction
-
-**Hardware**
-
-Under Construction
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
 
 **Settings for Another Raspberry Pi to Check This Test**
 

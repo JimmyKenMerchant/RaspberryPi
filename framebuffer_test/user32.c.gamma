@@ -76,7 +76,7 @@ void _user_start()
 	heap32_mfree( (obj)number5_str );
 	heap32_mfree( (obj)number6_str );
 
-	float32 number7 = deci32_string_to_float32( string_num3 );
+	float32 number7 = deci32_string_to_float32( string_num3, print32_strlen( string_num3 ) );
 	print32_set_caret( print32_number( vfp32_f32tos32( number7 ), FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 

@@ -20,8 +20,6 @@ void _user_start()
 	uint32 back_color = COLOR32_BLACK;
 	uint32 pipenumber = 0;
 	uint32 caltype = 0;
-	uint32 search_char = 0;
-	uint32 os_irq_heap_offset = 0;
 	uint32 process_counter = 0;
 	float32 var_a = 0.0;
 	float32 var_b = 0.0;
@@ -71,13 +69,9 @@ void _user_start()
 					break;
 
 				case 1:
-					search_char = print32_charindex( os_irq_heap, 0x0D ); // Carriage Return
-					os_irq_heap_offset = (uint32)os_irq_heap + search_char;
-					_store_8( os_irq_heap_offset, 0 ); // Carriage Return to Null Character
-
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 					
-					var_a = deci32_string_to_float32( os_irq_heap );
+					var_a = deci32_string_to_float32( os_irq_heap, print32_charindex( os_irq_heap, 0x0D ) );
 					if ( vfp32_f32tohexa( var_a ) == -1 ) {
 						_uarttx( ": No Float: ARGUMENT?\r\n\0", 24 );
 						break;
@@ -94,13 +88,9 @@ void _user_start()
 					break;
 
 				case 2:
-					search_char = print32_charindex( os_irq_heap, 0x0D ); // Carriage Return
-					os_irq_heap_offset = (uint32)os_irq_heap + search_char;
-					_store_8( os_irq_heap_offset, 0 ); // Carriage Return to Null Character
-
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 
-					var_b = deci32_string_to_float32( os_irq_heap );
+					var_b = deci32_string_to_float32( os_irq_heap, print32_charindex( os_irq_heap, 0x0D ) );
 					if ( vfp32_f32tohexa( var_b ) == -1 ) {
 						_uarttx( ": No Float: ARGUMENT?\r\n\0", 24 );
 						break;

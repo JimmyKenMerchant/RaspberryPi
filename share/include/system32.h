@@ -936,7 +936,8 @@ extern int32 deci32_string_to_int32
  */
 extern float32 deci32_string_to_float32
 (
-	String string
+	String string,
+	uint32 length_string // Max. 10 if Unsigned, 11 if Signed
 );
 
 
