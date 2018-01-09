@@ -16,6 +16,7 @@ void _user_start()
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
 	String newline = "\n\0";
+	String string_num0 = "1234567812345678\0";
 	String string_num1 = "1234567890\0";
 	String string_num2 = "-1234567890\0";
 	String string_num3 = "-123.123456789123e-03\0"; // float32's Expected Value is Untill 7th Decimal Digit on 10 Base (IEEE754)
@@ -29,16 +30,16 @@ void _user_start()
 	print32_set_caret( print32_number( number2, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	uint64 number1_deci = deci32_hexa_to_deci32( number1 );
-	uint64 number2_deci = deci32_hexa_to_deci32( number2 );
+	uint64 number1_deci = deci32_hexa_to_deci( number1 );
+	uint64 number2_deci = deci32_hexa_to_deci( number2 );
 
 	print32_set_caret( print32_number_double( number1_deci, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_number_double( number2_deci, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	uint32 number1_hexa = deci32_deci_to_hexa32( number1_deci );
-	uint32 number2_hexa = deci32_deci_to_hexa32( number2_deci );
+	uint32 number1_hexa = deci32_deci_to_hexa( number1_deci );
+	uint32 number2_hexa = deci32_deci_to_hexa( number2_deci );
 
 	print32_set_caret( print32_number( number1_hexa, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -54,6 +55,11 @@ void _user_start()
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_number_double( result2, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+
+	uint64 number0 = deci32_string_to_deci( string_num0, print32_strlen( string_num0 ) );
+	print32_set_caret( print32_number_double( number0, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	int32 number5 = deci32_string_to_int32( string_num1, print32_strlen( string_num1 ) );

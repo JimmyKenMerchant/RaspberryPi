@@ -272,7 +272,7 @@ os_fiq:
 	add r0, r0, basement
 
 	push {lr}
-	bl deci32_hexa_to_deci32
+	bl deci32_hexa_to_deci
 	pop {lr}
 
 	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)

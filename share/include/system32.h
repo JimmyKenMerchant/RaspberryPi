@@ -914,6 +914,20 @@ extern String deci32_int32_to_string_hexa
 
 
 /**
+ * Make 64-bit Decimal Number From String (Decimal System)
+ * Caution! The Range of Decimal Number is 0 through 9,999,999,999,999,999 (16 Digits).
+ * Otherwise, You'll Get Zero to Return.
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
+ */
+extern int64 deci32_string_to_deci
+(
+	String string,
+	uint32 length_string // Max. 16
+);
+
+
+/**
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
  * Otherwise, You'll Get Zero to Return.
@@ -946,7 +960,7 @@ extern float32 deci32_string_to_float32
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
  */
-extern uint64 deci32_hexa_to_deci32
+extern uint64 deci32_hexa_to_deci
 (
 	uint32 number_hexa
 );
@@ -971,7 +985,7 @@ extern uint64 deci32_deci_add64
  *
  * Return: Hexadecimal Number
  */
-extern uint32 deci32_deci_to_hexa32
+extern uint32 deci32_deci_to_hexa
 (
 	uint64 number_deci
 );
