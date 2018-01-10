@@ -346,6 +346,56 @@ print32_charindex:
 
 
 /**
+ * function print32_charcount
+ * Count Byte Characters in String
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Length of Array of String
+ * r2: Character to Be Searched (Key)
+ *
+ * Return: r0 (Number of Counts for Character Key)
+ */
+.globl print32_charcount
+print32_charcount:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_length     .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	char_search       .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	char_string       .req r3
+	increment         .req r4
+	count             .req r5
+
+	push {r4-r5}
+
+	mov increment, #0
+	mov count, #0
+
+	print32_charcount_loop:
+		cmp increment, string_length
+		bge print32_charcount_common
+
+		ldrb char_string, [string_point, increment]
+		cmp char_string, char_search
+		addeq count, count, #1
+
+		add increment, increment, #1
+		b print32_charcount_loop
+
+	print32_charcount_common:
+		mov r0, count
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq string_point
+.unreq string_length
+.unreq char_search
+.unreq char_string
+.unreq increment
+.unreq count
+
+
+/**
  * function print32_strcat
  * Concatenation of Two Strings
  * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with

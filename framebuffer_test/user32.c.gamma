@@ -16,10 +16,10 @@ void _user_start()
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
 	String newline = "\n\0";
-	String string_num0 = "1234567812345678\0";
-	String string_num1 = "1234567890\0";
-	String string_num2 = "-1234567890\0";
-	String string_num3 = "-123.123456789123e-03\0"; // float32's Expected Value is Untill 7th Decimal Digit on 10 Base (IEEE754)
+	String string_num0 = "123456781.2345678\0";
+	String string_num1 = "12345.67890\0";
+	String string_num2 = "-1234.567890\0";
+	String string_num3 = "-222.2222E-3\0"; // float32's Expected Value is Untill 7th Decimal Digit on 10 Base (IEEE754)
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	uint32 number1 = 0xFFFFFFFF;

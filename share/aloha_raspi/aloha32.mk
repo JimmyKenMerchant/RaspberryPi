@@ -94,8 +94,6 @@ kernel.img: inter.elf
 inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
-# -O2 (Normal Optimization) seems not to ensure to store r0-r3 registers to the stack,
-# before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919).
 $(OBJ3).o: $(OBJ3).c $(CCHEADER)
 	$(CC) $< -I $(CCINC)/ $(CCDEF) -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
 

@@ -831,12 +831,14 @@ deci32_int32_to_string_hexa:
 /**
  * function deci32_string_to_deci
  * Make 64-bit Decimal Number From String (Decimal System)
- * Caution! The Range of Decimal Number is 0 through 9,999,999,999,999,999 (16 Digits).
- * Otherwise, You'll Get Zero to Return.
+ * Caution! The Range of Decimal Number Is 0 through 9,999,999,999,999,999.
+ * Max. Valid Digits Are 16, Otherwise, You'll Get Zero to Return.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
  * Parameters
  * r0: Heap of String
- * r1: Length of String (Max. 16)
+ * r1: Length of String
  *
  * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
  */
@@ -850,8 +852,11 @@ deci32_string_to_deci:
 	deci_lower  .req r4
 	deci_upper  .req r5
 	shift       .req r6
+	dup_length  .req r7
 
-	push {r4-r6}
+	push {r4-r7,lr}
+
+	mov dup_length, length
 
 	sub length, length, #1
 
@@ -859,14 +864,76 @@ deci32_string_to_deci:
 	mov deci_lower, #0
 	mov deci_upper, #0
 
-	deci32_string_to_deci_length:
+	/* Check Existing of Spaces */
 
-		cmp length, #15
-		bgt deci32_string_to_deci_success
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x20                     @ Ascii Code of Space
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Plus */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2B                     @ Ascii Code of Plus
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Commas */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2C                     @ Ascii Code of Comma
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Minus */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Periods */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2E                     @ Ascii Code of Period
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	cmp length, #15
+	bgt deci32_string_to_deci_success
 
 	deci32_string_to_deci_loop:
 
 		ldrb byte, [heap, i]
+
+		cmp byte, #0x20                           @ If Space
+		cmpne byte, #0x2B                         @ If Plus
+		cmpne byte, #0x2C                         @ If Comma
+		cmpne byte, #0x2D                         @ If Minus
+		cmpne byte, #0x2E                         @ If Period
+		addeq i, i, #1
+		beq deci32_string_to_deci_loop
+
 		sub byte, byte, #0x30                     @ Ascii Table Number Offset
 
 		lsl shift, length, #2                     @ Substitute of Multiplication by 4
@@ -903,8 +970,7 @@ deci32_string_to_deci:
 		mov r1, deci_upper
 
 	deci32_string_to_deci_common:
-		pop {r4-r6}
-		mov pc, lr
+		pop {r4-r7,pc}
 
 .unreq heap
 .unreq length
@@ -913,17 +979,20 @@ deci32_string_to_deci:
 .unreq deci_lower
 .unreq deci_upper
 .unreq shift
+.unreq dup_length
 
 
 /**
  * function deci32_string_to_int32
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Otherwise, You'll Get Zero to Return.
+ * Caution! The Range of Decimal Number Is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Max. Valid Digits Are 10 If Unsigned, 11 If Signed, Otherwise, You'll Get Inaccurate Returned Value.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
  * Parameters
  * r0: Heap of String
- * r1: Length of String (Max. 10 if Unsigned, 11 if Signed)
+ * r1: Length of String
  *
  * Return: r0 (32-bit Unsigned/Signed Integer)
  */
@@ -933,96 +1002,51 @@ deci32_string_to_int32:
 	heap        .req r0
 	length      .req r1
 	signed      .req r2
-	byte        .req r3
-	i           .req r4
-	deci_lower  .req r5
-	deci_upper  .req r6
-	shift       .req r7
+	temp        .req r3
+	deci_lower  .req r4
+	deci_upper  .req r5
 
-	push {r4-r7}
+	push {r4-r5,lr}
 
-	sub length, length, #1
+	/* Check Existing of Minus */
 
-	mov i, #0
-	mov deci_lower, #0
-	mov deci_upper, #0
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charcount
+	mov deci_lower, r0
+	pop {r0-r3}
 
-	ldrb byte, [heap]
-	cmp byte, #0x2D                   @ Minus
-	moveq signed, #1
-	movne signed, #0
-	cmpne byte, #0x2B                 @ Plus
-	bne deci32_string_to_int32_length @ If Neither Minus nor Plus
+	cmp deci_lower, #0
+	movne signed, #1
+	moveq signed, #0
 
-	/* If Signed */
-	add i, i, #1
-	sub length, length, #1
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci_lower, r0
+	mov deci_upper, r1
+	pop {r0-r3}
 
-	deci32_string_to_int32_length:
+	push {r0-r3}
+	mov r0, deci_lower
+	mov r1, deci_upper
+	bl deci32_deci_to_hexa
+	mov deci_lower, r0
+	pop {r0-r3}
 
-		cmp length, #9
-		bgt deci32_string_to_int32_success
-
-	deci32_string_to_int32_loop:
-
-		ldrb byte, [heap, i]
-		sub byte, byte, #0x30                     @ Ascii Table Number Offset
-
-		lsl shift, length, #2                     @ Substitute of Multiplication by 4
-
-		cmp length, #8
-		bhs deci32_string_to_int32_loop_upper
-
-		/* Lower Number */
-		lsl byte, byte, shift
-
-		add deci_lower, deci_lower, byte
-
-		b deci32_string_to_int32_loop_common
-
-		/* Upper Number */
-		deci32_string_to_int32_loop_upper:
-
-			sub shift, shift, #32
-
-			lsl byte, byte, shift
-
-			add deci_upper, deci_upper, byte
-
-		deci32_string_to_int32_loop_common:
-
-			add i, i, #1
-			sub length, length, #1
-
-			cmp length, #0
-			bge deci32_string_to_int32_loop
-
-			push {r0-r3,lr}
-			mov r0, deci_lower
-			mov r1, deci_upper
-			bl deci32_deci_to_hexa
-			mov deci_lower, r0
-			pop {r0-r3,lr}
-
-			cmp signed, #1
-			mvneq deci_lower, deci_lower          @ Logical Not to Convert Plus to Minus
-			addeq deci_lower, deci_lower, #1      @ Add 1 to Convert Plus to Minus
-
-	deci32_string_to_int32_success:
-		mov r0, deci_lower
+	cmp signed, #1
+	mvneq deci_lower, deci_lower          @ Logical Not to Convert Plus to Minus
+	addeq deci_lower, deci_lower, #1      @ Add 1 to Convert Plus to Minus
 
 	deci32_string_to_int32_common:
-		pop {r4-r7}
-		mov pc, lr
+		mov r0, deci_lower
+		pop {r4-r5,pc}
 
 .unreq heap
 .unreq length
 .unreq signed
-.unreq byte
-.unreq i
+.unreq temp
 .unreq deci_lower
 .unreq deci_upper
-.unreq shift
 
 
 /**
@@ -1097,15 +1121,24 @@ deci32_string_to_float32:
 		cmp length_integer, #-1
 		beq deci32_string_to_float32_error
 
+		/* Check Existing of Minus */
+
+		push {r0-r3}
+		mov r1, length_integer
+		mov r2, #0x2D                     @ Ascii Code of Minus
+		bl print32_charcount
+		mov integer, r0
+		pop {r0-r3}
+
+		cmp integer, #0
+		movne minus, #1
+		moveq minus, #0
+
 		push {r0-r3}
 		mov r1, length_integer
 		bl deci32_string_to_int32
 		mov integer, r0
 		pop {r0-r3}
-
-		cmp integer, #0
-		movlt minus, #1
-		movge minus, #0
 
 		vmov vfp_float, integer
 		vcvt.f32.s32 vfp_float, vfp_float
@@ -1520,7 +1553,7 @@ deci32_deci_add64:
 /**
  * function deci32_deci_to_hexa
  * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295.
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
  *
  * Parameters
  * r0: Lower Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
@@ -1545,6 +1578,9 @@ deci32_deci_to_hexa:
                  @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov hexa, #0
+
+	cmp deci_upper, #43
+	bge deci32_deci_to_hexa_common
 
 	mov i, #7
 

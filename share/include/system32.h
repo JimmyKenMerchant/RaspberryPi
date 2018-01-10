@@ -459,6 +459,19 @@ extern int32 print32_charindex
 
 
 /**
+ * Count Byte Character in String
+ *
+ * Return: Number of Counts for Character Key
+ */
+extern int32 print32_charcount
+(
+	String string,
+	uint32 length,
+	char8 character_key
+);
+
+
+/**
  * Concatenation of Two Strings
  * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
  * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.
@@ -915,29 +928,33 @@ extern String deci32_int32_to_string_hexa
 
 /**
  * Make 64-bit Decimal Number From String (Decimal System)
- * Caution! The Range of Decimal Number is 0 through 9,999,999,999,999,999 (16 Digits).
- * Otherwise, You'll Get Zero to Return.
+ * Caution! The Range of Decimal Number Is 0 through 9,999,999,999,999,999.
+ * Max. Valid Digits Are 16, Otherwise, You'll Get Zero to Return.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
  */
 extern int64 deci32_string_to_deci
 (
 	String string,
-	uint32 length_string // Max. 16
+	uint32 length_string
 );
 
 
 /**
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Otherwise, You'll Get Zero to Return.
+ * Caution! The Range of Decimal Number Is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Max. Valid Digits Are 10 If Unsigned, 11 If Signed, Otherwise, You'll Get Inaccurate Returned Value.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
  * Return: 32-bit Unsigned/Signed Integer
  */
 extern int32 deci32_string_to_int32
 (
 	String string,
-	uint32 length_string // Max. 10 if Unsigned, 11 if Signed
+	uint32 length_string
 );
 
 
@@ -981,7 +998,7 @@ extern uint64 deci32_deci_add64
 
 /**
  * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295.
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
  *
  * Return: Hexadecimal Number
  */

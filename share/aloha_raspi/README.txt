@@ -20,4 +20,6 @@
 Assembler: GNU assembler (2.27-9+9) 2.27
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
 
+The option of arm-none-eabi-gcc, -O2 (Normal Optimization) seems not to ensure to store r0-r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919).
+
 * 0.9 Beta on September 27, 2017
