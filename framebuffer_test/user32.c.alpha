@@ -15,6 +15,8 @@ void _user_start()
 
 	String string1 = "ALOHA!\n\tHello World, Everyone!\0";
 	String string2 = "Konnichiwa!\n\tSekai No Minasan!\0";
+	String string3 = "1,2,3,4,5,6,7\0";
+	String string4 = "1.01,2.1,3.01,4.1,5.01,6.1\0";
 	String newline = "\n\0";
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
@@ -48,7 +50,7 @@ void _user_start()
 
 	String copy_string2 = (String)heap32_malloc(7); // 28 Bytes
 
-	uint32 error = heap32_mcopy( (uint32)copy_string2, (uint32)copy_string1, 1, 3);
+	uint32 error = heap32_mcopy( (uint32)copy_string2, (uint32)copy_string1, 1, 3 );
 
 	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -68,9 +70,24 @@ void _user_start()
 	print32_set_caret( print32_number( (uint32)error, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	heap32_mfree( (uint32)copy_string1 );
+	obj string3_obj = decix32_string_to_intarray( string3, print32_strlen( string3 ), 2 );
+	String dup_string3 = decix32_intarray_to_string( string3_obj, 2 );
 
+	print32_set_caret( print32_string( dup_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	obj string4_obj = decix32_string_to_farray( string4, print32_strlen( string4 ) );
+	String dup_string4 = decix32_farray_to_string( string4_obj );
+
+	print32_set_caret( print32_string( dup_string4, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string4 ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	heap32_mfree( (uint32)copy_string1 );
 	heap32_mfree( (uint32)copy_string2 );
+	heap32_mfree( string3_obj );
+	heap32_mfree( (uint32)dup_string3 );
+	heap32_mfree( string4_obj );
+	heap32_mfree( (uint32)dup_string4 );
 
 	_sleep( 10000000 );
 

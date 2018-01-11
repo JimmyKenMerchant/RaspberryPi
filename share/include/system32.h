@@ -1022,7 +1022,7 @@ extern uint64 deci32_deci_sub64
 
 
 /********************************
- * system32/library/deciex32.s
+ * system32/library/decix32.s
  ********************************/
 
 /**
@@ -1032,7 +1032,7 @@ extern uint64 deci32_deci_sub64
  *
  * Return: Heap of Array, 0 as not succeeded
  */
-extern obj deciex32_string_to_int_array
+extern obj decix32_string_to_intarray
 (
 	String string,
 	uint32 length_string,
@@ -1045,10 +1045,35 @@ extern obj deciex32_string_to_int_array
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String deciex32_int_array_to_string
+extern String decix32_intarray_to_string
 (
-	obj array,
+	obj object_array,
 	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+);
+
+
+/**
+ * Make Array of Single Precision Floats From String (Decimal System)
+ *
+ * This function detects commas as separators between each floats
+ *
+ * Return: Heap of Array, 0 as not succeeded
+ */
+extern obj decix32_string_to_farray
+(
+	String string,
+	uint32 length_string
+);
+
+
+/**
+ * Make String (Decimal System) From Single Precision Floats
+ *
+ * Return: Heap of String, 0 as not succeeded
+ */
+extern String decix32_farray_to_string
+(
+	obj object_array
 );
 
 
