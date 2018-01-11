@@ -33,7 +33,7 @@ void _user_start()
 
 	int32 search_char = print32_charindex( string1, char_key );
 
-	int32 count_char = print32_charcount( string1, print32_strlen( string1 ), char_key );
+	uint32 count_char = print32_charcount( string1, print32_strlen( string1 ), char_key );
 
 	int32 search_string = print32_strindex( string1, "HA!" );
 
@@ -53,7 +53,7 @@ void _user_start()
 	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	print32_set_caret( print32_number( (uint32)count_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( count_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	print32_set_caret( print32_number( (uint32)search_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );

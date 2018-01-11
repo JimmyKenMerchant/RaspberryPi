@@ -463,7 +463,7 @@ extern int32 print32_charindex
  *
  * Return: Number of Counts for Character Key
  */
-extern int32 print32_charcount
+extern uint32 print32_charcount
 (
 	String string,
 	uint32 length,
@@ -1018,6 +1018,37 @@ extern uint64 deci32_deci_sub64
 (
 	uint64 number_deci1,
 	uint64 number_deci2
+);
+
+
+/********************************
+ * system32/library/deciex32.s
+ ********************************/
+
+/**
+ * Make Array of Integers From String (Decimal System)
+ *
+ * This function detects commas as separators between each Integers
+ *
+ * Return: Heap of Array, 0 as not succeeded
+ */
+extern obj deciex32_string_to_int_array
+(
+	String string,
+	uint32 length_string,
+	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+);
+
+
+/**
+ * Make String (Decimal System) From Array of Integers
+ *
+ * Return: Heap of String, 0 as not succeeded
+ */
+extern String deciex32_int_array_to_string
+(
+	obj array,
+	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
 );
 
 

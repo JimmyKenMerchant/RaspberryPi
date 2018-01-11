@@ -111,7 +111,7 @@ deci32_float32_to_string:
 	movge minus, #0
 	beq deci32_float32_to_string_integer
 
-	vabs.f32 vfp_float, vfp_float
+	vabs.f32 vfp_float, vfp_float                 @ Convert to Absolute Value
 
 	mov temp, #1
 	vmov vfp_temp, temp
@@ -152,7 +152,7 @@ deci32_float32_to_string:
 
 	deci32_float32_to_string_convertfloat:
 		cmp minus, #1
-		vnegeq.f32 vfp_float, vfp_float
+		vnegeq.f32 vfp_float, vfp_float               @ Convert Absolute to Negative If Negative Originally
 		vmov float, vfp_float
 
 	/* Integer Part */
@@ -1579,7 +1579,7 @@ deci32_deci_to_hexa:
 
 	mov hexa, #0
 
-	cmp deci_upper, #43
+	cmp deci_upper, #0x43                                       @ Max. 0x42 on Upper, 0xFFFFFFFF on Lower
 	bge deci32_deci_to_hexa_common
 
 	mov i, #7
