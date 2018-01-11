@@ -1086,8 +1086,8 @@ deci32_string_to_float32:
 	/* Check Existing of Exponential Part */
 
 	push {r0-r3}
-	mov r1, #0x45                     @ Ascii Code of E
-	bl print32_charindex
+	mov r2, #0x45                     @ Ascii Code of E
+	bl print32_charsearch
 	mov exponent, r0
 	pop {r0-r3}
 
@@ -1095,8 +1095,8 @@ deci32_string_to_float32:
 	bne deci32_string_to_float32_preexpo
 
 	push {r0-r3}
-	mov r1, #0x65                     @ Ascii Code of e
-	bl print32_charindex
+	mov r2, #0x65                     @ Ascii Code of e
+	bl print32_charsearch
 	mov exponent, r0
 	pop {r0-r3}
 
@@ -1113,8 +1113,8 @@ deci32_string_to_float32:
 		/* Integer Part */
 
 		push {r0-r3}
-		mov r1, #0x2E                     @ Ascii Code for Period
-		bl print32_charindex
+		mov r2, #0x2E                     @ Ascii Code for Period
+		bl print32_charsearch
 		mov length_integer, r0
 		pop {r0-r3}
 

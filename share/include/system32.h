@@ -459,6 +459,19 @@ extern int32 print32_charindex
 
 
 /**
+ * Search Byte Character in String within Range
+ *
+ * Return: Index of Character, if not -1
+ */
+extern int32 print32_charsearch
+(
+	String string,
+	uint32 length_string,
+	char8 character_key
+);
+
+
+/**
  * Count Byte Character in String
  *
  * Return: Number of Counts for Character Key

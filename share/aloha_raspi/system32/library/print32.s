@@ -89,8 +89,8 @@ print32_debug_hexa_addr_font: .word FONT_MONO_12PX_ASCII
 print32_debug:
 	/* Auto (Local) Variables, but just Aliases */
 	register          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
+	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
 	color             .req r3
 	color_back        .req r4
 	length            .req r5
@@ -143,7 +143,7 @@ print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
 print32_set_caret:
 	/* Auto (Local) Variables, but just Aliases */
 	chars             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	xy_coord          .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	xy_coord          .req r1 @ Parameter, Register for Argument, Scratch Register
 	width             .req r2
 	height            .req r3
 	x_coord           .req r4
@@ -218,7 +218,7 @@ print32_set_caret_addr_y_caret: .word FB32_Y_CARET
 print32_strindex:
 	/* Auto (Local) Variables, but just Aliases */
 	string_point1      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	string_point2      .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	string_point2      .req r1 @ Parameter, Register for Argument, Scratch Register
 	char_search        .req r2
 	temp               .req r3
 	increment          .req r4
@@ -302,7 +302,7 @@ print32_strindex:
 print32_charindex:
 	/* Auto (Local) Variables, but just Aliases */
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	char_search       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	char_search       .req r1 @ Parameter, Register for Argument, Scratch Register
 	char_string       .req r2
 	increment         .req r3
 	string_length     .req r4
@@ -346,6 +346,54 @@ print32_charindex:
 
 
 /**
+ * function print32_charsearch
+ * Search Byte Character in String within Range
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Length of Array
+ * r2: Character to Be Searched (Key)
+ *
+ * Return: r0 (Index of Character, if not -1)
+ */
+.globl print32_charsearch
+print32_charsearch:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_length     .req r1 @ Parameter, Register for Argument, Scratch Register
+	char_search       .req r2 @ Parameter, Register for Argument, Scratch Register
+	char_string       .req r3
+	increment         .req r4
+
+	push {r4}
+
+	mov increment, #0
+
+	print32_charsearch_loop:
+		cmp increment, string_length
+		mvnge increment, #0
+		bge print32_charsearch_common
+
+		ldrb char_string, [string_point, increment]
+		cmp char_string, char_search
+		beq print32_charsearch_common
+
+		add increment, increment, #1
+		b print32_charsearch_loop
+
+	print32_charsearch_common:
+		mov r0, increment
+		pop {r4}
+		mov pc, lr
+
+.unreq string_point
+.unreq string_length
+.unreq char_search
+.unreq char_string
+.unreq increment
+
+
+/**
  * function print32_charcount
  * Count Byte Characters in String
  *
@@ -360,8 +408,8 @@ print32_charindex:
 print32_charcount:
 	/* Auto (Local) Variables, but just Aliases */
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	string_length     .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	char_search       .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	string_length     .req r1 @ Parameter, Register for Argument, Scratch Register
+	char_search       .req r2 @ Parameter, Register for Argument, Scratch Register
 	char_string       .req r3
 	increment         .req r4
 	count             .req r5

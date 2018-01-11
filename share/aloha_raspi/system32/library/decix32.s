@@ -39,7 +39,6 @@ decix32_string_to_intarray:
 	/* Check Commas */
 
 	push {r0-r3}
-	mov r1, length_str
 	mov r2, #0x2C                     @ Ascii Code of Comma
 	bl print32_charcount
 	mov length_arr, r0
@@ -95,8 +94,8 @@ decix32_string_to_intarray:
 		ble decix32_string_to_intarray_common
 
 		push {r0-r3}
-		mov r1, #0x2C                     @ Ascii Code of Comma
-		bl print32_charindex
+		mov r2, #0x2C                     @ Ascii Code of Comma
+		bl print32_charsearch
 		mov length_substr, r0
 		pop {r0-r3}
 
@@ -126,6 +125,8 @@ decix32_string_to_intarray:
 			/* Offset of String for Next Data */
 			add heap_str, heap_str, length_substr
 			add heap_str, heap_str, #1
+			sub length_str, length_str, length_substr
+			sub length_str, length_str, #1
 
 			/* Offset of Heap for Next Block of Array */
 			add offset, offset, align
@@ -324,7 +325,6 @@ decix32_string_to_farray:
 	/* Check Commas */
 
 	push {r0-r3}
-	mov r1, length_str
 	mov r2, #0x2C                     @ Ascii Code of Comma
 	bl print32_charcount
 	mov length_arr, r0
@@ -350,8 +350,8 @@ decix32_string_to_farray:
 		ble decix32_string_to_farray_common
 
 		push {r0-r3}
-		mov r1, #0x2C                     @ Ascii Code of Comma
-		bl print32_charindex
+		mov r2, #0x2C                     @ Ascii Code of Comma
+		bl print32_charsearch
 		mov length_substr, r0
 		pop {r0-r3}
 
@@ -376,6 +376,8 @@ decix32_string_to_farray:
 			/* Offset of String for Next Data */
 			add heap_str, heap_str, length_substr
 			add heap_str, heap_str, #1
+			sub length_str, length_str, length_substr
+			sub length_str, length_str, #1
 
 			/* Offset of Heap for Next Block of Array */
 			add offset, offset, #4
