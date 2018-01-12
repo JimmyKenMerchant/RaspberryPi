@@ -501,6 +501,20 @@ extern String print32_strcat
 
 
 /**
+ * Make Array of String List from One String
+ * Caution! This Function Generates Two-dimensional Array in Heap Area.
+ *
+ * Return: Pointer of Two-dimensional Array of List, if 0, no enough space for new Pointer of Array
+ */
+extern obj print32_strlist
+(
+	String string,
+	uint32 length_string,
+	char8 separater
+);
+
+
+/**
  * Count 1-Byte Words of String
  *
  * Return: Number of Words Maximum of 4,294,967,295 words
@@ -1096,12 +1110,11 @@ extern String decix32_farray_to_string
 
 extern uint32 heap32_malloc( uint32 block_size );
 
+extern uint32 heap32_mfree_multi( uint32 address, uint32 dimension );
 
 extern uint32 heap32_mfree( uint32 address );
 
-
 extern uint32 heap32_mfill( uint32 address, uint32 data );
-
 
 extern uint32 heap32_mcopy( uint32 address_dst, uint32 address_src, uint32 offset, uint32 size );
 

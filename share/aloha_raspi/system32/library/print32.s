@@ -545,6 +545,135 @@ print32_strcat:
 
 
 /**
+ * function print32_strlist
+ * Make Array of String List from One String
+ * Caution! This Function Generates Two-dimensional Array in Heap Area.
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Length of Array of String
+ * r2: Character of Separater (Ascii Code)
+ *
+ * Return: r0 (Pointer of Two-dimensional Array of List, if 0, no enough space for new Pointer of Array)
+ */
+.globl print32_strlist
+print32_strlist:
+	/* Auto (Local) Variables, but just Aliases */
+	str_origin         .req r0
+	length_str_origin .req r1
+	separator         .req r2
+	temp              .req r3
+	size_heap         .req r4
+	heap              .req r5
+	length_str_sub    .req r6
+	str_sub           .req r7
+	size_subheap      .req r8
+	subheap           .req r9
+	offset_str_origin .req r10
+	offset_heap       .req r11
+
+	push {r4-r11,lr}
+
+	push {r0-r3}
+	bl print32_charcount
+	mov size_heap, r0
+	pop {r0-r3}
+
+	add size_heap, size_heap, #1
+
+	push {r0-r3}
+	mov r0, size_heap
+	bl heap32_malloc
+	mov heap, r0
+	pop {r0-r3}
+
+	cmp heap, #0
+	beq print32_strlist_common
+
+	mov offset_str_origin, #0
+	mov offset_heap, #0
+
+	print32_strlist_loop:
+
+		cmp size_heap, #0
+		ble print32_strlist_common
+
+		/* Set Initial Size of Sub Heap in Advance */
+		mov size_subheap, #1
+
+		push {r0-r3}
+		add r0, str_origin, offset_str_origin
+		sub r1, length_str_origin, offset_str_origin
+		bl print32_charsearch
+		mov length_str_sub, r0
+		pop {r0-r3}
+
+		cmp length_str_sub, #-1
+		addne temp, length_str_sub, #1        @ For Null Character
+		bne print32_strlist_loop_countsize
+
+		push {r0-r3}
+		bl print32_strlen
+		mov length_str_sub, r0
+		pop {r0-r3}
+
+		add temp, length_str_sub, #1          @ For Null Character
+
+		print32_strlist_loop_countsize:
+			subs temp, temp, #4
+			addgt size_subheap, #1
+			bgt print32_strlist_loop_countsize
+
+		push {r0-r3}
+		mov r0, size_subheap
+		bl heap32_malloc
+		mov subheap, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r1, str_origin                    @ Pointer of Start Address of Memory Space to Be Copied (Source)
+		mov r0, subheap                       @ Pointer of Start Address of Memory Space to Be Destination
+		mov r2, offset_str_origin             @ Offset of Bytes to Be Copied (Source)
+		mov r3, length_str_sub                @ Offset of Bytes to Be Copied (Source)
+		bl heap32_mcopy
+		mov subheap, r0
+		pop {r0-r3}
+
+		cmp subheap, #0
+		beq print32_strlist_common
+
+		mov temp, #0
+		str temp, [subheap, length_str_sub]   @ Store Null Character
+
+		str subheap, [heap, offset_heap]
+
+		add offset_heap, offset_heap, #4
+		add offset_str_origin, offset_str_origin, length_str_sub
+		add offset_str_origin, offset_str_origin, #1
+
+		sub size_heap, size_heap, #1
+
+		b print32_strlist_loop
+
+	print32_strlist_common:
+		mov r0, heap
+		pop {r4-r11,pc}
+
+.unreq str_origin
+.unreq length_str_origin
+.unreq separator
+.unreq temp
+.unreq size_heap
+.unreq heap
+.unreq length_str_sub
+.unreq str_sub
+.unreq size_subheap
+.unreq subheap
+.unreq offset_str_origin
+.unreq offset_heap
+
+
+/**
  * function print32_strlen
  * Count 1-Byte Words of String
  *

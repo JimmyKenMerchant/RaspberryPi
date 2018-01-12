@@ -234,6 +234,91 @@ heap32_malloc_noncache:
 
 
 /**
+ * function heap32_mfree_multi
+ * Free Memory Space in Heap
+ * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
+ * Caution! This Function Uses Recursive Technique. Take Care of Limitation of Memory Space for Stack.
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space
+ * r1: Number of Dimension
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error: Pointer of Start Address is Null (0)
+ */
+.globl heap32_mfree_multi
+heap32_mfree_multi:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	dimension        .req r1
+	block_size       .req r2
+	heap_start       .req r3
+	heap_size        .req r4
+	zero             .req r5
+
+	push {r4-r5,lr}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_mfree_multi_error
+
+	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	ldr block_size, [block_start]
+	add block_size, block_start, block_size
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_mfree_multi_error                @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+
+	cmp block_start, heap_start
+	blo heap32_mfree_multi_error
+
+	mov zero, #0
+
+	/* Clean Size Indicator */
+	str zero, [block_start]
+	add block_start, block_start, #4
+
+	heap32_mfree_multi_loop:
+		cmp block_start, block_size
+		bhs heap32_mfree_multi_success
+
+		push {r0-r3}
+		cmp dimension, #1
+		ble heap32_mfree
+		subgt r1, dimension, #1
+		bgt heap32_mfree_multi
+		pop {r0-r3}
+
+		str zero, [block_start]
+		add block_start, block_start, #4
+
+		b heap32_mfree_multi_loop
+
+	heap32_mfree_multi_error:
+		mov r0, #1
+		b heap32_mfree_multi_common
+
+	heap32_mfree_multi_success:
+		mov r0, #0
+
+	heap32_mfree_multi_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4-r5,pc}
+
+.unreq block_start
+.unreq dimension
+.unreq block_size
+.unreq heap_start
+.unreq heap_size
+.unreq zero
+
+
+/**
  * function heap32_mfree
  * Free Memory Space in Heap
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
@@ -254,7 +339,7 @@ heap32_mfree:
 	heap_size        .req r3
 	zero             .req r4
 
-	push {r4}
+	push {r4,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
@@ -295,14 +380,13 @@ heap32_mfree:
 
 	heap32_mfree_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4}
-		mov pc, lr
+		pop {r4,pc}
 
 .unreq block_start
 .unreq block_size
-.unreq zero
 .unreq heap_start
 .unreq heap_size
+.unreq zero
 
 
 /**
