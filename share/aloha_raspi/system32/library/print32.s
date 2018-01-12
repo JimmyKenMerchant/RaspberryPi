@@ -613,6 +613,7 @@ print32_strlist:
 		bne print32_strlist_loop_countsize
 
 		push {r0-r3}
+		add r0, str_origin, offset_str_origin
 		bl print32_strlen
 		mov length_str_sub, r0
 		pop {r0-r3}

@@ -82,12 +82,32 @@ void _user_start()
 	print32_set_caret( print32_string( dup_string4, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string4 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
+	obj array_string = print32_strlist( dup_string4, print32_strlen( dup_string4 ), 0x2C );
+
+	uint32 length_array_string = heap32_mcount( array_string );
+	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	for ( uint32 i = 0; i < length_array_string; i+=4 ) {
+		String array_string_part = (String)_load_32( array_string + i );
+		print32_set_caret( print32_string( array_string_part, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( array_string_part ), 8, 12, FONT_MONO_12PX_ASCII ) );
+		print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+		print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
+		print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+		heap32_mfree( (uint32)array_string_part );
+	}
+
+	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
+
+	heap32_mfree( array_string );
 	heap32_mfree( (uint32)copy_string1 );
 	heap32_mfree( (uint32)copy_string2 );
 	heap32_mfree( string3_obj );
 	heap32_mfree( (uint32)dup_string3 );
 	heap32_mfree( string4_obj );
 	heap32_mfree( (uint32)dup_string4 );
+
+	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	_sleep( 10000000 );
 

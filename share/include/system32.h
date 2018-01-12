@@ -1110,13 +1110,13 @@ extern String decix32_farray_to_string
 
 extern uint32 heap32_malloc( uint32 block_size );
 
-extern uint32 heap32_mfree_multi( uint32 address, uint32 dimension );
-
 extern uint32 heap32_mfree( uint32 address );
+
+extern uint32 heap32_mcount( uint32 address );
 
 extern uint32 heap32_mfill( uint32 address, uint32 data );
 
-extern uint32 heap32_mcopy( uint32 address_dst, uint32 address_src, uint32 offset, uint32 size );
+extern uint32 heap32_mcopy( uint32 address_dst, uint32 address_src, uint32 offset_src, uint32 size_src );
 
 
 /********************************
