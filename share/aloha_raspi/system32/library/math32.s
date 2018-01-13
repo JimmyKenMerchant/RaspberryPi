@@ -423,3 +423,183 @@ math32_tan32:
 .unreq vfp_sin
 .unreq vfp_cos
 
+
+/**
+ * function math32_mat32_multiply
+ * Multiplies Two Matrix with Single Precision Float
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: Matrix1 with Single Precision Float
+ * r1: Matrix2 with Single Precision Float
+ * r2: Number of Rows and Columns
+ *
+ * Return: r0 (Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl math32_mat32_multiply
+math32_mat32_multiply:
+	/* Auto (Local) Variables, but just Aliases */
+	matrix1     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	matrix2     .req r1 @ Parameter, Register for Argument, Scratch Register
+	number_mat  .req r2 @ Parameter, Register for Argument, Scratch Register
+	temp        .req r3
+	temp2       .req r4
+	matrix_ret  .req r5
+	index       .req r6
+	column      .req r7
+	row         .req r8
+	i           .req r9
+
+	/* VFP Registers */
+	vfp_value   .req d0
+	vfp_value1  .req s0
+	vfp_value2  .req s1
+	vfp_sum     .req s2
+
+	push {r4-r9,lr}
+	vpush {s0-s2}
+
+	mul temp, number_mat, number_mat
+
+	push {r0-r3}
+	mov r0, temp
+	bl heap32_malloc
+	mov matrix_ret, r0
+	pop {r0-r3}
+
+	cmp matrix_ret, #0
+	beq math32_mat32_multiply_common
+
+	mov index, #0
+
+	/* for ( uint32 column = 0; column < number_mat; column++ ) { */
+	mov column, #0
+	math32_mat32_multiply_column:
+		cmp column, number_mat
+		bge math32_mat32_multiply_common
+
+		/* for ( uint32 row = 0; row < number_mat; row++ ) { */
+		mov row, #0
+		math32_mat32_multiply_column_row:
+			cmp row, number_mat
+			bge math32_mat32_multiply_column_row_common
+
+			mov temp, #0
+			vmov vfp_sum, temp
+			vcvt.f32.s32 vfp_sum, vfp_sum
+
+			/* for ( uint32 i = 0; i < number_mat; i++ ) { */
+			mov i, #0
+			math32_mat32_multiply_column_row_i:
+				cmp i, number_mat
+				bge math32_mat32_multiply_column_row_i_common
+
+				mul temp, column, number_mat
+				add temp, temp, i
+				ldr temp, [temp]
+				
+				mul temp2, i, number_mat
+				add temp2, temp2, row
+				ldr temp2, [temp2]
+
+				vmov vfp_value, temp, temp2
+				vmla.f32 vfp_sum, vfp_value1, vfp_value2    @ Multiply and Accumulate
+
+				add i, i, #1
+				b math32_mat32_multiply_column_row_i
+	
+			/* } */
+				math32_mat32_multiply_column_row_i_common:
+					vmov temp, vfp_sum
+					str temp, [matrix_ret, index]
+					add index, index, #4
+
+					add row, row, #1
+					b math32_mat32_multiply_column_row
+
+		/* } */
+			math32_mat32_multiply_column_row_common:
+
+				add column, column, #1
+				b math32_mat32_multiply_column
+
+	/* } */
+	math32_mat32_multiply_common:
+		mov r0, matrix_ret
+		vpop {s0-s2}
+		pop {r4-r9,pc}
+
+.unreq matrix1
+.unreq matrix2
+.unreq number_mat
+.unreq temp
+.unreq temp2
+.unreq matrix_ret
+.unreq index
+.unreq column
+.unreq row
+.unreq i
+.unreq vfp_value
+.unreq vfp_value1
+.unreq vfp_value2
+.unreq vfp_sum
+
+
+/**
+ * function math32_mat32_identity
+ * Get Identity of Matrix
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ *
+ * Parameters
+ * r0: Matrix with Single Precision Float
+ * r1: Number of Rows and Columns
+ *
+ * Return: r0 (Matrix to Have Identity, If Zero Not Allocated Memory)
+ */
+.globl math32_mat32_identity
+math32_mat32_identity:
+	/* Auto (Local) Variables, but just Aliases */
+	matrix      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	number_mat  .req r1 @ Parameter, Register for Argument, Scratch Register
+	one         .req r2
+	offset      .req r3
+	i           .req r4
+
+	/* VFP Registers */
+	vfp_one     .req s0
+
+	push {r4}
+	vpush {s0}
+
+	mov one, #1
+	vmov vfp_one, one
+	vcvt.f32.s32 vfp_one, vfp_one
+	vmov one, vfp_one
+
+	mov i, number_mat
+	add number_mat, number_mat, #1
+
+	mov offset, #0
+
+	math32_mat32_identity_loop:
+		cmp i, #0
+		ble math32_mat32_identity_common
+
+		str one, [matrix, offset, lsl #2]   @ Substitution of Multiplication by 4
+
+		add offset, offset, number_mat
+		sub i, i, #1
+		b math32_mat32_identity_loop
+
+	math32_mat32_identity_common:
+		vpop {s0}
+		pop {r4}
+		mov pc, lr
+
+.unreq matrix
+.unreq number_mat
+.unreq one
+.unreq offset
+.unreq i
+.unreq vfp_one
