@@ -497,11 +497,11 @@ math32_mat32_multiply:
 
 				mul temp, column, number_mat
 				add temp, temp, i
-				ldr temp, [temp]
+				ldr temp, [matrix1, temp, lsl #2]           @ Substitution of Multiplication by 4
 				
 				mul temp2, i, number_mat
 				add temp2, temp2, row
-				ldr temp2, [temp2]
+				ldr temp2, [matrix2, temp2, lsl #2]         @ Substitution of Multiplication by 4
 
 				vmov vfp_value, temp, temp2
 				vmla.f32 vfp_sum, vfp_value1, vfp_value2    @ Multiply and Accumulate
@@ -550,27 +550,35 @@ math32_mat32_multiply:
  * function math32_mat32_identity
  * Get Identity of Matrix
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r0: Matrix with Single Precision Float
- * r1: Number of Rows and Columns
+ * r0: Number of Rows and Columns
  *
  * Return: r0 (Matrix to Have Identity, If Zero Not Allocated Memory)
  */
 .globl math32_mat32_identity
 math32_mat32_identity:
 	/* Auto (Local) Variables, but just Aliases */
-	matrix      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	number_mat  .req r1 @ Parameter, Register for Argument, Scratch Register
-	one         .req r2
-	offset      .req r3
-	i           .req r4
+	number_mat  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	one         .req r1
+	offset      .req r2
+	i           .req r3
+	matrix      .req r4
 
 	/* VFP Registers */
 	vfp_one     .req s0
 
-	push {r4}
+	push {r4,lr}
 	vpush {s0}
+
+	mul i, number_mat, number_mat
+
+	push {r0-r3}
+	mov r0, i
+	bl heap32_malloc
+	mov matrix, r0
+	pop {r0-r3}
 
 	mov one, #1
 	vmov vfp_one, one
@@ -586,20 +594,20 @@ math32_mat32_identity:
 		cmp i, #0
 		ble math32_mat32_identity_common
 
-		str one, [matrix, offset, lsl #2]   @ Substitution of Multiplication by 4
+		str one, [matrix, offset, lsl #2] @ Substitution of Multiplication by 4
 
 		add offset, offset, number_mat
 		sub i, i, #1
 		b math32_mat32_identity_loop
 
 	math32_mat32_identity_common:
+		mov r0, matrix
 		vpop {s0}
-		pop {r4}
-		mov pc, lr
+		pop {r4,pc}
 
-.unreq matrix
 .unreq number_mat
 .unreq one
 .unreq offset
 .unreq i
+.unreq matrix
 .unreq vfp_one

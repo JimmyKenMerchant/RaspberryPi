@@ -904,6 +904,33 @@ extern float32 math32_tan32
 	float32 radian
 );
 
+/**
+ * Multiplies Two Matrix with Single Precision Float
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj math32_mat32_multiply
+(
+	obj address_matrix1,
+	obj address_matrix2,
+	uint32 number
+);
+
+
+/**
+ * Get Identity of Matrix
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Matrix to Have Identity, If Zero Not Allocated Memory
+ */
+extern obj math32_mat32_identity
+(
+	uint32 number
+);
+
 
 /********************************
  * system32/library/deci32.s
