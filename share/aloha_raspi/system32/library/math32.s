@@ -149,6 +149,13 @@ MATH32_PI_HALF32:        .word 0x3fc90fdb @ (.float 1.57079632679)
 MATH32_PI_PER_DEGREE32:  .word 0x3c8efa35 @ (.float 0.01745329252)
 .balign 8
 
+.globl MATH32_EULERS
+MATH32_EULERS:           .word 0x402df854 @ (.float 2.71828182846)
+.balign 8
+
+.globl MATH32_LN10
+MATH32_LN10:             .word 0x40135d8e @ (.float 2.30258509299)
+.balign 8
 
 /**
  * function math32_degree_to_radian32
@@ -209,14 +216,12 @@ math32_sin32:
 
 	/* VFP Registers */
 	vfp_radian    .req s0
-	vfp_dividend  .req s1
-	vfp_divisor   .req s2
+	vfp_pi        .req s1
+	vfp_pi_half   .req s2
 	vfp_temp      .req s3
 	vfp_sum       .req s4
-	vfp_pi        .req s5
-	vfp_pi_half   .req s6
 
-	vpush {s0-s6}
+	vpush {s0-s4}
 
 	/* Ensure Radian is Between -Pi to Pi */
 
@@ -240,6 +245,10 @@ math32_sin32:
 	vmov vfp_radian, vfp_temp
 	
 	math32_sin32_jump:
+		.unreq vfp_pi
+		vfp_dividend .req s1
+		.unreq vfp_pi_half
+		vfp_divisor .req s2
 
 		/**
 		 * sinx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n+1) Div by (2n+1)!
@@ -259,54 +268,39 @@ math32_sin32:
 		mov temp, #6
 		vmov vfp_divisor, temp
 		vcvt.f32.s32 vfp_divisor, vfp_divisor
-		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-		vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
+		vsub.f32 vfp_sum, vfp_sum, vfp_temp
 
-		vmov vfp_dividend, vfp_radian                   @ n = 2
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ n = 2
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Fifth Power
 		mov temp, #20
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 120.0
-		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-		vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
+		vadd.f32 vfp_sum, vfp_sum, vfp_temp
 
-		vmov vfp_dividend, vfp_radian                   @ n = 3
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ n = 3
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Seventh Power
 		mov temp, #42
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 5040.0
-		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-		vsub.f32 vfp_sum, vfp_sum, vfp_dividend
+		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
+		vsub.f32 vfp_sum, vfp_sum, vfp_temp
 
-		vmov vfp_dividend, vfp_radian                   @ n = 4
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
-		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ n = 4
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Nineth Power
 		mov temp, #72
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 362880.0
-		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
-		vadd.f32 vfp_sum, vfp_sum, vfp_dividend
+		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
+		vadd.f32 vfp_sum, vfp_sum, vfp_temp
 
 	math32_sin32_common:
 		vmov r0, vfp_sum
-		vpop {s0-s6}
+		vpop {s0-s4}
 		mov pc, lr
 
 .unreq temp
@@ -315,8 +309,6 @@ math32_sin32:
 .unreq vfp_divisor
 .unreq vfp_temp
 .unreq vfp_sum
-.unreq vfp_pi
-.unreq vfp_pi_half
 
 
 /**
@@ -422,6 +414,181 @@ math32_tan32:
 .unreq radian
 .unreq vfp_sin
 .unreq vfp_cos
+
+
+/**
+ * function math32_ln32
+ * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 7
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_ln32
+math32_ln32:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	temp         .req r1
+	exponent     .req r2
+
+	/* VFP Registers */
+	vfp_value    .req s0
+	vfp_eulers   .req s1
+	vfp_num      .req s2
+	vfp_one      .req s3
+	vfp_power    .req s4
+	vfp_cal      .req s5
+	
+	vpush {s0-s5}
+
+	/**
+	 * ln(1+x) = Sigma[n = 1 to Infinity] (-1)^n+1 X x^n Div by n
+	 * For |x| < 1
+	 * 
+	 * log(xy) = log(x) + log(y)
+	 */
+
+	vmov vfp_value, value
+	ldr temp, MATH32_EULERS
+	vmov vfp_eulers, temp
+
+	mov temp, #2
+	vmov vfp_num, temp
+	vcvt.f32.s32 vfp_num, vfp_num
+
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.s32 vfp_one, vfp_one
+
+	vcmp.f32 vfp_value, vfp_num
+	vmrs apsr_nzcv, fpscr                          @ Transfer FPSCR Flags to CPSR's NZCV
+	movlt exponent, #0
+	blt math32_ln32_series
+
+	mov exponent, #1
+	vmov vfp_power, vfp_eulers
+
+	math32_ln32_exponent:
+		vdiv.f32 vfp_cal, vfp_value, vfp_power
+
+		vcmp.f32 vfp_cal, vfp_num
+		vmrs apsr_nzcv, fpscr                      @ Transfer FPSCR Flags to CPSR's NZCV
+
+		vmovlt vfp_value, vfp_cal
+		blt math32_ln32_series
+
+		vmul.f32 vfp_power, vfp_power, vfp_eulers
+		add exponent, exponent, #1
+		b math32_ln32_exponent
+
+	math32_ln32_series:
+		.unreq vfp_eulers
+		vfp_inter .req s1
+		.unreq vfp_power
+		vfp_sum .req s4
+
+		/* n = 1 */
+		vsub.f32 vfp_value, vfp_value, vfp_one
+		vmov vfp_sum, vfp_value
+		
+		/* n = 2 */
+		vmul.f32 vfp_inter, vfp_value, vfp_value
+		vdiv.f32 vfp_cal, vfp_inter, vfp_num
+		vsub.f32 vfp_sum, vfp_sum, vfp_cal
+		
+		/* n = 3 */
+		vmul.f32 vfp_inter, vfp_inter, vfp_value
+		vadd.f32 vfp_num, vfp_num, vfp_one
+		vdiv.f32 vfp_cal, vfp_inter, vfp_num
+		vadd.f32 vfp_sum, vfp_sum, vfp_cal
+
+		/* n = 4 */
+		vmul.f32 vfp_inter, vfp_inter, vfp_value
+		vadd.f32 vfp_num, vfp_num, vfp_one
+		vdiv.f32 vfp_cal, vfp_inter, vfp_num
+		vsub.f32 vfp_sum, vfp_sum, vfp_cal
+
+		/* n = 5 */
+		vmul.f32 vfp_inter, vfp_inter, vfp_value
+		vadd.f32 vfp_num, vfp_num, vfp_one
+		vdiv.f32 vfp_cal, vfp_inter, vfp_num
+		vadd.f32 vfp_sum, vfp_sum, vfp_cal
+
+		/* n = 6 */
+		vmul.f32 vfp_inter, vfp_inter, vfp_value
+		vadd.f32 vfp_num, vfp_num, vfp_one
+		vdiv.f32 vfp_cal, vfp_inter, vfp_num
+		vsub.f32 vfp_sum, vfp_sum, vfp_cal
+
+		/* n = 7 */
+		vmul.f32 vfp_inter, vfp_inter, vfp_value
+		vadd.f32 vfp_num, vfp_num, vfp_one
+		vdiv.f32 vfp_cal, vfp_inter, vfp_num
+		vadd.f32 vfp_sum, vfp_sum, vfp_cal
+
+		vmov vfp_cal, exponent
+		vcvt.f32.s32 vfp_cal, vfp_cal
+		vadd.f32 vfp_sum, vfp_sum, vfp_cal
+
+	math32_ln32_common:
+		vmov r0, vfp_sum
+		vpop {s0-s5}
+		mov pc, lr
+
+.unreq value 
+.unreq temp
+.unreq exponent
+.unreq vfp_value
+.unreq vfp_inter
+.unreq vfp_num
+.unreq vfp_one
+.unreq vfp_sum
+.unreq vfp_cal
+
+
+/**
+ * function math32_log32
+ * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_log32
+math32_log32:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP Registers */
+	vfp_value    .req s0
+	vfp_ln10     .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	/**
+	 * log(x) = ln(x) Div by ln(10)
+	 */
+
+	bl math32_ln32
+
+	vmov vfp_value, value
+	ldr value, MATH32_LN10
+	vmov vfp_ln10, value
+	vdiv.f32 vfp_value, vfp_value, vfp_ln10
+
+	math32_log32_common:
+		vmov r0, vfp_value
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq value 
+.unreq vfp_value
+.unreq vfp_ln10
 
 
 /**

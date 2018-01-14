@@ -904,6 +904,31 @@ extern float32 math32_tan32
 	float32 radian
 );
 
+
+/**
+ * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 5
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_ln32
+(
+	float32 value
+);
+
+
+/**
+ * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_log32
+(
+	float32 value
+);
+
+
 /**
  * Multiplies Two Matrix with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
