@@ -54,7 +54,7 @@ deci32_count_zero32:
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
- * If Float Value is less than 1.0, String Will Be Shown With Exponent.
+ * (Deprecated: If Float Value is less than 1.0, String Will Be Shown With Exponent.)
  *
  * Parameters
  * r0: Float Value, Must Be Type of Single Precision Float
@@ -113,12 +113,14 @@ deci32_float32_to_string:
 
 	vabs.f32 vfp_float, vfp_float                 @ Convert to Absolute Value
 
+	/* (Deprecated)
 	mov temp, #1
 	vmov vfp_temp, temp
 	vcvt.f32.s32 vfp_temp, vfp_temp
 	vcmp.f32 vfp_float, vfp_temp
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 	blt deci32_float32_to_string_exponentminus
+	*/
 
 	mov temp, #0x3B
 	lsl temp, #8
@@ -130,9 +132,10 @@ deci32_float32_to_string:
 	vcvt.f32.u32 vfp_temp, vfp_temp
 	vcmp.f32 vfp_float, vfp_temp
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	bge deci32_float32_to_string_exponentplus
+	blt deci32_float32_to_string_convertfloat
 
-	b deci32_float32_to_string_integer
+	/* (Deprecated)
+	b deci32_float32_to_string_exponentplus
 
 	deci32_float32_to_string_exponentminus:
 		sub exponent, exponent, #1
@@ -142,6 +145,7 @@ deci32_float32_to_string:
 		blt deci32_float32_to_string_exponentminus
 
 		b deci32_float32_to_string_convertfloat
+	*/
 
 	deci32_float32_to_string_exponentplus:
 		add exponent, exponent, #1

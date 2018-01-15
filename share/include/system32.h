@@ -1022,7 +1022,7 @@ extern obj math32_vec32_crossproduct
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
- * If Float Value is less than 1.0, String Will Be Shown With Exponent.
+ * (Deprecated: If Float Value is less than 1.0, String Will Be Shown With Exponent.)
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
@@ -1177,14 +1177,31 @@ extern obj decix32_string_to_intarray
 
 
 /**
+ * Make String (Hexadecimal System) From Array of Integers
+ *
+ * Return: Heap of String, 0 as not succeeded
+ */
+extern String decix32_intarray_to_string_hexa
+(
+	obj object_array,
+	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+	uint32 min_length,
+	uint32 bool_signed,
+	uint32 bool_base_mark
+);
+
+
+/**
  * Make String (Decimal System) From Array of Integers
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String decix32_intarray_to_string
+extern String decix32_intarray_to_string_deci
 (
 	obj object_array,
-	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+	uint32 min_length,
+	uint32 bool_signed
 );
 
 
@@ -1209,7 +1226,10 @@ extern obj decix32_string_to_farray
  */
 extern String decix32_farray_to_string
 (
-	obj object_array
+	obj object_array,
+	uint32 min_integer, // 16 Digits Max
+	uint32 max_decimal, // Default 8 Digits
+	uint32 min_exponent // 16 Digits Max
 );
 
 
