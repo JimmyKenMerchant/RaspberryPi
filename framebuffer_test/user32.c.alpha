@@ -113,11 +113,14 @@ void _user_start()
 	obj string5_obj = decix32_string_to_farray( string5, print32_strlen( string5 ) );
 	obj string6_obj = decix32_string_to_farray( string6, print32_strlen( string6 ) );
 
-	obj answer_obj = math32_mat32_multiply( string5_obj, string6_obj, 2 );
-
+	//obj answer_obj = math32_mat32_multiply( string5_obj, string6_obj, 2 );
 	//obj answer_obj = math32_mat32_identity( 3 );
-
+	//obj answer_obj = math32_vec32_normalize( string5_obj, 4 );
+	obj answer_obj = math32_vec32_crossproduct( string5_obj, string6_obj );
 	String answer_string = decix32_farray_to_string( answer_obj );
+
+	//float32 answer_float = math32_vec32_dotproduct( string5_obj, string6_obj, 4 );
+	//String answer_string = deci32_float32_to_string( answer_float, 0, 20, 0 );
 
 	print32_set_caret( print32_string( answer_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( answer_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
 

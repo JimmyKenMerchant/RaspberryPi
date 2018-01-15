@@ -909,7 +909,7 @@ extern float32 math32_tan32
  * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 5
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
- * Return: Value by Single Precision Float
+ * Return: Value, Must Be Type of Single Precision Float and Signed Plus
  */
 extern float32 math32_ln32
 (
@@ -921,7 +921,7 @@ extern float32 math32_ln32
  * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
- * Return: Value by Single Precision Float
+ * Return: Value, Must Be Type of Single Precision Float and Signed Plus
  */
 extern float32 math32_log32
 (
@@ -938,8 +938,8 @@ extern float32 math32_log32
  */
 extern obj math32_mat32_multiply
 (
-	obj address_matrix1,
-	obj address_matrix2,
+	obj matrix1,
+	obj matrix2,
 	uint32 number
 );
 
@@ -954,6 +954,63 @@ extern obj math32_mat32_multiply
 extern obj math32_mat32_identity
 (
 	uint32 number
+);
+
+
+/**
+ * Square Matrix and Column Vector Multiplication
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Vector to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj math32_mat32_multiply_vec
+(
+	obj matrix,
+	obj vector,
+	uint32 number
+);
+
+
+/**
+ * Normalize Vector
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Vector to Have Been Normalized, If Zero Not Allocated Memory
+ */
+extern obj math32_vec32_normalize
+(
+	obj vector,
+	uint32 number
+);
+
+
+/**
+ * Dot Product
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ *
+ * Return: Value of Dot Product by Single Precision Float
+ */
+extern float32 math32_vec32_dotproduct
+(
+	obj vector1,
+	obj vector2,
+	uint32 number
+);
+
+
+/**
+ * Cross Product
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Vector to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj math32_vec32_crossproduct
+(
+	obj vector1, // Must Be Three of Vector Size
+	obj vector2 // Must Be Three of Vector Size
 );
 
 

@@ -424,7 +424,7 @@ math32_tan32:
  * Parameters
  * r0: Value, Must Be Type of Single Precision Float
  *
- * Return: r0 (Value by Single Precision Float)
+ * Return: r0 (Value, Must Be Type of Single Precision Float and Signed Plus)
  */
 .globl math32_ln32
 math32_ln32:
@@ -451,6 +451,7 @@ math32_ln32:
 	 */
 
 	vmov vfp_value, value
+	vabs.f32 vfp_value, vfp_value                  @ If Minus Signed, Chagnes to Plus Signed
 	ldr temp, MATH32_EULERS
 	vmov vfp_eulers, temp
 
@@ -556,7 +557,7 @@ math32_ln32:
  * Parameters
  * r0: Value, Must Be Type of Single Precision Float
  *
- * Return: r0 (Value by Single Precision Float)
+ * Return: r0 (Value, Must Be Type of Single Precision Float and Signed Plus)
  */
 .globl math32_log32
 math32_log32:
@@ -959,6 +960,7 @@ math32_vec32_normalize:
 		vmov value, vfp_value
 		str value, [vector_result, number_vec, lsl #2] @ Substitution of Multiplication by 4
 
+		sub number_vec, number_vec, #1
 		b math32_vec32_normalize_normal
 
 	math32_vec32_normalize_common:
@@ -1019,11 +1021,11 @@ math32_vec32_dotproduct:
 		vmov vfp_value2, value
 		vmla.f32 vfp_dot, vfp_value1, vfp_value2
 
+		sub number_vec, number_vec, #1
 		b math32_vec32_dotproduct_normal
 
 	math32_vec32_dotproduct_common:
-		vmov value, vfp_dot
-		mov r0, value
+		vmov r0, vfp_dot
 		vpop {s0-s2}
 		mov pc, lr
 
@@ -1037,7 +1039,7 @@ math32_vec32_dotproduct:
 
 
 /**
- * function math32_vec32_crossprodut
+ * function math32_vec32_crossproduct
  * Cross Product
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
@@ -1048,8 +1050,8 @@ math32_vec32_dotproduct:
  *
  * Return: r0 (Vector to Be Calculated, If Zero Not Allocated Memory)
  */
-.globl math32_vec32_crossprodut
-math32_vec32_crossprodut:
+.globl math32_vec32_crossproduct
+math32_vec32_crossproduct:
 	/* Auto (Local) Variables, but just Aliases */
 	vector1       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	vector2       .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -1128,7 +1130,7 @@ math32_vec32_crossprodut:
 	vmov value1, vfp_result
 	str value1, [vector_result, #8]             @ Vector_result[2], Z
 
-	math32_vec32_crossprodut_common:
+	math32_vec32_crossproduct_common:
 		mov r0, vector_result
 		vpop {s0-s4}
 		pop {r4-r5,pc}
@@ -1145,4 +1147,3 @@ math32_vec32_crossprodut:
 .unreq vfp_inter1
 .unreq vfp_inter2
 .unreq vfp_result
-
