@@ -124,7 +124,7 @@ void _user_start()
 					response = vfp32_s32tof32( response_roundoff );
 					response = vfp32_fdiv( response, 1000000 );
 
-					String str_response = deci32_float32_to_string( response, 0, 6, 0 );
+					String str_response = deci32_float32_to_string( response, 1, 6, 0 );
 					print32_set_caret( print32_string( str_response, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( str_response ), 8, 12, FONT_MONO_12PX_ASCII ) );
 					print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 3, 8, 12, FONT_MONO_12PX_ASCII ) );
 					_uarttx( ": ", 2 );

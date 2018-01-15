@@ -122,14 +122,11 @@ deci32_float32_to_string:
 	blt deci32_float32_to_string_exponentminus
 	*/
 
-	mov temp, #0x3B
-	lsl temp, #8
-	add temp, #0x9A
-	lsl temp, #8
-	add temp, #0xCA
-	lsl temp, #8                                  @ Making Decimal 1,000,000,000
+	mov temp, #0x3B000000
+	add temp, temp, #0x009A0000
+	add temp, temp, #0x0000CA00                   @ Making Decimal 1,000,000,000
 	vmov vfp_temp, temp
-	vcvt.f32.u32 vfp_temp, vfp_temp
+	vcvt.f32.s32 vfp_temp, vfp_temp
 	vcmp.f32 vfp_float, vfp_temp
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 	blt deci32_float32_to_string_convertfloat
@@ -164,9 +161,7 @@ deci32_float32_to_string:
 	deci32_float32_to_string_integer:
 
 		vmov vfp_integer, float                       @ Signed
-		cmp max_decimal, #0
-		vcvtgt.s32.f32 vfp_integer, vfp_integer       @ Round Down If Decimal Places Are Assigned
-		vcvtrle.s32.f32 vfp_integer, vfp_integer      @ Round Off If No Decimal Place
+		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
 		vmov integer, vfp_integer
 
 		push {r0-r3}
