@@ -1044,7 +1044,7 @@ extern String deci32_int32_to_string_deci
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
-	uint32 bool_signed
+	bool bool_signed
 );
 
 
@@ -1057,8 +1057,24 @@ extern String deci32_int32_to_string_hexa
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
-	uint32 bool_signed,
-	uint32 bool_basemark
+	bool bool_signed,
+	bool base_mark
+);
+
+
+/**
+ * Make 32-bit Hexadecimal Number From String
+ * Caution! The Range of Decimal Number Is 0x0 through 0xFFFFFFFF
+ * Max. Valid Digits Are 8, Otherwise, You'll Get Zero to Return.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
+ *
+ * Return: Hexadecimal Number
+ */
+extern int32 deci32_string_to_hexa
+(
+	String string,
+	uint32 length_string
 );
 
 
@@ -1090,7 +1106,8 @@ extern int64 deci32_string_to_deci
 extern int32 deci32_string_to_int32
 (
 	String string,
-	uint32 length_string
+	uint32 length_string,
+	bool decimal_system
 );
 
 
@@ -1172,7 +1189,8 @@ extern obj decix32_string_to_intarray
 (
 	String string,
 	uint32 length_string,
-	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+	bool decimal_system
 );
 
 
@@ -1186,8 +1204,8 @@ extern String decix32_intarray_to_string_hexa
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
 	uint32 min_length,
-	uint32 bool_signed,
-	uint32 bool_base_mark
+	bool bool_signed,
+	bool base_mark
 );
 
 
@@ -1201,7 +1219,7 @@ extern String decix32_intarray_to_string_deci
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
 	uint32 min_length,
-	uint32 bool_signed
+	bool bool_signed
 );
 
 
