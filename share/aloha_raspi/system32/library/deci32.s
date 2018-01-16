@@ -54,13 +54,12 @@ deci32_count_zero32:
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
- * (Deprecated: If Float Value is less than 1.0, String Will Be Shown With Exponent.)
  *
  * Parameters
  * r0: Float Value, Must Be Type of Single Precision Float
  * r1: Minimam Length of Digits in Integer Places, 16 Digits Max
  * r2: Maximam Length of Digits in Decimal Places, Default 8 Digits, If Exceeds, Round Down
- * r3: Minimam Length of Digits in Exponent Places, 16 Digits Max
+ * r3: Indicates Exponential
  *
  * Usage: r0-r11
  * Return: r0 (Pointer of String)
@@ -71,7 +70,7 @@ deci32_float32_to_string:
 	float          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	min_integer    .req r1
 	max_decimal    .req r2
-	min_exponent   .req r3
+	indicator_expo .req r3
 	temp           .req r4
 	integer        .req r5
 	decimal        .req r6
@@ -113,43 +112,38 @@ deci32_float32_to_string:
 
 	vabs.f32 vfp_float, vfp_float                 @ Convert to Absolute Value
 
-	/* (Deprecated)
-	mov temp, #1
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vcmp.f32 vfp_float, vfp_temp
-	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	blt deci32_float32_to_string_exponentminus
-	*/
-
-	mov temp, #0x3B000000
-	add temp, temp, #0x009A0000
-	add temp, temp, #0x0000CA00                   @ Making Decimal 1,000,000,000
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vcmp.f32 vfp_float, vfp_temp
-	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	blt deci32_float32_to_string_convertfloat
-
-	/* (Deprecated)
-	b deci32_float32_to_string_exponentplus
-
-	deci32_float32_to_string_exponentminus:
+	deci32_float32_to_string_expominus:
+		cmp indicator_expo, #0
+		bge deci32_float32_to_string_expoplus
 		sub exponent, exponent, #1
 		vmul.f32 vfp_float, vfp_float, vfp_ten
+		add indicator_expo, indicator_expo, #1
+		b deci32_float32_to_string_expominus
+
+	deci32_float32_to_string_expoplus:
+		cmp indicator_expo, #0
+		ble deci32_float32_to_string_jumpexpo
+		add exponent, exponent, #1
+		vdiv.f32 vfp_float, vfp_float, vfp_ten
+		sub indicator_expo, indicator_expo, #1
+		b deci32_float32_to_string_expoplus
+
+	deci32_float32_to_string_jumpexpo:
+		mov temp, #0x3B000000
+		add temp, temp, #0x009A0000
+		add temp, temp, #0x0000CA00                   @ Making Decimal 1,000,000,000
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		blt deci32_float32_to_string_exponentminus
+		blt deci32_float32_to_string_convertfloat
 
-		b deci32_float32_to_string_convertfloat
-	*/
-
-	deci32_float32_to_string_exponentplus:
+	deci32_float32_to_string_exceed:
 		add exponent, exponent, #1
 		vdiv.f32 vfp_float, vfp_float, vfp_ten
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		bge deci32_float32_to_string_exponentplus
+		bge deci32_float32_to_string_exceed
 
 	deci32_float32_to_string_convertfloat:
 		cmp minus, #1
@@ -333,7 +327,7 @@ deci32_float32_to_string:
 
 		push {r0-r3}
 		mov r0, exponent
-		mov r1, min_exponent
+		mov r1, #equ32_deci32_float32_to_string_min_expo
 		mov r2, #0
 		bl deci32_int32_to_string_deci
 		mov string_decimal, r0
@@ -391,7 +385,7 @@ deci32_float32_to_string:
 .unreq float
 .unreq temp2
 .unreq max_decimal
-.unreq min_exponent
+.unreq indicator_expo
 .unreq temp
 .unreq integer
 .unreq decimal
@@ -1577,6 +1571,149 @@ deci32_hexa_to_deci_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 
 
 /**
+ * function deci32_deci_to_hexa
+ * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
+ *
+ * Parameters
+ * r0: Lower Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
+ * r1: Upper Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
+ *
+ * Return: r0 (Hexadecimal Number)
+ */
+.globl deci32_deci_to_hexa
+deci32_deci_to_hexa:
+	/* Auto (Local) Variables, but just Aliases */
+	deci_lower     .req r0
+	deci_upper     .req r1
+	power_lower    .req r2
+	power_upper    .req r3
+	hexa           .req r4
+	i              .req r5
+	shift          .req r6
+	deci_lower_dup .req r7
+	deci_upper_dup .req r8
+
+	push {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                 @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	mov hexa, #0
+
+	cmp deci_upper, #0x43                                       @ Max. 0x42 on Upper, 0xFFFFFFFF on Lower
+	bge deci32_deci_to_hexa_common
+
+	mov i, #7
+
+	deci32_deci_to_hexa_loop:
+
+		cmp i, #0
+		ldreq power_lower, deci32_deci_to_hexa_0                @ 16^1
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_0
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #1
+		ldreq power_lower, deci32_deci_to_hexa_1                @ 16^1
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_1
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #2
+		ldreq power_lower, deci32_deci_to_hexa_2                @ 16^2
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_2
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #3
+		ldreq power_lower, deci32_deci_to_hexa_3                @ 16^3
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_3
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #4
+		ldreq power_lower, deci32_deci_to_hexa_4                @ 16^4
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_4
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #5
+		ldreq power_lower, deci32_deci_to_hexa_5                @ 16^5
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_5
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #6
+		ldreq power_lower, deci32_deci_to_hexa_6                @ 16^6
+		moveq power_upper, #0
+		ldreq shift, deci32_deci_to_hexa_shift_6
+		beq deci32_deci_to_hexa_loop_loop
+
+		cmp i, #7
+		ldreq power_lower, deci32_deci_to_hexa_7_lower          @ 16^7 Lower Bits
+		ldreq power_upper, deci32_deci_to_hexa_7_upper          @ 16^7 Upper Bits
+		ldreq shift, deci32_deci_to_hexa_shift_7
+
+		deci32_deci_to_hexa_loop_loop:
+
+			push {r0-r3,lr}
+			bl deci32_deci_sub64
+			mov deci_lower_dup, r0
+			mov deci_upper_dup, r1
+			pop {r0-r3,lr}
+			bcs deci32_deci_to_hexa_loop_common             @ If Carry Set/ Unsigned Higher or Same (hs)
+
+			mov deci_lower, deci_lower_dup
+			mov deci_upper, deci_upper_dup
+			add hexa, hexa, shift
+
+			b deci32_deci_to_hexa_loop_loop
+
+		deci32_deci_to_hexa_loop_common:
+
+			sub i, i, #1
+			cmp i, #0
+			bge deci32_deci_to_hexa_loop
+
+	deci32_deci_to_hexa_common:
+		mov r0, hexa
+		pop {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		mov pc, lr
+
+/* Variables */
+.balign 4
+deci32_deci_to_hexa_0:       .word 0x00000001 @ 16^0
+deci32_deci_to_hexa_1:       .word 0x00000016 @ 16^1
+deci32_deci_to_hexa_2:       .word 0x00000256 @ 16^2
+deci32_deci_to_hexa_3:       .word 0x00004096 @ 16^3
+deci32_deci_to_hexa_4:       .word 0x00065536 @ 16^4
+deci32_deci_to_hexa_5:       .word 0x01048576 @ 16^5
+deci32_deci_to_hexa_6:       .word 0x16777216 @ 16^6
+deci32_deci_to_hexa_7_lower: .word 0x68435456 @ 16^7 Lower Bits
+deci32_deci_to_hexa_7_upper: .word 0x00000002 @ 16^7 Upper Bits
+deci32_deci_to_hexa_shift_0: .word 0x00000001 @ 16^0
+deci32_deci_to_hexa_shift_1: .word 0x00000010 @ 16^1
+deci32_deci_to_hexa_shift_2: .word 0x00000100 @ 16^2
+deci32_deci_to_hexa_shift_3: .word 0x00001000 @ 16^3
+deci32_deci_to_hexa_shift_4: .word 0x00010000 @ 16^4
+deci32_deci_to_hexa_shift_5: .word 0x00100000 @ 16^5
+deci32_deci_to_hexa_shift_6: .word 0x01000000 @ 16^6
+deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
+.balign 4
+
+.unreq deci_lower
+.unreq deci_upper
+.unreq power_lower
+.unreq power_upper
+.unreq hexa
+.unreq i
+.unreq shift
+.unreq deci_lower_dup
+.unreq deci_upper_dup
+
+
+/**
  * function deci32_deci_add64
  * Addition with Decimal Bases (0-9)
  *
@@ -1737,149 +1874,6 @@ deci32_deci_add64:
 
 
 /**
- * function deci32_deci_to_hexa
- * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
- *
- * Parameters
- * r0: Lower Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
- * r1: Upper Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
- *
- * Return: r0 (Hexadecimal Number)
- */
-.globl deci32_deci_to_hexa
-deci32_deci_to_hexa:
-	/* Auto (Local) Variables, but just Aliases */
-	deci_lower     .req r0
-	deci_upper     .req r1
-	power_lower    .req r2
-	power_upper    .req r3
-	hexa           .req r4
-	i              .req r5
-	shift          .req r6
-	deci_lower_dup .req r7
-	deci_upper_dup .req r8
-
-	push {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                 @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	mov hexa, #0
-
-	cmp deci_upper, #0x43                                       @ Max. 0x42 on Upper, 0xFFFFFFFF on Lower
-	bge deci32_deci_to_hexa_common
-
-	mov i, #7
-
-	deci32_deci_to_hexa_loop:
-
-		cmp i, #0
-		ldreq power_lower, deci32_deci_to_hexa_0                @ 16^1
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_0
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #1
-		ldreq power_lower, deci32_deci_to_hexa_1                @ 16^1
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_1
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #2
-		ldreq power_lower, deci32_deci_to_hexa_2                @ 16^2
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_2
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #3
-		ldreq power_lower, deci32_deci_to_hexa_3                @ 16^3
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_3
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #4
-		ldreq power_lower, deci32_deci_to_hexa_4                @ 16^4
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_4
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #5
-		ldreq power_lower, deci32_deci_to_hexa_5                @ 16^5
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_5
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #6
-		ldreq power_lower, deci32_deci_to_hexa_6                @ 16^6
-		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_6
-		beq deci32_deci_to_hexa_loop_loop
-
-		cmp i, #7
-		ldreq power_lower, deci32_deci_to_hexa_7_lower          @ 16^7 Lower Bits
-		ldreq power_upper, deci32_deci_to_hexa_7_upper          @ 16^7 Upper Bits
-		ldreq shift, deci32_deci_to_hexa_shift_7
-
-		deci32_deci_to_hexa_loop_loop:
-
-			push {r0-r3,lr}
-			bl deci32_deci_sub64
-			mov deci_lower_dup, r0
-			mov deci_upper_dup, r1
-			pop {r0-r3,lr}
-			bcs deci32_deci_to_hexa_loop_common             @ If Carry Set/ Unsigned Higher or Same (hs)
-
-			mov deci_lower, deci_lower_dup
-			mov deci_upper, deci_upper_dup
-			add hexa, hexa, shift
-
-			b deci32_deci_to_hexa_loop_loop
-
-		deci32_deci_to_hexa_loop_common:
-
-			sub i, i, #1
-			cmp i, #0
-			bge deci32_deci_to_hexa_loop
-
-	deci32_deci_to_hexa_common:
-		mov r0, hexa
-		pop {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-
-		mov pc, lr
-
-/* Variables */
-.balign 4
-deci32_deci_to_hexa_0:       .word 0x00000001 @ 16^0
-deci32_deci_to_hexa_1:       .word 0x00000016 @ 16^1
-deci32_deci_to_hexa_2:       .word 0x00000256 @ 16^2
-deci32_deci_to_hexa_3:       .word 0x00004096 @ 16^3
-deci32_deci_to_hexa_4:       .word 0x00065536 @ 16^4
-deci32_deci_to_hexa_5:       .word 0x01048576 @ 16^5
-deci32_deci_to_hexa_6:       .word 0x16777216 @ 16^6
-deci32_deci_to_hexa_7_lower: .word 0x68435456 @ 16^7 Lower Bits
-deci32_deci_to_hexa_7_upper: .word 0x00000002 @ 16^7 Upper Bits
-deci32_deci_to_hexa_shift_0: .word 0x00000001 @ 16^0
-deci32_deci_to_hexa_shift_1: .word 0x00000010 @ 16^1
-deci32_deci_to_hexa_shift_2: .word 0x00000100 @ 16^2
-deci32_deci_to_hexa_shift_3: .word 0x00001000 @ 16^3
-deci32_deci_to_hexa_shift_4: .word 0x00010000 @ 16^4
-deci32_deci_to_hexa_shift_5: .word 0x00100000 @ 16^5
-deci32_deci_to_hexa_shift_6: .word 0x01000000 @ 16^6
-deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
-.balign 4
-
-.unreq deci_lower
-.unreq deci_upper
-.unreq power_lower
-.unreq power_upper
-.unreq hexa
-.unreq i
-.unreq shift
-.unreq deci_lower_dup
-.unreq deci_upper_dup
-
-
-/**
  * function deci32_deci_sub64
  * Subtraction with Decimal Bases (0-9)
  *
@@ -2026,3 +2020,197 @@ deci32_deci_sub64:
 .unreq bitmask_1
 .unreq bitmask_2
 .unreq carry_flag
+
+
+/**
+ * function deci32_deci_mul64
+ * Multiplication with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl deci32_deci_mul64
+deci32_deci_mul64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_2    .req r4 @ Duplication of lower_2
+	dup_upper_2    .req r5 @ Duplication of upper_2
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov dup_lower_2, lower_2
+	mov dup_upper_2, upper_2
+	mov lower_2, lower_1
+	mov upper_2, upper_1
+	mov lower_1, #0
+	mov upper_1, #0
+	mov carry_flag, #0
+
+	deci32_deci_mul64_loop:
+
+		push {r0-r3}
+		mov r0, dup_lower_2
+		mov r1, dup_upper_2
+		mov r2, #1
+		mov r3, #0
+		bl deci32_deci_sub64
+		mov dup_lower_2, r0
+		mov dup_upper_2, r1
+		pop {r0-r3}
+		bcs deci32_deci_mul64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		push {r2-r3}
+		bl deci32_deci_add64
+		pop {r2-r3}
+		movcs carry_flag, #1
+		bcs deci32_deci_mul64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		b deci32_deci_mul64_loop
+
+	deci32_deci_mul64_common:
+		cmp carry_flag, #1
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_2
+.unreq dup_upper_2
+.unreq carry_flag
+
+
+/**
+ * function deci32_deci_div64
+ * Division with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl deci32_deci_div64
+deci32_deci_div64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	cal_lower      .req r4
+	cal_upper      .req r5
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov cal_lower, #0
+	mov cal_upper, #0
+	mov carry_flag, #0
+
+	deci32_deci_div64_loop:
+
+		push {r2-r3}
+		bl deci32_deci_sub64
+		pop {r2-r3}
+		bcs deci32_deci_div64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		push {r0-r3}
+		mov r0, cal_lower
+		mov r1, cal_upper
+		mov r2, #1
+		mov r3, #0
+		bl deci32_deci_add64
+		mov cal_lower, r0
+		mov cal_upper, r1
+		pop {r0-r3}
+		movcs carry_flag, #1
+		bcs deci32_deci_div64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		cmp lower_1, #0
+		cmpeq upper_1, #0
+		beq deci32_deci_div64_common @ If Divisible
+
+		b deci32_deci_div64_loop
+
+	deci32_deci_div64_common:
+		cmp carry_flag, #1
+		mov r0, cal_lower
+		mov r1, cal_upper
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq cal_lower
+.unreq cal_upper
+.unreq carry_flag
+
+
+/**
+ * function deci32_deci_rem64
+ * Remainder of Division with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl deci32_deci_rem64
+deci32_deci_rem64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4
+	dup_upper_1    .req r5
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov carry_flag, #0
+
+	deci32_deci_rem64_loop:
+
+		mov dup_lower_1, lower_1
+		mov dup_upper_1, upper_1
+
+		push {r2-r3}
+		bl deci32_deci_sub64
+		pop {r2-r3}
+		bcs deci32_deci_rem64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		b deci32_deci_rem64_loop
+
+	deci32_deci_rem64_common:
+		cmp carry_flag, #1
+		mov r0, dup_lower_1
+		mov r1, dup_upper_1
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
+.unreq carry_flag
+

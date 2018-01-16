@@ -1022,7 +1022,6 @@ extern obj math32_vec32_crossproduct
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
- * (Deprecated: If Float Value is less than 1.0, String Will Be Shown With Exponent.)
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
@@ -1031,7 +1030,7 @@ extern String deci32_float32_to_string
 	float32 float_number,
 	uint32 min_integer, // 16 Digits Max
 	uint32 max_decimal, // Default 8 Digits
-	uint32 min_exponent // 16 Digits Max
+	int32 indicator_expo // Indicates Exponential
 );
 
 
@@ -1137,6 +1136,18 @@ extern uint64 deci32_hexa_to_deci
 
 
 /**
+ * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
+ *
+ * Return: Hexadecimal Number
+ */
+extern uint32 deci32_deci_to_hexa
+(
+	uint64 number_deci
+);
+
+
+/**
  * Addition with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
@@ -1150,24 +1161,51 @@ extern uint64 deci32_deci_add64
 
 
 /**
- * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
- *
- * Return: Hexadecimal Number
- */
-extern uint32 deci32_deci_to_hexa
-(
-	uint64 number_deci
-);
-
-
-/**
  * Subtraction with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because the result is signed minus.
  */
 extern uint64 deci32_deci_sub64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Multiplication with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 deci32_deci_mul64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Division with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 deci32_deci_div64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Remainder of Division with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 deci32_deci_rem64
 (
 	uint64 number_deci1,
 	uint64 number_deci2
@@ -1247,7 +1285,7 @@ extern String decix32_farray_to_string
 	obj object_array,
 	uint32 min_integer, // 16 Digits Max
 	uint32 max_decimal, // Default 8 Digits
-	uint32 min_exponent // 16 Digits Max
+	int32 indicator_expo // Indicates Exponential
 );
 
 

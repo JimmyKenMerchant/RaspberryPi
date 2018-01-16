@@ -574,7 +574,7 @@ decix32_string_to_farray:
  * r0: Heap of Array
  * r1: Minimam Length of Digits in Integer Places, 16 Digits Max
  * r2: Maximam Length of Digits in Decimal Places, Default 8 Digits, If Exceeds, Round Down
- * r3: Minimam Length of Digits in Exponent Places, 16 Digits Max
+ * r3: Indicates Exponential
  *
  * Return: r0 (Heap of String, 0 as not succeeded)
  */
@@ -584,7 +584,7 @@ decix32_farray_to_string:
 	heap_arr        .req r0
 	min_integer     .req r1
 	max_decimal     .req r2
-	min_exponent    .req r3
+	indicator_expo  .req r3
 	heap_arr_length .req r4
 	data            .req r5
 	heap_str0       .req r6
@@ -695,7 +695,7 @@ decix32_farray_to_string:
 .unreq heap_arr
 .unreq min_integer
 .unreq max_decimal
-.unreq min_exponent
+.unreq indicator_expo
 .unreq heap_arr_length
 .unreq data
 .unreq heap_str0
