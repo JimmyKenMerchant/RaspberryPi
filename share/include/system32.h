@@ -1174,6 +1174,18 @@ extern uint64 deci32_deci_sub64
 
 
 /**
+ * Shift Place with Decimal Bases (0-9)
+ *
+ * Return: Lower Bits of Decimal Number, Upper Bits of Decimal Number
+ */
+extern uint64 deci32_deci_shift64
+(
+	uint64 number_deci,
+	int32 number_shift
+);
+
+
+/**
  * Multiplication with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
