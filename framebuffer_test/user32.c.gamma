@@ -53,8 +53,8 @@ void _user_start()
 	print32_set_caret( print32_number_double( result1, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	number3_deci = 0x7123456789123456;
-	number4_deci = 0x3000000000000000;
+	number3_deci = 0x9999999999999999;
+	number4_deci = 0x0000000000000003;
 
 	uint64 result2 = deci32_deci_div64( number3_deci, number4_deci );
 	print32_set_caret( print32_number_double( result2, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );

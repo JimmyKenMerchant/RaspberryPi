@@ -2085,6 +2085,7 @@ deci32_deci_shift64:
 /**
  * function deci32_deci_mul64_pre
  * Multiplication with Decimal Bases (0-9)
+ * Caution! This Function is a Module for Other Functions.
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits
@@ -2265,8 +2266,79 @@ deci32_deci_mul64:
 
 
 /**
- * function deci32_deci_div64
+ * function deci32_deci_div64_pre
  * Division with Decimal Bases (0-9)
+ * Caution! This Function is a Module for Other Functions.
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl deci32_deci_div64_pre
+deci32_deci_div64_pre:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	cal_lower      .req r4
+	cal_upper      .req r5
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov cal_lower, #0
+	mov cal_upper, #0
+	mov carry_flag, #0
+
+	deci32_deci_div64_pre_loop:
+
+		push {r2-r3}
+		bl deci32_deci_sub64
+		pop {r2-r3}
+		bcs deci32_deci_div64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		push {r0-r3}
+		mov r0, cal_lower
+		mov r1, cal_upper
+		mov r2, #1
+		mov r3, #0
+		bl deci32_deci_add64
+		mov cal_lower, r0
+		mov cal_upper, r1
+		pop {r0-r3}
+		movcs carry_flag, #1
+		bcs deci32_deci_div64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		cmp lower_1, #0
+		cmpeq upper_1, #0
+		beq deci32_deci_div64_pre_common @ If Divisible
+
+		b deci32_deci_div64_pre_loop
+
+	deci32_deci_div64_pre_common:
+		cmp carry_flag, #1
+		mov r0, cal_lower
+		mov r1, cal_upper
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq cal_lower
+.unreq cal_upper
+.unreq carry_flag
+
+
+/**
+ * function deci32_deci_div64
+ * Multiplication with Decimal Bases (0-9)
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits
@@ -2286,36 +2358,85 @@ deci32_deci_div64:
 	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
 	cal_lower      .req r4
 	cal_upper      .req r5
-	carry_flag     .req r6
+	shift          .req r6
+	temp1_lower    .req r7
+	temp1_upper    .req r8
+	temp2_lower    .req r9
+	temp2_upper    .req r10
+	carry_flag     .req r11
 
-	push {r4-r6,lr}
+	push {r4-r11,lr}
 
 	mov cal_lower, #0
 	mov cal_upper, #0
-	mov carry_flag, #0
+
+	clz temp1_lower, upper_2
+	cmp temp1_lower, #32
+	clzge temp1_lower, lower_2
+	addge temp1_lower, temp1_lower, #32
+
+	mov shift, #0
+
+	deci32_deci_div64_count:
+		subs temp1_lower, temp1_lower, #4
+		addge shift, #1
+		bge deci32_deci_div64_count
 
 	deci32_deci_div64_loop:
 
-		push {r2-r3}
-		bl deci32_deci_sub64
-		pop {r2-r3}
-		bcs deci32_deci_div64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+		mov carry_flag, #1
+
+		cmp shift, #0
+		blt deci32_deci_div64_common
+
+		push {r0-r3}
+		mov r0, lower_2
+		mov r1, upper_2
+		mov r2, shift
+		bl deci32_deci_shift64
+		mov temp1_lower, r0
+		mov temp1_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl deci32_deci_div64_pre
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, temp2_lower
+		mov r1, temp2_upper
+		mov r2, shift
+		bl deci32_deci_shift64
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
 
 		push {r0-r3}
 		mov r0, cal_lower
 		mov r1, cal_upper
-		mov r2, #1
-		mov r3, #0
+		mov r2, temp2_lower
+		mov r3, temp2_upper
 		bl deci32_deci_add64
 		mov cal_lower, r0
 		mov cal_upper, r1
 		pop {r0-r3}
-		movcs carry_flag, #1
-		bcs deci32_deci_div64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		push {r2-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl deci32_deci_rem64_pre
+		pop {r2-r3}
 
 		cmp lower_1, #0
 		cmpeq upper_1, #0
-		beq deci32_deci_div64_common @ If Divisible
+		moveq carry_flag, #0
+		beq deci32_deci_div64_common
+
+		sub shift, shift, #1
 
 		b deci32_deci_div64_loop
 
@@ -2323,7 +2444,7 @@ deci32_deci_div64:
 		cmp carry_flag, #1
 		mov r0, cal_lower
 		mov r1, cal_upper
-		pop {r4-r6,pc}
+		pop {r4-r11,pc}
 
 .unreq lower_1
 .unreq upper_1
@@ -2331,6 +2452,67 @@ deci32_deci_div64:
 .unreq upper_2
 .unreq cal_lower
 .unreq cal_upper
+.unreq shift
+.unreq temp1_lower
+.unreq temp1_upper
+.unreq temp2_lower
+.unreq temp2_upper
+.unreq carry_flag
+
+
+/**
+ * function deci32_deci_rem64_pre
+ * Remainder of Division with Decimal Bases (0-9)
+ * Caution! This Function is a Module for Other Functions.
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl deci32_deci_rem64_pre
+deci32_deci_rem64_pre:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4
+	dup_upper_1    .req r5
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov carry_flag, #0
+
+	deci32_deci_rem64_pre_loop:
+
+		mov dup_lower_1, lower_1
+		mov dup_upper_1, upper_1
+
+		push {r2-r3}
+		bl deci32_deci_sub64
+		pop {r2-r3}
+		bcs deci32_deci_rem64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		b deci32_deci_rem64_pre_loop
+
+	deci32_deci_rem64_pre_common:
+		cmp carry_flag, #1
+		mov r0, dup_lower_1
+		mov r1, dup_upper_1
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
 .unreq carry_flag
 
 
@@ -2354,37 +2536,103 @@ deci32_deci_rem64:
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
 	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	dup_lower_1    .req r4
-	dup_upper_1    .req r5
-	carry_flag     .req r6
+	cal_lower      .req r4
+	cal_upper      .req r5
+	shift          .req r6
+	temp1_lower    .req r7
+	temp1_upper    .req r8
+	temp2_lower    .req r9
+	temp2_upper    .req r10
+	carry_flag     .req r11
 
-	push {r4-r6,lr}
+	push {r4-r11,lr}
 
-	mov carry_flag, #0
+	mov cal_lower, #0
+	mov cal_upper, #0
+
+	clz temp1_lower, upper_2
+	cmp temp1_lower, #32
+	clzge temp1_lower, lower_2
+	addge temp1_lower, temp1_lower, #32
+
+	mov shift, #0
+
+	deci32_deci_rem64_count:
+		subs temp1_lower, temp1_lower, #4
+		addge shift, #1
+		bge deci32_deci_rem64_count
 
 	deci32_deci_rem64_loop:
 
-		mov dup_lower_1, lower_1
-		mov dup_upper_1, upper_1
+		mov carry_flag, #1
+
+		cmp shift, #0
+		blt deci32_deci_rem64_common
+
+		push {r0-r3}
+		mov r0, lower_2
+		mov r1, upper_2
+		mov r2, shift
+		bl deci32_deci_shift64
+		mov temp1_lower, r0
+		mov temp1_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl deci32_deci_rem64_pre
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, temp2_lower
+		mov r1, temp2_upper
+		mov r2, shift
+		bl deci32_deci_shift64
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, cal_lower
+		mov r1, cal_upper
+		mov r2, temp2_lower
+		mov r3, temp2_upper
+		bl deci32_deci_add64
+		mov cal_lower, r0
+		mov cal_upper, r1
+		pop {r0-r3}
 
 		push {r2-r3}
-		bl deci32_deci_sub64
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl deci32_deci_rem64_pre
 		pop {r2-r3}
-		bcs deci32_deci_rem64_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		cmp lower_1, #0
+		cmpeq upper_1, #0
+		moveq carry_flag, #0
+		beq deci32_deci_rem64_common
+
+		sub shift, shift, #1
 
 		b deci32_deci_rem64_loop
 
 	deci32_deci_rem64_common:
 		cmp carry_flag, #1
-		mov r0, dup_lower_1
-		mov r1, dup_upper_1
-		pop {r4-r6,pc}
+		pop {r4-r11,pc}
 
 .unreq lower_1
 .unreq upper_1
 .unreq lower_2
 .unreq upper_2
-.unreq dup_lower_1
-.unreq dup_upper_1
+.unreq cal_lower
+.unreq cal_upper
+.unreq shift
+.unreq temp1_lower
+.unreq temp1_upper
+.unreq temp2_lower
+.unreq temp2_upper
 .unreq carry_flag
-
