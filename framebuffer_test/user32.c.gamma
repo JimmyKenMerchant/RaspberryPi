@@ -99,14 +99,14 @@ void _user_start()
 
 	heap32_mfree( (obj)number7_str );
 
-	float32 number_ln = math32_ln32( 4.0 );
+	float32 number_ln = math32_ln( 4.0 );
 	String number_ln_str = deci32_float32_to_string( number_ln, 1, 20, 0 );
 	print32_set_caret( print32_string( number_ln_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( number_ln_str ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	heap32_mfree( (obj)number_ln_str );
 
-	float32 number_log = math32_log32( 4.0 );
+	float32 number_log = math32_log( 4.0 );
 	String number_log_str = deci32_float32_to_string( number_log, 1, 20, 0 );
 	print32_set_caret( print32_string( number_log_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( number_log_str ), 8, 12, FONT_MONO_12PX_ASCII ) );
 

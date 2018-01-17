@@ -9,7 +9,7 @@
 
 
 /**
- * function math32_round_pi32
+ * function math32_round_pi
  * Return Rounded Radian Between -Pi to Pi with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -18,8 +18,8 @@
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_round_pi32
-math32_round_pi32:
+.globl math32_round_pi
+math32_round_pi:
 	/* Auto (Local) Variables, but just Aliases */
 	radian         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -32,34 +32,34 @@ math32_round_pi32:
 	vpush {s0-s3}
 
 	vmov vfp_radian, radian
-	vldr vfp_pi, MATH32_PI32
+	vldr vfp_pi, MATH32_PI
 	vneg.f32 vfp_pi_neg, vfp_pi
-	vldr vfp_pi_double, MATH32_PI_DOUBLE32
+	vldr vfp_pi_double, MATH32_PI_DOUBLE
 
 	vcmp.f32 vfp_radian, vfp_pi
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	bgt math32_round_pi32_over
+	bgt math32_round_pi_over
 
 	vcmp.f32 vfp_radian, vfp_pi_neg
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	blt math32_round_pi32_under
+	blt math32_round_pi_under
 
-	b math32_round_pi32_common
+	b math32_round_pi_common
 
-	math32_round_pi32_over:
+	math32_round_pi_over:
 		vsub.f32 vfp_radian, vfp_radian, vfp_pi_double
 		vcmp.f32 vfp_radian, vfp_pi
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		bgt math32_round_pi32_over
-		b math32_round_pi32_common
+		bgt math32_round_pi_over
+		b math32_round_pi_common
 
-	math32_round_pi32_under:
+	math32_round_pi_under:
 		vadd.f32 vfp_radian, vfp_radian, vfp_pi_double
 		vcmp.f32 vfp_radian, vfp_pi_neg
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		blt math32_round_pi32_under
+		blt math32_round_pi_under
 
-	math32_round_pi32_common:
+	math32_round_pi_common:
 		vmov radian, vfp_radian
 		vpop {s0-s3}
 		mov pc, lr
@@ -72,7 +72,7 @@ math32_round_pi32:
 
 
 /**
- * function math32_round_degree32
+ * function math32_round_degree
  * Return Rounded Degrees Between 0 to 360 with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -81,8 +81,8 @@ math32_round_pi32:
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_round_degree32
-math32_round_degree32:
+.globl math32_round_degree
+math32_round_degree:
 	/* Auto (Local) Variables, but just Aliases */
 	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	full           .req r1
@@ -101,28 +101,28 @@ math32_round_degree32:
 
 	vcmp.f32 vfp_degree, vfp_full
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	bgt math32_round_degree32_over
+	bgt math32_round_degree_over
 
 	vcmp.f32 vfp_degree, #0
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	blt math32_round_degree32_under
+	blt math32_round_degree_under
 
-	b math32_round_degree32_common
+	b math32_round_degree_common
 
-	math32_round_degree32_over:
+	math32_round_degree_over:
 		vsub.f32 vfp_degree, vfp_degree, vfp_full
 		vcmp.f32 vfp_degree, vfp_full
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		bgt math32_round_degree32_over
-		b math32_round_degree32_common
+		bgt math32_round_degree_over
+		b math32_round_degree_common
 
-	math32_round_degree32_under:
+	math32_round_degree_under:
 		vadd.f32 vfp_degree, vfp_degree, vfp_full
 		vcmp.f32 vfp_degree, #0
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		blt math32_round_degree32_under
+		blt math32_round_degree_under
 
-	math32_round_degree32_common:
+	math32_round_degree_common:
 		vmov degree, vfp_degree
 		vpop {s0-s1}
 		mov pc, lr
@@ -133,20 +133,20 @@ math32_round_degree32:
 .unreq vfp_full
 
 
-.globl MATH32_PI32
-MATH32_PI32:             .word 0x40490fdb @ (.float 3.14159265359)
+.globl MATH32_PI
+MATH32_PI:             .word 0x40490fdb @ (.float 3.14159265359)
 .balign 8
 
-.globl MATH32_PI_DOUBLE32
-MATH32_PI_DOUBLE32:      .word 0x40c90fdb @ (.float 6.28318530718)
+.globl MATH32_PI_DOUBLE
+MATH32_PI_DOUBLE:      .word 0x40c90fdb @ (.float 6.28318530718)
 .balign 8
 
-.globl MATH32_PI_HALF32
-MATH32_PI_HALF32:        .word 0x3fc90fdb @ (.float 1.57079632679)
+.globl MATH32_PI_HALF
+MATH32_PI_HALF:        .word 0x3fc90fdb @ (.float 1.57079632679)
 .balign 8
 
-.globl MATH32_PI_PER_DEGREE32
-MATH32_PI_PER_DEGREE32:  .word 0x3c8efa35 @ (.float 0.01745329252)
+.globl MATH32_PI_PER_DEGREE
+MATH32_PI_PER_DEGREE:  .word 0x3c8efa35 @ (.float 0.01745329252)
 .balign 8
 
 .globl MATH32_EULERS
@@ -157,8 +157,9 @@ MATH32_EULERS:           .word 0x402df854 @ (.float 2.71828182846)
 MATH32_LN10:             .word 0x40135d8e @ (.float 2.30258509299)
 .balign 8
 
+
 /**
- * function math32_degree_to_radian32
+ * function math32_degree_to_radian
  * Return Radian from Degrees
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -168,8 +169,8 @@ MATH32_LN10:             .word 0x40135d8e @ (.float 2.30258509299)
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_degree_to_radian32
-math32_degree_to_radian32:
+.globl math32_degree_to_radian
+math32_degree_to_radian:
 	/* Auto (Local) Variables, but just Aliases */
 	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -184,10 +185,10 @@ math32_degree_to_radian32:
 	 * Radian = degrees X (pi Div by 180)
 	 */
 	vmov vfp_degree, degree
-	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE32
+	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE
 	vmul.f32 vfp_radian, vfp_degree, vfp_pi_per_deg
 
-	math32_degree_to_radian32_common:
+	math32_degree_to_radian_common:
 		vmov r0, vfp_radian
 		vpop {s0-s2}
 		mov pc, lr
@@ -199,7 +200,7 @@ math32_degree_to_radian32:
 
 
 /**
- * function math32_sin32
+ * function math32_sin
  * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -209,8 +210,8 @@ math32_degree_to_radian32:
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_sin32
-math32_sin32:
+.globl math32_sin
+math32_sin:
 	/* Auto (Local) Variables, but just Aliases */
 	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -226,17 +227,17 @@ math32_sin32:
 	/* Ensure Radian is Between -Pi to Pi */
 
 	push {lr}
-	bl math32_round_pi32
+	bl math32_round_pi
 	pop {lr}
 
 	vmov vfp_radian, radian
-	vldr vfp_pi, MATH32_PI32
-	vldr vfp_pi_half, MATH32_PI_HALF32
+	vldr vfp_pi, MATH32_PI
+	vldr vfp_pi_half, MATH32_PI_HALF
 
 	vabs.f32 vfp_temp, vfp_radian
 	vcmp.f32 vfp_temp, vfp_pi_half
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	ble math32_sin32_jump
+	ble math32_sin_jump
 
 	vsub.f32 vfp_temp, vfp_pi
 	vcmp.f32 vfp_radian, #0
@@ -244,7 +245,7 @@ math32_sin32:
 	vneggt.f32 vfp_temp, vfp_temp                   @ If Original Radian is Positive, Make Value Positive
 	vmov vfp_radian, vfp_temp
 	
-	math32_sin32_jump:
+	math32_sin_jump:
 		.unreq vfp_pi
 		vfp_dividend .req s1
 		.unreq vfp_pi_half
@@ -260,7 +261,7 @@ math32_sin32:
 		vcmp.f32 vfp_radian, #0
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 		vmov vfp_sum, vfp_radian                        @ n = 0
-		beq math32_sin32_common
+		beq math32_sin_common
 
 		vmov vfp_dividend, vfp_radian                   @ n = 1
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian
@@ -298,7 +299,7 @@ math32_sin32:
 		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
 		vadd.f32 vfp_sum, vfp_sum, vfp_temp
 
-	math32_sin32_common:
+	math32_sin_common:
 		vmov r0, vfp_sum
 		vpop {s0-s4}
 		mov pc, lr
@@ -312,7 +313,7 @@ math32_sin32:
 
 
 /**
- * function math32_cos32
+ * function math32_cos
  * Return Cosine by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -322,8 +323,8 @@ math32_sin32:
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_cos32
-math32_cos32:
+.globl math32_cos
+math32_cos:
 	/* Auto (Local) Variables, but just Aliases */
 	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -337,12 +338,12 @@ math32_cos32:
 	 * Sin( Theta + Pi/2 ) = Cos( Theta )
 	 */
 	vmov vfp_radian, radian
-	vldr vfp_pi_half, MATH32_PI_HALF32
+	vldr vfp_pi_half, MATH32_PI_HALF
 	vadd.f32 vfp_radian, vfp_radian, vfp_pi_half
 	vmov radian, vfp_radian
 
 	push {lr}
-	bl math32_sin32
+	bl math32_sin
 	pop {lr}
 
 	/**
@@ -351,7 +352,7 @@ math32_cos32:
 	 * For All x
 	 */
 
-	math32_cos32_common:
+	math32_cos_common:
 		vpop {s0-s1}
 		mov pc, lr
 
@@ -361,7 +362,7 @@ math32_cos32:
 
 
 /**
- * function math32_tan32
+ * function math32_tan
  * Return Tangent by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -371,8 +372,8 @@ math32_cos32:
  * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
-.globl math32_tan32
-math32_tan32:
+.globl math32_tan
+math32_tan:
 	/* Auto (Local) Variables, but just Aliases */
 	radian     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -383,19 +384,19 @@ math32_tan32:
 	vpush {s0-s1}
 
 	push {r0,lr}
-	bl math32_sin32
+	bl math32_sin
 	vmov vfp_sin, r0
 	pop {r0,lr}
 
 	push {r0,lr}
-	bl math32_cos32
+	bl math32_cos
 	vmov vfp_cos, r0
 	pop {r0,lr}
 
 	vcmp.f32 vfp_cos, #0
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
 	moveq r0, #0
-	beq math32_tan32_common
+	beq math32_tan_common
 	
 	vdiv.f32 vfp_sin, vfp_sin, vfp_cos
 	vmov r0, vfp_sin
@@ -407,7 +408,7 @@ math32_tan32:
 	 * B is Bernoulli Number
 	 */
 
-	math32_tan32_common:
+	math32_tan_common:
 		vpop {s0-s1}
 		mov pc, lr
 
@@ -417,7 +418,7 @@ math32_tan32:
 
 
 /**
- * function math32_ln32
+ * function math32_ln
  * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 7
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -426,8 +427,8 @@ math32_tan32:
  *
  * Return: r0 (Value, Must Be Type of Single Precision Float and Signed Plus)
  */
-.globl math32_ln32
-math32_ln32:
+.globl math32_ln
+math32_ln:
 	/* Auto (Local) Variables, but just Aliases */
 	value        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	temp         .req r1
@@ -466,25 +467,25 @@ math32_ln32:
 	vcmp.f32 vfp_value, vfp_num
 	vmrs apsr_nzcv, fpscr                          @ Transfer FPSCR Flags to CPSR's NZCV
 	movlt exponent, #0
-	blt math32_ln32_series
+	blt math32_ln_series
 
 	mov exponent, #1
 	vmov vfp_power, vfp_eulers
 
-	math32_ln32_exponent:
+	math32_ln_exponent:
 		vdiv.f32 vfp_cal, vfp_value, vfp_power
 
 		vcmp.f32 vfp_cal, vfp_num
 		vmrs apsr_nzcv, fpscr                      @ Transfer FPSCR Flags to CPSR's NZCV
 
 		vmovlt vfp_value, vfp_cal
-		blt math32_ln32_series
+		blt math32_ln_series
 
 		vmul.f32 vfp_power, vfp_power, vfp_eulers
 		add exponent, exponent, #1
-		b math32_ln32_exponent
+		b math32_ln_exponent
 
-	math32_ln32_series:
+	math32_ln_series:
 		.unreq vfp_eulers
 		vfp_inter .req s1
 		.unreq vfp_power
@@ -533,7 +534,7 @@ math32_ln32:
 		vcvt.f32.s32 vfp_cal, vfp_cal
 		vadd.f32 vfp_sum, vfp_sum, vfp_cal
 
-	math32_ln32_common:
+	math32_ln_common:
 		vmov r0, vfp_sum
 		vpop {s0-s5}
 		mov pc, lr
@@ -550,7 +551,7 @@ math32_ln32:
 
 
 /**
- * function math32_log32
+ * function math32_log
  * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -559,8 +560,8 @@ math32_ln32:
  *
  * Return: r0 (Value, Must Be Type of Single Precision Float and Signed Plus)
  */
-.globl math32_log32
-math32_log32:
+.globl math32_log
+math32_log:
 	/* Auto (Local) Variables, but just Aliases */
 	value        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 
@@ -575,14 +576,14 @@ math32_log32:
 	 * log(x) = ln(x) Div by ln(10)
 	 */
 
-	bl math32_ln32
+	bl math32_ln
 
 	vmov vfp_value, value
 	ldr value, MATH32_LN10
 	vmov vfp_ln10, value
 	vdiv.f32 vfp_value, vfp_value, vfp_ln10
 
-	math32_log32_common:
+	math32_log_common:
 		vmov r0, vfp_value
 		vpop {s0-s1}
 		pop {pc}
@@ -593,7 +594,7 @@ math32_log32:
 
 
 /**
- * function math32_mat32_multiply
+ * function math32_mat_multiply
  * Multiplies Two Matrix with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
@@ -605,8 +606,8 @@ math32_log32:
  *
  * Return: r0 (Matrix to Be Calculated, If Zero Not Allocated Memory)
  */
-.globl math32_mat32_multiply
-math32_mat32_multiply:
+.globl math32_mat_multiply
+math32_mat_multiply:
 	/* Auto (Local) Variables, but just Aliases */
 	matrix1     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	matrix2     .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -637,21 +638,21 @@ math32_mat32_multiply:
 	pop {r0-r3}
 
 	cmp matrix_ret, #0
-	beq math32_mat32_multiply_common
+	beq math32_mat_multiply_common
 
 	mov index, #0
 
 	/* for ( uint32 column = 0; column < number_mat; column++ ) { */
 	mov column, #0
-	math32_mat32_multiply_column:
+	math32_mat_multiply_column:
 		cmp column, number_mat
-		bge math32_mat32_multiply_common
+		bge math32_mat_multiply_common
 
 		/* for ( uint32 row = 0; row < number_mat; row++ ) { */
 		mov row, #0
-		math32_mat32_multiply_column_row:
+		math32_mat_multiply_column_row:
 			cmp row, number_mat
-			bge math32_mat32_multiply_column_row_common
+			bge math32_mat_multiply_column_row_common
 
 			mov temp, #0
 			vmov vfp_sum, temp
@@ -659,9 +660,9 @@ math32_mat32_multiply:
 
 			/* for ( uint32 i = 0; i < number_mat; i++ ) { */
 			mov i, #0
-			math32_mat32_multiply_column_row_i:
+			math32_mat_multiply_column_row_i:
 				cmp i, number_mat
-				bge math32_mat32_multiply_column_row_i_common
+				bge math32_mat_multiply_column_row_i_common
 
 				mul temp, column, number_mat
 				add temp, temp, i
@@ -675,25 +676,25 @@ math32_mat32_multiply:
 				vmla.f32 vfp_sum, vfp_value1, vfp_value2    @ Multiply and Accumulate
 
 				add i, i, #1
-				b math32_mat32_multiply_column_row_i
+				b math32_mat_multiply_column_row_i
 	
 			/* } */
-				math32_mat32_multiply_column_row_i_common:
+				math32_mat_multiply_column_row_i_common:
 					vmov temp, vfp_sum
 					str temp, [matrix_ret, index]
 					add index, index, #4
 
 					add row, row, #1
-					b math32_mat32_multiply_column_row
+					b math32_mat_multiply_column_row
 
 		/* } */
-			math32_mat32_multiply_column_row_common:
+			math32_mat_multiply_column_row_common:
 
 				add column, column, #1
-				b math32_mat32_multiply_column
+				b math32_mat_multiply_column
 
 	/* } */
-	math32_mat32_multiply_common:
+	math32_mat_multiply_common:
 		mov r0, matrix_ret
 		vpop {s0-s2}
 		pop {r4-r9,pc}
@@ -715,7 +716,7 @@ math32_mat32_multiply:
 
 
 /**
- * function math32_mat32_identity
+ * function math32_mat_identity
  * Get Identity of Matrix
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
@@ -725,8 +726,8 @@ math32_mat32_multiply:
  *
  * Return: r0 (Matrix to Have Identity, If Zero Not Allocated Memory)
  */
-.globl math32_mat32_identity
-math32_mat32_identity:
+.globl math32_mat_identity
+math32_mat_identity:
 	/* Auto (Local) Variables, but just Aliases */
 	number_mat  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	one         .req r1
@@ -749,7 +750,7 @@ math32_mat32_identity:
 	pop {r0-r3}
 
 	cmp matrix, #0
-	beq math32_mat32_identity_common
+	beq math32_mat_identity_common
 
 	mov one, #1
 	vmov vfp_one, one
@@ -761,17 +762,17 @@ math32_mat32_identity:
 
 	mov offset, #0
 
-	math32_mat32_identity_loop:
+	math32_mat_identity_loop:
 		cmp i, #0
-		ble math32_mat32_identity_common
+		ble math32_mat_identity_common
 
 		str one, [matrix, offset, lsl #2] @ Substitution of Multiplication by 4
 
 		add offset, offset, number_mat
 		sub i, i, #1
-		b math32_mat32_identity_loop
+		b math32_mat_identity_loop
 
-	math32_mat32_identity_common:
+	math32_mat_identity_common:
 		mov r0, matrix
 		vpop {s0}
 		pop {r4,pc}
@@ -785,7 +786,7 @@ math32_mat32_identity:
 
 
 /**
- * function math32_mat32_multiply_vec
+ * function math32_mat_multiply_vec
  * Square Matrix and Column Vector Multiplication
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  *
@@ -796,8 +797,8 @@ math32_mat32_identity:
  *
  * Return: r0 (Value of Dot Product by Single Precision Float)
  */
-.globl math32_mat32_multiply_vec
-math32_mat32_multiply_vec:
+.globl math32_mat_multiply_vec
+math32_mat_multiply_vec:
 	/* Auto (Local) Variables, but just Aliases */
 	matrix         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	vector         .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -826,14 +827,14 @@ math32_mat32_multiply_vec:
 	pop {r0-r3}
 
 	cmp vector_result, #0
-	beq math32_mat32_multiply_vec_common
+	beq math32_mat_multiply_vec_common
 
 	mov offset, #0
 	mov i, #0
 
-	math32_mat32_multiply_vec_row:
+	math32_mat_multiply_vec_row:
 		cmp i, number_vec
-		bge math32_mat32_multiply_vec_common
+		bge math32_mat_multiply_vec_common
 
 		mov temp1, #0
 		vmov vfp_result, temp1
@@ -844,9 +845,9 @@ math32_mat32_multiply_vec:
 
 		add temp2, offset, temp1
 
-		math32_mat32_multiply_vec_row_column:
+		math32_mat_multiply_vec_row_column:
 			cmp temp1, #0
-			blt math32_mat32_multiply_vec_row_common
+			blt math32_mat_multiply_vec_row_common
 
 			ldr value1, [matrix, temp2, lsl #2]         @ Substitution of Multiplication by 4
 			ldr value2, [vector, temp1, lsl #2]         @ Substitution of Multiplication by 4
@@ -855,17 +856,17 @@ math32_mat32_multiply_vec:
 
 			sub temp1, temp1, #1
 			sub temp2, temp2, #1
-			b math32_mat32_multiply_vec_row_column
+			b math32_mat_multiply_vec_row_column
 
-		math32_mat32_multiply_vec_row_common:
+		math32_mat_multiply_vec_row_common:
 			vmov value1, vfp_result
 			str value1, [vector_result, i, lsl #2]      @ Substitution of Multiplication by 4
 			add offset, offset, number_vec
 			add i, i, #1
 
-			b math32_mat32_multiply_vec_row
+			b math32_mat_multiply_vec_row
 
-	math32_mat32_multiply_vec_common:
+	math32_mat_multiply_vec_common:
 		mov r0, vector_result
 		vpop {s0-s3}
 		pop {r4-r9,pc}
@@ -887,7 +888,7 @@ math32_mat32_multiply_vec:
 
 
 /**
- * function math32_vec32_normalize
+ * function math32_vec_normalize
  * Normalize Vector
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
@@ -898,8 +899,8 @@ math32_mat32_multiply_vec:
  *
  * Return: r0 (Vector to Have Been Normalized, If Zero Not Allocated Memory)
  */
-.globl math32_vec32_normalize
-math32_vec32_normalize:
+.globl math32_vec_normalize
+math32_vec_normalize:
 	/* Auto (Local) Variables, but just Aliases */
 	vector        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	number_vec    .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -922,7 +923,7 @@ math32_vec32_normalize:
 	pop {r0-r3}
 
 	cmp vector_result, #0
-	beq math32_vec32_normalize_common
+	beq math32_vec_normalize_common
 
 	mov temp, #0
 	vmov vfp_length, temp
@@ -931,28 +932,28 @@ math32_vec32_normalize:
 	mov temp, number_vec
 	sub temp, temp, #1
 
-	math32_vec32_normalize_length:
+	math32_vec_normalize_length:
 		cmp temp, #0
-		blt math32_vec32_normalize_checkzero
+		blt math32_vec_normalize_checkzero
 
 		ldr value, [vector, temp, lsl #2]              @ Substitution of Multiplication by 4
 		vmov vfp_value, value
 		vmla.f32 vfp_length, vfp_value, vfp_value
 
 		sub temp, temp, #1
-		b math32_vec32_normalize_length
+		b math32_vec_normalize_length
 
-	math32_vec32_normalize_checkzero:
+	math32_vec_normalize_checkzero:
 		vsqrt.f32 vfp_length, vfp_length
 		vcmp.f32 vfp_length, #0
 		vmrs apsr_nzcv, fpscr                          @ Transfer FPSCR Flags to CPSR's NZCV
-		beq math32_vec32_normalize_common
+		beq math32_vec_normalize_common
 
 		sub number_vec, number_vec, #1
 
-	math32_vec32_normalize_normal:
+	math32_vec_normalize_normal:
 		cmp number_vec, #0
-		blt math32_vec32_normalize_common
+		blt math32_vec_normalize_common
 
 		ldr value, [vector, number_vec, lsl #2]        @ Substitution of Multiplication by 4
 		vmov vfp_value, value
@@ -961,9 +962,9 @@ math32_vec32_normalize:
 		str value, [vector_result, number_vec, lsl #2] @ Substitution of Multiplication by 4
 
 		sub number_vec, number_vec, #1
-		b math32_vec32_normalize_normal
+		b math32_vec_normalize_normal
 
-	math32_vec32_normalize_common:
+	math32_vec_normalize_common:
 		mov r0, vector_result
 		vpop {s0-s1}
 		pop {r4-r5,pc}
@@ -979,7 +980,7 @@ math32_vec32_normalize:
 
 
 /**
- * function math32_vec32_dotproduct
+ * function math32_vec_dotproduct
  * Dot Product
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  *
@@ -990,8 +991,8 @@ math32_vec32_normalize:
  *
  * Return: r0 (Value of Dot Product by Single Precision Float)
  */
-.globl math32_vec32_dotproduct
-math32_vec32_dotproduct:
+.globl math32_vec_dotproduct
+math32_vec_dotproduct:
 	/* Auto (Local) Variables, but just Aliases */
 	vector1    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	vector2    .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -1011,9 +1012,9 @@ math32_vec32_dotproduct:
 
 	sub number_vec, number_vec, #1
 
-	math32_vec32_dotproduct_normal:
+	math32_vec_dotproduct_normal:
 		cmp number_vec, #0
-		blt math32_vec32_dotproduct_common
+		blt math32_vec_dotproduct_common
 
 		ldr value, [vector1, number_vec, lsl #2] @ Substitution of Multiplication by 4
 		vmov vfp_value1, value
@@ -1022,9 +1023,9 @@ math32_vec32_dotproduct:
 		vmla.f32 vfp_dot, vfp_value1, vfp_value2
 
 		sub number_vec, number_vec, #1
-		b math32_vec32_dotproduct_normal
+		b math32_vec_dotproduct_normal
 
-	math32_vec32_dotproduct_common:
+	math32_vec_dotproduct_common:
 		vmov r0, vfp_dot
 		vpop {s0-s2}
 		mov pc, lr
@@ -1039,7 +1040,7 @@ math32_vec32_dotproduct:
 
 
 /**
- * function math32_vec32_crossproduct
+ * function math32_vec_crossproduct
  * Cross Product
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
@@ -1050,8 +1051,8 @@ math32_vec32_dotproduct:
  *
  * Return: r0 (Vector to Be Calculated, If Zero Not Allocated Memory)
  */
-.globl math32_vec32_crossproduct
-math32_vec32_crossproduct:
+.globl math32_vec_crossproduct
+math32_vec_crossproduct:
 	/* Auto (Local) Variables, but just Aliases */
 	vector1       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	vector2       .req r1 @ Parameter, Register for Argument, Scratch Register
@@ -1130,7 +1131,7 @@ math32_vec32_crossproduct:
 	vmov value1, vfp_result
 	str value1, [vector_result, #8]             @ Vector_result[2], Z
 
-	math32_vec32_crossproduct_common:
+	math32_vec_crossproduct_common:
 		mov r0, vector_result
 		vpop {s0-s4}
 		pop {r4-r5,pc}
@@ -1147,3 +1148,93 @@ math32_vec32_crossproduct:
 .unreq vfp_inter1
 .unreq vfp_inter2
 .unreq vfp_result
+
+
+/**
+ * function math32_mat_translate3d
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Translation
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r1: Vector, Must Be Three of Vector Size, X, Y, and Z
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl math32_mat_translate3d
+math32_mat_translate3d:
+	/* Auto (Local) Variables, but just Aliases */
+	vector        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	matrix_result .req r1
+	value         .req r2
+
+	push {lr}
+
+	push {r0}
+	mov r0, #4
+	bl math32_mat_identity
+	mov matrix_result, r0
+	pop {r0}
+
+	cmp matrix_result, #0
+	beq math32_mat_translate3d_common
+
+	ldr value, [vector]
+	str value, [matrix_result, #48] @ Matrix_result[12], X
+	ldr value, [vector, #4]
+	str value, [matrix_result, #52] @ Matrix_result[13], Y
+	ldr value, [vector, #8]
+	str value, [matrix_result, #56] @ Matrix_result[14], Z
+
+	math32_mat_translate3d_common:
+		mov r0, matrix_result
+		pop {pc}
+
+.unreq vector
+.unreq matrix_result
+.unreq value
+
+
+/**
+ * function math32_mat_scale3d
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Scale
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r1: Vector, Must Be Three of Vector Size, X, Y, and Z
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl math32_mat_scale3d
+math32_mat_scale3d:
+	/* Auto (Local) Variables, but just Aliases */
+	vector        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	matrix_result .req r1
+	value         .req r2
+
+	push {lr}
+
+	push {r0}
+	mov r0, #4
+	bl math32_mat_identity
+	mov matrix_result, r0
+	pop {r0}
+
+	cmp matrix_result, #0
+	beq math32_mat_scale3d_common
+
+	ldr value, [vector]
+	str value, [matrix_result]      @ Matrix_result[0], X
+	ldr value, [vector, #4]
+	str value, [matrix_result, #20] @ Matrix_result[5], Y
+	ldr value, [vector, #8]
+	str value, [matrix_result, #40] @ Matrix_result[10], Z
+
+	math32_mat_scale3d_common:
+		mov r0, matrix_result
+		pop {pc}
+
+.unreq vector
+.unreq matrix_result
+.unreq value

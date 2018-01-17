@@ -1358,7 +1358,7 @@ heap32_wave_sin:
 
 			push {r0-r3,lr}
 			vmov r0, vfp_value
-			bl math32_sin32
+			bl math32_sin
 			vmov vfp_value, r0
 			pop {r0-r3,lr}
 
@@ -1409,7 +1409,7 @@ heap32_wave_sin:
 		pop {r4-r9}
 		mov pc, lr
 
-heap32_wave_sin_pi: .word MATH32_PI32
+heap32_wave_sin_pi: .word MATH32_PI
 
 .unreq block_start
 .unreq length

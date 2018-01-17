@@ -836,10 +836,10 @@ extern uint32 snd32_musiclen
 
 /* Constants */
 
-extern float32 MATH32_PI32;
-extern float32 MATH32_PI_DOUBLE32;
-extern float32 MATH32_PI_HALF32;
-extern float32 MATH32_PI_PER_DEGREE32;
+extern float32 MATH32_PI;
+extern float32 MATH32_PI_DOUBLE;
+extern float32 MATH32_PI_HALF;
+extern float32 MATH32_PI_PER_DEGREE;
 
 
 /* Regular Functions */
@@ -850,7 +850,7 @@ extern float32 MATH32_PI_PER_DEGREE32;
  *
  * Return: Value by Single Precision Float
  */
-extern float32 math32_round_degree32
+extern float32 math32_round_degree
 (
 	float32 degree
 );
@@ -862,7 +862,7 @@ extern float32 math32_round_degree32
  *
  * Return: Value by Single Precision Float
  */
-extern float32 math32_degree_to_radian32
+extern float32 math32_degree_to_radian
 (
 	float32 degree
 );
@@ -874,7 +874,7 @@ extern float32 math32_degree_to_radian32
  *
  * Return: Value by Single Precision Float
  */
-extern float32 math32_sin32
+extern float32 math32_sin
 (
 	float32 radian
 );
@@ -886,7 +886,7 @@ extern float32 math32_sin32
  *
  * Return: Value by Single Precision Float
  */
-extern float32 math32_cos32
+extern float32 math32_cos
 (
 	float32 radian
 );
@@ -899,7 +899,7 @@ extern float32 math32_cos32
  *
  * Return: Value by Single Precision Float
  */
-extern float32 math32_tan32
+extern float32 math32_tan
 (
 	float32 radian
 );
@@ -911,7 +911,7 @@ extern float32 math32_tan32
  *
  * Return: Value, Must Be Type of Single Precision Float and Signed Plus
  */
-extern float32 math32_ln32
+extern float32 math32_ln
 (
 	float32 value
 );
@@ -923,7 +923,7 @@ extern float32 math32_ln32
  *
  * Return: Value, Must Be Type of Single Precision Float and Signed Plus
  */
-extern float32 math32_log32
+extern float32 math32_log
 (
 	float32 value
 );
@@ -936,7 +936,7 @@ extern float32 math32_log32
  *
  * Return: Matrix to Be Calculated, If Zero Not Allocated Memory
  */
-extern obj math32_mat32_multiply
+extern obj math32_mat_multiply
 (
 	obj matrix1,
 	obj matrix2,
@@ -951,7 +951,7 @@ extern obj math32_mat32_multiply
  *
  * Return: Matrix to Have Identity, If Zero Not Allocated Memory
  */
-extern obj math32_mat32_identity
+extern obj math32_mat_identity
 (
 	uint32 number
 );
@@ -964,7 +964,7 @@ extern obj math32_mat32_identity
  *
  * Return: Vector to Be Calculated, If Zero Not Allocated Memory
  */
-extern obj math32_mat32_multiply_vec
+extern obj math32_mat_multiply_vec
 (
 	obj matrix,
 	obj vector,
@@ -979,7 +979,7 @@ extern obj math32_mat32_multiply_vec
  *
  * Return: Vector to Have Been Normalized, If Zero Not Allocated Memory
  */
-extern obj math32_vec32_normalize
+extern obj math32_vec_normalize
 (
 	obj vector,
 	uint32 number
@@ -992,7 +992,7 @@ extern obj math32_vec32_normalize
  *
  * Return: Value of Dot Product by Single Precision Float
  */
-extern float32 math32_vec32_dotproduct
+extern float32 math32_vec_dotproduct
 (
 	obj vector1,
 	obj vector2,
@@ -1007,7 +1007,7 @@ extern float32 math32_vec32_dotproduct
  *
  * Return: Vector to Be Calculated, If Zero Not Allocated Memory
  */
-extern obj math32_vec32_crossproduct
+extern obj math32_vec_crossproduct
 (
 	obj vector1, // Must Be Three of Vector Size
 	obj vector2 // Must Be Three of Vector Size

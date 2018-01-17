@@ -114,13 +114,13 @@ void _user_start()
 	obj string5_obj = decix32_string_to_farray( string5, print32_strlen( string5 ) );
 	obj string6_obj = decix32_string_to_farray( string6, print32_strlen( string6 ) );
 
-	//obj answer_obj = math32_mat32_multiply( string5_obj, string6_obj, 2 );
-	//obj answer_obj = math32_mat32_identity( 3 );
-	//obj answer_obj = math32_vec32_normalize( string5_obj, 4 );
-	obj answer_obj = math32_vec32_crossproduct( string5_obj, string6_obj );
+	//obj answer_obj = math32_mat_multiply( string5_obj, string6_obj, 2 );
+	//obj answer_obj = math32_mat_identity( 3 );
+	//obj answer_obj = math32_vec_normalize( string5_obj, 4 );
+	obj answer_obj = math32_vec_crossproduct( string5_obj, string6_obj );
 	String answer_string = decix32_farray_to_string( answer_obj, 0, 20, 0 );
 
-	//float32 answer_float = math32_vec32_dotproduct( string5_obj, string6_obj, 4 );
+	//float32 answer_float = math32_vec_dotproduct( string5_obj, string6_obj, 4 );
 	//String answer_string = deci32_float32_to_string( answer_float, 0, 20, 0 );
 
 	print32_set_caret( print32_string( answer_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( answer_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -141,7 +141,7 @@ void _user_start()
 		fb32_clear_color( clear_color );
 		draw32_line( COLOR32_BLUE, -50, 800, 100, 100, 20, 20 );
 		draw32_circle( COLOR32_CYAN, -100, 500, 200, 175 );
-		draw32_arc( COLOR32_WHITE, 200, 200, 200, 200, math32_degree_to_radian32( start_fdegree ), math32_degree_to_radian32( end_fdegree ), 10, 1 );
+		draw32_arc( COLOR32_WHITE, 200, 200, 200, 200, math32_degree_to_radian( start_fdegree ), math32_degree_to_radian( end_fdegree ), 10, 1 );
 		fb32_image( DATA_COLOR32_SAMPLE_IMAGE0, 400, 500, 64, 64, 0, 0, 0, 0 );
 		fb32_image( DATA_COLOR32_SAMPLE_IMAGE1, 500, 500, 64, 64, 0, 0, 0, 0 );
 		//clear_color += 20;

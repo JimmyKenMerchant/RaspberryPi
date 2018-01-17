@@ -2180,6 +2180,11 @@ deci32_deci_mul64:
 	temp_upper     .req r10
 	carry_flag     .req r11
 
+	/**
+	 * To speed up, this function refers handwrinting method to calculate multiplication,
+	 * i.e., two-dimensional method that is using exponent in base 10.
+	 */
+
 	push {r4-r11,lr}
 
 	mov dup_lower_2, lower_2
@@ -2196,7 +2201,7 @@ deci32_deci_mul64:
 		blt deci32_deci_mul64_common
 
 		mov lower_2, #0xF
-		lsl temp_lower, shift, #2
+		lsl temp_lower, shift, #2                   @ Substitute of Multiplication by 4
 		cmp shift, #8
 		bge deci32_deci_mul64_loop_upper
 
@@ -2364,6 +2369,11 @@ deci32_deci_div64:
 	temp2_lower    .req r9
 	temp2_upper    .req r10
 	carry_flag     .req r11
+
+	/**
+	 * To speed up, this function refers handwrinting method to calculate division,
+	 * i.e., two-dimensional method that is using exponent in base 10.
+	 */
 
 	push {r4-r11,lr}
 
@@ -2545,10 +2555,17 @@ deci32_deci_rem64:
 	temp2_upper    .req r10
 	carry_flag     .req r11
 
+	/**
+	 * To speed up, this function refers handwrinting method to calculate division,
+	 * i.e., two-dimensional method that is using exponent in base 10.
+	 */
+
 	push {r4-r11,lr}
 
 	mov cal_lower, #0
 	mov cal_upper, #0
+
+	mov carry_flag, #0
 
 	clz temp1_lower, upper_2
 	cmp temp1_lower, #32
@@ -2563,9 +2580,6 @@ deci32_deci_rem64:
 		bge deci32_deci_rem64_count
 
 	deci32_deci_rem64_loop:
-
-		mov carry_flag, #1
-
 		cmp shift, #0
 		blt deci32_deci_rem64_common
 
@@ -2613,7 +2627,6 @@ deci32_deci_rem64:
 
 		cmp lower_1, #0
 		cmpeq upper_1, #0
-		moveq carry_flag, #0
 		beq deci32_deci_rem64_common
 
 		sub shift, shift, #1

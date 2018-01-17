@@ -1201,13 +1201,13 @@ draw32_arc:
 
 		push {r0-r3,lr}
 		mov r0, start_radian
-		bl math32_cos32
+		bl math32_cos
 		mov x_current, r0
 		pop {r0-r3,lr}
 
 		push {r0-r3,lr}
 		mov r0, start_radian
-		bl math32_sin32
+		bl math32_sin
 		mov y_current, r0
 		pop {r0-r3,lr}
 
