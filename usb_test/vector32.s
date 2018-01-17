@@ -7,6 +7,9 @@
  *
  */
 
+/* Define Debug Status */
+.equ __DEBUG, 1
+
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
@@ -118,145 +121,9 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
 
-	/**
-	 * Set Cache Status for Memory Using as Framebuffer (By Section)
-	 * VideoCore seemes to connect with ARM closely, but make sure to add `shareable` attribute just in case.
-	 */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
+	mov pc, lr
 
-	/* Set Cache Status for Whole Area of Data Memory */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_DATAMEMORY_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	/**
-	 * Set Cache Status for HEAP with Non-cache
-	 * Non-cache HEAP is used for peripheral blocks.
-	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
-	 */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_section_shareable
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_HEAP_NONCACHE_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_HEAP_NONCACHE_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	/**
-	 * Set Cache Status for Memory with Non-cache
-	 * Non-cache memory is used for peripheral blocks.
-	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
-	 */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_section_shareable
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_SYSTEM32_NONCACHE_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_SYSTEM32_NONCACHE_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	/* Set Cache Status for Virtual Address Descriptor */
-	push {r0-r3,lr}
-.ifndef __ARMV6
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
-.ifndef __ARMV6
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_ARM32_VADESCRIPTOR_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3,lr}
-
-	macro32_dsb ip
-	macro32_invalidate_tlb_all ip
-	macro32_isb ip
-	macro32_dsb ip
-	macro32_invalidate_instruction_all ip
-	macro32_isb ip
-
-	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
-	
-	/**
-	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
-	 * Each 0b01 is for Enable in Previlege Mode
-	 * Each 0b11 is for Enable in Previlege and User Mode
-	 */
-	mov r0, #0b0101
-	lsl r0, r0, #20
-
-	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
-
-	macro32_dsb ip
-	macro32_isb ip                            @ Must Need When You Renew CPACR
-
-	mov r0, #0x40000000                       @ Enable NEON/VFP
-	vmsr fpexc, r0
-
-os_reset_render:
+os_debug:
 	push {r0-r8,lr}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE

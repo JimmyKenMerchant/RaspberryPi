@@ -869,7 +869,7 @@ extern float32 math32_degree_to_radian
 
 
 /**
- * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float
@@ -881,7 +881,7 @@ extern float32 math32_sin
 
 
 /**
- * Return cos(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Return cos(Radian) by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float
@@ -893,7 +893,7 @@ extern float32 math32_cos
 
 
 /**
- * Return tan(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 5
+ * Return tan(Radian) by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  * Radian Must be |Radian| < pi, -pi through pi
  *

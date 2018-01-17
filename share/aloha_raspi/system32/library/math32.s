@@ -201,7 +201,7 @@ math32_degree_to_radian:
 
 /**
  * function math32_sin
- * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 4
+ * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
@@ -222,13 +222,12 @@ math32_sin:
 	vfp_temp      .req s3
 	vfp_sum       .req s4
 
+	push {lr}
 	vpush {s0-s4}
 
 	/* Ensure Radian is Between -Pi to Pi */
 
-	push {lr}
 	bl math32_round_pi
-	pop {lr}
 
 	vmov vfp_radian, radian
 	vldr vfp_pi, MATH32_PI
@@ -290,6 +289,7 @@ math32_sin:
 		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
 		vsub.f32 vfp_sum, vfp_sum, vfp_temp
 
+		/*
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ n = 4
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Nineth Power
 		mov temp, #72
@@ -298,11 +298,12 @@ math32_sin:
 		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 362880.0
 		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
 		vadd.f32 vfp_sum, vfp_sum, vfp_temp
+		*/
 
 	math32_sin_common:
 		vmov r0, vfp_sum
 		vpop {s0-s4}
-		mov pc, lr
+		pop {pc}
 
 .unreq temp
 .unreq vfp_radian
@@ -404,7 +405,7 @@ math32_tan:
 	/**
 	 * Not Used, But Tangent's Series is Shown as Below 
 	 * tanx = Sigma[n = 1 to Infinity] (B2n X (-4)^n X (1 - 4^n)) X x^(2n - 1) Div by (2n)!
-	 * for |x| < pi Div by 2, because Tangent is 180 degrees cycle unlike Sin and Cosin
+	 * for |x| < pi Div by 2, because Tangent is 180 degrees cycle unlike Sine and Cosine
 	 * B is Bernoulli Number
 	 */
 
@@ -1238,3 +1239,205 @@ math32_mat_scale3d:
 .unreq vector
 .unreq matrix_result
 .unreq value
+
+
+/**
+ * function math32_mat_rotatex3d
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r1: Value of Degrees, Must Be Single Precision Float
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl math32_mat_rotatex3d
+math32_mat_rotatex3d:
+	/* Auto (Local) Variables, but just Aliases */
+	degree        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	matrix_result .req r1
+	value         .req r2
+
+	/* VFP Registers */
+	vfp_value     .req s0
+
+	push {lr}
+	vpush {s0}
+
+	bl math32_degree_to_radian
+	.unreq degree
+	radian .req r0
+
+	push {r0}
+	mov r0, #4
+	bl math32_mat_identity
+	mov matrix_result, r0
+	pop {r0}
+
+	cmp matrix_result, #0
+	beq math32_mat_rotatex3d_common
+
+	push {r0}
+	bl math32_cos
+	mov value, r0
+	pop {r0}
+
+	str value, [matrix_result, #20] @ Matrix_result[5], cos
+	str value, [matrix_result, #40] @ Matrix_result[10], cos
+
+	push {r0}
+	bl math32_sin
+	mov value, r0
+	pop {r0}
+
+	str value, [matrix_result, #24] @ Matrix_result[6], sin
+	vmov vfp_value, value
+	vneg.f32 vfp_value, vfp_value
+	vmov value, vfp_value
+	str value, [matrix_result, #36] @ Matrix_result[9], -sin
+
+	math32_mat_rotatex3d_common:
+		mov r0, matrix_result
+		vpop {s0}
+		pop {pc}
+
+.unreq radian
+.unreq matrix_result
+.unreq value
+.unreq vfp_value
+
+
+/**
+ * function math32_mat_rotatey3d
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r1: Value of Degrees, Must Be Single Precision Float
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl math32_mat_rotatey3d
+math32_mat_rotatey3d:
+	/* Auto (Local) Variables, but just Aliases */
+	degree        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	matrix_result .req r1
+	value         .req r2
+
+	/* VFP Registers */
+	vfp_value     .req s0
+
+	push {lr}
+	vpush {s0}
+
+	bl math32_degree_to_radian
+	.unreq degree
+	radian .req r0
+
+	push {r0}
+	mov r0, #4
+	bl math32_mat_identity
+	mov matrix_result, r0
+	pop {r0}
+
+	cmp matrix_result, #0
+	beq math32_mat_rotatey3d_common
+
+	push {r0}
+	bl math32_cos
+	mov value, r0
+	pop {r0}
+
+	str value, [matrix_result]      @ Matrix_result[0], cos
+	str value, [matrix_result, #40] @ Matrix_result[10], cos
+
+	push {r0}
+	bl math32_sin
+	mov value, r0
+	pop {r0}
+
+	str value, [matrix_result, #32] @ Matrix_result[8], sin
+	vmov vfp_value, value
+	vneg.f32 vfp_value, vfp_value
+	vmov value, vfp_value
+	str value, [matrix_result, #8] @ Matrix_result[2], -sin
+
+	math32_mat_rotatey3d_common:
+		mov r0, matrix_result
+		vpop {s0}
+		pop {pc}
+
+.unreq radian
+.unreq matrix_result
+.unreq value
+.unreq vfp_value
+
+
+/**
+ * function math32_mat_rotatez3d
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r1: Value of Degrees, Must Be Single Precision Float
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl math32_mat_rotatez3d
+math32_mat_rotatez3d:
+	/* Auto (Local) Variables, but just Aliases */
+	degree        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	matrix_result .req r1
+	value         .req r2
+
+	/* VFP Registers */
+	vfp_value     .req s0
+
+	push {lr}
+	vpush {s0}
+
+	bl math32_degree_to_radian
+	.unreq degree
+	radian .req r0
+
+	push {r0}
+	mov r0, #4
+	bl math32_mat_identity
+	mov matrix_result, r0
+	pop {r0}
+
+	cmp matrix_result, #0
+	beq math32_mat_rotatez3d_common
+
+	push {r0}
+	bl math32_cos
+	mov value, r0
+	pop {r0}
+
+	str value, [matrix_result]      @ Matrix_result[0], cos
+	str value, [matrix_result, #20]  @ Matrix_result[5], cos
+
+	push {r0}
+	bl math32_sin
+	mov value, r0
+	pop {r0}
+
+	str value, [matrix_result, #4] @ Matrix_result[1], sin
+	vmov vfp_value, value
+	vneg.f32 vfp_value, vfp_value
+	vmov value, vfp_value
+	str value, [matrix_result, #16] @ Matrix_result[4], -sin
+
+	math32_mat_rotatez3d_common:
+		mov r0, matrix_result
+		vpop {s0}
+		pop {pc}
+
+.unreq radian
+.unreq matrix_result
+.unreq value
+.unreq vfp_value
+

@@ -167,11 +167,6 @@ os_reset:
 
 	mov pc, lr
 
-os_irq:
-	push {r0-r12}
-	pop {r0-r12}
-	mov pc, lr
-
 os_debug:
 	push {lr}
 
@@ -224,6 +219,10 @@ os_debug:
 
 	pop {pc}
 
+os_irq:
+	push {r0-r12}
+	pop {r0-r12}
+	mov pc, lr
 
 os_fiq:
 	push {r0-r4}                              @ r5-r7 is used across modes

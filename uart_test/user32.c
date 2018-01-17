@@ -14,6 +14,12 @@ extern String os_irq_heap;
 extern uint32 os_irq_busy;
 extern uint32 os_irq_count;
 
+/**
+ * You can find that if you calculate with floating point, in several case,
+ * you face the number to be saturated with the number, "2147.483642".
+ * It Looks like the maximam value of signed 32-bit integer, just suggesting to convert float to integer.
+ */
+
 void _user_start()
 {
 	uint32 color = COLOR32_WHITE;
