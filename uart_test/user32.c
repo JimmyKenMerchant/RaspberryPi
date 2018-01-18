@@ -10,9 +10,9 @@
 #include "system32.h"
 #include "system32.c"
 
-extern String os_irq_heap;
-extern uint32 os_irq_busy;
-extern uint32 os_irq_count;
+extern String UART32_UARTINT_HEAP;
+extern uint32 UART32_UARTINT_BUSY_ADDR;
+extern uint32 UART32_UARTINT_COUNT_ADDR;
 
 void _user_start()
 {
@@ -37,27 +37,27 @@ void _user_start()
 	str_process_counter = deci32_int32_to_string_deci( process_counter, 1, 0 ); // Min. 1 Digit, Unsigned
 
 	while (true) {
-		if ( _load_32( os_irq_busy ) ) {
+		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
 				_uarttx( "\n\0", 2 ); // Send Line Feed Because Teletype Is Only Mirrored Carriage Return
 
 			switch ( pipenumber ) {
 				case 0:
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 
-					if ( print32_strindex( os_irq_heap, "fadd" ) != -1 ) {
+					if ( print32_strindex( UART32_UARTINT_HEAP, "fadd" ) != -1 ) {
 
 						_uarttx( ": Float ADD: ARG_FIRST?\r\n\0", 26 );
 						caltype = 0;
 						pipenumber = 1;
-					} else if ( print32_strindex( os_irq_heap, "fsub" ) != -1 ) {
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "fsub" ) != -1 ) {
 						_uarttx( ": Float SUB: ARG_FIRST?\r\n\0", 26 );
 						caltype = 1;
 						pipenumber = 1;
-					} else if ( print32_strindex( os_irq_heap, "fmul" ) != -1 ) {
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "fmul" ) != -1 ) {
 						_uarttx( ": Float MUL: ARG_FIRST?\r\n\0", 26 );
 						caltype = 2;
 						pipenumber = 1;
-					} else if ( print32_strindex( os_irq_heap, "fdiv" ) != -1 ) {
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "fdiv" ) != -1 ) {
 						_uarttx( ": Float DIV: ARG_FIRST?\r\n\0", 26 );
 						caltype = 3;
 						pipenumber = 1;
@@ -70,7 +70,7 @@ void _user_start()
 				case 1:
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 					
-					var_a = deci32_string_to_float32( os_irq_heap, print32_charindex( os_irq_heap, 0x0D ) );
+					var_a = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_charindex( UART32_UARTINT_HEAP, 0x0D ) );
 					if ( vfp32_f32tohexa( var_a ) == -1 ) {
 						_uarttx( ": No Float: ARGUMENT?\r\n\0", 24 );
 						break;
@@ -89,7 +89,7 @@ void _user_start()
 				case 2:
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 
-					var_b = deci32_string_to_float32( os_irq_heap, print32_charindex( os_irq_heap, 0x0D ) );
+					var_b = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_charindex( UART32_UARTINT_HEAP, 0x0D ) );
 					if ( vfp32_f32tohexa( var_b ) == -1 ) {
 						_uarttx( ": No Float: ARGUMENT?\r\n\0", 24 );
 						break;
@@ -147,9 +147,9 @@ void _user_start()
 					break;
 			}
 
-			heap32_mfill( (obj)os_irq_heap, 0 );
-			_store_32( os_irq_count, 0 );
-			_store_32( os_irq_busy, 0 );
+			heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+			_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
+			_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 		}
 	}
 }

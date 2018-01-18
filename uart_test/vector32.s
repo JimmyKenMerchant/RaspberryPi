@@ -119,121 +119,18 @@ os_reset:
 	push {r0-r3,lr}
 	mov r0, #8      @ 8 Words, 32 Bytes
 	bl heap32_malloc
-	str r0, os_irq_heap
+	ldr r1, ADDR32_UART32_UARTINT_HEAP
+	str r0, [r1]
 	pop {r0-r3,lr}
 
 	mov pc, lr
 
 os_irq:
-	/* Auto (Local) Variables, but just Aliases */
-	heap  .req r0
-	temp  .req r1
-
 	push {r0-r12,lr}
 
-	ldr temp, _os_irq_busy
-	tst temp, #0x1
-	bne os_irq_error1        @ If Busy
+	bl uart32_uartint
 
-	/*bl uart32_uartclrint*/     @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
-
-	ldr heap, os_irq_heap
-
-macro32_debug heap, 100, 88
-
-	push {r0}
-	ldr r1, _os_irq_count    @ Add Offset
-	add r0, r1
-	mov r1, #1               @ 1 Bytes
-	bl uart32_uartrx
-
-macro32_debug r0, 100, 100
-
-	tst r0, #0x8             @ Whether Overrun or Not
-
-	pop {r0}
-
-	bne os_irq_error2        @ If Overrun
-
-	/* If Succeed to Receive */
-
-	/* Mirror Received Data to Teletype */
-	push {r0}
-	ldr r1, _os_irq_count    @ Add Offset
-	add r0, r1
-	mov r1, #1               @ 1 Bytes
-	bl uart32_uarttx
-	pop {r0}
-
-	/* Slide Offset Count */
-	ldr temp, _os_irq_count
-	add temp, temp, #1
-	cmp temp, #32
-	movge temp, #0           @ If Exceeds 32 Bytes
-	str temp, _os_irq_count
-
-	push {r0}
-	mov r1, #0x0D            @ Ascii Codes of Carriage Return (By Pressing Enter Key)
-	bl print32_charindex
-	mov temp, r0
-	pop {r0}
-
-	cmp temp, #-1
-	beq os_irq_common
-
-	/* If Newline is Indicated (To Run Command) */
-
-	mov temp, #1
-	str temp, _os_irq_busy
-
-	b os_irq_common
-
-	os_irq_error1:
-		/* If Busy (Not Yet Proceeded on Previous Command) */
-		push {r0}
-		mov r0, #0xFF00
-		bl arm32_sleep
-		pop {r0}
-		b os_irq_common
-
-	os_irq_error2:
-		/* If Overrun to Receive */
-		bl uart32_uartclrrx
-		ldr heap, os_irq_warn_overrun
-
-		push {r0}
-		mov r1, #12
-		bl uart32_uarttx
-		pop {r0}
-
-	os_irq_common:
-
-macro32_debug_hexa heap, 100, 112, 32
-
-		pop {r0-r12,lr}
-		mov pc, lr
-
-.unreq heap
-.unreq temp
-
-.globl os_irq_heap
-.globl os_irq_count
-.globl os_irq_busy
-.balign 4
-os_irq_heap:   .word 0x00
-os_irq_count:  .word _os_irq_count
-_os_irq_count: .word 0x00
-os_irq_busy:   .word _os_irq_busy
-_os_irq_busy:  .word 0x00
-.balign 4
-
-
-.balign 4
-_os_irq_warn_overrun:
-	.ascii "Er:Overrun\r\n\0"    @ Add Null Escape Character on The End
-.balign 4
-os_irq_warn_overrun:
-	.word _os_irq_warn_overrun
+	pop {r0-r12,pc}
 
 os_fiq:
 	push {r0-r7,lr}
