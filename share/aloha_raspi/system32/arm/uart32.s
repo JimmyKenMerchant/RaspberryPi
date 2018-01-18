@@ -71,6 +71,7 @@ uart32_uartinit:
  * Parameters
  * r0: Interrupt FIFO Level Select
  * r1: Interrupt Mask Set (1)/ Clear(0)
+ * r2: Size of Heap (Words)
  *
  * Return: r0 (0 as Success)
  */
@@ -79,7 +80,8 @@ uart32_uartsetint:
 	/* Auto (Local) Variables, but just Aliases */
 	int_fifo        .req r0
 	int_mask        .req r1
-	addr_uart       .req r2
+	size_heap       .req r2
+	addr_uart       .req r3
 
 	mov addr_uart, #equ32_peripherals_base
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
@@ -100,10 +102,12 @@ uart32_uartsetint:
 	macro32_dsb ip
 
 	uart32_uartsetint_common:
+		mov r0, #0
 		mov pc, lr
 
 .unreq temp
 .unreq int_mask
+.unreq size_heap
 .unreq addr_uart
 
 
@@ -306,104 +310,122 @@ uart32_uartclrrx:
  * UART Receive and Wait for Reaching Sufficient Size
  *
  * Parameters
- * r0: Heap for Receive Data
- * r1: Transfer Size (Bytes)
+ * r0: Number of Maximum Size of Heap (Bytes)
+ * r1: Mirror Data to Teletype (1) or Not (0)
  *
- * Return: r0 (0 as success, not 0 as error)
- * Bit[3]: Overrun Error
- * Bit[2]: Break Error
- * Bit[1]: Parity Error
- * Bit[0]: Framing Error
+ * Return: r0 (0 as success)
  */
 .globl uart32_uartint
 uart32_uartint:
 	/* Auto (Local) Variables, but just Aliases */
-	heap  .req r0
-	temp  .req r1
+	max_size    .req r0
+	flag_mirror .req r1
+	heap        .req r2
+	rsv         .req r3
+	temp        .req r4
 
-	push {lr}
+	push {r4,lr}
 
 	ldr temp, UART32_UARTINT_BUSY
-macro32_debug temp, 100, 88
 	tst temp, #0x1
 	bne uart32_uartint_error1        @ If Busy
 
-	/*bl uart32_uartclrint*/     @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
+	/*bl uart32_uartclrint*/         @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
 
 	ldr heap, UART32_UARTINT_HEAP
+	cmp heap, #0
+	beq uart32_uartint_common        @ If No Heap
 
-	push {r0}
-	ldr r1, UART32_UARTINT_COUNT    @ Add Offset
-	add r0, r1
-	mov r1, #1               @ 1 Bytes
+	push {r0-r3}
+	ldr temp, UART32_UARTINT_COUNT   @ Add Offset
+	add r0, heap, temp
+	mov r1, #1                       @ 1 Bytes
 	bl uart32_uartrx
+	mov temp, r0
+	pop {r0-r3}
 
-macro32_debug r0, 100, 100
+/*macro32_debug temp, 100, 100*/
 
-	tst r0, #0x8             @ Whether Overrun or Not
-
-	pop {r0}
-
+	tst temp, #0x8                   @ Whether Overrun or Not
 	bne uart32_uartint_error2        @ If Overrun
 
 	/* If Succeed to Receive */
 
+	cmp flag_mirror, #0
+	beq uart32_uartint_jump
+
 	/* Mirror Received Data to Teletype */
-	push {r0}
-	ldr r1, UART32_UARTINT_COUNT    @ Add Offset
-	add r0, r1
-	mov r1, #1               @ 1 Bytes
+	push {r0-r3}
+	ldr temp, UART32_UARTINT_COUNT   @ Add Offset
+	add r0, heap, temp
+	mov r1, #1                       @ 1 Bytes
 	bl uart32_uarttx
-	pop {r0}
+	pop {r0-r3}
 
-	/* Slide Offset Count */
-	ldr temp, UART32_UARTINT_COUNT
-	add temp, temp, #1
-	cmp temp, #32
-	movge temp, #0           @ If Exceeds 32 Bytes
-	str temp, UART32_UARTINT_COUNT
+	uart32_uartint_jump:
 
-	push {r0}
-	mov r1, #0x0D            @ Ascii Codes of Carriage Return (By Pressing Enter Key)
-	bl print32_charindex
-	mov temp, r0
-	pop {r0}
+		/* Slide Offset Count */
+		ldr temp, UART32_UARTINT_COUNT
+		add temp, temp, #1
+		cmp temp, max_size
+		movge temp, #0                   @ If Exceeds Maximum Size of Heap
+		str temp, UART32_UARTINT_COUNT
 
-	cmp temp, #-1
-	beq uart32_uartint_common
+		push {r0-r3}
+		mov r0, heap
+		mov r1, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		bl print32_charindex
+		mov temp, r0
+		pop {r0-r3}
 
-	/* If Newline is Indicated (To Run Command) */
+		cmp temp, #-1
+		beq uart32_uartint_success
 
-	mov temp, #1
-	str temp, UART32_UARTINT_BUSY
+		/* If Newline is Indicated (To Run Command) */
 
-	b uart32_uartint_common
+		mov temp, #1
+		str temp, UART32_UARTINT_BUSY
+
+		b uart32_uartint_success
 
 	uart32_uartint_error1:
 		/* If Busy (Not Yet Proceeded on Previous Command) */
-		push {r0}
+		push {r0-r3}
 		mov r0, #0xFF00
 		bl arm32_sleep
-		pop {r0}
+		pop {r0-r3}
+
 		b uart32_uartint_common
 
 	uart32_uartint_error2:
 		/* If Overrun to Receive */
+		push {r0-r3}
 		bl uart32_uartclrrx
+		pop {r0-r3}
+
 		ldr heap, uart32_uartint_warn_overrun
 
-		push {r0}
+		push {r0-r3}
+		mov r0, heap
 		mov r1, #12
 		bl uart32_uarttx
-		pop {r0}
+		pop {r0-r3}
+
+		b uart32_uartint_common
+
+	uart32_uartint_success:
+		mov r0, #0
 
 	uart32_uartint_common:
 
 macro32_debug_hexa heap, 100, 112, 32
 
-		pop {pc}
+		pop {r4,pc}
 
+.unreq max_size
+.unreq flag_mirror
 .unreq heap
+.unreq rsv
 .unreq temp
 
 .globl UART32_UARTINT_HEAP

@@ -128,6 +128,8 @@ os_reset:
 os_irq:
 	push {r0-r12,lr}
 
+	mov r0, #31
+	mov r1, #1
 	bl uart32_uartint
 
 	pop {r0-r12,pc}
