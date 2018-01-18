@@ -25,7 +25,7 @@ void _user_start()
 	float32 var_b = 0.0;
 	float32 response = 0.0;
 	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
-	String str_prompt = "\r\nfadd/fsub/fmul/fdiv? Type Then Press Enter\r\n\0";
+	String str_prompt = "\r\nfadd/fsub/fmul/fdiv/sin/cos/tan/ln/log? Type Then Press Enter\r\n\0";
 	String str_process_counter;
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
@@ -45,22 +45,41 @@ void _user_start()
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 
 					if ( print32_strindex( UART32_UARTINT_HEAP, "fadd" ) != -1 ) {
-
-						_uarttx( ": Float ADD: ARG_FIRST?\r\n\0", 26 );
+						_uarttx( ": FLOAT ADD: ARG_FIRST?\r\n\0", 26 );
 						caltype = 0;
 						pipenumber = 1;
 					} else if ( print32_strindex( UART32_UARTINT_HEAP, "fsub" ) != -1 ) {
-						_uarttx( ": Float SUB: ARG_FIRST?\r\n\0", 26 );
+						_uarttx( ": FLOAT SUB: ARG_FIRST?\r\n\0", 26 );
 						caltype = 1;
 						pipenumber = 1;
 					} else if ( print32_strindex( UART32_UARTINT_HEAP, "fmul" ) != -1 ) {
-						_uarttx( ": Float MUL: ARG_FIRST?\r\n\0", 26 );
+						_uarttx( ": FLOAT MUL: ARG_FIRST?\r\n\0", 26 );
 						caltype = 2;
 						pipenumber = 1;
 					} else if ( print32_strindex( UART32_UARTINT_HEAP, "fdiv" ) != -1 ) {
-						_uarttx( ": Float DIV: ARG_FIRST?\r\n\0", 26 );
+						_uarttx( ": FLOAT DIV: ARG_FIRST?\r\n\0", 26 );
 						caltype = 3;
 						pipenumber = 1;
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "sin" ) != -1 ) {
+						_uarttx( ": SINE: ARGUMENT?\r\n\0", 20 );
+						caltype = 4;
+						pipenumber = 2;
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "cos" ) != -1 ) {
+						_uarttx( ": COSINE: ARGUMENT?\r\n\0", 22 );
+						caltype = 5;
+						pipenumber = 2;
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "tan" ) != -1 ) {
+						_uarttx( ": TANGENT: ARGUMENT?\r\n\0", 23 );
+						caltype = 6;
+						pipenumber = 2;
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "ln" ) != -1 ) {
+						_uarttx( ": NATURAL LOG: ARGUMENT?\r\n\0", 27 );
+						caltype = 7;
+						pipenumber = 2;
+					} else if ( print32_strindex( UART32_UARTINT_HEAP, "log" ) != -1 ) {
+						_uarttx( ": COMMON LOG: ARGUMENT?\r\n\0", 26 );
+						caltype = 8;
+						pipenumber = 2;
 					} else {
 						_uarttx( ": Type Correctly\r\n\0", 19 );
 					}
@@ -112,6 +131,24 @@ void _user_start()
 							break;
 						case 3:
 							response = vfp32_fdiv( var_a, var_b );
+							break;
+						case 4:
+							response = math32_degree_to_radian( var_b );
+							response = math32_sin( response );
+							break;
+						case 5:
+							response = math32_degree_to_radian( var_b );
+							response = math32_cos( response );
+							break;
+						case 6:
+							response = math32_degree_to_radian( var_b );
+							response = math32_tan( response );
+							break;
+						case 7:
+							response = math32_ln( var_b );
+							break;
+						case 8:
+							response = math32_log( var_b );
 							break;
 						default:
 							break;

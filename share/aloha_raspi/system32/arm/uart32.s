@@ -71,7 +71,6 @@ uart32_uartinit:
  * Parameters
  * r0: Interrupt FIFO Level Select
  * r1: Interrupt Mask Set (1)/ Clear(0)
- * r2: Size of Heap (Words)
  *
  * Return: r0 (0 as Success)
  */
@@ -80,8 +79,7 @@ uart32_uartsetint:
 	/* Auto (Local) Variables, but just Aliases */
 	int_fifo        .req r0
 	int_mask        .req r1
-	size_heap       .req r2
-	addr_uart       .req r3
+	addr_uart       .req r2
 
 	mov addr_uart, #equ32_peripherals_base
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
@@ -107,7 +105,6 @@ uart32_uartsetint:
 
 .unreq temp
 .unreq int_mask
-.unreq size_heap
 .unreq addr_uart
 
 
@@ -307,13 +304,14 @@ uart32_uartclrrx:
 
 /**
  * function uart32_uartint
- * UART Receive and Wait for Reaching Sufficient Size
+ * UART Interrupt Handler
  *
  * Parameters
  * r0: Number of Maximum Size of Heap (Bytes)
  * r1: Mirror Data to Teletype (1) or Not (0)
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): No Heap, Overrun, or Busy
  */
 .globl uart32_uartint
 uart32_uartint:
@@ -328,13 +326,13 @@ uart32_uartint:
 
 	ldr temp, UART32_UARTINT_BUSY
 	tst temp, #0x1
-	bne uart32_uartint_error1        @ If Busy
+	bne uart32_uartint_error         @ If Busy
 
 	/*bl uart32_uartclrint*/         @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
 
 	ldr heap, UART32_UARTINT_HEAP
 	cmp heap, #0
-	beq uart32_uartint_common        @ If No Heap
+	beq uart32_uartint_error         @ If No Heap
 
 	push {r0-r3}
 	ldr temp, UART32_UARTINT_COUNT   @ Add Offset
@@ -347,7 +345,7 @@ uart32_uartint:
 /*macro32_debug temp, 100, 100*/
 
 	tst temp, #0x8                   @ Whether Overrun or Not
-	bne uart32_uartint_error2        @ If Overrun
+	bne uart32_uartint_error         @ If Overrun
 
 	/* If Succeed to Receive */
 
@@ -388,28 +386,19 @@ uart32_uartint:
 
 		b uart32_uartint_success
 
-	uart32_uartint_error1:
-		/* If Busy (Not Yet Proceeded on Previous Command) */
-		push {r0-r3}
-		mov r0, #0xFF00
-		bl arm32_sleep
-		pop {r0-r3}
-
-		b uart32_uartint_common
-
-	uart32_uartint_error2:
-		/* If Overrun to Receive */
+	uart32_uartint_error:
+		/* If No Heap, Overrun, or Busy to Receive */
 		push {r0-r3}
 		bl uart32_uartclrrx
 		pop {r0-r3}
 
-		ldr heap, uart32_uartint_warn_overrun
-
 		push {r0-r3}
-		mov r0, heap
-		mov r1, #12
+		ldr r0, uart32_uartint_nak
+		mov r1, #2
 		bl uart32_uarttx
 		pop {r0-r3}
+
+		mov r0, #1
 
 		b uart32_uartint_common
 
@@ -439,8 +428,8 @@ UART32_UARTINT_BUSY_ADDR:  .word UART32_UARTINT_BUSY
 UART32_UARTINT_BUSY:  .word 0x00
 
 .balign 4
-_uart32_uartint_warn_overrun:
-	.ascii "Er:Overrun\r\n\0"    @ Add Null Escape Character on The End
+uart32_uartint_nak:
+	.word _uart32_uartint_nak
 .balign 4
-uart32_uartint_warn_overrun:
-	.word _uart32_uartint_warn_overrun
+_uart32_uartint_nak:
+	.ascii "\0x15\0"       @ Add Null Escape Character on The End
