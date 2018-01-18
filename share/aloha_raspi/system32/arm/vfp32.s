@@ -189,13 +189,13 @@ vfp32_feq:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 	mov value1, #0
 
 	vcmp.f32 vfp_value1, vfp_value2
@@ -208,6 +208,7 @@ vfp32_feq:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -229,13 +230,13 @@ vfp32_fgt:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 	mov value1, #0
 
 	vcmp.f32 vfp_value1, vfp_value2
@@ -248,6 +249,7 @@ vfp32_fgt:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -269,13 +271,13 @@ vfp32_flt:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 	mov value1, #0
 
 	vcmp.f32 vfp_value1, vfp_value2
@@ -288,6 +290,7 @@ vfp32_flt:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -309,13 +312,13 @@ vfp32_fge:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 	mov value1, #0
 
 	vcmp.f32 vfp_value1, vfp_value2
@@ -328,6 +331,7 @@ vfp32_fge:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -349,13 +353,13 @@ vfp32_fle:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 	mov value1, #0
 
 	vcmp.f32 vfp_value1, vfp_value2
@@ -368,6 +372,7 @@ vfp32_fle:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -389,13 +394,13 @@ vfp32_fadd:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 
 	vadd.f32 vfp_value1, vfp_value1, vfp_value2
 
@@ -406,6 +411,7 @@ vfp32_fadd:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -427,13 +433,13 @@ vfp32_fsub:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 
 	vsub.f32 vfp_value1, vfp_value1, vfp_value2
 
@@ -444,6 +450,7 @@ vfp32_fsub:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -465,13 +472,13 @@ vfp32_fmul:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 
 	vmul.f32 vfp_value1, vfp_value1, vfp_value2
 
@@ -482,6 +489,7 @@ vfp32_fmul:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2
 
@@ -503,13 +511,13 @@ vfp32_fdiv:
 	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
 
 	/* VFP Registers */
+	vfp_value      .req d0
 	vfp_value1     .req s0
 	vfp_value2     .req s1
 
 	vpush {s0-s1}
 
-	vmov vfp_value1, value1
-	vmov vfp_value2, value2
+	vmov vfp_value, value1, value2
 
 	vdiv.f32 vfp_value1, vfp_value1, vfp_value2
 
@@ -520,5 +528,166 @@ vfp32_fdiv:
 
 .unreq value1
 .unreq value2
+.unreq vfp_value
+.unreq vfp_value1
+.unreq vfp_value2
+
+
+/**
+ * function vfp32_faddi
+ * Add Two Values with Single Precision Float and Convert to 32-bit Unsigned Integer
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Float
+ * r1: Value2, Must Be Type of Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_faddi
+vfp32_faddi:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+
+	/* VFP Registers */
+	vfp_value      .req d0
+	vfp_value1     .req s0
+	vfp_value2     .req s1
+
+	vpush {s0-s1}
+
+	vmov vfp_value, value1, value2
+
+	vadd.f32 vfp_value1, vfp_value1, vfp_value2
+	vcvt.s32.f32 vfp_value1, vfp_value1
+
+	vfp32_faddi_common:
+		vmov value1, vfp_value1
+		vpop {s0-s1}
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+.unreq vfp_value
+.unreq vfp_value1
+.unreq vfp_value2
+
+
+/**
+ * function vfp32_fsubi
+ * Subtract Two Values with Single Precision Float and Convert to 32-bit Unsigned Integer
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Float
+ * r1: Value2, Must Be Type of Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_fsubi
+vfp32_fsubi:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+
+	/* VFP Registers */
+	vfp_value      .req d0
+	vfp_value1     .req s0
+	vfp_value2     .req s1
+
+	vpush {s0-s1}
+
+	vmov vfp_value, value1, value2
+
+	vsub.f32 vfp_value1, vfp_value1, vfp_value2
+	vcvt.s32.f32 vfp_value1, vfp_value1
+
+	vfp32_fsubi_common:
+		vmov value1, vfp_value1
+		vpop {s0-s1}
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+.unreq vfp_value
+.unreq vfp_value1
+.unreq vfp_value2
+
+
+/**
+ * function vfp32_fmuli
+ * Multiply Two Values with Single Precision Float and Convert to 32-bit Unsigned Integer
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Float
+ * r1: Value2, Must Be Type of Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_fmuli
+vfp32_fmuli:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+
+	/* VFP Registers */
+	vfp_value      .req d0
+	vfp_value1     .req s0
+	vfp_value2     .req s1
+
+	vpush {s0-s1}
+
+	vmov vfp_value, value1, value2
+
+	vmul.f32 vfp_value1, vfp_value1, vfp_value2
+	vcvt.s32.f32 vfp_value1, vfp_value1
+
+	vfp32_fmuli_common:
+		vmov value1, vfp_value1
+		vpop {s0-s1}
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+.unreq vfp_value
+.unreq vfp_value1
+.unreq vfp_value2
+
+
+/**
+ * function vfp32_fdivi
+ * Multiply Two Values with Single Precision Float and Convert to 32-bit Unsigned Integer
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Float
+ * r1: Value2, Must Be Type of Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_fdivi
+vfp32_fdivi:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+
+	/* VFP Registers */
+	vfp_value      .req d0
+	vfp_value1     .req s0
+	vfp_value2     .req s1
+
+	vpush {s0-s1}
+
+	vmov vfp_value, value1, value2
+
+	vdiv.f32 vfp_value1, vfp_value1, vfp_value2
+	vcvt.s32.f32 vfp_value1, vfp_value1
+
+	vfp32_fdivi_common:
+		vmov value1, vfp_value1
+		vpop {s0-s1}
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+.unreq vfp_value
 .unreq vfp_value1
 .unreq vfp_value2

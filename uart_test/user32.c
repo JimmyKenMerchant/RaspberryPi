@@ -14,12 +14,6 @@ extern String os_irq_heap;
 extern uint32 os_irq_busy;
 extern uint32 os_irq_count;
 
-/**
- * You can find that if you calculate with floating point, in several case,
- * you face the number to be saturated with the number, "2147.483642".
- * It Looks like the maximam value of signed 32-bit integer, just suggesting to convert float to integer.
- */
-
 void _user_start()
 {
 	uint32 color = COLOR32_WHITE;
@@ -30,7 +24,6 @@ void _user_start()
 	float32 var_a = 0.0;
 	float32 var_b = 0.0;
 	float32 response = 0.0;
-	int32 response_roundoff;
 	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_prompt = "\r\nfadd/fsub/fmul/fdiv? Type Then Press Enter\r\n\0";
 	String str_process_counter;
@@ -125,12 +118,14 @@ void _user_start()
 					}
 
 					/* Round Off to 6th Decimal Place */
+					/* This Makes Lack of Information (Saturated Integer)
 					response = vfp32_fmul( response, 1000000 );
-					response_roundoff = vfp32_f32tos32( response );
-					response = vfp32_s32tof32( response_roundoff );
+					response = vfp32_f32tos32( response );
+					response = vfp32_s32tof32( response );
 					response = vfp32_fdiv( response, 1000000 );
+					*/
 
-					String str_response = deci32_float32_to_string( response, 1, 6, 0 );
+					String str_response = deci32_float32_to_string( response, 1, 7, 0 );
 					print32_set_caret( print32_string( str_response, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( str_response ), 8, 12, FONT_MONO_12PX_ASCII ) );
 					print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 3, 8, 12, FONT_MONO_12PX_ASCII ) );
 					_uarttx( ": ", 2 );
