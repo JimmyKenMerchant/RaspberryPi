@@ -463,8 +463,9 @@ uart32_uartmalloc:
 	beq uart32_uartmalloc_error
 
 	str array, UART32_UARTMALLOC_ARRAY
-
 	str length_array, UART32_UARTMALLOC_LENGTH
+
+	macro32_dsb ip
 
 	sub length_array, length_array, #1
 	
@@ -483,6 +484,8 @@ uart32_uartmalloc:
 
 		str heap, [array, length_array, lsl #2]
 
+		macro32_dsb ip
+
 		sub length_array, length_array, #1
 
 		b uart32_uartmalloc_loop
@@ -496,6 +499,7 @@ uart32_uartmalloc:
 		mov r0, #0
 
 	uart32_uartmalloc_common:
+		macro32_dsb ip
 		pop {r4-r5,pc}
 
 .unreq length_array
@@ -507,8 +511,11 @@ uart32_uartmalloc:
 
 .globl UART32_UARTMALLOC_ARRAY
 .globl UART32_UARTMALLOC_LENGTH
-UART32_UARTMALLOC_ARRAY:  .word 0x00
-UART32_UARTMALLOC_LENGTH: .word 0x00
+.globl UART32_UARTMALLOC_NUMBER_ADDR
+UART32_UARTMALLOC_ARRAY:       .word 0x00
+UART32_UARTMALLOC_LENGTH:      .word 0x00
+UART32_UARTMALLOC_NUMBER_ADDR: .word UART32_UARTMALLOC_NUMBER
+UART32_UARTMALLOC_NUMBER:      .word 0x00
 
 
 /**
@@ -535,7 +542,15 @@ uart32_uartsetheap:
 
 	ldr array, UART32_UARTMALLOC_ARRAY
 	ldr heap, [array, num_heap, lsl #2]
+
+macro32_debug num_heap, 400, 400
+
+	macro32_dsb ip
+
 	str heap, UART32_UARTINT_HEAP
+	str num_heap, UART32_UARTMALLOC_NUMBER
+
+	macro32_dsb ip
 
 	b uart32_uartsetheap_success
 

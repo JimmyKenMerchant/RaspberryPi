@@ -183,6 +183,13 @@ __attribute__((noinline)) uint32 _uartclrrx()
 	return result;
 }
 
+__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x1A");
+	return result;
+}
+
 bool _gpio_detect( uchar8 gpio_number )
 {
 	int32 value = _load_32( _gpio_base|_gpio_gpeds0 );

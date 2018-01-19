@@ -204,6 +204,11 @@ __attribute__((noinline)) uint32 _uartrx
 
 __attribute__((noinline)) uint32 _uartclrrx();
 
+__attribute__((noinline)) uint32 _uartsetheap
+(
+	uint32 num_heap
+);
+
 
 /********************************
  * system32/arm/gpio32.s
