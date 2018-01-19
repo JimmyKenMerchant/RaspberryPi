@@ -136,8 +136,9 @@ print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
  * r0: Lower of Return
  * r1: Upper of Return 
  *
- * Return: r0 (0 as success, 1 as error)
- * Error: Y Caret Reaches Value of Height
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Y Caret Reaches Value of Height
+ * Error(2): When Buffer is not Defined
  */
 .globl print32_set_caret
 print32_set_caret:
@@ -153,9 +154,13 @@ print32_set_caret:
 
 	ldr width, PRINT32_FB32_WIDTH
 	ldr width, [width]
+	cmp width, #0
+	beq print32_set_caret_error2
 
 	ldr height, PRINT32_FB32_HEIGHT
 	ldr height, [height]
+	cmp height, #0
+	beq print32_set_caret_error2
 
 	mov x_coord, xy_coord, lsr #16
 	mov y_coord, xy_coord, lsl #16
@@ -171,12 +176,16 @@ print32_set_caret:
 	print32_set_caret_height:
 		cmp y_coord, height
 		movge y_coord, height
-		bge print32_set_caret_error
+		bge print32_set_caret_error1
 
 		b print32_set_caret_success
 
-	print32_set_caret_error:
+	print32_set_caret_error1:
 		mov r0, #1
+		b print32_set_caret_common
+
+	print32_set_caret_error2:
+		mov r0, #2
 		b print32_set_caret_common
 
 	print32_set_caret_success:

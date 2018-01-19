@@ -55,3 +55,7 @@ sudo echo -ne 'GOOD\r\n' > /dev/serial0
 
 # https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
 ```
+
+**Draft of Description about "UART"**
+
+* UART seems to need to connect with HDMI device on Booting Process. If not, UART will send unavailable characters. This may be relevant to HDMI ground pin with GND. Check the discussion, [UART problem and HDMI](https://www.raspberrypi.org/forums/viewtopic.php?t=61971&p=460906).
