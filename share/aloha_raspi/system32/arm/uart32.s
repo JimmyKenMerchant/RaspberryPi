@@ -421,15 +421,135 @@ macro32_debug_hexa heap, 100, 112, 32
 .globl UART32_UARTINT_COUNT_ADDR
 .globl UART32_UARTINT_BUSY_ADDR
 .balign 4
-UART32_UARTINT_HEAP:  .word 0x00
+UART32_UARTINT_HEAP:       .word 0x00
 UART32_UARTINT_COUNT_ADDR: .word UART32_UARTINT_COUNT
-UART32_UARTINT_COUNT: .word 0x00
+UART32_UARTINT_COUNT:      .word 0x00
 UART32_UARTINT_BUSY_ADDR:  .word UART32_UARTINT_BUSY
-UART32_UARTINT_BUSY:  .word 0x00
+UART32_UARTINT_BUSY:       .word 0x00
+uart32_uartint_nak:        .word _uart32_uartint_nak
+_uart32_uartint_nak:       .ascii "\0x15\0"       @ Add Null Escape Character on The End
+.balign 4
 
-.balign 4
-uart32_uartint_nak:
-	.word _uart32_uartint_nak
-.balign 4
-_uart32_uartint_nak:
-	.ascii "\0x15\0"       @ Add Null Escape Character on The End
+
+/**
+ * function uart32_uartmalloc
+ * Make Two Dimensional Heap Array and Set for UART Receive Interrupt
+ *
+ * Parameters
+ * r0: Length of Heap Array
+ * r1: Size of Each Heap (Words)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Memory Allocation Is Not Succeeded
+ */
+.globl uart32_uartmalloc
+uart32_uartmalloc:
+	/* Auto (Local) Variables, but just Aliases */
+	length_array .req r0
+	size_heap    .req r1
+	rsv          .req r2
+	rsv2         .req r3
+	array        .req r4
+	heap         .req r5
+
+	push {r4-r5,lr}
+
+	push {r0-r3}
+	bl heap32_malloc
+	mov array, r0
+	pop {r0-r3}
+
+	cmp array, #0
+	beq uart32_uartmalloc_error
+
+	str array, UART32_UARTMALLOC_ARRAY
+
+	str length_array, UART32_UARTMALLOC_LENGTH
+
+	sub length_array, length_array, #1
+	
+	uart32_uartmalloc_loop:
+		cmp length_array, #0
+		blt uart32_uartmalloc_success
+
+		push {r0-r3}
+		mov r0, size_heap
+		bl heap32_malloc
+		mov heap, r0
+		pop {r0-r3}
+
+		cmp heap, #0
+		beq uart32_uartmalloc_error
+
+		str heap, [array, length_array, lsl #2]
+
+		sub length_array, length_array, #1
+
+		b uart32_uartmalloc_loop
+
+	uart32_uartmalloc_error:
+		mov r0, #1
+		b uart32_uartmalloc_common
+
+	uart32_uartmalloc_success:
+		str heap, UART32_UARTINT_HEAP            @ Store to First Place of Array
+		mov r0, #0
+
+	uart32_uartmalloc_common:
+		pop {r4-r5,pc}
+
+.unreq length_array
+.unreq size_heap
+.unreq rsv
+.unreq rsv2
+.unreq array
+.unreq heap
+
+.globl UART32_UARTMALLOC_ARRAY
+.globl UART32_UARTMALLOC_LENGTH
+UART32_UARTMALLOC_ARRAY:  .word 0x00
+UART32_UARTMALLOC_LENGTH: .word 0x00
+
+
+/**
+ * function uart32_uartsetheap
+ * Set Assigned Heap for UART Receive Interrupt
+ *
+ * Parameters
+ * r0: Number of Heap in Array
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Out of Range
+ */
+.globl uart32_uartsetheap
+uart32_uartsetheap:
+	/* Auto (Local) Variables, but just Aliases */
+	num_heap     .req r0
+	array        .req r1
+	heap         .req r2
+	length_array .req r3
+
+	ldr length_array, UART32_UARTMALLOC_LENGTH
+	cmp num_heap, length_array
+	bge uart32_uartsetheap_error
+
+	ldr array, UART32_UARTMALLOC_ARRAY
+	ldr heap, [array, num_heap, lsl #2]
+	str heap, UART32_UARTINT_HEAP
+
+	b uart32_uartsetheap_success
+
+	uart32_uartsetheap_error:
+		mov r0, #1
+		b uart32_uartsetheap_common
+
+	uart32_uartsetheap_success:
+		mov r0, #0
+
+	uart32_uartsetheap_common:
+		mov pc, lr
+
+.unreq num_heap
+.unreq array
+.unreq heap
+.unreq length_array

@@ -117,10 +117,9 @@ os_reset:
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #8      @ 8 Words, 32 Bytes
-	bl heap32_malloc
-	ldr r1, ADDR32_UART32_UARTINT_HEAP
-	str r0, [r1]
+	mov r0, #1
+	mov r1, #8                                               @ 8 Words, 32 Bytes
+	bl uart32_uartmalloc
 	pop {r0-r3,lr}
 
 	mov pc, lr

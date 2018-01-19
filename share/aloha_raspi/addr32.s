@@ -59,13 +59,6 @@ ADDR32_DMA32_CB:   .word DMA32_CB
 
 
 /**
- * system32/arm/uart32.s
- */
-
-ADDR32_UART32_UARTINT_HEAP:  .word UART32_UARTINT_HEAP
-
-
-/**
  * system32/library/fb32.s
  */
 
