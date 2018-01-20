@@ -117,7 +117,7 @@ os_reset:
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #4
+	mov r0, #8
 	mov r1, #8                                               @ 8 Words, 32 Bytes
 	bl uart32_uartmalloc
 	pop {r0-r3,lr}

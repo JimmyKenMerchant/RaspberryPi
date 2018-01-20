@@ -407,7 +407,7 @@ uart32_uartint:
 
 	uart32_uartint_common:
 
-macro32_debug_hexa heap, 100, 112, 32
+macro32_debug_hexa heap, 100, 112, 36
 
 		pop {r4,pc}
 
@@ -511,10 +511,9 @@ uart32_uartmalloc:
 
 .globl UART32_UARTMALLOC_ARRAY
 .globl UART32_UARTMALLOC_LENGTH
-.globl UART32_UARTMALLOC_NUMBER_ADDR
+.globl UART32_UARTMALLOC_NUMBER
 UART32_UARTMALLOC_ARRAY:       .word 0x00
 UART32_UARTMALLOC_LENGTH:      .word 0x00
-UART32_UARTMALLOC_NUMBER_ADDR: .word UART32_UARTMALLOC_NUMBER
 UART32_UARTMALLOC_NUMBER:      .word 0x00
 
 
@@ -542,8 +541,6 @@ uart32_uartsetheap:
 
 	ldr array, UART32_UARTMALLOC_ARRAY
 	ldr heap, [array, num_heap, lsl #2]
-
-macro32_debug num_heap, 400, 400
 
 	macro32_dsb ip
 
