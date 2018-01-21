@@ -10,7 +10,7 @@
 
 /**
  * function decix32_string_to_intarray
- * Make Array of Integers From String (Hexadecimal/Decimal System)
+ * Make Array of Integers From String
  *
  * This function detects commas as separators between each Integers
  *
@@ -18,7 +18,6 @@
  * r0: Heap of String
  * r1: Length of String
  * r2: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
- * r3: 0 Means Hexadecimal System, 1 Means Decimal System
  *
  * Return: r0 (Heap of Array, 0 as not succeeded)
  */
@@ -28,15 +27,14 @@ decix32_string_to_intarray:
 	heap_str      .req r0
 	length_str    .req r1
 	size          .req r2
-	system        .req r3
-	temp          .req r4
-	temp2         .req r5
-	length_substr .req r6
-	heap_arr      .req r7
-	length_arr    .req r8
-	offset        .req r9
+	temp          .req r3
+	temp2         .req r4
+	length_substr .req r5
+	heap_arr      .req r6
+	length_arr    .req r7
+	offset        .req r8
 
-	push {r4-r9,lr}
+	push {r4-r8,lr}
 
 	/* Check Commas */
 
@@ -80,14 +78,14 @@ decix32_string_to_intarray:
 		beq decix32_string_to_intarray_common
 
 		.unreq temp
-		align .req r4
+		align .req r3
 
 		/* Convert Size to Bytes Alignment */
 		mov temp2, #1
 		lsl align, temp2, size
 
 		.unreq temp2
-		data .req r5
+		data .req r4
 
 		mov offset, #0
 
@@ -113,7 +111,6 @@ decix32_string_to_intarray:
 
 			push {r0-r3}
 			mov r1, length_substr
-			mov r2, system
 			bl deci32_string_to_int32
 			mov data, r0
 			pop {r0-r3}
@@ -139,12 +136,11 @@ decix32_string_to_intarray:
 
 	decix32_string_to_intarray_common:
 		mov r0, heap_arr
-		pop {r4-r9,pc}
+		pop {r4-r8,pc}
 
 .unreq heap_str
 .unreq length_str
 .unreq size
-.unreq system
 .unreq align
 .unreq data
 .unreq length_substr
@@ -155,7 +151,7 @@ decix32_string_to_intarray:
 
 /**
  * function decix32_intarray_to_string_hexa
- * Make String (Hexadecimal System) From Array of Integers
+ * Make String on Hexadecimal System From Array of Integers
  *
  * Parameters
  * r0: Heap of Array
@@ -314,7 +310,7 @@ decix32_intarray_to_string_hexa:
 
 /**
  * function decix32_intarray_to_string_deci
- * Make String (Decimal System) From Array of Integers
+ * Make String on Decimal System From Array of Integers
  *
  * Parameters
  * r0: Heap of Array
@@ -465,7 +461,7 @@ decix32_intarray_to_string_deci:
 
 /**
  * function decix32_string_to_farray
- * Make Array of Single Precision Floats From String (Decimal System)
+ * Make Array of Single Precision Floats From String on Decimal System
  *
  * This function detects commas as separators between each floats
  *

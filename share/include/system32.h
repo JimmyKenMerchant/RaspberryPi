@@ -1067,15 +1067,15 @@ extern String deci32_int32_to_string_hexa
 
 
 /**
- * Make 32-bit Hexadecimal Number From String
+ * Make 32-bit Unsigned Integer From String on Hexadecimal System
  * Caution! The Range of Decimal Number Is 0x0 through 0xFFFFFFFF
- * Max. Valid Digits Are 8, Otherwise, You'll Get Zero to Return.
+ * Max. Valid Digits Are 8, Otherwise, You'll Inaccurate Return.
  *
  * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
- * Return: Hexadecimal Number
+ * Return: Unsigned Integer
  */
-extern int32 deci32_string_to_hexa
+extern uint32 deci32_string_to_hexa
 (
 	String string,
 	uint32 length_string
@@ -1083,9 +1083,9 @@ extern int32 deci32_string_to_hexa
 
 
 /**
- * Make 64-bit Decimal Number From String (Decimal System)
+ * Make 64-bit Decimal Number From String on Decimal System
  * Caution! The Range of Decimal Number Is 0 through 9,999,999,999,999,999.
- * Max. Valid Digits Are 16, Otherwise, You'll Get Zero to Return.
+ * Max. Valid Digits Are 16, Otherwise, You'll Get Inaccurate Return.
  *
  * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
@@ -1099,9 +1099,25 @@ extern int64 deci32_string_to_deci
 
 
 /**
+ * Make 32-bit Unsigned Integer From String on Binary System
+ * Caution! The Range of Decimal Number Is 0b0 through 0b1111 1111 1111 1111 1111 1111 1111 1111
+ * Max. Valid Digits Are 32, Otherwise, You'll Get Inaccurate Return.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
+ *
+ * Return: Unsigned Integer
+ */
+extern uint32 deci32_string_to_bin
+(
+	String string,
+	uint32 length_string
+);
+
+
+/**
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number Is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Max. Valid Digits Are 10 If Unsigned, 11 If Signed, Otherwise, You'll Get Inaccurate Returned Value.
+ * Maximum Number of Valid Digits Exists. If It Exceeds, You'll Get Inaccurate Return.
  *
  * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
@@ -1110,15 +1126,14 @@ extern int64 deci32_string_to_deci
 extern int32 deci32_string_to_int32
 (
 	String string,
-	uint32 length_string,
-	bool decimal_system
+	uint32 length_string
 );
 
 
 /**
  * Make 32-bit Float From String (Decimal System)
  * Caution! The Range of Integer Part is -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Otherwise, You'll Get Zero on Integer Part to Return.
+ * Otherwise, You'll Get Inaccurate Integer Part to Return.
  *
  * Return: 32-bit Float
  */
@@ -1234,7 +1249,7 @@ extern uint64 deci32_deci_rem64
  ********************************/
 
 /**
- * Make Array of Integers From String (Decimal System)
+ * Make Array of Integers From String
  *
  * This function detects commas as separators between each Integers
  *
@@ -1244,13 +1259,12 @@ extern obj decix32_string_to_intarray
 (
 	String string,
 	uint32 length_string,
-	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
-	bool decimal_system
+	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
 );
 
 
 /**
- * Make String (Hexadecimal System) From Array of Integers
+ * Make String on Hexadecimal System From Array of Integers
  *
  * Return: Heap of String, 0 as not succeeded
  */
@@ -1265,7 +1279,7 @@ extern String decix32_intarray_to_string_hexa
 
 
 /**
- * Make String (Decimal System) From Array of Integers
+ * Make String on Decimal System From Array of Integers
  *
  * Return: Heap of String, 0 as not succeeded
  */
@@ -1279,7 +1293,7 @@ extern String decix32_intarray_to_string_deci
 
 
 /**
- * Make Array of Single Precision Floats From String (Decimal System)
+ * Make Array of Single Precision Floats From String on Decimal System
  *
  * This function detects commas as separators between each floats
  *
@@ -1293,7 +1307,7 @@ extern obj decix32_string_to_farray
 
 
 /**
- * Make String (Decimal System) From Single Precision Floats
+ * Make String on Decimal System From Single Precision Floats
  *
  * Return: Heap of String, 0 as not succeeded
  */

@@ -108,7 +108,7 @@ void _user_start()
 							offset++;
 							length_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x20 ); // Ascii Code of Space
 							if ( length_temp == -1 ) length_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x0D ); // Ascii Code of CR, for Last Variable
-							var_temp = deci32_string_to_int32( UART32_UARTINT_HEAP + offset, length_temp, 0 );
+							var_temp = deci32_string_to_int32( UART32_UARTINT_HEAP + offset, length_temp );
 							_store_32( array_varnumber + 4 * i,  var_temp );
 						}
 

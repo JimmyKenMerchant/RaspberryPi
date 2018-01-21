@@ -440,10 +440,7 @@ deci32_int32_to_string_deci:
 	mov string_minus, #0
 	mov string_cmp, #0
 
-	push {r0-r3}
-	bl deci32_count_zero32
-	mov count_lower, r0
-	pop {r0-r3}
+	clz count_lower, integer
 
 	cmp signed, #1
 	cmpeq count_lower, #0                   @ Whether Top Bit is One or Zero
@@ -461,17 +458,8 @@ deci32_int32_to_string_deci:
 		mov integer_upper, r1
 		pop {r0-r3}
 
-		push {r0-r3}
-		mov r0, integer_lower
-		bl deci32_count_zero32
-		mov count_lower, r0
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, integer_upper
-		bl deci32_count_zero32
-		mov count_upper, r0
-		pop {r0-r3}
+		clz count_lower, integer_lower
+		clz count_upper, integer_upper
 
 		mov temp, count_lower
 		mov count_lower, #0
@@ -704,10 +692,7 @@ deci32_int32_to_string_hexa:
 	cmp min_length, #8
 	movgt min_length, #8
 
-	push {r0-r3}
-	bl deci32_count_zero32
-	mov count, r0
-	pop {r0-r3}
+	clz count, integer
 
 	cmp signed, #1
 	cmpeq count, #0                         @ Whether Top Bit is One or Zero
@@ -717,10 +702,7 @@ deci32_int32_to_string_hexa:
 	/* Process for Minus Signed */
 	mvn integer, integer                    @ All Inverter
 	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
-	push {r0-r3}
-	bl deci32_count_zero32
-	mov count, r0
-	pop {r0-r3}
+	clz count, integer
 
 	deci32_int32_to_string_hexa_jumpunsigned:
 		mov temp, count
@@ -823,9 +805,9 @@ deci32_int32_to_string_hexa:
 
 /**
  * function deci32_string_to_hexa
- * Make 32-bit Hexadecimal Number From String
+ * Make 32-bit Unsigned Integer From String on Hexadecimal System
  * Caution! The Range of Decimal Number Is 0x0 through 0xFFFFFFFF
- * Max. Valid Digits Are 8, Otherwise, You'll Get Zero to Return.
+ * Max. Valid Digits Are 8, Otherwise, You'll Get Inaccurate Return.
  *
  * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
@@ -833,7 +815,7 @@ deci32_int32_to_string_hexa:
  * r0: Heap of String
  * r1: Length of String
  *
- * Return: r0 (Hexadecimal Number)
+ * Return: r0 (Unsigned Integer)
  */
 .globl deci32_string_to_hexa
 deci32_string_to_hexa:
@@ -938,8 +920,11 @@ deci32_string_to_hexa:
 
 	sub length, length, shift
 
+	cmp length, #0
+	blt deci32_string_to_hexa_success
+
 	cmp length, #7
-	bgt deci32_string_to_hexa_success
+	movgt length, #7
 
 	deci32_string_to_hexa_loop:
 
@@ -992,9 +977,9 @@ deci32_string_to_hexa:
 
 /**
  * function deci32_string_to_deci
- * Make 64-bit Decimal Number From String (Decimal System)
+ * Make 64-bit Decimal Number From String on Decimal System
  * Caution! The Range of Decimal Number Is 0 through 9,999,999,999,999,999.
- * Max. Valid Digits Are 16, Otherwise, You'll Get Zero to Return.
+ * Max. Valid Digits Are 16, Otherwise, You'll Get Inaccurate Return.
  *
  * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
@@ -1081,8 +1066,11 @@ deci32_string_to_deci:
 
 	sub length, length, shift
 
+	cmp length, #0
+	blt deci32_string_to_deci_success
+
 	cmp length, #15
-	bgt deci32_string_to_deci_success
+	movgt length, #15 
 
 	deci32_string_to_deci_loop:
 
@@ -1145,17 +1133,182 @@ deci32_string_to_deci:
 
 
 /**
- * function deci32_string_to_int32
- * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
- * Caution! The Range of Decimal Number Is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Max. Valid Digits Are 10 If Unsigned, 11 If Signed, Otherwise, You'll Get Inaccurate Returned Value.
+ * function deci32_string_to_bin
+ * Make 32-bit Unsigned Integer From String on Binary System
+ * Caution! The Range of Decimal Number Is 0b0 through 0b1111 1111 1111 1111 1111 1111 1111 1111
+ * Max. Valid Digits Are 32, Otherwise, You'll Get Inaccurate Return.
  *
  * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
  *
  * Parameters
  * r0: Heap of String
  * r1: Length of String
- * r2: 0 Means Hexadecimal System, 1 Means Decimal System
+ *
+ * Return: r0 (Unsigned Integer)
+ */
+.globl deci32_string_to_bin
+deci32_string_to_bin:
+	/* Auto (Local) Variables, but just Aliases */
+	heap        .req r0
+	length      .req r1
+	byte        .req r2
+	i           .req r3
+	bin         .req r4
+	shift       .req r5
+	dup_length  .req r6
+
+	push {r4-r6,lr}
+
+	mov i, #0
+	mov bin, #0
+
+	/* Check Existing of B */
+
+	push {r0-r3}
+	mov r2, #0x42                     @ Ascii Code of B
+	bl print32_charsearch
+	mov shift, r0
+	pop {r0-r3}
+
+	cmp shift, #-1
+	addne shift, shift, #1            @ Start From Next of B
+	addne heap, heap, shift
+	subne length, length, shift
+
+	/* Check Existing of b */
+
+	push {r0-r3}
+	mov r2, #0x62                     @ Ascii Code of b
+	bl print32_charsearch
+	mov shift, r0
+	pop {r0-r3}
+
+	cmp shift, #-1
+	addne shift, shift, #1            @ Start From Next of b
+	addne heap, heap, shift
+	subne length, length, shift
+
+	cmp length, #0
+	ble deci32_string_to_bin_success
+
+	mov dup_length, length
+	sub length, length, #1
+
+	/* Check Existing of Spaces */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x20                     @ Ascii Code of Space
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Plus */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2B                     @ Ascii Code of Plus
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Commas */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2C                     @ Ascii Code of Comma
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Minus */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	/* Check Existing of Periods */
+
+	push {r0-r3}
+	mov r1, dup_length
+	mov r2, #0x2E                     @ Ascii Code of Period
+	bl print32_charcount
+	mov shift, r0
+	pop {r0-r3}
+
+	sub length, length, shift
+
+	cmp length, #0
+	blt deci32_string_to_bin_success
+
+	cmp length, #31
+	movgt length, #31 
+
+	deci32_string_to_bin_loop:
+
+		ldrb byte, [heap, i]
+
+		cmp byte, #0x20                           @ If Space
+		cmpne byte, #0x2B                         @ If Plus
+		cmpne byte, #0x2C                         @ If Comma
+		cmpne byte, #0x2D                         @ If Minus
+		cmpne byte, #0x2E                         @ If Period
+		addeq i, i, #1
+		beq deci32_string_to_bin_loop
+
+		cmp byte, #0x30                           @ Ascii Code of 0
+
+		moveq shift, #0b0
+		movne shift, #0b1
+
+		deci32_string_to_bin_loop_common:
+
+			lsl shift, shift, length
+			add bin, bin, shift
+
+			add i, i, #1
+			sub length, length, #1
+
+			cmp length, #0
+			bge deci32_string_to_bin_loop
+
+	deci32_string_to_bin_success:
+		mov r0, bin
+
+	deci32_string_to_bin_common:
+		pop {r4-r6,pc}
+
+.unreq heap
+.unreq length
+.unreq byte
+.unreq i
+.unreq bin
+.unreq shift
+.unreq dup_length
+
+
+/**
+ * function deci32_string_to_int32
+ * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
+ * Caution! The Range of Decimal Number Is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
+ * Maximum Number of Valid Digits Exists. If It Exceeds, You'll Get Inaccurate Return.
+ *
+ * This function detects spaces, plus signs, commas, minus signs, periods, then ignores these.
+ *
+ * Parameters
+ * r0: Heap of String
+ * r1: Length of String
  *
  * Return: r0 (32-bit Unsigned/Signed Integer)
  */
@@ -1164,7 +1317,7 @@ deci32_string_to_int32:
 	/* Auto (Local) Variables, but just Aliases */
 	heap        .req r0
 	length      .req r1
-	system      .req r2
+	system      .req r2 @ 0: Binary | 1: Decimal | 2: Hexadecimal
 	signed      .req r3
 	temp        .req r4
 	deci_lower  .req r5
@@ -1172,8 +1325,59 @@ deci32_string_to_int32:
 
 	push {r4-r6,lr}
 
-	cmp system, #0
-	bne deci32_string_to_int32_decimal
+	mov system, #1                    @ Decimal System
+
+	/* B and b are used for Hexadecimal Number. So You Need to Search These as Binary Indicator Before X and x */
+	push {r0-r3}
+	mov r2, #0x42                     @ Ascii Code of B
+	bl print32_charsearch
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	movne system, #0                  @ Binary System
+
+	push {r0-r3}
+	mov r2, #0x62                     @ Ascii Code of b
+	bl print32_charsearch
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	movne system, #0                  @ Binary System
+
+	push {r0-r3}
+	mov r2, #0x58                     @ Ascii Code of X
+	bl print32_charsearch
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	movne system, #2                  @ Hexadecimal System
+
+	push {r0-r3}
+	mov r2, #0x78                     @ Ascii Code of x
+	bl print32_charsearch
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	movne system, #2                  @ Hexadecimal System
+
+	cmp system, #1
+	beq deci32_string_to_int32_decimal
+
+	cmp system, #2
+	beq deci32_string_to_int32_hexadecimal
+
+	push {r0-r3}
+	bl deci32_string_to_bin
+	mov deci_lower, r0
+	pop {r0-r3}
+
+	b deci32_string_to_int32_common
+
+	deci32_string_to_int32_hexadecimal:
 
 	push {r0-r3}
 	bl deci32_string_to_hexa
@@ -1230,7 +1434,7 @@ deci32_string_to_int32:
  * function deci32_string_to_float32
  * Make 32-bit Float From String (Decimal System)
  * Caution! The Range of Integer Part is -2,147,483,648 thorugh 2,147,483,647 on Signed.
- * Otherwise, You'll Get Zero on Integer Part to Return.
+ * Otherwise, You'll Get Inaccurate Integer Part to Return.
  *
  * Parameters
  * r0: Heap of String
@@ -1313,7 +1517,6 @@ deci32_string_to_float32:
 
 		push {r0-r3}
 		mov r1, length_integer
-		mov r2, #1
 		bl deci32_string_to_int32
 		mov integer, r0
 		pop {r0-r3}
@@ -1357,7 +1560,6 @@ deci32_string_to_float32:
 
 		push {r0-r3}
 		mov r1, length_dup
-		mov r2, #1
 		bl deci32_string_to_int32
 		mov frac, r0
 		pop {r0-r3}
@@ -1399,7 +1601,6 @@ deci32_string_to_float32:
 
 		push {r0-r3}
 		mov r1, length_exponent
-		mov r2, #1
 		bl deci32_string_to_int32
 		mov exponent, r0
 		pop {r0-r3}
