@@ -19,10 +19,10 @@
 
 /**
  * function print32_debug_hexa
- * Print Hexadecimal Values in Pointer for Debug Use
+ * Print Hexadecimal Values in Heap for Debug Use
  *
  * Parameters
- * r0: Register to Be Shown
+ * r0: Address of Heap to Be Shown
  * r1: X Coordinate
  * r2: Y Coordinate
  * r3: Length
@@ -56,9 +56,7 @@ print32_debug_hexa:
 	bl print32_hexa
 	add sp, sp, #20
 
-	pop {r4-r8,lr}
-
-	mov pc, lr
+	pop {r4-r8,pc}
 
 print32_debug_hexa_addr_font: .word FONT_MONO_12PX_ASCII
 
@@ -111,9 +109,7 @@ print32_debug:
 	bl print32_number
 	add sp, sp, #20
 
-	pop {r4-r8,lr}
-
-	mov pc, lr
+	pop {r4-r8,pc}
 
 print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
 
@@ -722,10 +718,10 @@ print32_strlen:
 
 /**
  * function print32_hexa
- * Print Hexadecimal Value of 1 Byte
+ * Print Hexadecimal Values in Heap
  *
  * Parameters
- * r0: Pointer of Array of Bytes
+ * r0: Pointer of Array of Bytes (Heap)
  * r1: X Coordinate
  * r2: Y Coordinate
  * r3: Color (16-bit or 32-bit)

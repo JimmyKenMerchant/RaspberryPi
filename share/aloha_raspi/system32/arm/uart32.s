@@ -319,7 +319,7 @@ uart32_uartint:
 	max_size    .req r0
 	flag_mirror .req r1
 	heap        .req r2
-	rsv         .req r3
+	count       .req r3
 	temp        .req r4
 
 	push {r4,lr}
@@ -334,9 +334,10 @@ uart32_uartint:
 	cmp heap, #0
 	beq uart32_uartint_error         @ If No Heap
 
+	ldr count, UART32_UARTINT_COUNT
+
 	push {r0-r3}
-	ldr temp, UART32_UARTINT_COUNT   @ Add Offset
-	add r0, heap, temp
+	add r0, heap, count              @ Add Offset
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uartrx
 	mov temp, r0
@@ -349,40 +350,66 @@ uart32_uartint:
 
 	/* If Succeed to Receive */
 
+	/* Send ACK (Acknowledgement) */
+	push {r0-r3}
+	ldr r0, uart32_uartint_ack
+	mov r1, #1
+	bl uart32_uarttx
+	pop {r0-r3}
+
 	cmp flag_mirror, #0
-	beq uart32_uartint_jump
+	beq uart32_uartint_verify
 
 	/* Mirror Received Data to Teletype */
 	push {r0-r3}
-	ldr temp, UART32_UARTINT_COUNT   @ Add Offset
-	add r0, heap, temp
+	add r0, heap, count              @ Add Offset
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uarttx
 	pop {r0-r3}
 
-	uart32_uartint_jump:
+	uart32_uartint_verify:
 
-		/* Slide Offset Count */
-		ldr temp, UART32_UARTINT_COUNT
-		add temp, temp, #1
-		cmp temp, max_size
-		movge temp, #0                   @ If Exceeds Maximum Size of Heap
-		str temp, UART32_UARTINT_COUNT
-
+		/* Check Back Space */
 		push {r0-r3}
-		mov r0, heap
-		mov r1, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		add r0, heap, count              @ Add Offset
+		mov r1, #0x08                    @ Ascii Code of Back Space
 		bl print32_charindex
 		mov temp, r0
 		pop {r0-r3}
 
 		cmp temp, #-1
-		beq uart32_uartint_success
+		bne uart32_uartint_backspace
 
-		/* If Newline is Indicated (To Run Command) */
+		push {r0-r3}
+		add r0, heap, count              @ Add Offset
+		mov r1, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		bl print32_charindex
+		mov temp, r0
+		pop {r0-r3}
 
-		mov temp, #1
-		str temp, UART32_UARTINT_BUSY
+		/* If Carriage Return is Indicated by Pressing Enter Key */
+
+		cmp temp, #-1
+		movne temp, #1
+		strne temp, UART32_UARTINT_BUSY
+
+		/* Slide Offset Count */
+		add count, count, #1
+		cmp count, max_size
+		movge count, #0                  @ If Exceeds Maximum Size of Heap
+		str count, UART32_UARTINT_COUNT
+
+		b uart32_uartint_success
+
+	uart32_uartint_backspace:
+
+		mov temp, #0
+		str temp, [heap, count]          @ Delete Ascii Code of Backspace Itself
+		sub count, count, #1
+		cmp count, #0
+		movlt count, #0
+		str temp, [heap, count]          @ Delete Previous Character
+		str count, UART32_UARTINT_COUNT
 
 		b uart32_uartint_success
 
@@ -392,9 +419,10 @@ uart32_uartint:
 		bl uart32_uartclrrx
 		pop {r0-r3}
 
+		/* Send NAK (Negative-acknowledgement) */
 		push {r0-r3}
 		ldr r0, uart32_uartint_nak
-		mov r1, #2
+		mov r1, #1
 		bl uart32_uarttx
 		pop {r0-r3}
 
@@ -414,7 +442,7 @@ macro32_debug_hexa heap, 100, 112, 36
 .unreq max_size
 .unreq flag_mirror
 .unreq heap
-.unreq rsv
+.unreq count
 .unreq temp
 
 .globl UART32_UARTINT_HEAP
@@ -427,7 +455,10 @@ UART32_UARTINT_COUNT:      .word 0x00
 UART32_UARTINT_BUSY_ADDR:  .word UART32_UARTINT_BUSY
 UART32_UARTINT_BUSY:       .word 0x00
 uart32_uartint_nak:        .word _uart32_uartint_nak
-_uart32_uartint_nak:       .ascii "\0x15\0"       @ Add Null Escape Character on The End
+_uart32_uartint_nak:       .ascii "\0x15"
+.balign 4
+uart32_uartint_ack:        .word _uart32_uartint_ack
+_uart32_uartint_ack:       .ascii "\0x6"
 .balign 4
 
 

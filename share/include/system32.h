@@ -428,6 +428,33 @@ extern uint32 fb32_clear_color
  ********************************/
 
 /**
+ * Print Hexadecimal Values in Heap for Debug Use
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 print32_debug_hexa
+(
+	uint32 address_heap,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 length
+);
+
+
+/**
+ * Print Number in Register for Debug Use
+ *
+ * Return: 0 as sucess
+ */
+extern uint32 print32_debug
+(
+	uint32 value,
+	int32 x_coord,
+	int32 y_coord
+);
+
+
+/**
  * Set Caret Position from Return Vlue of `print_*` functions
  *
  * Return: 0 as success, 1 as error

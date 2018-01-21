@@ -187,6 +187,8 @@ void _user_start()
 						/* Continue Process */
 						if ( _uartsetheap( current_number + 1 ) ) _uartsetheap( 0 );
 						pipenumber = 0;
+						heap32_mfill( array_var, 0 );
+						heap32_mfill( array_varnumber, 0 );
 
 						break;
 
