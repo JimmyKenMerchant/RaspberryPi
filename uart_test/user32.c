@@ -18,7 +18,7 @@ extern uint32 UART32_UARTMALLOC_LENGTH;
 
 void _user_start()
 {
-	bool execute = false;
+	bool flag_execute = false;
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
@@ -46,7 +46,7 @@ void _user_start()
 
 	while ( true ) {
 		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
-			if ( execute ) {
+			if ( flag_execute ) {
 				switch ( pipenumber ) {
 					case 0:
 
@@ -93,7 +93,15 @@ void _user_start()
 							commandtype = 9;
 							length_arg = 1;
 							pipenumber = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "exec" ) != -1 ) {
+						} else if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
+							commandtype = 0;
+							length_arg = 0;
+							pipenumber = 4;
+						} else if ( print32_strindex( UART32_UARTINT_HEAP, "clear" ) != -1 ) {
+							for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+								_uartsetheap( i );
+								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+							}
 							commandtype = 0;
 							length_arg = 0;
 							pipenumber = 4;
@@ -214,10 +222,6 @@ void _user_start()
 					case 4:
 
 						/* End Process */
-						for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
-							_uartsetheap( i );
-							heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-						}
 
 						_uartsetheap( 0 );
 						str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
@@ -227,7 +231,7 @@ void _user_start()
 						_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 						_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 						pipenumber = 0;
-						execute = false;
+						flag_execute = false;
 
 						break;
 
@@ -237,8 +241,8 @@ void _user_start()
 				}
 			} else {
 				_uarttx( "\n\0", 2 ); // Send Line Feed Because Teletype Is Only Mirrored Carriage Return
-				if ( print32_strindex( UART32_UARTINT_HEAP, "exec" ) != -1 ) {
-					execute = true;
+				if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
+					flag_execute = true;
 					pipenumber = 0;
 					_uartsetheap( 0 );
 				} else {
@@ -247,6 +251,7 @@ void _user_start()
 					_uarttx( ": \0", 3 );
 					heap32_mfree( (obj)str_process_counter );
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( 0 );
+					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 					_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
