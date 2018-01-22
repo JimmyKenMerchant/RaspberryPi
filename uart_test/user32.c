@@ -22,13 +22,13 @@ void _user_start()
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
-	String str_prompt = "\r\nfadd/fsub/fmul/fdiv/sin/cos/tan/ln/log? Type Then Press Enter\r\n\0";
+	String str_prompt = "\r\nfadd/fsub/fmul/fdiv/sin/cos/tan/ln/log/print? Type Then Press Enter\r\n\0";
 	String str_process_counter;
 	obj array_var = heap32_malloc( 3 );
-	obj array_varnumber = heap32_malloc( 3 );
+	obj array_argpointer = heap32_malloc( 3 );
 	uint32 pipenumber;
 	uint32 commandtype;
-	uint32 length_var;
+	uint32 length_arg;
 	uint32 var_index;
 	uint32 current_number;
 	float32 response;
@@ -55,77 +55,86 @@ void _user_start()
 						/* Select Command Type */
 						if ( print32_strindex( UART32_UARTINT_HEAP, "fadd" ) != -1 ) {
 							commandtype = 0;
-							length_var = 3;
+							length_arg = 3;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "fsub" ) != -1 ) {
 							commandtype = 1;
-							length_var = 3;
+							length_arg = 3;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "fmul" ) != -1 ) {
 							commandtype = 2;
-							length_var = 3;
+							length_arg = 3;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "fdiv" ) != -1 ) {
 							commandtype = 3;
-							length_var = 3;
+							length_arg = 3;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "sin" ) != -1 ) {
 							commandtype = 4;
-							length_var = 2;
+							length_arg = 2;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "cos" ) != -1 ) {
 							commandtype = 5;
-							length_var = 2;
+							length_arg = 2;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "tan" ) != -1 ) {
 							commandtype = 6;
-							length_var = 2;
+							length_arg = 2;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "ln" ) != -1 ) {
 							commandtype = 7;
-							length_var = 2;
+							length_arg = 2;
 							pipenumber = 1;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "log" ) != -1 ) {
 							commandtype = 8;
-							length_var = 2;
+							length_arg = 2;
 							pipenumber = 1;
+						} else if ( print32_strindex( UART32_UARTINT_HEAP, "print" ) != -1 ) {
+							commandtype = 9;
+							length_arg = 1;
+							pipenumber = 2;
+						} else if ( print32_strindex( UART32_UARTINT_HEAP, "exec" ) != -1 ) {
+							commandtype = 0;
+							length_arg = 0;
+							pipenumber = 4;
 						} else {
 							commandtype = 0;
-							length_var = 0;
-							pipenumber = 4;
+							length_arg = 0;
+							pipenumber = 3;
 						}
 
-						current_number = UART32_UARTMALLOC_NUMBER;
-						var_index = 0;
 						uint32 offset = 0;
 						uint32 var_temp;
 						uint32 length_temp;
 
-						for( uint32 i = 0; i < length_var; i++ ) {
+						for( uint32 i = 0; i < length_arg; i++ ) {
 							var_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x25 ); // Ascii Code of %
 							if ( var_temp == -1 ) break;
 							offset += var_temp;
 							offset++;
 							length_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x20 ); // Ascii Code of Space
-							if ( length_temp == -1 ) length_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x0D ); // Ascii Code of CR, for Last Variable
+							if ( length_temp == -1 ) length_temp = print32_strlen( UART32_UARTINT_HEAP + offset ); // Ascii Code of CR, for Last Variable
 							var_temp = deci32_string_to_int32( UART32_UARTINT_HEAP + offset, length_temp );
-							_store_32( array_varnumber + 4 * i,  var_temp );
+							_store_32( array_argpointer + 4 * i,  var_temp );
 						}
+
+						current_number = UART32_UARTMALLOC_NUMBER;
+						var_index = 1; // 0 is Direction
 
 						break;
 
 					case 1:
 						
-						if ( _uartsetheap( _load_32( array_varnumber + 4 * var_index ) ) ) _uartsetheap( 0 );
+						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( 0 );
 
-						float32 var_temp2 = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_charindex( UART32_UARTINT_HEAP, 0x0D ) );
+						float32 var_temp2 = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
 						if ( vfp32_f32tohexa( var_temp2 ) == -1 ) {
 							var_temp2 = 0.0;
 						}
 						_store_32( array_var + 4 * var_index,  vfp32_f32tohexa( var_temp2 ) );
 
 						var_index++;
-						if ( var_index >= length_var ) {
+						if ( var_index >= length_arg ) {
 						   	pipenumber = 2;
 						} else {
 							pipenumber = 1;
@@ -137,48 +146,58 @@ void _user_start()
 
 						switch ( commandtype ) {
 							case 0:
-								response = vfp32_fadd( vfp32_hexatof32( _load_32( array_var ) ), vfp32_hexatof32( _load_32( array_var + 4 ) ) );
+								response = vfp32_fadd( vfp32_hexatof32( _load_32( array_var + 4 ) ), vfp32_hexatof32( _load_32( array_var + 8 ) ) );
 								break;
 							case 1:
-								response = vfp32_fsub( vfp32_hexatof32( _load_32( array_var ) ), vfp32_hexatof32( _load_32( array_var + 4 ) ) );
+								response = vfp32_fsub( vfp32_hexatof32( _load_32( array_var + 4 ) ), vfp32_hexatof32( _load_32( array_var + 8 ) ) );
 								break;
 							case 2:
-								response = vfp32_fmul( vfp32_hexatof32( _load_32( array_var ) ), vfp32_hexatof32( _load_32( array_var + 4 ) ) );
+								response = vfp32_fmul( vfp32_hexatof32( _load_32( array_var + 4 ) ), vfp32_hexatof32( _load_32( array_var + 8 ) ) );
 								break;
 							case 3:
-								response = vfp32_fdiv( vfp32_hexatof32( _load_32( array_var ) ), vfp32_hexatof32( _load_32( array_var + 4 ) ) );
+								response = vfp32_fdiv( vfp32_hexatof32( _load_32( array_var + 4 ) ), vfp32_hexatof32( _load_32( array_var + 8 ) ) );
 								break;
 							case 4:
-								response = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_var ) ) );
+								response = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_var + 4 ) ) );
 								response = math32_sin( response );
 								break;
 							case 5:
-								response = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_var ) ) );
+								response = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_var + 4 ) ) );
 								response = math32_cos( response );
 								break;
 							case 6:
-								response = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_var ) ) );
+								response = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_var + 4 ) ) );
 								response = math32_tan( response );
 								break;
 							case 7:
-								response = math32_ln( ( vfp32_hexatof32( _load_32( array_var ) ) ) );
+								response = math32_ln( ( vfp32_hexatof32( _load_32( array_var + 4 ) ) ) );
 								break;
 							case 8:
-								response = math32_log( ( vfp32_hexatof32( _load_32( array_var ) ) ) );
+								response = math32_log( ( vfp32_hexatof32( _load_32( array_var + 4 ) ) ) );
+
+								break;
+							case 9:
+								_uartsetheap( _load_32( array_argpointer ) );
+								_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+								_uarttx( "\r\n\0", 3 );
+								print32_set_caret( print32_string( UART32_UARTINT_HEAP, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( UART32_UARTINT_HEAP ), 8, 12, FONT_MONO_12PX_ASCII ) );
+								print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 3, 8, 12, FONT_MONO_12PX_ASCII ) );
+
 								break;
 							default:
 								break;
 						}
 
-						String str_response = deci32_float32_to_string( response, 1, 7, 0 );
-						print32_set_caret( print32_string( str_response, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( str_response ), 8, 12, FONT_MONO_12PX_ASCII ) );
-						print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 3, 8, 12, FONT_MONO_12PX_ASCII ) );
-						_uarttx( str_response, print32_strlen( str_response ) + 1 );
-						heap32_mfree( (obj)str_response );
-
-						_uarttx( "\r\n\0", 3 );
-
 						pipenumber = 3;
+						if ( commandtype == 9 ) break; // print
+						String str_response = deci32_float32_to_string( response, 1, 7, 0 );
+						//print32_set_caret( print32_string( str_response, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( str_response ), 8, 12, FONT_MONO_12PX_ASCII ) );
+						//print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 3, 8, 12, FONT_MONO_12PX_ASCII ) );
+						//_uarttx( str_response, print32_strlen( str_response ) + 1 );
+						//_uarttx( "\r\n\0", 3 );
+						_uartsetheap( _load_32( array_argpointer ) );
+						heap32_mcopy( (obj)UART32_UARTINT_HEAP, (obj)str_response, 0, print32_strlen( str_response ) );
+						heap32_mfree( (obj)str_response );
 
 						break;
 
@@ -188,7 +207,7 @@ void _user_start()
 						if ( _uartsetheap( current_number + 1 ) ) _uartsetheap( 0 );
 						pipenumber = 0;
 						heap32_mfill( array_var, 0 );
-						heap32_mfill( array_varnumber, 0 );
+						heap32_mfill( array_argpointer, 0 );
 
 						break;
 

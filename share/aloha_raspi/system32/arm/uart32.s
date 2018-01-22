@@ -392,11 +392,13 @@ uart32_uartint:
 		cmp temp, #-1
 		movne temp, #1
 		strne temp, UART32_UARTINT_BUSY
+		movne temp, #0
+		strne temp, [heap, count]        @ Delete Ascii Code of Backspace Itself
 
 		/* Slide Offset Count */
 		add count, count, #1
 		cmp count, max_size
-		movge count, #0                  @ If Exceeds Maximum Size of Heap
+		subge count, count, #1           @ If Exceeds Maximum Size of Heap, Stay Count
 		str count, UART32_UARTINT_COUNT
 
 		b uart32_uartint_success
