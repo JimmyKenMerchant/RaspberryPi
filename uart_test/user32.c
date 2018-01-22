@@ -94,14 +94,21 @@ void _user_start()
 							length_arg = 1;
 							pipenumber = 2;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
+							/* Stop Execution If Reaching "run" */
 							commandtype = 0;
 							length_arg = 0;
 							pipenumber = 4;
 						} else if ( print32_strindex( UART32_UARTINT_HEAP, "clear" ) != -1 ) {
+							/* Clear All Lines */
 							for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 								_uartsetheap( i );
 								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 							}
+							commandtype = 0;
+							length_arg = 0;
+							pipenumber = 4;
+						} else if ( print32_strlen( UART32_UARTINT_HEAP ) == 0 ) {
+							/* Stop Execution If No Content in Line */
 							commandtype = 0;
 							length_arg = 0;
 							pipenumber = 4;
@@ -212,6 +219,7 @@ void _user_start()
 					case 3:
 
 						/* Continue Process */
+
 						if ( _uartsetheap( current_number + 1 ) ) _uartsetheap( 0 );
 						pipenumber = 0;
 						heap32_mfill( array_var, 0 );
@@ -242,6 +250,7 @@ void _user_start()
 			} else {
 				_uarttx( "\n\0", 2 ); // Send Line Feed Because Teletype Is Only Mirrored Carriage Return
 				if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
+					/* If You Command "run", It Starts Execution */
 					flag_execute = true;
 					pipenumber = 0;
 					_uartsetheap( 0 );
