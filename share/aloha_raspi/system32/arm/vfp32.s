@@ -173,6 +173,47 @@ vfp32_f32tou32:
 
 
 /**
+ * function vfp32_fcmp
+ * Compare Two Values and Return NZCV ALU Flags (Bit[31:28])
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Float
+ * r1: Value2, Must Be Type of Float
+ *
+ * Return: r0 (Value by Integer, 0 as False and 1 as True)
+ */
+.globl vfp32_fcmp
+vfp32_fcmp:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+
+	/* VFP Registers */
+	vfp_value      .req d0
+	vfp_value1     .req s0
+	vfp_value2     .req s1
+
+	vpush {s0-s1}
+
+	vmov vfp_value, value1, value2
+
+	vcmp.f32 vfp_value1, vfp_value2
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	mrs value1, apsr
+	and value1, value1, #0xF0000000
+
+	vfp32_fcmp_common:
+		vpop {s0-s1}
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+.unreq vfp_value
+.unreq vfp_value1
+.unreq vfp_value2
+
+
+/**
  * function vfp32_feq
  * Compare Two Values and Return True if Equal
  *

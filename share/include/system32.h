@@ -264,6 +264,12 @@ extern int32 vfp32_f32tos32( float32 value );
 
 extern uint32 vfp32_f32tou32( float32 value );
 
+extern uint32 vfp32_fcmp
+(
+	float32 value1,
+	float32 value2
+);
+
 extern bool vfp32_feq
 (
 	float32 value1,
