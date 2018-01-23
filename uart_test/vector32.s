@@ -9,6 +9,7 @@
 
 /* Define Debug Status */
 .equ __DEBUG, 1
+.equ __MATH32_PRECISION_HIGH, 1
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -118,7 +119,7 @@ os_reset:
 
 	push {r0-r3,lr}
 	mov r0, #32                                              @ 32 Lines
-	mov r1, #8                                               @ 8 Words, 32 Bytes
+	mov r1, #16                                              @ 16 Words, 64 Bytes
 	bl uart32_uartmalloc
 	pop {r0-r3,lr}
 
@@ -127,7 +128,7 @@ os_reset:
 os_irq:
 	push {r0-r12,lr}
 
-	mov r0, #31
+	mov r0, #63                                              @ Last Byte For Null Character
 	mov r1, #1
 	bl uart32_uartint
 

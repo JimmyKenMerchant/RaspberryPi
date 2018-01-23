@@ -27,31 +27,30 @@
 **Settings for Another Raspberry Pi to Check This Test**
 
 ```bash
-#This Example is for Raspberry Pi 3B with Raspbian Stretch 
+#This Example is for Raspberry Pi 3B and Pi Zero W with Raspbian Stretch 
 
-sudo raspi-config
 # 5 Interfacing Options > P6 Serial > No (serial login shell) > Yes (serial interface) > OK > Finish (Reboot)
+sudo raspi-config
 
-sudo less /boot/config.txt
 # Make Sure of comment "enable_uart=1" if RasPi 3B which uses UART1 for the interface
+sudo less /boot/config.txt
 
-sudo stty -F /dev/serial0 speed
-# Check current baud
+# Check current status
+sudo stty -F /dev/serial0 -a
 
 # Set UART rate to 115200 baud
 sudo stty -F /dev/serial0 115200
 
-sudo stty -F /dev/serial0 speed
 # Verify changed baud
+sudo stty -F /dev/serial0 speed
 
 # To Read and Write
 # Ctrl+m Sends CR, Ctrl+j Sends LF, Ctrl+@ Sends Null Character, Similar to Macros of TeraTerm
 sudo minicom -D /dev/serial0
 # sudo apt-get install minicom
-# sudo cat -vA < /dev/serial0
 
 # To Write on another terminal (Write Once per Word, 4 Bytes)
-sudo echo -ne 'GOOD\r\n' > /dev/serial0
+# sudo echo -ne 'GOOD\r\n' > /dev/serial0
 
 # https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
 ```

@@ -24,8 +24,8 @@ void _user_start()
 	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_prompt = "\r\nfadd/fsub/fmul/fdiv/sin/cos/tan/ln/log/print? Type Then Press Enter\r\n\0";
 	String str_process_counter;
-	obj array_var = heap32_malloc( 3 );
-	obj array_argpointer = heap32_malloc( 3 );
+	obj array_var = heap32_malloc( 8 );
+	obj array_argpointer = heap32_malloc( 8 );
 	uint32 pipenumber;
 	uint32 commandtype;
 	uint32 length_arg;
@@ -236,7 +236,9 @@ void _user_start()
 						_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 						_uarttx( ": \0", 3 );
 						heap32_mfree( (obj)str_process_counter );
-						_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
+						_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) + 1 );
+						_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
+						//_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 						_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 						pipenumber = 0;
 						flag_execute = false;
@@ -260,8 +262,10 @@ void _user_start()
 					_uarttx( ": \0", 3 );
 					heap32_mfree( (obj)str_process_counter );
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( 0 );
-					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-					_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
+					//heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+					//_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
+					_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) + 1 );
+					_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
 			}
