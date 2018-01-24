@@ -52,98 +52,98 @@ void _user_start()
 						/* Numeration Process */
 
 						/* Select Command Type */
-						if ( print32_strindex( UART32_UARTINT_HEAP, "fadd" ) != -1 ) {
+						if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fadd", 4 ) != -1 ) {
 							command_number = 0;
 							length_arg = 3;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "fsub" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fsub", 4 ) != -1 ) {
 							command_number = 1;
 							length_arg = 3;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "fmul" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fmul", 4 ) != -1 ) {
 							command_number = 2;
 							length_arg = 3;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "fdiv" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fdiv", 4 ) != -1 ) {
 							command_number = 3;
 							length_arg = 3;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "sin" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "sin", 3 ) != -1 ) {
 							command_number = 4;
 							length_arg = 2;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "cos" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "cos", 3 ) != -1 ) {
 							command_number = 5;
 							length_arg = 2;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "tan" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "tan", 3 ) != -1 ) {
 							command_number = 6;
 							length_arg = 2;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "ln" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 2, "ln", 2 ) != -1 ) {
 							command_number = 7;
 							length_arg = 2;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "log" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "log", 3 ) != -1 ) {
 							command_number = 8;
 							length_arg = 2;
 							pipe_number = 1;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "print" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "print", 5 ) != -1 ) {
 							command_number = 9;
 							length_arg = 1;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "goto" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "goto", 4 ) != -1 ) {
 							command_number = 10;
 							length_arg = 1;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "cmp" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fcmp", 4 ) != -1 ) {
 							command_number = 11;
 							length_arg = 2;
 							pipe_number = 1;
 							var_index = 0; // No Direction
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "jmpeq" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "jmpeq", 5 ) != -1 ) {
 							command_number = 12;
 							length_arg = 0;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "jmpne" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "jmpne", 5 ) != -1 ) {
 							command_number = 13;
 							length_arg = 0;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "jmpge" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "jmpge", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Greater Than or Equal */
 							command_number = 14;
 							length_arg = 0;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "jmple" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "jmple", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than or Equal */
 							command_number = 15;
 							length_arg = 0;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "jmpgt" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "jmpgt", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Greater Than */
 							command_number = 16;
 							length_arg = 0;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "jmplt" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "jmplt", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than */
 							command_number = 17;
 							length_arg = 0;
 							pipe_number = 2;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "run", 3 ) != -1 ) {
 							/* Stop Execution If Reaching "run" */
 							command_number = 0;
 							length_arg = 0;
 							pipe_number = 4;
-						} else if ( print32_strindex( UART32_UARTINT_HEAP, "clear" ) != -1 ) {
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "clear", 5 ) != -1 ) {
 							/* Clear All Lines */
 							for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 								_uartsetheap( i );
@@ -237,10 +237,24 @@ void _user_start()
 								break;
 							case 9:
 								_uartsetheap( _load_32( array_argpointer ) );
-								_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
-								_uarttx( "\r\n\0", 3 );
-								print32_set_caret( print32_string( UART32_UARTINT_HEAP, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( UART32_UARTINT_HEAP ), 8, 12, FONT_MONO_12PX_ASCII ) );
-								print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 3, 8, 12, FONT_MONO_12PX_ASCII ) );
+								String temp_str = UART32_UARTINT_HEAP;
+								uint32 temp_str_index;
+								while ( print32_strlen( temp_str ) ) {
+									temp_str_index = print32_strindex( temp_str, "\\n" ); // Escaped
+									if ( temp_str_index == -1 ) {
+										temp_str_index = print32_strlen( temp_str );
+										_uarttx( temp_str, temp_str_index );
+										print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+										temp_str += temp_str_index;
+									} else {
+										_uarttx( temp_str, temp_str_index );
+										print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+										_uarttx( "\r\n", 2 );
+										print32_set_caret( print32_string( "\r\n", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
+										temp_str += temp_str_index;
+										temp_str += 2;
+									}
+								}
 
 								break;
 							case 10:
@@ -312,6 +326,7 @@ void _user_start()
 					case 4:
 
 						/* End Process */
+						_uarttx( "\0\r\n", 3 );
 
 						_uartsetheap( 0 );
 						str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned

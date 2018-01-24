@@ -510,6 +510,20 @@ extern int32 print32_charsearch
 
 
 /**
+ * Search Second Key String in First String within Range
+ *
+ * Return: Index of First Character in String, if not -1
+ */
+extern int32 print32_strsearch
+(
+	String string,
+	uint32 length_string,
+	String string_key,
+	uint32 length_string_key
+);
+
+
+/**
  * Count Byte Character in String
  *
  * Return: Number of Counts for Character Key

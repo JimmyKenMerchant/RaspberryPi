@@ -214,7 +214,7 @@ print32_set_caret_addr_y_caret: .word FB32_Y_CARET
  * Search Second Key String in First String
  *
  * Parameters
- * r0: Pointer of Array of String
+ * r0: Pointer of Array of String to Be Subjected
  * r1: Pointer of Array of String to Be Searched (Key)
  *
  * Return: r0 (Index of First Character in String, if not -1)
@@ -225,72 +225,70 @@ print32_strindex:
 	string_point1      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	string_point2      .req r1 @ Parameter, Register for Argument, Scratch Register
 	char_search        .req r2
-	temp               .req r3
-	increment          .req r4
-	string_size1       .req r5
-	string_length2     .req r6
-	string_size2       .req r7
+	search_length      .req r3
+	string_length1     .req r4
+	string_length2     .req r5
+	string_size2       .req r6
+	increment          .req r7
 
-	push {r4-r7}
+	push {r4-r7,lr}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl print32_strlen
-	mov string_size1, r0
-	pop {r0-r3,lr}
+	mov string_length1, r0
+	pop {r0-r3}
 
-	add string_size1, string_point1, string_size1
-
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, string_point2
 	bl print32_strlen
 	mov string_length2, r0
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	add string_size2, string_point2, string_length2
 
 	mov increment, #0
+	mov search_length, string_length1                 @ For First Character of Key
 
 	print32_strindex_loop:
 		cmp string_point2, string_size2
 		subhs increment, increment, string_length2     @ string_length2 May Have Zero
 		bhs print32_strindex_common
 
-		add temp, string_point1, increment
-
-		cmp temp, string_size1
+		cmp increment, string_length1
 		mvnhs increment, #0
 		bhs print32_strindex_common
 
 		ldrb char_search, [string_point2]
 
-		push {r0-r3,lr}
-		mov r0, temp
-		mov r1, char_search
-		bl print32_charindex
+		push {r0-r3}
+		add r0, string_point1, increment
+		mov r1, search_length
+		mov r2, char_search
+		bl print32_charsearch
 		cmp r0, #-1                                    @ 0xFFFFFFF
 		addne increment, increment, r0
-		moveq increment, r0
-		pop {r0-r3,lr}
+		pop {r0-r3}
+		mvneq increment, #0
 		beq print32_strindex_common
 
 		add string_point2, string_point2, #1
 		add increment, increment, #1
+		mov search_length, #1                          @ After Search and Hit First Character of Key 
 
 		b print32_strindex_loop
 
 	print32_strindex_common:
 		mov r0, increment
-		pop {r4-r7}
-		mov pc, lr
+		pop {r4-r7,pc}
 
 .unreq string_point1
 .unreq string_point2
 .unreq char_search
-.unreq temp
-.unreq increment
-.unreq string_size1
+.unreq search_length
+.unreq string_length1
 .unreq string_length2
 .unreq string_size2
+.unreq increment
 
 
 /**
@@ -311,26 +309,22 @@ print32_charindex:
 	char_string       .req r2
 	increment         .req r3
 	string_length     .req r4
-	temp              .req r5
 
-	push {r4-r5}
+	push {r4,lr}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl print32_strlen
 	mov string_length, r0
-	pop {r0-r3,lr}
-
-	add string_length, string_point, string_length
+	pop {r0-r3}
 
 	mov increment, #0
 
 	print32_charindex_loop:
-		add temp, string_point, increment
-		cmp temp, string_length
-		mvnge increment, #0
-		bge print32_charindex_common
+		cmp increment, string_length
+		mvnhs increment, #0
+		bhs print32_charindex_common
 
-		ldrb char_string, [temp]
+		ldrb char_string, [string_point, increment]
 		cmp char_string, char_search
 		beq print32_charindex_common
 
@@ -339,15 +333,13 @@ print32_charindex:
 
 	print32_charindex_common:
 		mov r0, increment
-		pop {r4-r5}
-		mov pc, lr
+		pop {r4,pc}
 
 .unreq string_point
 .unreq char_search
 .unreq char_string
 .unreq increment
 .unreq string_length
-.unreq temp
 
 
 /**
@@ -376,8 +368,8 @@ print32_charsearch:
 
 	print32_charsearch_loop:
 		cmp increment, string_length
-		mvnge increment, #0
-		bge print32_charsearch_common
+		mvnhs increment, #0
+		bhs print32_charsearch_common
 
 		ldrb char_string, [string_point, increment]
 		cmp char_string, char_search
@@ -395,6 +387,79 @@ print32_charsearch:
 .unreq string_length
 .unreq char_search
 .unreq char_string
+.unreq increment
+
+
+/**
+ * function print32_strsearch
+ * Search Second Key String in First String within Range
+ *
+ * Parameters
+ * r0: Pointer of Array of String to Be Subjected
+ * r1: Length of String to Be Subjected
+ * r2: Pointer of Array of String to Be Searched (Key)
+ * r3: Length 0f String to Be Searched (Key)
+ *
+ * Return: r0 (Index of First Character in String, if not -1)
+ */
+.globl print32_strsearch
+print32_strsearch:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point1      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_length1     .req r1 @ Parameter, Register for Argument, Scratch Register
+	string_point2      .req r2
+	string_length2     .req r3
+	char_search        .req r4
+	search_length      .req r5
+	string_size2       .req r6
+	increment          .req r7
+
+	push {r4-r7,lr}
+
+	add string_size2, string_point2, string_length2
+
+	mov increment, #0
+	mov search_length, string_length1                 @ For First Character of Key
+
+	print32_strsearch_loop:
+		cmp string_point2, string_size2
+		subhs increment, increment, string_length2     @ string_length2 May Have Zero
+		bhs print32_strsearch_common
+
+		cmp increment, string_length1
+		mvnhs increment, #0
+		bhs print32_strsearch_common
+
+		ldrb char_search, [string_point2]
+
+		push {r0-r3}
+		add r0, string_point1, increment
+		mov r1, search_length
+		mov r2, char_search
+		bl print32_charsearch
+		cmp r0, #-1                                    @ 0xFFFFFFF
+		addne increment, increment, r0
+		pop {r0-r3}
+		mvneq increment, #0
+		beq print32_strsearch_common
+
+		add string_point2, string_point2, #1
+		add increment, increment, #1
+		mov search_length, #1                          @ After Search and Hit First Character of Key 
+
+		b print32_strsearch_loop
+
+	print32_strsearch_common:
+		mov r0, increment
+		pop {r4-r7,pc}
+
+.unreq string_point1
+.unreq string_length1
+.unreq string_point2
+.unreq string_length2
+.unreq char_search
+.unreq search_length
+.unreq string_size2
 .unreq increment
 
 
