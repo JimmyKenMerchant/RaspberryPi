@@ -713,12 +713,12 @@ extern uint32 draw32_rgba_to_argb
 
 
 enum Object_draw32_renderbuffer {
-	draw32_renderbuffer        = 5, // Size
-	draw32_renderbuffer_addr   = 0,
-	draw32_renderbuffer_width  = 4,
-	draw32_renderbuffer_height = 8,
-	draw32_renderbuffer_size   = 12,
-	draw32_renderbuffer_depth  = 16
+	draw32_renderbuffer        = 5, // Size of Object (Words)
+	draw32_renderbuffer_addr   = 0, // Offset in Object
+	draw32_renderbuffer_width  = 4, // Offset in Object
+	draw32_renderbuffer_height = 8, // Offset in Object
+	draw32_renderbuffer_size   = 12, // Offset in Object
+	draw32_renderbuffer_depth  = 16 // Offset in Object
 };
 
 /**
