@@ -1487,6 +1487,103 @@ arm32_fill_random:
 
 
 /**
+ * function arm32_count_zero32
+ * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
+ *
+ * Parameters
+ * r0: Register to Count
+ *
+ * Usage: r0-r3
+ * Return: r0 (Number of Count of Leading Zero)
+ */
+.globl arm32_count_zero32
+arm32_count_zero32:
+	/* Auto (Local) Variables, but just Aliases */
+	register      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	mask          .req r1
+	base          .req r2
+	count         .req r3
+
+	mov mask, #0x80000000              @ Most Siginificant Bit
+	mov count, #0
+
+	arm32_count_zero32_loop:
+		cmp count, #32
+		beq arm32_count_zero32_common @ If All Zero
+
+		and base, register, mask
+		teq base, mask                 @ Similar to EORS (Exclusive OR)
+		addne count, count, #1         @ No Zero flag (This Means The Bit is Zero)
+		lsrne mask, mask, #1
+		bne arm32_count_zero32_loop   @ If the Bit is Zero
+
+	arm32_count_zero32_common:
+		mov r0, count
+		mov pc, lr
+
+.unreq register
+.unreq mask
+.unreq base
+.unreq count
+
+
+/**
+ * function arm32_mul
+ * Multiplication of Two Integers
+ *
+ * Parameters
+ * r0: First Factor
+ * r1: Second Factor
+ *
+ * Return: r0 (Answer of Multiplication)
+ */
+.globl arm32_mul
+arm32_mul:
+	/* Auto (Local) Variables, but just Aliases */
+	factor1       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	factor2       .req r1
+	shift         .req r2
+	answer        .req r3
+	temp          .req r4
+
+	push {r4,lr}
+
+	mov answer, #31
+
+	clz shift, factor2           @ All Zero is #32, 0x80000000 is #0
+	sub shift, answer, shift
+
+	mov answer, #0 
+
+	arm32_mul_loop:
+		cmp shift, #0
+		blt arm32_mul_common
+
+		mov temp, #1
+		lsl temp, temp, shift
+		tst factor2, temp
+		beq arm32_mul_loop_common    @ If Zero
+
+		/* If One on The Bit[shift] */
+		lsl temp, factor1, shift
+		add answer, answer, temp
+
+		arm32_mul_loop_common:
+			sub shift, shift, #1
+			b arm32_mul_loop
+
+	arm32_mul_common:
+		mov r0, answer
+		pop {r4,pc}
+
+.unreq factor1
+.unreq factor2
+.unreq shift
+.unreq answer
+.unreq temp
+
+
+/**
  * function arm32_div
  * Division of Two Integers
  *
@@ -1529,8 +1626,7 @@ arm32_div:
 		lsl bit, bit, shift
 
 		arm32_div_loop_loop:
-			sub dividend, dividend, temp
-			cmp dividend, #0
+			subs dividend, dividend, temp
 			blt arm32_div_loop_common
 
 			add answer, answer, bit
@@ -1544,8 +1640,8 @@ arm32_div:
 			b arm32_div_loop
 
 	arm32_div_common:
+		mov r1, dividend @ dividend is r0, copy dividend to r1 before storing answer to r0
 		mov r0, answer
-		mov r1, dividend
 		pop {r4-r5,pc}
 
 .unreq dividend
@@ -1574,7 +1670,7 @@ arm32_rem:
 
 	push {lr}
 
-	bl arm32_rem
+	bl arm32_div
 
 	arm32_rem_common:
 		mov r0, r1

@@ -20,15 +20,22 @@ extern uint32 UART32_UARTMALLOC_LENGTH;
 typedef enum _command_list {
 	null,
 	sleep, // Sleep Microseconds by Integer "Sleep %S1"
-	fadd, // Float Addition, "fadd %D %S1 %S2": D = S1 + S2.
-	fsub, // Float Subtruction, "fsub %D %S1 %S2": D = S1 - S2.
+	add, // Integer Addition, "add %D %S1 %S2": D = S1 + S2.
+	sub,
+	mul,
+	div,
+	rem,
+	cmp, // Compare Two Values of Integer, "cmp %S1 %S2": Reflects NZCV Flags.
+	fadd, // Floating Point Addition, "fadd %D %S1 %S2": D = S1 + S2.
+	fsub, // Float Point Subtruction, "fsub %D %S1 %S2": D = S1 - S2.
 	fmul,
 	fdiv,
-	sin, // Sine by Degrees on Float, "sin %D %S1": D = sin(S1).
-	cos,
-	tan,
-	ln,
-	log,
+	fsin, // Sine by Degrees on Float, "sin %D %S1": D = sin(S1).
+	fcos,
+	ftan,
+	fln,
+	flog,
+	fcmp, // Compare Two Values of Floating Point, "fcmp %S1 %S2": Reflects NZCV Flags.
 	input, // Input to the Line, "input %D"
 	print,
 	mov, // Copy, "mov %D %S1"
@@ -36,14 +43,12 @@ typedef enum _command_list {
 	jmp, // Jump to the Line, "jmp %S1": Next line will be the number in S1.
 	call, // Jump to the Line and Store Current Line to Stack (Last In First Out) for Link
 	ret, // Return to Previous Line Stored in Stack
-	fcmp, // Compare Two Values, "cmp %S1 %S2": Reflects NZCV Flags.
 	skpeq, // Skip One Line If Equal, just "skpeq": Use next to a "cmp.." command.
 	skpne,
 	skpge,
 	skple,
 	skpgt,
 	skplt,
-
 	run, // Runs Script From List Number Zero
 	clear // Clear All in Every Line
 } command_list;
@@ -65,10 +70,11 @@ typedef union _flex32 {
 	obj oj;
 } flex32;
 
+bool flag_execute;
 
 void _user_start()
 {
-	bool flag_execute = false;
+
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
 	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
@@ -88,9 +94,10 @@ void _user_start()
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
 	_uarttx( str_aloha, print32_strlen( str_aloha ) + 1 );
-
 	_uarttx( "00: \0", 5 );
 
+	flag_execute = false;
+	
 	while ( true ) {
 		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
 			if ( flag_execute ) {
@@ -105,6 +112,36 @@ void _user_start()
 							length_arg = 1;
 							pipe_type = enumurate_variables;
 							var_index = 0;
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "add", 3 ) != -1 ) {
+							command_type = add;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "sub", 3 ) != -1 ) {
+							command_type = sub;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "mul", 3 ) != -1 ) {
+							command_type = mul;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "div", 3 ) != -1 ) {
+							command_type = div;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "rem", 3 ) != -1 ) {
+							command_type = rem;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "cmp", 3 ) != -1 ) {
+							command_type = cmp;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 0; // No Direction
 						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fadd", 4 ) != -1 ) {
 							command_type = fadd;
 							length_arg = 3;
@@ -125,31 +162,36 @@ void _user_start()
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "sin", 3 ) != -1 ) {
-							command_type = sin;
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fsin", 4 ) != -1 ) {
+							command_type = fsin;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "cos", 3 ) != -1 ) {
-							command_type = cos;
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fcos", 4 ) != -1 ) {
+							command_type = fcos;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "tan", 3 ) != -1 ) {
-							command_type = tan;
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "ftan", 4 ) != -1 ) {
+							command_type = ftan;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 2, "ln", 2 ) != -1 ) {
-							command_type = ln;
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "fln", 3 ) != -1 ) {
+							command_type = fln;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "log", 3 ) != -1 ) {
-							command_type = log;
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "flog", 4 ) != -1 ) {
+							command_type = flog;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fcmp", 4 ) != -1 ) {
+							command_type = fcmp;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 0; // No Direction
 						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "input", 5 ) != -1 ) {
 							command_type = input;
 							length_arg = 1;
@@ -178,11 +220,6 @@ void _user_start()
 							command_type = ret;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fcmp", 4 ) != -1 ) {
-							command_type = fcmp;
-							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0; // No Direction
 						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skpeq", 5 ) != -1 ) {
 							command_type = skpeq;
 							length_arg = 0;
@@ -266,13 +303,19 @@ void _user_start()
 
 						flex32 var_temp2;
 
-						if ( command_type >= fadd ) {
+						if ( command_type >= fadd ) { // Type of Single Precision Float
 							var_temp2.f32 = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
 							if ( var_temp2.i32 == -1 ) {
-								var_temp2.f32 = 0.0;
+								var_temp2.i32 = deci32_string_to_int32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+								var_temp2.f32 = vfp32_s32tof32( var_temp2.i32 );
 							}
-						} else {
-							var_temp2.i32 = deci32_string_to_int32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+						} else { // Type of 32-bit Signed Integer
+							if( print32_charindex( UART32_UARTINT_HEAP, 0x2E ) != -1 ) { // Ascii Code of Period
+								var_temp2.f32 = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+								var_temp2.i32 = vfp32_f32tos32( var_temp2.f32 );
+							} else {
+								var_temp2.i32 = deci32_string_to_int32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+							}
 						}
 
 						_store_32( array_source + 4 * var_index, var_temp2.i32 );
@@ -288,35 +331,72 @@ void _user_start()
 							case sleep:
 								_sleep( _load_32( array_source ) );
 								break;
+							case add:
+								direction.i32 =  _load_32( array_source + 4 ) + _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								break;
+							case sub:
+								direction.i32 =  _load_32( array_source + 4 ) - _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								break;
+							case mul:
+								direction.i32 =  arm32_mul( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								break;
+							case div:
+								direction.i32 =  arm32_div( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								break;
+							case rem:
+								direction.i32 =  arm32_rem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								break;
+							case cmp:
+								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+
+								break;
 							case fadd:
 								direction.f32 = vfp32_fadd( vfp32_hexatof32( _load_32( array_source + 4 ) ), vfp32_hexatof32( _load_32( array_source + 8 ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
 							case fsub:
 								direction.f32 = vfp32_fsub( vfp32_hexatof32( _load_32( array_source + 4 ) ), vfp32_hexatof32( _load_32( array_source + 8 ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
 							case fmul:
 								direction.f32 = vfp32_fmul( vfp32_hexatof32( _load_32( array_source + 4 ) ), vfp32_hexatof32( _load_32( array_source + 8 ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
 							case fdiv:
 								direction.f32 = vfp32_fdiv( vfp32_hexatof32( _load_32( array_source + 4 ) ), vfp32_hexatof32( _load_32( array_source + 8 ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case sin:
+							case fsin:
 								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								direction.f32 = math32_sin( direction.f32 );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case cos:
+							case fcos:
 								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								direction.f32 = math32_cos( direction.f32 );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case tan:
+							case ftan:
 								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								direction.f32 = math32_tan( direction.f32 );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case ln:
+							case fln:
 								direction.f32 = math32_ln( ( vfp32_hexatof32( _load_32( array_source + 4 ) ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case log:
+							case flog:
 								direction.f32 = math32_log( ( vfp32_hexatof32( _load_32( array_source + 4 ) ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
+
+								break;
+							case fcmp:
+								status_nzcv = vfp32_fcmp( vfp32_hexatof32( _load_32( array_source ) ), vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 
 								break;
 							case input:
@@ -382,10 +462,6 @@ void _user_start()
 								current_line = _load_32( (obj)UART32_UARTINT_HEAP );
 
 								break;
-							case fcmp:
-								status_nzcv = vfp32_fcmp( vfp32_hexatof32( _load_32( array_source ) ), vfp32_hexatof32( _load_32( array_source + 4 ) ) );
-
-								break;
 							case skpeq:
 								/* Equal; Z Bit[30] == 1 */
 								if ( status_nzcv & 0x40000000 ) current_line++;
@@ -421,16 +497,11 @@ void _user_start()
 						}
 
 						pipe_type = go_nextline;
-						if ( command_type >= input ) { 
-							break; // Type of No Direction or Special
-						} else if ( command_type >= fadd) { // Type of Float
-							str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
-						} else {
-							break; // sleep
-						}
+						if ( str_direction == null ) break;
 						_uartsetheap( _load_32( array_argpointer ) );
+						heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 						heap32_mcopy( (obj)UART32_UARTINT_HEAP, (obj)str_direction, 0, print32_strlen( str_direction ) );
-						heap32_mfree( (obj)str_direction );
+						str_direction = (String)heap32_mfree( (obj)str_direction );
 
 						break;
 
@@ -448,8 +519,6 @@ void _user_start()
 					case terminate_pipe:
 
 						/* End Process */
-						_uarttx( "\0\r\n", 3 );
-
 						_uartsetheap( 0 );
 						str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 						_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
@@ -469,7 +538,7 @@ void _user_start()
 						break;
 				}
 			} else {
-				_uarttx( "\n\0", 2 ); // Send Line Feed Because Teletype Is Only Mirrored Carriage Return
+				_uarttx( "\r\n", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 				if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
 					/* If You Command "run", It Starts Execution */
 					flag_execute = true;

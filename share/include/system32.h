@@ -169,6 +169,27 @@ extern void arm32_msb();
 
 extern void arm32_isb();
 
+/**
+ * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
+ *
+ * Return: Number of Count of Leading Zero
+ */
+extern uint32 arm32_count_zero32
+(
+	uint32 countee
+);
+
+
+/**
+ * Multiplication of Two Integers
+ *
+ * Return: Answer of Multiplication
+ */
+extern int32 arm32_mul(
+	int32 factor1,
+	int32 factor2
+);
+
 
 /**
  * Division of Two Integers
@@ -176,8 +197,8 @@ extern void arm32_isb();
  * Return: Answer of Division
  */
 extern int32 arm32_div(
-	uint32 dividend,
-	uint32 divisor
+	int32 dividend,
+	int32 divisor
 );
 
 

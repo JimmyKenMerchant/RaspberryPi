@@ -7,48 +7,6 @@
  *
  */
 
-
-/**
- * function deci32_count_zero32
- * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
- *
- * Parameters
- * r0: Register to Count
- *
- * Usage: r0-r3
- * Return: r0 (Count)
- */
-.globl deci32_count_zero32
-deci32_count_zero32:
-	/* Auto (Local) Variables, but just Aliases */
-	register      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	mask          .req r1
-	base          .req r2
-	count         .req r3
-
-	mov mask, #0x80000000              @ Most Siginificant Bit
-	mov count, #0
-
-	deci32_count_zero32_loop:
-		cmp count, #32
-		beq deci32_count_zero32_common @ If All Zero
-
-		and base, register, mask
-		teq base, mask                 @ Similar to EORS (Exclusive OR)
-		addne count, count, #1         @ No Zero flag (This Means The Bit is Zero)
-		lsrne mask, mask, #1
-		bne deci32_count_zero32_loop   @ If the Bit is Zero
-
-	deci32_count_zero32_common:
-		mov r0, count
-		mov pc, lr
-
-.unreq register
-.unreq mask
-.unreq base
-.unreq count
-
-
 /**
  * function deci32_float32_to_string
  * Make String of Single Precision Float Value

@@ -308,7 +308,7 @@ uart32_uartclrrx:
  *
  * Parameters
  * r0: Number of Maximum Size of Heap (Bytes)
- * r1: Mirror Data to Teletype (1) or Not (0)
+ * r1: Mirror Data to Teletype (1) or Send ACK (0)
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): No Heap, Overrun, or Busy
@@ -337,7 +337,7 @@ uart32_uartint:
 	ldr count, UART32_UARTINT_COUNT
 
 	push {r0-r3}
-	add r0, heap, count              @ Add Offset
+	ldr r0, uart32_uartint_buffer
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uartrx
 	mov temp, r0
@@ -350,50 +350,57 @@ uart32_uartint:
 
 	/* If Succeed to Receive */
 
-	/* Send ACK (Acknowledgement) */
-	push {r0-r3}
-	ldr r0, uart32_uartint_ack
-	mov r1, #1
-	bl uart32_uarttx
-	pop {r0-r3}
-
 	cmp flag_mirror, #0
-	beq uart32_uartint_verify
+	beq uart32_uartint_sendack
 
 	/* Mirror Received Data to Teletype */
 	push {r0-r3}
-	add r0, heap, count              @ Add Offset
+	ldr r0, uart32_uartint_buffer
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uarttx
 	pop {r0-r3}
+
+	b uart32_uartint_verify
+
+	uart32_uartint_sendack:
+
+		/* Send ACK (Acknowledgement) */
+		push {r0-r3}
+		ldr r0, uart32_uartint_ack
+		mov r1, #1
+		bl uart32_uarttx
+		pop {r0-r3}
 
 	uart32_uartint_verify:
 
 		/* Check Back Space */
 		push {r0-r3}
-		add r0, heap, count              @ Add Offset
-		mov r1, #0x08                    @ Ascii Code of Back Space
-		bl print32_charindex
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x08                    @ Ascii Code of Back Space
+		bl print32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 
 		cmp temp, #-1
 		bne uart32_uartint_backspace
 
+		/* Check Carriage Return */
 		push {r0-r3}
-		add r0, heap, count              @ Add Offset
-		mov r1, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
-		bl print32_charindex
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		bl print32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 
-		/* If Carriage Return is Indicated by Pressing Enter Key */
-
 		cmp temp, #-1
-		movne temp, #1
-		strne temp, UART32_UARTINT_BUSY
-		movne temp, #0
-		strne temp, [heap, count]        @ Delete Ascii Code of Backspace Itself
+		bne uart32_uartint_carriagereturn
+
+		/* Store Data to Actual Memory Space from Buffer */
+		ldr temp, uart32_uartint_buffer
+		ldrb temp, [temp]
+		strb temp, [heap, count]
 
 		/* Slide Offset Count */
 		add count, count, #1
@@ -405,13 +412,26 @@ uart32_uartint:
 
 	uart32_uartint_backspace:
 
-		mov temp, #0
-		str temp, [heap, count]          @ Delete Ascii Code of Backspace Itself
 		sub count, count, #1
 		cmp count, #0
 		movlt count, #0
-		str temp, [heap, count]          @ Delete Previous Character
+		mov temp, #0
+		str temp, [heap, count]          @ Clear Previous Character
 		str count, UART32_UARTINT_COUNT
+
+		/* Send Esc[K (Clear From Cursor Right) */
+		push {r0-r3}
+		ldr r0, uart32_uartint_e_clrline
+		mov r1, #3
+		bl uart32_uarttx
+		pop {r0-r3}
+
+		b uart32_uartint_success
+
+	uart32_uartint_carriagereturn:
+
+		mov temp, #1
+		str temp, UART32_UARTINT_BUSY
 
 		b uart32_uartint_success
 
@@ -457,10 +477,22 @@ UART32_UARTINT_COUNT:      .word 0x00
 UART32_UARTINT_BUSY_ADDR:  .word UART32_UARTINT_BUSY
 UART32_UARTINT_BUSY:       .word 0x00
 uart32_uartint_nak:        .word _uart32_uartint_nak
-_uart32_uartint_nak:       .ascii "\0x15"
+_uart32_uartint_nak:       .ascii "\x15\0"
 .balign 4
 uart32_uartint_ack:        .word _uart32_uartint_ack
-_uart32_uartint_ack:       .ascii "\0x6"
+_uart32_uartint_ack:       .ascii "\x6\0"
+.balign 4
+uart32_uartint_e_clrline:  .word _uart32_uartint_e_clrline
+_uart32_uartint_e_clrline: .ascii "\x1B[K\0"           @ Esc(0x1B)[K: Clear From Cursor Right
+.balign 4
+uart32_uartint_e_clrscr:   .word _uart32_uartint_e_clrscr
+_uart32_uartint_e_clrscr:  .ascii "\x1B[2\0"           @ Esc(0x1B)[2: Clear Screen
+.balign 4
+uart32_uartint_e_homecs:   .word _uart32_uartint_e_homecs
+_uart32_uartint_e_homecs:  .ascii "\x1B[H\0"           @ Esc(0x1B)[H: Set Cursor to Upper Left Corner
+.balign 4
+uart32_uartint_buffer:     .word _uart32_uartint_buffer
+_uart32_uartint_buffer:    .space 4                     @ 4 Bytes
 .balign 4
 
 
