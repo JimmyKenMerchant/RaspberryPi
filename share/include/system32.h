@@ -170,6 +170,39 @@ extern void arm32_msb();
 extern void arm32_isb();
 
 
+/**
+ * Division of Two Integers
+ *
+ * Return: Answer of Division
+ */
+extern int32 arm32_div(
+	uint32 dividend,
+	uint32 divisor
+);
+
+
+/**
+ * Return Remainder of Division of Two Integers
+ *
+ * Return: Reminder of Division
+ */
+extern int32 arm32_rem(
+	uint32 dividend,
+	uint32 divisor
+);
+
+
+/**
+ * Compare Two Values and Return NZCV ALU Flags (Bit[31:28])
+ *
+ * Return: NZCV ALU Flags (Bit[31:28])
+ */
+extern uint32 arm32_cmp(
+	uint32 value1,
+	uint32 value2
+);
+
+
 /********************************
  * system32/arm/uart32.s
  ********************************/

@@ -180,7 +180,7 @@ vfp32_f32tou32:
  * r0: Value1, Must Be Type of Float
  * r1: Value2, Must Be Type of Float
  *
- * Return: r0 (Value by Integer, 0 as False and 1 as True)
+ * Return: r0 (NZCV ALU Flags (Bit[31:28]))
  */
 .globl vfp32_fcmp
 vfp32_fcmp:

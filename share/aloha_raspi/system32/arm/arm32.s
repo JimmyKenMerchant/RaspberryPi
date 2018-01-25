@@ -1487,6 +1487,131 @@ arm32_fill_random:
 
 
 /**
+ * function arm32_div
+ * Division of Two Integers
+ *
+ * Parameters
+ * r0: Dividend (Numerator)
+ * r1: Divisor (Denominator)
+ *
+ * Return: r0 (Answer of Division), r1 (Reminder of Division)
+ */
+.globl arm32_div
+arm32_div:
+	/* Auto (Local) Variables, but just Aliases */
+	dividend       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	divisor        .req r1
+	lz_dividend    .req r2
+	lz_divisor     .req r3
+	answer         .req r4
+	bit            .req r5
+
+	push {r4-r5,lr}
+
+	mov answer, #0
+
+	clz lz_dividend, dividend
+	clz lz_divisor, divisor
+
+	sub lz_dividend, lz_divisor, lz_dividend
+
+	.unreq lz_dividend
+	.unreq lz_divisor
+	shift .req r2
+	temp  .req r3
+
+	arm32_div_loop:
+		cmp shift, #0
+		blt arm32_div_common
+
+		lsl temp, divisor, shift
+		mov bit, #1
+		lsl bit, bit, shift
+
+		arm32_div_loop_loop:
+			sub dividend, dividend, temp
+			cmp dividend, #0
+			blt arm32_div_loop_common
+
+			add answer, answer, bit
+
+			b arm32_div_loop_loop
+
+		arm32_div_loop_common:
+
+			add dividend, dividend, temp @ Reverse If Reaches Minus
+			sub shift, shift, #1
+			b arm32_div_loop
+
+	arm32_div_common:
+		mov r0, answer
+		mov r1, dividend
+		pop {r4-r5,pc}
+
+.unreq dividend
+.unreq divisor
+.unreq shift
+.unreq temp
+.unreq answer
+.unreq bit
+
+
+/**
+ * function arm32_rem
+ * Return Remainder of Division of Two Integers
+ *
+ * Parameters
+ * r0: Dividend (Numerator)
+ * r1: Divisor (Denominator)
+ *
+ * Return: r0 (Reminder of Division)
+ */
+.globl arm32_rem
+arm32_rem:
+	/* Auto (Local) Variables, but just Aliases */
+	dividend       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	divisor        .req r1
+
+	push {lr}
+
+	bl arm32_rem
+
+	arm32_rem_common:
+		mov r0, r1
+		pop {pc}
+
+.unreq dividend
+.unreq divisor
+
+
+/**
+ * function arm32_cmp
+ * Compare Two Values and Return NZCV ALU Flags (Bit[31:28])
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Integer
+ * r1: Value2, Must Be Type of Integer
+ *
+ * Return: r0 (NZCV ALU Flags (Bit[31:28]))
+ */
+.globl arm32_cmp
+arm32_cmp:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+
+	cmp value1, value2
+	mrs value1, apsr
+	and value1, value1, #0xF0000000
+
+	arm32_cmp_common:
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+
+
+/**
  * Make sure to complete addresses of variables by `str/ldr Rd, [PC, #Immediate]`,
  * othewise, compiler can't recognaize labels of variables or literal pool.
  * This Immediate can't be over #4095 (0xFFF), i.e. within 4K Bytes.
