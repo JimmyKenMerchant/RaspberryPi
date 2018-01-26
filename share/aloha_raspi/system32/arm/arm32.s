@@ -1545,8 +1545,22 @@ arm32_mul:
 	shift         .req r2
 	answer        .req r3
 	temp          .req r4
+	sign_factor1  .req r5
+	sign_factor2  .req r6
 
-	push {r4,lr}
+	push {r4-r6,lr}
+
+	cmp factor1, #0
+	movlt sign_factor1, #1
+	mvnlt factor1, factor1
+	addlt factor1, factor1, #1
+	movge sign_factor1, #0
+
+	cmp factor2, #0
+	movlt sign_factor2, #1
+	mvnlt factor2, factor2
+	addlt factor2, factor2, #1
+	movge sign_factor2, #0
 
 	mov answer, #31
 
@@ -1557,7 +1571,7 @@ arm32_mul:
 
 	arm32_mul_loop:
 		cmp shift, #0
-		blt arm32_mul_common
+		blt arm32_mul_sign
 
 		mov temp, #1
 		lsl temp, temp, shift
@@ -1565,27 +1579,50 @@ arm32_mul:
 		beq arm32_mul_loop_common    @ If Zero
 
 		/* If One on The Bit[shift] */
-		lsl temp, factor1, shift
-		add answer, answer, temp
+
+		lsls temp, factor1, shift
+		movcs answer, #0x7FFFFFFF    @ If Carry
+		bcs arm32_mul_sign
+
+		adds answer, answer, temp
+		movvs answer, #0x7FFFFFFF    @ If Overflow
+		bvs arm32_mul_sign
 
 		arm32_mul_loop_common:
 			sub shift, shift, #1
 			b arm32_mul_loop
 
+	arm32_mul_sign:
+		cmp sign_factor1, #1
+		cmpeq sign_factor2, #0
+		beq arm32_mul_sign_negative
+		cmp sign_factor2, #1
+		cmpeq sign_factor1, #0
+		beq arm32_mul_sign_negative
+
+		b arm32_mul_common
+
+		arm32_mul_sign_negative:
+
+			mvn answer, answer
+			add answer, answer, #1
+
 	arm32_mul_common:
 		mov r0, answer
-		pop {r4,pc}
+		pop {r4-r6,pc}
 
 .unreq factor1
 .unreq factor2
 .unreq shift
 .unreq answer
 .unreq temp
+.unreq sign_factor1
+.unreq sign_factor2
 
 
 /**
  * function arm32_div
- * Division of Two Integers
+ * Division of Two Signed Integers
  *
  * Parameters
  * r0: Dividend (Numerator)
@@ -1602,10 +1639,24 @@ arm32_div:
 	lz_divisor     .req r3
 	answer         .req r4
 	bit            .req r5
+	sign_dividend  .req r6
+	sign_divisor   .req r7
 
-	push {r4-r5,lr}
+	push {r4-r7,lr}
 
 	mov answer, #0
+
+	cmp dividend, #0
+	movlt sign_dividend, #1
+	mvnlt dividend, dividend
+	addlt dividend, dividend, #1
+	movge sign_dividend, #0
+
+	cmp divisor, #0
+	movlt sign_divisor, #1
+	mvnlt divisor, divisor
+	addlt divisor, divisor, #1
+	movge sign_divisor, #0
 
 	clz lz_dividend, dividend
 	clz lz_divisor, divisor
@@ -1619,7 +1670,7 @@ arm32_div:
 
 	arm32_div_loop:
 		cmp shift, #0
-		blt arm32_div_common
+		blt arm32_div_signanswer
 
 		lsl temp, divisor, shift
 		mov bit, #1
@@ -1627,6 +1678,11 @@ arm32_div:
 
 		arm32_div_loop_loop:
 			subs dividend, dividend, temp
+			/**
+			 * vs<means set overflow>: V == 1, vc: V == 0, mi<means minus>: N == 1, pl<means plus>: N == 0
+			 * hi: C == 1 && Z == 0, hs(cs): C == 1, lo(cc): C == 0, ls C == 0 || Z == 1
+			 * "cmp" is like "subs", but C-set means hs because minus singed binary is bigger than plus signed one.
+			 */
 			blt arm32_div_loop_common
 
 			add answer, answer, bit
@@ -1639,10 +1695,36 @@ arm32_div:
 			sub shift, shift, #1
 			b arm32_div_loop
 
+	arm32_div_signanswer:
+		cmp sign_dividend, #1
+		cmpeq sign_divisor, #0
+		beq arm32_div_signanswer_negative
+		cmp sign_divisor, #1
+		cmpeq sign_dividend, #0
+		beq arm32_div_signanswer_negative
+
+		b arm32_div_signreminder
+
+		arm32_div_signanswer_negative:
+
+			mvn answer, answer
+			add answer, answer, #1
+
+	arm32_div_signreminder:
+		cmp sign_dividend, #1
+		beq arm32_div_signreminder_negative
+
+		b arm32_div_common
+
+		arm32_div_signreminder_negative:
+
+			mvn dividend, dividend
+			add dividend, dividend, #1
+
 	arm32_div_common:
 		mov r1, dividend @ dividend is r0, copy dividend to r1 before storing answer to r0
 		mov r0, answer
-		pop {r4-r5,pc}
+		pop {r4-r7,pc}
 
 .unreq dividend
 .unreq divisor
@@ -1650,6 +1732,8 @@ arm32_div:
 .unreq temp
 .unreq answer
 .unreq bit
+.unreq sign_dividend
+.unreq sign_divisor
 
 
 /**

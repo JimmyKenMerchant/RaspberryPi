@@ -59,7 +59,7 @@ typedef enum _pipe_list {
 	enumurate_variables,
 	execute_command,
 	go_nextline,
-	terminate_pipe
+	termination
 } pipe_list;
 
 
@@ -91,6 +91,7 @@ void _user_start()
 	flex32 direction;
 	direction.i32 = 0;
 	uint32 stack_offset = 1; // Stack offset for "Call" and "Ret", 1 is minimam, from the last line decremental order.
+	String temp_str = null;
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
 	_uarttx( str_aloha, print32_strlen( str_aloha ) + 1 );
@@ -104,161 +105,167 @@ void _user_start()
 				switch ( pipe_type ) {
 					case search_command:
 
+						/* Search and Pass Tabs Before Command */
+						temp_str = UART32_UARTINT_HEAP;
+						while ( print32_strsearch( temp_str, 1, "\t", 1 ) != -1 ) {
+							temp_str++;
+						}
+
 						/* Numeration Process */
 
 						/* Select Command Type */
-						if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "sleep", 5 ) != -1 ) {
+						if ( print32_strsearch( temp_str, 5, "sleep", 5 ) != -1 ) {
 							command_type = sleep;
 							length_arg = 1;
 							pipe_type = enumurate_variables;
 							var_index = 0;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "add", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "add", 3 ) != -1 ) {
 							command_type = add;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "sub", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "sub", 3 ) != -1 ) {
 							command_type = sub;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "mul", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "mul", 3 ) != -1 ) {
 							command_type = mul;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "div", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "div", 3 ) != -1 ) {
 							command_type = div;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "rem", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "rem", 3 ) != -1 ) {
 							command_type = rem;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "cmp", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "cmp", 3 ) != -1 ) {
 							command_type = cmp;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fadd", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fadd", 4 ) != -1 ) {
 							command_type = fadd;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fsub", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fsub", 4 ) != -1 ) {
 							command_type = fsub;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fmul", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fmul", 4 ) != -1 ) {
 							command_type = fmul;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fdiv", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fdiv", 4 ) != -1 ) {
 							command_type = fdiv;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fsin", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fsin", 4 ) != -1 ) {
 							command_type = fsin;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fcos", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fcos", 4 ) != -1 ) {
 							command_type = fcos;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "ftan", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "ftan", 4 ) != -1 ) {
 							command_type = ftan;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "fln", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "fln", 3 ) != -1 ) {
 							command_type = fln;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "flog", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "flog", 4 ) != -1 ) {
 							command_type = flog;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "fcmp", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fcmp", 4 ) != -1 ) {
 							command_type = fcmp;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "input", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "input", 5 ) != -1 ) {
 							command_type = input;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "print", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "print", 5 ) != -1 ) {
 							command_type = print;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "mov", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "mov", 3 ) != -1 ) {
 							command_type = mov;
 							length_arg = 2;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "clr", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "clr", 3 ) != -1 ) {
 							command_type = clr;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "jmp", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "jmp", 3 ) != -1 ) {
 							command_type = jmp;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 4, "call", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "call", 4 ) != -1 ) {
 							command_type = call;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "ret", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "ret", 3 ) != -1 ) {
 							command_type = ret;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skpeq", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpeq", 5 ) != -1 ) {
 							command_type = skpeq;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skpne", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpne", 5 ) != -1 ) {
 							command_type = skpne;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skpge", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpge", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Greater Than or Equal */
 							command_type = skpge;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skple", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skple", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than or Equal */
 							command_type = skple;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skpgt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpgt", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Greater Than */
 							command_type = skpgt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skplt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skplt", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than */
 							command_type = skplt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "skplt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skplt", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than */
 							command_type = skplt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "run", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "run", 3 ) != -1 ) {
 							/* Stop Execution If Reaching "run" */
 							command_type = null;
 							length_arg = 0;
-							pipe_type = terminate_pipe;
-						} else if ( print32_strsearch( UART32_UARTINT_HEAP, 5, "clear", 5 ) != -1 ) {
+							pipe_type = termination;
+						} else if ( print32_strsearch( temp_str, 5, "clear", 5 ) != -1 ) {
 							/* Clear All Lines */
 							for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 								_uartsetheap( i );
@@ -266,12 +273,12 @@ void _user_start()
 							}
 							command_type = null;
 							length_arg = 0;
-							pipe_type = terminate_pipe;
-						} else if ( print32_strlen( UART32_UARTINT_HEAP ) == 0 ) {
+							pipe_type = termination;
+						} else if ( print32_strlen( temp_str ) == 0 ) {
 							/* Stop Execution If No Content in Line */
 							command_type = null;
 							length_arg = 0;
-							pipe_type = terminate_pipe;
+							pipe_type = termination;
 						} else {
 							command_type = null;
 							length_arg = 0;
@@ -283,13 +290,13 @@ void _user_start()
 						uint32 length_temp;
 
 						for ( uint32 i = 0; i < length_arg; i++ ) {
-							var_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x25 ); // Ascii Code of %
+							var_temp = print32_charindex( temp_str + offset, 0x25 ); // Ascii Code of %
 							if ( var_temp == -1 ) break;
 							offset += var_temp;
 							offset++;
-							length_temp = print32_charindex( UART32_UARTINT_HEAP + offset, 0x20 ); // Ascii Code of Space
-							if ( length_temp == -1 ) length_temp = print32_strlen( UART32_UARTINT_HEAP + offset ); // Ascii Code of CR, for Last Variable
-							var_temp = deci32_string_to_int32( UART32_UARTINT_HEAP + offset, length_temp );
+							length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
+							if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
+							var_temp = deci32_string_to_int32( temp_str + offset, length_temp );
 							_store_32( array_argpointer + 4 * i,  var_temp );
 						}
 
@@ -298,23 +305,29 @@ void _user_start()
 						break;
 
 					case enumurate_variables:
-						
+
 						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( 0 );
+
+						/* Search and Pass Tabs Before Command */
+						temp_str = UART32_UARTINT_HEAP;
+						while ( print32_strsearch( temp_str, 1, "\t", 1 ) != -1 ) {
+							temp_str++;
+						}
 
 						flex32 var_temp2;
 
 						if ( command_type >= fadd ) { // Type of Single Precision Float
-							var_temp2.f32 = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+							var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
 							if ( var_temp2.i32 == -1 ) {
-								var_temp2.i32 = deci32_string_to_int32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+								var_temp2.i32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 								var_temp2.f32 = vfp32_s32tof32( var_temp2.i32 );
 							}
 						} else { // Type of 32-bit Signed Integer
-							if( print32_charindex( UART32_UARTINT_HEAP, 0x2E ) != -1 ) { // Ascii Code of Period
-								var_temp2.f32 = deci32_string_to_float32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+							if( print32_charindex( temp_str, 0x2E ) != -1 ) { // Ascii Code of Period
+								var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
 								var_temp2.i32 = vfp32_f32tos32( var_temp2.f32 );
 							} else {
-								var_temp2.i32 = deci32_string_to_int32( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+								var_temp2.i32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 							}
 						}
 
@@ -411,7 +424,7 @@ void _user_start()
 								break;
 							case print:
 								_uartsetheap( _load_32( array_argpointer ) );
-								String temp_str = UART32_UARTINT_HEAP;
+								temp_str = UART32_UARTINT_HEAP;
 								uint32 temp_str_index;
 								while ( print32_strlen( temp_str ) ) {
 									temp_str_index = print32_strindex( temp_str, "\\n" ); // Escaped
@@ -433,6 +446,7 @@ void _user_start()
 								break;
 							case mov:
 								_uartsetheap( _load_32( array_argpointer ) );
+								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 								String mov_str_dst = UART32_UARTINT_HEAP;
 								_uartsetheap( _load_32( array_argpointer + 4 ) );
 								String mov_str_src = UART32_UARTINT_HEAP;
@@ -516,9 +530,10 @@ void _user_start()
 
 						break;
 
-					case terminate_pipe:
+					case termination:
 
 						/* End Process */
+						_uarttx( "\r\n", 2 );
 						_uartsetheap( 0 );
 						str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 						_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
@@ -538,7 +553,7 @@ void _user_start()
 						break;
 				}
 			} else {
-				_uarttx( "\r\n", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
+				_uarttx( "\r\n\0", 3 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 				if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
 					/* If You Command "run", It Starts Execution */
 					flag_execute = true;

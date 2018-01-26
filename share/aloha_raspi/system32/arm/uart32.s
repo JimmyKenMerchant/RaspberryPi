@@ -422,7 +422,7 @@ uart32_uartint:
 		/* Send Esc[K (Clear From Cursor Right) */
 		push {r0-r3}
 		ldr r0, uart32_uartint_e_clrline
-		mov r1, #3
+		mov r1, #4
 		bl uart32_uarttx
 		pop {r0-r3}
 
@@ -483,16 +483,31 @@ uart32_uartint_ack:        .word _uart32_uartint_ack
 _uart32_uartint_ack:       .ascii "\x6\0"
 .balign 4
 uart32_uartint_e_clrline:  .word _uart32_uartint_e_clrline
-_uart32_uartint_e_clrline: .ascii "\x1B[K\0"           @ Esc(0x1B)[K: Clear From Cursor Right
+_uart32_uartint_e_clrline: .ascii "\x1B[0K\0"          @ Esc(0x1B)[0K: Clear From Cursor to End of Line
+.balign 4
+uart32_uartint_e_nxtline:  .word _uart32_uartint_e_nxtline
+_uart32_uartint_e_nxtline: .ascii "\x1B[1E\0"          @ Esc(0x1B)[1E: Move Cursor to Beginning of Next Line
 .balign 4
 uart32_uartint_e_clrscr:   .word _uart32_uartint_e_clrscr
-_uart32_uartint_e_clrscr:  .ascii "\x1B[2\0"           @ Esc(0x1B)[2: Clear Screen
+_uart32_uartint_e_clrscr:  .ascii "\x1B[2J\0"          @ Esc(0x1B)[2J: Clear All Screen
 .balign 4
 uart32_uartint_e_homecs:   .word _uart32_uartint_e_homecs
-_uart32_uartint_e_homecs:  .ascii "\x1B[H\0"           @ Esc(0x1B)[H: Set Cursor to Upper Left Corner
+_uart32_uartint_e_homecs:  .ascii "\x1B[0;0H\0"        @ Esc(0x1B)[0;0H: Set Cursor to Upper Left Corner
+.balign 4
+uart32_uartint_e_up:       .word _uart32_uartint_e_up
+_uart32_uartint_e_up:      .ascii "\x1B[1A\0"          @ Esc(0x1B)[1A: Move Cursor Upward
+.balign 4
+uart32_uartint_e_down:     .word _uart32_uartint_e_down
+_uart32_uartint_e_down:    .ascii "\x1B[1B\0"          @ Esc(0x1B)[1B: Move Cursor Downward
+.balign 4
+uart32_uartint_e_right:    .word _uart32_uartint_e_right
+_uart32_uartint_e_right:   .ascii "\x1B[1C\0"          @ Esc(0x1B)[1C: Move Cursor Right
+.balign 4
+uart32_uartint_e_left:     .word _uart32_uartint_e_left
+_uart32_uartint_e_left:    .ascii "\x1B[1D\0"          @ Esc(0x1B)[1D: Move Cursor Left
 .balign 4
 uart32_uartint_buffer:     .word _uart32_uartint_buffer
-_uart32_uartint_buffer:    .space 4                     @ 4 Bytes
+_uart32_uartint_buffer:    .space 4                    @ 4 Bytes
 .balign 4
 
 
