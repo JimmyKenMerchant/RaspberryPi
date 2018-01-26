@@ -318,6 +318,8 @@ extern int32 vfp32_f32tos32( float32 value );
 
 extern uint32 vfp32_f32tou32( float32 value );
 
+extern float32 vfp32_fsqrt( float32 value );
+
 extern uint32 vfp32_fcmp
 (
 	float32 value1,

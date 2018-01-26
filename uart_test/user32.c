@@ -30,11 +30,15 @@ typedef enum _command_list {
 	fsub, // Float Point Subtruction, "fsub %D %S1 %S2": D = S1 - S2.
 	fmul,
 	fdiv,
-	fsin, // Sine by Degrees on Float, "sin %D %S1": D = sin(S1).
+	fsqrt, // Square Root, "fsqrt %D %S1": D = S1^1/2
+	frad, // Radian, "frad %D %S1": D = S1 * pi/180.0 
+	fsin, // Sine by Radian on Float, "sin %D %S1": D = sin(S1).
 	fcos,
 	ftan,
 	fln,
 	flog,
+	fabs,
+	fneg,
 	fcmp, // Compare Two Values of Floating Point, "fcmp %S1 %S2": Reflects NZCV Flags.
 	input, // Input to the Line, "input %D"
 	print,
@@ -65,7 +69,7 @@ typedef enum _pipe_list {
 
 typedef union _flex32 {
 	float32 f32;
-	int32 i32;
+	int32 s32;
 	uint32 u32;
 	obj oj;
 } flex32;
@@ -89,7 +93,7 @@ void _user_start()
 	pipe_list pipe_type = search_command;
 	command_list command_type = null;
 	flex32 direction;
-	direction.i32 = 0;
+	direction.s32 = 0;
 	uint32 stack_offset = 1; // Stack offset for "Call" and "Ret", 1 is minimam, from the last line decremental order.
 	String temp_str = null;
 
@@ -169,6 +173,16 @@ void _user_start()
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 5, "fsqrt", 5 ) != -1 ) {
+							command_type = fsqrt;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "frad", 4 ) != -1 ) {
+							command_type = frad;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
 						} else if ( print32_strsearch( temp_str, 4, "fsin", 4 ) != -1 ) {
 							command_type = fsin;
 							length_arg = 2;
@@ -191,6 +205,16 @@ void _user_start()
 							var_index = 1; // 0 is Direction
 						} else if ( print32_strsearch( temp_str, 4, "flog", 4 ) != -1 ) {
 							command_type = flog;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "fabs", 4 ) != -1 ) {
+							command_type = fabs;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "fneg", 4 ) != -1 ) {
+							command_type = fneg;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
@@ -318,20 +342,20 @@ void _user_start()
 
 						if ( command_type >= fadd ) { // Type of Single Precision Float
 							var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
-							if ( var_temp2.i32 == -1 ) {
-								var_temp2.i32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
-								var_temp2.f32 = vfp32_s32tof32( var_temp2.i32 );
+							if ( var_temp2.s32 == -1 ) {
+								var_temp2.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
+								var_temp2.f32 = vfp32_s32tof32( var_temp2.s32 );
 							}
 						} else { // Type of 32-bit Signed Integer
 							if( print32_charindex( temp_str, 0x2E ) != -1 ) { // Ascii Code of Period
 								var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
-								var_temp2.i32 = vfp32_f32tos32( var_temp2.f32 );
+								var_temp2.s32 = vfp32_f32tos32( var_temp2.f32 );
 							} else {
-								var_temp2.i32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
+								var_temp2.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 							}
 						}
 
-						_store_32( array_source + 4 * var_index, var_temp2.i32 );
+						_store_32( array_source + 4 * var_index, var_temp2.s32 );
 
 						var_index++;
 						if ( var_index >= length_arg ) pipe_type = execute_command;
@@ -345,24 +369,24 @@ void _user_start()
 								_sleep( _load_32( array_source ) );
 								break;
 							case add:
-								direction.i32 =  _load_32( array_source + 4 ) + _load_32( array_source + 8 );
-								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								direction.s32 =  _load_32( array_source + 4 ) + _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case sub:
-								direction.i32 =  _load_32( array_source + 4 ) - _load_32( array_source + 8 );
-								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								direction.s32 =  _load_32( array_source + 4 ) - _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case mul:
-								direction.i32 =  arm32_mul( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
-								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								direction.s32 =  arm32_mul( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case div:
-								direction.i32 =  arm32_div( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
-								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								direction.s32 =  arm32_div( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case rem:
-								direction.i32 =  arm32_rem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
-								str_direction = deci32_int32_to_string_deci( direction.i32, 1, 1 );
+								direction.s32 =  arm32_rem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case cmp:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
@@ -384,19 +408,24 @@ void _user_start()
 								direction.f32 = vfp32_fdiv( vfp32_hexatof32( _load_32( array_source + 4 ) ), vfp32_hexatof32( _load_32( array_source + 8 ) ) );
 								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case fsin:
+							case fsqrt:
+								direction.f32 = vfp32_fsqrt( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
+								break;
+							case frad:
 								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
-								direction.f32 = math32_sin( direction.f32 );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
+								break;
+							case fsin:
+								direction.f32 = math32_sin( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
 							case fcos:
-								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
-								direction.f32 = math32_cos( direction.f32 );
+								direction.f32 = math32_cos( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
 							case ftan:
-								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
-								direction.f32 = math32_tan( direction.f32 );
+								direction.f32 = math32_tan( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
 							case fln:
@@ -405,6 +434,14 @@ void _user_start()
 								break;
 							case flog:
 								direction.f32 = math32_log( ( vfp32_hexatof32( _load_32( array_source + 4 ) ) ) );
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
+								break;
+							case fabs:
+								direction.u32 = _load_32( array_source + 4 ) & ~(0x80000000); // ~ is Not (Inverter), Sign Bit[31] Clear
+								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
+								break;
+							case fneg:
+								direction.u32 = _load_32( array_source + 4 ) | 0x80000000; // Sign Bit[31] Set
 								str_direction = deci32_float32_to_string( direction.f32, 1, 7, 0 );
 
 								break;

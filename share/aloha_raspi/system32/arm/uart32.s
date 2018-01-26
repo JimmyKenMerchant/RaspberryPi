@@ -416,7 +416,7 @@ uart32_uartint:
 		cmp count, #0
 		movlt count, #0
 		mov temp, #0
-		str temp, [heap, count]          @ Clear Previous Character
+		strb temp, [heap, count]         @ Clear Previous Character
 		str count, UART32_UARTINT_COUNT
 
 		/* Send Esc[K (Clear From Cursor Right) */

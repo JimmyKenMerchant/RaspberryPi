@@ -173,6 +173,37 @@ vfp32_f32tou32:
 
 
 /**
+ * function vfp32_fsqrt
+ * Square Root
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_fsqrt
+vfp32_fsqrt:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	/* VFP Registers */
+	vfp_value1     .req s0
+
+	vpush {s0}
+
+	vmov vfp_value1, value1
+	vsqrt.f32 vfp_value1, vfp_value1
+	vmov value1, vfp_value1
+
+	vfp32_fsqrt_common:
+		vpop {s0}
+		mov pc, lr
+
+.unreq value1
+.unreq vfp_value1
+
+
+/**
  * function vfp32_fcmp
  * Compare Two Values and Return NZCV ALU Flags (Bit[31:28])
  *
