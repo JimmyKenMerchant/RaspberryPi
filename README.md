@@ -45,9 +45,9 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
 system32_sleep:
 	/* Auto (Local) Variables, but just Aliases */
 	usecond        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base .req r1
-	count_low      .req r2
-	count_high     .req r3
+	memorymap_base .req r1 @ Scratch Register
+	count_low      .req r2 @ Scratch Register
+	count_high     .req r3 @ Scratch Register
 	time_low       .req r4
 	time_high      .req r5
 

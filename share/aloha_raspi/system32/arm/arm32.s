@@ -28,8 +28,8 @@
 arm32_core_call:
 	/* Auto (Local) Variables, but just Aliases */
 	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	number_core  .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	handle_addr  .req r2
+	number_core  .req r1 @ Parameter, Register for Argument, Scratch Register
+	handle_addr  .req r2 @ Scratch Register
 
 	and number_core, number_core, #0b11      @ Prevet Memory Overflow
 
@@ -85,10 +85,10 @@ arm32_core_call:
 .globl arm32_core_handle
 arm32_core_handle:
 	/* Auto (Local) Variables, but just Aliases */
-	number_core  .req r0
-	arg1         .req r1
-	arg2         .req r2
-	arg3         .req r3
+	number_core  .req r0 @ Register for Result, Scratch Register
+	arg1         .req r1 @ Scratch Register
+	arg2         .req r2 @ Scratch Register
+	arg3         .req r3 @ Scratch Register
 	handle_addr  .req r4
 	heap         .req r5
 	addr_start   .req r6
@@ -209,9 +209,9 @@ ARM32_CORE_HANDLE_3:         .word 0x00
 arm32_cache_operation_all:
 	/* Auto (Local) Variables, but just Aliases */
 	level        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	flag         .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	set_bit      .req r2
-	temp         .req r3
+	flag         .req r1 @ Parameter, Register for Argument, Scratch Register
+	set_bit      .req r2 @ Scratch Register
+	temp         .req r3 @ Scratch Register
 	bit_mask     .req r4
 	line_shift   .req r5
 	way_size     .req r6
@@ -321,9 +321,9 @@ arm32_cache_operation_all:
 arm32_cache_operation:
 	/* Auto (Local) Variables, but just Aliases */
 	p_address   .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	level       .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	flag        .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	temp        .req r3
+	level       .req r1 @ Parameter, Register for Argument, Scratch Register
+	flag        .req r2 @ Parameter, Register for Argument, Scratch Register
+	temp        .req r3 @ Scratch Register
 	bit_mask    .req r4
 	line_shift  .req r5
 	way_size    .req r6
@@ -470,8 +470,8 @@ arm32_cache_info:
 arm32_cache_operation_heap:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	flag        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	block_size  .req r2
+	flag        .req r1 @ Parameter, Register for Argument, Scratch Register
+	block_size  .req r2 @ Scratch Register
 
 	cmp block_start, #0
 	beq arm32_cache_operation_heap_error
@@ -533,9 +533,9 @@ arm32_cache_operation_heap:
 arm32_convert_endianness:
 	/* Auto (Local) Variables, but just Aliases */
 	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	size            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	align_bytes     .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	swap_1          .req r3
+	size            .req r1 @ Parameter, Register for Argument, Scratch Register
+	align_bytes     .req r2 @ Parameter, Register for Argument, Scratch Register
+	swap_1          .req r3 @ Scratch Register
 	swap_2          .req r4
 	convert_result  .req r5
 	i               .req r6
@@ -623,9 +623,9 @@ ARM32_STOPWATCH_HIGH: .word 0x00
 .globl arm32_stopwatch_start
 arm32_stopwatch_start:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base .req r0
-	count_low      .req r1
-	count_high     .req r2
+	memorymap_base .req r0 @ Scratch Register
+	count_low      .req r1 @ Scratch Register
+	count_high     .req r2 @ Scratch Register
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
@@ -655,10 +655,10 @@ arm32_stopwatch_start:
 .globl arm32_stopwatch_end
 arm32_stopwatch_end:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base .req r0
-	count_low      .req r1
-	count_high     .req r2
-	time_low       .req r3
+	memorymap_base .req r0 @ Register for Result, Scratch Register
+	count_low      .req r1 @ Scratch Register
+	count_high     .req r2 @ Scratch Register
+	time_low       .req r3 @ Scratch Register
 	time_high      .req r4
 
 	push {r4}
@@ -706,9 +706,9 @@ arm32_stopwatch_end:
 arm32_sleep:
 	/* Auto (Local) Variables, but just Aliases */
 	usecond        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base .req r1
-	count_low      .req r2
-	count_high     .req r3
+	memorymap_base .req r1 @ Scratch Register
+	count_low      .req r2 @ Scratch Register
+	count_high     .req r3 @ Scratch Register
 	time_low       .req r4
 	time_high      .req r5
 
@@ -1344,9 +1344,9 @@ arm32_isb:
 arm32_random:
 	/* Auto (Local) Variables, but just Aliases */
 	range_end       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	byte            .req r1
-	temp            .req r2
-	temp2           .req r3
+	byte            .req r1 @ Scratch Register
+	temp            .req r2 @ Scratch Register
+	temp2           .req r3 @ Scratch Register
 
 	/**
 	 * Fibonacci LFSRs
@@ -1457,9 +1457,9 @@ arm32_random_value: .byte equ32_arm32_random_value
 arm32_fill_random:
 	/* Auto (Local) Variables, but just Aliases */
 	range_end       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memory_start    .req r1
-	memory_size     .req r2
-	random          .req r3
+	memory_start    .req r1 @ Parameter, Register for Argument, Scratch Register
+	memory_size     .req r2 @ Parameter, Register for Argument, Scratch Register
+	random          .req r3 @ Parameter, Register for Argument, Scratch Register
 
 	add memory_size, memory_start, memory_size
 
@@ -1499,7 +1499,7 @@ arm32_fill_random:
 .globl arm32_count_zero32
 arm32_count_zero32:
 	/* Auto (Local) Variables, but just Aliases */
-	register      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	register      .req r0
 	mask          .req r1
 	base          .req r2
 	count         .req r3
@@ -1540,7 +1540,7 @@ arm32_count_zero32:
 .globl arm32_mul
 arm32_mul:
 	/* Auto (Local) Variables, but just Aliases */
-	factor1       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	factor1       .req r0
 	factor2       .req r1
 	shift         .req r2
 	answer        .req r3
@@ -1633,7 +1633,7 @@ arm32_mul:
 .globl arm32_div
 arm32_div:
 	/* Auto (Local) Variables, but just Aliases */
-	dividend       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	dividend       .req r0
 	divisor        .req r1
 	lz_dividend    .req r2
 	lz_divisor     .req r3
@@ -1749,7 +1749,7 @@ arm32_div:
 .globl arm32_rem
 arm32_rem:
 	/* Auto (Local) Variables, but just Aliases */
-	dividend       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	dividend       .req r0
 	divisor        .req r1
 
 	push {lr}
@@ -1777,8 +1777,8 @@ arm32_rem:
 .globl arm32_cmp
 arm32_cmp:
 	/* Auto (Local) Variables, but just Aliases */
-	value1         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	value2         .req r1 @ Parameter, Register for Argument, Scratch Register
+	value1         .req r0
+	value2         .req r1
 
 	cmp value1, value2
 	mrs value1, apsr

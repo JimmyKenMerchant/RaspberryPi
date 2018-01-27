@@ -7,11 +7,287 @@
  *
  */
 
-/* Binary Coded Decimal */
+/* Calculation with Binary Coded Decimal (BCD) */
+
+
+/**
+ * function bcd32_bcdstring
+ * Make String for BCD Process
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Lower Half of Decimal Value
+ * r1: Upper Half Of Decimal Value
+ * r2: Plus Sign (0) or Minus Sign (1)
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_bcdstring
+bcd32_bcdstring:
+	/* Auto (Local) Variables, but just Aliases */
+	deci_lower    .req r0
+	deci_upper    .req r1
+	sign          .req r2
+	ret_lower     .req r3
+	ret_upper     .req r4
+	ret_all       .req r5
+	ret_minus     .req r6
+
+	push {r4-r6,lr}
+
+	push {r0-r3}
+	mov r0, deci_upper
+	mov r1, #0
+	mov r2, #0
+	mov r3, #0
+	bl deci32_int32_to_string_hexa
+	mov ret_upper, r0
+	pop {r0-r3}
+
+	cmp ret_upper, #0
+	beq bcd32_bcdstring_error
+
+	push {r0-r3}
+	mov r0, deci_lower
+	mov r1, #1
+	mov r2, #0
+	mov r3, #0
+	bl deci32_int32_to_string_hexa
+	mov ret_lower, r0
+	pop {r0-r3}
+
+	cmp ret_lower, #0
+	beq bcd32_bcdstring_error
+
+	push {r0-r3}
+	mov r0, ret_upper
+	mov r1, ret_lower
+	bl print32_strcat
+	mov ret_all, r0
+	pop {r0-r3}
+
+	cmp ret_all, #0
+	beq bcd32_bcdstring_error
+
+	push {r0-r3}
+	mov r0, ret_upper
+	bl heap32_mfree
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, ret_lower
+	bl heap32_mfree
+	pop {r0-r3}
+
+	cmp sign, #1
+	bne bcd32_bcdstring_success
+
+	push {r0-r3}
+	mov r0, #1
+	bl heap32_malloc
+	mov ret_lower, r0
+	pop {r0-r3}
+
+	cmp ret_lower, #0
+	beq bcd32_bcdstring_error
+
+	.unreq deci_lower
+	temp .req r0
+
+	mov temp, #0x2D
+	strb temp, [ret_lower]                   @ Store Minus Sign
+	mov temp, #0x00
+	strb temp, [ret_lower, #1]               @ Store Null Character
+
+	mov ret_upper, ret_all
+
+	push {r0-r3}
+	mov r0, ret_upper
+	mov r1, ret_lower
+	bl print32_strcat
+	mov ret_all, r0
+	pop {r0-r3}
+
+	cmp ret_all, #0
+	beq bcd32_bcdstring_error
+
+	push {r0-r3}
+	mov r0, ret_upper
+	bl heap32_mfree
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, ret_lower
+	bl heap32_mfree
+	pop {r0-r3}
+
+	b bcd32_bcdstring_success
+
+	bcd32_bcdstring_error:
+		mov r0, #0
+		b bcd32_bcdstring_common
+
+	bcd32_bcdstring_success:
+		mov r0, ret_all
+
+	bcd32_bcdstring_common:
+		pop {r4-r6,pc}
+
+.unreq temp
+.unreq deci_upper
+.unreq sign
+.unreq ret_lower
+.unreq ret_upper
+.unreq ret_all
+.unreq ret_minus
+
+
+/**
+ * function bcd32_ladd
+ * Signed Addition with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Pointer of String of First Number, needed between 0-9 in all digits
+ * r1: Length of String of First Number
+ * r2: Pointer of String of Second Number, needed between 0-9 in all digits
+ * r3: Length of String of Second Number
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_ladd
+bcd32_ladd:
+	/* Auto (Local) Variables, but just Aliases */
+	string1        .req r0
+	length1        .req r1
+	string2        .req r2
+	length2        .req r3
+	deci1_lower    .req r4
+	deci1_upper    .req r5
+	deci2_lower    .req r6
+	deci2_upper    .req r7
+	sign1          .req r8
+	sign2          .req r9
+
+	push {r4-r9,lr}
+
+	/* Check Existing of minus */
+
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign1, r0
+	pop {r0-r3}
+	cmp sign1, #-1
+	addne string1, string1, sign1
+	subne length1, length1, sign1
+	movne sign1, #1
+
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign2, r0
+	pop {r0-r3}
+	cmp sign2, #-1
+	addne string2, string2, sign2
+	subne length2, length2, sign2
+	movne sign2, #1
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	bl deci32_string_to_deci
+	mov deci2_lower, r0
+	mov deci2_upper, r1
+	pop {r0-r3}
+
+	/* If Sign of Value is Diffrent from Another */
+	cmp sign1, #1
+	cmpeq sign2, #0
+	beq bcd32_ladd_subtraction
+	cmp sign2, #1
+	cmpeq sign1, #0
+	beq bcd32_ladd_subtraction
+
+	push {r0-r3}
+	mov r0, deci1_lower
+	mov r1, deci1_upper
+	mov r2, deci2_lower
+	mov r3, deci2_upper
+	bl bcd32_deci_add64
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	b bcd32_ladd_string
+
+	bcd32_ladd_subtraction:
+
+		/* Check Which is Bigger than Another */
+		cmp deci1_upper, deci2_upper
+		cmpls deci1_lower, deci2_lower
+		movlo string1, deci1_upper
+		movlo deci1_upper, deci2_upper
+		movlo deci2_upper, string1
+		movlo string1, deci1_lower
+		movlo deci1_lower, deci2_lower
+		movlo deci2_lower, string1
+
+		push {r0-r3}
+		mov r0, deci1_lower
+		mov r1, deci1_upper
+		mov r2, deci2_lower
+		mov r3, deci2_upper
+		bl bcd32_deci_sub64
+		mov deci1_lower, r0
+		mov deci1_upper, r1
+		pop {r0-r3}
+
+	bcd32_ladd_string:
+		push {r0-r3}
+		mov r0, deci1_lower
+		mov r1, deci1_upper
+		mov r2, sign1
+		bl bcd32_bcdstring
+		mov deci1_upper, r0
+		pop {r0-r3}
+
+		cmp deci1_upper, #0
+		bne bcd32_ladd_success
+
+	bcd32_ladd_error:
+		mov r0, #0
+		b bcd32_ladd_common
+
+	bcd32_ladd_success:
+		mov r0, deci1_upper
+
+	bcd32_ladd_common:
+		pop {r4-r9,pc}
+
+.unreq string1
+.unreq length1
+.unreq string2
+.unreq length2
+.unreq deci1_lower
+.unreq deci1_upper
+.unreq deci2_lower
+.unreq deci2_upper
+.unreq sign1
+.unreq sign2
+
 
 /**
  * function bcd32_deci_add64
- * Addition with Decimal Bases (0-9)
+ * Unsigned Addition with Decimal Bases (0-9)
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits
@@ -171,7 +447,7 @@ bcd32_deci_add64:
 
 /**
  * function bcd32_deci_sub64
- * Subtraction with Decimal Bases (0-9)
+ * Unsigned Subtraction with Decimal Bases (0-9)
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits
@@ -335,7 +611,7 @@ bcd32_deci_shift64:
 	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	shift          .req r2 @ Parameter, Register for Argument, Scratch Register
-	minus          .req r3
+	minus          .req r3 @ Scratch Register
 
 	cmp shift, #0
 	movlt minus, #1
@@ -380,7 +656,7 @@ bcd32_deci_shift64:
 
 /**
  * function bcd32_deci_mul64_pre
- * Multiplication with Decimal Bases (0-9)
+ * Unsigned Multiplication with Decimal Bases (0-9)
  * Caution! This Function is a Module for Other Functions.
  *
  * Parameters
@@ -449,7 +725,7 @@ bcd32_deci_mul64_pre:
 
 /**
  * function bcd32_deci_mul64
- * Multiplication with Decimal Bases (0-9)
+ * Unsigned Multiplication with Decimal Bases (0-9)
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits
@@ -568,7 +844,7 @@ bcd32_deci_mul64:
 
 /**
  * function bcd32_deci_div64_pre
- * Division with Decimal Bases (0-9)
+ * Unsigned Division with Decimal Bases (0-9)
  * Caution! This Function is a Module for Other Functions.
  *
  * Parameters
@@ -639,7 +915,7 @@ bcd32_deci_div64_pre:
 
 /**
  * function bcd32_deci_div64
- * Multiplication with Decimal Bases (0-9)
+ * Unsigned Division with Decimal Bases (0-9)
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits
@@ -768,7 +1044,7 @@ bcd32_deci_div64:
 
 /**
  * function bcd32_deci_rem64_pre
- * Remainder of Division with Decimal Bases (0-9)
+ * Remainder of Unsigned Division with Decimal Bases (0-9)
  * Caution! This Function is a Module for Other Functions.
  *
  * Parameters
@@ -824,7 +1100,7 @@ bcd32_deci_rem64_pre:
 
 /**
  * function bcd32_deci_rem64
- * Remainder of Division with Decimal Bases (0-9)
+ * Remainder of Unsigned Division with Decimal Bases (0-9)
  *
  * Parameters
  * r0: Lower Bits of First Number, needed between 0-9 in all digits

@@ -25,7 +25,7 @@
 .globl deci32_float32_to_string
 deci32_float32_to_string:
 	/* Auto (Local) Variables, but just Aliases */
-	float          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	float          .req r0
 	min_integer    .req r1
 	max_decimal    .req r2
 	indicator_expo .req r3
@@ -365,7 +365,7 @@ deci32_float32_to_string:
  *
  * Parameters
  * r0: Integer Number
- * r1: Minimum Length of Digits from Left Side, Up to 16 Digits
+ * r1: Minimum Length of Digits from Right Side, Up to 16 Digits
  * r2: 0 unsigned, 1 signed
  *
  * Usage: r0-r11
@@ -624,7 +624,7 @@ deci32_int32_to_string_deci:
  *
  * Parameters
  * r0: Integer Number
- * r1: Minimum Length of Digits from Left Side, Up to 8 Digits
+ * r1: Minimum Length of Digits from Right Side, Up to 8 Digits
  * r2: 0 unsigned, 1 signed
  * r3: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0x`)
  *
@@ -1619,7 +1619,7 @@ deci32_string_to_float32:
 .globl deci32_hexa_to_deci
 deci32_hexa_to_deci:
 	/* Auto (Local) Variables, but just Aliases */
-	hexa        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	hexa        .req r0
 	deci_upper  .req r1
 	power_lower .req r2
 	power_upper .req r3
