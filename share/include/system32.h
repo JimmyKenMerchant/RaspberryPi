@@ -1347,7 +1347,22 @@ extern String deci32_farray_to_string
  ********************************/
 
 /**
- * Addition with Decimal Bases (0-9)
+ * Signed Addition with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Return: Pointer of String of Decimal Number, If Zero Memory Allocation Fails
+ */
+extern String bcd32_ladd
+(
+	String string_deci1, // Needed between 0-9 in all digits
+	uint32 length_deci1,
+	String string_deci2, // Needed between 0-9 in all digits
+	uint32 length_deci2
+);
+
+
+/**
+ * Unsigned Addition with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because of digit-overflow.
@@ -1360,7 +1375,7 @@ extern uint64 bcd32_deci_add64
 
 
 /**
- * Subtraction with Decimal Bases (0-9)
+ * Unsigned Subtraction with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because the result is signed minus.
@@ -1385,7 +1400,7 @@ extern uint64 bcd32_deci_shift64
 
 
 /**
- * Multiplication with Decimal Bases (0-9)
+ * Unsigned Multiplication with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because of digit-overflow.
@@ -1398,7 +1413,7 @@ extern uint64 bcd32_deci_mul64
 
 
 /**
- * Division with Decimal Bases (0-9)
+ * Unsigned Division with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because of digit-overflow.
@@ -1411,7 +1426,7 @@ extern uint64 bcd32_deci_div64
 
 
 /**
- * Remainder of Division with Decimal Bases (0-9)
+ * Remainder of Unsigned Division with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
  * Error: This function could not calculate because of digit-overflow.

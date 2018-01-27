@@ -28,12 +28,13 @@ bcd32_bcdstring:
 	deci_lower    .req r0
 	deci_upper    .req r1
 	sign          .req r2
-	ret_lower     .req r3
-	ret_upper     .req r4
-	ret_all       .req r5
-	ret_minus     .req r6
+	temp          .req r3
+	ret_lower     .req r4
+	ret_upper     .req r5
+	ret_all       .req r6
+	ret_minus     .req r7
 
-	push {r4-r6,lr}
+	push {r4-r7,lr}
 
 	push {r0-r3}
 	mov r0, deci_upper
@@ -48,7 +49,6 @@ bcd32_bcdstring:
 	beq bcd32_bcdstring_error
 
 	push {r0-r3}
-	mov r0, deci_lower
 	mov r1, #1
 	mov r2, #0
 	mov r3, #0
@@ -85,21 +85,18 @@ bcd32_bcdstring:
 	push {r0-r3}
 	mov r0, #1
 	bl heap32_malloc
-	mov ret_lower, r0
+	mov ret_upper, r0
 	pop {r0-r3}
 
-	cmp ret_lower, #0
+	cmp ret_upper, #0
 	beq bcd32_bcdstring_error
 
-	.unreq deci_lower
-	temp .req r0
-
 	mov temp, #0x2D
-	strb temp, [ret_lower]                   @ Store Minus Sign
+	strb temp, [ret_upper]                   @ Store Minus Sign
 	mov temp, #0x00
-	strb temp, [ret_lower, #1]               @ Store Null Character
+	strb temp, [ret_upper, #1]               @ Store Null Character
 
-	mov ret_upper, ret_all
+	mov ret_lower, ret_all
 
 	push {r0-r3}
 	mov r0, ret_upper
@@ -131,11 +128,12 @@ bcd32_bcdstring:
 		mov r0, ret_all
 
 	bcd32_bcdstring_common:
-		pop {r4-r6,pc}
+		pop {r4-r7,pc}
 
-.unreq temp
+.unreq deci_lower 
 .unreq deci_upper
 .unreq sign
+.unreq temp
 .unreq ret_lower
 .unreq ret_upper
 .unreq ret_all
@@ -145,6 +143,7 @@ bcd32_bcdstring:
 /**
  * function bcd32_ladd
  * Signed Addition with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
  * Caution! This function makes string allocated from Heap.
  *
  * Parameters
@@ -182,6 +181,7 @@ bcd32_ladd:
 	addne string1, string1, sign1
 	subne length1, length1, sign1
 	movne sign1, #1
+	moveq sign1, #0
 
 	push {r0-r3}
 	bl deci32_string_to_deci
@@ -200,6 +200,7 @@ bcd32_ladd:
 	addne string2, string2, sign2
 	subne length2, length2, sign2
 	movne sign2, #1
+	moveq sign2, #0
 
 	push {r0-r3}
 	mov r0, string2
@@ -227,29 +228,46 @@ bcd32_ladd:
 	mov deci1_upper, r1
 	pop {r0-r3}
 
+	/* If Carry Set, Error Value */
+	movcs deci1_lower, #0xFFFFFFFF
+	movcs deci1_upper, #0xFFFFFFFF
+
 	b bcd32_ladd_string
 
 	bcd32_ladd_subtraction:
 
-		/* Check Which is Bigger than Another */
+		/* Check Which Is Higher than Another */
 		cmp deci1_upper, deci2_upper
-		cmpls deci1_lower, deci2_lower
-		movlo string1, deci1_upper
-		movlo deci1_upper, deci2_upper
-		movlo deci2_upper, string1
-		movlo string1, deci1_lower
-		movlo deci1_lower, deci2_lower
-		movlo deci2_lower, string1
+		/* First Is Higher on Uppers */
+		bhi bcd32_ladd_subtraction_calc
+		/* First Is Lower on Uppers */
+		blo bcd32_ladd_subtraction_swap
+		/* Uppers Are Same Value, So Check Lowers */
+		cmpeq deci1_lower, deci2_lower
+		/* Uppers Are Same Value, But First is Higher or Same on Lowers */
+		bhs bcd32_ladd_subtraction_calc
 
-		push {r0-r3}
-		mov r0, deci1_lower
-		mov r1, deci1_upper
-		mov r2, deci2_lower
-		mov r3, deci2_upper
-		bl bcd32_deci_sub64
-		mov deci1_lower, r0
-		mov deci1_upper, r1
-		pop {r0-r3}
+		bcd32_ladd_subtraction_swap:
+			mov string1, deci1_upper
+			mov deci1_upper, deci2_upper
+			mov deci2_upper, string1
+			mov string1, deci1_lower
+			mov deci1_lower, deci2_lower
+			mov deci2_lower, string1
+			mov string1, sign1
+			mov sign1, sign2
+			mov sign2, string1
+
+		bcd32_ladd_subtraction_calc:
+			push {r0-r3}
+			mov r0, deci1_lower
+			mov r1, deci1_upper
+			mov r2, deci2_lower
+			mov r3, deci2_upper
+			bl bcd32_deci_sub64
+			mov deci1_lower, r0
+			mov deci1_upper, r1
+			pop {r0-r3}
 
 	bcd32_ladd_string:
 		push {r0-r3}

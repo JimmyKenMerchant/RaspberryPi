@@ -724,7 +724,8 @@ arm32_sleep:
 		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower] @ In Case of Interrupt, Load Lower Bits First
 		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
 		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
-		cmpls count_low, time_low                                   @ Compare Lower 32 Bits
+		blo arm32_sleep_common                                      @ End Loop If Higher Timer Reaches
+		cmpeq count_low, time_low                                   @ Compare Lower 32 Bits If Higher 32 Bits Are Same
 		bhi arm32_sleep_loop
 
 	arm32_sleep_common:

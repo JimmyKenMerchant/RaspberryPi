@@ -1732,7 +1732,8 @@ deci32_hexa_to_deci_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 /**
  * function deci32_deci_to_hexa
  * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
- * Caution! The Range of Decimal Number is 0 through 4,294,967,295. If Value of Upper Bits is 43 and Over, Returns 0.
+ * Caution! The Range of Decimal Number is 0 through 4,294,967,295.
+ * If Exceeds Range, Returns 0xFFFFFFFF
  *
  * Parameters
  * r0: Lower Bits of Decimal Number to Be Converted, needed between 0-9 in all digits
@@ -1758,8 +1759,14 @@ deci32_deci_to_hexa:
 
 	mov hexa, #0
 
-	cmp deci_upper, #0x43                                       @ Max. 0x42 on Upper, 0xFFFFFFFF on Lower
-	bge deci32_deci_to_hexa_common
+	cmp deci_upper, #0x42
+	moveq i, #0x00000095
+	addeq i, i, #0x00007200
+	addeq i, i, #0x00960000
+	addeq i, i, #0x94000000
+	cmpeq deci_lower, i
+	mvnhi hexa, #0
+	bhi deci32_deci_to_hexa_common
 
 	mov i, #7
 
