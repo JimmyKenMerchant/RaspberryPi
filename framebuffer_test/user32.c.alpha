@@ -72,15 +72,15 @@ void _user_start()
 	print32_set_caret( print32_number( (uint32)error, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	obj string3_obj = decix32_string_to_intarray( string3, print32_strlen( string3 ), 0 );
-	//String dup_string3 = decix32_intarray_to_string_deci( string3_obj, 0, 1, 1 );
-	String dup_string3 = decix32_intarray_to_string_hexa( string3_obj, 0, 1, 1, 1 );
+	obj string3_obj = deci32_string_to_intarray( string3, print32_strlen( string3 ), 0 );
+	//String dup_string3 = deci32_intarray_to_string_deci( string3_obj, 0, 1, 1 );
+	String dup_string3 = deci32_intarray_to_string_hexa( string3_obj, 0, 1, 1, 1 );
 
 	print32_set_caret( print32_string( dup_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	obj string4_obj = decix32_string_to_farray( string4, print32_strlen( string4 ) );
-	String dup_string4 = decix32_farray_to_string( string4_obj, 1, 8, 0 );
+	obj string4_obj = deci32_string_to_farray( string4, print32_strlen( string4 ) );
+	String dup_string4 = deci32_farray_to_string( string4_obj, 1, 8, 0 );
 
 	print32_set_caret( print32_string( dup_string4, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string4 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -111,14 +111,14 @@ void _user_start()
 	heap32_mfree( string4_obj );
 	heap32_mfree( (obj)dup_string4 );
 
-	obj string5_obj = decix32_string_to_farray( string5, print32_strlen( string5 ) );
-	obj string6_obj = decix32_string_to_farray( string6, print32_strlen( string6 ) );
+	obj string5_obj = deci32_string_to_farray( string5, print32_strlen( string5 ) );
+	obj string6_obj = deci32_string_to_farray( string6, print32_strlen( string6 ) );
 
 	//obj answer_obj = math32_mat_multiply( string5_obj, string6_obj, 2 );
 	//obj answer_obj = math32_mat_identity( 3 );
 	//obj answer_obj = math32_vec_normalize( string5_obj, 4 );
 	obj answer_obj = math32_vec_crossproduct( string5_obj, string6_obj );
-	String answer_string = decix32_farray_to_string( answer_obj, 0, 20, 0 );
+	String answer_string = deci32_farray_to_string( answer_obj, 0, 20, 0 );
 
 	//float32 answer_float = math32_vec_dotproduct( string5_obj, string6_obj, 4 );
 	//String answer_string = deci32_float32_to_string( answer_float, 0, 20, 0 );

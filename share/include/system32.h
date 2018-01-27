@@ -1271,94 +1271,13 @@ extern uint32 deci32_deci_to_hexa
 
 
 /**
- * Addition with Decimal Bases (0-9)
- *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
- * Error: This function could not calculate because of digit-overflow.
- */
-extern uint64 deci32_deci_add64
-(
-	uint64 number_deci1,
-	uint64 number_deci2
-);
-
-
-/**
- * Subtraction with Decimal Bases (0-9)
- *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
- * Error: This function could not calculate because the result is signed minus.
- */
-extern uint64 deci32_deci_sub64
-(
-	uint64 number_deci1,
-	uint64 number_deci2
-);
-
-
-/**
- * Shift Place with Decimal Bases (0-9)
- *
- * Return: Lower Bits of Decimal Number, Upper Bits of Decimal Number
- */
-extern uint64 deci32_deci_shift64
-(
-	uint64 number_deci,
-	int32 number_shift
-);
-
-
-/**
- * Multiplication with Decimal Bases (0-9)
- *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
- * Error: This function could not calculate because of digit-overflow.
- */
-extern uint64 deci32_deci_mul64
-(
-	uint64 number_deci1,
-	uint64 number_deci2
-);
-
-
-/**
- * Division with Decimal Bases (0-9)
- *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
- * Error: This function could not calculate because of digit-overflow.
- */
-extern uint64 deci32_deci_div64
-(
-	uint64 number_deci1,
-	uint64 number_deci2
-);
-
-
-/**
- * Remainder of Division with Decimal Bases (0-9)
- *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
- * Error: This function could not calculate because of digit-overflow.
- */
-extern uint64 deci32_deci_rem64
-(
-	uint64 number_deci1,
-	uint64 number_deci2
-);
-
-
-/********************************
- * system32/library/decix32.s
- ********************************/
-
-/**
  * Make Array of Integers From String
  *
  * This function detects commas as separators between each Integers
  *
  * Return: Heap of Array, 0 as not succeeded
  */
-extern obj decix32_string_to_intarray
+extern obj deci32_string_to_intarray
 (
 	String string,
 	uint32 length_string,
@@ -1371,7 +1290,7 @@ extern obj decix32_string_to_intarray
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String decix32_intarray_to_string_hexa
+extern String deci32_intarray_to_string_hexa
 (
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
@@ -1386,7 +1305,7 @@ extern String decix32_intarray_to_string_hexa
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String decix32_intarray_to_string_deci
+extern String deci32_intarray_to_string_deci
 (
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
@@ -1402,7 +1321,7 @@ extern String decix32_intarray_to_string_deci
  *
  * Return: Heap of Array, 0 as not succeeded
  */
-extern obj decix32_string_to_farray
+extern obj deci32_string_to_farray
 (
 	String string,
 	uint32 length_string
@@ -1414,12 +1333,93 @@ extern obj decix32_string_to_farray
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String decix32_farray_to_string
+extern String deci32_farray_to_string
 (
 	obj object_array,
 	uint32 min_integer, // 16 Digits Max
 	uint32 max_decimal, // Default 8 Digits
 	int32 indicator_expo // Indicates Exponential
+);
+
+
+/********************************
+ * system32/library/bcd32.s
+ ********************************/
+
+/**
+ * Addition with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 bcd32_deci_add64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Subtraction with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because the result is signed minus.
+ */
+extern uint64 bcd32_deci_sub64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Shift Place with Decimal Bases (0-9)
+ *
+ * Return: Lower Bits of Decimal Number, Upper Bits of Decimal Number
+ */
+extern uint64 bcd32_deci_shift64
+(
+	uint64 number_deci,
+	int32 number_shift
+);
+
+
+/**
+ * Multiplication with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 bcd32_deci_mul64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Division with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 bcd32_deci_div64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
+);
+
+
+/**
+ * Remainder of Division with Decimal Bases (0-9)
+ *
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Error: This function could not calculate because of digit-overflow.
+ */
+extern uint64 bcd32_deci_rem64
+(
+	uint64 number_deci1,
+	uint64 number_deci2
 );
 
 

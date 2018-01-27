@@ -49,18 +49,18 @@ void _user_start()
 	uint64 number3_deci = 0x0000000041234123;
 	uint64 number4_deci = 0x0000000000009999;
 
-	uint64 result1 = deci32_deci_mul64( number3_deci, number4_deci );
+	uint64 result1 = bcd32_deci_mul64( number3_deci, number4_deci );
 	print32_set_caret( print32_number_double( result1, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	number3_deci = 0x9999999999999999;
 	number4_deci = 0x0000000000000003;
 
-	uint64 result2 = deci32_deci_div64( number3_deci, number4_deci );
+	uint64 result2 = bcd32_deci_div64( number3_deci, number4_deci );
 	print32_set_caret( print32_number_double( result2, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	uint64 result3 = deci32_deci_rem64( number3_deci, number4_deci );
+	uint64 result3 = bcd32_deci_rem64( number3_deci, number4_deci );
 	print32_set_caret( print32_number_double( result3, FB32_X_CARET, FB32_Y_CARET, color, back_color, 16, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );

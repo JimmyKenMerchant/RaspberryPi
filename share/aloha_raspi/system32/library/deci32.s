@@ -1687,7 +1687,7 @@ deci32_hexa_to_deci:
 			ble deci32_hexa_to_deci_loop_common
 
 			push {lr}
-			bl deci32_deci_add64
+			bl bcd32_deci_add64
 			pop {lr}
 
 			sub bitmask, bitmask, #1
@@ -1815,7 +1815,7 @@ deci32_deci_to_hexa:
 		deci32_deci_to_hexa_loop_loop:
 
 			push {r0-r3,lr}
-			bl deci32_deci_sub64
+			bl bcd32_deci_sub64
 			mov deci_lower_dup, r0
 			mov deci_upper_dup, r1
 			pop {r0-r3,lr}
@@ -1873,938 +1873,692 @@ deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
 
 
 /**
- * function deci32_deci_add64
- * Addition with Decimal Bases (0-9)
+ * function deci32_string_to_intarray
+ * Make Array of Integers From String
+ *
+ * This function detects commas as separators between each Integers
  *
  * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ * r0: Heap of String
+ * r1: Length of String
+ * r2: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
+ * Return: r0 (Heap of Array, 0 as not succeeded)
  */
-.globl deci32_deci_add64
-deci32_deci_add64:
+.globl deci32_string_to_intarray
+deci32_string_to_intarray:
 	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	dup_lower_1    .req r4 @ Duplication of lower_1
-	dup_upper_1    .req r5 @ Duplication of upper_1
-	i              .req r6
-	shift          .req r7
-	bitmask_1      .req r8
-	bitmask_2      .req r9
-	carry_flag     .req r10
-
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	mov dup_lower_1, lower_1
-	mov dup_upper_1, upper_1
-	mov lower_1, #0
-	mov upper_1, #0
-	mov carry_flag, #0
-
-	mov i, #0
-
-	deci32_deci_add64_loop:
-		mov bitmask_1, #0xF                            @ 0b1111
-		mov bitmask_2, #0xF
-
-		lsl shift, i, #2                               @ Substitute of Multiplication by 4
-
-		cmp i, #8
-		bhs deci32_deci_add64_loop_uppernumber
-
-		/* Lower Number */
-		lsl bitmask_1, bitmask_1, shift
-		lsl bitmask_2, bitmask_2, shift
-
-		and bitmask_1, dup_lower_1, bitmask_1
-		and bitmask_2, lower_2, bitmask_2
-
-		b deci32_deci_add64_loop_cal
-
-		/* Upper Number */
-		deci32_deci_add64_loop_uppernumber:
-
-			sub shift, shift, #32
-
-			lsl bitmask_1, bitmask_1, shift
-			lsl bitmask_2, bitmask_2, shift
-
-			and bitmask_1, dup_upper_1, bitmask_1
-			and bitmask_2, upper_2, bitmask_2
-
-		deci32_deci_add64_loop_cal:
-		
-			lsr bitmask_1, bitmask_1, shift
-			lsr bitmask_2, bitmask_2, shift
-
-			add bitmask_1, bitmask_1, bitmask_2
-			add bitmask_1, bitmask_1, carry_flag
-
-			cmp bitmask_1, #0x10
-			bhs deci32_deci_add64_loop_cal_hexacarry
-
-			cmp bitmask_1, #0x0A
-			bhs deci32_deci_add64_loop_cal_decicarry
-
-			mov carry_flag, #0                      @ Clear Carry
-
-			b deci32_deci_add64_loop_common	
-
-			deci32_deci_add64_loop_cal_hexacarry:
-
-				sub bitmask_1, #0x10
-				add bitmask_1, #0x06 
-				mov carry_flag, #1              @ Set Carry
-
-				b deci32_deci_add64_loop_common
-
-			deci32_deci_add64_loop_cal_decicarry:
-
-				sub bitmask_1, #0x0A
-				mov carry_flag, #1              @ Set Carry
-
-		deci32_deci_add64_loop_common:
-			lsl bitmask_1, bitmask_1, shift
-
-			cmp i, #8
-			bhs deci32_deci_add64_loop_common_uppernumber
-
-			/* Lower Number */
-			add lower_1, lower_1, bitmask_1
-
-			b deci32_deci_add64_loop_common_common
-
-			/* Upper Number */
-			deci32_deci_add64_loop_common_uppernumber:
-
-				add upper_1, upper_1, bitmask_1
-
-			deci32_deci_add64_loop_common_common:
-
-				add i, i, #1
-				cmp i, #16
-				blo deci32_deci_add64_loop
-
-				cmp carry_flag, #1
-				beq deci32_deci_add64_error
-
-	deci32_deci_add64_success:            
-		b deci32_deci_add64_common
-
-	deci32_deci_add64_error:
-		/**
-		 * Load Only Status Flags From CPSR
-		 * NZCVQ (Negative; Zero; Unsigned Carry; Overflow = Signed Carry; Saturation = Stickey Overflow on QADD, etc.)
-		 * But codes below is not valid in User mode because writing to cpsr is not valid in User mode
-		 */
-		/*
-		mrs carry_flag, apsr                    @ NZCVQ Bit[31:27]
-		bic carry_flag, carry_flag, #0xF8000000 @ Clear NZCVQ
-		orr carry_flag, carry_flag, #0x20000000 @ Only Set Carry Bit[29], Check by Conditional cs/hs and cc/lo
-		msr apsr_nzcvq, carry_flag
-		*/
-
-	deci32_deci_add64_common:
-		cmp carry_flag, #1
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-
-		mov pc, lr
-
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq dup_lower_1
-.unreq dup_upper_1
-.unreq i
-.unreq shift
-.unreq bitmask_1
-.unreq bitmask_2
-.unreq carry_flag
-
-
-/**
- * function deci32_deci_sub64
- * Subtraction with Decimal Bases (0-9)
- *
- * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
- *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because the result is reached minus.
- */
-.globl deci32_deci_sub64
-deci32_deci_sub64:
-	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	dup_lower_1    .req r4 @ Duplication of lower_1
-	dup_upper_1    .req r5 @ Duplication of upper_1
-	i              .req r6
-	shift          .req r7
-	bitmask_1      .req r8
-	bitmask_2      .req r9
-	carry_flag     .req r10
-
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
-
-	mov dup_lower_1, lower_1
-	mov dup_upper_1, upper_1
-	mov lower_1, #0
-	mov upper_1, #0
-	mov carry_flag, #0
-
-	mov i, #0
-
-	deci32_deci_sub64_loop:
-		mov bitmask_1, #0xF                            @ 0b1111
-		mov bitmask_2, #0xF
-
-		lsl shift, i, #2                               @ Substitute of Multiplication by 4
-
-		cmp i, #8
-		bhs deci32_deci_sub64_loop_uppernumber
-
-		/* Lower Number */
-		lsl bitmask_1, bitmask_1, shift
-		lsl bitmask_2, bitmask_2, shift
-
-		and bitmask_1, dup_lower_1, bitmask_1
-		and bitmask_2, lower_2, bitmask_2
-
-		b deci32_deci_sub64_loop_cal
-
-		/* Upper Number */
-		deci32_deci_sub64_loop_uppernumber:
-
-			sub shift, shift, #32
-
-			lsl bitmask_1, bitmask_1, shift
-			lsl bitmask_2, bitmask_2, shift
-
-			and bitmask_1, dup_upper_1, bitmask_1
-			and bitmask_2, upper_2, bitmask_2
-
-		deci32_deci_sub64_loop_cal:
-	
-			lsr bitmask_1, bitmask_1, shift
-			lsr bitmask_2, bitmask_2, shift
-
-			sub bitmask_1, bitmask_1, bitmask_2
-			sub bitmask_1, bitmask_1, carry_flag
-
-			cmp bitmask_1, #0x0
-			blt deci32_deci_sub64_loop_cal_carry
-
-			mov carry_flag, #0                      @ Clear Carry
-
-			b deci32_deci_sub64_loop_common	
-
-			deci32_deci_sub64_loop_cal_carry:
-
-				add bitmask_1, bitmask_1, #10        @ Value of bitmask_1 is minus
-				mov carry_flag, #1                   @ Set Carry
-
-		deci32_deci_sub64_loop_common:
-			lsl bitmask_1, bitmask_1, shift
-
-			cmp i, #8
-			bhs deci32_deci_sub64_loop_common_uppernumber
-
-			/* Lower Number */
-			add lower_1, lower_1, bitmask_1
-
-			b deci32_deci_sub64_loop_common_common
-
-			/* Upper Number */
-			deci32_deci_sub64_loop_common_uppernumber:
-
-				add upper_1, upper_1, bitmask_1
-
-			deci32_deci_sub64_loop_common_common:
-
-				add i, i, #1
-				cmp i, #16
-				blo deci32_deci_sub64_loop
-
-				cmp carry_flag, #1
-				beq deci32_deci_sub64_error
-
-	deci32_deci_sub64_success:
-		b deci32_deci_sub64_common
-
-	deci32_deci_sub64_error:
-		/**
-		 * Load Only Status Flags From CPSR
-		 * NZCVQ (Negative; Zero; Unsigned Carry; Overflow = Signed Carry; Saturation = Stickey Overflow on QADD, etc.)
-		 * But codes below is not valid in User mode because writing to cpsr is not valid in User mode
-		 */
-		/*
-		mrs carry_flag, apsr                    @ NZCVQ Bit[31:27]
-		bic carry_flag, carry_flag, #0xF8000000 @ Clear NZCVQ
-		orr carry_flag, carry_flag, #0x20000000 @ Only Set Carry Bit[29], Check by Conditional cs/hs and cc/lo
-		msr apsr_nzcvq, carry_flag
-		*/
-
-	deci32_deci_sub64_common:
-		cmp carry_flag, #1
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-
-		mov pc, lr
-
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq dup_lower_1
-.unreq dup_upper_1
-.unreq i
-.unreq shift
-.unreq bitmask_1
-.unreq bitmask_2
-.unreq carry_flag
-
-
-/**
- * function deci32_deci_shift64
- * Shift Place with Decimal Bases (0-9)
- *
- * Parameters
- * r0: Lower Bits of Number, needed between 0-9 in all digits
- * r1: Upper Bits of Number, needed between 0-9 in all digits
- * r2: Number of Place to Shift, Plus Signed Means Shift Left, Minus Singed Means Shift Right
- *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
- */
-.globl deci32_deci_shift64
-deci32_deci_shift64:
-	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	shift          .req r2 @ Parameter, Register for Argument, Scratch Register
-	minus          .req r3
-
-	cmp shift, #0
-	movlt minus, #1
-	mvnlt shift, shift
-	addlt shift, shift, #1
-	movge minus, #0
-
-	lsl shift, shift, #2                   @ Substitute of Multiplication by 4
-
-	deci32_deci_shift64_loop:
-
-		cmp shift, #0
-		ble deci32_deci_shift64_common
-
-		cmp minus, #1
-		beq deci32_deci_shift64_loop_minus
-
-		lsls lower_1, lower_1, #1
-		lsl upper_1, upper_1, #1
-		addcs upper_1, upper_1, #1
-
-		sub shift, shift, #1
-		b deci32_deci_shift64_loop
-
-		deci32_deci_shift64_loop_minus:
-
-			lsrs upper_1, upper_1, #1
-			lsr lower_1, lower_1, #1
-			addcs lower_1, lower_1, #0x80000000
-
-			sub shift, shift, #1
-			b deci32_deci_shift64_loop
-
-	deci32_deci_shift64_common:
-		mov pc, lr
-
-.unreq lower_1
-.unreq upper_1
-.unreq shift
-.unreq minus
-
-
-/**
- * function deci32_deci_mul64_pre
- * Multiplication with Decimal Bases (0-9)
- * Caution! This Function is a Module for Other Functions.
- *
- * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
- *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
- */
-.globl deci32_deci_mul64_pre
-deci32_deci_mul64_pre:
-	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	dup_lower_2    .req r4 @ Duplication of lower_2
-	dup_upper_2    .req r5 @ Duplication of upper_2
-	carry_flag     .req r6
-
-	push {r4-r6,lr}
-
-	mov dup_lower_2, lower_2
-	mov dup_upper_2, upper_2
-	mov lower_2, lower_1
-	mov upper_2, upper_1
-	mov lower_1, #0
-	mov upper_1, #0
-	mov carry_flag, #0
-
-	deci32_deci_mul64_pre_loop:
+	heap_str      .req r0
+	length_str    .req r1
+	size          .req r2
+	temp          .req r3
+	temp2         .req r4
+	length_substr .req r5
+	heap_arr      .req r6
+	length_arr    .req r7
+	offset        .req r8
+
+	push {r4-r8,lr}
+
+	/* Check Commas */
+
+	push {r0-r3}
+	mov r2, #0x2C                     @ Ascii Code of Comma
+	bl print32_charcount
+	mov length_arr, r0
+	pop {r0-r3}
+
+	add length_arr, length_arr, #1
+
+	cmp size, #2
+	bge deci32_string_to_intarray_word
+
+	mov temp, length_arr
+	mov temp2, #0x1
+
+	deci32_string_to_intarray_lessthanword:
+		tst temp, #0x1
+		addne temp, temp, #0x1
+		lsr temp, temp, #0x1
+		sub temp2, temp2, #0x1
+		cmp temp2, size
+		bge deci32_string_to_intarray_lessthanword
+
+		b deci32_string_to_intarray_malloc
+
+	deci32_string_to_intarray_word:
+		sub temp, size, #2
+		lsl temp, length_arr, temp
+
+	deci32_string_to_intarray_malloc:
 
 		push {r0-r3}
-		mov r0, dup_lower_2
-		mov r1, dup_upper_2
-		mov r2, #1
-		mov r3, #0
-		bl deci32_deci_sub64
-		mov dup_lower_2, r0
-		mov dup_upper_2, r1
+		mov r0, temp
+		bl heap32_malloc
+		mov heap_arr, r0
 		pop {r0-r3}
-		bcs deci32_deci_mul64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
 
-		push {r2-r3}
-		bl deci32_deci_add64
-		pop {r2-r3}
-		movcs carry_flag, #1
-		bcs deci32_deci_mul64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+		cmp heap_arr, #0
+		beq deci32_string_to_intarray_common
 
-		b deci32_deci_mul64_pre_loop
+		.unreq temp
+		align .req r3
 
-	deci32_deci_mul64_pre_common:
-		cmp carry_flag, #1
-		pop {r4-r6,pc}
+		/* Convert Size to Bytes Alignment */
+		mov temp2, #1
+		lsl align, temp2, size
 
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq dup_lower_2
-.unreq dup_upper_2
-.unreq carry_flag
+		.unreq temp2
+		data .req r4
+
+		mov offset, #0
+
+	deci32_string_to_intarray_loop:
+		cmp length_arr, #0
+		ble deci32_string_to_intarray_common
+
+		push {r0-r3}
+		mov r2, #0x2C                     @ Ascii Code of Comma
+		bl print32_charsearch
+		mov length_substr, r0
+		pop {r0-r3}
+
+		cmp length_substr, #-1
+		bne deci32_string_to_intarray_loop_jump
+
+		push {r0-r3}
+		bl print32_strlen
+		mov length_substr, r0
+		pop {r0-r3}
+
+		deci32_string_to_intarray_loop_jump:
+
+			push {r0-r3}
+			mov r1, length_substr
+			bl deci32_string_to_int32
+			mov data, r0
+			pop {r0-r3}
+
+			cmp size, #0
+			streqb data, [heap_arr, offset]
+			cmp size, #1
+			streqh data, [heap_arr, offset]
+			cmp size, #2
+			strge data, [heap_arr, offset]
+
+			/* Offset of String for Next Data */
+			add heap_str, heap_str, length_substr
+			add heap_str, heap_str, #1
+			sub length_str, length_str, length_substr
+			sub length_str, length_str, #1
+
+			/* Offset of Heap for Next Block of Array */
+			add offset, offset, align
+
+			sub length_arr, length_arr, #1
+			b deci32_string_to_intarray_loop
+
+	deci32_string_to_intarray_common:
+		mov r0, heap_arr
+		pop {r4-r8,pc}
+
+.unreq heap_str
+.unreq length_str
+.unreq size
+.unreq align
+.unreq data
+.unreq length_substr
+.unreq heap_arr
+.unreq length_arr
+.unreq offset
 
 
 /**
- * function deci32_deci_mul64
- * Multiplication with Decimal Bases (0-9)
+ * function deci32_intarray_to_string_hexa
+ * Make String on Hexadecimal System From Array of Integers
  *
  * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ * r0: Heap of Array
+ * r1: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+ * r2: Minimum Length of Digits from Left Side, Up to 8 Digits
+ * r3: 0 unsigned, 1 signed
+ * r4: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0x`)
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
+ * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_deci_mul64
-deci32_deci_mul64:
+.globl deci32_intarray_to_string_hexa
+deci32_intarray_to_string_hexa:
 	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	dup_lower_2    .req r4 @ Duplication of lower_2
-	dup_upper_2    .req r5 @ Duplication of upper_2
-	cal_lower      .req r6
-	cal_upper      .req r7
-	shift          .req r8
-	temp_lower     .req r9
-	temp_upper     .req r10
-	carry_flag     .req r11
-
-	/**
-	 * To speed up, this function refers handwrinting method to calculate multiplication,
-	 * i.e., two-dimensional method that is using exponent in base 10.
-	 */
+	heap_arr        .req r0
+	size            .req r1
+	min_length      .req r2
+	signed          .req r3
+	base_mark       .req r4
+	align           .req r5
+	heap_arr_length .req r6
+	heap_str0       .req r7
+	heap_str1       .req r8
+	heap_str2       .req r9
+	heap_str3       .req r10
+	data            .req r11
 
 	push {r4-r11,lr}
 
-	mov dup_lower_2, lower_2
-	mov dup_upper_2, upper_2
-	mov upper_2, #0
-	mov cal_lower, #0
-	mov cal_upper, #0
-	mov shift, #15
-	mov carry_flag, #0
+	add sp, sp, #36                     @ r4-r11 and lr offset 36 bytes
+	pop {base_mark}                     @ Get Fifth and Sixth Arguments
+	sub sp, sp, #40                     @ Retrieve SP
 
-	deci32_deci_mul64_loop:
+	/* Check Size */
 
-		cmp shift, #0
-		blt deci32_deci_mul64_common
+	ldr heap_arr_length, [heap_arr, #-4]
 
-		mov lower_2, #0xF
-		lsl temp_lower, shift, #2                   @ Substitute of Multiplication by 4
-		cmp shift, #8
-		bge deci32_deci_mul64_loop_upper
+	add heap_arr_length, heap_arr, heap_arr_length
+	sub heap_arr_length, heap_arr_length, #4
 
-		lsl lower_2, lower_2, temp_lower
-		and lower_2, lower_2, dup_lower_2
-		lsr lower_2, lower_2, temp_lower
+	/* Convert Size to Bytes Alignment */
+	mov data, #1
+	lsl align, data, size
 
-		b deci32_deci_mul64_loop_common
+	mov heap_str0, #0
 
-		deci32_deci_mul64_loop_upper:
+	deci32_intarray_to_string_hexa_loop:
+		cmp heap_arr, heap_arr_length
+		bge deci32_intarray_to_string_hexa_common
 
-			sub temp_lower, temp_lower, #32
-			lsl lower_2, lower_2, temp_lower
-			and lower_2, lower_2, dup_upper_2
-			lsr lower_2, lower_2, temp_lower
-	
-		deci32_deci_mul64_loop_common:
+		cmp size, #0
+		ldreqb data, [heap_arr]
+		cmp size, #1
+		ldreqh data, [heap_arr]
+		cmp size, #2
+		ldrge data, [heap_arr]
 
+		push {r0-r3}
+		mov r0, data
+		mov r1, min_length
+		mov r2, signed
+		mov r3, base_mark
+		bl deci32_int32_to_string_hexa
+		mov heap_str1, r0
+		pop {r0-r3}
+
+		cmp heap_str1, #0
+		beq deci32_intarray_to_string_hexa_common
+
+		add heap_arr, heap_arr, align
+		cmp heap_arr, heap_arr_length
+		bge deci32_intarray_to_string_hexa_loop_common
+
+		push {r0-r3}
+		mov r0, #1
+		bl heap32_malloc
+		mov heap_str2, r0
+		pop {r0-r3}
+
+		cmp heap_str2, #0
+		beq deci32_intarray_to_string_hexa_common
+
+		mov data, #0x2C                          @ Ascii Code of Comma
+		strb data, [heap_str2]
+
+		mov data, #0x00                          @ Ascii Code of Null
+		strb data, [heap_str2, #1]
+
+		push {r0-r3}
+		mov r0, heap_str1
+		mov r1, heap_str2
+		bl print32_strcat
+		mov heap_str3, r0
+		pop {r0-r3}
+
+		cmp heap_str3, #0
+		beq deci32_intarray_to_string_hexa_common
+
+		push {r0-r3}
+		mov r0, heap_str1
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, heap_str2
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov heap_str1, heap_str3
+
+		deci32_intarray_to_string_hexa_loop_common:
+
+			/* If Initial Part of Array */
+			cmp heap_str0, #0
+			moveq heap_str0, heap_str1
+			beq deci32_intarray_to_string_hexa_loop
+
+			/* If Following Parts of Array */
 			push {r0-r3}
-			bl deci32_deci_mul64_pre
-			mov temp_lower, r0
-			mov temp_upper, r1
+			mov r0, heap_str0
+			mov r1, heap_str1
+			bl print32_strcat
+			mov heap_str2, r0
 			pop {r0-r3}
 
 			push {r0-r3}
-			mov r0, temp_lower
-			mov r1, temp_upper
-			mov r2, shift
-			bl deci32_deci_shift64
-			mov temp_lower, r0
-			mov temp_upper, r1
+			mov r0, heap_str0
+			bl heap32_mfree
 			pop {r0-r3}
 
 			push {r0-r3}
-			mov r0, cal_lower
-			mov r1, cal_upper
-			mov r2, temp_lower
-			mov r3, temp_upper
-			bl deci32_deci_add64
-			mov cal_lower, r0
-			mov cal_upper, r1
+			mov r0, heap_str1
+			bl heap32_mfree
 			pop {r0-r3}
-			movcs carry_flag, #1
-			bcs deci32_deci_mul64_common
 
-			sub shift, shift, #1
-			b deci32_deci_mul64_loop
+			mov heap_str0, heap_str2
 
-	deci32_deci_mul64_common:
-		cmp carry_flag, #1
-		mov r0, cal_lower
-		mov r1, cal_upper
+			b deci32_intarray_to_string_hexa_loop
+
+	deci32_intarray_to_string_hexa_common:
+		mov r0, heap_str0
 		pop {r4-r11,pc}
 
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq dup_lower_2
-.unreq dup_upper_2
-.unreq cal_lower
-.unreq cal_upper
-.unreq shift
-.unreq temp_lower
-.unreq temp_upper
-.unreq carry_flag
+.unreq heap_arr
+.unreq size
+.unreq min_length
+.unreq signed
+.unreq base_mark
+.unreq align
+.unreq heap_arr_length
+.unreq heap_str0
+.unreq heap_str1
+.unreq heap_str2
+.unreq heap_str3
+.unreq data
 
 
 /**
- * function deci32_deci_div64_pre
- * Division with Decimal Bases (0-9)
- * Caution! This Function is a Module for Other Functions.
+ * function deci32_intarray_to_string_deci
+ * Make String on Decimal System From Array of Integers
  *
  * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ * r0: Heap of Array
+ * r1: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+ * r2: Minimum Length of Digits from Left Side, Up to 16 Digits
+ * r3: 0 unsigned, 1 signed
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
+ * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_deci_div64_pre
-deci32_deci_div64_pre:
+.globl deci32_intarray_to_string_deci
+deci32_intarray_to_string_deci:
 	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	cal_lower      .req r4
-	cal_upper      .req r5
-	carry_flag     .req r6
+	heap_arr        .req r0
+	size            .req r1
+	min_length      .req r2
+	signed          .req r3
+	align           .req r4
+	heap_arr_length .req r5
+	heap_str0       .req r6
+	heap_str1       .req r7
+	heap_str2       .req r8
+	heap_str3       .req r9
+	data            .req r10
 
-	push {r4-r6,lr}
+	push {r4-r10,lr}
 
-	mov cal_lower, #0
-	mov cal_upper, #0
-	mov carry_flag, #0
+	/* Check Size */
 
-	deci32_deci_div64_pre_loop:
+	ldr heap_arr_length, [heap_arr, #-4]
 
-		push {r2-r3}
-		bl deci32_deci_sub64
-		pop {r2-r3}
-		bcs deci32_deci_div64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+	add heap_arr_length, heap_arr, heap_arr_length
+	sub heap_arr_length, heap_arr_length, #4
+
+	/* Convert Size to Bytes Alignment */
+	mov data, #1
+	lsl align, data, size
+
+	mov heap_str0, #0
+
+	deci32_intarray_to_string_deci_loop:
+		cmp heap_arr, heap_arr_length
+		bge deci32_intarray_to_string_deci_common
+
+		cmp size, #0
+		ldreqb data, [heap_arr]
+		cmp size, #1
+		ldreqh data, [heap_arr]
+		cmp size, #2
+		ldrge data, [heap_arr]
 
 		push {r0-r3}
-		mov r0, cal_lower
-		mov r1, cal_upper
-		mov r2, #1
-		mov r3, #0
-		bl deci32_deci_add64
-		mov cal_lower, r0
-		mov cal_upper, r1
+		mov r0, data
+		mov r1, min_length
+		mov r2, signed
+		bl deci32_int32_to_string_deci
+		mov heap_str1, r0
 		pop {r0-r3}
-		movcs carry_flag, #1
-		bcs deci32_deci_div64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
 
-		cmp lower_1, #0
-		cmpeq upper_1, #0
-		beq deci32_deci_div64_pre_common @ If Divisible
+		cmp heap_str1, #0
+		beq deci32_intarray_to_string_deci_common
 
-		b deci32_deci_div64_pre_loop
+		add heap_arr, heap_arr, align
+		cmp heap_arr, heap_arr_length
+		bge deci32_intarray_to_string_deci_loop_common
 
-	deci32_deci_div64_pre_common:
-		cmp carry_flag, #1
-		mov r0, cal_lower
-		mov r1, cal_upper
-		pop {r4-r6,pc}
+		push {r0-r3}
+		mov r0, #1
+		bl heap32_malloc
+		mov heap_str2, r0
+		pop {r0-r3}
 
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq cal_lower
-.unreq cal_upper
-.unreq carry_flag
+		cmp heap_str2, #0
+		beq deci32_intarray_to_string_deci_common
+
+		mov data, #0x2C                          @ Ascii Code of Comma
+		strb data, [heap_str2]
+
+		mov data, #0x00                          @ Ascii Code of Null
+		strb data, [heap_str2, #1]
+
+		push {r0-r3}
+		mov r0, heap_str1
+		mov r1, heap_str2
+		bl print32_strcat
+		mov heap_str3, r0
+		pop {r0-r3}
+
+		cmp heap_str3, #0
+		beq deci32_intarray_to_string_deci_common
+
+		push {r0-r3}
+		mov r0, heap_str1
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, heap_str2
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov heap_str1, heap_str3
+
+		deci32_intarray_to_string_deci_loop_common:
+
+			/* If Initial Part of Array */
+			cmp heap_str0, #0
+			moveq heap_str0, heap_str1
+			beq deci32_intarray_to_string_deci_loop
+
+			/* If Following Parts of Array */
+			push {r0-r3}
+			mov r0, heap_str0
+			mov r1, heap_str1
+			bl print32_strcat
+			mov heap_str2, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, heap_str0
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, heap_str1
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov heap_str0, heap_str2
+
+			b deci32_intarray_to_string_deci_loop
+
+	deci32_intarray_to_string_deci_common:
+		mov r0, heap_str0
+		pop {r4-r10,pc}
+
+.unreq heap_arr
+.unreq size
+.unreq min_length
+.unreq signed
+.unreq align
+.unreq heap_arr_length
+.unreq heap_str0
+.unreq heap_str1
+.unreq heap_str2
+.unreq heap_str3
+.unreq data
 
 
 /**
- * function deci32_deci_div64
- * Multiplication with Decimal Bases (0-9)
+ * function deci32_string_to_farray
+ * Make Array of Single Precision Floats From String on Decimal System
+ *
+ * This function detects commas as separators between each floats
  *
  * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ * r0: Heap of String
+ * r1: Length of String
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
+ * Return: r0 (Heap of Array, 0 as not succeeded)
  */
-.globl deci32_deci_div64
-deci32_deci_div64:
+.globl deci32_string_to_farray
+deci32_string_to_farray:
 	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	cal_lower      .req r4
-	cal_upper      .req r5
-	shift          .req r6
-	temp1_lower    .req r7
-	temp1_upper    .req r8
-	temp2_lower    .req r9
-	temp2_upper    .req r10
-	carry_flag     .req r11
+	heap_str      .req r0
+	length_str    .req r1
+	temp          .req r2
+	offset        .req r3
+	length_substr .req r4
+	heap_arr      .req r5
+	length_arr    .req r6
+	data          .req r7
 
-	/**
-	 * To speed up, this function refers handwrinting method to calculate division,
-	 * i.e., two-dimensional method that is using exponent in base 10.
-	 */
+	push {r4-r7,lr}
 
-	push {r4-r11,lr}
+	/* Check Commas */
 
-	mov cal_lower, #0
-	mov cal_upper, #0
+	push {r0-r3}
+	mov r2, #0x2C                     @ Ascii Code of Comma
+	bl print32_charcount
+	mov length_arr, r0
+	pop {r0-r3}
 
-	clz temp1_lower, upper_2
-	cmp temp1_lower, #32
-	clzge temp1_lower, lower_2
-	addge temp1_lower, temp1_lower, #32
+	add length_arr, length_arr, #1
 
-	mov shift, #0
-
-	deci32_deci_div64_count:
-		subs temp1_lower, temp1_lower, #4
-		addge shift, #1
-		bge deci32_deci_div64_count
-
-	deci32_deci_div64_loop:
-
-		mov carry_flag, #1
-
-		cmp shift, #0
-		blt deci32_deci_div64_common
+	deci32_string_to_farray_malloc:
 
 		push {r0-r3}
-		mov r0, lower_2
-		mov r1, upper_2
-		mov r2, shift
-		bl deci32_deci_shift64
-		mov temp1_lower, r0
-		mov temp1_upper, r1
+		mov r0, length_arr
+		bl heap32_malloc
+		mov heap_arr, r0
 		pop {r0-r3}
+
+		cmp heap_arr, #0
+		beq deci32_string_to_farray_common
+
+		mov offset, #0
+
+	deci32_string_to_farray_loop:
+		cmp length_arr, #0
+		ble deci32_string_to_farray_common
 
 		push {r0-r3}
-		mov r2, temp1_lower
-		mov r3, temp1_upper
-		bl deci32_deci_div64_pre
-		mov temp2_lower, r0
-		mov temp2_upper, r1
+		mov r2, #0x2C                     @ Ascii Code of Comma
+		bl print32_charsearch
+		mov length_substr, r0
 		pop {r0-r3}
+
+		cmp length_substr, #-1
+		bne deci32_string_to_farray_loop_jump
 
 		push {r0-r3}
-		mov r0, temp2_lower
-		mov r1, temp2_upper
-		mov r2, shift
-		bl deci32_deci_shift64
-		mov temp2_lower, r0
-		mov temp2_upper, r1
+		bl print32_strlen
+		mov length_substr, r0
 		pop {r0-r3}
 
-		push {r0-r3}
-		mov r0, cal_lower
-		mov r1, cal_upper
-		mov r2, temp2_lower
-		mov r3, temp2_upper
-		bl deci32_deci_add64
-		mov cal_lower, r0
-		mov cal_upper, r1
-		pop {r0-r3}
+		deci32_string_to_farray_loop_jump:
 
-		push {r2-r3}
-		mov r2, temp1_lower
-		mov r3, temp1_upper
-		bl deci32_deci_rem64_pre
-		pop {r2-r3}
+			push {r0-r3}
+			mov r1, length_substr
+			bl deci32_string_to_float32
+			mov data, r0
+			pop {r0-r3}
 
-		cmp lower_1, #0
-		cmpeq upper_1, #0
-		moveq carry_flag, #0
-		beq deci32_deci_div64_common
+			str data, [heap_arr, offset]
 
-		sub shift, shift, #1
+			/* Offset of String for Next Data */
+			add heap_str, heap_str, length_substr
+			add heap_str, heap_str, #1
+			sub length_str, length_str, length_substr
+			sub length_str, length_str, #1
 
-		b deci32_deci_div64_loop
+			/* Offset of Heap for Next Block of Array */
+			add offset, offset, #4
 
-	deci32_deci_div64_common:
-		cmp carry_flag, #1
-		mov r0, cal_lower
-		mov r1, cal_upper
-		pop {r4-r11,pc}
+			sub length_arr, length_arr, #1
+			b deci32_string_to_farray_loop
 
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq cal_lower
-.unreq cal_upper
-.unreq shift
-.unreq temp1_lower
-.unreq temp1_upper
-.unreq temp2_lower
-.unreq temp2_upper
-.unreq carry_flag
+	deci32_string_to_farray_common:
+		mov r0, heap_arr
+		pop {r4-r7,pc}
+
+.unreq heap_str
+.unreq length_str
+.unreq temp
+.unreq offset
+.unreq length_substr
+.unreq heap_arr
+.unreq length_arr
+.unreq data
 
 
 /**
- * function deci32_deci_rem64_pre
- * Remainder of Division with Decimal Bases (0-9)
- * Caution! This Function is a Module for Other Functions.
+ * function deci32_farray_to_string
+ * Make String (Decimal System) From Single Precision Floats
  *
  * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ * r0: Heap of Array
+ * r1: Minimam Length of Digits in Integer Places, 16 Digits Max
+ * r2: Maximam Length of Digits in Decimal Places, Default 8 Digits, If Exceeds, Round Down
+ * r3: Indicates Exponential
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
+ * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_deci_rem64_pre
-deci32_deci_rem64_pre:
+.globl deci32_farray_to_string
+deci32_farray_to_string:
 	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	dup_lower_1    .req r4
-	dup_upper_1    .req r5
-	carry_flag     .req r6
+	heap_arr        .req r0
+	min_integer     .req r1
+	max_decimal     .req r2
+	indicator_expo  .req r3
+	heap_arr_length .req r4
+	data            .req r5
+	heap_str0       .req r6
+	heap_str1       .req r7
+	heap_str2       .req r8
+	heap_str3       .req r9
 
-	push {r4-r6,lr}
+	push {r4-r9,lr}
 
-	mov carry_flag, #0
+	/* Check Size */
 
-	deci32_deci_rem64_pre_loop:
+	ldr heap_arr_length, [heap_arr, #-4]
 
-		mov dup_lower_1, lower_1
-		mov dup_upper_1, upper_1
+	add heap_arr_length, heap_arr, heap_arr_length
+	sub heap_arr_length, heap_arr_length, #4
 
-		push {r2-r3}
-		bl deci32_deci_sub64
-		pop {r2-r3}
-		bcs deci32_deci_rem64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+	mov heap_str0, #0
 
-		b deci32_deci_rem64_pre_loop
+	deci32_farray_to_string_loop:
+		cmp heap_arr, heap_arr_length
+		bge deci32_farray_to_string_common
 
-	deci32_deci_rem64_pre_common:
-		cmp carry_flag, #1
-		mov r0, dup_lower_1
-		mov r1, dup_upper_1
-		pop {r4-r6,pc}
-
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq dup_lower_1
-.unreq dup_upper_1
-.unreq carry_flag
-
-
-/**
- * function deci32_deci_rem64
- * Remainder of Division with Decimal Bases (0-9)
- *
- * Parameters
- * r0: Lower Bits of First Number, needed between 0-9 in all digits
- * r1: Upper Bits of First Number, needed between 0-9 in all digits
- * r2: Lower Bits of Second Number, needed between 0-9 in all digits
- * r3: Upper Bits of Second Number, needed between 0-9 in all digits
- *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
- * Error: This function could not calculate because of digit-overflow.
- */
-.globl deci32_deci_rem64
-deci32_deci_rem64:
-	/* Auto (Local) Variables, but just Aliases */
-	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
-	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	cal_lower      .req r4
-	cal_upper      .req r5
-	shift          .req r6
-	temp1_lower    .req r7
-	temp1_upper    .req r8
-	temp2_lower    .req r9
-	temp2_upper    .req r10
-	carry_flag     .req r11
-
-	/**
-	 * To speed up, this function refers handwrinting method to calculate division,
-	 * i.e., two-dimensional method that is using exponent in base 10.
-	 */
-
-	push {r4-r11,lr}
-
-	mov cal_lower, #0
-	mov cal_upper, #0
-
-	mov carry_flag, #0
-
-	clz temp1_lower, upper_2
-	cmp temp1_lower, #32
-	clzge temp1_lower, lower_2
-	addge temp1_lower, temp1_lower, #32
-
-	mov shift, #0
-
-	deci32_deci_rem64_count:
-		subs temp1_lower, temp1_lower, #4
-		addge shift, #1
-		bge deci32_deci_rem64_count
-
-	deci32_deci_rem64_loop:
-		cmp shift, #0
-		blt deci32_deci_rem64_common
+		ldr data, [heap_arr]
 
 		push {r0-r3}
-		mov r0, lower_2
-		mov r1, upper_2
-		mov r2, shift
-		bl deci32_deci_shift64
-		mov temp1_lower, r0
-		mov temp1_upper, r1
+		mov r0, data
+		bl deci32_float32_to_string
+		mov heap_str1, r0
+		pop {r0-r3}
+
+		cmp heap_str1, #0
+		beq deci32_farray_to_string_common
+
+		add heap_arr, heap_arr, #4
+		cmp heap_arr, heap_arr_length
+		bge deci32_farray_to_string_loop_common
+
+		push {r0-r3}
+		mov r0, #1
+		bl heap32_malloc
+		mov heap_str2, r0
+		pop {r0-r3}
+
+		cmp heap_str2, #0
+		beq deci32_farray_to_string_common
+
+		mov data, #0x2C                          @ Ascii Code of Comma
+		strb data, [heap_str2]
+
+		mov data, #0x00                          @ Ascii Code of Null
+		strb data, [heap_str2, #1]
+
+		push {r0-r3}
+		mov r0, heap_str1
+		mov r1, heap_str2
+		bl print32_strcat
+		mov heap_str3, r0
+		pop {r0-r3}
+
+		cmp heap_str3, #0
+		beq deci32_farray_to_string_common
+
+		push {r0-r3}
+		mov r0, heap_str1
+		bl heap32_mfree
 		pop {r0-r3}
 
 		push {r0-r3}
-		mov r2, temp1_lower
-		mov r3, temp1_upper
-		bl deci32_deci_rem64_pre
-		mov temp2_lower, r0
-		mov temp2_upper, r1
+		mov r0, heap_str2
+		bl heap32_mfree
 		pop {r0-r3}
 
-		push {r0-r3}
-		mov r0, temp2_lower
-		mov r1, temp2_upper
-		mov r2, shift
-		bl deci32_deci_shift64
-		mov temp2_lower, r0
-		mov temp2_upper, r1
-		pop {r0-r3}
+		mov heap_str1, heap_str3
 
-		push {r0-r3}
-		mov r0, cal_lower
-		mov r1, cal_upper
-		mov r2, temp2_lower
-		mov r3, temp2_upper
-		bl deci32_deci_add64
-		mov cal_lower, r0
-		mov cal_upper, r1
-		pop {r0-r3}
+		deci32_farray_to_string_loop_common:
 
-		push {r2-r3}
-		mov r2, temp1_lower
-		mov r3, temp1_upper
-		bl deci32_deci_rem64_pre
-		pop {r2-r3}
+			/* If Initial Part of Array */
+			cmp heap_str0, #0
+			moveq heap_str0, heap_str1
+			beq deci32_farray_to_string_loop
 
-		cmp lower_1, #0
-		cmpeq upper_1, #0
-		beq deci32_deci_rem64_common
+			/* If Following Parts of Array */
+			push {r0-r3}
+			mov r0, heap_str0
+			mov r1, heap_str1
+			bl print32_strcat
+			mov heap_str2, r0
+			pop {r0-r3}
 
-		sub shift, shift, #1
+			push {r0-r3}
+			mov r0, heap_str0
+			bl heap32_mfree
+			pop {r0-r3}
 
-		b deci32_deci_rem64_loop
+			push {r0-r3}
+			mov r0, heap_str1
+			bl heap32_mfree
+			pop {r0-r3}
 
-	deci32_deci_rem64_common:
-		cmp carry_flag, #1
-		pop {r4-r11,pc}
+			mov heap_str0, heap_str2
 
-.unreq lower_1
-.unreq upper_1
-.unreq lower_2
-.unreq upper_2
-.unreq cal_lower
-.unreq cal_upper
-.unreq shift
-.unreq temp1_lower
-.unreq temp1_upper
-.unreq temp2_lower
-.unreq temp2_upper
-.unreq carry_flag
+			b deci32_farray_to_string_loop
+
+	deci32_farray_to_string_common:
+		mov r0, heap_str0
+		pop {r4-r9,pc}
+
+.unreq heap_arr
+.unreq min_integer
+.unreq max_decimal
+.unreq indicator_expo
+.unreq heap_arr_length
+.unreq data
+.unreq heap_str0
+.unreq heap_str1
+.unreq heap_str2
+.unreq heap_str3

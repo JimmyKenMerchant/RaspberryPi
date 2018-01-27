@@ -1,0 +1,947 @@
+/**
+ * bcd32.s
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+/* Binary Coded Decimal */
+
+/**
+ * function bcd32_deci_add64
+ * Addition with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_add64
+bcd32_deci_add64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4 @ Duplication of lower_1
+	dup_upper_1    .req r5 @ Duplication of upper_1
+	i              .req r6
+	shift          .req r7
+	bitmask_1      .req r8
+	bitmask_2      .req r9
+	carry_flag     .req r10
+
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	mov dup_lower_1, lower_1
+	mov dup_upper_1, upper_1
+	mov lower_1, #0
+	mov upper_1, #0
+	mov carry_flag, #0
+
+	mov i, #0
+
+	bcd32_deci_add64_loop:
+		mov bitmask_1, #0xF                            @ 0b1111
+		mov bitmask_2, #0xF
+
+		lsl shift, i, #2                               @ Substitute of Multiplication by 4
+
+		cmp i, #8
+		bhs bcd32_deci_add64_loop_uppernumber
+
+		/* Lower Number */
+		lsl bitmask_1, bitmask_1, shift
+		lsl bitmask_2, bitmask_2, shift
+
+		and bitmask_1, dup_lower_1, bitmask_1
+		and bitmask_2, lower_2, bitmask_2
+
+		b bcd32_deci_add64_loop_cal
+
+		/* Upper Number */
+		bcd32_deci_add64_loop_uppernumber:
+
+			sub shift, shift, #32
+
+			lsl bitmask_1, bitmask_1, shift
+			lsl bitmask_2, bitmask_2, shift
+
+			and bitmask_1, dup_upper_1, bitmask_1
+			and bitmask_2, upper_2, bitmask_2
+
+		bcd32_deci_add64_loop_cal:
+		
+			lsr bitmask_1, bitmask_1, shift
+			lsr bitmask_2, bitmask_2, shift
+
+			add bitmask_1, bitmask_1, bitmask_2
+			add bitmask_1, bitmask_1, carry_flag
+
+			cmp bitmask_1, #0x10
+			bhs bcd32_deci_add64_loop_cal_hexacarry
+
+			cmp bitmask_1, #0x0A
+			bhs bcd32_deci_add64_loop_cal_decicarry
+
+			mov carry_flag, #0                      @ Clear Carry
+
+			b bcd32_deci_add64_loop_common	
+
+			bcd32_deci_add64_loop_cal_hexacarry:
+
+				sub bitmask_1, #0x10
+				add bitmask_1, #0x06 
+				mov carry_flag, #1              @ Set Carry
+
+				b bcd32_deci_add64_loop_common
+
+			bcd32_deci_add64_loop_cal_decicarry:
+
+				sub bitmask_1, #0x0A
+				mov carry_flag, #1              @ Set Carry
+
+		bcd32_deci_add64_loop_common:
+			lsl bitmask_1, bitmask_1, shift
+
+			cmp i, #8
+			bhs bcd32_deci_add64_loop_common_uppernumber
+
+			/* Lower Number */
+			add lower_1, lower_1, bitmask_1
+
+			b bcd32_deci_add64_loop_common_common
+
+			/* Upper Number */
+			bcd32_deci_add64_loop_common_uppernumber:
+
+				add upper_1, upper_1, bitmask_1
+
+			bcd32_deci_add64_loop_common_common:
+
+				add i, i, #1
+				cmp i, #16
+				blo bcd32_deci_add64_loop
+
+				cmp carry_flag, #1
+				beq bcd32_deci_add64_error
+
+	bcd32_deci_add64_success:            
+		b bcd32_deci_add64_common
+
+	bcd32_deci_add64_error:
+		/**
+		 * Load Only Status Flags From CPSR
+		 * NZCVQ (Negative; Zero; Unsigned Carry; Overflow = Signed Carry; Saturation = Stickey Overflow on QADD, etc.)
+		 * But codes below is not valid in User mode because writing to cpsr is not valid in User mode
+		 */
+		/*
+		mrs carry_flag, apsr                    @ NZCVQ Bit[31:27]
+		bic carry_flag, carry_flag, #0xF8000000 @ Clear NZCVQ
+		orr carry_flag, carry_flag, #0x20000000 @ Only Set Carry Bit[29], Check by Conditional cs/hs and cc/lo
+		msr apsr_nzcvq, carry_flag
+		*/
+
+	bcd32_deci_add64_common:
+		cmp carry_flag, #1
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		mov pc, lr
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
+.unreq i
+.unreq shift
+.unreq bitmask_1
+.unreq bitmask_2
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_sub64
+ * Subtraction with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because the result is reached minus.
+ */
+.globl bcd32_deci_sub64
+bcd32_deci_sub64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4 @ Duplication of lower_1
+	dup_upper_1    .req r5 @ Duplication of upper_1
+	i              .req r6
+	shift          .req r7
+	bitmask_1      .req r8
+	bitmask_2      .req r9
+	carry_flag     .req r10
+
+	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			@ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	mov dup_lower_1, lower_1
+	mov dup_upper_1, upper_1
+	mov lower_1, #0
+	mov upper_1, #0
+	mov carry_flag, #0
+
+	mov i, #0
+
+	bcd32_deci_sub64_loop:
+		mov bitmask_1, #0xF                            @ 0b1111
+		mov bitmask_2, #0xF
+
+		lsl shift, i, #2                               @ Substitute of Multiplication by 4
+
+		cmp i, #8
+		bhs bcd32_deci_sub64_loop_uppernumber
+
+		/* Lower Number */
+		lsl bitmask_1, bitmask_1, shift
+		lsl bitmask_2, bitmask_2, shift
+
+		and bitmask_1, dup_lower_1, bitmask_1
+		and bitmask_2, lower_2, bitmask_2
+
+		b bcd32_deci_sub64_loop_cal
+
+		/* Upper Number */
+		bcd32_deci_sub64_loop_uppernumber:
+
+			sub shift, shift, #32
+
+			lsl bitmask_1, bitmask_1, shift
+			lsl bitmask_2, bitmask_2, shift
+
+			and bitmask_1, dup_upper_1, bitmask_1
+			and bitmask_2, upper_2, bitmask_2
+
+		bcd32_deci_sub64_loop_cal:
+	
+			lsr bitmask_1, bitmask_1, shift
+			lsr bitmask_2, bitmask_2, shift
+
+			sub bitmask_1, bitmask_1, bitmask_2
+			sub bitmask_1, bitmask_1, carry_flag
+
+			cmp bitmask_1, #0x0
+			blt bcd32_deci_sub64_loop_cal_carry
+
+			mov carry_flag, #0                      @ Clear Carry
+
+			b bcd32_deci_sub64_loop_common	
+
+			bcd32_deci_sub64_loop_cal_carry:
+
+				add bitmask_1, bitmask_1, #10        @ Value of bitmask_1 is minus
+				mov carry_flag, #1                   @ Set Carry
+
+		bcd32_deci_sub64_loop_common:
+			lsl bitmask_1, bitmask_1, shift
+
+			cmp i, #8
+			bhs bcd32_deci_sub64_loop_common_uppernumber
+
+			/* Lower Number */
+			add lower_1, lower_1, bitmask_1
+
+			b bcd32_deci_sub64_loop_common_common
+
+			/* Upper Number */
+			bcd32_deci_sub64_loop_common_uppernumber:
+
+				add upper_1, upper_1, bitmask_1
+
+			bcd32_deci_sub64_loop_common_common:
+
+				add i, i, #1
+				cmp i, #16
+				blo bcd32_deci_sub64_loop
+
+				cmp carry_flag, #1
+				beq bcd32_deci_sub64_error
+
+	bcd32_deci_sub64_success:
+		b bcd32_deci_sub64_common
+
+	bcd32_deci_sub64_error:
+		/**
+		 * Load Only Status Flags From CPSR
+		 * NZCVQ (Negative; Zero; Unsigned Carry; Overflow = Signed Carry; Saturation = Stickey Overflow on QADD, etc.)
+		 * But codes below is not valid in User mode because writing to cpsr is not valid in User mode
+		 */
+		/*
+		mrs carry_flag, apsr                    @ NZCVQ Bit[31:27]
+		bic carry_flag, carry_flag, #0xF8000000 @ Clear NZCVQ
+		orr carry_flag, carry_flag, #0x20000000 @ Only Set Carry Bit[29], Check by Conditional cs/hs and cc/lo
+		msr apsr_nzcvq, carry_flag
+		*/
+
+	bcd32_deci_sub64_common:
+		cmp carry_flag, #1
+		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+
+		mov pc, lr
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
+.unreq i
+.unreq shift
+.unreq bitmask_1
+.unreq bitmask_2
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_shift64
+ * Shift Place with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of Number, needed between 0-9 in all digits
+ * r1: Upper Bits of Number, needed between 0-9 in all digits
+ * r2: Number of Place to Shift, Plus Signed Means Shift Left, Minus Singed Means Shift Right
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
+ */
+.globl bcd32_deci_shift64
+bcd32_deci_shift64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	shift          .req r2 @ Parameter, Register for Argument, Scratch Register
+	minus          .req r3
+
+	cmp shift, #0
+	movlt minus, #1
+	mvnlt shift, shift
+	addlt shift, shift, #1
+	movge minus, #0
+
+	lsl shift, shift, #2                   @ Substitute of Multiplication by 4
+
+	bcd32_deci_shift64_loop:
+
+		cmp shift, #0
+		ble bcd32_deci_shift64_common
+
+		cmp minus, #1
+		beq bcd32_deci_shift64_loop_minus
+
+		lsls lower_1, lower_1, #1
+		lsl upper_1, upper_1, #1
+		addcs upper_1, upper_1, #1
+
+		sub shift, shift, #1
+		b bcd32_deci_shift64_loop
+
+		bcd32_deci_shift64_loop_minus:
+
+			lsrs upper_1, upper_1, #1
+			lsr lower_1, lower_1, #1
+			addcs lower_1, lower_1, #0x80000000
+
+			sub shift, shift, #1
+			b bcd32_deci_shift64_loop
+
+	bcd32_deci_shift64_common:
+		mov pc, lr
+
+.unreq lower_1
+.unreq upper_1
+.unreq shift
+.unreq minus
+
+
+/**
+ * function bcd32_deci_mul64_pre
+ * Multiplication with Decimal Bases (0-9)
+ * Caution! This Function is a Module for Other Functions.
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_mul64_pre
+bcd32_deci_mul64_pre:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_2    .req r4 @ Duplication of lower_2
+	dup_upper_2    .req r5 @ Duplication of upper_2
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov dup_lower_2, lower_2
+	mov dup_upper_2, upper_2
+	mov lower_2, lower_1
+	mov upper_2, upper_1
+	mov lower_1, #0
+	mov upper_1, #0
+	mov carry_flag, #0
+
+	bcd32_deci_mul64_pre_loop:
+
+		push {r0-r3}
+		mov r0, dup_lower_2
+		mov r1, dup_upper_2
+		mov r2, #1
+		mov r3, #0
+		bl bcd32_deci_sub64
+		mov dup_lower_2, r0
+		mov dup_upper_2, r1
+		pop {r0-r3}
+		bcs bcd32_deci_mul64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		push {r2-r3}
+		bl bcd32_deci_add64
+		pop {r2-r3}
+		movcs carry_flag, #1
+		bcs bcd32_deci_mul64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		b bcd32_deci_mul64_pre_loop
+
+	bcd32_deci_mul64_pre_common:
+		cmp carry_flag, #1
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_2
+.unreq dup_upper_2
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_mul64
+ * Multiplication with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_mul64
+bcd32_deci_mul64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_2    .req r4 @ Duplication of lower_2
+	dup_upper_2    .req r5 @ Duplication of upper_2
+	cal_lower      .req r6
+	cal_upper      .req r7
+	shift          .req r8
+	temp_lower     .req r9
+	temp_upper     .req r10
+	carry_flag     .req r11
+
+	/**
+	 * To speed up, this function refers handwrinting method to calculate multiplication,
+	 * i.e., two-dimensional method that is using exponent in base 10.
+	 */
+
+	push {r4-r11,lr}
+
+	mov dup_lower_2, lower_2
+	mov dup_upper_2, upper_2
+	mov upper_2, #0
+	mov cal_lower, #0
+	mov cal_upper, #0
+	mov shift, #15
+	mov carry_flag, #0
+
+	bcd32_deci_mul64_loop:
+
+		cmp shift, #0
+		blt bcd32_deci_mul64_common
+
+		mov lower_2, #0xF
+		lsl temp_lower, shift, #2                   @ Substitute of Multiplication by 4
+		cmp shift, #8
+		bge bcd32_deci_mul64_loop_upper
+
+		lsl lower_2, lower_2, temp_lower
+		and lower_2, lower_2, dup_lower_2
+		lsr lower_2, lower_2, temp_lower
+
+		b bcd32_deci_mul64_loop_common
+
+		bcd32_deci_mul64_loop_upper:
+
+			sub temp_lower, temp_lower, #32
+			lsl lower_2, lower_2, temp_lower
+			and lower_2, lower_2, dup_upper_2
+			lsr lower_2, lower_2, temp_lower
+	
+		bcd32_deci_mul64_loop_common:
+
+			push {r0-r3}
+			bl bcd32_deci_mul64_pre
+			mov temp_lower, r0
+			mov temp_upper, r1
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, temp_lower
+			mov r1, temp_upper
+			mov r2, shift
+			bl bcd32_deci_shift64
+			mov temp_lower, r0
+			mov temp_upper, r1
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, cal_lower
+			mov r1, cal_upper
+			mov r2, temp_lower
+			mov r3, temp_upper
+			bl bcd32_deci_add64
+			mov cal_lower, r0
+			mov cal_upper, r1
+			pop {r0-r3}
+			movcs carry_flag, #1
+			bcs bcd32_deci_mul64_common
+
+			sub shift, shift, #1
+			b bcd32_deci_mul64_loop
+
+	bcd32_deci_mul64_common:
+		cmp carry_flag, #1
+		mov r0, cal_lower
+		mov r1, cal_upper
+		pop {r4-r11,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_2
+.unreq dup_upper_2
+.unreq cal_lower
+.unreq cal_upper
+.unreq shift
+.unreq temp_lower
+.unreq temp_upper
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_div64_pre
+ * Division with Decimal Bases (0-9)
+ * Caution! This Function is a Module for Other Functions.
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_div64_pre
+bcd32_deci_div64_pre:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	cal_lower      .req r4
+	cal_upper      .req r5
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov cal_lower, #0
+	mov cal_upper, #0
+	mov carry_flag, #0
+
+	bcd32_deci_div64_pre_loop:
+
+		push {r2-r3}
+		bl bcd32_deci_sub64
+		pop {r2-r3}
+		bcs bcd32_deci_div64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		push {r0-r3}
+		mov r0, cal_lower
+		mov r1, cal_upper
+		mov r2, #1
+		mov r3, #0
+		bl bcd32_deci_add64
+		mov cal_lower, r0
+		mov cal_upper, r1
+		pop {r0-r3}
+		movcs carry_flag, #1
+		bcs bcd32_deci_div64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		cmp lower_1, #0
+		cmpeq upper_1, #0
+		beq bcd32_deci_div64_pre_common @ If Divisible
+
+		b bcd32_deci_div64_pre_loop
+
+	bcd32_deci_div64_pre_common:
+		cmp carry_flag, #1
+		mov r0, cal_lower
+		mov r1, cal_upper
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq cal_lower
+.unreq cal_upper
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_div64
+ * Multiplication with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_div64
+bcd32_deci_div64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	cal_lower      .req r4
+	cal_upper      .req r5
+	shift          .req r6
+	temp1_lower    .req r7
+	temp1_upper    .req r8
+	temp2_lower    .req r9
+	temp2_upper    .req r10
+	carry_flag     .req r11
+
+	/**
+	 * To speed up, this function refers handwrinting method to calculate division,
+	 * i.e., two-dimensional method that is using exponent in base 10.
+	 */
+
+	push {r4-r11,lr}
+
+	mov cal_lower, #0
+	mov cal_upper, #0
+
+	clz temp1_lower, upper_2
+	cmp temp1_lower, #32
+	clzge temp1_lower, lower_2
+	addge temp1_lower, temp1_lower, #32
+
+	mov shift, #0
+
+	bcd32_deci_div64_count:
+		subs temp1_lower, temp1_lower, #4
+		addge shift, #1
+		bge bcd32_deci_div64_count
+
+	bcd32_deci_div64_loop:
+
+		mov carry_flag, #1
+
+		cmp shift, #0
+		blt bcd32_deci_div64_common
+
+		push {r0-r3}
+		mov r0, lower_2
+		mov r1, upper_2
+		mov r2, shift
+		bl bcd32_deci_shift64
+		mov temp1_lower, r0
+		mov temp1_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl bcd32_deci_div64_pre
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, temp2_lower
+		mov r1, temp2_upper
+		mov r2, shift
+		bl bcd32_deci_shift64
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, cal_lower
+		mov r1, cal_upper
+		mov r2, temp2_lower
+		mov r3, temp2_upper
+		bl bcd32_deci_add64
+		mov cal_lower, r0
+		mov cal_upper, r1
+		pop {r0-r3}
+
+		push {r2-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl bcd32_deci_rem64_pre
+		pop {r2-r3}
+
+		cmp lower_1, #0
+		cmpeq upper_1, #0
+		moveq carry_flag, #0
+		beq bcd32_deci_div64_common
+
+		sub shift, shift, #1
+
+		b bcd32_deci_div64_loop
+
+	bcd32_deci_div64_common:
+		cmp carry_flag, #1
+		mov r0, cal_lower
+		mov r1, cal_upper
+		pop {r4-r11,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq cal_lower
+.unreq cal_upper
+.unreq shift
+.unreq temp1_lower
+.unreq temp1_upper
+.unreq temp2_lower
+.unreq temp2_upper
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_rem64_pre
+ * Remainder of Division with Decimal Bases (0-9)
+ * Caution! This Function is a Module for Other Functions.
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_rem64_pre
+bcd32_deci_rem64_pre:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	dup_lower_1    .req r4
+	dup_upper_1    .req r5
+	carry_flag     .req r6
+
+	push {r4-r6,lr}
+
+	mov carry_flag, #0
+
+	bcd32_deci_rem64_pre_loop:
+
+		mov dup_lower_1, lower_1
+		mov dup_upper_1, upper_1
+
+		push {r2-r3}
+		bl bcd32_deci_sub64
+		pop {r2-r3}
+		bcs bcd32_deci_rem64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		b bcd32_deci_rem64_pre_loop
+
+	bcd32_deci_rem64_pre_common:
+		cmp carry_flag, #1
+		mov r0, dup_lower_1
+		mov r1, dup_upper_1
+		pop {r4-r6,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq dup_lower_1
+.unreq dup_upper_1
+.unreq carry_flag
+
+
+/**
+ * function bcd32_deci_rem64
+ * Remainder of Division with Decimal Bases (0-9)
+ *
+ * Parameters
+ * r0: Lower Bits of First Number, needed between 0-9 in all digits
+ * r1: Upper Bits of First Number, needed between 0-9 in all digits
+ * r2: Lower Bits of Second Number, needed between 0-9 in all digits
+ * r3: Upper Bits of Second Number, needed between 0-9 in all digits
+ *
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Error: This function could not calculate because of digit-overflow.
+ */
+.globl bcd32_deci_rem64
+bcd32_deci_rem64:
+	/* Auto (Local) Variables, but just Aliases */
+	lower_1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
+	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
+	cal_lower      .req r4
+	cal_upper      .req r5
+	shift          .req r6
+	temp1_lower    .req r7
+	temp1_upper    .req r8
+	temp2_lower    .req r9
+	temp2_upper    .req r10
+	carry_flag     .req r11
+
+	/**
+	 * To speed up, this function refers handwrinting method to calculate division,
+	 * i.e., two-dimensional method that is using exponent in base 10.
+	 */
+
+	push {r4-r11,lr}
+
+	mov cal_lower, #0
+	mov cal_upper, #0
+
+	mov carry_flag, #0
+
+	clz temp1_lower, upper_2
+	cmp temp1_lower, #32
+	clzge temp1_lower, lower_2
+	addge temp1_lower, temp1_lower, #32
+
+	mov shift, #0
+
+	bcd32_deci_rem64_count:
+		subs temp1_lower, temp1_lower, #4
+		addge shift, #1
+		bge bcd32_deci_rem64_count
+
+	bcd32_deci_rem64_loop:
+		cmp shift, #0
+		blt bcd32_deci_rem64_common
+
+		push {r0-r3}
+		mov r0, lower_2
+		mov r1, upper_2
+		mov r2, shift
+		bl bcd32_deci_shift64
+		mov temp1_lower, r0
+		mov temp1_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl bcd32_deci_rem64_pre
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, temp2_lower
+		mov r1, temp2_upper
+		mov r2, shift
+		bl bcd32_deci_shift64
+		mov temp2_lower, r0
+		mov temp2_upper, r1
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, cal_lower
+		mov r1, cal_upper
+		mov r2, temp2_lower
+		mov r3, temp2_upper
+		bl bcd32_deci_add64
+		mov cal_lower, r0
+		mov cal_upper, r1
+		pop {r0-r3}
+
+		push {r2-r3}
+		mov r2, temp1_lower
+		mov r3, temp1_upper
+		bl bcd32_deci_rem64_pre
+		pop {r2-r3}
+
+		cmp lower_1, #0
+		cmpeq upper_1, #0
+		beq bcd32_deci_rem64_common
+
+		sub shift, shift, #1
+
+		b bcd32_deci_rem64_loop
+
+	bcd32_deci_rem64_common:
+		cmp carry_flag, #1
+		pop {r4-r11,pc}
+
+.unreq lower_1
+.unreq upper_1
+.unreq lower_2
+.unreq upper_2
+.unreq cal_lower
+.unreq cal_upper
+.unreq shift
+.unreq temp1_lower
+.unreq temp1_upper
+.unreq temp2_lower
+.unreq temp2_upper
+.unreq carry_flag
