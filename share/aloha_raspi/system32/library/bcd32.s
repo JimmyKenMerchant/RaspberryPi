@@ -589,14 +589,20 @@ bcd32_bmul:
 
 	/* If Sign of Value is Diffrent from Another */
 	cmp sign1, #1
-	cmpeq sign2, #1
-	beq bcd32_bmul_string
-	cmp sign1, #0
 	cmpeq sign2, #0
-	beq bcd32_bmul_string
+	beq bcd32_bmul_negative
+	cmp sign1, #0
+	cmpeq sign2, #1
+	beq bcd32_bmul_negative
 
-	/* Different Signs Mean Signed Minus */
-	mov sign1, #1
+	mov sign1, #0
+
+	b bcd32_bmul_string
+
+	bcd32_bmul_negative:
+
+		/* Different Signs Mean Signed Minus */
+		mov sign1, #1
 
 	bcd32_bmul_string:
 
@@ -714,20 +720,22 @@ bcd32_bdiv:
 	mov deci1_upper, r1
 	pop {r0-r3}
 
-	/* If Carry Set, Error Value */
-	movcs deci1_lower, #0xFFFFFFFF
-	movcs deci1_upper, #0xFFFFFFFF
-
 	/* If Sign of Value is Diffrent from Another */
 	cmp sign1, #1
-	cmpeq sign2, #1
-	beq bcd32_bdiv_string
-	cmp sign1, #0
 	cmpeq sign2, #0
-	beq bcd32_bdiv_string
+	beq bcd32_bdiv_negative
+	cmp sign1, #0
+	cmpeq sign2, #1
+	beq bcd32_bdiv_negative
 
-	/* Different Signs Mean Signed Minus */
-	mov sign1, #1
+	mov sign1, #0
+
+	b bcd32_bdiv_string
+
+	bcd32_bdiv_negative:
+
+		/* Different Signs Mean Signed Minus */
+		mov sign1, #1
 
 	bcd32_bdiv_string:
 
@@ -844,10 +852,6 @@ bcd32_brem:
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
-
-	/* If Carry Set, Error Value */
-	movcs deci1_lower, #0xFFFFFFFF
-	movcs deci1_upper, #0xFFFFFFFF
 
 	bcd32_brem_string:
 
@@ -1364,7 +1368,7 @@ bcd32_deci_sub64:
  * r1: Upper Bits of Number, needed between 0-9 in all digits
  * r2: Number of Place to Shift, Plus Signed Means Shift Left, Minus Singed Means Shift Right
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
  */
 .globl bcd32_deci_shift64
 bcd32_deci_shift64:
@@ -1373,6 +1377,9 @@ bcd32_deci_shift64:
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	shift          .req r2 @ Parameter, Register for Argument, Scratch Register
 	minus          .req r3 @ Scratch Register
+	carry_flag     .req r4
+
+	push {r4,lr}
 
 	cmp shift, #0
 	movlt minus, #1
@@ -1381,6 +1388,7 @@ bcd32_deci_shift64:
 	movge minus, #0
 
 	lsl shift, shift, #2                   @ Substitute of Multiplication by 4
+	mov carry_flag, #0
 
 	bcd32_deci_shift64_loop:
 
@@ -1390,8 +1398,9 @@ bcd32_deci_shift64:
 		cmp minus, #1
 		beq bcd32_deci_shift64_loop_minus
 
+		lsls upper_1, upper_1, #1
+		orrcs carry_flag, carry_flag, #1
 		lsls lower_1, lower_1, #1
-		lsl upper_1, upper_1, #1
 		addcs upper_1, upper_1, #1
 
 		sub shift, shift, #1
@@ -1407,12 +1416,14 @@ bcd32_deci_shift64:
 			b bcd32_deci_shift64_loop
 
 	bcd32_deci_shift64_common:
-		mov pc, lr
+		cmp carry_flag, #1
+		pop {r4,pc}
 
 .unreq lower_1
 .unreq upper_1
 .unreq shift
 .unreq minus
+.unreq carry_flag
 
 
 /**
@@ -1567,6 +1578,8 @@ bcd32_deci_mul64:
 			mov temp_lower, r0
 			mov temp_upper, r1
 			pop {r0-r3}
+			movcs carry_flag, #1
+			bcs bcd32_deci_mul64_common
 
 			push {r0-r3}
 			mov r0, cal_lower
@@ -1614,7 +1627,7 @@ bcd32_deci_mul64:
  * r2: Lower Bits of Second Number, needed between 0-9 in all digits
  * r3: Upper Bits of Second Number, needed between 0-9 in all digits
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), Remainder Exists If Carry Bit Is Set
  * Error: This function could not calculate because of digit-overflow.
  */
 .globl bcd32_deci_div64_pre
@@ -1684,7 +1697,7 @@ bcd32_deci_div64_pre:
  * r2: Lower Bits of Second Number, needed between 0-9 in all digits
  * r3: Upper Bits of Second Number, needed between 0-9 in all digits
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), Remainder Exists If Carry Bit Is Set
  * Error: This function could not calculate because of digit-overflow.
  */
 .globl bcd32_deci_div64
@@ -1814,7 +1827,7 @@ bcd32_deci_div64:
  * r2: Lower Bits of Second Number, needed between 0-9 in all digits
  * r3: Upper Bits of Second Number, needed between 0-9 in all digits
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
  * Error: This function could not calculate because of digit-overflow.
  */
 .globl bcd32_deci_rem64_pre
@@ -1826,11 +1839,8 @@ bcd32_deci_rem64_pre:
 	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
 	dup_lower_1    .req r4
 	dup_upper_1    .req r5
-	carry_flag     .req r6
 
-	push {r4-r6,lr}
-
-	mov carry_flag, #0
+	push {r4-r5,lr}
 
 	bcd32_deci_rem64_pre_loop:
 
@@ -1845,10 +1855,9 @@ bcd32_deci_rem64_pre:
 		b bcd32_deci_rem64_pre_loop
 
 	bcd32_deci_rem64_pre_common:
-		cmp carry_flag, #1
 		mov r0, dup_lower_1
 		mov r1, dup_upper_1
-		pop {r4-r6,pc}
+		pop {r4-r5,pc}
 
 .unreq lower_1
 .unreq upper_1
@@ -1856,7 +1865,6 @@ bcd32_deci_rem64_pre:
 .unreq upper_2
 .unreq dup_lower_1
 .unreq dup_upper_1
-.unreq carry_flag
 
 
 /**
@@ -1869,7 +1877,7 @@ bcd32_deci_rem64_pre:
  * r2: Lower Bits of Second Number, needed between 0-9 in all digits
  * r3: Upper Bits of Second Number, needed between 0-9 in all digits
  *
- * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number), error if carry bit is set
+ * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
  * Error: This function could not calculate because of digit-overflow.
  */
 .globl bcd32_deci_rem64
@@ -1886,19 +1894,16 @@ bcd32_deci_rem64:
 	temp1_upper    .req r8
 	temp2_lower    .req r9
 	temp2_upper    .req r10
-	carry_flag     .req r11
 
 	/**
 	 * To speed up, this function refers handwrinting method to calculate division,
 	 * i.e., two-dimensional method that is using exponent in base 10.
 	 */
 
-	push {r4-r11,lr}
+	push {r4-r10,lr}
 
 	mov cal_lower, #0
 	mov cal_upper, #0
-
-	mov carry_flag, #0
 
 	clz temp1_lower, upper_2
 	cmp temp1_lower, #32
@@ -1967,8 +1972,7 @@ bcd32_deci_rem64:
 		b bcd32_deci_rem64_loop
 
 	bcd32_deci_rem64_common:
-		cmp carry_flag, #1
-		pop {r4-r11,pc}
+		pop {r4-r10,pc}
 
 .unreq lower_1
 .unreq upper_1
@@ -1981,4 +1985,4 @@ bcd32_deci_rem64:
 .unreq temp1_upper
 .unreq temp2_lower
 .unreq temp2_upper
-.unreq carry_flag
+

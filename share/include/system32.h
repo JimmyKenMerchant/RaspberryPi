@@ -1442,7 +1442,7 @@ extern uint32 bcd32_bcmp
 /**
  * Unsigned Addition with Decimal Bases (0-9)
  *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), error if carry bit is set
  * Error: This function could not calculate because of digit-overflow.
  */
 extern uint64 bcd32_deci_add64
@@ -1455,7 +1455,7 @@ extern uint64 bcd32_deci_add64
 /**
  * Unsigned Subtraction with Decimal Bases (0-9)
  *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), error if carry bit is set
  * Error: This function could not calculate because the result is signed minus.
  */
 extern uint64 bcd32_deci_sub64
@@ -1468,7 +1468,7 @@ extern uint64 bcd32_deci_sub64
 /**
  * Shift Place with Decimal Bases (0-9)
  *
- * Return: Lower Bits of Decimal Number, Upper Bits of Decimal Number
+ * Return: Lower Bits of Decimal Number, Upper Bits of Decimal Number, error if carry bit is set
  */
 extern uint64 bcd32_deci_shift64
 (
@@ -1480,7 +1480,7 @@ extern uint64 bcd32_deci_shift64
 /**
  * Unsigned Multiplication with Decimal Bases (0-9)
  *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), error if carry bit is set
  * Error: This function could not calculate because of digit-overflow.
  */
 extern uint64 bcd32_deci_mul64
@@ -1493,7 +1493,7 @@ extern uint64 bcd32_deci_mul64
 /**
  * Unsigned Division with Decimal Bases (0-9)
  *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), Remainder Exists If Carry Bit Is Set
  * Error: This function could not calculate because of digit-overflow.
  */
 extern uint64 bcd32_deci_div64
@@ -1506,7 +1506,7 @@ extern uint64 bcd32_deci_div64
 /**
  * Remainder of Unsigned Division with Decimal Bases (0-9)
  *
- * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error
+ * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
  * Error: This function could not calculate because of digit-overflow.
  */
 extern uint64 bcd32_deci_rem64
