@@ -1352,7 +1352,7 @@ extern String deci32_farray_to_string
  *
  * Return: Pointer of String of Decimal Number, If Zero Memory Allocation Fails
  */
-extern String bcd32_ladd
+extern String bcd32_badd
 (
 	String string_deci1, // Needed between 0-9 in all digits
 	uint32 length_deci1,

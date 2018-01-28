@@ -7,7 +7,7 @@
  *
  */
 
-/* Calculation with Binary Coded Decimal (BCD) */
+/* Calculation with Binary-coded Decimal (BCD) */
 
 
 /**
@@ -141,7 +141,7 @@ bcd32_bcdstring:
 
 
 /**
- * function bcd32_ladd
+ * function bcd32_badd
  * Signed Addition with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
  * If Saturated, Returns All F in 16 Digits
  * Caution! This function makes string allocated from Heap.
@@ -154,8 +154,8 @@ bcd32_bcdstring:
  *
  * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
  */
-.globl bcd32_ladd
-bcd32_ladd:
+.globl bcd32_badd
+bcd32_badd:
 	/* Auto (Local) Variables, but just Aliases */
 	string1        .req r0
 	length1        .req r1
@@ -213,11 +213,12 @@ bcd32_ladd:
 	/* If Sign of Value is Diffrent from Another */
 	cmp sign1, #1
 	cmpeq sign2, #0
-	beq bcd32_ladd_subtraction
-	cmp sign2, #1
-	cmpeq sign1, #0
-	beq bcd32_ladd_subtraction
+	beq bcd32_badd_subtraction
+	cmp sign1, #0
+	cmpeq sign2, #1
+	beq bcd32_badd_subtraction
 
+	/* Same Signs Mean Addition */
 	push {r0-r3}
 	mov r0, deci1_lower
 	mov r1, deci1_upper
@@ -232,33 +233,33 @@ bcd32_ladd:
 	movcs deci1_lower, #0xFFFFFFFF
 	movcs deci1_upper, #0xFFFFFFFF
 
-	b bcd32_ladd_string
+	b bcd32_badd_string
 
-	bcd32_ladd_subtraction:
+	bcd32_badd_subtraction:
+		/* Diffrent Signs Mean Subtraction */
 
 		/* Check Which Is Higher than Another */
 		cmp deci1_upper, deci2_upper
 		/* First Is Higher on Uppers */
-		bhi bcd32_ladd_subtraction_calc
+		bhi bcd32_badd_subtraction_calc
 		/* First Is Lower on Uppers */
-		blo bcd32_ladd_subtraction_swap
+		blo bcd32_badd_subtraction_swap
 		/* Uppers Are Same Value, So Check Lowers */
 		cmpeq deci1_lower, deci2_lower
 		/* Uppers Are Same Value, But First is Higher or Same on Lowers */
-		bhs bcd32_ladd_subtraction_calc
+		bhs bcd32_badd_subtraction_calc
 
-		bcd32_ladd_subtraction_swap:
+		bcd32_badd_subtraction_swap:
 			mov string1, deci1_upper
 			mov deci1_upper, deci2_upper
 			mov deci2_upper, string1
 			mov string1, deci1_lower
 			mov deci1_lower, deci2_lower
 			mov deci2_lower, string1
-			mov string1, sign1
+			/* Sign of Return Value Becomes Sign of Second Value */
 			mov sign1, sign2
-			mov sign2, string1
 
-		bcd32_ladd_subtraction_calc:
+		bcd32_badd_subtraction_calc:
 			push {r0-r3}
 			mov r0, deci1_lower
 			mov r1, deci1_upper
@@ -269,7 +270,7 @@ bcd32_ladd:
 			mov deci1_upper, r1
 			pop {r0-r3}
 
-	bcd32_ladd_string:
+	bcd32_badd_string:
 		push {r0-r3}
 		mov r0, deci1_lower
 		mov r1, deci1_upper
@@ -279,19 +280,731 @@ bcd32_ladd:
 		pop {r0-r3}
 
 		cmp deci1_upper, #0
-		bne bcd32_ladd_success
+		bne bcd32_badd_success
 
-	bcd32_ladd_error:
+	bcd32_badd_error:
 		mov r0, #0
-		b bcd32_ladd_common
+		b bcd32_badd_common
 
-	bcd32_ladd_success:
+	bcd32_badd_success:
 		mov r0, deci1_upper
 
-	bcd32_ladd_common:
+	bcd32_badd_common:
 		pop {r4-r9,pc}
 
 .unreq string1
+.unreq length1
+.unreq string2
+.unreq length2
+.unreq deci1_lower
+.unreq deci1_upper
+.unreq deci2_lower
+.unreq deci2_upper
+.unreq sign1
+.unreq sign2
+
+
+/**
+ * function bcd32_bsub
+ * Signed Subtraction with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Pointer of String of First Number, needed between 0-9 in all digits
+ * r1: Length of String of First Number
+ * r2: Pointer of String of Second Number, needed between 0-9 in all digits
+ * r3: Length of String of Second Number
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_bsub
+bcd32_bsub:
+	/* Auto (Local) Variables, but just Aliases */
+	string1        .req r0
+	length1        .req r1
+	string2        .req r2
+	length2        .req r3
+	deci1_lower    .req r4
+	deci1_upper    .req r5
+	deci2_lower    .req r6
+	deci2_upper    .req r7
+	sign1          .req r8
+	sign2          .req r9
+
+	push {r4-r9,lr}
+
+	/* Check Existing of minus */
+
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign1, r0
+	pop {r0-r3}
+	cmp sign1, #-1
+	addne string1, string1, sign1
+	subne length1, length1, sign1
+	movne sign1, #1
+	moveq sign1, #0
+
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign2, r0
+	pop {r0-r3}
+	cmp sign2, #-1
+	addne string2, string2, sign2
+	subne length2, length2, sign2
+	movne sign2, #1
+	moveq sign2, #0
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	bl deci32_string_to_deci
+	mov deci2_lower, r0
+	mov deci2_upper, r1
+	pop {r0-r3}
+
+	/* If Sign of Value is Diffrent from Another */
+	cmp sign1, #1
+	cmpeq sign2, #1
+	beq bcd32_bsub_subtraction
+	cmp sign1, #0
+	cmpeq sign2, #0
+	beq bcd32_bsub_subtraction
+
+	/* Different Signs Mean Addition */
+	push {r0-r3}
+	mov r0, deci1_lower
+	mov r1, deci1_upper
+	mov r2, deci2_lower
+	mov r3, deci2_upper
+	bl bcd32_deci_add64
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	/* If Carry Set, Error Value */
+	movcs deci1_lower, #0xFFFFFFFF
+	movcs deci1_upper, #0xFFFFFFFF
+
+	b bcd32_bsub_string
+
+	bcd32_bsub_subtraction:
+		/* Same Signs Mean Subtraction */
+
+		/* Check Which Is Higher than Another */
+		cmp deci1_upper, deci2_upper
+		/* First Is Higher on Uppers */
+		bhi bcd32_bsub_subtraction_calc
+		/* First Is Lower on Uppers */
+		blo bcd32_bsub_subtraction_swap
+		/* Uppers Are Same Value, So Check Lowers */
+		cmpeq deci1_lower, deci2_lower
+		/* Uppers Are Same Value, But First is Higher or Same on Lowers */
+		bhs bcd32_bsub_subtraction_calc
+
+		bcd32_bsub_subtraction_swap:
+			mov string1, deci1_upper
+			mov deci1_upper, deci2_upper
+			mov deci2_upper, string1
+			mov string1, deci1_lower
+			mov deci1_lower, deci2_lower
+			mov deci2_lower, string1
+			/* Sign of Return Value Becomes Inverted Sign of Second Value */
+			cmp sign2, #1
+			moveq sign1, #0
+			movne sign1, #1
+
+		bcd32_bsub_subtraction_calc:
+			push {r0-r3}
+			mov r0, deci1_lower
+			mov r1, deci1_upper
+			mov r2, deci2_lower
+			mov r3, deci2_upper
+			bl bcd32_deci_sub64
+			mov deci1_lower, r0
+			mov deci1_upper, r1
+			pop {r0-r3}
+
+	bcd32_bsub_string:
+		push {r0-r3}
+		mov r0, deci1_lower
+		mov r1, deci1_upper
+		mov r2, sign1
+		bl bcd32_bcdstring
+		mov deci1_upper, r0
+		pop {r0-r3}
+
+		cmp deci1_upper, #0
+		bne bcd32_bsub_success
+
+	bcd32_bsub_error:
+		mov r0, #0
+		b bcd32_bsub_common
+
+	bcd32_bsub_success:
+		mov r0, deci1_upper
+
+	bcd32_bsub_common:
+		pop {r4-r9,pc}
+
+.unreq string1
+.unreq length1
+.unreq string2
+.unreq length2
+.unreq deci1_lower
+.unreq deci1_upper
+.unreq deci2_lower
+.unreq deci2_upper
+.unreq sign1
+.unreq sign2
+
+
+/**
+ * function bcd32_bmul
+ * Signed Multiplication with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Pointer of String of First Number, needed between 0-9 in all digits
+ * r1: Length of String of First Number
+ * r2: Pointer of String of Second Number, needed between 0-9 in all digits
+ * r3: Length of String of Second Number
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_bmul
+bcd32_bmul:
+	/* Auto (Local) Variables, but just Aliases */
+	string1        .req r0
+	length1        .req r1
+	string2        .req r2
+	length2        .req r3
+	deci1_lower    .req r4
+	deci1_upper    .req r5
+	deci2_lower    .req r6
+	deci2_upper    .req r7
+	sign1          .req r8
+	sign2          .req r9
+
+	push {r4-r9,lr}
+
+	/* Check Existing of minus */
+
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign1, r0
+	pop {r0-r3}
+	cmp sign1, #-1
+	addne string1, string1, sign1
+	subne length1, length1, sign1
+	movne sign1, #1
+	moveq sign1, #0
+
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign2, r0
+	pop {r0-r3}
+	cmp sign2, #-1
+	addne string2, string2, sign2
+	subne length2, length2, sign2
+	movne sign2, #1
+	moveq sign2, #0
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	bl deci32_string_to_deci
+	mov deci2_lower, r0
+	mov deci2_upper, r1
+	pop {r0-r3}
+
+	/* Multiplication with Absolute Values */
+	push {r0-r3}
+	mov r0, deci1_lower
+	mov r1, deci1_upper
+	mov r2, deci2_lower
+	mov r3, deci2_upper
+	bl bcd32_deci_mul64
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	/* If Carry Set, Error Value */
+	movcs deci1_lower, #0xFFFFFFFF
+	movcs deci1_upper, #0xFFFFFFFF
+
+	/* If Sign of Value is Diffrent from Another */
+	cmp sign1, #1
+	cmpeq sign2, #1
+	beq bcd32_bmul_string
+	cmp sign1, #0
+	cmpeq sign2, #0
+	beq bcd32_bmul_string
+
+	/* Different Signs Mean Signed Minus */
+	mov sign1, #1
+
+	bcd32_bmul_string:
+
+		push {r0-r3}
+		mov r0, deci1_lower
+		mov r1, deci1_upper
+		mov r2, sign1
+		bl bcd32_bcdstring
+		mov deci1_upper, r0
+		pop {r0-r3}
+
+		cmp deci1_upper, #0
+		bne bcd32_bmul_success
+
+	bcd32_bmul_error:
+		mov r0, #0
+		b bcd32_bmul_common
+
+	bcd32_bmul_success:
+		mov r0, deci1_upper
+
+	bcd32_bmul_common:
+		pop {r4-r9,pc}
+
+.unreq string1
+.unreq length1
+.unreq string2
+.unreq length2
+.unreq deci1_lower
+.unreq deci1_upper
+.unreq deci2_lower
+.unreq deci2_upper
+.unreq sign1
+.unreq sign2
+
+
+/**
+ * function bcd32_bdiv
+ * Signed Division with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Pointer of String of First Number, needed between 0-9 in all digits
+ * r1: Length of String of First Number
+ * r2: Pointer of String of Second Number, needed between 0-9 in all digits
+ * r3: Length of String of Second Number
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_bdiv
+bcd32_bdiv:
+	/* Auto (Local) Variables, but just Aliases */
+	string1        .req r0
+	length1        .req r1
+	string2        .req r2
+	length2        .req r3
+	deci1_lower    .req r4
+	deci1_upper    .req r5
+	deci2_lower    .req r6
+	deci2_upper    .req r7
+	sign1          .req r8
+	sign2          .req r9
+
+	push {r4-r9,lr}
+
+	/* Check Existing of minus */
+
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign1, r0
+	pop {r0-r3}
+	cmp sign1, #-1
+	addne string1, string1, sign1
+	subne length1, length1, sign1
+	movne sign1, #1
+	moveq sign1, #0
+
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign2, r0
+	pop {r0-r3}
+	cmp sign2, #-1
+	addne string2, string2, sign2
+	subne length2, length2, sign2
+	movne sign2, #1
+	moveq sign2, #0
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	bl deci32_string_to_deci
+	mov deci2_lower, r0
+	mov deci2_upper, r1
+	pop {r0-r3}
+
+	/* Multiplication with Absolute Values */
+	push {r0-r3}
+	mov r0, deci1_lower
+	mov r1, deci1_upper
+	mov r2, deci2_lower
+	mov r3, deci2_upper
+	bl bcd32_deci_div64
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	/* If Carry Set, Error Value */
+	movcs deci1_lower, #0xFFFFFFFF
+	movcs deci1_upper, #0xFFFFFFFF
+
+	/* If Sign of Value is Diffrent from Another */
+	cmp sign1, #1
+	cmpeq sign2, #1
+	beq bcd32_bdiv_string
+	cmp sign1, #0
+	cmpeq sign2, #0
+	beq bcd32_bdiv_string
+
+	/* Different Signs Mean Signed Minus */
+	mov sign1, #1
+
+	bcd32_bdiv_string:
+
+		push {r0-r3}
+		mov r0, deci1_lower
+		mov r1, deci1_upper
+		mov r2, sign1
+		bl bcd32_bcdstring
+		mov deci1_upper, r0
+		pop {r0-r3}
+
+		cmp deci1_upper, #0
+		bne bcd32_bdiv_success
+
+	bcd32_bdiv_error:
+		mov r0, #0
+		b bcd32_bdiv_common
+
+	bcd32_bdiv_success:
+		mov r0, deci1_upper
+
+	bcd32_bdiv_common:
+		pop {r4-r9,pc}
+
+.unreq string1
+.unreq length1
+.unreq string2
+.unreq length2
+.unreq deci1_lower
+.unreq deci1_upper
+.unreq deci2_lower
+.unreq deci2_upper
+.unreq sign1
+.unreq sign2
+
+
+/**
+ * function bcd32_brem
+ * Remainder of Signed Division with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Pointer of String of First Number, needed between 0-9 in all digits
+ * r1: Length of String of First Number
+ * r2: Pointer of String of Second Number, needed between 0-9 in all digits
+ * r3: Length of String of Second Number
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_brem
+bcd32_brem:
+	/* Auto (Local) Variables, but just Aliases */
+	string1        .req r0
+	length1        .req r1
+	string2        .req r2
+	length2        .req r3
+	deci1_lower    .req r4
+	deci1_upper    .req r5
+	deci2_lower    .req r6
+	deci2_upper    .req r7
+	sign1          .req r8
+	sign2          .req r9
+
+	push {r4-r9,lr}
+
+	/* Check Existing of minus */
+
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign1, r0
+	pop {r0-r3}
+	cmp sign1, #-1
+	addne string1, string1, sign1
+	subne length1, length1, sign1
+	movne sign1, #1
+	moveq sign1, #0
+
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign2, r0
+	pop {r0-r3}
+	cmp sign2, #-1
+	addne string2, string2, sign2
+	subne length2, length2, sign2
+	movne sign2, #1
+	moveq sign2, #0
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	bl deci32_string_to_deci
+	mov deci2_lower, r0
+	mov deci2_upper, r1
+	pop {r0-r3}
+
+	/* Multiplication with Absolute Values */
+	push {r0-r3}
+	mov r0, deci1_lower
+	mov r1, deci1_upper
+	mov r2, deci2_lower
+	mov r3, deci2_upper
+	bl bcd32_deci_rem64
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	/* If Carry Set, Error Value */
+	movcs deci1_lower, #0xFFFFFFFF
+	movcs deci1_upper, #0xFFFFFFFF
+
+	bcd32_brem_string:
+
+		push {r0-r3}
+		mov r0, deci1_lower
+		mov r1, deci1_upper
+		mov r2, sign1         @ Minus Sign of Dividend Mean Signed Minus
+		bl bcd32_bcdstring
+		mov deci1_upper, r0
+		pop {r0-r3}
+
+		cmp deci1_upper, #0
+		bne bcd32_brem_success
+
+	bcd32_brem_error:
+		mov r0, #0
+		b bcd32_brem_common
+
+	bcd32_brem_success:
+		mov r0, deci1_upper
+
+	bcd32_brem_common:
+		pop {r4-r9,pc}
+
+.unreq string1
+.unreq length1
+.unreq string2
+.unreq length2
+.unreq deci1_lower
+.unreq deci1_upper
+.unreq deci2_lower
+.unreq deci2_upper
+.unreq sign1
+.unreq sign2
+
+
+/**
+ * function bcd32_bcmp
+ * Signed Subtraction with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Parameters
+ * r0: Pointer of String of First Number, needed between 0-9 in all digits
+ * r1: Length of String of First Number
+ * r2: Pointer of String of Second Number, needed between 0-9 in all digits
+ * r3: Length of String of Second Number
+ *
+ * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ */
+.globl bcd32_bcmp
+bcd32_bcmp:
+	/* Auto (Local) Variables, but just Aliases */
+	string1        .req r0
+	length1        .req r1
+	string2        .req r2
+	length2        .req r3
+	deci1_lower    .req r4
+	deci1_upper    .req r5
+	deci2_lower    .req r6
+	deci2_upper    .req r7
+	sign1          .req r8
+	sign2          .req r9
+
+	push {r4-r9,lr}
+
+	/* Check Existing of minus */
+
+	push {r0-r3}
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign1, r0
+	pop {r0-r3}
+	cmp sign1, #-1
+	addne string1, string1, sign1
+	subne length1, length1, sign1
+	movne sign1, #1
+	moveq sign1, #0
+
+	push {r0-r3}
+	bl deci32_string_to_deci
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	mov r2, #0x2D                     @ Ascii Code of Minus
+	bl print32_charsearch
+	mov sign2, r0
+	pop {r0-r3}
+	cmp sign2, #-1
+	addne string2, string2, sign2
+	subne length2, length2, sign2
+	movne sign2, #1
+	moveq sign2, #0
+
+	push {r0-r3}
+	mov r0, string2
+	mov r1, length2
+	bl deci32_string_to_deci
+	mov deci2_lower, r0
+	mov deci2_upper, r1
+	pop {r0-r3}
+
+	.unreq string1
+	flag_nzcv .req r0
+	mov flag_nzcv, #0
+
+	/* If Sign of Value is Diffrent from Another */
+	cmp sign1, #1
+	cmpeq sign2, #1
+	beq bcd32_bcmp_subtraction
+	cmp sign1, #0
+	cmpeq sign2, #0
+	beq bcd32_bcmp_subtraction
+
+	/* Different Signs Mean Addition */
+	push {r0-r3}
+	mov r0, deci1_lower
+	mov r1, deci1_upper
+	mov r2, deci2_lower
+	mov r3, deci2_upper
+	bl bcd32_deci_add64
+	mov deci1_lower, r0
+	mov deci1_upper, r1
+	pop {r0-r3}
+
+	/* If Carry Set, Error Value */
+	movcs deci1_lower, #0xFFFFFFFF
+	movcs deci1_upper, #0xFFFFFFFF
+
+	b bcd32_bcmp_nz
+
+	bcd32_bcmp_subtraction:
+		/* Same Signs Mean Subtraction */
+
+		/* Check Which Is Higher than Another */
+		cmp deci1_upper, deci2_upper
+		/* First Is Higher on Uppers */
+		bhi bcd32_bcmp_subtraction_calc
+		/* First Is Lower on Uppers */
+		blo bcd32_bcmp_subtraction_swap
+		/* Uppers Are Same Value, So Check Lowers */
+		cmpeq deci1_lower, deci2_lower
+		/* Uppers Are Same Value, But First is Higher or Same on Lowers */
+		bhs bcd32_bcmp_subtraction_calc
+
+		bcd32_bcmp_subtraction_swap:
+			mov string2, deci1_upper
+			mov deci1_upper, deci2_upper
+			mov deci2_upper, string2
+			mov string2, deci1_lower
+			mov deci1_lower, deci2_lower
+			mov deci2_lower, string2
+			/* Sign of Return Value Becomes Inverted Sign of Second Value */
+			cmp sign2, #1
+			moveq sign1, #0
+			movne sign1, #1
+
+		bcd32_bcmp_subtraction_calc:
+			push {r0-r3}
+			mov r0, deci1_lower
+			mov r1, deci1_upper
+			mov r2, deci2_lower
+			mov r3, deci2_upper
+			bl bcd32_deci_sub64
+			mov deci1_lower, r0
+			mov deci1_upper, r1
+			pop {r0-r3}
+
+	bcd32_bcmp_nz:
+		/* If Minus Signed (Negative), N Bit[31] */
+		cmp sign1, #1
+		orreq flag_nzcv, flag_nzcv, #0x80000000
+
+		/* If Zero, Z Bit[30] */
+		cmp deci1_upper, #0
+		cmpeq deci1_lower, #0
+		orreq flag_nzcv, flag_nzcv, #0x40000000
+
+		/* Two's Complement Overflow (V Bit[28]) Never Occurs Because It's Not a True Binary Arithmetic */
+		/* Carry (C Bit[29]) Never Occurs Because It's Not a True Binary Arithmetic */
+
+	bcd32_bcmp_common:
+		pop {r4-r9,pc}
+
+.unreq flag_nzcv
 .unreq length1
 .unreq string2
 .unreq length2
