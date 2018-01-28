@@ -1362,6 +1362,84 @@ extern String bcd32_badd
 
 
 /**
+ * Signed Subtraction with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Return: Pointer of String of Decimal Number, If Zero Memory Allocation Fails
+ */
+extern String bcd32_bsub
+(
+	String string_deci1, // Needed between 0-9 in all digits
+	uint32 length_deci1,
+	String string_deci2, // Needed between 0-9 in all digits
+	uint32 length_deci2
+);
+
+
+/**
+ * Signed Multiplication with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Return: Pointer of String of Decimal Number, If Zero Memory Allocation Fails
+ */
+extern String bcd32_bmul
+(
+	String string_deci1, // Needed between 0-9 in all digits
+	uint32 length_deci1,
+	String string_deci2, // Needed between 0-9 in all digits
+	uint32 length_deci2
+);
+
+
+/**
+ * Signed Division with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Return: Pointer of String of Decimal Number, If Zero Memory Allocation Fails
+ */
+extern String bcd32_bdiv
+(
+	String string_deci1, // Needed between 0-9 in all digits
+	uint32 length_deci1,
+	String string_deci2, // Needed between 0-9 in all digits
+	uint32 length_deci2
+);
+
+
+/**
+ * Remainder of Signed Division with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ * If Saturated, Returns All F in 16 Digits
+ * Caution! This function makes string allocated from Heap.
+ *
+ * Return: Pointer of String of Decimal Number, If Zero Memory Allocation Fails
+ */
+extern String bcd32_brem
+(
+	String string_deci1, // Needed between 0-9 in all digits
+	uint32 length_deci1,
+	String string_deci2, // Needed between 0-9 in all digits
+	uint32 length_deci2
+);
+
+
+/**
+ * Compare Values with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
+ *
+ * Return: NZCV ALU Flags (Bit[31:28])
+ */
+extern uint32 bcd32_bcmp
+(
+	String string_deci1, // Needed between 0-9 in all digits
+	uint32 length_deci1,
+	String string_deci2, // Needed between 0-9 in all digits
+	uint32 length_deci2
+);
+
+
+/**
  * Unsigned Addition with Decimal Bases (0-9)
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number), -1 (ALL Ones on r0 and r1) as error

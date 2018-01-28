@@ -20,12 +20,18 @@ extern uint32 UART32_UARTMALLOC_LENGTH;
 typedef enum _command_list {
 	null,
 	sleep, // Sleep Microseconds by Integer "Sleep %S1"
-	add, // Integer Addition, "add %D %S1 %S2": D = S1 + S2.
+	add, // Integer Addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
 	sub,
 	mul,
 	div,
 	rem,
 	cmp, // Compare Two Values of Integer, "cmp %S1 %S2": Reflects NZCV Flags.
+	badd, // Binary-coded Decimal, "badd %D %S1 %S2": D = S1 + S2. -9,999,999,999,999,999 through 9,999,999,999,999,999.
+	bsub,
+	bmul,
+	bdiv,
+	brem,
+	bcmp,
 	fadd, // Floating Point Addition, "fadd %D %S1 %S2": D = S1 + S2.
 	fsub, // Float Point Subtruction, "fsub %D %S1 %S2": D = S1 - S2.
 	fmul,
@@ -86,10 +92,10 @@ void _user_start()
 	String str_direction = null;
 	obj array_source = heap32_malloc( 8 );
 	obj array_argpointer = heap32_malloc( 8 );
-	uint32 length_arg;
-	uint32 var_index;
-	uint32 current_line;
-	uint32 status_nzcv;
+	uint32 length_arg = 0;
+	uint32 var_index = 0;
+	uint32 current_line = 0;
+	uint32 status_nzcv = 0;
 	pipe_list pipe_type = search_command;
 	command_list command_type = null;
 	flex32 direction;
@@ -150,6 +156,36 @@ void _user_start()
 							var_index = 1; // 0 is Direction
 						} else if ( print32_strsearch( temp_str, 3, "cmp", 3 ) != -1 ) {
 							command_type = cmp;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 0; // No Direction
+						} else if ( print32_strsearch( temp_str, 4, "badd", 4 ) != -1 ) {
+							command_type = badd;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "bsub", 4 ) != -1 ) {
+							command_type = bsub;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "bmul", 4 ) != -1 ) {
+							command_type = bmul;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "bdiv", 4 ) != -1 ) {
+							command_type = bdiv;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "brem", 4 ) != -1 ) {
+							command_type = brem;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "bcmp", 4 ) != -1 ) {
+							command_type = bcmp;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
@@ -346,6 +382,12 @@ void _user_start()
 								var_temp2.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 								var_temp2.f32 = vfp32_s32tof32( var_temp2.s32 );
 							}
+							_store_32( array_source + 4 * var_index, var_temp2.s32 );
+						} else if ( command_type >= badd ){ // Type of Binary-coded Deximal
+							var_temp2.u32 = print32_charindex( temp_str, 0x2E ); // Ascii Code of Period
+							if ( var_temp2.u32 == -1 ) var_temp2.u32 = print32_strlen( temp_str );
+							_store_32( array_source + 8 * var_index, (obj)temp_str );
+							_store_32( array_source + 8 * var_index + 4, var_temp2.u32 );
 						} else { // Type of 32-bit Signed Integer
 							if( print32_charindex( temp_str, 0x2E ) != -1 ) { // Ascii Code of Period
 								var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
@@ -353,9 +395,8 @@ void _user_start()
 							} else {
 								var_temp2.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 							}
+							_store_32( array_source + 4 * var_index, var_temp2.s32 );
 						}
-
-						_store_32( array_source + 4 * var_index, var_temp2.s32 );
 
 						var_index++;
 						if ( var_index >= length_arg ) pipe_type = execute_command;
@@ -390,6 +431,30 @@ void _user_start()
 								break;
 							case cmp:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+
+								break;
+							case badd:
+								str_direction = bcd32_badd( (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ), (String)_load_32( array_source + 16 ), _load_32( array_source + 20 ) );
+
+								break;
+							case bsub:
+								str_direction = bcd32_bsub( (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ), (String)_load_32( array_source + 16 ), _load_32( array_source + 20 ) );
+
+								break;
+							case bmul:
+								str_direction = bcd32_bmul( (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ), (String)_load_32( array_source + 16 ), _load_32( array_source + 20 ) );
+
+								break;
+							case bdiv:
+								str_direction = bcd32_bdiv( (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ), (String)_load_32( array_source + 16 ), _load_32( array_source + 20 ) );
+
+								break;
+							case brem:
+								str_direction = bcd32_brem( (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ), (String)_load_32( array_source + 16 ), _load_32( array_source + 20 ) );
+
+								break;
+							case bcmp:
+								status_nzcv = bcd32_bcmp( (String)_load_32( array_source ), _load_32( array_source + 4 ), (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ) );
 
 								break;
 							case fadd:

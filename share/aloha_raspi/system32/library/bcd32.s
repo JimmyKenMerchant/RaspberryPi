@@ -9,7 +9,6 @@
 
 /* Calculation with Binary-coded Decimal (BCD) */
 
-
 /**
  * function bcd32_bcdstring
  * Make String for BCD Process
@@ -33,12 +32,25 @@ bcd32_bcdstring:
 	ret_upper     .req r5
 	ret_all       .req r6
 	ret_minus     .req r7
+	count         .req r8
 
-	push {r4-r7,lr}
+	push {r4-r8,lr}
+
+	/* Make String of Upper Part */
+
+	clz temp, deci_upper
+	mov count, #0
+	bcd32_bcdstring_countupper:
+		subs temp, temp, #4
+		addge count, #1
+		bge bcd32_bcdstring_countupper
+
+	mov temp, #8
+	sub count, temp, count
 
 	push {r0-r3}
 	mov r0, deci_upper
-	mov r1, #0
+	mov r1, count
 	mov r2, #0
 	mov r3, #0
 	bl deci32_int32_to_string_hexa
@@ -48,77 +60,96 @@ bcd32_bcdstring:
 	cmp ret_upper, #0
 	beq bcd32_bcdstring_error
 
-	push {r0-r3}
-	mov r1, #1
-	mov r2, #0
-	mov r3, #0
-	bl deci32_int32_to_string_hexa
-	mov ret_lower, r0
-	pop {r0-r3}
+	/* Make String of Lower Part */
 
-	cmp ret_lower, #0
-	beq bcd32_bcdstring_error
+	cmp count, #0
+	movgt count, #8          @ If Any Digit at Upper Part Exists
+	bgt bcd32_bcdstring_jump @ If Any Digit at Upper Part Exists
 
-	push {r0-r3}
-	mov r0, ret_upper
-	mov r1, ret_lower
-	bl print32_strcat
-	mov ret_all, r0
-	pop {r0-r3}
+	clz temp, deci_lower
+	mov count, #0
+	bcd32_bcdstring_countlower:
+		subs temp, temp, #4
+		addge count, #1
+		bge bcd32_bcdstring_countlower
 
-	cmp ret_all, #0
-	beq bcd32_bcdstring_error
+	mov temp, #8
+	subs count, temp, count
+	moveq count, #1         @ If count is Zero
 
-	push {r0-r3}
-	mov r0, ret_upper
-	bl heap32_mfree
-	pop {r0-r3}
+	bcd32_bcdstring_jump:
 
-	push {r0-r3}
-	mov r0, ret_lower
-	bl heap32_mfree
-	pop {r0-r3}
+		push {r0-r3}
+		mov r1, count
+		mov r2, #0
+		mov r3, #0
+		bl deci32_int32_to_string_hexa
+		mov ret_lower, r0
+		pop {r0-r3}
 
-	cmp sign, #1
-	bne bcd32_bcdstring_success
+		cmp ret_lower, #0
+		beq bcd32_bcdstring_error
 
-	push {r0-r3}
-	mov r0, #1
-	bl heap32_malloc
-	mov ret_upper, r0
-	pop {r0-r3}
+		push {r0-r3}
+		mov r0, ret_upper
+		mov r1, ret_lower
+		bl print32_strcat
+		mov ret_all, r0
+		pop {r0-r3}
 
-	cmp ret_upper, #0
-	beq bcd32_bcdstring_error
+		cmp ret_all, #0
+		beq bcd32_bcdstring_error
 
-	mov temp, #0x2D
-	strb temp, [ret_upper]                   @ Store Minus Sign
-	mov temp, #0x00
-	strb temp, [ret_upper, #1]               @ Store Null Character
+		push {r0-r3}
+		mov r0, ret_upper
+		bl heap32_mfree
+		pop {r0-r3}
 
-	mov ret_lower, ret_all
+		push {r0-r3}
+		mov r0, ret_lower
+		bl heap32_mfree
+		pop {r0-r3}
 
-	push {r0-r3}
-	mov r0, ret_upper
-	mov r1, ret_lower
-	bl print32_strcat
-	mov ret_all, r0
-	pop {r0-r3}
+		cmp sign, #1
+		bne bcd32_bcdstring_success
 
-	cmp ret_all, #0
-	beq bcd32_bcdstring_error
+		push {r0-r3}
+		mov r0, #1
+		bl heap32_malloc
+		mov ret_upper, r0
+		pop {r0-r3}
 
-	push {r0-r3}
-	mov r0, ret_upper
-	bl heap32_mfree
-	pop {r0-r3}
+		cmp ret_upper, #0
+		beq bcd32_bcdstring_error
 
-	push {r0-r3}
-	mov r0, ret_lower
-	bl heap32_mfree
-	pop {r0-r3}
+		mov temp, #0x2D
+		strb temp, [ret_upper]                   @ Store Minus Sign
+		mov temp, #0x00
+		strb temp, [ret_upper, #1]               @ Store Null Character
 
-	b bcd32_bcdstring_success
+		mov ret_lower, ret_all
+
+		push {r0-r3}
+		mov r0, ret_upper
+		mov r1, ret_lower
+		bl print32_strcat
+		mov ret_all, r0
+		pop {r0-r3}
+
+		cmp ret_all, #0
+		beq bcd32_bcdstring_error
+
+		push {r0-r3}
+		mov r0, ret_upper
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, ret_lower
+		bl heap32_mfree
+		pop {r0-r3}
+
+		b bcd32_bcdstring_success
 
 	bcd32_bcdstring_error:
 		mov r0, #0
@@ -128,7 +159,7 @@ bcd32_bcdstring:
 		mov r0, ret_all
 
 	bcd32_bcdstring_common:
-		pop {r4-r7,pc}
+		pop {r4-r8,pc}
 
 .unreq deci_lower 
 .unreq deci_upper
@@ -138,6 +169,7 @@ bcd32_bcdstring:
 .unreq ret_upper
 .unreq ret_all
 .unreq ret_minus
+.unreq count
 
 
 /**
@@ -671,7 +703,7 @@ bcd32_bdiv:
 	mov deci2_upper, r1
 	pop {r0-r3}
 
-	/* Multiplication with Absolute Values */
+	/* Division with Absolute Values */
 	push {r0-r3}
 	mov r0, deci1_lower
 	mov r1, deci1_upper
@@ -802,7 +834,7 @@ bcd32_brem:
 	mov deci2_upper, r1
 	pop {r0-r3}
 
-	/* Multiplication with Absolute Values */
+	/* Remainder with Absolute Values */
 	push {r0-r3}
 	mov r0, deci1_lower
 	mov r1, deci1_upper
@@ -854,9 +886,7 @@ bcd32_brem:
 
 /**
  * function bcd32_bcmp
- * Signed Subtraction with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
- * If Saturated, Returns All F in 16 Digits
- * Caution! This function makes string allocated from Heap.
+ * Compare Values with Decimal Bases (0-9), -9,999,999,999,999,999 to 9,999,999,999,999,999
  *
  * Parameters
  * r0: Pointer of String of First Number, needed between 0-9 in all digits
@@ -864,7 +894,7 @@ bcd32_brem:
  * r2: Pointer of String of Second Number, needed between 0-9 in all digits
  * r3: Length of String of Second Number
  *
- * Return: r0 (Pointer of String of Decimal Number, If Zero Memory Allocation Fails)
+ * Return: r0 (NZCV ALU Flags (Bit[31:28]))
  */
 .globl bcd32_bcmp
 bcd32_bcmp:
