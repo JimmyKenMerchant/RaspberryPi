@@ -28,6 +28,7 @@
 .equ equ32_snd32_dma_channel,                  0
 .equ equ32_gpio32_gpiomask,                    0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 .equ equ32_deci32_float32_to_string_min_expo,  1
+.equ equ32_uart32_uartint_buffer_size,         4
 
 /**
  * Standard Peripherals

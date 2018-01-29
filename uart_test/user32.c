@@ -13,8 +13,9 @@
 extern String UART32_UARTINT_HEAP;
 extern uint32 UART32_UARTINT_BUSY_ADDR;
 extern uint32 UART32_UARTINT_COUNT_ADDR;
-extern uint32 UART32_UARTMALLOC_NUMBER;
 extern uint32 UART32_UARTMALLOC_LENGTH;
+extern uint32 UART32_UARTMALLOC_NUMBER;
+extern uint32 UART32_UARTMALLOC_MAXROW;
 
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source */
 typedef enum _command_list {
@@ -103,6 +104,7 @@ void _user_start()
 	uint32 status_nzcv = 0;
 	pipe_list pipe_type = search_command;
 	command_list command_type = null;
+	flex32 var_temp;
 	flex32 direction;
 	direction.s32 = 0;
 	uint32 stack_offset = 1; // Stack offset for "push" and "pop", 1 is minimam, from the last line decremental order.
@@ -369,18 +371,17 @@ void _user_start()
 							pipe_type = go_nextline;
 						}
 						uint32 offset = 0;
-						uint32 var_temp;
 						uint32 length_temp;
 
 						for ( uint32 i = 0; i < length_arg; i++ ) {
-							var_temp = print32_charindex( temp_str + offset, 0x25 ); // Ascii Code of %
-							if ( var_temp == -1 ) break;
-							offset += var_temp;
+							var_temp.s32 = print32_charindex( temp_str + offset, 0x25 ); // Ascii Code of %
+							if ( var_temp.s32 == -1 ) break;
+							offset += var_temp.s32;
 							offset++;
 							length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
 							if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
-							var_temp = deci32_string_to_int32( temp_str + offset, length_temp );
-							_store_32( array_argpointer + 4 * i,  var_temp );
+							var_temp.s32 = deci32_string_to_int32( temp_str + offset, length_temp );
+							_store_32( array_argpointer + 4 * i,  var_temp.s32 );
 						}
 
 						current_line = UART32_UARTMALLOC_NUMBER;
@@ -397,28 +398,26 @@ void _user_start()
 							temp_str++;
 						}
 
-						flex32 var_temp2;
-
 						if ( command_type >= fadd ) { // Type of Single Precision Float
-							var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
-							if ( var_temp2.s32 == -1 ) {
-								var_temp2.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
-								var_temp2.f32 = vfp32_s32tof32( var_temp2.s32 );
+							var_temp.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
+							if ( var_temp.s32 == -1 ) {
+								var_temp.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
+								var_temp.f32 = vfp32_s32tof32( var_temp.s32 );
 							}
-							_store_32( array_source + 4 * var_index, var_temp2.s32 );
+							_store_32( array_source + 4 * var_index, var_temp.s32 );
 						} else if ( command_type >= badd ){ // Type of Binary-coded Deximal
-							var_temp2.u32 = print32_charindex( temp_str, 0x2E ); // Ascii Code of Period
-							if ( var_temp2.u32 == -1 ) var_temp2.u32 = print32_strlen( temp_str );
+							var_temp.u32 = print32_charindex( temp_str, 0x2E ); // Ascii Code of Period
+							if ( var_temp.u32 == -1 ) var_temp.u32 = print32_strlen( temp_str );
 							_store_32( array_source + 8 * var_index, (obj)temp_str );
-							_store_32( array_source + 8 * var_index + 4, var_temp2.u32 );
+							_store_32( array_source + 8 * var_index + 4, var_temp.u32 );
 						} else { // Type of 32-bit Signed Integer
 							if( print32_charindex( temp_str, 0x2E ) != -1 ) { // Ascii Code of Period
-								var_temp2.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
-								var_temp2.s32 = vfp32_f32tos32( var_temp2.f32 );
+								var_temp.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
+								var_temp.s32 = vfp32_f32tos32( var_temp.f32 );
 							} else {
-								var_temp2.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
+								var_temp.s32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 							}
-							_store_32( array_source + 4 * var_index, var_temp2.s32 );
+							_store_32( array_source + 4 * var_index, var_temp.s32 );
 						}
 
 						var_index++;
@@ -575,7 +574,7 @@ void _user_start()
 								break;
 							case mov:
 								_uartsetheap( _load_32( array_argpointer ) );
-								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+								//heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 								dst_str = UART32_UARTINT_HEAP;
 								_uartsetheap( _load_32( array_argpointer + 4 ) );
 								src_str = UART32_UARTINT_HEAP;
@@ -606,7 +605,7 @@ void _user_start()
 							case push:
 								_uartsetheap(  UART32_UARTMALLOC_LENGTH - stack_offset );
 								dst_str = UART32_UARTINT_HEAP;
-								heap32_mfill( (obj)dst_str, 0 );
+								//heap32_mfill( (obj)dst_str, 0 );
 								_uartsetheap( _load_32( array_argpointer ) );
 								src_str = UART32_UARTINT_HEAP;
 								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
@@ -616,11 +615,11 @@ void _user_start()
 							case pop:
 								if ( stack_offset <= 1 ) break;
 								stack_offset--;
-								_uartsetheap( UART32_UARTMALLOC_LENGTH - stack_offset );
-								src_str = UART32_UARTINT_HEAP;
 								_uartsetheap( _load_32( array_argpointer ) );
 								dst_str = UART32_UARTINT_HEAP;
-								heap32_mfill( (obj)dst_str, 0 );
+								//heap32_mfill( (obj)dst_str, 0 );
+								_uartsetheap( UART32_UARTMALLOC_LENGTH - stack_offset );
+								src_str = UART32_UARTINT_HEAP;
 								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
 
 								break;
@@ -661,8 +660,10 @@ void _user_start()
 						pipe_type = go_nextline;
 						if ( str_direction == null ) break;
 						_uartsetheap( _load_32( array_argpointer ) );
-						heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-						heap32_mcopy( (obj)UART32_UARTINT_HEAP, (obj)str_direction, 0, print32_strlen( str_direction ) );
+						//heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+						var_temp.u32 = print32_strlen( str_direction );
+						if ( var_temp.u32 > UART32_UARTMALLOC_MAXROW ) var_temp.u32 = UART32_UARTMALLOC_MAXROW; // Limitatin for Safety
+						heap32_mcopy( (obj)UART32_UARTINT_HEAP, (obj)str_direction, 0, var_temp.u32 );
 						str_direction = (String)heap32_mfree( (obj)str_direction );
 
 						break;
@@ -673,8 +674,8 @@ void _user_start()
 
 						if ( _uartsetheap( current_line + 1 ) ) _uartsetheap( 0 );
 						pipe_type = search_command;
-						heap32_mfill( array_source, 0 );
-						heap32_mfill( array_argpointer, 0 );
+						//heap32_mfill( array_source, 0 );
+						//heap32_mfill( array_argpointer, 0 );
 
 						break;
 
@@ -704,6 +705,7 @@ void _user_start()
 				_uarttx( "\r\n\0", 3 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 				if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
 					/* If You Command "run", It Starts Execution */
+					_uarttx( "\x1B[2J\x1B[H\0", 9 ); // Clear All Screen and Move Cursor to Upper Left
 					flag_execute = true;
 					pipe_type = search_command;
 					_uartsetheap( 0 );

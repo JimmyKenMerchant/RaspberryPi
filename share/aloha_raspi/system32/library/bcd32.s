@@ -1463,6 +1463,8 @@ bcd32_deci_mul64_pre:
 
 	bcd32_deci_mul64_pre_loop:
 
+		/* Just Addition with Number of Times on Second Factor */
+
 		push {r0-r3}
 		mov r0, dup_lower_2
 		mov r1, dup_upper_2
@@ -1648,6 +1650,8 @@ bcd32_deci_div64_pre:
 	mov carry_flag, #0
 
 	bcd32_deci_div64_pre_loop:
+
+		/* Just Subtraction Untill Divisor Becomes Greater than or Equal to Dividend */
 
 		push {r2-r3}
 		bl bcd32_deci_sub64

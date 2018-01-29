@@ -316,13 +316,16 @@ uart32_uartclrrx:
 .globl uart32_uartint
 uart32_uartint:
 	/* Auto (Local) Variables, but just Aliases */
-	max_size    .req r0
-	flag_mirror .req r1
-	heap        .req r2
-	count       .req r3
-	temp        .req r4
+	max_size      .req r0
+	flag_mirror   .req r1
+	heap          .req r2
+	count         .req r3
+	temp          .req r4
+	temp2         .req r5
+	escape_offset .req r6
+	buffer        .req r7
 
-	push {r4,lr}
+	push {r4-r7,lr}
 
 	ldr temp, UART32_UARTINT_BUSY
 	tst temp, #0x1
@@ -336,8 +339,11 @@ uart32_uartint:
 
 	ldr count, UART32_UARTINT_COUNT
 
+	ldr escape_offset, uart32_escape_offset
+
 	push {r0-r3}
 	ldr r0, uart32_uartint_buffer
+	add r0, r0, escape_offset
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uartrx
 	mov temp, r0
@@ -356,6 +362,7 @@ uart32_uartint:
 	/* Mirror Received Data to Teletype */
 	push {r0-r3}
 	ldr r0, uart32_uartint_buffer
+	add r0, r0, escape_offset
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uarttx
 	pop {r0-r3}
@@ -372,6 +379,18 @@ uart32_uartint:
 		pop {r0-r3}
 
 	uart32_uartint_verify:
+
+		/* Check Escape */
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x1B                    @ Ascii Code of Escape
+		bl print32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+
+		cmp temp, #-1
+		bne uart32_uartint_escseq           @ If in Escape Sequence
 
 		/* Check Back Space */
 		push {r0-r3}
@@ -410,21 +429,184 @@ uart32_uartint:
 
 		b uart32_uartint_success
 
+	uart32_uartint_escseq:
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #3
+		ldr r2, uart32_uartint_esc_up
+		mov r3, #3
+		bl print32_strsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_escseq_up
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #3
+		ldr r2, uart32_uartint_esc_down
+		mov r3, #3
+		bl print32_strsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_escseq_down
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #3
+		ldr r2, uart32_uartint_esc_right
+		mov r3, #3
+		bl print32_strsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_escseq_right
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #3
+		ldr r2, uart32_uartint_esc_left
+		mov r3, #3
+		bl print32_strsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_escseq_left
+
+		/* If Passed Through */
+		add escape_offset, escape_offset, #1
+		cmp escape_offset, #equ32_uart32_uartint_buffer_size
+		movge escape_offset, #0
+
+		b uart32_uartint_escseq_common
+
+		uart32_uartint_escseq_up:
+
+			ldr temp, UART32_UARTMALLOC_NUMBER
+			cmp temp, #0
+			bgt uart32_uartint_escseq_up_jump
+
+			/* Send Move Cursor Down Because Of Overshoot */
+			push {r0-r3}
+			ldr r0, uart32_uartint_esc_down
+			mov r1, #3
+			bl uart32_uarttx
+			pop {r0-r3}
+
+			b uart32_uartint_escseq_clear
+
+			uart32_uartint_escseq_up_jump:
+				push {r0-r3}
+				sub r0, temp, #1
+				bl uart32_uartsetheap
+				pop {r0-r3}
+
+				b uart32_uartint_escseq_clear
+
+		uart32_uartint_escseq_down:
+
+			/* Send Move Cursor Up Because Of Overshoot */
+			push {r0-r3}
+			ldr r0, uart32_uartint_esc_up
+			mov r1, #3
+			bl uart32_uarttx
+			pop {r0-r3}
+
+			b uart32_uartint_escseq_clear
+
+		uart32_uartint_escseq_right:
+
+			add count, count, #1
+			cmp count, max_size
+			bge uart32_uartint_escseq_right_jump @ If Exceeds Maximum Size of Heap, Stay Count
+
+			push {r0-r3}
+			mov r0, heap
+			bl print32_strlen
+			mov temp, r0
+			pop {r0-r3}
+			cmp count, temp
+			ble uart32_uartint_escseq_clear
+
+			uart32_uartint_escseq_right_jump:
+
+				/* Count Overshoots Length of List */
+				sub count, count, #1
+
+				/* Send Move Cursor Left Because Of Overshoot */
+				push {r0-r3}
+				ldr r0, uart32_uartint_esc_left
+				mov r1, #3
+				bl uart32_uarttx
+				pop {r0-r3}
+
+				b uart32_uartint_escseq_clear
+
+		uart32_uartint_escseq_left:
+			
+			sub count, count, #1
+			cmp count, #0
+			bge uart32_uartint_escseq_clear
+
+			/* Count Becomes Minus */
+
+			mov count, #0
+
+			/* Send Move Cursor Right Because Of Overshoot */
+			push {r0-r3}
+			ldr r0, uart32_uartint_esc_right
+			mov r1, #3
+			bl uart32_uarttx
+			pop {r0-r3}
+
+		uart32_uartint_escseq_clear:
+			str count, UART32_UARTINT_COUNT
+			mov escape_offset, #0
+
+			mov temp, #0
+			mov temp2, #0
+			ldr buffer, uart32_uartint_buffer
+			uart32_uartint_escseq_clear_loop:
+				strb temp, [buffer, temp2]
+				add temp2, temp2, #1
+				cmp temp2, #equ32_uart32_uartint_buffer_size
+				blt uart32_uartint_escseq_clear_loop
+
+		uart32_uartint_escseq_common:
+			str escape_offset, uart32_escape_offset
+			b uart32_uartint_success
+
 	uart32_uartint_backspace:
 
 		sub count, count, #1
 		cmp count, #0
-		movlt count, #0
-		mov temp, #0
-		strb temp, [heap, count]         @ Clear Previous Character
-		str count, UART32_UARTINT_COUNT
+		bge uart32_uartint_backspace_jmp
 
-		/* Send Esc[K (Clear From Cursor Right) */
+		/* Count Becomes Minus */
+
+		mov count, #0
+
+		/* Send Move Cursor Right Because Of Overshoot */
 		push {r0-r3}
-		ldr r0, uart32_uartint_e_clrline
+		ldr r0, uart32_uartint_esc_right
 		mov r1, #4
 		bl uart32_uarttx
 		pop {r0-r3}
+
+		uart32_uartint_backspace_jmp:
+
+			mov temp, #0
+			strb temp, [heap, count]         @ Clear Previous Character
+			str count, UART32_UARTINT_COUNT
+
+			/* Send Esc[K (Clear From Cursor Right) */
+			push {r0-r3}
+			ldr r0, uart32_uartint_esc_clrline
+			mov r1, #4
+			bl uart32_uarttx
+			pop {r0-r3}
 
 		b uart32_uartint_success
 
@@ -458,56 +640,62 @@ uart32_uartint:
 	uart32_uartint_common:
 
 macro32_debug_hexa heap, 100, 112, 36
+macro32_debug_hexa buffer, 100, 124, equ32_uart32_uartint_buffer_size
+macro32_debug escape_offset, 100, 136
 
-		pop {r4,pc}
+		pop {r4-r7,pc}
 
 .unreq max_size
 .unreq flag_mirror
 .unreq heap
 .unreq count
 .unreq temp
+.unreq temp2
+.unreq escape_offset
+.unreq buffer
 
 .globl UART32_UARTINT_HEAP
 .globl UART32_UARTINT_COUNT_ADDR
 .globl UART32_UARTINT_BUSY_ADDR
 .balign 4
-UART32_UARTINT_HEAP:       .word 0x00
-UART32_UARTINT_COUNT_ADDR: .word UART32_UARTINT_COUNT
-UART32_UARTINT_COUNT:      .word 0x00
-UART32_UARTINT_BUSY_ADDR:  .word UART32_UARTINT_BUSY
-UART32_UARTINT_BUSY:       .word 0x00
-uart32_uartint_nak:        .word _uart32_uartint_nak
-_uart32_uartint_nak:       .ascii "\x15\0"
+UART32_UARTINT_HEAP:         .word 0x00
+UART32_UARTINT_COUNT_ADDR:   .word UART32_UARTINT_COUNT
+UART32_UARTINT_COUNT:        .word 0x00
+UART32_UARTINT_BUSY_ADDR:    .word UART32_UARTINT_BUSY
+UART32_UARTINT_BUSY:         .word 0x00
+uart32_escape_offset:        .word 0x00
+uart32_uartint_nak:          .word _uart32_uartint_nak
+_uart32_uartint_nak:         .ascii "\x15\0"
 .balign 4
-uart32_uartint_ack:        .word _uart32_uartint_ack
-_uart32_uartint_ack:       .ascii "\x6\0"
+uart32_uartint_ack:          .word _uart32_uartint_ack
+_uart32_uartint_ack:         .ascii "\x6\0"
 .balign 4
-uart32_uartint_e_clrline:  .word _uart32_uartint_e_clrline
-_uart32_uartint_e_clrline: .ascii "\x1B[0K\0"          @ Esc(0x1B)[0K: Clear From Cursor to End of Line
+uart32_uartint_esc_clrline:  .word _uart32_uartint_esc_clrline
+_uart32_uartint_esc_clrline: .ascii "\x1B[0K\0"         @ Esc(0x1B)[0K: Clear From Cursor to End of Line
 .balign 4
-uart32_uartint_e_nxtline:  .word _uart32_uartint_e_nxtline
-_uart32_uartint_e_nxtline: .ascii "\x1B[1E\0"          @ Esc(0x1B)[1E: Move Cursor to Beginning of Next Line
+uart32_uartint_esc_nxtline:  .word _uart32_uartint_esc_nxtline
+_uart32_uartint_esc_nxtline: .ascii "\x1B[1E\0"         @ Esc(0x1B)[1E: Move Cursor to Beginning of Next Line
 .balign 4
-uart32_uartint_e_clrscr:   .word _uart32_uartint_e_clrscr
-_uart32_uartint_e_clrscr:  .ascii "\x1B[2J\0"          @ Esc(0x1B)[2J: Clear All Screen
+uart32_uartint_esc_clrscr:   .word _uart32_uartint_esc_clrscr
+_uart32_uartint_esc_clrscr:  .ascii "\x1B[2J\0"         @ Esc(0x1B)[2J: Clear All Screen
 .balign 4
-uart32_uartint_e_homecs:   .word _uart32_uartint_e_homecs
-_uart32_uartint_e_homecs:  .ascii "\x1B[0;0H\0"        @ Esc(0x1B)[0;0H: Set Cursor to Upper Left Corner
+uart32_uartint_esc_homecs:   .word _uart32_uartint_esc_homecs
+_uart32_uartint_esc_homecs:  .ascii "\x1B[H\0"          @ Esc(0x1B)[H (Esc(0x1B)[1;1H): Set Cursor to Upper Left Corner
 .balign 4
-uart32_uartint_e_up:       .word _uart32_uartint_e_up
-_uart32_uartint_e_up:      .ascii "\x1B[1A\0"          @ Esc(0x1B)[1A: Move Cursor Upward
+uart32_uartint_esc_up:       .word _uart32_uartint_esc_up
+_uart32_uartint_esc_up:      .ascii "\x1B[A\0"          @ Esc(0x1B)[A (Esc(0x1B)[1A): Move Cursor Upward
 .balign 4
-uart32_uartint_e_down:     .word _uart32_uartint_e_down
-_uart32_uartint_e_down:    .ascii "\x1B[1B\0"          @ Esc(0x1B)[1B: Move Cursor Downward
+uart32_uartint_esc_down:     .word _uart32_uartint_esc_down
+_uart32_uartint_esc_down:    .ascii "\x1B[B\0"          @ Esc(0x1B)[B (Esc(0x1B)[1B): Move Cursor Downward
 .balign 4
-uart32_uartint_e_right:    .word _uart32_uartint_e_right
-_uart32_uartint_e_right:   .ascii "\x1B[1C\0"          @ Esc(0x1B)[1C: Move Cursor Right
+uart32_uartint_esc_right:    .word _uart32_uartint_esc_right
+_uart32_uartint_esc_right:   .ascii "\x1B[C\0"          @ Esc(0x1B)[C (Esc(0x1B)[1C): Move Cursor Right
 .balign 4
-uart32_uartint_e_left:     .word _uart32_uartint_e_left
-_uart32_uartint_e_left:    .ascii "\x1B[1D\0"          @ Esc(0x1B)[1D: Move Cursor Left
+uart32_uartint_esc_left:     .word _uart32_uartint_esc_left
+_uart32_uartint_esc_left:    .ascii "\x1B[D\0"          @ Esc(0x1B)[D (Esc(0x1B)[1D): Move Cursor Left
 .balign 4
-uart32_uartint_buffer:     .word _uart32_uartint_buffer
-_uart32_uartint_buffer:    .space 4                    @ 4 Bytes
+uart32_uartint_buffer:       .word _uart32_uartint_buffer
+_uart32_uartint_buffer:      .space equ32_uart32_uartint_buffer_size
 .balign 4
 
 
@@ -575,7 +763,10 @@ uart32_uartmalloc:
 		b uart32_uartmalloc_common
 
 	uart32_uartmalloc_success:
-		str heap, UART32_UARTINT_HEAP            @ Store to First Place of Array
+		lsl size_heap, size_heap, #2            @ Substitution of Multiplication by 4
+		sub size_heap, size_heap, #1            @ Subtract 1 Byte for Static Null Character at End
+		str size_heap, UART32_UARTMALLOC_MAXROW
+		str heap, UART32_UARTINT_HEAP           @ Store to First Place of Array
 		mov r0, #0
 
 	uart32_uartmalloc_common:
@@ -592,9 +783,11 @@ uart32_uartmalloc:
 .globl UART32_UARTMALLOC_ARRAY
 .globl UART32_UARTMALLOC_LENGTH
 .globl UART32_UARTMALLOC_NUMBER
+.globl UART32_UARTMALLOC_MAXROW
 UART32_UARTMALLOC_ARRAY:       .word 0x00
 UART32_UARTMALLOC_LENGTH:      .word 0x00
 UART32_UARTMALLOC_NUMBER:      .word 0x00
+UART32_UARTMALLOC_MAXROW:      .word 0x00
 
 
 /**
