@@ -1546,22 +1546,8 @@ arm32_mul:
 	shift         .req r2
 	answer        .req r3
 	temp          .req r4
-	sign_factor1  .req r5
-	sign_factor2  .req r6
 
-	push {r4-r6,lr}
-
-	cmp factor1, #0
-	movlt sign_factor1, #1
-	mvnlt factor1, factor1
-	addlt factor1, factor1, #1
-	movge sign_factor1, #0
-
-	cmp factor2, #0
-	movlt sign_factor2, #1
-	mvnlt factor2, factor2
-	addlt factor2, factor2, #1
-	movge sign_factor2, #0
+	push {r4,lr}
 
 	mov answer, #31
 
@@ -1572,7 +1558,7 @@ arm32_mul:
 
 	arm32_mul_loop:
 		cmp shift, #0
-		blt arm32_mul_sign
+		blt arm32_mul_common
 
 		mov temp, #1
 		lsl temp, temp, shift
@@ -1581,49 +1567,27 @@ arm32_mul:
 
 		/* If One on The Bit[shift] */
 
-		lsls temp, factor1, shift
-		movcs answer, #0x7FFFFFFF    @ If Carry
-		bcs arm32_mul_sign
-
-		adds answer, answer, temp
-		movvs answer, #0x7FFFFFFF    @ If Overflow
-		bvs arm32_mul_sign
+		lsl temp, factor1, shift
+		add answer, answer, temp
 
 		arm32_mul_loop_common:
 			sub shift, shift, #1
 			b arm32_mul_loop
 
-	arm32_mul_sign:
-		cmp sign_factor1, #1
-		cmpeq sign_factor2, #0
-		beq arm32_mul_sign_negative
-		cmp sign_factor2, #1
-		cmpeq sign_factor1, #0
-		beq arm32_mul_sign_negative
-
-		b arm32_mul_common
-
-		arm32_mul_sign_negative:
-
-			mvn answer, answer
-			add answer, answer, #1
-
 	arm32_mul_common:
 		mov r0, answer
-		pop {r4-r6,pc}
+		pop {r4,pc}
 
 .unreq factor1
 .unreq factor2
 .unreq shift
 .unreq answer
 .unreq temp
-.unreq sign_factor1
-.unreq sign_factor2
 
 
 /**
- * function arm32_div
- * Division of Two Signed Integers
+ * function arm32_sdiv
+ * Signed Division of Two Signed Integers
  *
  * Parameters
  * r0: Dividend (Numerator)
@@ -1631,8 +1595,8 @@ arm32_mul:
  *
  * Return: r0 (Answer of Division), r1 (Reminder of Division)
  */
-.globl arm32_div
-arm32_div:
+.globl arm32_sdiv
+arm32_sdiv:
 	/* Auto (Local) Variables, but just Aliases */
 	dividend       .req r0
 	divisor        .req r1
@@ -1669,60 +1633,60 @@ arm32_div:
 	shift .req r2
 	temp  .req r3
 
-	arm32_div_loop:
+	arm32_sdiv_loop:
 		cmp shift, #0
-		blt arm32_div_signanswer
+		blt arm32_sdiv_signanswer
 
 		lsl temp, divisor, shift
 		mov bit, #1
 		lsl bit, bit, shift
 
-		arm32_div_loop_loop:
+		arm32_sdiv_loop_loop:
 			subs dividend, dividend, temp
 			/**
 			 * vs<means set overflow>: V == 1, vc: V == 0, mi<means minus>: N == 1, pl<means plus>: N == 0
 			 * hi: C == 1 && Z == 0, hs(cs): C == 1, lo(cc): C == 0, ls C == 0 || Z == 1
 			 * "cmp" is like "subs", but C-set means hs because minus singed binary is bigger than plus signed one.
 			 */
-			blt arm32_div_loop_common
+			blt arm32_sdiv_loop_common
 
 			add answer, answer, bit
 
-			b arm32_div_loop_loop
+			b arm32_sdiv_loop_loop
 
-		arm32_div_loop_common:
+		arm32_sdiv_loop_common:
 
 			add dividend, dividend, temp @ Reverse If Reaches Minus
 			sub shift, shift, #1
-			b arm32_div_loop
+			b arm32_sdiv_loop
 
-	arm32_div_signanswer:
+	arm32_sdiv_signanswer:
 		cmp sign_dividend, #1
 		cmpeq sign_divisor, #0
-		beq arm32_div_signanswer_negative
+		beq arm32_sdiv_signanswer_negative
 		cmp sign_divisor, #1
 		cmpeq sign_dividend, #0
-		beq arm32_div_signanswer_negative
+		beq arm32_sdiv_signanswer_negative
 
-		b arm32_div_signreminder
+		b arm32_sdiv_signreminder
 
-		arm32_div_signanswer_negative:
+		arm32_sdiv_signanswer_negative:
 
 			mvn answer, answer
 			add answer, answer, #1
 
-	arm32_div_signreminder:
+	arm32_sdiv_signreminder:
 		cmp sign_dividend, #1
-		beq arm32_div_signreminder_negative
+		beq arm32_sdiv_signreminder_negative
 
-		b arm32_div_common
+		b arm32_sdiv_common
 
-		arm32_div_signreminder_negative:
+		arm32_sdiv_signreminder_negative:
 
 			mvn dividend, dividend
 			add dividend, dividend, #1
 
-	arm32_div_common:
+	arm32_sdiv_common:
 		mov r1, dividend @ dividend is r0, copy dividend to r1 before storing answer to r0
 		mov r0, answer
 		pop {r4-r7,pc}
@@ -1738,8 +1702,8 @@ arm32_div:
 
 
 /**
- * function arm32_rem
- * Return Remainder of Division of Two Integers
+ * function arm32_srem
+ * Return Remainder of Signed Division of Two Integers
  *
  * Parameters
  * r0: Dividend (Numerator)
@@ -1747,17 +1711,17 @@ arm32_div:
  *
  * Return: r0 (Reminder of Division)
  */
-.globl arm32_rem
-arm32_rem:
+.globl arm32_srem
+arm32_srem:
 	/* Auto (Local) Variables, but just Aliases */
 	dividend       .req r0
 	divisor        .req r1
 
 	push {lr}
 
-	bl arm32_div
+	bl arm32_sdiv
 
-	arm32_rem_common:
+	arm32_srem_common:
 		mov r0, r1
 		pop {pc}
 

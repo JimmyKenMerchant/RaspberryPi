@@ -192,22 +192,22 @@ extern int32 arm32_mul(
 
 
 /**
- * Division of Two Integers
+ * Signed Division of Two Integers
  *
  * Return: Answer of Division
  */
-extern int32 arm32_div(
+extern int32 arm32_sdiv(
 	int32 dividend,
 	int32 divisor
 );
 
 
 /**
- * Return Remainder of Division of Two Integers
+ * Return Remainder of Signed Division of Two Integers
  *
  * Return: Reminder of Division
  */
-extern int32 arm32_rem(
+extern int32 arm32_srem(
 	uint32 dividend,
 	uint32 divisor
 );

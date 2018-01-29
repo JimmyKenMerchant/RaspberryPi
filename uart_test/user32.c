@@ -25,6 +25,7 @@ typedef enum _command_list {
 	mul,
 	div,
 	rem,
+	rand,
 	cmp, // Compare Two Values of Integer, "cmp %S1 %S2": Reflects NZCV Flags.
 	badd, // Binary-coded Decimal, "badd %D %S1 %S2": D = S1 + S2. -9,999,999,999,999,999 through 9,999,999,999,999,999.
 	bsub,
@@ -53,6 +54,8 @@ typedef enum _command_list {
 	jmp, // Jump to the Line, "jmp %S1": Next line will be the number in S1.
 	call, // Jump to the Line and Store Current Line to Stack (Last In First Out) for Link
 	ret, // Return to Previous Line Stored in Stack
+	push,
+	pop,
 	skpeq, // Skip One Line If Equal, just "skpeq": Use next to a "cmp.." command.
 	skpne,
 	skpge,
@@ -87,11 +90,13 @@ void _user_start()
 
 	uint32 color = COLOR32_WHITE;
 	uint32 back_color = COLOR32_BLACK;
-	String str_aloha = "Aloha Calc Version 0.8 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
+	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_process_counter = null;
 	String str_direction = null;
 	obj array_source = heap32_malloc( 8 );
 	obj array_argpointer = heap32_malloc( 8 );
+	obj array_link = heap32_malloc( 32 );
+	uint32 array_link_offset = 0;
 	uint32 length_arg = 0;
 	uint32 var_index = 0;
 	uint32 current_line = 0;
@@ -100,7 +105,9 @@ void _user_start()
 	command_list command_type = null;
 	flex32 direction;
 	direction.s32 = 0;
-	uint32 stack_offset = 1; // Stack offset for "Call" and "Ret", 1 is minimam, from the last line decremental order.
+	uint32 stack_offset = 1; // Stack offset for "push" and "pop", 1 is minimam, from the last line decremental order.
+	String src_str = null;
+	String dst_str = null;
 	String temp_str = null;
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
@@ -124,7 +131,17 @@ void _user_start()
 						/* Numeration Process */
 
 						/* Select Command Type */
-						if ( print32_strsearch( temp_str, 5, "sleep", 5 ) != -1 ) {
+						if ( print32_strsearch( temp_str, 1, "*", 1 ) != -1 ) {
+							/* Comment Will Be Immdiately Skipped */
+							command_type = null;
+							length_arg = 0;
+							pipe_type = go_nextline;
+						} else if ( print32_strlen( temp_str ) == 0 ) {
+							/* Stop Execution If No Content in Line */
+							command_type = null;
+							length_arg = 0;
+							pipe_type = termination;
+						} else if ( print32_strsearch( temp_str, 5, "sleep", 5 ) != -1 ) {
 							command_type = sleep;
 							length_arg = 1;
 							pipe_type = enumurate_variables;
@@ -154,6 +171,10 @@ void _user_start()
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
+						} else if ( print32_strsearch( temp_str, 4, "rand", 4 ) != -1 ) {
+							command_type = rand;
+							length_arg = 1;
+							pipe_type = execute_command;
 						} else if ( print32_strsearch( temp_str, 3, "cmp", 3 ) != -1 ) {
 							command_type = cmp;
 							length_arg = 2;
@@ -287,6 +308,14 @@ void _user_start()
 							command_type = ret;
 							length_arg = 0;
 							pipe_type = execute_command;
+						} else if ( print32_strsearch( temp_str, 4, "push", 4 ) != -1 ) {
+							command_type = push;
+							length_arg = 1;
+							pipe_type = execute_command;
+						} else if ( print32_strsearch( temp_str, 3, "pop", 3 ) != -1 ) {
+							command_type = pop;
+							length_arg = 1;
+							pipe_type = execute_command;
 						} else if ( print32_strsearch( temp_str, 5, "skpeq", 5 ) != -1 ) {
 							command_type = skpeq;
 							length_arg = 0;
@@ -334,17 +363,11 @@ void _user_start()
 							command_type = null;
 							length_arg = 0;
 							pipe_type = termination;
-						} else if ( print32_strlen( temp_str ) == 0 ) {
-							/* Stop Execution If No Content in Line */
-							command_type = null;
-							length_arg = 0;
-							pipe_type = termination;
 						} else {
 							command_type = null;
 							length_arg = 0;
 							pipe_type = go_nextline;
 						}
-
 						uint32 offset = 0;
 						uint32 var_temp;
 						uint32 length_temp;
@@ -422,11 +445,15 @@ void _user_start()
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case div:
-								direction.s32 =  arm32_div( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								direction.s32 =  arm32_sdiv( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case rem:
-								direction.s32 =  arm32_rem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								direction.s32 =  arm32_srem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
+								break;
+							case rand:
+								direction.s32 =  _random( 255 );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case cmp:
@@ -549,10 +576,10 @@ void _user_start()
 							case mov:
 								_uartsetheap( _load_32( array_argpointer ) );
 								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-								String mov_str_dst = UART32_UARTINT_HEAP;
+								dst_str = UART32_UARTINT_HEAP;
 								_uartsetheap( _load_32( array_argpointer + 4 ) );
-								String mov_str_src = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)mov_str_dst, (obj)mov_str_src, 0, print32_strlen( mov_str_src ) );
+								src_str = UART32_UARTINT_HEAP;
+								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
 
 								break;
 							case clr:
@@ -565,17 +592,36 @@ void _user_start()
 
 								break;
 							case call:
-								_uartsetheap(  UART32_UARTMALLOC_LENGTH - stack_offset );
-								_store_32( (obj)UART32_UARTINT_HEAP, current_line );
-								stack_offset++;
+								_store_32( array_link + array_link_offset * 4, current_line );
+								array_link_offset++;
 								current_line = _load_32( array_argpointer ) - 1;
 
 								break;
 							case ret:
+								if ( array_link_offset <= 0 ) break;
+								array_link_offset--;
+								current_line = _load_32( array_link + array_link_offset * 4 );
+
+								break;
+							case push:
+								_uartsetheap(  UART32_UARTMALLOC_LENGTH - stack_offset );
+								dst_str = UART32_UARTINT_HEAP;
+								heap32_mfill( (obj)dst_str, 0 );
+								_uartsetheap( _load_32( array_argpointer ) );
+								src_str = UART32_UARTINT_HEAP;
+								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
+								stack_offset++;
+
+								break;
+							case pop:
 								if ( stack_offset <= 1 ) break;
 								stack_offset--;
 								_uartsetheap( UART32_UARTMALLOC_LENGTH - stack_offset );
-								current_line = _load_32( (obj)UART32_UARTINT_HEAP );
+								src_str = UART32_UARTINT_HEAP;
+								_uartsetheap( _load_32( array_argpointer ) );
+								dst_str = UART32_UARTINT_HEAP;
+								heap32_mfill( (obj)dst_str, 0 );
+								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
 
 								break;
 							case skpeq:
