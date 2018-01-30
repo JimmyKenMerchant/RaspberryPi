@@ -514,6 +514,62 @@ print32_charcount:
 
 
 /**
+ * function print32_strcount
+ * Count Key String in Subjected String
+ *
+ * Parameters
+ * r0: Pointer of Array of String to Be Subjected
+ * r1: Length of String to Be Subjected
+ * r2: Pointer of Array of String to Be Searched (Key)
+ * r3: Length 0f String to Be Searched (Key)
+ *
+ * Return: r0 (Number of Counts for String Key)
+ */
+.globl print32_strcount
+print32_strcount:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point1      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	string_length1     .req r1 @ Parameter, Register for Argument, Scratch Register
+	string_point2      .req r2
+	string_length2     .req r3
+	count              .req r4
+	index              .req r5
+
+	push {r4-r5,lr}
+
+	mov count, #0
+	mov index, #0
+
+	print32_strcount_loop:
+
+		push {r0-r3}
+		bl print32_strsearch
+		mov index, r0
+		pop {r0-r3}
+
+		cmp index, #-1
+		beq print32_strcount_common
+
+		add count, count, #1
+		add index, index, string_length2
+		add string_point1, string_point1, index
+		sub string_length1, string_length1, index
+
+		b print32_strcount_loop
+
+	print32_strcount_common:
+		mov r0, count
+		pop {r4-r5,pc}
+
+.unreq string_point1
+.unreq string_length1
+.unreq string_point2
+.unreq string_length2
+.unreq count
+.unreq index
+
+
+/**
  * function print32_strcat
  * Concatenation of Two Strings
  * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with

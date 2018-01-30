@@ -1528,7 +1528,7 @@ extern uint32 heap32_mcount( uint32 address );
 
 extern uint32 heap32_mfill( uint32 address, uint32 data );
 
-extern uint32 heap32_mcopy( uint32 address_dst, uint32 address_src, uint32 offset_src, uint32 size_src );
+extern uint32 heap32_mcopy( uint32 address_dst, uint32 offset_dst, uint32 address_src, uint32 offset_src, uint32 size_src );
 
 
 /********************************

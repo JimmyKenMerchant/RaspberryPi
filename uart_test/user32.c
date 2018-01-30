@@ -105,16 +105,19 @@ void _user_start()
 	pipe_list pipe_type = search_command;
 	command_list command_type = null;
 	flex32 var_temp;
+	flex32 var_temp2;
 	flex32 direction;
 	direction.s32 = 0;
 	uint32 stack_offset = 1; // Stack offset for "push" and "pop", 1 is minimam, from the last line decremental order.
 	String src_str = null;
 	String dst_str = null;
 	String temp_str = null;
+	String temp_str2 = null;
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
-	_uarttx( str_aloha, print32_strlen( str_aloha ) + 1 );
-	_uarttx( "00: \0", 5 );
+	_uarttx( str_aloha, print32_strlen( str_aloha ) );
+
+	_uarttx( "01: \0", 4 );
 
 	flag_execute = false;
 	
@@ -126,14 +129,14 @@ void _user_start()
 
 						/* Search and Pass Tabs Before Command */
 						temp_str = UART32_UARTINT_HEAP;
-						while ( print32_strsearch( temp_str, 1, "\t", 1 ) != -1 ) {
+						while ( print32_strsearch( temp_str, 1, "\t\0", 1 ) != -1 ) {
 							temp_str++;
 						}
 
 						/* Numeration Process */
 
 						/* Select Command Type */
-						if ( print32_strsearch( temp_str, 1, "*", 1 ) != -1 ) {
+						if ( print32_strsearch( temp_str, 1, "*\0", 1 ) != -1 ) {
 							/* Comment Will Be Immdiately Skipped */
 							command_type = null;
 							length_arg = 0;
@@ -143,220 +146,215 @@ void _user_start()
 							command_type = null;
 							length_arg = 0;
 							pipe_type = termination;
-						} else if ( print32_strsearch( temp_str, 5, "sleep", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "sleep\0", 5 ) != -1 ) {
 							command_type = sleep;
 							length_arg = 1;
 							pipe_type = enumurate_variables;
 							var_index = 0;
-						} else if ( print32_strsearch( temp_str, 3, "add", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "add\0", 3 ) != -1 ) {
 							command_type = add;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 3, "sub", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "sub\0", 3 ) != -1 ) {
 							command_type = sub;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 3, "mul", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "mul\0", 3 ) != -1 ) {
 							command_type = mul;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 3, "div", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "div\0", 3 ) != -1 ) {
 							command_type = div;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 3, "rem", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "rem\0", 3 ) != -1 ) {
 							command_type = rem;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "rand", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "rand\0", 4 ) != -1 ) {
 							command_type = rand;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "cmp", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "cmp\0", 3 ) != -1 ) {
 							command_type = cmp;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
-						} else if ( print32_strsearch( temp_str, 4, "badd", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "badd\0", 4 ) != -1 ) {
 							command_type = badd;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "bsub", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "bsub\0", 4 ) != -1 ) {
 							command_type = bsub;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "bmul", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "bmul\0", 4 ) != -1 ) {
 							command_type = bmul;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "bdiv", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "bdiv\0", 4 ) != -1 ) {
 							command_type = bdiv;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "brem", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "brem\0", 4 ) != -1 ) {
 							command_type = brem;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "bcmp", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "bcmp\0", 4 ) != -1 ) {
 							command_type = bcmp;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
-						} else if ( print32_strsearch( temp_str, 4, "fadd", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fadd\0", 4 ) != -1 ) {
 							command_type = fadd;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fsub", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fsub\0", 4 ) != -1 ) {
 							command_type = fsub;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fmul", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fmul\0", 4 ) != -1 ) {
 							command_type = fmul;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fdiv", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fdiv\0", 4 ) != -1 ) {
 							command_type = fdiv;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 5, "fsqrt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "fsqrt\0", 5 ) != -1 ) {
 							command_type = fsqrt;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "frad", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "frad\0", 4 ) != -1 ) {
 							command_type = frad;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fsin", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fsin\0", 4 ) != -1 ) {
 							command_type = fsin;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fcos", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fcos\0", 4 ) != -1 ) {
 							command_type = fcos;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "ftan", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "ftan\0", 4 ) != -1 ) {
 							command_type = ftan;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 3, "fln", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "fln\0", 3 ) != -1 ) {
 							command_type = fln;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "flog", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "flog\0", 4 ) != -1 ) {
 							command_type = flog;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fabs", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fabs\0", 4 ) != -1 ) {
 							command_type = fabs;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fneg", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fneg\0", 4 ) != -1 ) {
 							command_type = fneg;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
-						} else if ( print32_strsearch( temp_str, 4, "fcmp", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "fcmp\0", 4 ) != -1 ) {
 							command_type = fcmp;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
-						} else if ( print32_strsearch( temp_str, 5, "input", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "input\0", 5 ) != -1 ) {
 							command_type = input;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "print", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "print\0", 5 ) != -1 ) {
 							command_type = print;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "mov", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "mov\0", 3 ) != -1 ) {
 							command_type = mov;
 							length_arg = 2;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "clr", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "clr\0", 3 ) != -1 ) {
 							command_type = clr;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "jmp", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "jmp\0", 3 ) != -1 ) {
 							command_type = jmp;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 4, "call", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "call\0", 4 ) != -1 ) {
 							command_type = call;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "ret", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "ret\0", 3 ) != -1 ) {
 							command_type = ret;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 4, "push", 4 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 4, "push\0", 4 ) != -1 ) {
 							command_type = push;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "pop", 3 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 3, "pop\0", 3 ) != -1 ) {
 							command_type = pop;
 							length_arg = 1;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skpeq", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpeq\0", 5 ) != -1 ) {
 							command_type = skpeq;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skpne", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpne\0", 5 ) != -1 ) {
 							command_type = skpne;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skpge", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpge\0", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Greater Than or Equal */
 							command_type = skpge;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skple", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skple\0", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than or Equal */
 							command_type = skple;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skpgt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skpgt\0", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Greater Than */
 							command_type = skpgt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skplt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skplt\0", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than */
 							command_type = skplt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 5, "skplt", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "skplt\0", 5 ) != -1 ) {
 							/* Jump Over One Line If Signed Less Than */
 							command_type = skplt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strsearch( temp_str, 3, "run", 3 ) != -1 ) {
-							/* Stop Execution If Reaching "run" */
-							command_type = null;
-							length_arg = 0;
-							pipe_type = termination;
-						} else if ( print32_strsearch( temp_str, 5, "clear", 5 ) != -1 ) {
+						} else if ( print32_strsearch( temp_str, 5, "clear\0", 5 ) != -1 ) {
 							/* Clear All Lines */
 							for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 								_uartsetheap( i );
@@ -374,14 +372,35 @@ void _user_start()
 						uint32 length_temp;
 
 						for ( uint32 i = 0; i < length_arg; i++ ) {
-							var_temp.s32 = print32_charindex( temp_str + offset, 0x25 ); // Ascii Code of %
-							if ( var_temp.s32 == -1 ) break;
-							offset += var_temp.s32;
-							offset++;
-							length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
-							if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
-							var_temp.s32 = deci32_string_to_int32( temp_str + offset, length_temp );
-							_store_32( array_argpointer + 4 * i,  var_temp.s32 );
+							var_temp.u32 = print32_charindex( temp_str + offset, 0x25 ); // Ascii Code of %
+							var_temp2.u32 = print32_charindex( temp_str + offset, 0x5B ); // Ascii Code of [ (Square Bracket Left)
+							/* Subtract One from Number Because of Converting to Internal Number */
+							if ( var_temp.u32 == -1 && var_temp2.u32 == -1 ) {
+								/* Both Are Nothing */
+								break;
+							} else if ( var_temp2.u32 == -1 || var_temp.u32 < var_temp2.u32 ) {
+								/* Direct Argument Indicated by "%N" */
+								offset += var_temp.u32;
+								offset++;
+								length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
+								var_temp.u32 = deci32_string_to_int32( temp_str + offset, length_temp );
+								_store_32( array_argpointer + 4 * i,  var_temp.u32 - 1 );
+							} else if ( var_temp.u32 == -1 || var_temp.u32 > var_temp2.u32 ) {
+								/* Indirect Argument (Pointer) Indicated by "[N" */
+								offset += var_temp2.u32;
+								offset++;
+								length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
+								var_temp2.u32 = deci32_string_to_int32( temp_str + offset, length_temp );
+								if ( _uartsetheap( var_temp2.u32 - 1 ) ) _uartsetheap( 0 );
+								temp_str2 = UART32_UARTINT_HEAP;
+								while ( print32_strsearch( temp_str2, 1, "\t\0", 1 ) != -1 ) {
+									temp_str2++;
+								}
+								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
+								_store_32( array_argpointer + 4 * i,  var_temp2.u32 - 1 );
+							}
 						}
 
 						current_line = UART32_UARTMALLOC_NUMBER;
@@ -394,7 +413,7 @@ void _user_start()
 
 						/* Search and Pass Tabs Before Command */
 						temp_str = UART32_UARTINT_HEAP;
-						while ( print32_strsearch( temp_str, 1, "\t", 1 ) != -1 ) {
+						while ( print32_strsearch( temp_str, 1, "\t\0", 1 ) != -1 ) {
 							temp_str++;
 						}
 
@@ -405,7 +424,7 @@ void _user_start()
 								var_temp.f32 = vfp32_s32tof32( var_temp.s32 );
 							}
 							_store_32( array_source + 4 * var_index, var_temp.s32 );
-						} else if ( command_type >= badd ){ // Type of Binary-coded Deximal
+						} else if ( command_type >= badd ){ // Type of Binary-coded Decimal
 							var_temp.u32 = print32_charindex( temp_str, 0x2E ); // Ascii Code of Period
 							if ( var_temp.u32 == -1 ) var_temp.u32 = print32_strlen( temp_str );
 							_store_32( array_source + 8 * var_index, (obj)temp_str );
@@ -542,7 +561,7 @@ void _user_start()
 								break;
 							case input:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-								_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) + 1 );
+								_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
 								_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 								while (true) {
@@ -555,30 +574,37 @@ void _user_start()
 								temp_str = UART32_UARTINT_HEAP;
 								uint32 temp_str_index;
 								while ( print32_strlen( temp_str ) ) {
-									temp_str_index = print32_strindex( temp_str, "\\n" ); // Escaped
-									if ( temp_str_index == -1 ) {
+									if ( print32_strindex( temp_str, "\\n\0" ) != -1 ) {
+										temp_str_index = print32_strindex( temp_str, "\\n\0" );
+										_uarttx( temp_str, temp_str_index );
+										print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+										_uarttx( "\r\n\0", 2 );
+										print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
+										temp_str += temp_str_index;
+										temp_str += 2;
+									} else if ( print32_strindex( temp_str, "\\e\0" ) != -1 ) {
+										temp_str_index = print32_strindex( temp_str, "\\e\0" );
+										_uarttx( temp_str, temp_str_index );
+										print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+										_uarttx( "\x1B\0", 1 );
+										//print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 1, 8, 12, FONT_MONO_12PX_ASCII ) );
+										temp_str += temp_str_index;
+										temp_str += 1;
+									} else {
 										temp_str_index = print32_strlen( temp_str );
 										_uarttx( temp_str, temp_str_index );
 										print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
 										temp_str += temp_str_index;
-									} else {
-										_uarttx( temp_str, temp_str_index );
-										print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
-										_uarttx( "\r\n", 2 );
-										print32_set_caret( print32_string( "\r\n", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
-										temp_str += temp_str_index;
-										temp_str += 2;
 									}
 								}
 
 								break;
 							case mov:
 								_uartsetheap( _load_32( array_argpointer ) );
-								//heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 								dst_str = UART32_UARTINT_HEAP;
 								_uartsetheap( _load_32( array_argpointer + 4 ) );
 								src_str = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
+								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, 0, print32_strlen( src_str ) + 1 ); // Add Null Character
 
 								break;
 							case clr:
@@ -608,7 +634,7 @@ void _user_start()
 								//heap32_mfill( (obj)dst_str, 0 );
 								_uartsetheap( _load_32( array_argpointer ) );
 								src_str = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
+								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, 0, print32_strlen( src_str ) + 1 ); // Add Null Character
 								stack_offset++;
 
 								break;
@@ -620,7 +646,7 @@ void _user_start()
 								//heap32_mfill( (obj)dst_str, 0 );
 								_uartsetheap( UART32_UARTMALLOC_LENGTH - stack_offset );
 								src_str = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)dst_str, (obj)src_str, 0, print32_strlen( src_str ) );
+								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, 0, print32_strlen( src_str ) + 1 ); // Add Null Character
 
 								break;
 							case skpeq:
@@ -660,37 +686,39 @@ void _user_start()
 						pipe_type = go_nextline;
 						if ( str_direction == null ) break;
 						_uartsetheap( _load_32( array_argpointer ) );
-						//heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
 						var_temp.u32 = print32_strlen( str_direction );
 						if ( var_temp.u32 > UART32_UARTMALLOC_MAXROW ) var_temp.u32 = UART32_UARTMALLOC_MAXROW; // Limitatin for Safety
-						heap32_mcopy( (obj)UART32_UARTINT_HEAP, (obj)str_direction, 0, var_temp.u32 );
+						heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)str_direction, 0, var_temp.u32 + 1 ); // Add Null Character
 						str_direction = (String)heap32_mfree( (obj)str_direction );
 
 						break;
 
 					case go_nextline:
-
 						/* Continue Process */
 
-						if ( _uartsetheap( current_line + 1 ) ) _uartsetheap( 0 );
+						if ( _uartsetheap( current_line + 1 ) ) _uartsetheap( 0 ); // #0 is Guaranteed as Null
 						pipe_type = search_command;
-						//heap32_mfill( array_source, 0 );
-						//heap32_mfill( array_argpointer, 0 );
 
 						break;
 
 					case termination:
-
 						/* End Process */
-						_uarttx( "\r\n", 2 );
-						_uartsetheap( 0 );
-						str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-						_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
-						_uarttx( ": \0", 3 );
-						heap32_mfree( (obj)str_process_counter );
-						_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) + 1 );
+						_uarttx( "\r\n\0", 2 );
+
+						/* Print Commands Untill Line with Null Character */
+						for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+							_uartsetheap( i );
+							str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER + 1, 2, 0, 0 ); // Min. 2 Digit, Unsigned, Add One for External Interface
+							_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
+							_uarttx( ": \0", 2 );
+							heap32_mfree( (obj)str_process_counter );
+
+							var_temp.u32 = print32_strlen( UART32_UARTINT_HEAP );
+							if ( var_temp.u32 == 0 ) break;
+							_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+							_uarttx( "\r\n\0", 2 );
+						}
 						_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
-						//_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 						_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 						pipe_type = search_command;
 						flag_execute = false;
@@ -702,22 +730,21 @@ void _user_start()
 						break;
 				}
 			} else {
-				_uarttx( "\r\n\0", 3 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
-				if ( print32_strindex( UART32_UARTINT_HEAP, "run" ) != -1 ) {
+				_uarttx( "\r\n\0", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
+				if ( print32_strindex( UART32_UARTINT_HEAP, "run\0" ) != -1 ) {
 					/* If You Command "run", It Starts Execution */
-					_uarttx( "\x1B[2J\x1B[H\0", 9 ); // Clear All Screen and Move Cursor to Upper Left
+					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
 					flag_execute = true;
 					pipe_type = search_command;
 					_uartsetheap( 0 );
 				} else {
-					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER + 1, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
-					_uarttx( ": \0", 3 );
-					heap32_mfree( (obj)str_process_counter );
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( 0 );
-					//heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-					//_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
-					_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) + 1 );
+					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER + 1, 2, 0, 0 ); // Min. 2 Digit, Unsigned, Add One for External Interface
+					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
+					_uarttx( ": \0", 2 );
+					heap32_mfree( (obj)str_process_counter );
+					_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}

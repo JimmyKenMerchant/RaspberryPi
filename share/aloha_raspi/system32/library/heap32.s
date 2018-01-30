@@ -338,27 +338,34 @@ heap32_mcount:
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space to Be Destination
- * r1: Pointer of Start Address of Memory Space to Be Copied (Source)
- * r2: Offset of Bytes to Be Copied (Source)
- * r3: Size of Bytes to Be Copied (Source)
+ * r1: Offset of Bytes to Be Copied (Destination)
+ * r2: Pointer of Start Address of Memory Space to Be Copied (Source)
+ * r3: Offset of Bytes to Be Copied (Source)
+ * r4: Size of Bytes to Be Copied (Source)
  *
- * Return: r0 (Pointer of Start Address of Memory Space to Be Destination, If 0, No Enough Space to Copy to First Argument)
+ * Return: r0 (Pointer of Start Address of Memory Space to Be Destination, If No Enough Space to Copy, Sequence Stops Halfway)
+ * Error(0): Wrong Heap for Destination or Source
  */
 .globl heap32_mcopy
 heap32_mcopy:
 	/* Auto (Local) Variables, but just Aliases */
 	heap1        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	heap2        .req r1 @ Parameter, Register for Argument
-	offset       .req r2 @ Parameter, Register for Argument
-	size         .req r3 @ Parameter, Register for Argument
-	heap1_size   .req r4
-	heap2_size   .req r5
-	byte         .req r6
-	heap_start   .req r7
-	heap_size    .req r8
-	heap1_dup    .req r9
+	offset1      .req r1 @ Parameter, Register for Argument
+	heap2        .req r2 @ Parameter, Register for Argument
+	offset2      .req r3 @ Parameter, Register for Argument
+	size         .req r4
+	heap1_size   .req r5
+	heap2_size   .req r6
+	byte         .req r7
+	heap_start   .req r8
+	heap_size    .req r9
+	heap1_dup    .req r10
 
-	push {r4-r9}
+	push {r4-r10}
+
+	add sp, sp, #28                           @ r4-r10 offset 28 bytes
+	pop {size}                                @ Get Fifth Arguments
+	sub sp, sp, #32                           @ Retrieve SP
 
 	macro32_dsb ip                            @ Ensure Completion of Instructions Before
 
@@ -390,14 +397,14 @@ heap32_mcopy:
 	bhs heap32_mcopy_error
 
 	mov heap1_dup, heap1
-
-	add heap2, heap2, offset
+	add heap1, heap1, offset1                 @ Add Offset for Destination
+	add heap2, heap2, offset2                 @ Add Offset for Source
 
 	heap32_mcopy_loop:
 		cmp heap1, heap1_size
-		bhs heap32_mcopy_error
+		bhs heap32_mcopy_success
 		cmp heap2, heap2_size
-		bhs heap32_mcopy_error
+		bhs heap32_mcopy_success
 
 		ldrb byte, [heap2]
 		strb byte, [heap1]
@@ -418,12 +425,13 @@ heap32_mcopy:
 
 	heap32_mcopy_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r9}
+		pop {r4-r10}
 		mov pc, lr
 
 .unreq heap1
+.unreq offset1
 .unreq heap2
-.unreq offset
+.unreq offset2
 .unreq size
 .unreq heap1_size
 .unreq heap2_size

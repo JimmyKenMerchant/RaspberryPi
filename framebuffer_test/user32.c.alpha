@@ -52,7 +52,7 @@ void _user_start()
 
 	String copy_string2 = (String)heap32_malloc(7); // 28 Bytes
 
-	uint32 error = heap32_mcopy( (uint32)copy_string2, (uint32)copy_string1, 1, 3 );
+	uint32 error = heap32_mcopy( (uint32)copy_string2, 0, (uint32)copy_string1, 1, 3 );
 
 	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );

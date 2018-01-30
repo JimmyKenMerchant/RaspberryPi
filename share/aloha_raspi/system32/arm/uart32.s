@@ -486,7 +486,8 @@ uart32_uartint:
 
 			ldr temp, UART32_UARTMALLOC_NUMBER
 			cmp temp, #0
-			bgt uart32_uartint_escseq_up_jump
+			subhi temp, temp, #1
+			bhi uart32_uartint_escseq_up_jump
 
 			/* Send Move Cursor Down Because Of Overshoot */
 			push {r0-r3}
@@ -499,11 +500,35 @@ uart32_uartint:
 
 			uart32_uartint_escseq_up_jump:
 				push {r0-r3}
-				sub r0, temp, #1
+				mov r0, temp
 				bl uart32_uartsetheap
 				pop {r0-r3}
 
-				b uart32_uartint_escseq_clear
+				ldr heap, UART32_UARTINT_HEAP
+				cmp heap, #0
+				beq uart32_uartint_error         @ If No Heap
+
+				push {r0-r3}
+				mov r0, heap
+				bl print32_strlen
+				mov temp, r0
+				pop {r0-r3}
+
+				str temp, UART32_UARTINT_COUNT
+
+				uart32_uartint_escseq_up_jump_loop:
+					cmp temp, count
+					bge uart32_uartint_escseq_clear
+
+					/* Send Move Cursor Left Because Of Overshoot */
+					push {r0-r3}
+					ldr r0, uart32_uartint_esc_left
+					mov r1, #3
+					bl uart32_uarttx
+					pop {r0-r3}
+
+					sub count, count, #1
+					b uart32_uartint_escseq_up_jump_loop
 
 		uart32_uartint_escseq_down:
 
@@ -591,7 +616,7 @@ uart32_uartint:
 		/* Send Move Cursor Right Because Of Overshoot */
 		push {r0-r3}
 		ldr r0, uart32_uartint_esc_right
-		mov r1, #4
+		mov r1, #3
 		bl uart32_uarttx
 		pop {r0-r3}
 
@@ -664,6 +689,9 @@ UART32_UARTINT_COUNT:        .word 0x00
 UART32_UARTINT_BUSY_ADDR:    .word UART32_UARTINT_BUSY
 UART32_UARTINT_BUSY:         .word 0x00
 uart32_escape_offset:        .word 0x00
+uart32_uartint_cr:           .word _uart32_uartint_cr
+_uart32_uartint_cr:          .ascii "\x0D\0"
+.balign 4
 uart32_uartint_nak:          .word _uart32_uartint_nak
 _uart32_uartint_nak:         .ascii "\x15\0"
 .balign 4
@@ -810,7 +838,7 @@ uart32_uartsetheap:
 
 	ldr length_array, UART32_UARTMALLOC_LENGTH
 	cmp num_heap, length_array
-	bge uart32_uartsetheap_error
+	bhs uart32_uartsetheap_error
 
 	ldr array, UART32_UARTMALLOC_ARRAY
 	ldr heap, [array, num_heap, lsl #2]
