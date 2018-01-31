@@ -10,6 +10,8 @@
 #include "system32.h"
 #include "system32.c"
 
+String pass_tab_label( String target_str ); 
+
 extern String UART32_UARTINT_HEAP;
 extern uint32 UART32_UARTINT_BUSY_ADDR;
 extern uint32 UART32_UARTINT_COUNT_ADDR;
@@ -84,7 +86,16 @@ typedef union _flex32 {
 	obj oj;
 } flex32;
 
+
+typedef struct _dictionary {
+	obj name;
+	obj number;
+	uint32 length;
+} dictionary;
+
+
 bool flag_execute;
+
 
 void _user_start()
 {
@@ -99,14 +110,22 @@ void _user_start()
 	obj array_link = heap32_malloc( 32 );
 	uint32 array_link_offset = 0;
 	uint32 length_arg = 0;
+	uint32 length_temp = 0;
 	uint32 var_index = 0;
 	uint32 current_line = 0;
 	uint32 status_nzcv = 0;
 	pipe_list pipe_type = search_command;
 	command_list command_type = null;
 	flex32 var_temp;
+	var_temp.u32 = 0;
 	flex32 var_temp2;
+	var_temp2.u32 = 0;
 	flex32 direction;
+	direction.u32 = 0;
+	dictionary label_list;
+	label_list.name = heap32_malloc( 32 ); // Naming Length: Max. 8 bytes (8 Characters)
+	label_list.number = heap32_malloc( 16 ); // 4 Bytes (32-bit Integer) per Number
+	label_list.length = 0;
 	direction.s32 = 0;
 	uint32 stack_offset = 1; // Stack offset for "push" and "pop", 1 is minimam, from the last line decremental order.
 	String src_str = null;
@@ -117,7 +136,7 @@ void _user_start()
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
 	_uarttx( str_aloha, print32_strlen( str_aloha ) );
 
-	_uarttx( "01: \0", 4 );
+	_uarttx( "00: \0", 4 );
 
 	flag_execute = false;
 	
@@ -127,11 +146,8 @@ void _user_start()
 				switch ( pipe_type ) {
 					case search_command:
 
-						/* Search and Pass Tabs Before Command */
-						temp_str = UART32_UARTINT_HEAP;
-						while ( print32_strsearch( temp_str, 1, "\t\0", 1 ) != -1 ) {
-							temp_str++;
-						}
+						/* Pass Tabs and Label*/
+						temp_str = pass_tab_label( UART32_UARTINT_HEAP );
 
 						/* Numeration Process */
 
@@ -368,42 +384,66 @@ void _user_start()
 							length_arg = 0;
 							pipe_type = go_nextline;
 						}
-						uint32 offset = 0;
-						uint32 length_temp;
-
-						for ( uint32 i = 0; i < length_arg; i++ ) {
-							var_temp.u32 = print32_charindex( temp_str + offset, 0x25 ); // Ascii Code of %
-							var_temp2.u32 = print32_charindex( temp_str + offset, 0x5B ); // Ascii Code of [ (Square Bracket Left)
-							/* Subtract One from Number Because of Converting to Internal Number */
-							if ( var_temp.u32 == -1 && var_temp2.u32 == -1 ) {
-								/* Both Are Nothing */
-								break;
-							} else if ( var_temp2.u32 == -1 || var_temp.u32 < var_temp2.u32 ) {
-								/* Direct Argument Indicated by "%N" */
-								offset += var_temp.u32;
-								offset++;
-								length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
-								var_temp.u32 = deci32_string_to_int32( temp_str + offset, length_temp );
-								_store_32( array_argpointer + 4 * i,  var_temp.u32 - 1 );
-							} else if ( var_temp.u32 == -1 || var_temp.u32 > var_temp2.u32 ) {
-								/* Indirect Argument (Pointer) Indicated by "[N" */
-								offset += var_temp2.u32;
-								offset++;
-								length_temp = print32_charindex( temp_str + offset, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str + offset ); // Ascii Code of CR, for Last Variable
-								var_temp2.u32 = deci32_string_to_int32( temp_str + offset, length_temp );
-								if ( _uartsetheap( var_temp2.u32 - 1 ) ) _uartsetheap( 0 );
-								temp_str2 = UART32_UARTINT_HEAP;
-								while ( print32_strsearch( temp_str2, 1, "\t\0", 1 ) != -1 ) {
-									temp_str2++;
-								}
-								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
-								_store_32( array_argpointer + 4 * i,  var_temp2.u32 - 1 );
-							}
-						}
 
 						current_line = UART32_UARTMALLOC_NUMBER;
+
+						for ( uint32 i = 0; i < length_arg; i++ ) {
+							length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
+							if ( length_temp == -1 ) break;
+							temp_str += length_temp;
+							temp_str++; // Next of Space
+							while ( print32_charsearch( temp_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space
+								temp_str++;
+							}
+							if ( print32_charsearch( temp_str, 1, 0x2E ) != -1 ) { // Ascii Code of Period
+								/* Label Argument Indicated by ".<NAME>" */
+								temp_str++; // Next of Character
+								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								var_temp.u32 = 0;
+								for ( uint32 j = 0; j < label_list.length; j++ ) {
+									if ( print32_strsearch( (String)label_list.name + 8 * j, 8, temp_str, length_temp ) != -1 ) {
+										var_temp.u32 = _load_32( label_list.number + 4 * j );
+									}
+								}
+								_store_32( array_argpointer + 4 * i,  var_temp.u32 );
+							} else if ( print32_charsearch( temp_str, 1, 0x3A ) != -1 ) { // Ascii Code of Colon
+								/* Indiret Label Argument Indicated by ":<NAME>" */
+								temp_str++; // Next of Character
+								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								var_temp.u32 = 0;
+								for ( uint32 j = 0; j < label_list.length; j++ ) {
+									if ( print32_strsearch( (String)label_list.name + 8 * j, 8, temp_str, length_temp ) != -1 ) {
+										var_temp.u32 = _load_32( label_list.number + 4 * j );
+									}
+								}
+								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( 0 );
+								/* Pass Tabs and Label*/
+								temp_str2 = pass_tab_label( UART32_UARTINT_HEAP );
+								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
+								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
+							} else if ( print32_charsearch( temp_str, 1, 0x25 ) != -1 ) { // Ascii Code of %
+								/* Direct Argument Indicated by "%N" */
+								temp_str++; // Next of Character
+								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								var_temp.u32 = deci32_string_to_int32( temp_str, length_temp );
+								_store_32( array_argpointer + 4 * i,  var_temp.u32 );
+							} else if ( print32_charsearch( temp_str, 1, 0x5B ) != -1 ) { // Ascii Code of [ (Square Bracket Left)
+								/* Indirect Argument (Pointer) Indicated by "[N" */
+								temp_str++; // Next of Character
+								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								var_temp.u32 = deci32_string_to_int32( temp_str, length_temp );
+								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( 0 );
+								/* Pass Tabs and Label*/
+								temp_str2 = pass_tab_label( UART32_UARTINT_HEAP );
+								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
+print32_debug( var_temp2.u32, 300, 300  ); 
+								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
+							}
+						}
 
 						break;
 
@@ -411,12 +451,8 @@ void _user_start()
 
 						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( 0 );
 
-						/* Search and Pass Tabs Before Command */
-						temp_str = UART32_UARTINT_HEAP;
-						while ( print32_strsearch( temp_str, 1, "\t\0", 1 ) != -1 ) {
-							temp_str++;
-						}
-
+						/* Pass Tabs and Label*/
+						temp_str = pass_tab_label( UART32_UARTINT_HEAP );
 						if ( command_type >= fadd ) { // Type of Single Precision Float
 							var_temp.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
 							if ( var_temp.s32 == -1 ) {
@@ -571,7 +607,8 @@ void _user_start()
 								break;
 							case print:
 								_uartsetheap( _load_32( array_argpointer ) );
-								temp_str = UART32_UARTINT_HEAP;
+								/* Pass Tabs and Label*/
+								temp_str = pass_tab_label( UART32_UARTINT_HEAP );
 								uint32 temp_str_index;
 								while ( print32_strlen( temp_str ) ) {
 									if ( print32_strindex( temp_str, "\\n\0" ) != -1 ) {
@@ -686,9 +723,12 @@ void _user_start()
 						pipe_type = go_nextline;
 						if ( str_direction == null ) break;
 						_uartsetheap( _load_32( array_argpointer ) );
-						var_temp.u32 = print32_strlen( str_direction );
-						if ( var_temp.u32 > UART32_UARTMALLOC_MAXROW ) var_temp.u32 = UART32_UARTMALLOC_MAXROW; // Limitatin for Safety
-						heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)str_direction, 0, var_temp.u32 + 1 ); // Add Null Character
+						/* Pass Tabs and Label*/
+						temp_str = pass_tab_label( UART32_UARTINT_HEAP );
+						var_temp.u32 = temp_str - UART32_UARTINT_HEAP;
+						var_temp2.u32 = print32_strlen( str_direction );
+						if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW; // Limitatin for Safety
+						heap32_mcopy( (obj)UART32_UARTINT_HEAP, var_temp.u32, (obj)str_direction, 0, var_temp2.u32 + 1 ); // Add Null Character
 						str_direction = (String)heap32_mfree( (obj)str_direction );
 
 						break;
@@ -708,7 +748,7 @@ void _user_start()
 						/* Print Commands Untill Line with Null Character */
 						for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 							_uartsetheap( i );
-							str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER + 1, 2, 0, 0 ); // Min. 2 Digit, Unsigned, Add One for External Interface
+							str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 							_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 							_uarttx( ": \0", 2 );
 							heap32_mfree( (obj)str_process_counter );
@@ -731,16 +771,41 @@ void _user_start()
 				}
 			} else {
 				_uarttx( "\r\n\0", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
-				if ( print32_strindex( UART32_UARTINT_HEAP, "run\0" ) != -1 ) {
+				if ( print32_strsearch( UART32_UARTINT_HEAP, 3, "run\0", 3 ) != -1 ) {
 					/* If You Command "run", It Starts Execution */
 					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+
+					/* Labels Enumuration */
+					for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+						_uartsetheap( i );
+						temp_str = UART32_UARTINT_HEAP;
+						/* Pass Tabs */
+						while ( print32_charsearch( temp_str, 1, 0x09 ) != -1 ) { // Ascii Code of Tab
+							temp_str++;
+						}
+						var_temp.u32 = print32_charsearch( temp_str, 1, 0x2E ); // Ascii Code of Period
+						if ( var_temp.u32 != -1 ) {
+							var_temp2.u32 = print32_charsearch( temp_str, 1, 0x20 ); // Ascii Code of Space
+							var_temp2.u32 = var_temp2.u32 - 1;
+							/* Maximum Length of Name is 8 */
+							if ( var_temp2.u32 > 8 ) var_temp2.u32 = 8;
+							/* Store Name of Label */
+							heap32_mcopy( label_list.name + 8 * label_list.length, 0, (obj)temp_str, 1, var_temp2.u32 ); // Add Null Character
+							/* Store Line Number of Label */
+							_store_32(  label_list.number + 4 * label_list.length, i );
+							label_list.length++;
+							/* Maximum Length of Label List is 16 */
+							if ( label_list.length > 16 ) label_list.length = 16;
+						}
+					}
+
 					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
 					flag_execute = true;
 					pipe_type = search_command;
 					_uartsetheap( 0 );
 				} else {
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( 0 );
-					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER + 1, 2, 0, 0 ); // Min. 2 Digit, Unsigned, Add One for External Interface
+					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
 					_uarttx( ": \0", 2 );
 					heap32_mfree( (obj)str_process_counter );
@@ -752,3 +817,22 @@ void _user_start()
 		}
 	}
 }
+
+
+String pass_tab_label( String target_str ) {
+
+	/* Pass Tabs  */
+	while ( print32_charsearch( target_str, 1, 0x09 ) != -1 ) { // Ascii Code of Tab
+		target_str++;
+	}
+	/* Pass Label Itself */
+	if ( print32_charsearch( target_str, 1, 0x2E ) != -1 ) { // Period
+		uint32 length_temp = print32_charindex( target_str, 0x20 ); // Ascii Code of Space
+		if ( length_temp != -1 ) {
+			target_str += length_temp;
+			target_str++; // Next of Space
+		}
+	}
+	return target_str;
+}
+
