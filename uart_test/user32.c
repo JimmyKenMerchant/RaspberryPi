@@ -10,7 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 
-String pass_tab_label( String target_str ); 
+String pass_space_label( String target_str ); 
 
 extern String UART32_UARTINT_HEAP;
 extern uint32 UART32_UARTINT_BUSY_ADDR;
@@ -146,14 +146,23 @@ void _user_start()
 				switch ( pipe_type ) {
 					case search_command:
 
-						/* Pass Tabs and Label*/
-						temp_str = pass_tab_label( UART32_UARTINT_HEAP );
+						/*  Pass Spaces */
+						temp_str = pass_space_label( UART32_UARTINT_HEAP );
+						/* Pass Spaces  */
+						while ( print32_charsearch( temp_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space 
+						temp_str++;
+						}
 
 						/* Numeration Process */
 
 						/* Select Command Type */
 						if ( print32_strsearch( temp_str, 1, "*\0", 1 ) != -1 ) {
 							/* Comment Will Be Immdiately Skipped */
+							command_type = null;
+							length_arg = 0;
+							pipe_type = go_nextline;
+						} else if ( print32_strsearch( temp_str, 1, ".\0", 1 ) != -1 ) {
+							/* Skip If Label */
 							command_type = null;
 							length_arg = 0;
 							pipe_type = go_nextline;
@@ -399,7 +408,7 @@ void _user_start()
 								/* Label Argument Indicated by ".<NAME>" */
 								temp_str++; // Next of Character
 								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of Null, for Last Variable
 								var_temp.u32 = 0;
 								for ( uint32 j = 0; j < label_list.length; j++ ) {
 									if ( print32_strsearch( (String)label_list.name + 8 * j, 8, temp_str, length_temp ) != -1 ) {
@@ -411,7 +420,7 @@ void _user_start()
 								/* Indiret Label Argument Indicated by ":<NAME>" */
 								temp_str++; // Next of Character
 								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of Null, for Last Variable
 								var_temp.u32 = 0;
 								for ( uint32 j = 0; j < label_list.length; j++ ) {
 									if ( print32_strsearch( (String)label_list.name + 8 * j, 8, temp_str, length_temp ) != -1 ) {
@@ -419,26 +428,26 @@ void _user_start()
 									}
 								}
 								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( 0 );
-								/* Pass Tabs and Label*/
-								temp_str2 = pass_tab_label( UART32_UARTINT_HEAP );
+								/*  Pass Spaces and Label*/
+								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
 								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
 							} else if ( print32_charsearch( temp_str, 1, 0x25 ) != -1 ) { // Ascii Code of %
 								/* Direct Argument Indicated by "%N" */
 								temp_str++; // Next of Character
 								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of Null, for Last Variable
 								var_temp.u32 = deci32_string_to_int32( temp_str, length_temp );
 								_store_32( array_argpointer + 4 * i,  var_temp.u32 );
 							} else if ( print32_charsearch( temp_str, 1, 0x5B ) != -1 ) { // Ascii Code of [ (Square Bracket Left)
 								/* Indirect Argument (Pointer) Indicated by "[N" */
 								temp_str++; // Next of Character
 								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of CR, for Last Variable
+								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of Null, for Last Variable
 								var_temp.u32 = deci32_string_to_int32( temp_str, length_temp );
 								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( 0 );
-								/* Pass Tabs and Label*/
-								temp_str2 = pass_tab_label( UART32_UARTINT_HEAP );
+								/*  Pass Spaces and Label*/
+								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
 print32_debug( var_temp2.u32, 300, 300  ); 
 								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
@@ -451,8 +460,8 @@ print32_debug( var_temp2.u32, 300, 300  );
 
 						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( 0 );
 
-						/* Pass Tabs and Label*/
-						temp_str = pass_tab_label( UART32_UARTINT_HEAP );
+						/*  Pass Spaces and Label*/
+						temp_str = pass_space_label( UART32_UARTINT_HEAP );
 						if ( command_type >= fadd ) { // Type of Single Precision Float
 							var_temp.f32 = deci32_string_to_float32( temp_str, print32_strlen( temp_str ) );
 							if ( var_temp.s32 == -1 ) {
@@ -607,8 +616,8 @@ print32_debug( var_temp2.u32, 300, 300  );
 								break;
 							case print:
 								_uartsetheap( _load_32( array_argpointer ) );
-								/* Pass Tabs and Label*/
-								temp_str = pass_tab_label( UART32_UARTINT_HEAP );
+								/*  Pass Spaces and Label*/
+								temp_str = pass_space_label( UART32_UARTINT_HEAP );
 								uint32 temp_str_index;
 								while ( print32_strlen( temp_str ) ) {
 									if ( print32_strindex( temp_str, "\\n\0" ) != -1 ) {
@@ -723,11 +732,11 @@ print32_debug( var_temp2.u32, 300, 300  );
 						pipe_type = go_nextline;
 						if ( str_direction == null ) break;
 						_uartsetheap( _load_32( array_argpointer ) );
-						/* Pass Tabs and Label*/
-						temp_str = pass_tab_label( UART32_UARTINT_HEAP );
+						/* Pass Spaces and Label */
+						temp_str = pass_space_label( UART32_UARTINT_HEAP );
 						var_temp.u32 = temp_str - UART32_UARTINT_HEAP;
 						var_temp2.u32 = print32_strlen( str_direction );
-						if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW; // Limitatin for Safety
+						if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
 						heap32_mcopy( (obj)UART32_UARTINT_HEAP, var_temp.u32, (obj)str_direction, 0, var_temp2.u32 + 1 ); // Add Null Character
 						str_direction = (String)heap32_mfree( (obj)str_direction );
 
@@ -744,6 +753,10 @@ print32_debug( var_temp2.u32, 300, 300  );
 					case termination:
 						/* End Process */
 						_uarttx( "\r\n\0", 2 );
+
+						heap32_mfill( label_list.name, 0 );
+						heap32_mfill( label_list.number, 0 );
+						label_list.length = 0;
 
 						/* Print Commands Untill Line with Null Character */
 						for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -779,20 +792,21 @@ print32_debug( var_temp2.u32, 300, 300  );
 					for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 						_uartsetheap( i );
 						temp_str = UART32_UARTINT_HEAP;
-						/* Pass Tabs */
-						while ( print32_charsearch( temp_str, 1, 0x09 ) != -1 ) { // Ascii Code of Tab
+						/* Pass Spaces */
+						while ( print32_charsearch( temp_str, 1, 0x20 ) != -1 ) { // Ascii Code of Spaces
 							temp_str++;
 						}
 						var_temp.u32 = print32_charsearch( temp_str, 1, 0x2E ); // Ascii Code of Period
 						if ( var_temp.u32 != -1 ) {
-							var_temp2.u32 = print32_charsearch( temp_str, 1, 0x20 ); // Ascii Code of Space
-							var_temp2.u32 = var_temp2.u32 - 1;
+							var_temp.u32 = print32_charsearch( temp_str, 1, 0x20 ); // Ascii Code of Space
+							if ( var_temp.u32 == -1 ) var_temp.u32 = print32_strlen( temp_str );
+							var_temp.u32 = var_temp.u32 - 1;
 							/* Maximum Length of Name is 8 */
-							if ( var_temp2.u32 > 8 ) var_temp2.u32 = 8;
+							if ( var_temp.u32 > 8 ) var_temp.u32 = 8;
 							/* Store Name of Label */
-							heap32_mcopy( label_list.name + 8 * label_list.length, 0, (obj)temp_str, 1, var_temp2.u32 ); // Add Null Character
+							heap32_mcopy( label_list.name + 8 * label_list.length, 0, (obj)temp_str, 1, var_temp.u32 ); // Add Null Character
 							/* Store Line Number of Label */
-							_store_32(  label_list.number + 4 * label_list.length, i );
+							_store_32( label_list.number + 4 * label_list.length, i );
 							label_list.length++;
 							/* Maximum Length of Label List is 16 */
 							if ( label_list.length > 16 ) label_list.length = 16;
@@ -819,15 +833,16 @@ print32_debug( var_temp2.u32, 300, 300  );
 }
 
 
-String pass_tab_label( String target_str ) {
+String pass_space_label( String target_str ) {
 
-	/* Pass Tabs  */
-	while ( print32_charsearch( target_str, 1, 0x09 ) != -1 ) { // Ascii Code of Tab
+	/* Pass Spaces  */
+	while ( print32_charsearch( target_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space 
 		target_str++;
 	}
 	/* Pass Label Itself */
 	if ( print32_charsearch( target_str, 1, 0x2E ) != -1 ) { // Period
 		uint32 length_temp = print32_charindex( target_str, 0x20 ); // Ascii Code of Space
+		if ( length_temp == -1 ) length_temp = print32_strlen( target_str );
 		if ( length_temp != -1 ) {
 			target_str += length_temp;
 			target_str++; // Next of Space

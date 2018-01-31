@@ -514,8 +514,6 @@ uart32_uartint:
 				mov temp, r0
 				pop {r0-r3}
 
-				str temp, UART32_UARTINT_COUNT
-
 				uart32_uartint_escseq_up_jump_loop:
 					cmp temp, count
 					bge uart32_uartint_escseq_clear
@@ -545,7 +543,7 @@ uart32_uartint:
 
 			add count, count, #1
 			cmp count, max_size
-			bge uart32_uartint_escseq_right_jump @ If Exceeds Maximum Size of Heap, Stay Count
+			bge uart32_uartint_escseq_right_over @ If Exceeds Maximum Size of Heap, Stay Count
 
 			push {r0-r3}
 			mov r0, heap
@@ -555,7 +553,7 @@ uart32_uartint:
 			cmp count, temp
 			ble uart32_uartint_escseq_clear
 
-			uart32_uartint_escseq_right_jump:
+			uart32_uartint_escseq_right_over:
 
 				/* Count Overshoots Length of List */
 				sub count, count, #1
@@ -609,22 +607,35 @@ uart32_uartint:
 		cmp count, #0
 		bge uart32_uartint_backspace_jmp
 
-		/* Count Becomes Minus */
-
-		mov count, #0
-
-		/* Send Move Cursor Right Because Of Overshoot */
+		/* Send Move Cursor Right Because of Overshoot */
 		push {r0-r3}
 		ldr r0, uart32_uartint_esc_right
 		mov r1, #3
 		bl uart32_uarttx
 		pop {r0-r3}
 
+		b uart32_uartint_success
+
 		uart32_uartint_backspace_jmp:
 
-			mov temp, #0
-			strb temp, [heap, count]         @ Clear Previous Character
-			str count, UART32_UARTINT_COUNT
+			/* Get Length of Back Half to Be Concatenated */
+			push {r0-r3}
+			add r0, heap, count
+			add r0, r0, #1      @ Over Character to Be Deleted
+			bl print32_strlen
+			mov temp, r0
+			pop {r0-r3}
+			add temp, temp, #1  @ Add One For Null Character
+
+			push {r0-r3}
+			mov r0, heap
+			mov r1, count
+			mov r2, heap
+			add r3, count, #1   @ Over Character to Be Deleted
+			push {temp}
+			bl heap32_mcopy
+			add sp, sp, #4
+			pop {r0-r3}
 
 			/* Send Esc[K (Clear From Cursor Right) */
 			push {r0-r3}
@@ -633,7 +644,31 @@ uart32_uartint:
 			bl uart32_uarttx
 			pop {r0-r3}
 
-		b uart32_uartint_success
+			/* This Makes Move Cursor Right  */
+			push {r0-r3}
+			add r0, heap, count
+			mov r1, temp 
+			bl uart32_uarttx
+			pop {r0-r3}
+
+			/* Move Cursor Left Because of Renewed Back Half */
+			sub temp, temp, #1  @ Subtract One For Null Character
+			uart32_uartint_backspace_jmp_loop:
+				cmp temp, #0
+				ble uart32_uartint_backspace_jmp_common
+
+				push {r0-r3}
+				ldr r0, uart32_uartint_esc_left
+				mov r1, #3
+				bl uart32_uarttx
+				pop {r0-r3}
+
+				sub temp, temp, #1
+				b uart32_uartint_backspace_jmp_loop
+
+			uart32_uartint_backspace_jmp_common:
+				str count, UART32_UARTINT_COUNT
+				b uart32_uartint_success
 
 	uart32_uartint_carriagereturn:
 

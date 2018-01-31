@@ -341,7 +341,7 @@ heap32_mcount:
  * r1: Offset of Bytes to Be Copied (Destination)
  * r2: Pointer of Start Address of Memory Space to Be Copied (Source)
  * r3: Offset of Bytes to Be Copied (Source)
- * r4: Size of Bytes to Be Copied (Source)
+ * r4: Length of Bytes to Be Copied (Source)
  *
  * Return: r0 (Pointer of Start Address of Memory Space to Be Destination, If No Enough Space to Copy, Sequence Stops Halfway)
  * Error(0): Wrong Heap for Destination or Source

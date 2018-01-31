@@ -685,7 +685,7 @@ print32_strcat:
 .globl print32_strlist
 print32_strlist:
 	/* Auto (Local) Variables, but just Aliases */
-	str_origin         .req r0
+	str_origin        .req r0
 	length_str_origin .req r1
 	separator         .req r2
 	temp              .req r3
@@ -758,11 +758,14 @@ print32_strlist:
 		pop {r0-r3}
 
 		push {r0-r3}
-		mov r1, str_origin                    @ Pointer of Start Address of Memory Space to Be Copied (Source)
+		mov r2, str_origin                    @ Pointer of Start Address of Memory Space to Be Copied (Source)
 		mov r0, subheap                       @ Pointer of Start Address of Memory Space to Be Destination
-		mov r2, offset_str_origin             @ Offset of Bytes to Be Copied (Source)
-		mov r3, length_str_sub                @ Offset of Bytes to Be Copied (Source)
+		mov r1, #0                            @ Offset of Bytes to Be Copied
+		mov r3, length_str_sub                @ Length of Bytes to Be Copied (Source)
+		push {r3}
+		mov r3, offset_str_origin             @ Offset of Bytes to Be Copied (Source)
 		bl heap32_mcopy
+		add sp, sp, #4
 		mov subheap, r0
 		pop {r0-r3}
 
