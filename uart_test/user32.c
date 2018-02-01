@@ -69,6 +69,13 @@ typedef enum _command_list {
 	clear // Clear All in Every Line
 } command_list;
 
+/**
+ * Four Types of Arguments
+ * 1. Label, indicated by ".", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
+ * 1. Indirect Label, indicated by ":", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
+ * 3. Line Number, indicated by "%".
+ * 4. Indirect Number, indicated by "[".
+ */
 
 typedef enum _pipe_list {
 	search_command,
@@ -146,12 +153,8 @@ void _user_start()
 				switch ( pipe_type ) {
 					case search_command:
 
-						/*  Pass Spaces */
+						/*  Pass Spaces and Label*/
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
-						/* Pass Spaces  */
-						while ( print32_charsearch( temp_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space 
-						temp_str++;
-						}
 
 						/* Numeration Process */
 
@@ -161,13 +164,10 @@ void _user_start()
 							command_type = null;
 							length_arg = 0;
 							pipe_type = go_nextline;
-						} else if ( print32_strsearch( temp_str, 1, ".\0", 1 ) != -1 ) {
-							/* Skip If Label */
-							command_type = null;
-							length_arg = 0;
 							pipe_type = go_nextline;
 						} else if ( print32_strlen( temp_str ) == 0 ) {
 							/* Stop Execution If No Content in Line */
+							/* Labels with No Initialization Becomes This Type */
 							command_type = null;
 							length_arg = 0;
 							pipe_type = termination;
@@ -735,6 +735,7 @@ print32_debug( var_temp2.u32, 300, 300  );
 						/* Pass Spaces and Label */
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
 						var_temp.u32 = temp_str - UART32_UARTINT_HEAP;
+print32_debug( var_temp.u32, 500, 500 );
 						var_temp2.u32 = print32_strlen( str_direction );
 						if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
 						heap32_mcopy( (obj)UART32_UARTINT_HEAP, var_temp.u32, (obj)str_direction, 0, var_temp2.u32 + 1 ); // Add Null Character
@@ -798,13 +799,14 @@ print32_debug( var_temp2.u32, 300, 300  );
 						}
 						var_temp.u32 = print32_charsearch( temp_str, 1, 0x2E ); // Ascii Code of Period
 						if ( var_temp.u32 != -1 ) {
-							var_temp.u32 = print32_charsearch( temp_str, 1, 0x20 ); // Ascii Code of Space
+							var_temp.u32 = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 							if ( var_temp.u32 == -1 ) var_temp.u32 = print32_strlen( temp_str );
 							var_temp.u32 = var_temp.u32 - 1;
 							/* Maximum Length of Name is 8 */
 							if ( var_temp.u32 > 8 ) var_temp.u32 = 8;
 							/* Store Name of Label */
-							heap32_mcopy( label_list.name + 8 * label_list.length, 0, (obj)temp_str, 1, var_temp.u32 ); // Add Null Character
+							/* heap32_mcopy can't slide the address of Heap because of its system for verifying overflow */
+							heap32_mcopy( label_list.name, 8 * label_list.length, (obj)temp_str, 1, var_temp.u32 ); // Add Null Character
 							/* Store Line Number of Label */
 							_store_32( label_list.number + 4 * label_list.length, i );
 							label_list.length++;
@@ -812,6 +814,9 @@ print32_debug( var_temp2.u32, 300, 300  );
 							if ( label_list.length > 16 ) label_list.length = 16;
 						}
 					}
+
+print32_debug_hexa( label_list.name, 400, 400, 64 );
+print32_debug_hexa( label_list.number, 400, 424, 64 );
 
 					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
 					flag_execute = true;
@@ -845,7 +850,10 @@ String pass_space_label( String target_str ) {
 		if ( length_temp == -1 ) length_temp = print32_strlen( target_str );
 		if ( length_temp != -1 ) {
 			target_str += length_temp;
-			target_str++; // Next of Space
+			/* Pass Spaces After Label */
+			while ( print32_charsearch( target_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space 
+				target_str++;
+			}
 		}
 	}
 	return target_str;
