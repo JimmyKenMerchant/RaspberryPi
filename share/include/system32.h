@@ -593,6 +593,20 @@ extern uint32 print32_charcount
 
 
 /**
+ * Check Whether One Pair of Strings Are Same
+ *
+ * Return: 1 is Match, 0 is Not Match
+ */
+extern uint32 print32_strmatch
+(
+	String string,
+	uint32 length_string,
+	String string_key,
+	uint32 length_string_key
+);
+
+
+/**
  * Concatenation of Two Strings
  * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
  * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.

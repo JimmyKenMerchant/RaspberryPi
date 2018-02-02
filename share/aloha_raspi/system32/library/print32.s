@@ -570,6 +570,67 @@ print32_strcount:
 
 
 /**
+ * function print32_strmatch
+ * Check Whether One Pair of Strings Are Same
+ *
+ * Parameters
+ * r0: Pointer of Array of String to Be Subjected
+ * r1: Length of String to Be Subjected
+ * r2: Pointer of Array of String to Be Searched (Key)
+ * r3: Length 0f String to Be Searched (Key)
+ *
+ * Return: r0 (1 is Match, 0 is Not Match)
+ */
+.globl print32_strmatch
+print32_strmatch:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point1      .req r0
+	string_length1     .req r1
+	string_point2      .req r2
+	string_length2     .req r3
+	byte1              .req r4
+	byte2              .req r5
+
+	push {r4-r5,lr}
+
+	cmp string_length1, string_length2
+	bne print32_strmatch_notmatch
+
+	add string_length1, string_point1, string_length1
+	add string_length2, string_point2, string_length2
+
+	print32_strmatch_loop:
+
+		ldrb byte1, [string_point1]
+		ldrb byte2, [string_point1]
+		cmp byte1, byte2
+		bne print32_strmatch_notmatch
+
+		add string_point1, string_point1, #1
+		add string_point1, string_point1, #2
+
+		cmp string_point1, string_length1
+		blt print32_strmatch_loop
+
+	print32_strmatch_match:
+		mov r0, #1
+		b print32_strmatch_common
+
+	print32_strmatch_notmatch:
+		mov r0, #0
+
+	print32_strmatch_common:
+		pop {r4-r5,pc}
+
+.unreq string_point1
+.unreq string_length1
+.unreq string_point2
+.unreq string_length2
+.unreq byte1
+.unreq byte2
+
+
+/**
  * function print32_strcat
  * Concatenation of Two Strings
  * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
