@@ -602,12 +602,12 @@ print32_strmatch:
 	print32_strmatch_loop:
 
 		ldrb byte1, [string_point1]
-		ldrb byte2, [string_point1]
+		ldrb byte2, [string_point2]
 		cmp byte1, byte2
 		bne print32_strmatch_notmatch
 
 		add string_point1, string_point1, #1
-		add string_point1, string_point1, #2
+		add string_point2, string_point2, #1
 
 		cmp string_point1, string_length1
 		blt print32_strmatch_loop
