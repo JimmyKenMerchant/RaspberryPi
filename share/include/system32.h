@@ -1202,6 +1202,19 @@ extern String deci32_int32_to_string_hexa
 
 
 /**
+ * Make String of Integer Value by Binary System (Base 2)
+ *
+ * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
+ */
+extern String deci32_int32_to_string_bin
+(
+	uint32 number, 
+	uint32 min_length,
+	bool base_mark
+);
+
+
+/**
  * Make 32-bit Unsigned Integer From String on Hexadecimal System
  * Caution! The Range of Decimal Number Is 0x0 through 0xFFFFFFFF
  * Max. Valid Digits Are 8, Otherwise, You'll Inaccurate Return.

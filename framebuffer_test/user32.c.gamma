@@ -18,7 +18,7 @@ void _user_start()
 	String newline = "\n\0";
 	String string_num = "9999999999999999\0";
 	String string_num0 = "2222222222222222\0";
-	String string_num1 = "4,294,967,299\0";
+	String string_num1 = "0b1110101";
 	String string_num2 = "-1234.567890\0";
 	String string_num3 = "-222.2222E-3\0"; // float32's Expected Value is Untill 7th Decimal Digit on 10 Base (IEEE754)
 	uint32 color = COLOR32_WHITE;
@@ -78,7 +78,7 @@ void _user_start()
 	print32_set_caret( print32_number( (uint32)number6, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
-	String number5_str = deci32_int32_to_string_deci( number5, 0, 1 );
+	String number5_str = deci32_int32_to_string_bin( number5, 1, 1 );
 	String number6_str = deci32_int32_to_string_deci( number6, 0, 1 );
 
 	print32_set_caret( print32_string( number5_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( number5_str ), 8, 12, FONT_MONO_12PX_ASCII ) );
@@ -114,7 +114,7 @@ void _user_start()
 
 	heap32_mfree( (obj)number_log_str );
 
-	String answer_str = bcd32_ladd( string_num, print32_strlen( string_num ), string_num0, print32_strlen( string_num0 ) );
+	String answer_str = bcd32_badd( string_num, print32_strlen( string_num ), string_num0, print32_strlen( string_num0 ) );
 	print32_set_caret( print32_string( answer_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( answer_str ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	heap32_mfree( (obj)answer_str );

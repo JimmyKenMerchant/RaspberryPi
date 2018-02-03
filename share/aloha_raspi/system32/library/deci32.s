@@ -602,7 +602,6 @@ deci32_int32_to_string_deci:
 
 	deci32_int32_to_string_deci_common:
 		pop {r4-r11,pc}
-		mov pc, lr
 
 .unreq integer
 .unreq min_length
@@ -735,7 +734,7 @@ deci32_int32_to_string_hexa:
 
 		deci32_int32_to_string_hexa_loop_common:
 			mov mask, #0
-			strb mask, [heap]
+			strb mask, [heap]                           @ Null Character
 			b deci32_int32_to_string_hexa_success
 
 	deci32_int32_to_string_hexa_error:
@@ -747,11 +746,119 @@ deci32_int32_to_string_hexa:
 
 	deci32_int32_to_string_hexa_common:
 		pop {r4-r9,pc}
-		mov pc, lr
 
 .unreq integer
 .unreq min_length
 .unreq signed
+.unreq base_mark
+.unreq temp
+.unreq mask
+.unreq heap
+.unreq heap_origin
+.unreq heap_size
+.unreq count
+
+
+/**
+ * function deci32_int32_to_string_bin
+ * Make String of Integer Value by Binary System (Base 2)
+ *
+ * Parameters
+ * r0: Integer Number
+ * r1: Minimum Length of Digits from Right Side, Up to 31 Digits
+ * r2: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0b`)
+ *
+ * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
+ */
+.globl deci32_int32_to_string_bin
+deci32_int32_to_string_bin:
+	/* Auto (Local) Variables, but just Aliases */
+	integer     .req r0
+	min_length  .req r1
+	base_mark   .req r2
+	temp        .req r3
+	mask        .req r4
+	heap        .req r5
+	heap_origin .req r6
+	heap_size   .req r7
+	count       .req r8
+
+	push {r4-r8,lr}
+
+	cmp min_length, #31
+	movgt min_length, #31
+
+	clz count, integer
+
+	mov temp, #32
+	sub count, temp, count
+	cmp count, min_length
+	movlt count, min_length
+
+	mov heap_size, #1                               @ 1 Size is 4 bytes in Heap
+	mov temp, count
+	add temp, temp, #1                              @ Add One for Null Character
+	cmp base_mark, #1
+	addeq temp, temp, #2                            @ Add Two for Bases Mark, `0x`
+
+	deci32_int32_to_string_bin_countsize:
+		subs temp, temp, #4
+		addgt heap_size, #1
+		bgt deci32_int32_to_string_bin_countsize
+
+	push {r0-r3}
+	mov r0, heap_size
+	bl heap32_malloc
+	mov heap_origin, r0
+	pop {r0-r3}
+
+	cmp heap_origin, #0
+	beq deci32_int32_to_string_bin_error
+	mov heap, heap_origin
+
+	/* Base Mark */
+	cmp base_mark, #1
+	bne deci32_int32_to_string_bin_loop
+	mov mask, #0x30
+	strb mask, [heap]                       @ Store `0`
+	add heap, heap, #1
+	mov mask, #0x62
+	strb mask, [heap]                       @ Store `b`
+	add heap, heap, #1
+	
+	deci32_int32_to_string_bin_loop:
+		sub count, count, #1
+		cmp count, #0
+		blt deci32_int32_to_string_bin_loop_common
+		mov mask, #0x1
+		lsl mask, count
+		and mask, integer, mask
+		lsr mask, count
+		cmp mask, #1
+		moveq mask, #0x31
+		movne mask, #0x30
+		strb mask, [heap]
+		add heap, heap, #1
+
+		b deci32_int32_to_string_bin_loop
+
+		deci32_int32_to_string_bin_loop_common:
+			mov mask, #0
+			strb mask, [heap]                   @ Null Character
+			b deci32_int32_to_string_bin_success
+
+	deci32_int32_to_string_bin_error:
+		mov r0, #0
+		b deci32_int32_to_string_bin_common
+
+	deci32_int32_to_string_bin_success:
+		mov r0, heap_origin
+
+	deci32_int32_to_string_bin_common:
+		pop {r4-r8,pc}
+
+.unreq integer
+.unreq min_length
 .unreq base_mark
 .unreq temp
 .unreq mask
@@ -1628,8 +1735,8 @@ deci32_hexa_to_deci:
 	shift       .req r6
 	bitmask     .req r7
 
-	push {r4-r7}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+	push {r4-r7,lr}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                       @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov dup_hexa, hexa
 	
@@ -1686,9 +1793,7 @@ deci32_hexa_to_deci:
 			cmp bitmask, #0
 			ble deci32_hexa_to_deci_loop_common
 
-			push {lr}
 			bl bcd32_deci_add64
-			pop {lr}
 
 			sub bitmask, bitmask, #1
 
@@ -1701,10 +1806,8 @@ deci32_hexa_to_deci:
 			blo deci32_hexa_to_deci_loop
 
 	deci32_hexa_to_deci_common:
-		pop {r4-r7}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-
-		mov pc, lr
+		pop {r4-r7,pc}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			               @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 /* Variables */
 .balign 4
@@ -1754,8 +1857,8 @@ deci32_deci_to_hexa:
 	deci_lower_dup .req r7
 	deci_upper_dup .req r8
 
-	push {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                 @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+	push {r4-r8,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	mov hexa, #0
 
@@ -1821,11 +1924,11 @@ deci32_deci_to_hexa:
 
 		deci32_deci_to_hexa_loop_loop:
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			bl bcd32_deci_sub64
 			mov deci_lower_dup, r0
 			mov deci_upper_dup, r1
-			pop {r0-r3,lr}
+			pop {r0-r3}
 			bcs deci32_deci_to_hexa_loop_common             @ If Carry Set/ Unsigned Higher or Same (hs)
 
 			mov deci_lower, deci_lower_dup
@@ -1842,10 +1945,8 @@ deci32_deci_to_hexa:
 
 	deci32_deci_to_hexa_common:
 		mov r0, hexa
-		pop {r4-r8} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
-
-		mov pc, lr
+		pop {r4-r8,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                       @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 /* Variables */
 .balign 4
