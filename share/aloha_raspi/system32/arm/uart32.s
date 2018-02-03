@@ -161,6 +161,9 @@ uart32_uarttx:
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
 	add addr_uart, addr_uart, #equ32_uart0_base_lower
 
+	cmp size_tx, #0
+	ble uart32_uarttx_success
+
 	uart32_uarttx_fifo:
 		ldr temp, [addr_uart, #equ32_uart0_fr]
 

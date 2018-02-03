@@ -31,6 +31,18 @@
 #define float32 float
 #define float64 double
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef exit_success
+#define exit_success 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+#ifndef exit_failure
+#define exit_failure 1
+#endif
 #ifndef bool
 #define bool unsigned char
 #endif
@@ -39,6 +51,12 @@
 #endif
 #ifndef false
 #define false 0
+#endif
+#ifndef True
+#define True 1
+#endif
+#ifndef False
+#define False 0
 #endif
 #ifndef TRUE
 #define TRUE 1

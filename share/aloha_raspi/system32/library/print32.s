@@ -345,6 +345,7 @@ print32_charindex:
 /**
  * function print32_charsearch
  * Search Byte Character in String within Range
+ * This function stops at the null character of the string.
  *
  * Parameters
  * r0: Pointer of Array of String
@@ -372,6 +373,9 @@ print32_charsearch:
 		bhs print32_charsearch_common
 
 		ldrb char_string, [string_point, increment]
+		cmp char_string, #0                         @ Null Character
+		mvneq increment, #0
+		beq print32_charsearch_common
 		cmp char_string, char_search
 		beq print32_charsearch_common
 
@@ -393,6 +397,7 @@ print32_charsearch:
 /**
  * function print32_strsearch
  * Search Second Key String in First String within Range
+ * This function stops at the null character of the string.
  *
  * Parameters
  * r0: Pointer of Array of String to Be Subjected
@@ -423,7 +428,7 @@ print32_strsearch:
 
 	print32_strsearch_loop:
 		cmp string_point2, string_size2
-		subhs increment, increment, string_length2     @ string_length2 May Have Zero
+		subhs increment, increment, string_length2        @ string_length2 May Have Zero
 		bhs print32_strsearch_common
 
 		cmp increment, string_length1
@@ -431,13 +436,16 @@ print32_strsearch:
 		bhs print32_strsearch_common
 
 		ldrb char_search, [string_point2]
+		cmp char_search, #0                               @ Null Character
+		mvneq increment, #0
+		beq print32_strsearch_common
 
 		push {r0-r3}
 		add r0, string_point1, increment
 		mov r1, search_length
 		mov r2, char_search
 		bl print32_charsearch
-		cmp r0, #-1                                    @ 0xFFFFFFF
+		cmp r0, #-1                                       @ 0xFFFFFFF
 		addne increment, increment, r0
 		pop {r0-r3}
 		mvneq increment, #0
@@ -572,6 +580,7 @@ print32_strcount:
 /**
  * function print32_strmatch
  * Check Whether One Pair of Strings Are Same
+ * This function stops at the null character of the string.
  *
  * Parameters
  * r0: Pointer of Array of String to Be Subjected
@@ -602,7 +611,13 @@ print32_strmatch:
 	print32_strmatch_loop:
 
 		ldrb byte1, [string_point1]
+		cmp byte1, #0
+		beq print32_strmatch_notmatch
+
 		ldrb byte2, [string_point2]
+		cmp byte2, #0
+		beq print32_strmatch_notmatch
+
 		cmp byte1, byte2
 		bne print32_strmatch_notmatch
 
@@ -628,6 +643,55 @@ print32_strmatch:
 .unreq string_length2
 .unreq byte1
 .unreq byte2
+
+
+/**
+ * function print32_charreplace
+ * Replace Character
+ * This function stops at the null character of the string.
+ *
+ * Parameters
+ * r0: Pointer of Array of String to Be Subjected
+ * r1: Index of Character to Be Replaced
+ * r2: Character to Be Substituted
+ *
+ * Return: r0 (1 is Match, 0 is Not Match)
+ */
+.globl print32_charreplace
+print32_charreplace:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point1      .req r0
+	string_index1      .req r1
+	character          .req r2
+	string_length1     .req r3
+
+	push {lr}
+
+	push {r0-r2}
+	bl print32_strlen
+	mov r3, r0
+	pop {r0-r2}
+
+	cmp string_index1, string_length1
+	bge print32_charreplace_error
+
+	strb character, [string_point1, string_index1]
+	b print32_charreplace_success
+
+	print32_charreplace_error:
+		mov r0, #1
+		b print32_charreplace_common
+
+	print32_charreplace_success:
+		mov r0, #0
+
+	print32_charreplace_common:
+		pop {pc}
+
+.unreq string_point1
+.unreq string_index1
+.unreq character
+.unreq string_length1
 
 
 /**
