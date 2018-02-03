@@ -1203,6 +1203,7 @@ extern String deci32_int32_to_string_hexa
 
 /**
  * Make String of Integer Value by Binary System (Base 2)
+ * This function uses defined bytes for true (1 on default) and false (0 on default).
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */

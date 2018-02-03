@@ -73,9 +73,9 @@ void _user_start()
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
 
 	obj string3_obj = deci32_string_to_intarray( string3, print32_strlen( string3 ), 0 );
-	String dup_string3 = deci32_intarray_to_string_deci( string3_obj, 0, 1, 1 );
+	//String dup_string3 = deci32_intarray_to_string_deci( string3_obj, 0, 1, 1 );
 	//String dup_string3 = deci32_intarray_to_string_hexa( string3_obj, 0, 1, 1, 1 );
-	//String dup_string3 = deci32_intarray_to_string_bin( string3_obj, 0, 1, 1 );
+	String dup_string3 = deci32_intarray_to_string_bin( string3_obj, 0, 1, 1 );
 
 	print32_set_caret( print32_string( dup_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
 	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );

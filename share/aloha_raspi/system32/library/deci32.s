@@ -762,6 +762,7 @@ deci32_int32_to_string_hexa:
 /**
  * function deci32_int32_to_string_bin
  * Make String of Integer Value by Binary System (Base 2)
+ * This function uses defined bytes for true (1 on default) and false (0 on default).
  *
  * Parameters
  * r0: Integer Number
@@ -835,8 +836,8 @@ deci32_int32_to_string_bin:
 		and mask, integer, mask
 		lsr mask, count
 		cmp mask, #1
-		moveq mask, #0x31
-		movne mask, #0x30
+		moveq mask, #equ32_deci32_int32_to_string_bin_true
+		movne mask, #equ32_deci32_int32_to_string_bin_false
 		strb mask, [heap]
 		add heap, heap, #1
 
