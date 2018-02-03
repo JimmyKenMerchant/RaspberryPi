@@ -1318,7 +1318,7 @@ extern uint32 deci32_deci_to_hexa
 /**
  * Make Array of Integers From String
  *
- * This function detects commas as separators between each Integers
+ *  This function detects defined separators (commas on default) between each Integers
  *
  * Return: Heap of Array, 0 as not succeeded
  */
@@ -1327,6 +1327,20 @@ extern obj deci32_string_to_intarray
 	String string,
 	uint32 length_string,
 	uint32 size_block // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+);
+
+
+/**
+ * Make String on Decimal System From Array of Integers
+ *
+ * Return: Heap of String, 0 as not succeeded
+ */
+extern String deci32_intarray_to_string_deci
+(
+	obj object_array,
+	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+	uint32 min_length,
+	bool bool_signed
 );
 
 
@@ -1346,23 +1360,23 @@ extern String deci32_intarray_to_string_hexa
 
 
 /**
- * Make String on Decimal System From Array of Integers
+ * Make String on Binary System From Array of Integers
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String deci32_intarray_to_string_deci
+extern String deci32_intarray_to_string_bin
 (
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
 	uint32 min_length,
-	bool bool_signed
+	bool base_mark
 );
 
 
 /**
  * Make Array of Single Precision Floats From String on Decimal System
  *
- * This function detects commas as separators between each floats
+ *  This function detects defined separators (commas on default) between each floats
  *
  * Return: Heap of Array, 0 as not succeeded
  */

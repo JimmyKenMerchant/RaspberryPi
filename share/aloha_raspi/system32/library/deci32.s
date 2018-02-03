@@ -1984,7 +1984,7 @@ deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
  * function deci32_string_to_intarray
  * Make Array of Integers From String
  *
- * This function detects commas as separators between each Integers
+ * This function detects defined separators (commas on default) between each Integers
  *
  * Parameters
  * r0: Heap of String
@@ -2008,10 +2008,10 @@ deci32_string_to_intarray:
 
 	push {r4-r8,lr}
 
-	/* Check Commas */
+	/* Check Separators */
 
 	push {r0-r3}
-	mov r2, #0x2C                     @ Ascii Code of Comma
+	mov r2, #equ32_deci32_separator
 	bl print32_charcount
 	mov length_arr, r0
 	pop {r0-r3}
@@ -2066,7 +2066,7 @@ deci32_string_to_intarray:
 		ble deci32_string_to_intarray_common
 
 		push {r0-r3}
-		mov r2, #0x2C                     @ Ascii Code of Comma
+		mov r2, #equ32_deci32_separator
 		bl print32_charsearch
 		mov length_substr, r0
 		pop {r0-r3}
@@ -2122,13 +2122,164 @@ deci32_string_to_intarray:
 
 
 /**
+ * function deci32_intarray_to_string_deci
+ * Make String on Decimal System From Array of Integers
+ *
+ * Parameters
+ * r0: Heap of Array
+ * r1: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
+ * r2: Minimum Length of Digits from Right Side, Up to 16 Digits
+ * r3: 0 unsigned, 1 signed
+ *
+ * Return: r0 (Heap of String, 0 as not succeeded)
+ */
+.globl deci32_intarray_to_string_deci
+deci32_intarray_to_string_deci:
+	/* Auto (Local) Variables, but just Aliases */
+	heap_arr        .req r0
+	size            .req r1
+	min_length      .req r2
+	signed          .req r3
+	align           .req r4
+	heap_arr_length .req r5
+	heap_str0       .req r6
+	heap_str1       .req r7
+	heap_str2       .req r8
+	heap_str3       .req r9
+	data            .req r10
+
+	push {r4-r10,lr}
+
+	/* Check Size */
+
+	ldr heap_arr_length, [heap_arr, #-4]
+
+	add heap_arr_length, heap_arr, heap_arr_length
+	sub heap_arr_length, heap_arr_length, #4
+
+	/* Convert Size to Bytes Alignment */
+	mov data, #1
+	lsl align, data, size
+
+	mov heap_str0, #0
+
+	deci32_intarray_to_string_deci_loop:
+		cmp heap_arr, heap_arr_length
+		bge deci32_intarray_to_string_deci_common
+
+		cmp size, #0
+		ldreqb data, [heap_arr]
+		cmp size, #1
+		ldreqh data, [heap_arr]
+		cmp size, #2
+		ldrge data, [heap_arr]
+
+		push {r0-r3}
+		mov r0, data
+		mov r1, min_length
+		mov r2, signed
+		bl deci32_int32_to_string_deci
+		mov heap_str1, r0
+		pop {r0-r3}
+
+		cmp heap_str1, #0
+		beq deci32_intarray_to_string_deci_common
+
+		add heap_arr, heap_arr, align
+		cmp heap_arr, heap_arr_length
+		bge deci32_intarray_to_string_deci_loop_common
+
+		push {r0-r3}
+		mov r0, #1
+		bl heap32_malloc
+		mov heap_str2, r0
+		pop {r0-r3}
+
+		cmp heap_str2, #0
+		beq deci32_intarray_to_string_deci_common
+
+		mov data, #equ32_deci32_separator
+		strb data, [heap_str2]
+
+		mov data, #0x00                          @ Ascii Code of Null
+		strb data, [heap_str2, #1]
+
+		push {r0-r3}
+		mov r0, heap_str1
+		mov r1, heap_str2
+		bl print32_strcat
+		mov heap_str3, r0
+		pop {r0-r3}
+
+		cmp heap_str3, #0
+		beq deci32_intarray_to_string_deci_common
+
+		push {r0-r3}
+		mov r0, heap_str1
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, heap_str2
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov heap_str1, heap_str3
+
+		deci32_intarray_to_string_deci_loop_common:
+
+			/* If Initial Part of Array */
+			cmp heap_str0, #0
+			moveq heap_str0, heap_str1
+			beq deci32_intarray_to_string_deci_loop
+
+			/* If Following Parts of Array */
+			push {r0-r3}
+			mov r0, heap_str0
+			mov r1, heap_str1
+			bl print32_strcat
+			mov heap_str2, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, heap_str0
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, heap_str1
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov heap_str0, heap_str2
+
+			b deci32_intarray_to_string_deci_loop
+
+	deci32_intarray_to_string_deci_common:
+		mov r0, heap_str0
+		pop {r4-r10,pc}
+
+.unreq heap_arr
+.unreq size
+.unreq min_length
+.unreq signed
+.unreq align
+.unreq heap_arr_length
+.unreq heap_str0
+.unreq heap_str1
+.unreq heap_str2
+.unreq heap_str3
+.unreq data
+
+
+/**
  * function deci32_intarray_to_string_hexa
  * Make String on Hexadecimal System From Array of Integers
  *
  * Parameters
  * r0: Heap of Array
  * r1: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
- * r2: Minimum Length of Digits from Left Side, Up to 8 Digits
+ * r2: Minimum Length of Digits from Right Side, Up to 8 Digits
  * r3: 0 unsigned, 1 signed
  * r4: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0x`)
  *
@@ -2205,7 +2356,7 @@ deci32_intarray_to_string_hexa:
 		cmp heap_str2, #0
 		beq deci32_intarray_to_string_hexa_common
 
-		mov data, #0x2C                          @ Ascii Code of Comma
+		mov data, #equ32_deci32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
@@ -2281,24 +2432,24 @@ deci32_intarray_to_string_hexa:
 
 
 /**
- * function deci32_intarray_to_string_deci
- * Make String on Decimal System From Array of Integers
+ * function deci32_intarray_to_string_bin
+ * Make String on Binary System From Array of Integers
  *
  * Parameters
  * r0: Heap of Array
  * r1: Indicaton for Size of Each Block on Array: 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
- * r2: Minimum Length of Digits from Left Side, Up to 16 Digits
- * r3: 0 unsigned, 1 signed
+ * r2: Minimum Length of Digits from Right Side, Up to 31 Digits
+ * r3: 0 Doesn't Show Bases Mark, 1 Shows Bases Mark(`0b`)
  *
  * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_intarray_to_string_deci
-deci32_intarray_to_string_deci:
+.globl deci32_intarray_to_string_bin
+deci32_intarray_to_string_bin:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_arr        .req r0
 	size            .req r1
 	min_length      .req r2
-	signed          .req r3
+	base_mark       .req r3
 	align           .req r4
 	heap_arr_length .req r5
 	heap_str0       .req r6
@@ -2322,9 +2473,9 @@ deci32_intarray_to_string_deci:
 
 	mov heap_str0, #0
 
-	deci32_intarray_to_string_deci_loop:
+	deci32_intarray_to_string_bin_loop:
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_deci_common
+		bge deci32_intarray_to_string_bin_common
 
 		cmp size, #0
 		ldreqb data, [heap_arr]
@@ -2336,17 +2487,17 @@ deci32_intarray_to_string_deci:
 		push {r0-r3}
 		mov r0, data
 		mov r1, min_length
-		mov r2, signed
-		bl deci32_int32_to_string_deci
+		mov r2, base_mark
+		bl deci32_int32_to_string_bin
 		mov heap_str1, r0
 		pop {r0-r3}
 
 		cmp heap_str1, #0
-		beq deci32_intarray_to_string_deci_common
+		beq deci32_intarray_to_string_bin_common
 
 		add heap_arr, heap_arr, align
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_deci_loop_common
+		bge deci32_intarray_to_string_bin_loop_common
 
 		push {r0-r3}
 		mov r0, #1
@@ -2355,9 +2506,9 @@ deci32_intarray_to_string_deci:
 		pop {r0-r3}
 
 		cmp heap_str2, #0
-		beq deci32_intarray_to_string_deci_common
+		beq deci32_intarray_to_string_bin_common
 
-		mov data, #0x2C                          @ Ascii Code of Comma
+		mov data, #equ32_deci32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
@@ -2371,7 +2522,7 @@ deci32_intarray_to_string_deci:
 		pop {r0-r3}
 
 		cmp heap_str3, #0
-		beq deci32_intarray_to_string_deci_common
+		beq deci32_intarray_to_string_bin_common
 
 		push {r0-r3}
 		mov r0, heap_str1
@@ -2385,12 +2536,12 @@ deci32_intarray_to_string_deci:
 
 		mov heap_str1, heap_str3
 
-		deci32_intarray_to_string_deci_loop_common:
+		deci32_intarray_to_string_bin_loop_common:
 
 			/* If Initial Part of Array */
 			cmp heap_str0, #0
 			moveq heap_str0, heap_str1
-			beq deci32_intarray_to_string_deci_loop
+			beq deci32_intarray_to_string_bin_loop
 
 			/* If Following Parts of Array */
 			push {r0-r3}
@@ -2412,16 +2563,16 @@ deci32_intarray_to_string_deci:
 
 			mov heap_str0, heap_str2
 
-			b deci32_intarray_to_string_deci_loop
+			b deci32_intarray_to_string_bin_loop
 
-	deci32_intarray_to_string_deci_common:
+	deci32_intarray_to_string_bin_common:
 		mov r0, heap_str0
 		pop {r4-r10,pc}
 
 .unreq heap_arr
 .unreq size
 .unreq min_length
-.unreq signed
+.unreq base_mark
 .unreq align
 .unreq heap_arr_length
 .unreq heap_str0
@@ -2435,7 +2586,7 @@ deci32_intarray_to_string_deci:
  * function deci32_string_to_farray
  * Make Array of Single Precision Floats From String on Decimal System
  *
- * This function detects commas as separators between each floats
+ * This function detects defined separators (commas on default) between each floats
  *
  * Parameters
  * r0: Heap of String
@@ -2457,10 +2608,10 @@ deci32_string_to_farray:
 
 	push {r4-r7,lr}
 
-	/* Check Commas */
+	/* Check Separators */
 
 	push {r0-r3}
-	mov r2, #0x2C                     @ Ascii Code of Comma
+	mov r2, #equ32_deci32_separator
 	bl print32_charcount
 	mov length_arr, r0
 	pop {r0-r3}
@@ -2485,7 +2636,7 @@ deci32_string_to_farray:
 		ble deci32_string_to_farray_common
 
 		push {r0-r3}
-		mov r2, #0x2C                     @ Ascii Code of Comma
+		mov r2, #equ32_deci32_separator
 		bl print32_charsearch
 		mov length_substr, r0
 		pop {r0-r3}
@@ -2599,7 +2750,7 @@ deci32_farray_to_string:
 		cmp heap_str2, #0
 		beq deci32_farray_to_string_common
 
-		mov data, #0x2C                          @ Ascii Code of Comma
+		mov data, #equ32_deci32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
