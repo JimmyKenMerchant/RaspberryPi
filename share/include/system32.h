@@ -1578,15 +1578,37 @@ extern uint64 bcd32_deci_rem64
  * system32/library/heap32.s
  ********************************/
 
-extern uint32 heap32_malloc( uint32 block_size );
+typedef struct _darray {
+	obj heap;
+	uint32 current_length; // Current Length as Array (Per Data, Not Bytes)
+	uint32 size_indicator; // Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 3 = 4 Bytes, Indicating Each Data of Array
+} darray;
 
-extern uint32 heap32_mfree( uint32 address );
+extern uint32 heap32_mpush
+(
+	obj heap,
+	uint32 data,
+	uint32 current_length,
+	uint32 size_indicator
+);
 
-extern uint32 heap32_mcount( uint32 address );
+extern uint32 heap32_msquash
+(
+	obj heap,
+	uint32 index_data,
+	uint32 current_length,
+	uint32 size_indicator
+);
 
-extern uint32 heap32_mfill( uint32 address, uint32 data );
+extern obj heap32_malloc( uint32 block_size );
 
-extern uint32 heap32_mcopy( uint32 address_dst, uint32 offset_dst, uint32 address_src, uint32 offset_src, uint32 size_src );
+extern uint32 heap32_mfree( obj heap );
+
+extern uint32 heap32_mcount( obj heap );
+
+extern uint32 heap32_mfill( obj heap, uint32 data );
+
+extern obj heap32_mcopy( obj heap_dst, uint32 offset_dst, obj heap_src, uint32 offset_src, uint32 size_src );
 
 
 /********************************

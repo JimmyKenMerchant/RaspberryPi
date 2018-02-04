@@ -13,6 +13,167 @@ HEAP32_MALLOC_SIZE:   .word SYSTEM32_HEAP_NONCACHE - SYSTEM32_HEAP
 HEAP32_NONCACHE_ADDR: .word SYSTEM32_HEAP_NONCACHE
 HEAP32_NONCACHE_SIZE: .word SYSTEM32_HEAP_NONCACHE_END - SYSTEM32_HEAP_NONCACHE
 
+
+/**
+ * function heap32_mpush
+ * Push Data to Last
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space
+ * r1: Data to Be Stored
+ * r2: Current Length as Array (Per Data, Not Bytes)
+ * r3: Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 2 = 4 Bytes, Indicating Each Data of Array
+ *
+ * Return: r0 (Length of Memory Space After This Function By Bytes, 0 as Error)
+ * Error(0): Data Could Not Be Stored Because Size of Memory Space Is Already Full.
+ */
+.globl heap32_mpush
+heap32_mpush:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start    .req r0
+	data           .req r1
+	current_length .req r2
+	size_indicator .req r3
+	block_size     .req r4
+	next_length    .req r5
+	heap_start     .req r6
+	heap_size      .req r7
+
+	push {r4-r7,lr}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
+	add block_size, block_start, block_size
+	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	add heap_size, heap_start, heap_size
+
+	cmp block_start, heap_start
+	blo heap32_mpush_error                      @ Unsigned Lower Than
+	cmp block_size, heap_size
+	bhs heap32_mpush_error
+
+	cmp size_indicator, #2
+	movhi size_indicator, #2
+
+	lsl current_length, current_length, size_indicator
+	add current_length, current_length, block_start
+
+	mov next_length, #1
+	lsl next_length, next_length, size_indicator
+	add next_length, current_length, next_length
+	cmp next_length, block_size
+	bhs heap32_mpush_error
+
+	cmp size_indicator, #2
+	strhs data, [current_length]
+	bhs heap32_mpush_success
+
+	cmp size_indicator, #1
+	strhsh data, [current_length]
+	bhs heap32_mpush_success
+
+	cmp size_indicator, #0
+	strhsb data, [current_length]
+	bhs heap32_mpush_success
+
+	heap32_mpush_error:
+		mov r0, #0
+		b heap32_mpush_common
+
+	heap32_mpush_success:
+		sub next_length, next_length, block_start
+		lsr r0, next_length, size_indicator
+
+	heap32_mpush_common:
+		macro32_dsb ip                            @ Ensure Completion of Instructions Before
+		pop {r4-r7,pc}
+
+.unreq block_start
+.unreq data
+.unreq current_length
+.unreq size_indicator
+.unreq block_size
+.unreq next_length
+.unreq heap_start
+.unreq heap_size
+
+
+/**
+ * function heap32_msquash
+ * Squash Memory Space
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space
+ * r1: Index of Data to Be Squashed (Per Data, Not Bytes)
+ * r2: Current Length as Array (Per Data, Not Bytes)
+ * r3: Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 2 = 4 Bytes, Indicating Each Data of Array
+ *
+ * Return: r0 (Length of Memory Space After This Function By Bytes, 0 as Error)
+ * Error(0): Data Could Not Be Stored Because Size of Memory Space Is Already Full.
+ */
+.globl heap32_msquash
+heap32_msquash:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start    .req r0
+	index_data     .req r1
+	current_length .req r2
+	size_indicator .req r3
+	back_length    .req r4
+	offset         .req r5
+
+	push {r4-r5,lr}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp size_indicator, #2
+	movhi size_indicator, #2
+
+	lsl index_data, index_data, size_indicator
+	lsl current_length, current_length, size_indicator
+
+	mov offset, #1
+	lsl offset, offset, size_indicator
+
+	mov back_length, current_length
+	sub back_length, back_length, index_data
+	sub back_length, back_length, offset 
+
+	push {r0-r3}
+	push {back_length}                          @ r4: Length of Bytes to Be Copied (Source)
+	mov r2, block_start                         @ Pointer of Start Address of Memory Space to Be Copied (Source)
+	add r3, index_data, offset                  @ Offset of Bytes to Be Copied (Source)
+	bl heap32_mcopy
+	add sp, sp, #4
+	mov back_length, r0
+	pop {r0-r3}
+
+	cmp back_length, #0
+	bne heap32_msquash_success
+
+	heap32_msquash_error:
+		mov r0, #0
+		b heap32_msquash_common
+
+	heap32_msquash_success:
+		sub r0, current_length, offset 
+		lsr r0, r0, size_indicator
+
+	heap32_msquash_common:
+		macro32_dsb ip                              @ Ensure Completion of Instructions Before
+		pop {r4-r5,pc}
+
+.unreq block_start
+.unreq index_data
+.unreq current_length
+.unreq size_indicator
+.unreq back_length
+.unreq offset
+
+
 /**
  * function heap32_clear_heap
  * Clear (All Zero) in Heap

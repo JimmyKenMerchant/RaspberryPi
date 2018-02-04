@@ -78,8 +78,9 @@ typedef enum _command_list {
 	skple,
 	skpgt,
 	skplt,
-	run, // Runs script from list number zero
-	clear // Clear all in every Line
+	clear, // Clear all in every Line
+	run, // Meta Command: Runs script from list number zero
+	set // Meta Command: Set Line
 } command_list;
 
 /**
@@ -128,7 +129,6 @@ void _user_start()
 	obj array_link = heap32_malloc( link_stacksize );
 	uint32 array_link_offset = 0;
 	obj array_rawdata = heap32_malloc( rawdata_maxlength ); // Two Dimentional Array
-	uint32 array_rawdata_length = 0;
 	uint32 length_arg = 0;
 	uint32 length_temp = 0;
 	uint32 var_index = 0;
@@ -533,36 +533,40 @@ print32_debug( var_temp2.u32, 300, 300  );
 								_sleep( _load_32( array_source ) );
 								break;
 							case arr:
-								if ( array_rawdata_length >= rawdata_maxlength ) break;
-								var_temp.u32 = _load_32( array_argpointer + 4 );
-								var_temp2.u32 = _load_32( array_argpointer + 8 );
-								if ( _uartsetheap( var_temp.u32 ) ) break;
-								dst_str = pass_space_label( UART32_UARTINT_HEAP );
-								var_temp.u32++;
-								for ( uint32 i = var_temp.u32; i <= var_temp2.u32; i++ ) {
-									temp_str = dst_str;
-									if ( _uartsetheap( i ) ) break;
-									temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
-									dst_str = print32_strcat( temp_str, temp_str2 );	
-									if ( i != var_temp.u32 ) { // No Initial Round
-										heap32_mfree( (obj)temp_str );
-									}
-print32_debug( i, 400, 388 );
-								}
+								for ( uint32 i = 0; i < rawdata_maxlength; i++ ) {
+									var_temp.u32 = _load_32( array_rawdata + 4 * i );
+									if ( var_temp.u32 == 0 ) {
+										var_temp.u32 = _load_32( array_argpointer + 4 );
+										var_temp2.u32 = _load_32( array_argpointer + 8 );
+										if ( _uartsetheap( var_temp.u32 ) ) break;
+										dst_str = pass_space_label( UART32_UARTINT_HEAP );
+										var_temp.u32++;
+										for ( uint32 j = var_temp.u32; j <= var_temp2.u32; j++ ) {
+											temp_str = dst_str;
+											if ( _uartsetheap( j ) ) break;
+											temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
+											dst_str = print32_strcat( temp_str, temp_str2 );	
+											if ( j != var_temp.u32 ) { // No Initial Round
+												heap32_mfree( (obj)temp_str );
+											}
+										}
 
-								var_temp.u32 = deci32_string_to_intarray( dst_str, print32_strlen( dst_str ), _load_32( array_source + 12 ) );
+										var_temp.u32 = deci32_string_to_intarray( dst_str, print32_strlen( dst_str ), _load_32( array_source + 12 ) );
 print32_debug_hexa( var_temp.u32, 400, 400, 64 );
-								_store_32( array_rawdata + 4 * array_rawdata_length, var_temp.u32 );
-								str_direction = deci32_int32_to_string_deci( array_rawdata_length, 1, 0 );
-								array_rawdata_length++;
+										_store_32( array_rawdata + 4 * i, var_temp.u32 );
+										str_direction = deci32_int32_to_string_deci( i, 1, 0 );
+										break;
+									}
+								}
 
 								break;
 							case free:
 								var_temp.u32 = _load_32( array_source );
 								if ( var_temp.u32 >= rawdata_maxlength ) break;
-								var_temp.u32 = _load_32( array_rawdata + 4 * var_temp.u32 );
-print32_debug_hexa( var_temp.u32, 400, 436, 64 );
-								heap32_mfree( var_temp.u32 );
+								var_temp2.u32 = _load_32( array_rawdata + 4 * var_temp.u32 );
+print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
+								heap32_mfree( var_temp2.u32 );
+								_store_32( array_rawdata + 4 * var_temp.u32, 0 );
 
 								break;
 							case add:
@@ -816,12 +820,11 @@ print32_debug_hexa( var_temp.u32, 400, 436, 64 );
 						heap32_mfill( label_list.name, 0 );
 						heap32_mfill( label_list.number, 0 );
 						label_list.length = 0;
-						for ( uint32 i = 0; i < array_rawdata_length; i++ ) {
+						for ( uint32 i = 0; i < rawdata_maxlength; i++ ) {
 								var_temp.u32 = _load_32( array_rawdata + 4 * i );
 								heap32_mfree( var_temp.u32 );
 						}
 						heap32_mfill( array_rawdata, 0 );
-						array_rawdata_length = 0;
 
 						/* Print Commands Untill Line with Null Character */
 						for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -897,6 +900,29 @@ print32_debug_hexa( var_temp.u32, 400, 436, 64 );
 //print32_debug_hexa( label_list.name, 400, 400, 64 );
 //print32_debug_hexa( label_list.number, 400, 424, 64 );
 
+				} else if ( print32_strmatch( UART32_UARTINT_HEAP, 3, "set\0", 3 ) ) {
+					/* If You Command "set <LineNumber>", It Sets Line */
+					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
+					temp_str = UART32_UARTINT_HEAP;
+					var_temp.u32 = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
+					if ( var_temp.u32 == -1 ) {
+						var_temp.u32 = print32_strlen( temp_str );
+					} else {
+						var_temp.u32++; // Next to Space
+					}
+					temp_str += var_temp.u32;
+					var_temp.u32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
+					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+					if ( var_temp.u32 < initial_line ) var_temp.u32 = initial_line;
+					if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
+					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
+					_uarttx( "|\0", 1 );
+					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
+					_uarttx( "| \0", 2 );
+					heap32_mfree( (obj)str_process_counter );
+					_uarttx( UART32_UARTINT_HEAP, print32_strlen( UART32_UARTINT_HEAP ) );
+					_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
+					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
 					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
