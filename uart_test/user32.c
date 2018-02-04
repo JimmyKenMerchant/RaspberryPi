@@ -10,13 +10,14 @@
 #include "system32.h"
 #include "system32.c"
 
+#define initial_line       1
 #define argument_maxlength 8
-#define label_maxlength 16
-#define label_maxchar 2     // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
-#define link_stacksize 32
-#define rawdata_maxlength 16
-#define color COLOR32_WHITE
-#define back_color COLOR32_BLACK
+#define label_maxlength    16
+#define label_maxchar      2 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
+#define link_stacksize     32
+#define rawdata_maxlength  16
+#define color              COLOR32_WHITE
+#define back_color         COLOR32_BLACK
 
 String pass_space_label( String target_str ); 
 uint32 print_sequence( String target_str ); 
@@ -155,7 +156,7 @@ void _user_start()
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
 	_uarttx( str_aloha, print32_strlen( str_aloha ) );
 
-	if ( ! _uartsetheap( 0 ) ) {
+	if ( ! _uartsetheap( initial_line ) ) {
 		str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 		_uarttx( "|\0", 1 );
 		_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
@@ -463,7 +464,7 @@ void _user_start()
 										break; // Break For Loop
 									}
 								}
-								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( 0 );
+								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
 								/*  Pass Spaces and Label*/
 								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
@@ -481,7 +482,7 @@ void _user_start()
 								length_temp = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 								if ( length_temp == -1 ) length_temp = print32_strlen( temp_str ); // Ascii Code of Null, for Last Variable
 								var_temp.u32 = deci32_string_to_int32( temp_str, length_temp );
-								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( 0 );
+								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
 								/*  Pass Spaces and Label*/
 								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
@@ -494,7 +495,7 @@ print32_debug( var_temp2.u32, 300, 300  );
 
 					case enumurate_variables:
 
-						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( 0 );
+						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( initial_line );
 
 						/*  Pass Spaces and Label*/
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
@@ -823,7 +824,7 @@ print32_debug_hexa( var_temp.u32, 400, 436, 64 );
 						array_rawdata_length = 0;
 
 						/* Print Commands Untill Line with Null Character */
-						for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+						for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 							_uartsetheap( i );
 							str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 							_uarttx( "|\0", 1 );
@@ -858,7 +859,7 @@ print32_debug_hexa( var_temp.u32, 400, 436, 64 );
 					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
 
 					/* Labels Enumuration */
-					for ( uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+					for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 						_uartsetheap( i );
 						temp_str = UART32_UARTINT_HEAP;
 						/* Pass Spaces */
@@ -891,13 +892,13 @@ print32_debug_hexa( var_temp.u32, 400, 436, 64 );
 						}
 					}
 
-					_uartsetheap( 0 );
+					_uartsetheap( initial_line );
 
 //print32_debug_hexa( label_list.name, 400, 400, 64 );
 //print32_debug_hexa( label_list.number, 400, 424, 64 );
 
 				} else {
-					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( 0 );
+					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
 					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 					_uarttx( "|\0", 1 );
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );

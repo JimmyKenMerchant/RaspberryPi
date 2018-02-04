@@ -762,7 +762,7 @@ deci32_int32_to_string_hexa:
 /**
  * function deci32_int32_to_string_bin
  * Make String of Integer Value by Binary System (Base 2)
- * This function uses defined bytes for true (1 on default) and false (0 on default).
+ * This function uses defined Ascii Codes for true ("1" on default) and false ("0" on default).
  *
  * Parameters
  * r0: Integer Number
@@ -1984,8 +1984,7 @@ deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
 /**
  * function deci32_string_to_intarray
  * Make Array of Integers From String
- *
- * This function detects defined separators (commas on default) between each Integers
+ * This function detects defined separators (commas on default) between each Integers.
  *
  * Parameters
  * r0: Heap of String
@@ -2586,8 +2585,7 @@ deci32_intarray_to_string_bin:
 /**
  * function deci32_string_to_farray
  * Make Array of Single Precision Floats From String on Decimal System
- *
- * This function detects defined separators (commas on default) between each floats
+ * This function detects defined separators (commas on default) between each floats.
  *
  * Parameters
  * r0: Heap of String

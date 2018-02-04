@@ -1203,7 +1203,7 @@ extern String deci32_int32_to_string_hexa
 
 /**
  * Make String of Integer Value by Binary System (Base 2)
- * This function uses defined bytes for true (1 on default) and false (0 on default).
+ * This function uses defined Ascii Codes for true ("1" on default) and false ("0" on default).
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
@@ -1318,8 +1318,7 @@ extern uint32 deci32_deci_to_hexa
 
 /**
  * Make Array of Integers From String
- *
- *  This function detects defined separators (commas on default) between each Integers
+ * This function detects defined separators (commas on default) between each Integers.
  *
  * Return: Heap of Array, 0 as not succeeded
  */
@@ -1376,8 +1375,7 @@ extern String deci32_intarray_to_string_bin
 
 /**
  * Make Array of Single Precision Floats From String on Decimal System
- *
- *  This function detects defined separators (commas on default) between each floats
+ * This function detects defined separators (commas on default) between each floats.
  *
  * Return: Heap of Array, 0 as not succeeded
  */
