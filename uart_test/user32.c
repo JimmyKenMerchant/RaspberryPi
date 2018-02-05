@@ -1000,6 +1000,14 @@ uint32 print_sequence( String target_str ) {
 			print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
 			temp_str += temp_str_index;
 			temp_str += 2;
+		} else if ( print32_strindex( temp_str, "\\s\0" ) != -1 ) {
+			temp_str_index = print32_strindex( temp_str, "\\s\0" );
+			_uarttx( temp_str, temp_str_index );
+			print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+			_uarttx( " \0", 1 );
+			print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 1, 8, 12, FONT_MONO_12PX_ASCII ) );
+			temp_str += temp_str_index;
+			temp_str += 2;
 		} else if ( print32_strindex( temp_str, "\\e\0" ) != -1 ) {
 			temp_str_index = print32_strindex( temp_str, "\\e\0" );
 			_uarttx( temp_str, temp_str_index );
@@ -1007,7 +1015,7 @@ uint32 print_sequence( String target_str ) {
 			_uarttx( "\x1B\0", 1 );
 			//print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 1, 8, 12, FONT_MONO_12PX_ASCII ) );
 			temp_str += temp_str_index;
-			temp_str += 1;
+			temp_str += 2;
 		} else {
 			temp_str_index = print32_strlen( temp_str );
 			_uarttx( temp_str, temp_str_index );
