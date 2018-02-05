@@ -64,6 +64,7 @@ typedef enum _command_list {
 	fcmp, // Compare two values of floating point, "fcmp %S1 %S2": Reflects NZCV flags.
 	input, // Input to the line, "input %D".
 	print,
+	scmp, // String Compare
 	mov, // Copy, "mov %D %S1".
 	clr, // Clear the line, "clr %D".
 	jmp, // Jump to the line, "jmp %S1": Next line will be the number in S1.
@@ -129,6 +130,7 @@ void _user_start()
 	obj array_link = heap32_malloc( link_stacksize );
 	uint32 array_link_offset = 0;
 	obj array_rawdata = heap32_malloc( rawdata_maxlength ); // Two Dimentional Array
+	obj buffer_line = heap32_malloc( UART32_UARTMALLOC_MAXROW / 4 );
 	uint32 length_arg = 0;
 	uint32 length_temp = 0;
 	uint32 var_index = 0;
@@ -345,6 +347,10 @@ void _user_start()
 							pipe_type = execute_command;
 						} else if ( print32_strmatch( temp_str, 5, "print\0", 5 ) ) {
 							command_type = print;
+							length_arg = 2;
+							pipe_type = execute_command;
+						} else if ( print32_strmatch( temp_str, 4, "scmp\0", 4 ) ) {
+							command_type = scmp;
 							length_arg = 2;
 							pipe_type = execute_command;
 						} else if ( print32_strmatch( temp_str, 3, "mov\0", 3 ) ) {
@@ -698,6 +704,16 @@ print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
 								}
 
 								break;
+							case scmp:
+								temp_str = (String)_load_32( array_argpointer );
+								temp_str2 = (String)_load_32( array_argpointer + 4 );
+								status_nzcv = 0;
+								if ( print32_strmatch( temp_str, print32_strlen( temp_str ), temp_str2, print32_strlen( temp_str2 ) ) ) {
+									/* Equal; Z Bit[30] == 1 */
+									status_nzcv |= 0x40000000;
+								}	
+
+								break;
 							case mov:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
@@ -825,6 +841,7 @@ print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
 								heap32_mfree( var_temp.u32 );
 						}
 						heap32_mfill( array_rawdata, 0 );
+						heap32_mfill( buffer_line, 0 ); // Clean Content in Previous Line
 
 						/* Print Commands Untill Line with Null Character */
 						for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -855,7 +872,9 @@ print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
 				_uarttx( "\r\n\0", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 				if ( print32_strmatch( UART32_UARTINT_HEAP, 3, "run\0", 3 ) ) {
 					/* If You Command "run", It Starts Execution */
-					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+					/* Retrieve Previous Content in Line that is Wrote Meta Command */
+					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clean Meta Command
+					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, print32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
 
 					flag_execute = true;
 					pipe_type = search_command;
@@ -912,9 +931,14 @@ print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
 					}
 					temp_str += var_temp.u32;
 					var_temp.u32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
-					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+					/* Retrieve Previous Content in Line that is Wrote Meta Command */
+					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clean Meta Command
+					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, print32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
 					if ( var_temp.u32 < initial_line ) var_temp.u32 = initial_line;
 					if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
+					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
+					heap32_mfill( buffer_line, 0 ); // Clean Content in Previous Line
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, print32_strlen( UART32_UARTINT_HEAP ) );
 					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 					_uarttx( "|\0", 1 );
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
@@ -925,6 +949,9 @@ print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
+					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
+					heap32_mfill( buffer_line, 0 ); // Clean Content in Previous Line
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, print32_strlen( UART32_UARTINT_HEAP ) );
 					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 					_uarttx( "|\0", 1 );
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );

@@ -487,11 +487,6 @@ uart32_uartint:
 
 		uart32_uartint_escseq_up:
 
-			ldr temp, UART32_UARTMALLOC_NUMBER
-			cmp temp, #0
-			subhi temp, temp, #1
-			bhi uart32_uartint_escseq_up_jump
-
 			/* Send Move Cursor Down Because Of Overshoot */
 			push {r0-r3}
 			ldr r0, uart32_uartint_esc_down
@@ -500,36 +495,6 @@ uart32_uartint:
 			pop {r0-r3}
 
 			b uart32_uartint_escseq_clear
-
-			uart32_uartint_escseq_up_jump:
-				push {r0-r3}
-				mov r0, temp
-				bl uart32_uartsetheap
-				pop {r0-r3}
-
-				ldr heap, UART32_UARTINT_HEAP
-				cmp heap, #0
-				beq uart32_uartint_error         @ If No Heap
-
-				push {r0-r3}
-				mov r0, heap
-				bl print32_strlen
-				mov temp, r0
-				pop {r0-r3}
-
-				uart32_uartint_escseq_up_jump_loop:
-					cmp temp, count
-					bge uart32_uartint_escseq_clear
-
-					/* Send Move Cursor Left Because Of Overshoot */
-					push {r0-r3}
-					ldr r0, uart32_uartint_esc_left
-					mov r1, #3
-					bl uart32_uarttx
-					pop {r0-r3}
-
-					sub count, count, #1
-					b uart32_uartint_escseq_up_jump_loop
 
 		uart32_uartint_escseq_down:
 
