@@ -20,7 +20,8 @@
 #define back_color         COLOR32_BLACK
 
 String pass_space_label( String target_str ); 
-uint32 print_sequence( String target_str ); 
+bool command_print( String target_str ); 
+bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
 
 extern String UART32_UARTINT_HEAP;
 extern uint32 UART32_UARTINT_BUSY_ADDR;
@@ -29,12 +30,18 @@ extern uint32 UART32_UARTMALLOC_LENGTH;
 extern uint32 UART32_UARTMALLOC_NUMBER;
 extern uint32 UART32_UARTMALLOC_MAXROW;
 
-/* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source */
+/* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
 typedef enum _command_list {
 	null,
 	sleep, // Sleep microseconds by integer "Sleep %S1"
 	arr, // Make raw data array of integer, "arr %D %S1 %S2 %S3": D = number of array made of S1 - S2. S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
-	free, //  Free memory space for raw data array, "free %S1": Free memory space for array whose number is indicated in S1.
+	free, // Free memory space for raw data array, "free %S1": Free memory space for array whose number is indicated in S1.
+	/**
+	 * "pict" does sequential printing with judging bit value in raw data of array from MSB to LSB, "pict %S1 %S2 %S3 %S4":
+	 * S1 is the string when true (1), S2 is the string when false (0), S3 is number of Array, S4 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
+	 * This command inserts "\r\n" when each data of array is ended.
+	 */
+	pict,
 	add, // Integer addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
 	sub,
 	mul,
@@ -105,7 +112,7 @@ typedef union _flex32 {
 	float32 f32;
 	int32 s32;
 	uint32 u32;
-	obj oj;
+	obj object;
 } flex32;
 
 
@@ -120,7 +127,6 @@ bool flag_execute;
 
 void _user_start()
 {
-
 
 	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_process_counter = null;
@@ -207,6 +213,11 @@ void _user_start()
 							length_arg = 1;
 							pipe_type = enumurate_variables;
 							var_index = 0; // Only Last One Is Needed to Translate to Integer
+						} else if ( print32_strmatch( temp_str, 4, "pict\0", 4 ) ) {
+							command_type = pict;
+							length_arg = 4;
+							pipe_type = enumurate_variables;
+							var_index = 2; // Only Last Two Is Needed to Translate to Integer
 						} else if ( print32_strmatch( temp_str, 3, "add\0", 3 ) ) {
 							command_type = add;
 							length_arg = 3;
@@ -558,7 +569,7 @@ print32_debug( var_temp2.u32, 300, 300  );
 										}
 
 										var_temp.u32 = deci32_string_to_intarray( dst_str, print32_strlen( dst_str ), _load_32( array_source + 12 ) );
-print32_debug_hexa( var_temp.u32, 400, 400, 64 );
+print32_debug( var_temp.u32, 400, 400 );
 										_store_32( array_rawdata + 4 * i, var_temp.u32 );
 										str_direction = deci32_int32_to_string_deci( i, 1, 0 );
 										break;
@@ -570,9 +581,23 @@ print32_debug_hexa( var_temp.u32, 400, 400, 64 );
 								var_temp.u32 = _load_32( array_source );
 								if ( var_temp.u32 >= rawdata_maxlength ) break;
 								var_temp2.u32 = _load_32( array_rawdata + 4 * var_temp.u32 );
-print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
+print32_debug( var_temp2.u32, 400, 436 );
 								heap32_mfree( var_temp2.u32 );
 								_store_32( array_rawdata + 4 * var_temp.u32, 0 );
+
+								break;
+							case pict:
+								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break; 
+								temp_str = pass_space_label( UART32_UARTINT_HEAP );
+								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break; 
+								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
+								var_temp.u32 = _load_32( array_source + 8 );
+								if ( var_temp.u32 >=  rawdata_maxlength ) break;
+								var_temp.object = _load_32( array_rawdata + 4 * var_temp.u32 );
+								if ( var_temp.object == 0 ) break;
+								var_temp2.u32 = _load_32( array_source + 12 );
+
+								command_pict( temp_str, temp_str2, var_temp.object, var_temp2.u32 ); 
 
 								break;
 							case add:
@@ -700,7 +725,7 @@ print32_debug_hexa( var_temp2.u32, 400, 436, 64 );
 								if ( var_temp2.u32 < var_temp.u32 ) var_temp2.u32 = var_temp.u32; // If Second Argument Is Not Defined, etc.
 								for ( uint32 i = var_temp.u32; i <= var_temp2.u32; i++ ) {
 									if ( _uartsetheap( i ) ) break; 
-									print_sequence( UART32_UARTINT_HEAP );
+									command_print( UART32_UARTINT_HEAP );
 								}
 
 								break;
@@ -988,7 +1013,8 @@ String pass_space_label( String target_str ) {
 	return target_str;
 }
 
-uint32 print_sequence( String target_str ) {
+
+bool command_print( String target_str ) {
 	String temp_str = pass_space_label( target_str );
 	uint32 temp_str_index;
 	while ( print32_strlen( temp_str ) ) {
@@ -1023,5 +1049,29 @@ uint32 print_sequence( String target_str ) {
 			temp_str += temp_str_index;
 		}
 	}
-	return EXIT_SUCCESS;
+	return TRUE; 
 }
+
+
+bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
+	uint32 size_array = heap32_mcount( array ); 
+	size_indicator = 1 << size_indicator;
+	uint32 count_array = size_array / size_indicator;
+	uint32 length_data = 8 * size_indicator; // 1 Byte equals 8 Bits
+	for ( uint32 i = 0; i < count_array; i++ ) {
+		uint32 data = _load_32( array + size_indicator * i );
+		for ( uint32 j = 0; j < length_data; j++ ) {
+			uint32 shift = length_data - j - 1;
+			uint32 bit = data & TRUE << shift;
+			if ( bit ) {
+				command_print( true_str );
+			} else {
+				command_print( false_str );
+			}
+		}
+		_uarttx( "\r\n\0", 2 );
+		print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
+	}
+	return TRUE;
+}
+
