@@ -730,13 +730,15 @@ print32_debug( var_temp2.u32, 400, 436 );
 
 								break;
 							case scmp:
-								temp_str = (String)_load_32( array_argpointer );
-								temp_str2 = (String)_load_32( array_argpointer + 4 );
+								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
+								temp_str = UART32_UARTINT_HEAP;
+								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break; 
+								temp_str2 = UART32_UARTINT_HEAP;
 								status_nzcv = 0;
 								if ( print32_strmatch( temp_str, print32_strlen( temp_str ), temp_str2, print32_strlen( temp_str2 ) ) ) {
 									/* Equal; Z Bit[30] == 1 */
 									status_nzcv |= 0x40000000;
-								}	
+								}
 
 								break;
 							case mov:
@@ -846,6 +848,10 @@ print32_debug( var_temp2.u32, 400, 436 );
 					case go_nextline:
 						/* Continue Process */
 
+						/* Clean Arrays About Arguments on Each Command */
+						heap32_mfill( array_argpointer, 0 );
+						heap32_mfill( array_source, 0 );
+
 						if ( _uartsetheap( current_line + 1 ) ) {
 							pipe_type = termination;
 						} else {
@@ -894,16 +900,14 @@ print32_debug( var_temp2.u32, 400, 436 );
 						break;
 				}
 			} else {
-				_uarttx( "\r\n\0", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 				if ( print32_strmatch( UART32_UARTINT_HEAP, 3, "run\0", 3 ) ) {
 					/* If You Command "run", It Starts Execution */
 					/* Retrieve Previous Content in Line that is Wrote Meta Command */
-					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clean Meta Command
 					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, print32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
 
 					flag_execute = true;
 					pipe_type = search_command;
-					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
+					_uarttx( "\x1B[2J\x1B[H\0", 7 ); // Clear All Screen and Move Cursor to Upper Left
 
 					/* Labels Enumuration */
 					for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -946,7 +950,7 @@ print32_debug( var_temp2.u32, 400, 436 );
 
 				} else if ( print32_strmatch( UART32_UARTINT_HEAP, 3, "set\0", 3 ) ) {
 					/* If You Command "set <LineNumber>", It Sets Line */
-					_uarttx( "\x1B[2J\x1B[H\0", 8 ); // Clear All Screen and Move Cursor to Upper Left
+					_uarttx( "\x1B[2J\x1B[H\0", 7 ); // Clear All Screen and Move Cursor to Upper Left
 					temp_str = UART32_UARTINT_HEAP;
 					var_temp.u32 = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 					if ( var_temp.u32 == -1 ) {
@@ -957,13 +961,11 @@ print32_debug( var_temp2.u32, 400, 436 );
 					temp_str += var_temp.u32;
 					var_temp.u32 = deci32_string_to_int32( temp_str, print32_strlen( temp_str ) );
 					/* Retrieve Previous Content in Line that is Wrote Meta Command */
-					heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clean Meta Command
 					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, print32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
 					if ( var_temp.u32 < initial_line ) var_temp.u32 = initial_line;
 					if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
-					heap32_mfill( buffer_line, 0 ); // Clean Content in Previous Line
-					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, print32_strlen( UART32_UARTINT_HEAP ) );
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, print32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
 					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 					_uarttx( "|\0", 1 );
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
@@ -973,10 +975,10 @@ print32_debug( var_temp2.u32, 400, 436 );
 					_store_32( UART32_UARTINT_COUNT_ADDR, print32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
+					_uarttx( "\r\n\0", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
-					heap32_mfill( buffer_line, 0 ); // Clean Content in Previous Line
-					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, print32_strlen( UART32_UARTINT_HEAP ) );
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, print32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
 					str_process_counter = deci32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
 					_uarttx( "|\0", 1 );
 					_uarttx( str_process_counter, print32_strlen( str_process_counter ) );
@@ -1055,14 +1057,14 @@ bool command_print( String target_str ) {
 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
 	uint32 size_array = heap32_mcount( array ); 
+	if ( size_indicator > 2 ) size_indicator = 2;
 	size_indicator = 1 << size_indicator;
 	uint32 count_array = size_array / size_indicator;
-	uint32 length_data = 8 * size_indicator; // 1 Byte equals 8 Bits
+	int32 length_data = 8 * size_indicator; // 1 Byte equals 8 Bits
 	for ( uint32 i = 0; i < count_array; i++ ) {
 		uint32 data = _load_32( array + size_indicator * i );
-		for ( uint32 j = 0; j < length_data; j++ ) {
-			uint32 shift = length_data - j - 1;
-			uint32 bit = data & TRUE << shift;
+		for ( int32 j = length_data - 1; j >= 0; j-- ) {
+			uint32 bit = data & TRUE << j;
 			if ( bit ) {
 				command_print( true_str );
 			} else {
