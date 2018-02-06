@@ -393,7 +393,7 @@ uart32_uartint:
 		pop {r0-r3}
 
 		cmp temp, #-1
-		bne uart32_uartint_escseq           @ If in Escape Sequence
+		bne uart32_uartint_escseq        @ If in Escape Sequence
 
 		/* Check Back Space */
 		push {r0-r3}
@@ -608,7 +608,7 @@ uart32_uartint:
 			/* Send Esc[K (Clear From Cursor Right) */
 			push {r0-r3}
 			ldr r0, uart32_uartint_esc_clrline
-			mov r1, #4
+			mov r1, #3
 			bl uart32_uarttx
 			pop {r0-r3}
 
@@ -701,30 +701,34 @@ _uart32_uartint_nak:         .ascii "\x15\0"
 uart32_uartint_ack:          .word _uart32_uartint_ack
 _uart32_uartint_ack:         .ascii "\x6\0"
 .balign 4
-uart32_uartint_esc_clrline:  .word _uart32_uartint_esc_clrline
-_uart32_uartint_esc_clrline: .ascii "\x1B[0K\0"         @ Esc(0x1B)[0K: Clear From Cursor to End of Line
-.balign 4
-uart32_uartint_esc_nxtline:  .word _uart32_uartint_esc_nxtline
-_uart32_uartint_esc_nxtline: .ascii "\x1B[1E\0"         @ Esc(0x1B)[1E: Move Cursor to Beginning of Next Line
-.balign 4
-uart32_uartint_esc_clrscr:   .word _uart32_uartint_esc_clrscr
-_uart32_uartint_esc_clrscr:  .ascii "\x1B[2J\0"         @ Esc(0x1B)[2J: Clear All Screen
-.balign 4
-uart32_uartint_esc_homecs:   .word _uart32_uartint_esc_homecs
-_uart32_uartint_esc_homecs:  .ascii "\x1B[H\0"          @ Esc(0x1B)[H (Esc(0x1B)[1;1H): Set Cursor to Upper Left Corner
-.balign 4
 uart32_uartint_esc_up:       .word _uart32_uartint_esc_up
-_uart32_uartint_esc_up:      .ascii "\x1B[A\0"          @ Esc(0x1B)[A (Esc(0x1B)[1A): Move Cursor Upward
+_uart32_uartint_esc_up:      .ascii "\x1B[A\0"         @ Esc(0x1B)[A (Esc(0x1B)[1A): Move Cursor Upward
 .balign 4
 uart32_uartint_esc_down:     .word _uart32_uartint_esc_down
-_uart32_uartint_esc_down:    .ascii "\x1B[B\0"          @ Esc(0x1B)[B (Esc(0x1B)[1B): Move Cursor Downward
+_uart32_uartint_esc_down:    .ascii "\x1B[B\0"         @ Esc(0x1B)[B (Esc(0x1B)[1B): Move Cursor Downward
 .balign 4
 uart32_uartint_esc_right:    .word _uart32_uartint_esc_right
-_uart32_uartint_esc_right:   .ascii "\x1B[C\0"          @ Esc(0x1B)[C (Esc(0x1B)[1C): Move Cursor Right
+_uart32_uartint_esc_right:   .ascii "\x1B[C\0"         @ Esc(0x1B)[C (Esc(0x1B)[1C): Move Cursor Right
 .balign 4
 uart32_uartint_esc_left:     .word _uart32_uartint_esc_left
-_uart32_uartint_esc_left:    .ascii "\x1B[D\0"          @ Esc(0x1B)[D (Esc(0x1B)[1D): Move Cursor Left
+_uart32_uartint_esc_left:    .ascii "\x1B[D\0"         @ Esc(0x1B)[D (Esc(0x1B)[1D): Move Cursor Left
 .balign 4
+uart32_uartint_esc_nxtline:  .word _uart32_uartint_esc_nxtline
+_uart32_uartint_esc_nxtline: .ascii "\x1B[E\0"         @ Esc(0x1B)[E (Esc(0x1B)[1E): Move Cursor to Beginning of Next Line
+.balign 4
+uart32_uartint_esc_bckline:  .word _uart32_uartint_esc_bckline
+_uart32_uartint_esc_bckline: .ascii "\x1B[F\0"         @ Esc(0x1B)[F (Esc(0x1B)[1F): Move Cursor to Beginning of Previous Line
+.balign 4
+uart32_uartint_esc_clrscr:   .word _uart32_uartint_esc_clrscr
+_uart32_uartint_esc_clrscr:  .ascii "\x1B[2J\0"        @ Esc(0x1B)[2J: Clear All Screen
+.balign 4
+uart32_uartint_esc_clrline:  .word _uart32_uartint_esc_clrline
+_uart32_uartint_esc_clrline: .ascii "\x1B[K\0"         @ Esc(0x1B)[K (Esc(0x1B)[0K): Clear From Cursor to End of Line
+.balign 4
+uart32_uartint_esc_homecs:   .word _uart32_uartint_esc_homecs
+_uart32_uartint_esc_homecs:  .ascii "\x1B[H\0"         @ Esc(0x1B)[H (Esc(0x1B)[1;1H): Set Cursor to Upper Left Corner
+.balign 4
+
 uart32_uartint_buffer:       .word _uart32_uartint_buffer
 _uart32_uartint_buffer:      .space equ32_uart32_uartint_buffer_size
 .balign 4

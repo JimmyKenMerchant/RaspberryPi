@@ -33,6 +33,7 @@ extern uint32 UART32_UARTMALLOC_MAXROW;
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
 typedef enum _command_list {
 	null,
+	end,
 	sleep, // Sleep microseconds by integer "Sleep %S1"
 	arr, // Make raw data array of integer, "arr %D %S1 %S2 %S3": D = number of array made of S1 - S2. S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
 	free, // Free memory space for raw data array, "free %S1": Free memory space for array whose number is indicated in S1.
@@ -195,6 +196,10 @@ void _user_start()
 						} else if ( print32_strlen( temp_str ) == 0 ) {
 							/* Stop Execution If No Content in Line */
 							/* Labels with No Initialization Becomes This Type */
+							command_type = null;
+							length_arg = 0;
+							pipe_type = termination;
+						} else if ( print32_strmatch( temp_str, 3, "end\0", 3 ) ) {
 							command_type = null;
 							length_arg = 0;
 							pipe_type = termination;
@@ -731,9 +736,9 @@ print32_debug( var_temp2.u32, 400, 436 );
 								break;
 							case scmp:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-								temp_str = UART32_UARTINT_HEAP;
+								temp_str = pass_space_label( UART32_UARTINT_HEAP );
 								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break; 
-								temp_str2 = UART32_UARTINT_HEAP;
+								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								status_nzcv = 0;
 								if ( print32_strmatch( temp_str, print32_strlen( temp_str ), temp_str2, print32_strlen( temp_str2 ) ) ) {
 									/* Equal; Z Bit[30] == 1 */
