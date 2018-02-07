@@ -210,6 +210,28 @@ extern int32 arm32_mul(
 
 
 /**
+ * Unsigned Division of Two Integers
+ *
+ * Return: Answer of Division
+ */
+extern int32 arm32_udiv(
+	int32 dividend,
+	int32 divisor
+);
+
+
+/**
+ * Return Remainder of Unsigned Division of Two Integers
+ *
+ * Return: Reminder of Division
+ */
+extern int32 arm32_urem(
+	uint32 dividend,
+	uint32 divisor
+);
+
+
+/**
  * Signed Division of Two Integers
  *
  * Return: Answer of Division

@@ -48,6 +48,17 @@ typedef enum _command_list {
 	mul,
 	div,
 	rem,
+	uadd,
+	usub,
+	umul,
+	udiv,
+	urem,
+	and,
+	not,
+	or,
+	xor,
+	lsl,
+	lsr,
 	rand,
 	cmp, // Compare two values of integer, "cmp %S1 %S2": Reflects NZCV flags.
 	badd, // Binary-coded decimal, "badd %D %S1 %S2": D = S1 + S2. -9,999,999,999,999,999 through 9,999,999,999,999,999.
@@ -87,6 +98,8 @@ typedef enum _command_list {
 	skple,
 	skpgt,
 	skplt,
+	skpcs, // Skip one line if carry flag is set (Unsigned Higher or Equal)
+	skpcc, // Skip one line if carry flag is not set (Unsigned Lower)
 	clear, // Clear all in every Line
 	run, // Meta Command: Runs script from list number zero
 	set // Meta Command: Set Line
@@ -245,6 +258,61 @@ void _user_start()
 							var_index = 1; // 0 is Direction
 						} else if ( print32_strmatch( temp_str, 3, "rem\0", 3 ) ) {
 							command_type = rem;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 4, "uadd\0", 4 ) ) {
+							command_type = uadd;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 4, "usub\0", 4 ) ) {
+							command_type = usub;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 4, "umul\0", 4 ) ) {
+							command_type = umul;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 4, "udiv\0", 4 ) ) {
+							command_type = udiv;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 4, "urem\0", 4 ) ) {
+							command_type = urem;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 3, "and\0", 3 ) ) {
+							command_type = and;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 3, "not\0", 3 ) ) {
+							command_type = not;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 2, "or\0", 2 ) ) {
+							command_type = or;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 3, "xor\0", 3 ) ) {
+							command_type = xor;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 3, "lsl\0", 3 ) ) {
+							command_type = lsl;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 1; // 0 is Direction
+						} else if ( print32_strmatch( temp_str, 3, "lsr\0", 3 ) ) {
+							command_type = lsr;
 							length_arg = 3;
 							pipe_type = enumurate_variables;
 							var_index = 1; // 0 is Direction
@@ -429,9 +497,12 @@ void _user_start()
 							command_type = skplt;
 							length_arg = 0;
 							pipe_type = execute_command;
-						} else if ( print32_strmatch( temp_str, 5, "skplt\0", 5 ) ) {
-							/* Jump Over One Line If Signed Less Than */
-							command_type = skplt;
+						} else if ( print32_strmatch( temp_str, 5, "skpcs\0", 5 ) ) {
+							command_type = skpcs;
+							length_arg = 0;
+							pipe_type = execute_command;
+						} else if ( print32_strmatch( temp_str, 5, "skpcc\0", 5 ) ) {
+							command_type = skpcc;
 							length_arg = 0;
 							pipe_type = execute_command;
 						} else if ( print32_strmatch( temp_str, 5, "clear\0", 5 ) ) {
@@ -606,28 +677,72 @@ print32_debug( var_temp2.u32, 400, 436 );
 
 								break;
 							case add:
-								direction.s32 =  _load_32( array_source + 4 ) + _load_32( array_source + 8 );
+								direction.s32 = _load_32( array_source + 4 ) + _load_32( array_source + 8 );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case sub:
-								direction.s32 =  _load_32( array_source + 4 ) - _load_32( array_source + 8 );
+								direction.s32 = _load_32( array_source + 4 ) - _load_32( array_source + 8 );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case mul:
-								direction.s32 =  arm32_mul( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								direction.s32 = arm32_mul( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case div:
-								direction.s32 =  arm32_sdiv( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								direction.s32 = arm32_sdiv( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
 							case rem:
-								direction.s32 =  arm32_srem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								direction.s32 = arm32_srem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
 								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
 								break;
+							case uadd:
+								direction.u32 = _load_32( array_source + 4 ) + _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_hexa( direction.u32, 1, 0, 1 );
+								break;
+							case usub:
+								direction.u32 = _load_32( array_source + 4 ) - _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_hexa( direction.u32, 1, 0, 1 );
+								break;
+							case umul:
+								direction.u32 = arm32_mul( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_hexa( direction.u32, 1, 0, 1 );
+								break;
+							case udiv:
+								direction.u32 = arm32_udiv( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_hexa( direction.u32, 1, 0, 1 );
+								break;
+							case urem:
+								direction.u32 = arm32_urem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+								str_direction = deci32_int32_to_string_hexa( direction.u32, 1, 0, 1 );
+								break;
+							case and:
+								direction.u32 = _load_32( array_source + 4 ) & _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_bin( direction.u32, 1, 1 );
+								break;
+							case not:
+								direction.u32 = ~( _load_32( array_source + 4 ) );
+								str_direction = deci32_int32_to_string_bin( direction.u32, 1, 1 );
+								break;
+							case or:
+								direction.u32 = _load_32( array_source + 4 ) | _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_bin( direction.u32, 1, 1 );
+								break;
+							case xor:
+								direction.u32 = _load_32( array_source + 4 ) ^ _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_bin( direction.u32, 1, 1 );
+								break;
+							case lsl:
+								direction.u32 = _load_32( array_source + 4 ) << _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_bin( direction.u32, 1, 1 );
+								break;
+							case lsr:
+								direction.u32 = _load_32( array_source + 4 ) >> _load_32( array_source + 8 );
+								str_direction = deci32_int32_to_string_bin( direction.u32, 1, 1 );
+								break;
 							case rand:
-								direction.s32 =  _random( 255 );
-								str_direction = deci32_int32_to_string_deci( direction.s32, 1, 1 );
+								direction.u32 =  _random( 255 );
+								str_direction = deci32_int32_to_string_deci( direction.u32, 1, 0 );
 								break;
 							case cmp:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
@@ -831,6 +946,16 @@ print32_debug( var_temp2.u32, 400, 436 );
 							case skplt:
 								/* Less Than: N Bit[31] != V Bit[28] */
 								if ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) ) current_line++;
+
+								break;
+							case skpcs:
+								/* Less Than: C Bit[29] == 1 */
+								if ( status_nzcv & 0x20000000 ) current_line++;
+
+								break;
+							case skpcc:
+								/* Less Than: C Bit[29] != 1 */
+								if ( ! ( status_nzcv & 0x20000000 ) ) current_line++;
 
 								break;
 							default:

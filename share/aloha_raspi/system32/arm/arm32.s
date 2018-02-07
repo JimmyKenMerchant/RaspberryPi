@@ -1586,6 +1586,109 @@ arm32_mul:
 
 
 /**
+ * function arm32_udiv
+ * Unsigned Division of Two Signed Integers
+ *
+ * Parameters
+ * r0: Dividend (Numerator)
+ * r1: Divisor (Denominator)
+ *
+ * Return: r0 (Answer of Division), r1 (Reminder of Division)
+ */
+.globl arm32_udiv
+arm32_udiv:
+	/* Auto (Local) Variables, but just Aliases */
+	dividend       .req r0
+	divisor        .req r1
+	lz_dividend    .req r2
+	lz_divisor     .req r3
+	answer         .req r4
+	bit            .req r5
+
+	push {r4-r5,lr}
+
+	mov answer, #0
+
+	clz lz_dividend, dividend
+	clz lz_divisor, divisor
+
+	sub lz_dividend, lz_divisor, lz_dividend
+
+	.unreq lz_dividend
+	.unreq lz_divisor
+	shift .req r2
+	temp  .req r3
+
+	arm32_udiv_loop:
+		cmp shift, #0
+		blt arm32_udiv_common
+
+		lsl temp, divisor, shift
+		mov bit, #1
+		lsl bit, bit, shift
+
+		arm32_udiv_loop_loop:
+			subs dividend, dividend, temp
+			/**
+			 * vs<means set overflow>: V == 1, vc: V == 0, mi<means minus>: N == 1, pl<means plus>: N == 0
+			 * hi: C == 1 && Z == 0, hs(cs): C == 1, lo(cc): C == 0, ls C == 0 || Z == 1
+			 * "cmp" is like "subs", but C-set means hs because minus singed (two's complement) binary is bigger than plus signed one.
+			 * "sub" means some value with no two's complement plus another value with two's complement
+			 */
+			bcc arm32_udiv_loop_common
+
+			add answer, answer, bit
+
+			b arm32_udiv_loop_loop
+
+		arm32_udiv_loop_common:
+
+			add dividend, dividend, temp @ Reverse If Reaches Minus
+			sub shift, shift, #1
+			b arm32_udiv_loop
+
+	arm32_udiv_common:
+		mov r1, dividend @ dividend is r0, copy dividend to r1 before storing answer to r0
+		mov r0, answer
+		pop {r4-r5,pc}
+
+.unreq dividend
+.unreq divisor
+.unreq shift
+.unreq temp
+.unreq answer
+.unreq bit
+
+
+/**
+ * function arm32_urem
+ * Return Remainder of Unsigned Division of Two Integers
+ *
+ * Parameters
+ * r0: Dividend (Numerator)
+ * r1: Divisor (Denominator)
+ *
+ * Return: r0 (Reminder of Division)
+ */
+.globl arm32_urem
+arm32_urem:
+	/* Auto (Local) Variables, but just Aliases */
+	dividend       .req r0
+	divisor        .req r1
+
+	push {lr}
+
+	bl arm32_udiv
+
+	arm32_urem_common:
+		mov r0, r1
+		pop {pc}
+
+.unreq dividend
+.unreq divisor
+
+
+/**
  * function arm32_sdiv
  * Signed Division of Two Signed Integers
  *
@@ -1646,7 +1749,8 @@ arm32_sdiv:
 			/**
 			 * vs<means set overflow>: V == 1, vc: V == 0, mi<means minus>: N == 1, pl<means plus>: N == 0
 			 * hi: C == 1 && Z == 0, hs(cs): C == 1, lo(cc): C == 0, ls C == 0 || Z == 1
-			 * "cmp" is like "subs", but C-set means hs because minus singed binary is bigger than plus signed one.
+			 * "cmp" is like "subs", but C-set means hs because minus singed (two's complement) binary is bigger than plus signed one.
+			 * "sub" means some value with no two's complement plus another value with two's complement
 			 */
 			blt arm32_sdiv_loop_common
 
