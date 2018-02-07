@@ -110,7 +110,7 @@ macro32_debug temp, 0, 100
 		tst temp, #equ32_i2c_s_txd
 		ldrneb byte, [heap]                      @ If Having Space on FIFO
 		strneb byte, [addr_i2c, #equ32_i2c_fifo]
-		addne heap, heap, #1                     @ Substitute of Multiplication by 8 (Per Byte)
+		addne heap, heap, #1
 		subne size_tx, size_tx, #1
 
 		cmp size_tx, #0
@@ -213,7 +213,7 @@ macro32_debug temp, 0, 112
 		tst temp, #equ32_i2c_s_rxd
 		ldrneb byte, [addr_i2c, #equ32_i2c_fifo] @ If Having Data on FIFO
 		strneb byte, [heap]
-		addne heap, heap, #1                     @ Substitute of Multiplication by 8 (Per Byte)
+		addne heap, heap, #1
 		subne size_rx, size_rx, #1
 
 		cmp size_rx, #0

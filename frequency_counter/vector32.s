@@ -174,23 +174,27 @@ os_debug:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
-	ldr r0, string_hello                      @ Pointer of Array of String
-	ldr r1, ADDR32_COLOR32_WHITE              @ Color (16-bit or 32-bit)
+	ldr r0, ADDR32_PRINT32_FONT_BACKCOLOR
+	ldr r1, ADDR32_COLOR32_BLUE
 	ldr r1, [r1]
-	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r3, [r3]
-	macro32_print_string r0 0 48 r1 r2 200 8 12 r3
+	str r1, [r0]
+
+	ldr r0, string_hello                      @ Pointer of Array of String
+	macro32_print_string r0 0 48 200
 
 	ldr r0, string_helts                      @ Pointer of Array of String
-	macro32_print_string r0 232 200 r1 r2 2 8 12 r3
+	macro32_print_string r0 232 200 2
 
 	ldr r0, string_copy1                      @ Pointer of Array of String
-	macro32_print_string r0 148 284 r1 r2 30 8 12 r3
+	macro32_print_string r0 148 284 30
 
 	ldr r0, string_copy2                      @ Pointer of Array of String
-	macro32_print_string r0 148 300 r1 r2 30 8 12 r3
+	macro32_print_string r0 148 300 30
+
+	ldr r0, ADDR32_PRINT32_FONT_COLOR
+	ldr r1, ADDR32_COLOR32_YELLOW
+	ldr r1, [r1]
+	str r1, [r0]
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
@@ -274,13 +278,7 @@ os_fiq:
 	bl deci32_hexa_to_deci
 	pop {lr}
 
-	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r4, [r4]
-	macro32_print_number_double r0, r1, 100, 200, r2, r3, 16, 8, 12, r4
+	macro32_print_number_double r0, r1, 100, 200, 16
 
 	/* Reset Sequence */
 

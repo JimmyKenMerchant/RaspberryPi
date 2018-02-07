@@ -175,7 +175,7 @@ void _user_start()
 	String temp_str = null;
 	String temp_str2 = null;
 
-	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, COLOR32_YELLOW, back_color, print32_strlen( str_aloha ), 8, 12, FONT_MONO_12PX_ASCII ) ) ) FB32_Y_CARET = 0;
+	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, print32_strlen( str_aloha ) ) ) ) FB32_Y_CARET = 0;
 	_uarttx( str_aloha, print32_strlen( str_aloha ) );
 
 	if ( ! _uartsetheap( initial_line ) ) {
@@ -579,7 +579,7 @@ void _user_start()
 								/*  Pass Spaces and Label*/
 								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								var_temp2.u32 = deci32_string_to_int32( temp_str2, print32_strlen( temp_str2 ) );
-print32_debug( var_temp2.u32, 300, 300  ); 
+/*print32_debug( var_temp2.u32, 300, 300  );*/
 								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
 							}
 						}
@@ -1049,6 +1049,7 @@ print32_debug( var_temp2.u32, 400, 436 );
 						}
 						var_temp.u32 = print32_charsearch( temp_str, 1, 0x2E ); // Ascii Code of Period
 						if ( var_temp.u32 != -1 ) {
+print32_debug( var_temp.u32, 400, 300  );
 							temp_str++;
 							var_temp.u32 = print32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 							if ( var_temp.u32 == -1 ) { // If Not Initialized
@@ -1153,31 +1154,31 @@ bool command_print( String target_str ) {
 		if ( print32_strindex( temp_str, "\\n\0" ) != -1 ) {
 			temp_str_index = print32_strindex( temp_str, "\\n\0" );
 			_uarttx( temp_str, temp_str_index );
-			print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
 			_uarttx( "\r\n\0", 2 );
-			print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
+			if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) FB32_Y_CARET = 0;
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( print32_strindex( temp_str, "\\s\0" ) != -1 ) {
 			temp_str_index = print32_strindex( temp_str, "\\s\0" );
 			_uarttx( temp_str, temp_str_index );
-			print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
 			_uarttx( " \0", 1 );
-			print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 1, 8, 12, FONT_MONO_12PX_ASCII ) );
+			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) FB32_Y_CARET = 0;
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( print32_strindex( temp_str, "\\e\0" ) != -1 ) {
 			temp_str_index = print32_strindex( temp_str, "\\e\0" );
 			_uarttx( temp_str, temp_str_index );
-			print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
 			_uarttx( "\x1B\0", 1 );
-			//print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 1, 8, 12, FONT_MONO_12PX_ASCII ) );
+			//if ( print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) FB32_Y_CARET = 0;
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else {
 			temp_str_index = print32_strlen( temp_str );
 			_uarttx( temp_str, temp_str_index );
-			print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, color, back_color, temp_str_index, 8, 12, FONT_MONO_12PX_ASCII ) );
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
 			temp_str += temp_str_index;
 		}
 	}
@@ -1188,8 +1189,8 @@ bool command_print( String target_str ) {
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
 	uint32 size_array = heap32_mcount( array ); 
 	if ( size_indicator > 2 ) size_indicator = 2;
+	uint32 count_array = size_array >> size_indicator;
 	size_indicator = 1 << size_indicator;
-	uint32 count_array = size_array / size_indicator;
 	int32 length_data = 8 * size_indicator; // 1 Byte equals 8 Bits
 	for ( uint32 i = 0; i < count_array; i++ ) {
 		uint32 data = _load_32( array + size_indicator * i );
@@ -1202,7 +1203,7 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 			}
 		}
 		_uarttx( "\r\n\0", 2 );
-		print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, color, back_color, 2, 8, 12, FONT_MONO_12PX_ASCII ) );
+		if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) FB32_Y_CARET = 0;
 	}
 	return TRUE;
 }

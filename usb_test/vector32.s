@@ -131,17 +131,11 @@ os_debug:
 	bl fb32_clear_color
 
 	ldr r0, string_hello                      @ Pointer of Array of String
-	ldr r1, ADDR32_COLOR32_GREEN              @ Color (16-bit or 32-bit)
-	ldr r1, [r1]
-	ldr r2, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r3, [r3]
-	macro32_print_string r0, 0, 0, r1, r2, 22, 8, 12, r3
-	macro32_print_hexa r0, 0, 50, r1, r2, 22, 8, 12, r3
+	macro32_print_string r0, 0, 0, 22
+	macro32_print_hexa r0, 0, 50, 22
 
 	ldr r0, string_test                       @ Pointer of Array of String
-	macro32_print_string r0, 0, 100, r1, r2, 100, 8, 12, r3
+	macro32_print_string r0, 0, 100, 100
 
 	bl bcm32_poweron_usb
 
@@ -263,13 +257,7 @@ os_fiq:
 	bl deci32_hexa_to_deci
 	pop {lr}
 
-	ldr r2, ADDR32_COLOR32_YELLOW             @ Color (16-bit or 32-bit)
-	ldr r2, [r2]
-	ldr r3, ADDR32_COLOR32_BLUE               @ Background Color (16-bit or 32-bit)
-	ldr r3, [r3]
-	ldr r4, ADDR32_FONT_MONO_12PX_ASCII       @ Font
-	ldr r4, [r4]
-	macro32_print_number_double r0, r1, 80, 388, r2, r3, 16, 8, 12, r4
+	macro32_print_number_double r0, r1, 80, 388, 16
 
 	ldr r0, timer_sub
 	ldr r1, timer_main
@@ -282,7 +270,7 @@ os_fiq:
 	str r0, timer_sub
 	str r1, timer_main
 
-	macro32_print_number_double r0, r1, 80, 400, r2, r3, 16, 8, 12, r4
+	macro32_print_number_double r0, r1, 80, 400, 16
 
 	/* Get HID IN */
 

@@ -58,16 +58,16 @@
  * Use r0 for number_lower, r1 for number_upper, r2 for color, r3 for back_color, r4 for font. Otherwise, printed incorrectly.
  */
 .macro macro32_print_number_double reg0_number_lower reg1_number_upper x_coord y_coord digits:req
-	push {r0-r3,lr}
-	mov r0, #\digits                          @ Length of Characters, Need of PUSH/POP
-	push {r0}
+	push {r0-r4,lr}
 	mov r0, \reg0_number_lower
 	mov r1, \reg1_number_upper
 	mov r2, #\x_coord                         @ X Coordinate
 	mov r3, #\y_coord                         @ Y Coordinate
+	mov r4, #\digits                          @ Length of Characters, Need of PUSH/POP
+	push {r4}
 	bl print32_number_double
 	add sp, sp, #4                            @ Increment SP because of push
-	pop {r0-r3,lr}
+	pop {r0-r4,lr}
 .endm
 
 
