@@ -12,21 +12,14 @@
  * Print Hexadecimal Value
  * Use r0 for Array of Bytes, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
  */
-.macro macro32_print_hexa reg0_array x_coord y_coord reg1_color reg2_back_color length char_width char_height reg3_font:req
-	push {r0-r8,lr}
+.macro macro32_print_hexa reg0_array x_coord y_coord length:req
+	push {r0-r3,lr}
 	mov r0, \reg0_array                       @ Pointer of Array of Bytes
-	mov r8, \reg3_font
-	mov r3, \reg1_color                       @ Color (16-bit or 32-bit)
-	mov r4, \reg2_back_color                  @ Background Color (16-bit or 32-bit)
 	mov r1, #\x_coord                         @ X Coordinate
 	mov r2, #\y_coord                         @ Y Coordinate
-	mov r5, #\length                          @ Length of Characters, Need of PUSH/POP
-	mov r6, #\char_width
-	mov r7, #\char_height
-	push {r4-r8}
+	mov r3, #\length                          @ Length of Characters
 	bl print32_hexa
-	add sp, sp, #20                           @ Increment SP because of push
-	pop {r0-r8,lr}
+	pop {r0-r3,lr}
 .endm
 
 
@@ -34,21 +27,14 @@
  * Print String
  * Use r0 for string, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
  */
-.macro macro32_print_string reg0_string x_coord y_coord reg1_color reg2_back_color length char_width char_height reg3_font:req
-	push {r0-r8,lr}
+.macro macro32_print_string reg0_string x_coord y_coord length:req
+	push {r0-r3,lr}
 	mov r0, \reg0_string                      @ Pointer of Array of String
-	mov r8, \reg3_font
-	mov r3, \reg1_color                       @ Color (16-bit or 32-bit)
-	mov r4, \reg2_back_color                  @ Background Color (16-bit or 32-bit)
 	mov r1, #\x_coord                         @ X Coordinate
 	mov r2, #\y_coord                         @ Y Coordinate
-	mov r5, #\length                          @ Length of Characters, Need of PUSH/POP
-	mov r6, #\char_width
-	mov r7, #\char_height
-	push {r4-r8}
+	mov r3, #\length                          @ Length of Characters
 	bl print32_string
-	add sp, sp, #20                           @ Increment SP because of push
-	pop {r0-r8,lr}
+	pop {r0-r3,lr}
 .endm
 
 
@@ -56,21 +42,14 @@
  * Print Number (32-bit)
  * Use r0 for number, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
  */
-.macro macro32_print_number reg0_number x_coord y_coord reg1_color reg2_back_color digits char_width char_height reg3_font:req
-	push {r0-r8,lr}
+.macro macro32_print_number reg0_number x_coord y_coord digits:req
+	push {r0-r3,lr}
 	mov r0, \reg0_number
-	mov r8, \reg3_font
-	mov r3, \reg1_color                       @ Color (16-bit or 32-bit)
-	mov r4, \reg2_back_color                  @ Background Color (16-bit or 32-bit)
 	mov r1, #\x_coord                         @ X Coordinate
 	mov r2, #\y_coord                         @ Y Coordinate
-	mov r5, #\digits                          @ Length of Characters, Need of PUSH/POP
-	mov r6, #\char_width
-	mov r7, #\char_height
-	push {r4-r8}
+	mov r3, #\digits                          @ Length of Characters
 	bl print32_number
-	add sp, sp, #20                           @ Increment SP because of push
-	pop {r0-r8,lr}
+	pop {r0-r3,lr}
 .endm
 
 
@@ -78,22 +57,17 @@
  * Print Number (64-bit)
  * Use r0 for number_lower, r1 for number_upper, r2 for color, r3 for back_color, r4 for font. Otherwise, printed incorrectly.
  */
-.macro macro32_print_number_double reg0_number_lower reg1_number_upper x_coord y_coord reg2_color reg3_back_color digits:req char_width char_height reg4_font
-	push {r0-r9,lr}
+.macro macro32_print_number_double reg0_number_lower reg1_number_upper x_coord y_coord digits:req
+	push {r0-r3,lr}
+	mov r0, #\digits                          @ Length of Characters, Need of PUSH/POP
+	push {r0}
 	mov r0, \reg0_number_lower
 	mov r1, \reg1_number_upper
-	mov r9, \reg4_font
-	mov r4, \reg2_color                       @ Color (16-bit or 32-bit)
-	mov r5, \reg3_back_color                  @ Background Color (16-bit or 32-bit)
 	mov r2, #\x_coord                         @ X Coordinate
 	mov r3, #\y_coord                         @ Y Coordinate
-	mov r6, #\digits                          @ Length of Characters, Need of PUSH/POP
-	mov r7, #\char_width
-	mov r8, #\char_height
-	push {r4-r9}
 	bl print32_number_double
-	add sp, sp, #24                           @ Increment SP because of push
-	pop {r0-r9,lr}
+	add sp, sp, #4                            @ Increment SP because of push
+	pop {r0-r3,lr}
 .endm
 
 

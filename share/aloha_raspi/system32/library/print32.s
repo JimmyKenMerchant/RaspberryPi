@@ -16,114 +16,6 @@
  *
  */
 
-
-/**
- * function print32_debug_hexa
- * Print Hexadecimal Values in Heap for Debug Use
- *
- * Parameters
- * r0: Address of Heap to Be Shown
- * r1: X Coordinate
- * r2: Y Coordinate
- * r3: Length
- *
- * Return: r0 (0 as sucess)
- */
-.globl print32_debug_hexa
-print32_debug_hexa:
-	/* Auto (Local) Variables, but just Aliases */
-	pointer           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
-	color             .req r3 @ Parameter, Register for Argument, Scratch Register
-	color_back        .req r4
-	length            .req r5
-	char_width        .req r6
-	char_height       .req r7
-	font              .req r8
-
-	push {r4-r8,lr}
-	
-	mov length, color
-
-	mvn color, #0
-	mov color_back, #0xFF000000
-	mov char_width, #8
-	mov char_height, #12
-	ldr font, print32_debug_hexa_addr_font
-	ldr font, [font]
-	push {r4-r8}
-	bl print32_hexa
-	add sp, sp, #20
-
-	pop {r4-r8,pc}
-
-print32_debug_hexa_addr_font: .word FONT_MONO_12PX_ASCII
-
-.unreq pointer
-.unreq x_coord
-.unreq y_coord
-.unreq color
-.unreq color_back
-.unreq length
-.unreq char_width
-.unreq char_height
-.unreq font
-
-
-/**
- * function print32_debug
- * Print Number in Register for Debug Use
- *
- * Parameters
- * r0: Register to Be Shown
- * r1: X Coordinate
- * r2: Y Coordinate
- *
- * Usage: r0-r8
- * Return: r0 (0 as sucess)
- */
-.globl print32_debug
-print32_debug:
-	/* Auto (Local) Variables, but just Aliases */
-	register          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
-	color             .req r3
-	color_back        .req r4
-	length            .req r5
-	char_width        .req r6
-	char_height       .req r7
-	font              .req r8
-
-	push {r4-r8,lr}
-	
-	mvn color, #0
-	mov color_back, #0xFF000000
-	mov length, #8
-	mov char_width, #8
-	mov char_height, #12
-	ldr font, print32_debug_addr_font
-	ldr font, [font]
-	push {r4-r8}
-	bl print32_number
-	add sp, sp, #20
-
-	pop {r4-r8,pc}
-
-print32_debug_addr_font: .word FONT_MONO_12PX_ASCII
-
-.unreq register
-.unreq x_coord
-.unreq y_coord
-.unreq color
-.unreq color_back
-.unreq length
-.unreq char_width
-.unreq char_height
-.unreq font
-
-
 /**
  * function print32_set_caret
  * Set Caret Position from Return Value of `print32_number*` or `print32_string*` functions
@@ -965,6 +857,18 @@ print32_strlen:
 .unreq length
 
 
+.globl PRINT32_FONT_BASE
+.globl PRINT32_FONT_WIDTH
+.globl PRINT32_FONT_HEIGHT
+.globl PRINT32_FONT_COLOR
+.globl PRINT32_FONT_BACKCOLOR
+PRINT32_FONT_BASE:      .word FONT_MONO_12PX_ASCII_NULL
+PRINT32_FONT_WIDTH:     .word 8
+PRINT32_FONT_HEIGHT:    .word 12
+PRINT32_FONT_COLOR:     .word 0xFFFFFFFF
+PRINT32_FONT_BACKCOLOR: .word 0xFF000000
+
+
 /**
  * function print32_hexa
  * Print Hexadecimal Values in Heap
@@ -973,12 +877,7 @@ print32_strlen:
  * r0: Pointer of Array of Bytes (Heap)
  * r1: X Coordinate
  * r2: Y Coordinate
- * r3: Color (16-bit or 32-bit)
- * r4: Background Color (16-bit or 32-bit)
- * r5: Length of Characters, Left to Right, Need of PUSH/POP
- * r6: Character Width in Pixels
- * r7: Character Height in Pixels
- * r8: Font Set Base to Picture Character
+ * r3: Length of Characters, Left to Right, Need of PUSH/POP
  *
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
@@ -989,24 +888,24 @@ print32_hexa:
 	byte_point        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	color             .req r3 @ Parameter, Register for Argument and Result, Scratch Register
-	back_color        .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	length            .req r5 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width        .req r6 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height       .req r7 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	font_ascii_base   .req r8 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	length            .req r3 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	color             .req r4
+	back_color        .req r5
+	char_width        .req r6
+	char_height       .req r7
+	font_ascii_base   .req r8
 	byte              .req r9
 	length_max        .req r10
-	length_hexa       .req r11
 
-	push {r4-r11} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r10,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	add sp, sp, #32                                                @ r4-r11 offset 32 bytes
-	pop {back_color,length,char_width,char_height,font_ascii_base} @ Get Fifth to Eighth Arguments
-	sub sp, sp, #52                                                @ Retrieve SP
+	ldr color, PRINT32_FONT_COLOR
+	ldr back_color, PRINT32_FONT_BACKCOLOR
+	ldr char_width, PRINT32_FONT_WIDTH
+	ldr char_height, PRINT32_FONT_HEIGHT
+	ldr font_ascii_base, PRINT32_FONT_BASE
 
 	mov length_max, #equ32_print32_hexa_length_max
-	mov length_hexa, #2                          @ 2 Digits
 
 	print32_hexa_loop:
 		cmp length, #0                           @ `for (; length > 0; length--)`
@@ -1019,20 +918,17 @@ print32_hexa:
 
 		/* Picture Hexadecimal Value */
 
-		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
 		mov r0, byte
-		push {char_width,char_height,font_ascii_base}
-		push {length_hexa}
-		push {back_color}                        @ Most Top on SP
+		mov r3, #2                               @ 2 Digits
 		bl print32_number
-		add sp, sp, #20
 		push {r1}
 		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
-		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_hexa_error
 
-		ldr x_coord, [sp, #-24]
+		ldr x_coord, [sp, #-20]
 		mov y_coord, x_coord
 		lsr x_coord, x_coord, #16
 		lsl y_coord, y_coord, #16
@@ -1054,22 +950,19 @@ print32_hexa:
 	print32_hexa_common:
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
-		pop {r4-r11} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-
-		mov pc, lr
+		pop {r4-r10,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 .unreq byte_point
 .unreq x_coord
 .unreq y_coord
+.unreq length
 .unreq color
 .unreq back_color
-.unreq length
 .unreq char_width
 .unreq char_height
 .unreq font_ascii_base
 .unreq byte
 .unreq length_max
-.unreq length_hexa
 
 
 /**
@@ -1080,12 +973,7 @@ print32_hexa:
  * r0: Pointer of Array of String
  * r1: X Coordinate
  * r2: Y Coordinate
- * r3: Color (16-bit or 32-bit)
- * r4: Background Color (16-bit or 32-bit)
- * r5: Length of Characters, Left to Right, Need of PUSH/POP
- * r6: Character Width in Pixels
- * r7: Character Height in Pixels
- * r8: Font Set Base to Picture Character
+ * r3: Length of Characters, Left to Right
  *
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
@@ -1096,21 +984,23 @@ print32_string:
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	color             .req r3 @ Parameter, Register for Argument and Result, Scratch Register
-	back_color        .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	length            .req r5 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width        .req r6 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height       .req r7 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	font_ascii_base   .req r8 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	length            .req r3 @ Parameter, Register for Argument and Result, Scratch Register
+	color             .req r4
+	back_color        .req r5
+	char_width        .req r6
+	char_height       .req r7
+	font_ascii_base   .req r8
 	string_byte       .req r9
 	width             .req r10
 	tab_length        .req r11
 
-	push {r4-r11} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r11,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	add sp, sp, #32                                                @ r4-r11 offset 32 bytes
-	pop {back_color,length,char_width,char_height,font_ascii_base} @ Get Fifth to Eighth Arguments
-	sub sp, sp, #52                                                @ Retrieve SP
+	ldr color, PRINT32_FONT_COLOR
+	ldr back_color, PRINT32_FONT_BACKCOLOR
+	ldr char_width, PRINT32_FONT_WIDTH
+	ldr char_height, PRINT32_FONT_HEIGHT
+	ldr font_ascii_base, PRINT32_FONT_BASE
 
 	ldr width, PRINT32_FB32_WIDTH
 	ldr width, [width]
@@ -1135,27 +1025,28 @@ print32_string:
 
 		/* Clear the Block by Color */
 
-		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
 		mov r0, back_color
 		mov r3, char_width
 		push {char_height} 
 		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
-		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
 
 		/* Picture String */
 
 		lsl string_byte, string_byte, #2         @ Substitute of Multiplication by #4 (mul)
 
-		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [font_ascii_base, string_byte]   @ Character Pointer
+		mov r3, color
 		push {char_width,char_height}            @ Push Character Width and Hight
 		bl fb32_char
 		add sp, sp, #8
 		cmp r0, #0                               @ Compare Return 0
-		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
 
 		add x_coord, x_coord, char_width
@@ -1199,16 +1090,14 @@ print32_string:
 	print32_string_common:
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
-		pop {r4-r11} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-
-		mov pc, lr
+		pop {r4-r11,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 .unreq string_point
 .unreq x_coord
 .unreq y_coord
+.unreq length
 .unreq color
 .unreq back_color
-.unreq length
 .unreq char_width
 .unreq char_height
 .unreq font_ascii_base
@@ -1226,12 +1115,7 @@ print32_string:
  * r1: Upper Half of the Number
  * r2: X Coordinate
  * r3: Y Coordinate
- * r4: Color (16-bit or 32-bit), Need of PUSH/POP
- * r5: Background Color (16-bit or 32-bit)
- * r6: length of Digits, 16 Digits Maximum, Left to Right, Need of PUSH/POP
- * r7: Character Width in Pixels
- * r8: Character Height in Pixels
- * r9: Font Set Base to Picture Numbers
+ * r4: length of Digits, 16 Digits Maximum, Left to Right, Need of PUSH/POP
  *
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
@@ -1243,19 +1127,14 @@ print32_number_double:
 	number_upper      .req r1  @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord           .req r2  @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord           .req r3  @ Parameter, Register for Argument, Scratch Register
-	color             .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	back_color        .req r5  @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	length            .req r6  @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width        .req r7  @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height       .req r8  @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	font_ascii_base   .req r9  @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	length_lower      .req r10
+	length            .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	length_lower      .req r5
 
-	push {r4-r10} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+	push {r4-r5,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	add sp, sp, #28                                                    @ r4-r10 offset 28 bytes
-	pop {color,back_color,length,char_width,char_height,font_ascii_base} @ Get Fifth to Nineth Argument
-	sub sp, sp, #52                                                    @ Retrieve SP
+	add sp, sp, #12                                                    @ r4-r5,lr offset 12 bytes
+	pop {length}    @ Get Fifth Argument
+	sub sp, sp, #16                                                    @ Retrieve SP
 
 	mov length_lower, #0
 
@@ -1266,19 +1145,17 @@ print32_number_double:
 
 		/* Print Upper Half */
 
-		push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3}                    @ Equals to stmfd (stack pointer full, decrement order)
 		mov r0, number_upper	
 		mov r1, x_coord
 		mov r2, y_coord
-		mov r3, color
-		push {back_color,length,char_width,char_height,font_ascii_base}
+		mov r3, length
 		bl print32_number
-		add sp, sp, #20
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                         @ Compare Return 0
+		cmp r0, #0                      @ Compare Return 0
 		addne length, r0, length_lower
-		pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                     @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_double_error
 
 		cmp length_lower, #0
@@ -1286,7 +1163,7 @@ print32_number_double:
 
 		/* Print Lower Half */
 
-		ldr x_coord, [sp, #-24]
+		ldr x_coord, [sp, #-20]
 		mov y_coord, x_coord
 		lsr x_coord, x_coord, #16
 		lsl y_coord, y_coord, #16
@@ -1294,18 +1171,16 @@ print32_number_double:
 
 		mov length, length_lower
 
-		push {r0-r3,lr}                    @ Equals to stmfd (stack pointer full, decrement order)	
+		push {r0-r3}                    @ Equals to stmfd (stack pointer full, decrement order)	
 		mov r1, x_coord
 		mov r2, y_coord
-		mov r3, color
-		push {back_color,length,char_width,char_height,font_ascii_base}
+		mov r3, length
 		bl print32_number
-		add sp, sp, #20
 		push {r1}
 		add sp, sp, #4
-		cmp r0, #0                         @ Compare Return 0
+		cmp r0, #0                      @ Compare Return 0
 		movne length, r0
-		pop {r0-r3,lr}                     @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                     @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_double_error
 
 	print32_number_double_success:
@@ -1316,21 +1191,14 @@ print32_number_double:
 		mov r0, length                             @ Return with Number of Characters Which Were Not Drawn
 
 	print32_number_double_common:
-		ldr r1, [sp, #-24]
-		pop {r4-r10} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-
-		mov pc, lr
+		ldr r1, [sp, #-20]
+		pop {r4-r5,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 .unreq number_lower
 .unreq number_upper
 .unreq x_coord
 .unreq y_coord
-.unreq color
-.unreq back_color
 .unreq length
-.unreq char_width
-.unreq char_height
-.unreq font_ascii_base
 .unreq length_lower
 
 
@@ -1342,14 +1210,8 @@ print32_number_double:
  * r0: Register to show numbers
  * r1: X Coordinate
  * r2: Y Coordinate
- * r3: Color (16-bit or 32-bit)
- * r4: Background Color (16-bit or 32-bit)
- * r5: length of Digits, 8 Digits Maximum, Left to Right, Need of PUSH/POP
- * r6: Character Width in Pixels
- * r7: Character Height in Pixels
- * r8: Font Set Base to Picture Numbers
+ * r3: length of Digits, 8 Digits Maximum, Left to Right
  *
- * Usage: r0-r11
  * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
@@ -1359,27 +1221,29 @@ print32_number:
 	number          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	x_coord         .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	y_coord         .req r2 @ Parameter, Register for Argument, Scratch Register
-	color           .req r3 @ Parameter, Register for Argument, Scratch Register
-	back_color      .req r4 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	length          .req r5 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_width      .req r6 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	char_height     .req r7 @ Parameter, have to PUSH/POP in ARM C lang Regulation
-	font_ascii_base .req r8 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	length          .req r3 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	color           .req r4
+	back_color      .req r5
+	char_width      .req r6
+	char_height     .req r7
+	font_ascii_base .req r8
 	width           .req r9
 	i               .req r10
 	bitmask         .req r11
 
-	push {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			 @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+	push {r4-r11,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                     @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	add sp, sp, #32                                              @ r4-r11 offset 32 bytes
-	pop {back_color,length,char_width,char_height,font_ascii_base} @ Get Fifth to Eighth Arguments
-	sub sp, sp, #52                                              @ Retrieve SP
+	ldr color, PRINT32_FONT_COLOR
+	ldr back_color, PRINT32_FONT_BACKCOLOR
+	ldr char_width, PRINT32_FONT_WIDTH
+	ldr char_height, PRINT32_FONT_HEIGHT
+	ldr font_ascii_base, PRINT32_FONT_BASE
 
 	ldr width, PRINT32_FB32_WIDTH
 	ldr width, [width]
 
-	mov i, #8                                        @ `for ( int i = 8; i >= 0; --i )`
+	mov i, #8                                @ `for ( int i = 8; i >= 0; --i )`
 
 	print32_number_loop:
 		sub i, i, #1
@@ -1388,14 +1252,14 @@ print32_number:
 
 		/* Clear the Block by Color */
 
-		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
 		mov r0, back_color
 		mov r3, char_width
 		push {char_height} 
 		bl fb32_block_color
 		add sp, sp, #4
 		cmp r0, #0                               @ Compare Return 0
-		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_error
 
 		/* Picture Number */
@@ -1411,13 +1275,14 @@ print32_number:
 		lsl bitmask, bitmask, #2                 @ Substitute of Multiplication by 4
 		lsr i, i, #2                             @ Substitute of Division by 4
 
-		push {r0-r3,lr}                          @ Equals to stmfd (stack pointer full, decrement order)
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
 		ldr r0, [font_ascii_base, bitmask]       @ Character Pointer
+		mov r3, color
 		push {char_width,char_height}            @ Push Character Width and Hight
 		bl fb32_char
 		add sp, sp, #8
 		cmp r0, #0                               @ Compare Return 0
-		pop {r0-r3,lr}                           @ Retrieve Registers Before Error Check, POP does not flags-update
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_number_error
 
 		add x_coord, char_width 
@@ -1445,20 +1310,19 @@ print32_number:
 	print32_number_common:
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
-		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		pop {r4-r11,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 		/*pop {r3}*/    @ To Prevent Stack Pointer Increment after Return Because of the 5th Parameter
-                                @ BUT, this increment is in charge of CALLER, not CALLEE on ARM C Lang Regulation
+                        @ BUT, this increment is in charge of CALLER, not CALLEE on ARM C Lang Regulation
 
-		mov pc, lr
 
 .unreq number
 .unreq x_coord
 .unreq y_coord
+.unreq length
 .unreq color
 .unreq back_color
-.unreq length
 .unreq char_width
 .unreq char_height
 .unreq font_ascii_base
@@ -1466,5 +1330,73 @@ print32_number:
 .unreq i
 .unreq bitmask
 
+
 PRINT32_FB32_WIDTH:  .word FB32_WIDTH
 PRINT32_FB32_HEIGHT: .word FB32_HEIGHT
+
+
+/**
+ * function print32_debug_hexa
+ * Print Hexadecimal Values in Heap for Debug Use
+ *
+ * Parameters
+ * r0: Address of Heap to Be Shown
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Length
+ *
+ * Return: r0 (0 as sucess)
+ */
+.globl print32_debug_hexa
+print32_debug_hexa:
+	/* Auto (Local) Variables, but just Aliases */
+	pointer           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
+	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
+	length            .req r3 @ Parameter, Register for Argument, Scratch Register
+
+	push {lr}
+	
+	bl print32_hexa
+
+	pop {pc}
+
+.unreq pointer
+.unreq x_coord
+.unreq y_coord
+.unreq length
+
+
+/**
+ * function print32_debug
+ * Print Number in Register for Debug Use
+ *
+ * Parameters
+ * r0: Register to Be Shown
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ *
+ * Usage: r0-r8
+ * Return: r0 (0 as sucess)
+ */
+.globl print32_debug
+print32_debug:
+	/* Auto (Local) Variables, but just Aliases */
+	register          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
+	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
+	length            .req r3
+
+	mov length, #8
+
+	push {lr}
+	
+	bl print32_number
+
+	pop {pc}
+
+.unreq register
+.unreq x_coord
+.unreq y_coord
+.unreq length
+

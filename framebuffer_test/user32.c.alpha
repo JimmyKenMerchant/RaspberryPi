@@ -19,19 +19,16 @@ void _user_start()
 	String string4 = "0.01,0.1,3.01,4.1,5.01,6.1,7.2222\0";
 	String string5 = "0.4,2.0,3.0,4.0\0";
 	String string6 = "2.0,3.0,4.0,5.0\0";
-	String newline = "\n\0";
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = 200;
-	uint32 color = COLOR32_WHITE;
-	uint32 back_color = COLOR32_BLACK;
 	uint32 clear_color = COLOR32_NAVYBLUE;
 	float32 start_fdegree = -90.0;
 	float32 end_fdegree = 20.0;
 
-	print32_set_caret( print32_string( string1, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string1 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( string1, FB32_X_CARET, FB32_Y_CARET, print32_strlen( string1 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string2, FB32_X_CARET, FB32_Y_CARET, print32_strlen( string2 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	char8 char_key = 0x65; // "e"
 
@@ -62,55 +59,54 @@ void _user_start()
 
 	uint32 error = heap32_mcopy( (uint32)copy_string2, 0, (uint32)copy_string1, 1, 3 );
 
-	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( (uint32)search_char, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_number( count_char, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	print32_set_caret( print32_number( count_char, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( (uint32)search_string, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	print32_set_caret( print32_number( (uint32)search_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( copy_string1, FB32_X_CARET, FB32_Y_CARET, print32_strlen( copy_string1 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	print32_set_caret( print32_string( copy_string1, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( copy_string1 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( copy_string2, FB32_X_CARET, FB32_Y_CARET, print32_strlen( copy_string2 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	print32_set_caret( print32_string( copy_string2, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( copy_string2 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
-
-	print32_set_caret( print32_number( (uint32)error, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( (uint32)error, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	obj string3_obj = deci32_string_to_intarray( string3, print32_strlen( string3 ), 0 );
 	//String dup_string3 = deci32_intarray_to_string_deci( string3_obj, 0, 1, 1 );
 	//String dup_string3 = deci32_intarray_to_string_hexa( string3_obj, 0, 1, 1, 1 );
 	String dup_string3 = deci32_intarray_to_string_bin( string3_obj, 0, 1, 1 );
 
-	print32_set_caret( print32_string( dup_string3, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string3 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( dup_string3, FB32_X_CARET, FB32_Y_CARET, print32_strlen( dup_string3 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	obj string4_obj = deci32_string_to_farray( string4, print32_strlen( string4 ) );
 	String dup_string4 = deci32_farray_to_string( string4_obj, 1, 8, 0 );
 
-	print32_set_caret( print32_string( dup_string4, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( dup_string4 ), 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( dup_string4, FB32_X_CARET, FB32_Y_CARET, print32_strlen( dup_string4 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	obj array_string = print32_strlist( dup_string4, print32_strlen( dup_string4 ), 0x2C );
 
 	uint32 length_array_string = heap32_mcount( array_string );
-	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	for ( uint32 i = 0; i < length_array_string; i+=4 ) {
 		String array_string_part = (String)_load_32( array_string + i );
-		print32_set_caret( print32_string( array_string_part, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( array_string_part ), 8, 12, FONT_MONO_12PX_ASCII ) );
-		print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
-		print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-		print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+		print32_set_caret( print32_string( array_string_part, FB32_X_CARET, FB32_Y_CARET, print32_strlen( array_string_part ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 		heap32_mfree( (uint32)array_string_part );
 	}
 
-	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, 8, 8, 12, FONT_MONO_12PX_ASCII ) );
-	print32_set_caret( print32_string( newline, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( newline ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_number( length_array_string, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( array_string );
 	heap32_mfree( (obj)copy_string1 );
@@ -132,7 +128,7 @@ void _user_start()
 	//float32 answer_float = math32_vec_dotproduct( string5_obj, string6_obj, 4 );
 	//String answer_string = deci32_float32_to_string( answer_float, 0, 20, 0 );
 
-	print32_set_caret( print32_string( answer_string, FB32_X_CARET, FB32_Y_CARET, color, back_color, print32_strlen( answer_string ), 8, 12, FONT_MONO_12PX_ASCII ) );
+	print32_set_caret( print32_string( answer_string, FB32_X_CARET, FB32_Y_CARET, print32_strlen( answer_string ) ) );
 
 	heap32_mfree( answer_obj );
 	heap32_mfree( (obj)answer_string );
