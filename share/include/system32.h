@@ -542,125 +542,6 @@ extern uint32 print32_set_caret
 
 
 /**
- * Search Second Key String in First String
- *
- * Return: Index of First Character in String, if not -1
- */
-extern int32 print32_strindex
-(
-	String string,
-	String string_key
-);
-
-
-/**
- * Search Byte Character in String
- *
- * Return: Index of Character, if not -1
- */
-extern int32 print32_charindex
-(
-	String string,
-	char8 character_key
-);
-
-
-/**
- * Search Byte Character in String within Range
- *
- * Return: Index of Character, if not -1
- */
-extern int32 print32_charsearch
-(
-	String string,
-	uint32 length_string,
-	char8 character_key
-);
-
-
-/**
- * Search Second Key String in First String within Range
- *
- * Return: Index of First Character in String, if not -1
- */
-extern int32 print32_strsearch
-(
-	String string,
-	uint32 length_string,
-	String string_key,
-	uint32 length_string_key
-);
-
-
-/**
- * Count Byte Character in String
- *
- * Return: Number of Counts for Character Key
- */
-extern uint32 print32_charcount
-(
-	String string,
-	uint32 length,
-	char8 character_key
-);
-
-
-/**
- * Check Whether One Pair of Strings Are Same
- *
- * Return: 1 is Match, 0 is Not Match
- */
-extern uint32 print32_strmatch
-(
-	String string,
-	uint32 length_string,
-	String string_key,
-	uint32 length_string_key
-);
-
-
-/**
- * Concatenation of Two Strings
- * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
- * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.
- * But that makes buffer overflow easily. So in this function, print32_strcat returns new Pointer of Array.
- * Note that this function makes new memory space to be needed to make the memory free.
- *
- * Return: Pointer of Concatenated String
- */
-extern String print32_strcat
-(
-	String string1,
-	String string2
-);
-
-
-/**
- * Make Array of String List from One String
- * Caution! This Function Generates Two-dimensional Array in Heap Area.
- *
- * Return: Pointer of Two-dimensional Array of List, if 0, no enough space for new Pointer of Array
- */
-extern obj print32_strlist
-(
-	String string,
-	uint32 length_string,
-	char8 separater
-);
-
-
-/**
- * Count 1-Byte Words of String
- *
- * Return: Number of Words Maximum of 4,294,967,295 words
- */
-extern uint32 print32_strlen
-(
-	String string
-);
-
-
-/**
  * rint String with 1 Byte Character
  *
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
@@ -729,6 +610,129 @@ extern uint32 print32_debug
 	uint32 value,
 	int32 x_coord,
 	int32 y_coord
+);
+
+
+/********************************
+ * system32/library/str32.s
+ ********************************/
+
+/**
+ * Search Second Key String in First String
+ *
+ * Return: Index of First Character in String, if not -1
+ */
+extern int32 str32_strindex
+(
+	String string,
+	String string_key
+);
+
+
+/**
+ * Search Byte Character in String
+ *
+ * Return: Index of Character, if not -1
+ */
+extern int32 str32_charindex
+(
+	String string,
+	char8 character_key
+);
+
+
+/**
+ * Search Byte Character in String within Range
+ *
+ * Return: Index of Character, if not -1
+ */
+extern int32 str32_charsearch
+(
+	String string,
+	uint32 length_string,
+	char8 character_key
+);
+
+
+/**
+ * Search Second Key String in First String within Range
+ *
+ * Return: Index of First Character in String, if not -1
+ */
+extern int32 str32_strsearch
+(
+	String string,
+	uint32 length_string,
+	String string_key,
+	uint32 length_string_key
+);
+
+
+/**
+ * Count Byte Character in String
+ *
+ * Return: Number of Counts for Character Key
+ */
+extern uint32 str32_charcount
+(
+	String string,
+	uint32 length,
+	char8 character_key
+);
+
+
+/**
+ * Check Whether One Pair of Strings Are Same
+ *
+ * Return: 1 is Match, 0 is Not Match
+ */
+extern uint32 str32_strmatch
+(
+	String string,
+	uint32 length_string,
+	String string_key,
+	uint32 length_string_key
+);
+
+
+/**
+ * Concatenation of Two Strings
+ * Caution! On the standard C Langage string.h library, strcat returns Pointer of Array of the first argument with
+ * the concatenated string. That needs to have enough spaces of memory on the first one to concatenate.
+ * But that makes buffer overflow easily. So in this function, str32_strcat returns new Pointer of Array.
+ * Note that this function makes new memory space to be needed to make the memory free.
+ *
+ * Return: Pointer of Concatenated String
+ */
+extern String str32_strcat
+(
+	String string1,
+	String string2
+);
+
+
+/**
+ * Make Array of String List from One String
+ * Caution! This Function Generates Two-dimensional Array in Heap Area.
+ *
+ * Return: Pointer of Two-dimensional Array of List, if 0, no enough space for new Pointer of Array
+ */
+extern obj str32_strlist
+(
+	String string,
+	uint32 length_string,
+	char8 separater
+);
+
+
+/**
+ * Count 1-Byte Words of String
+ *
+ * Return: Number of Words Maximum of 4,294,967,295 words
+ */
+extern uint32 str32_strlen
+(
+	String string
 );
 
 
@@ -1162,7 +1166,7 @@ extern obj math32_vec_crossproduct
 
 
 /********************************
- * system32/library/deci32.s
+ * system32/library/cvt32.s
  ********************************/
 
 /**
@@ -1172,7 +1176,7 @@ extern obj math32_vec_crossproduct
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String deci32_float32_to_string
+extern String cvt32_float32_to_string
 (
 	float32 float_number,
 	uint32 min_integer, // 16 Digits Max
@@ -1186,7 +1190,7 @@ extern String deci32_float32_to_string
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String deci32_int32_to_string_deci
+extern String cvt32_int32_to_string_deci
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
@@ -1199,7 +1203,7 @@ extern String deci32_int32_to_string_deci
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String deci32_int32_to_string_hexa
+extern String cvt32_int32_to_string_hexa
 (
 	int32 number, // If You Use This for uint32, You Need to Cast It to int32 
 	uint32 min_length,
@@ -1214,7 +1218,7 @@ extern String deci32_int32_to_string_hexa
  *
  * Return: Pointer of String, If Zero, Memory Space for String Can't Be Allocated
  */
-extern String deci32_int32_to_string_bin
+extern String cvt32_int32_to_string_bin
 (
 	uint32 number, 
 	uint32 min_length,
@@ -1231,7 +1235,7 @@ extern String deci32_int32_to_string_bin
  *
  * Return: Unsigned Integer
  */
-extern uint32 deci32_string_to_hexa
+extern uint32 cvt32_string_to_hexa
 (
 	String string,
 	uint32 length_string
@@ -1247,7 +1251,7 @@ extern uint32 deci32_string_to_hexa
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
  */
-extern int64 deci32_string_to_deci
+extern int64 cvt32_string_to_deci
 (
 	String string,
 	uint32 length_string
@@ -1263,7 +1267,7 @@ extern int64 deci32_string_to_deci
  *
  * Return: Unsigned Integer
  */
-extern uint32 deci32_string_to_bin
+extern uint32 cvt32_string_to_bin
 (
 	String string,
 	uint32 length_string
@@ -1279,7 +1283,7 @@ extern uint32 deci32_string_to_bin
  *
  * Return: 32-bit Unsigned/Signed Integer
  */
-extern int32 deci32_string_to_int32
+extern int32 cvt32_string_to_int32
 (
 	String string,
 	uint32 length_string
@@ -1293,7 +1297,7 @@ extern int32 deci32_string_to_int32
  *
  * Return: 32-bit Float
  */
-extern float32 deci32_string_to_float32
+extern float32 cvt32_string_to_float32
 (
 	String string,
 	uint32 length_string // Max. 10 if Unsigned, 11 if Signed
@@ -1305,7 +1309,7 @@ extern float32 deci32_string_to_float32
  *
  * Return: Lower 32 Bits (Lower Bits of Decimal Number), Upper 32 Bits (Upper Bits of Decimal Number)
  */
-extern uint64 deci32_hexa_to_deci
+extern uint64 cvt32_hexa_to_deci
 (
 	uint32 number_hexa
 );
@@ -1317,7 +1321,7 @@ extern uint64 deci32_hexa_to_deci
  *
  * Return: Hexadecimal Number
  */
-extern uint32 deci32_deci_to_hexa
+extern uint32 cvt32_deci_to_hexa
 (
 	uint64 number_deci
 );
@@ -1329,7 +1333,7 @@ extern uint32 deci32_deci_to_hexa
  *
  * Return: Heap of Array, 0 as not succeeded
  */
-extern obj deci32_string_to_intarray
+extern obj cvt32_string_to_intarray
 (
 	String string,
 	uint32 length_string,
@@ -1342,7 +1346,7 @@ extern obj deci32_string_to_intarray
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String deci32_intarray_to_string_deci
+extern String cvt32_intarray_to_string_deci
 (
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
@@ -1356,7 +1360,7 @@ extern String deci32_intarray_to_string_deci
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String deci32_intarray_to_string_hexa
+extern String cvt32_intarray_to_string_hexa
 (
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
@@ -1371,7 +1375,7 @@ extern String deci32_intarray_to_string_hexa
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String deci32_intarray_to_string_bin
+extern String cvt32_intarray_to_string_bin
 (
 	obj object_array,
 	uint32 size_block, // 0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes
@@ -1386,7 +1390,7 @@ extern String deci32_intarray_to_string_bin
  *
  * Return: Heap of Array, 0 as not succeeded
  */
-extern obj deci32_string_to_farray
+extern obj cvt32_string_to_farray
 (
 	String string,
 	uint32 length_string
@@ -1398,7 +1402,7 @@ extern obj deci32_string_to_farray
  *
  * Return: Heap of String, 0 as not succeeded
  */
-extern String deci32_farray_to_string
+extern String cvt32_farray_to_string
 (
 	obj object_array,
 	uint32 min_integer, // 16 Digits Max

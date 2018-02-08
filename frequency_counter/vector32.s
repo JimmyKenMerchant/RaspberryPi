@@ -275,7 +275,7 @@ os_fiq:
 	add r0, r0, basement
 
 	push {lr}
-	bl deci32_hexa_to_deci
+	bl cvt32_hexa_to_deci
 	pop {lr}
 
 	macro32_print_number_double r0, r1, 100, 200, 16

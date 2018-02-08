@@ -28,16 +28,16 @@ void _user_start()
 	print32_set_caret( print32_number( number2, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	uint64 number1_deci = deci32_hexa_to_deci( number1 );
-	uint64 number2_deci = deci32_hexa_to_deci( number2 );
+	uint64 number1_deci = cvt32_hexa_to_deci( number1 );
+	uint64 number2_deci = cvt32_hexa_to_deci( number2 );
 
 	print32_set_caret( print32_number_double( number1_deci, FB32_X_CARET, FB32_Y_CARET, 16 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_number_double( number2_deci, FB32_X_CARET, FB32_Y_CARET, 16 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	uint32 number1_hexa = deci32_deci_to_hexa( number1_deci );
-	uint32 number2_hexa = deci32_deci_to_hexa( number2_deci );
+	uint32 number1_hexa = cvt32_deci_to_hexa( number1_deci );
+	uint32 number2_hexa = cvt32_deci_to_hexa( number2_deci );
 
 	print32_set_caret( print32_number( number1_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
@@ -63,56 +63,56 @@ void _user_start()
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	uint64 number0 = deci32_string_to_deci( string_num0, print32_strlen( string_num0 ) );
+	uint64 number0 = cvt32_string_to_deci( string_num0, str32_strlen( string_num0 ) );
 	print32_set_caret( print32_number_double( number0, FB32_X_CARET, FB32_Y_CARET, 16 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	int32 number5 = deci32_string_to_int32( string_num1, print32_strlen( string_num1 ) );
+	int32 number5 = cvt32_string_to_int32( string_num1, str32_strlen( string_num1 ) );
 	print32_set_caret( print32_number( (uint32)number5, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	int32 number6 = deci32_string_to_int32( string_num2, print32_strlen( string_num2 ) );
+	int32 number6 = cvt32_string_to_int32( string_num2, str32_strlen( string_num2 ) );
 	print32_set_caret( print32_number( (uint32)number6, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	String number5_str = deci32_int32_to_string_bin( number5, 1, 1 );
-	String number6_str = deci32_int32_to_string_deci( number6, 0, 1 );
+	String number5_str = cvt32_int32_to_string_bin( number5, 1, 1 );
+	String number6_str = cvt32_int32_to_string_deci( number6, 0, 1 );
 
-	print32_set_caret( print32_string( number5_str, FB32_X_CARET, FB32_Y_CARET, print32_strlen( number5_str ) ) );
+	print32_set_caret( print32_string( number5_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( number5_str ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-	print32_set_caret( print32_string( number6_str, FB32_X_CARET, FB32_Y_CARET, print32_strlen( number6_str ) ) );
+	print32_set_caret( print32_string( number6_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( number6_str ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( (obj)number5_str );
 	heap32_mfree( (obj)number6_str );
 
-	float32 number7 = deci32_string_to_float32( string_num3, print32_strlen( string_num3 ) );
+	float32 number7 = cvt32_string_to_float32( string_num3, str32_strlen( string_num3 ) );
 	print32_set_caret( print32_number( vfp32_f32tos32( number7 ), FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	String number7_str = deci32_float32_to_string( number7, 0, 20, 0 );
-	print32_set_caret( print32_string( number7_str, FB32_X_CARET, FB32_Y_CARET, print32_strlen( number7_str ) ) );
+	String number7_str = cvt32_float32_to_string( number7, 0, 20, 0 );
+	print32_set_caret( print32_string( number7_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( number7_str ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( (obj)number7_str );
 
 	float32 number_ln = math32_ln( 4.0 );
-	String number_ln_str = deci32_float32_to_string( number_ln, 1, 20, 0 );
-	print32_set_caret( print32_string( number_ln_str, FB32_X_CARET, FB32_Y_CARET, print32_strlen( number_ln_str ) ) );
+	String number_ln_str = cvt32_float32_to_string( number_ln, 1, 20, 0 );
+	print32_set_caret( print32_string( number_ln_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( number_ln_str ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( (obj)number_ln_str );
 
 	float32 number_log = math32_log( 4.0 );
-	String number_log_str = deci32_float32_to_string( number_log, 1, 20, 0 );
-	print32_set_caret( print32_string( number_log_str, FB32_X_CARET, FB32_Y_CARET, print32_strlen( number_log_str ) ) );
+	String number_log_str = cvt32_float32_to_string( number_log, 1, 20, 0 );
+	print32_set_caret( print32_string( number_log_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( number_log_str ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( (obj)number_log_str );
 
-	String answer_str = bcd32_badd( string_num, print32_strlen( string_num ), string_num0, print32_strlen( string_num0 ) );
-	print32_set_caret( print32_string( answer_str, FB32_X_CARET, FB32_Y_CARET, print32_strlen( answer_str ) ) );
+	String answer_str = bcd32_badd( string_num, str32_strlen( string_num ), string_num0, str32_strlen( string_num0 ) );
+	print32_set_caret( print32_string( answer_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( answer_str ) ) );
 
 	heap32_mfree( (obj)answer_str );
 

@@ -53,7 +53,7 @@ bcd32_bcdstring:
 	mov r1, count
 	mov r2, #0
 	mov r3, #0
-	bl deci32_int32_to_string_hexa
+	bl cvt32_int32_to_string_hexa
 	mov ret_upper, r0
 	pop {r0-r3}
 
@@ -83,7 +83,7 @@ bcd32_bcdstring:
 		mov r1, count
 		mov r2, #0
 		mov r3, #0
-		bl deci32_int32_to_string_hexa
+		bl cvt32_int32_to_string_hexa
 		mov ret_lower, r0
 		pop {r0-r3}
 
@@ -93,7 +93,7 @@ bcd32_bcdstring:
 		push {r0-r3}
 		mov r0, ret_upper
 		mov r1, ret_lower
-		bl print32_strcat
+		bl str32_strcat
 		mov ret_all, r0
 		pop {r0-r3}
 
@@ -132,7 +132,7 @@ bcd32_bcdstring:
 		push {r0-r3}
 		mov r0, ret_upper
 		mov r1, ret_lower
-		bl print32_strcat
+		bl str32_strcat
 		mov ret_all, r0
 		pop {r0-r3}
 
@@ -206,7 +206,7 @@ bcd32_badd:
 
 	push {r0-r3}
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign1, r0
 	pop {r0-r3}
 	cmp sign1, #-1
@@ -216,7 +216,7 @@ bcd32_badd:
 	moveq sign1, #0
 
 	push {r0-r3}
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
@@ -225,7 +225,7 @@ bcd32_badd:
 	mov r0, string2
 	mov r1, length2
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign2, r0
 	pop {r0-r3}
 	cmp sign2, #-1
@@ -237,7 +237,7 @@ bcd32_badd:
 	push {r0-r3}
 	mov r0, string2
 	mov r1, length2
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci2_lower, r0
 	mov deci2_upper, r1
 	pop {r0-r3}
@@ -370,7 +370,7 @@ bcd32_bsub:
 
 	push {r0-r3}
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign1, r0
 	pop {r0-r3}
 	cmp sign1, #-1
@@ -380,7 +380,7 @@ bcd32_bsub:
 	moveq sign1, #0
 
 	push {r0-r3}
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
@@ -389,7 +389,7 @@ bcd32_bsub:
 	mov r0, string2
 	mov r1, length2
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign2, r0
 	pop {r0-r3}
 	cmp sign2, #-1
@@ -401,7 +401,7 @@ bcd32_bsub:
 	push {r0-r3}
 	mov r0, string2
 	mov r1, length2
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci2_lower, r0
 	mov deci2_upper, r1
 	pop {r0-r3}
@@ -536,7 +536,7 @@ bcd32_bmul:
 
 	push {r0-r3}
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign1, r0
 	pop {r0-r3}
 	cmp sign1, #-1
@@ -546,7 +546,7 @@ bcd32_bmul:
 	moveq sign1, #0
 
 	push {r0-r3}
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
@@ -555,7 +555,7 @@ bcd32_bmul:
 	mov r0, string2
 	mov r1, length2
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign2, r0
 	pop {r0-r3}
 	cmp sign2, #-1
@@ -567,7 +567,7 @@ bcd32_bmul:
 	push {r0-r3}
 	mov r0, string2
 	mov r1, length2
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci2_lower, r0
 	mov deci2_upper, r1
 	pop {r0-r3}
@@ -673,7 +673,7 @@ bcd32_bdiv:
 
 	push {r0-r3}
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign1, r0
 	pop {r0-r3}
 	cmp sign1, #-1
@@ -683,7 +683,7 @@ bcd32_bdiv:
 	moveq sign1, #0
 
 	push {r0-r3}
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
@@ -692,7 +692,7 @@ bcd32_bdiv:
 	mov r0, string2
 	mov r1, length2
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign2, r0
 	pop {r0-r3}
 	cmp sign2, #-1
@@ -704,7 +704,7 @@ bcd32_bdiv:
 	push {r0-r3}
 	mov r0, string2
 	mov r1, length2
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci2_lower, r0
 	mov deci2_upper, r1
 	pop {r0-r3}
@@ -806,7 +806,7 @@ bcd32_brem:
 
 	push {r0-r3}
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign1, r0
 	pop {r0-r3}
 	cmp sign1, #-1
@@ -816,7 +816,7 @@ bcd32_brem:
 	moveq sign1, #0
 
 	push {r0-r3}
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
@@ -825,7 +825,7 @@ bcd32_brem:
 	mov r0, string2
 	mov r1, length2
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign2, r0
 	pop {r0-r3}
 	cmp sign2, #-1
@@ -837,7 +837,7 @@ bcd32_brem:
 	push {r0-r3}
 	mov r0, string2
 	mov r1, length2
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci2_lower, r0
 	mov deci2_upper, r1
 	pop {r0-r3}
@@ -920,7 +920,7 @@ bcd32_bcmp:
 
 	push {r0-r3}
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign1, r0
 	pop {r0-r3}
 	cmp sign1, #-1
@@ -930,7 +930,7 @@ bcd32_bcmp:
 	moveq sign1, #0
 
 	push {r0-r3}
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci1_lower, r0
 	mov deci1_upper, r1
 	pop {r0-r3}
@@ -939,7 +939,7 @@ bcd32_bcmp:
 	mov r0, string2
 	mov r1, length2
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charsearch
+	bl str32_charsearch
 	mov sign2, r0
 	pop {r0-r3}
 	cmp sign2, #-1
@@ -951,7 +951,7 @@ bcd32_bcmp:
 	push {r0-r3}
 	mov r0, string2
 	mov r1, length2
-	bl deci32_string_to_deci
+	bl cvt32_string_to_deci
 	mov deci2_lower, r0
 	mov deci2_upper, r1
 	pop {r0-r3}

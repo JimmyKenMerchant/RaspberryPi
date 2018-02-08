@@ -1,5 +1,5 @@
 /**
- * deci32.s
+ * cvt32.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -8,7 +8,7 @@
  */
 
 /**
- * function deci32_float32_to_string
+ * function cvt32_float32_to_string
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  * If Float Value Exceeds 1,000,000,000.0, String Will Be Shown With Exponent and May Have Loss of Signification.
@@ -22,8 +22,8 @@
  * Usage: r0-r11
  * Return: r0 (Pointer of String)
  */
-.globl deci32_float32_to_string
-deci32_float32_to_string:
+.globl cvt32_float32_to_string
+cvt32_float32_to_string:
 	/* Auto (Local) Variables, but just Aliases */
 	float          .req r0
 	min_integer    .req r1
@@ -66,27 +66,27 @@ deci32_float32_to_string:
 	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 	movlt minus, #1
 	movge minus, #0
-	beq deci32_float32_to_string_integer
+	beq cvt32_float32_to_string_integer
 
 	vabs.f32 vfp_float, vfp_float                 @ Convert to Absolute Value
 
-	deci32_float32_to_string_expominus:
+	cvt32_float32_to_string_expominus:
 		cmp indicator_expo, #0
-		bge deci32_float32_to_string_expoplus
+		bge cvt32_float32_to_string_expoplus
 		sub exponent, exponent, #1
 		vmul.f32 vfp_float, vfp_float, vfp_ten
 		add indicator_expo, indicator_expo, #1
-		b deci32_float32_to_string_expominus
+		b cvt32_float32_to_string_expominus
 
-	deci32_float32_to_string_expoplus:
+	cvt32_float32_to_string_expoplus:
 		cmp indicator_expo, #0
-		ble deci32_float32_to_string_jumpexpo
+		ble cvt32_float32_to_string_jumpexpo
 		add exponent, exponent, #1
 		vdiv.f32 vfp_float, vfp_float, vfp_ten
 		sub indicator_expo, indicator_expo, #1
-		b deci32_float32_to_string_expoplus
+		b cvt32_float32_to_string_expoplus
 
-	deci32_float32_to_string_jumpexpo:
+	cvt32_float32_to_string_jumpexpo:
 		mov temp, #0x3B000000
 		add temp, temp, #0x009A0000
 		add temp, temp, #0x0000CA00                   @ Making Decimal 1,000,000,000
@@ -94,23 +94,23 @@ deci32_float32_to_string:
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		blt deci32_float32_to_string_convertfloat
+		blt cvt32_float32_to_string_convertfloat
 
-	deci32_float32_to_string_exceed:
+	cvt32_float32_to_string_exceed:
 		add exponent, exponent, #1
 		vdiv.f32 vfp_float, vfp_float, vfp_ten
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		bge deci32_float32_to_string_exceed
+		bge cvt32_float32_to_string_exceed
 
-	deci32_float32_to_string_convertfloat:
+	cvt32_float32_to_string_convertfloat:
 		cmp minus, #1
 		vnegeq.f32 vfp_float, vfp_float               @ Convert Absolute to Negative If Negative Originally
 		vmov float, vfp_float
 
 	/* Integer Part */
 
-	deci32_float32_to_string_integer:
+	cvt32_float32_to_string_integer:
 
 		vmov vfp_integer, float                       @ Signed
 		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
@@ -119,7 +119,7 @@ deci32_float32_to_string:
 		push {r0-r3}
 		mov r0, integer
 		mov r2, #1
-		bl deci32_int32_to_string_deci
+		bl cvt32_int32_to_string_deci
 		mov string_integer, r0
 		pop {r0-r3}
 
@@ -127,7 +127,7 @@ deci32_float32_to_string:
 		temp2 .req r1
 
 		cmp string_integer, #0
-		beq deci32_float32_to_string_error
+		beq cvt32_float32_to_string_error
 
 		push {r0-r3}
 		mov r0, #1
@@ -136,7 +136,7 @@ deci32_float32_to_string:
 		pop {r0-r3}
 
 		cmp string_decimal, #0
-		beq deci32_float32_to_string_error
+		beq cvt32_float32_to_string_error
 
 		mov temp, #0x2E
 		strb temp, [string_decimal]                   @ Store Period Sign
@@ -146,12 +146,12 @@ deci32_float32_to_string:
 		push {r0-r3}
 		mov r0, string_integer
 		mov r1, string_decimal
-		bl print32_strcat
+		bl str32_strcat
 		mov string_cmp, r0
 		pop {r0-r3}
 
 		cmp string_cmp, #0
-		beq deci32_float32_to_string_error
+		beq cvt32_float32_to_string_error
 
 		push {r0-r3}
 		mov r0, string_integer 
@@ -173,23 +173,23 @@ deci32_float32_to_string:
 
 	/* Decimal Part */
 
-	deci32_float32_to_string_decimal:
+	cvt32_float32_to_string_decimal:
 		/* Repeat of vfp_decimal X 10^8 and Cut it till catch Zero */
 		cmp max_decimal, #0
-		ble deci32_float32_to_string_exponent
+		ble cvt32_float32_to_string_exponent
 		mov temp, #8
 
-		deci32_float32_to_string_decimal_loop:
+		cvt32_float32_to_string_decimal_loop:
 			cmp temp, #0
-			ble deci32_float32_to_string_decimal_common
+			ble cvt32_float32_to_string_decimal_common
 			cmp max_decimal, #0
-			ble deci32_float32_to_string_decimal_common
+			ble cvt32_float32_to_string_decimal_common
 			vmul.f32 vfp_decimal, vfp_decimal, vfp_ten
 			sub temp, temp, #1
 			sub max_decimal, max_decimal, #1
-			b deci32_float32_to_string_decimal_loop
+			b cvt32_float32_to_string_decimal_loop
 
-		deci32_float32_to_string_decimal_common:
+		cvt32_float32_to_string_decimal_common:
 			mov temp2, #8
 			sub temp, temp2, temp
 
@@ -201,19 +201,19 @@ deci32_float32_to_string:
 			mov r0, decimal
 			mov r1, temp
 			mov r2, #0
-			bl deci32_int32_to_string_deci
+			bl cvt32_int32_to_string_deci
 			mov string_decimal, r0
 			pop {r0-r3}
 			
 			push {r0-r3}
 			mov r0, string_integer
 			mov r1, string_decimal
-			bl print32_strcat
+			bl str32_strcat
 			mov string_cmp, r0
 			pop {r0-r3}
 
 			cmp string_cmp, #0
-			beq deci32_float32_to_string_error
+			beq cvt32_float32_to_string_error
 
 			push {r0-r3}
 			mov r0, string_integer 
@@ -232,15 +232,15 @@ deci32_float32_to_string:
 
 			vcmp.f32 vfp_decimal, #0
 			vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-			ble deci32_float32_to_string_exponent
+			ble cvt32_float32_to_string_exponent
 
-			b deci32_float32_to_string_decimal
+			b cvt32_float32_to_string_decimal
 
 	/* Exponential Part */
 
-	deci32_float32_to_string_exponent:
+	cvt32_float32_to_string_exponent:
 		cmp exponent, #0
-		beq deci32_float32_to_string_success
+		beq cvt32_float32_to_string_success
 
 		push {r0-r3}
 		mov r0, #1
@@ -260,12 +260,12 @@ deci32_float32_to_string:
 		push {r0-r3}
 		mov r0, string_integer
 		mov r1, string_decimal
-		bl print32_strcat
+		bl str32_strcat
 		mov string_cmp, r0
 		pop {r0-r3}
 
 		cmp string_cmp, #0
-		beq deci32_float32_to_string_error
+		beq cvt32_float32_to_string_error
 
 		push {r0-r3}
 		mov r0, string_integer 
@@ -285,21 +285,21 @@ deci32_float32_to_string:
 
 		push {r0-r3}
 		mov r0, exponent
-		mov r1, #equ32_deci32_float32_to_string_min_expo
+		mov r1, #equ32_cvt32_float32_to_string_min_expo
 		mov r2, #0
-		bl deci32_int32_to_string_deci
+		bl cvt32_int32_to_string_deci
 		mov string_decimal, r0
 		pop {r0-r3}
 
 		push {r0-r3}
 		mov r0, string_integer
 		mov r1, string_decimal
-		bl print32_strcat
+		bl str32_strcat
 		mov string_cmp, r0
 		pop {r0-r3}
 
 		cmp string_cmp, #0
-		beq deci32_float32_to_string_error
+		beq cvt32_float32_to_string_error
 
 		push {r0-r3}
 		mov r0, string_integer 
@@ -312,9 +312,9 @@ deci32_float32_to_string:
 		pop {r0-r3}
 
 		mov string_integer, string_cmp
-		b deci32_float32_to_string_success
+		b cvt32_float32_to_string_success
 
-	deci32_float32_to_string_error:
+	cvt32_float32_to_string_error:
 		push {r0-r3}
 		mov r0, string_integer 
 		bl heap32_mfree
@@ -331,12 +331,12 @@ deci32_float32_to_string:
 		pop {r0-r3}
 
 		mov r0, #0
-		b deci32_float32_to_string_common
+		b cvt32_float32_to_string_common
 
-	deci32_float32_to_string_success:
+	cvt32_float32_to_string_success:
 		mov r0, string_integer
 
-	deci32_float32_to_string_common:
+	cvt32_float32_to_string_common:
 		vpop {s0-s4}
 		pop {r4-r11,pc}
 
@@ -360,7 +360,7 @@ deci32_float32_to_string:
 
 
 /**
- * function deci32_int32_to_string_deci
+ * function cvt32_int32_to_string_deci
  * Make String of Integer Value by Decimal System (Base 10)
  *
  * Parameters
@@ -371,8 +371,8 @@ deci32_float32_to_string:
  * Usage: r0-r11
  * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
  */
-.globl deci32_int32_to_string_deci
-deci32_int32_to_string_deci:
+.globl cvt32_int32_to_string_deci
+cvt32_int32_to_string_deci:
 	/* Auto (Local) Variables, but just Aliases */
 	integer       .req r0
 	min_length    .req r1
@@ -403,15 +403,15 @@ deci32_int32_to_string_deci:
 	cmp signed, #1
 	cmpeq count_lower, #0                   @ Whether Top Bit is One or Zero
 	movne signed, #0                        @ If Count Is Not Zero, Signed Will Perform The Same as Unsigned
-	bne deci32_int32_to_string_deci_jumpunsigned
+	bne cvt32_int32_to_string_deci_jumpunsigned
 
 	/* Process for Minus Signed */
 	mvn integer, integer                    @ All Inverter
 	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
 
-	deci32_int32_to_string_deci_jumpunsigned:
+	cvt32_int32_to_string_deci_jumpunsigned:
 		push {r0-r3}
-		bl deci32_hexa_to_deci
+		bl cvt32_hexa_to_deci
 		mov integer_lower, r0
 		mov integer_upper, r1
 		pop {r0-r3}
@@ -422,10 +422,10 @@ deci32_int32_to_string_deci:
 		mov temp, count_lower
 		mov count_lower, #0
 
-	deci32_int32_to_string_deci_countlower:
+	cvt32_int32_to_string_deci_countlower:
 		subs temp, temp, #4
 		addge count_lower, #1
-		bge deci32_int32_to_string_deci_countlower
+		bge cvt32_int32_to_string_deci_countlower
 
 		mov temp, #8
 		sub count_lower, temp, count_lower
@@ -433,54 +433,54 @@ deci32_int32_to_string_deci:
 		mov temp, count_upper
 		mov count_upper, #0
 
-	deci32_int32_to_string_deci_countupper:
+	cvt32_int32_to_string_deci_countupper:
 		subs temp, temp, #4
 		addge count_upper, #1
-		bge deci32_int32_to_string_deci_countupper
+		bge cvt32_int32_to_string_deci_countupper
 
 		mov temp, #8
 		sub count_upper, temp, count_upper
 
 		cmp count_lower, min_length
-		movlt count_lower, min_length                    @ Cutting off min_length Exists in deci32_int32_to_string_hexa
+		movlt count_lower, min_length                    @ Cutting off min_length Exists in cvt32_int32_to_string_hexa
 
 		cmp count_upper, #0
-		beq deci32_int32_to_string_deci_lower            @ If Upper String Doesn't Exist
+		beq cvt32_int32_to_string_deci_lower            @ If Upper String Doesn't Exist
 
 		sub temp, min_length, #8
 		cmp count_upper, temp
 		movlt count_upper, temp
 
-	deci32_int32_to_string_deci_upper:
+	cvt32_int32_to_string_deci_upper:
 		push {r0-r3}
 		mov r0, integer_upper
 		mov r1, count_upper
 		mov r2, #0
 		mov r3, #0
-		bl deci32_int32_to_string_hexa
+		bl cvt32_int32_to_string_hexa
 		mov string_upper, r0
 		pop {r0-r3}
 
 		cmp string_upper, #0
-		beq deci32_int32_to_string_deci_error
+		beq cvt32_int32_to_string_deci_error
 
 		mov count_lower, #8
 
-	deci32_int32_to_string_deci_lower:
+	cvt32_int32_to_string_deci_lower:
 		push {r0-r3}
 		mov r0, integer_lower
 		mov r1, count_lower
 		mov r2, #0
 		mov r3, #0
-		bl deci32_int32_to_string_hexa
+		bl cvt32_int32_to_string_hexa
 		mov string_lower, r0
 		pop {r0-r3}
 
 		cmp string_lower, #0
-		beq deci32_int32_to_string_deci_error
+		beq cvt32_int32_to_string_deci_error
 
 		cmp signed, #1
-		bne deci32_int32_to_string_deci_cat         @ If Unsigned, Jump to Next
+		bne cvt32_int32_to_string_deci_cat         @ If Unsigned, Jump to Next
 
 		push {r0-r3}
 		mov r0, #1
@@ -489,7 +489,7 @@ deci32_int32_to_string_deci:
 		pop {r0-r3}
 
 		cmp string_minus, #0
-		beq deci32_int32_to_string_deci_error
+		beq cvt32_int32_to_string_deci_error
 
 		mov temp, #0x2D
 		strb temp, [string_minus]                   @ Store Minus Sign
@@ -497,22 +497,22 @@ deci32_int32_to_string_deci:
 		mov temp, #0x00
 		strb temp, [string_minus, #1]               @ Store Null Character
 
-	deci32_int32_to_string_deci_cat:
+	cvt32_int32_to_string_deci_cat:
 		cmp count_upper, #0
-		beq deci32_int32_to_string_deci_cat_lower
+		beq cvt32_int32_to_string_deci_cat_lower
 
 		cmp signed, #1
-		bne deci32_int32_to_string_deci_cat_jump   @ If Unsigned, Jump to Next
+		bne cvt32_int32_to_string_deci_cat_jump   @ If Unsigned, Jump to Next
 
 		push {r0-r3}
 		mov r0, string_minus 
 		mov r1, string_upper
-		bl print32_strcat
+		bl str32_strcat
 		mov string_cmp, r0
 		pop {r0-r3}
 
 		cmp string_cmp, #0
-		beq deci32_int32_to_string_deci_error
+		beq cvt32_int32_to_string_deci_error
 
 		push {r0-r3}
 		mov r0, string_minus 
@@ -526,16 +526,16 @@ deci32_int32_to_string_deci:
 
 		mov string_upper, string_cmp
 
-		deci32_int32_to_string_deci_cat_jump:
+		cvt32_int32_to_string_deci_cat_jump:
 			push {r0-r3}
 			mov r0, string_upper
 			mov r1, string_lower
-			bl print32_strcat
+			bl str32_strcat
 			mov string_cmp, r0
 			pop {r0-r3}
 
 			cmp string_cmp, #0
-			beq deci32_int32_to_string_deci_error
+			beq cvt32_int32_to_string_deci_error
 
 			push {r0-r3}
 			mov r0, string_upper 
@@ -547,22 +547,22 @@ deci32_int32_to_string_deci:
 			bl heap32_mfree
 			pop {r0-r3}
 
-			b deci32_int32_to_string_deci_success 
+			b cvt32_int32_to_string_deci_success 
 
-		deci32_int32_to_string_deci_cat_lower:
+		cvt32_int32_to_string_deci_cat_lower:
 			cmp signed, #1
 			movne string_cmp, string_lower
-			bne deci32_int32_to_string_deci_success         @ If Unsigned, Jump to Next
+			bne cvt32_int32_to_string_deci_success         @ If Unsigned, Jump to Next
 
 			push {r0-r3}
 			mov r0, string_minus 
 			mov r1, string_lower
-			bl print32_strcat
+			bl str32_strcat
 			mov string_cmp, r0
 			pop {r0-r3}
 
 			cmp string_cmp, #0
-			beq deci32_int32_to_string_deci_error
+			beq cvt32_int32_to_string_deci_error
 
 			push {r0-r3}
 			mov r0, string_minus 
@@ -574,9 +574,9 @@ deci32_int32_to_string_deci:
 			bl heap32_mfree
 			pop {r0-r3}
 
-			b deci32_int32_to_string_deci_success 
+			b cvt32_int32_to_string_deci_success 
 
-	deci32_int32_to_string_deci_error:
+	cvt32_int32_to_string_deci_error:
 		push {r0-r3}
 		mov r0, string_lower
 		bl heap32_mfree
@@ -595,12 +595,12 @@ deci32_int32_to_string_deci:
 		pop {r0-r3}
 
 		mov r0, #0
-		b deci32_int32_to_string_deci_common
+		b cvt32_int32_to_string_deci_common
 
-	deci32_int32_to_string_deci_success:
+	cvt32_int32_to_string_deci_success:
 		mov r0, string_cmp
 
-	deci32_int32_to_string_deci_common:
+	cvt32_int32_to_string_deci_common:
 		pop {r4-r11,pc}
 
 .unreq integer
@@ -618,7 +618,7 @@ deci32_int32_to_string_deci:
 
 
 /**
- * function deci32_int32_to_string_hexa
+ * function cvt32_int32_to_string_hexa
  * Make String of Integer Value by Hexadecimal System (Base 16)
  *
  * Parameters
@@ -630,8 +630,8 @@ deci32_int32_to_string_deci:
  * Usage: r0-r9
  * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
  */
-.globl deci32_int32_to_string_hexa
-deci32_int32_to_string_hexa:
+.globl cvt32_int32_to_string_hexa
+cvt32_int32_to_string_hexa:
 	/* Auto (Local) Variables, but just Aliases */
 	integer     .req r0
 	min_length  .req r1
@@ -654,21 +654,21 @@ deci32_int32_to_string_hexa:
 	cmp signed, #1
 	cmpeq count, #0                         @ Whether Top Bit is One or Zero
 	movne signed, #0                        @ If Count Is Not Zero, Signed Will Perform The Same as Unsigned
-	bne deci32_int32_to_string_hexa_jumpunsigned
+	bne cvt32_int32_to_string_hexa_jumpunsigned
 
 	/* Process for Minus Signed */
 	mvn integer, integer                    @ All Inverter
 	add integer, #1                         @ Convert Value from Minus Signed Number to Plus Signed Number
 	clz count, integer
 
-	deci32_int32_to_string_hexa_jumpunsigned:
+	cvt32_int32_to_string_hexa_jumpunsigned:
 		mov temp, count
 		mov count, #0
 
-	deci32_int32_to_string_hexa_arrangecount:
+	cvt32_int32_to_string_hexa_arrangecount:
 		subs temp, temp, #4
 		addge count, #1
-		bge deci32_int32_to_string_hexa_arrangecount
+		bge cvt32_int32_to_string_hexa_arrangecount
 
 		mov temp, #8
 		sub count, temp, count
@@ -683,10 +683,10 @@ deci32_int32_to_string_hexa:
 		cmp base_mark, #1
 		addeq temp, temp, #2                            @ Add Two for Bases Mark, `0x`
 
-	deci32_int32_to_string_hexa_countsize:
+	cvt32_int32_to_string_hexa_countsize:
 		subs temp, temp, #4
 		addgt heap_size, #1
-		bgt deci32_int32_to_string_hexa_countsize
+		bgt cvt32_int32_to_string_hexa_countsize
 
 		push {r0-r3}
 		mov r0, heap_size
@@ -695,18 +695,18 @@ deci32_int32_to_string_hexa:
 		pop {r0-r3}
 
 		cmp heap_origin, #0
-		beq deci32_int32_to_string_hexa_error
+		beq cvt32_int32_to_string_hexa_error
 		mov heap, heap_origin
 
 		cmp signed, #1
-		bne deci32_int32_to_string_hexa_basemark        @ If Unsigned, Jump to Next
+		bne cvt32_int32_to_string_hexa_basemark        @ If Unsigned, Jump to Next
 		mov mask, #0x2D
 		strb mask, [heap]                               @ Store Minus Sign
 		add heap, heap, #1
 
-	deci32_int32_to_string_hexa_basemark:
+	cvt32_int32_to_string_hexa_basemark:
 		cmp base_mark, #1
-		bne deci32_int32_to_string_hexa_loop
+		bne cvt32_int32_to_string_hexa_loop
 		mov mask, #0x30
 		strb mask, [heap]                       @ Store `0`
 		add heap, heap, #1
@@ -714,10 +714,10 @@ deci32_int32_to_string_hexa:
 		strb mask, [heap]                       @ Store `x`
 		add heap, heap, #1
 	
-	deci32_int32_to_string_hexa_loop:
+	cvt32_int32_to_string_hexa_loop:
 		sub count, count, #1
 		cmp count, #0
-		blt deci32_int32_to_string_hexa_loop_common
+		blt cvt32_int32_to_string_hexa_loop_common
 		lsl count, #2                               @ Substitution of Multiplication by 4
 		mov mask, #0xF
 		lsl mask, count
@@ -730,21 +730,21 @@ deci32_int32_to_string_hexa:
 		add heap, heap, #1
 		lsr count, #2                               @ Substitution of Division by 4
 
-		b deci32_int32_to_string_hexa_loop
+		b cvt32_int32_to_string_hexa_loop
 
-		deci32_int32_to_string_hexa_loop_common:
+		cvt32_int32_to_string_hexa_loop_common:
 			mov mask, #0
 			strb mask, [heap]                           @ Null Character
-			b deci32_int32_to_string_hexa_success
+			b cvt32_int32_to_string_hexa_success
 
-	deci32_int32_to_string_hexa_error:
+	cvt32_int32_to_string_hexa_error:
 		mov r0, #0
-		b deci32_int32_to_string_hexa_common
+		b cvt32_int32_to_string_hexa_common
 
-	deci32_int32_to_string_hexa_success:
+	cvt32_int32_to_string_hexa_success:
 		mov r0, heap_origin
 
-	deci32_int32_to_string_hexa_common:
+	cvt32_int32_to_string_hexa_common:
 		pop {r4-r9,pc}
 
 .unreq integer
@@ -760,7 +760,7 @@ deci32_int32_to_string_hexa:
 
 
 /**
- * function deci32_int32_to_string_bin
+ * function cvt32_int32_to_string_bin
  * Make String of Integer Value by Binary System (Base 2)
  * This function uses defined Ascii Codes for true ("1" on default) and false ("0" on default).
  *
@@ -771,8 +771,8 @@ deci32_int32_to_string_hexa:
  *
  * Return: r0 (Pointer of String, If Zero, Memory Space for String Can't Be Allocated)
  */
-.globl deci32_int32_to_string_bin
-deci32_int32_to_string_bin:
+.globl cvt32_int32_to_string_bin
+cvt32_int32_to_string_bin:
 	/* Auto (Local) Variables, but just Aliases */
 	integer     .req r0
 	min_length  .req r1
@@ -802,10 +802,10 @@ deci32_int32_to_string_bin:
 	cmp base_mark, #1
 	addeq temp, temp, #2                            @ Add Two for Bases Mark, `0x`
 
-	deci32_int32_to_string_bin_countsize:
+	cvt32_int32_to_string_bin_countsize:
 		subs temp, temp, #4
 		addgt heap_size, #1
-		bgt deci32_int32_to_string_bin_countsize
+		bgt cvt32_int32_to_string_bin_countsize
 
 	push {r0-r3}
 	mov r0, heap_size
@@ -814,12 +814,12 @@ deci32_int32_to_string_bin:
 	pop {r0-r3}
 
 	cmp heap_origin, #0
-	beq deci32_int32_to_string_bin_error
+	beq cvt32_int32_to_string_bin_error
 	mov heap, heap_origin
 
 	/* Base Mark */
 	cmp base_mark, #1
-	bne deci32_int32_to_string_bin_loop
+	bne cvt32_int32_to_string_bin_loop
 	mov mask, #0x30
 	strb mask, [heap]                       @ Store `0`
 	add heap, heap, #1
@@ -827,35 +827,35 @@ deci32_int32_to_string_bin:
 	strb mask, [heap]                       @ Store `b`
 	add heap, heap, #1
 	
-	deci32_int32_to_string_bin_loop:
+	cvt32_int32_to_string_bin_loop:
 		sub count, count, #1
 		cmp count, #0
-		blt deci32_int32_to_string_bin_loop_common
+		blt cvt32_int32_to_string_bin_loop_common
 		mov mask, #0x1
 		lsl mask, count
 		and mask, integer, mask
 		lsr mask, count
 		cmp mask, #1
-		moveq mask, #equ32_deci32_int32_to_string_bin_true
-		movne mask, #equ32_deci32_int32_to_string_bin_false
+		moveq mask, #equ32_cvt32_int32_to_string_bin_true
+		movne mask, #equ32_cvt32_int32_to_string_bin_false
 		strb mask, [heap]
 		add heap, heap, #1
 
-		b deci32_int32_to_string_bin_loop
+		b cvt32_int32_to_string_bin_loop
 
-		deci32_int32_to_string_bin_loop_common:
+		cvt32_int32_to_string_bin_loop_common:
 			mov mask, #0
 			strb mask, [heap]                   @ Null Character
-			b deci32_int32_to_string_bin_success
+			b cvt32_int32_to_string_bin_success
 
-	deci32_int32_to_string_bin_error:
+	cvt32_int32_to_string_bin_error:
 		mov r0, #0
-		b deci32_int32_to_string_bin_common
+		b cvt32_int32_to_string_bin_common
 
-	deci32_int32_to_string_bin_success:
+	cvt32_int32_to_string_bin_success:
 		mov r0, heap_origin
 
-	deci32_int32_to_string_bin_common:
+	cvt32_int32_to_string_bin_common:
 		pop {r4-r8,pc}
 
 .unreq integer
@@ -870,7 +870,7 @@ deci32_int32_to_string_bin:
 
 
 /**
- * function deci32_string_to_hexa
+ * function cvt32_string_to_hexa
  * Make 32-bit Unsigned Integer From String on Hexadecimal System
  * Caution! The Range of Decimal Number Is 0x0 through 0xFFFFFFFF
  * Max. Valid Digits Are 8, Otherwise, You'll Get Inaccurate Return.
@@ -883,8 +883,8 @@ deci32_int32_to_string_bin:
  *
  * Return: r0 (Unsigned Integer)
  */
-.globl deci32_string_to_hexa
-deci32_string_to_hexa:
+.globl cvt32_string_to_hexa
+cvt32_string_to_hexa:
 	/* Auto (Local) Variables, but just Aliases */
 	heap        .req r0
 	length      .req r1
@@ -903,7 +903,7 @@ deci32_string_to_hexa:
 
 	push {r0-r3}
 	mov r2, #0x58                     @ Ascii Code of X
-	bl print32_charsearch
+	bl str32_charsearch
 	mov shift, r0
 	pop {r0-r3}
 
@@ -916,7 +916,7 @@ deci32_string_to_hexa:
 
 	push {r0-r3}
 	mov r2, #0x78                     @ Ascii Code of x
-	bl print32_charsearch
+	bl str32_charsearch
 	mov shift, r0
 	pop {r0-r3}
 
@@ -926,7 +926,7 @@ deci32_string_to_hexa:
 	subne length, length, shift
 
 	cmp length, #0
-	ble deci32_string_to_hexa_success
+	ble cvt32_string_to_hexa_success
 
 	mov dup_length, length
 	sub length, length, #1
@@ -936,7 +936,7 @@ deci32_string_to_hexa:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x20                     @ Ascii Code of Space
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -947,7 +947,7 @@ deci32_string_to_hexa:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2B                     @ Ascii Code of Plus
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -958,7 +958,7 @@ deci32_string_to_hexa:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2C                     @ Ascii Code of Comma
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -969,7 +969,7 @@ deci32_string_to_hexa:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -980,19 +980,19 @@ deci32_string_to_hexa:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2E                     @ Ascii Code of Period
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
 	sub length, length, shift
 
 	cmp length, #0
-	blt deci32_string_to_hexa_success
+	blt cvt32_string_to_hexa_success
 
 	cmp length, #7
 	movgt length, #7
 
-	deci32_string_to_hexa_loop:
+	cvt32_string_to_hexa_loop:
 
 		ldrb byte, [heap, i]
 
@@ -1002,19 +1002,19 @@ deci32_string_to_hexa:
 		cmpne byte, #0x2D                         @ If Minus
 		cmpne byte, #0x2E                         @ If Period
 		addeq i, i, #1
-		beq deci32_string_to_hexa_loop
+		beq cvt32_string_to_hexa_loop
 
 		cmp byte, #0x61                           @ Ascii Code of a
 		subge byte, byte, #0x57                   @ Ascii Table Small Letters Offset
-		bge deci32_string_to_hexa_loop_common
+		bge cvt32_string_to_hexa_loop_common
 
 		cmp byte, #0x41                           @ Ascii Code of A
 		subge byte, byte, #0x37                   @ Ascii Table Capital Letters Offset
-		bge deci32_string_to_hexa_loop_common
+		bge cvt32_string_to_hexa_loop_common
 
 		sub byte, byte, #0x30                     @ Ascii Table Number Offset
 
-		deci32_string_to_hexa_loop_common:
+		cvt32_string_to_hexa_loop_common:
 
 			lsl shift, length, #2             @ Substitute of Multiplication by 4
 			lsl byte, byte, shift
@@ -1024,12 +1024,12 @@ deci32_string_to_hexa:
 			sub length, length, #1
 
 			cmp length, #0
-			bge deci32_string_to_hexa_loop
+			bge cvt32_string_to_hexa_loop
 
-	deci32_string_to_hexa_success:
+	cvt32_string_to_hexa_success:
 		mov r0, hexa
 
-	deci32_string_to_hexa_common:
+	cvt32_string_to_hexa_common:
 		pop {r4-r6,pc}
 
 .unreq heap
@@ -1042,7 +1042,7 @@ deci32_string_to_hexa:
 
 
 /**
- * function deci32_string_to_deci
+ * function cvt32_string_to_deci
  * Make 64-bit Decimal Number From String on Decimal System
  * Caution! The Range of Decimal Number Is 0 through 9,999,999,999,999,999.
  * Max. Valid Digits Are 16, Otherwise, You'll Get Inaccurate Return.
@@ -1055,8 +1055,8 @@ deci32_string_to_hexa:
  *
  * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
  */
-.globl deci32_string_to_deci
-deci32_string_to_deci:
+.globl cvt32_string_to_deci
+cvt32_string_to_deci:
 	/* Auto (Local) Variables, but just Aliases */
 	heap        .req r0
 	length      .req r1
@@ -1082,7 +1082,7 @@ deci32_string_to_deci:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x20                     @ Ascii Code of Space
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1093,7 +1093,7 @@ deci32_string_to_deci:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2B                     @ Ascii Code of Plus
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1104,7 +1104,7 @@ deci32_string_to_deci:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2C                     @ Ascii Code of Comma
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1115,7 +1115,7 @@ deci32_string_to_deci:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1126,19 +1126,19 @@ deci32_string_to_deci:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2E                     @ Ascii Code of Period
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
 	sub length, length, shift
 
 	cmp length, #0
-	blt deci32_string_to_deci_success
+	blt cvt32_string_to_deci_success
 
 	cmp length, #15
 	movgt length, #15 
 
-	deci32_string_to_deci_loop:
+	cvt32_string_to_deci_loop:
 
 		ldrb byte, [heap, i]
 
@@ -1148,24 +1148,24 @@ deci32_string_to_deci:
 		cmpne byte, #0x2D                         @ If Minus
 		cmpne byte, #0x2E                         @ If Period
 		addeq i, i, #1
-		beq deci32_string_to_deci_loop
+		beq cvt32_string_to_deci_loop
 
 		sub byte, byte, #0x30                     @ Ascii Table Number Offset
 
 		lsl shift, length, #2                     @ Substitute of Multiplication by 4
 
 		cmp length, #8
-		bhs deci32_string_to_deci_loop_upper
+		bhs cvt32_string_to_deci_loop_upper
 
 		/* Lower Number */
 		lsl byte, byte, shift
 
 		add deci_lower, deci_lower, byte
 
-		b deci32_string_to_deci_loop_common
+		b cvt32_string_to_deci_loop_common
 
 		/* Upper Number */
-		deci32_string_to_deci_loop_upper:
+		cvt32_string_to_deci_loop_upper:
 
 			sub shift, shift, #32
 
@@ -1173,19 +1173,19 @@ deci32_string_to_deci:
 
 			add deci_upper, deci_upper, byte
 
-		deci32_string_to_deci_loop_common:
+		cvt32_string_to_deci_loop_common:
 
 			add i, i, #1
 			sub length, length, #1
 
 			cmp length, #0
-			bge deci32_string_to_deci_loop
+			bge cvt32_string_to_deci_loop
 
-	deci32_string_to_deci_success:
+	cvt32_string_to_deci_success:
 		mov r0, deci_lower
 		mov r1, deci_upper
 
-	deci32_string_to_deci_common:
+	cvt32_string_to_deci_common:
 		pop {r4-r7,pc}
 
 .unreq heap
@@ -1199,7 +1199,7 @@ deci32_string_to_deci:
 
 
 /**
- * function deci32_string_to_bin
+ * function cvt32_string_to_bin
  * Make 32-bit Unsigned Integer From String on Binary System
  * Caution! The Range of Decimal Number Is 0b0 through 0b1111 1111 1111 1111 1111 1111 1111 1111
  * Max. Valid Digits Are 32, Otherwise, You'll Get Inaccurate Return.
@@ -1212,8 +1212,8 @@ deci32_string_to_deci:
  *
  * Return: r0 (Unsigned Integer)
  */
-.globl deci32_string_to_bin
-deci32_string_to_bin:
+.globl cvt32_string_to_bin
+cvt32_string_to_bin:
 	/* Auto (Local) Variables, but just Aliases */
 	heap        .req r0
 	length      .req r1
@@ -1232,7 +1232,7 @@ deci32_string_to_bin:
 
 	push {r0-r3}
 	mov r2, #0x42                     @ Ascii Code of B
-	bl print32_charsearch
+	bl str32_charsearch
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1245,7 +1245,7 @@ deci32_string_to_bin:
 
 	push {r0-r3}
 	mov r2, #0x62                     @ Ascii Code of b
-	bl print32_charsearch
+	bl str32_charsearch
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1255,7 +1255,7 @@ deci32_string_to_bin:
 	subne length, length, shift
 
 	cmp length, #0
-	ble deci32_string_to_bin_success
+	ble cvt32_string_to_bin_success
 
 	mov dup_length, length
 	sub length, length, #1
@@ -1265,7 +1265,7 @@ deci32_string_to_bin:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x20                     @ Ascii Code of Space
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1276,7 +1276,7 @@ deci32_string_to_bin:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2B                     @ Ascii Code of Plus
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1287,7 +1287,7 @@ deci32_string_to_bin:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2C                     @ Ascii Code of Comma
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1298,7 +1298,7 @@ deci32_string_to_bin:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2D                     @ Ascii Code of Minus
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
@@ -1309,19 +1309,19 @@ deci32_string_to_bin:
 	push {r0-r3}
 	mov r1, dup_length
 	mov r2, #0x2E                     @ Ascii Code of Period
-	bl print32_charcount
+	bl str32_charcount
 	mov shift, r0
 	pop {r0-r3}
 
 	sub length, length, shift
 
 	cmp length, #0
-	blt deci32_string_to_bin_success
+	blt cvt32_string_to_bin_success
 
 	cmp length, #31
 	movgt length, #31 
 
-	deci32_string_to_bin_loop:
+	cvt32_string_to_bin_loop:
 
 		ldrb byte, [heap, i]
 
@@ -1331,14 +1331,14 @@ deci32_string_to_bin:
 		cmpne byte, #0x2D                         @ If Minus
 		cmpne byte, #0x2E                         @ If Period
 		addeq i, i, #1
-		beq deci32_string_to_bin_loop
+		beq cvt32_string_to_bin_loop
 
 		cmp byte, #0x30                           @ Ascii Code of 0
 
 		moveq shift, #0b0
 		movne shift, #0b1
 
-		deci32_string_to_bin_loop_common:
+		cvt32_string_to_bin_loop_common:
 
 			lsl shift, shift, length
 			add bin, bin, shift
@@ -1347,12 +1347,12 @@ deci32_string_to_bin:
 			sub length, length, #1
 
 			cmp length, #0
-			bge deci32_string_to_bin_loop
+			bge cvt32_string_to_bin_loop
 
-	deci32_string_to_bin_success:
+	cvt32_string_to_bin_success:
 		mov r0, bin
 
-	deci32_string_to_bin_common:
+	cvt32_string_to_bin_common:
 		pop {r4-r6,pc}
 
 .unreq heap
@@ -1365,7 +1365,7 @@ deci32_string_to_bin:
 
 
 /**
- * function deci32_string_to_int32
+ * function cvt32_string_to_int32
  * Make 32-bit Unsigned/Signed Integer From String (Decimal System)
  * Caution! The Range of Decimal Number Is 0 through 4,294,967,295 on Unsigned, -2,147,483,648 thorugh 2,147,483,647 on Signed.
  * Maximum Number of Valid Digits Exists. If It Exceeds, You'll Get Inaccurate Return.
@@ -1378,8 +1378,8 @@ deci32_string_to_bin:
  *
  * Return: r0 (32-bit Unsigned/Signed Integer)
  */
-.globl deci32_string_to_int32
-deci32_string_to_int32:
+.globl cvt32_string_to_int32
+cvt32_string_to_int32:
 	/* Auto (Local) Variables, but just Aliases */
 	heap        .req r0
 	length      .req r1
@@ -1396,7 +1396,7 @@ deci32_string_to_int32:
 	/* B and b are used for Hexadecimal Number. So You Need to Search These as Binary Indicator Before X and x */
 	push {r0-r3}
 	mov r2, #0x42                     @ Ascii Code of B
-	bl print32_charsearch
+	bl str32_charsearch
 	mov temp, r0
 	pop {r0-r3}
 
@@ -1405,7 +1405,7 @@ deci32_string_to_int32:
 
 	push {r0-r3}
 	mov r2, #0x62                     @ Ascii Code of b
-	bl print32_charsearch
+	bl str32_charsearch
 	mov temp, r0
 	pop {r0-r3}
 
@@ -1414,7 +1414,7 @@ deci32_string_to_int32:
 
 	push {r0-r3}
 	mov r2, #0x58                     @ Ascii Code of X
-	bl print32_charsearch
+	bl str32_charsearch
 	mov temp, r0
 	pop {r0-r3}
 
@@ -1423,7 +1423,7 @@ deci32_string_to_int32:
 
 	push {r0-r3}
 	mov r2, #0x78                     @ Ascii Code of x
-	bl print32_charsearch
+	bl str32_charsearch
 	mov temp, r0
 	pop {r0-r3}
 
@@ -1431,34 +1431,34 @@ deci32_string_to_int32:
 	movne system, #2                  @ Hexadecimal System
 
 	cmp system, #1
-	beq deci32_string_to_int32_decimal
+	beq cvt32_string_to_int32_decimal
 
 	cmp system, #2
-	beq deci32_string_to_int32_hexadecimal
+	beq cvt32_string_to_int32_hexadecimal
 
 	push {r0-r3}
-	bl deci32_string_to_bin
+	bl cvt32_string_to_bin
 	mov deci_lower, r0
 	pop {r0-r3}
 
-	b deci32_string_to_int32_common
+	b cvt32_string_to_int32_common
 
-	deci32_string_to_int32_hexadecimal:
+	cvt32_string_to_int32_hexadecimal:
 
 	push {r0-r3}
-	bl deci32_string_to_hexa
+	bl cvt32_string_to_hexa
 	mov deci_lower, r0
 	pop {r0-r3}
 
-	b deci32_string_to_int32_common
+	b cvt32_string_to_int32_common
 
-	deci32_string_to_int32_decimal:
+	cvt32_string_to_int32_decimal:
 
 		/* Check Existing of Minus */
 
 		push {r0-r3}
 		mov r2, #0x2D                     @ Ascii Code of Minus
-		bl print32_charcount
+		bl str32_charcount
 		mov deci_lower, r0
 		pop {r0-r3}
 
@@ -1467,7 +1467,7 @@ deci32_string_to_int32:
 		moveq signed, #0
 
 		push {r0-r3}
-		bl deci32_string_to_deci
+		bl cvt32_string_to_deci
 		mov deci_lower, r0
 		mov deci_upper, r1
 		pop {r0-r3}
@@ -1475,7 +1475,7 @@ deci32_string_to_int32:
 		push {r0-r3}
 		mov r0, deci_lower
 		mov r1, deci_upper
-		bl deci32_deci_to_hexa
+		bl cvt32_deci_to_hexa
 		mov deci_lower, r0
 		pop {r0-r3}
 
@@ -1483,7 +1483,7 @@ deci32_string_to_int32:
 		mvneq deci_lower, deci_lower          @ Logical Not to Convert Plus to Minus
 		addeq deci_lower, deci_lower, #1      @ Add 1 to Convert Plus to Minus
 
-	deci32_string_to_int32_common:
+	cvt32_string_to_int32_common:
 		mov r0, deci_lower
 		pop {r4-r6,pc}
 
@@ -1497,7 +1497,7 @@ deci32_string_to_int32:
 
 
 /**
- * function deci32_string_to_float32
+ * function cvt32_string_to_float32
  * Make 32-bit Float From String (Decimal System)
  * Caution! The Range of Integer Part is -2,147,483,648 thorugh 2,147,483,647 on Signed.
  * Otherwise, You'll Get Inaccurate Integer Part to Return.
@@ -1509,8 +1509,8 @@ deci32_string_to_int32:
  * Return: r0 (32-bit Float, -1 as error)
  * Error(-1): String Could Not Be Converted
  */
-.globl deci32_string_to_float32
-deci32_string_to_float32:
+.globl cvt32_string_to_float32
+cvt32_string_to_float32:
 	/* Auto (Local) Variables, but just Aliases */
 	heap               .req r0
 	length             .req r1
@@ -1534,46 +1534,46 @@ deci32_string_to_float32:
 
 	push {r0-r3}
 	mov r2, #0x45                     @ Ascii Code of E
-	bl print32_charsearch
+	bl str32_charsearch
 	mov exponent, r0
 	pop {r0-r3}
 
 	cmp exponent, #-1
-	bne deci32_string_to_float32_preexpo
+	bne cvt32_string_to_float32_preexpo
 
 	push {r0-r3}
 	mov r2, #0x65                     @ Ascii Code of e
-	bl print32_charsearch
+	bl str32_charsearch
 	mov exponent, r0
 	pop {r0-r3}
 
 	cmp exponent, #-1
 	moveq length_exponent, #0
-	beq deci32_string_to_float32_int
+	beq cvt32_string_to_float32_int
 
-	deci32_string_to_float32_preexpo:
+	cvt32_string_to_float32_preexpo:
 
 		sub length_exponent, length, exponent
 
-	deci32_string_to_float32_int:
+	cvt32_string_to_float32_int:
 
 		/* Integer Part */
 
 		push {r0-r3}
 		mov r2, #0x2E                     @ Ascii Code for Period
-		bl print32_charsearch
+		bl str32_charsearch
 		mov length_integer, r0
 		pop {r0-r3}
 
 		cmp length_integer, #-1
-		beq deci32_string_to_float32_error
+		beq cvt32_string_to_float32_error
 
 		/* Check Existing of Minus */
 
 		push {r0-r3}
 		mov r1, length_integer
 		mov r2, #0x2D                     @ Ascii Code of Minus
-		bl print32_charcount
+		bl str32_charcount
 		mov integer, r0
 		pop {r0-r3}
 
@@ -1583,7 +1583,7 @@ deci32_string_to_float32:
 
 		push {r0-r3}
 		mov r1, length_integer
-		bl deci32_string_to_int32
+		bl cvt32_string_to_int32
 		mov integer, r0
 		pop {r0-r3}
 
@@ -1619,14 +1619,14 @@ deci32_string_to_float32:
 		.unreq temp
 		length_dup .req r3
 
-	deci32_string_to_float32_frac:
+	cvt32_string_to_float32_frac:
 		cmp length_frac, #8
 		movge length_dup, #8
 		movlt length_dup, length_frac
 
 		push {r0-r3}
 		mov r1, length_dup
-		bl deci32_string_to_int32
+		bl cvt32_string_to_int32
 		mov frac, r0
 		pop {r0-r3}
 
@@ -1637,28 +1637,28 @@ deci32_string_to_float32:
 
 		add length_dup, length_dup, frac_offset
 
-		deci32_string_to_float32_frac_loop:
+		cvt32_string_to_float32_frac_loop:
 
 			vdiv.f32 vfp_float_cal, vfp_float_cal, vfp_ten
 
 			sub length_dup, length_dup, #1
 			cmp length_dup, #0
-			bgt deci32_string_to_float32_frac_loop
+			bgt cvt32_string_to_float32_frac_loop
 
 		vadd.f32 vfp_float_frac, vfp_float_frac, vfp_float_cal
 
 		sub length_frac, length_frac, #8
 		cmp length_frac, #0
 		addgt frac_offset, frac_offset, #8
-		bgt deci32_string_to_float32_frac
+		bgt cvt32_string_to_float32_frac
 
 		cmp minus, #1
 		vnegeq.f32 vfp_float_frac, vfp_float_frac
 		vadd.f32 vfp_float, vfp_float, vfp_float_frac
 
-	deci32_string_to_float32_expo:
+	cvt32_string_to_float32_expo:
 		cmp exponent, #-1
-		beq deci32_string_to_float32_success
+		beq cvt32_string_to_float32_success
 
 		/* Exponential Part */
 
@@ -1667,7 +1667,7 @@ deci32_string_to_float32:
 
 		push {r0-r3}
 		mov r1, length_exponent
-		bl deci32_string_to_int32
+		bl cvt32_string_to_int32
 		mov exponent, r0
 		pop {r0-r3}
 
@@ -1677,9 +1677,9 @@ deci32_string_to_float32:
 		mvnlt exponent, exponent                 @ Logical Not to Convert Plus to Minus
 		addlt exponent, exponent, #1             @ Add 1 to Convert Plus to Minus
 
-	deci32_string_to_float32_expo_loop:
+	cvt32_string_to_float32_expo_loop:
 		cmp exponent, #0
-		ble deci32_string_to_float32_success
+		ble cvt32_string_to_float32_success
 
 		cmp minus, #1
 		vdiveq.f32 vfp_float, vfp_float, vfp_ten
@@ -1687,16 +1687,16 @@ deci32_string_to_float32:
 
 		sub exponent, exponent, #1
 
-		b deci32_string_to_float32_expo_loop
+		b cvt32_string_to_float32_expo_loop
 
-	deci32_string_to_float32_error:
+	cvt32_string_to_float32_error:
 		mvn r0, #0x00                            @ Error With -1
-		b deci32_string_to_float32_common
+		b cvt32_string_to_float32_common
 
-	deci32_string_to_float32_success:
+	cvt32_string_to_float32_success:
 		vmov r0, vfp_float
 
-	deci32_string_to_float32_common:
+	cvt32_string_to_float32_common:
 		vpop {s0-s3}
 		pop {r4-r8,pc}
 
@@ -1716,7 +1716,7 @@ deci32_string_to_float32:
 
 
 /**
- * function deci32_hexa_to_deci
+ * function cvt32_hexa_to_deci
  * Convert Hexadecimal Bases (0-F) to Decimal Bases (0-9)
  *
  * Parameters
@@ -1724,8 +1724,8 @@ deci32_string_to_float32:
  *
  * Return: r0 (Lower Bits of Decimal Number), r1 (Upper Bits of Decimal Number)
  */
-.globl deci32_hexa_to_deci
-deci32_hexa_to_deci:
+.globl cvt32_hexa_to_deci
+cvt32_hexa_to_deci:
 	/* Auto (Local) Variables, but just Aliases */
 	hexa        .req r0
 	deci_upper  .req r1
@@ -1750,7 +1750,7 @@ deci32_hexa_to_deci:
 
 	mov i, #0
 
-	deci32_hexa_to_deci_loop:
+	cvt32_hexa_to_deci_loop:
 		mov bitmask, #0xF                         @ 0b1111
 		lsl shift, i, #2                          @ Substitute of Multiplication by 4
 		lsl bitmask, bitmask, shift               @ Make bitmask
@@ -1758,69 +1758,69 @@ deci32_hexa_to_deci:
 		lsr bitmask, bitmask, shift               @ Make One Digit Number
 
 		cmp i, #0
-		ldreq power_lower, deci32_hexa_to_deci_0                @ 16^0
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_0                @ 16^0
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #1
-		ldreq power_lower, deci32_hexa_to_deci_1                @ 16^1
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_1                @ 16^1
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #2
-		ldreq power_lower, deci32_hexa_to_deci_2                @ 16^2
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_2                @ 16^2
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #3
-		ldreq power_lower, deci32_hexa_to_deci_3                @ 16^3
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_3                @ 16^3
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #4
-		ldreq power_lower, deci32_hexa_to_deci_4                @ 16^4
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_4                @ 16^4
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #5
-		ldreq power_lower, deci32_hexa_to_deci_5                @ 16^5
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_5                @ 16^5
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #6
-		ldreq power_lower, deci32_hexa_to_deci_6                @ 16^6
-		beq deci32_hexa_to_deci_loop_loop
+		ldreq power_lower, cvt32_hexa_to_deci_6                @ 16^6
+		beq cvt32_hexa_to_deci_loop_loop
 
 		cmp i, #7
-		ldreq power_lower, deci32_hexa_to_deci_7_lower          @ 16^7 Lower Bits
-		ldreq power_upper, deci32_hexa_to_deci_7_upper          @ 16^7 Upper Bits
+		ldreq power_lower, cvt32_hexa_to_deci_7_lower          @ 16^7 Lower Bits
+		ldreq power_upper, cvt32_hexa_to_deci_7_upper          @ 16^7 Upper Bits
 
-		deci32_hexa_to_deci_loop_loop:
+		cvt32_hexa_to_deci_loop_loop:
 
 			cmp bitmask, #0
-			ble deci32_hexa_to_deci_loop_common
+			ble cvt32_hexa_to_deci_loop_common
 
 			bl bcd32_deci_add64
 
 			sub bitmask, bitmask, #1
 
-			b deci32_hexa_to_deci_loop_loop
+			b cvt32_hexa_to_deci_loop_loop
 
-		deci32_hexa_to_deci_loop_common:
+		cvt32_hexa_to_deci_loop_common:
 
 			add i, i, #1
 			cmp i, #8
-			blo deci32_hexa_to_deci_loop
+			blo cvt32_hexa_to_deci_loop
 
-	deci32_hexa_to_deci_common:
+	cvt32_hexa_to_deci_common:
 		pop {r4-r7,pc}     @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			               @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 /* Variables */
 .balign 4
-deci32_hexa_to_deci_0:       .word 0x00000001 @ 16^0
-deci32_hexa_to_deci_1:       .word 0x00000016 @ 16^1
-deci32_hexa_to_deci_2:       .word 0x00000256 @ 16^2
-deci32_hexa_to_deci_3:       .word 0x00004096 @ 16^3
-deci32_hexa_to_deci_4:       .word 0x00065536 @ 16^4
-deci32_hexa_to_deci_5:       .word 0x01048576 @ 16^5
-deci32_hexa_to_deci_6:       .word 0x16777216 @ 16^6
-deci32_hexa_to_deci_7_lower: .word 0x68435456 @ 16^7 Lower Bits
-deci32_hexa_to_deci_7_upper: .word 0x00000002 @ 16^7 Upper Bits
+cvt32_hexa_to_deci_0:       .word 0x00000001 @ 16^0
+cvt32_hexa_to_deci_1:       .word 0x00000016 @ 16^1
+cvt32_hexa_to_deci_2:       .word 0x00000256 @ 16^2
+cvt32_hexa_to_deci_3:       .word 0x00004096 @ 16^3
+cvt32_hexa_to_deci_4:       .word 0x00065536 @ 16^4
+cvt32_hexa_to_deci_5:       .word 0x01048576 @ 16^5
+cvt32_hexa_to_deci_6:       .word 0x16777216 @ 16^6
+cvt32_hexa_to_deci_7_lower: .word 0x68435456 @ 16^7 Lower Bits
+cvt32_hexa_to_deci_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 .balign 4
 
 .unreq deci_lower
@@ -1834,7 +1834,7 @@ deci32_hexa_to_deci_7_upper: .word 0x00000002 @ 16^7 Upper Bits
 
 
 /**
- * function deci32_deci_to_hexa
+ * function cvt32_deci_to_hexa
  * Convert Decimal Bases (0-9) to Hexadecimal Bases (0-F)
  * Caution! The Range of Decimal Number is 0 through 4,294,967,295.
  * If Exceeds Range, Returns 0xFFFFFFFF
@@ -1845,8 +1845,8 @@ deci32_hexa_to_deci_7_upper: .word 0x00000002 @ 16^7 Upper Bits
  *
  * Return: r0 (Hexadecimal Number)
  */
-.globl deci32_deci_to_hexa
-deci32_deci_to_hexa:
+.globl cvt32_deci_to_hexa
+cvt32_deci_to_hexa:
 	/* Auto (Local) Variables, but just Aliases */
 	deci_lower     .req r0
 	deci_upper     .req r1
@@ -1870,104 +1870,104 @@ deci32_deci_to_hexa:
 	addeq i, i, #0x94000000
 	cmpeq deci_lower, i
 	mvnhi hexa, #0
-	bhi deci32_deci_to_hexa_common
+	bhi cvt32_deci_to_hexa_common
 
 	mov i, #7
 
-	deci32_deci_to_hexa_loop:
+	cvt32_deci_to_hexa_loop:
 
 		cmp i, #0
-		ldreq power_lower, deci32_deci_to_hexa_0                @ 16^1
+		ldreq power_lower, cvt32_deci_to_hexa_0                @ 16^1
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_0
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_0
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #1
-		ldreq power_lower, deci32_deci_to_hexa_1                @ 16^1
+		ldreq power_lower, cvt32_deci_to_hexa_1                @ 16^1
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_1
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_1
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #2
-		ldreq power_lower, deci32_deci_to_hexa_2                @ 16^2
+		ldreq power_lower, cvt32_deci_to_hexa_2                @ 16^2
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_2
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_2
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #3
-		ldreq power_lower, deci32_deci_to_hexa_3                @ 16^3
+		ldreq power_lower, cvt32_deci_to_hexa_3                @ 16^3
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_3
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_3
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #4
-		ldreq power_lower, deci32_deci_to_hexa_4                @ 16^4
+		ldreq power_lower, cvt32_deci_to_hexa_4                @ 16^4
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_4
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_4
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #5
-		ldreq power_lower, deci32_deci_to_hexa_5                @ 16^5
+		ldreq power_lower, cvt32_deci_to_hexa_5                @ 16^5
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_5
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_5
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #6
-		ldreq power_lower, deci32_deci_to_hexa_6                @ 16^6
+		ldreq power_lower, cvt32_deci_to_hexa_6                @ 16^6
 		moveq power_upper, #0
-		ldreq shift, deci32_deci_to_hexa_shift_6
-		beq deci32_deci_to_hexa_loop_loop
+		ldreq shift, cvt32_deci_to_hexa_shift_6
+		beq cvt32_deci_to_hexa_loop_loop
 
 		cmp i, #7
-		ldreq power_lower, deci32_deci_to_hexa_7_lower          @ 16^7 Lower Bits
-		ldreq power_upper, deci32_deci_to_hexa_7_upper          @ 16^7 Upper Bits
-		ldreq shift, deci32_deci_to_hexa_shift_7
+		ldreq power_lower, cvt32_deci_to_hexa_7_lower          @ 16^7 Lower Bits
+		ldreq power_upper, cvt32_deci_to_hexa_7_upper          @ 16^7 Upper Bits
+		ldreq shift, cvt32_deci_to_hexa_shift_7
 
-		deci32_deci_to_hexa_loop_loop:
+		cvt32_deci_to_hexa_loop_loop:
 
 			push {r0-r3}
 			bl bcd32_deci_sub64
 			mov deci_lower_dup, r0
 			mov deci_upper_dup, r1
 			pop {r0-r3}
-			bcs deci32_deci_to_hexa_loop_common             @ If Carry Set/ Unsigned Higher or Same (hs)
+			bcs cvt32_deci_to_hexa_loop_common             @ If Carry Set/ Unsigned Higher or Same (hs)
 
 			mov deci_lower, deci_lower_dup
 			mov deci_upper, deci_upper_dup
 			add hexa, hexa, shift
 
-			b deci32_deci_to_hexa_loop_loop
+			b cvt32_deci_to_hexa_loop_loop
 
-		deci32_deci_to_hexa_loop_common:
+		cvt32_deci_to_hexa_loop_common:
 
 			sub i, i, #1
 			cmp i, #0
-			bge deci32_deci_to_hexa_loop
+			bge cvt32_deci_to_hexa_loop
 
-	deci32_deci_to_hexa_common:
+	cvt32_deci_to_hexa_common:
 		mov r0, hexa
 		pop {r4-r8,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                        @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 
 /* Variables */
 .balign 4
-deci32_deci_to_hexa_0:       .word 0x00000001 @ 16^0
-deci32_deci_to_hexa_1:       .word 0x00000016 @ 16^1
-deci32_deci_to_hexa_2:       .word 0x00000256 @ 16^2
-deci32_deci_to_hexa_3:       .word 0x00004096 @ 16^3
-deci32_deci_to_hexa_4:       .word 0x00065536 @ 16^4
-deci32_deci_to_hexa_5:       .word 0x01048576 @ 16^5
-deci32_deci_to_hexa_6:       .word 0x16777216 @ 16^6
-deci32_deci_to_hexa_7_lower: .word 0x68435456 @ 16^7 Lower Bits
-deci32_deci_to_hexa_7_upper: .word 0x00000002 @ 16^7 Upper Bits
-deci32_deci_to_hexa_shift_0: .word 0x00000001 @ 16^0
-deci32_deci_to_hexa_shift_1: .word 0x00000010 @ 16^1
-deci32_deci_to_hexa_shift_2: .word 0x00000100 @ 16^2
-deci32_deci_to_hexa_shift_3: .word 0x00001000 @ 16^3
-deci32_deci_to_hexa_shift_4: .word 0x00010000 @ 16^4
-deci32_deci_to_hexa_shift_5: .word 0x00100000 @ 16^5
-deci32_deci_to_hexa_shift_6: .word 0x01000000 @ 16^6
-deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
+cvt32_deci_to_hexa_0:       .word 0x00000001 @ 16^0
+cvt32_deci_to_hexa_1:       .word 0x00000016 @ 16^1
+cvt32_deci_to_hexa_2:       .word 0x00000256 @ 16^2
+cvt32_deci_to_hexa_3:       .word 0x00004096 @ 16^3
+cvt32_deci_to_hexa_4:       .word 0x00065536 @ 16^4
+cvt32_deci_to_hexa_5:       .word 0x01048576 @ 16^5
+cvt32_deci_to_hexa_6:       .word 0x16777216 @ 16^6
+cvt32_deci_to_hexa_7_lower: .word 0x68435456 @ 16^7 Lower Bits
+cvt32_deci_to_hexa_7_upper: .word 0x00000002 @ 16^7 Upper Bits
+cvt32_deci_to_hexa_shift_0: .word 0x00000001 @ 16^0
+cvt32_deci_to_hexa_shift_1: .word 0x00000010 @ 16^1
+cvt32_deci_to_hexa_shift_2: .word 0x00000100 @ 16^2
+cvt32_deci_to_hexa_shift_3: .word 0x00001000 @ 16^3
+cvt32_deci_to_hexa_shift_4: .word 0x00010000 @ 16^4
+cvt32_deci_to_hexa_shift_5: .word 0x00100000 @ 16^5
+cvt32_deci_to_hexa_shift_6: .word 0x01000000 @ 16^6
+cvt32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
 .balign 4
 
 .unreq deci_lower
@@ -1982,7 +1982,7 @@ deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
 
 
 /**
- * function deci32_string_to_intarray
+ * function cvt32_string_to_intarray
  * Make Array of Integers From String
  * This function detects defined separators (commas on default) between each Integers.
  *
@@ -1993,8 +1993,8 @@ deci32_deci_to_hexa_shift_7: .word 0x10000000 @ 16^7
  *
  * Return: r0 (Heap of Array, 0 as not succeeded)
  */
-.globl deci32_string_to_intarray
-deci32_string_to_intarray:
+.globl cvt32_string_to_intarray
+cvt32_string_to_intarray:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_str      .req r0
 	length_str    .req r1
@@ -2011,34 +2011,34 @@ deci32_string_to_intarray:
 	/* Check Separators */
 
 	push {r0-r3}
-	mov r2, #equ32_deci32_separator
-	bl print32_charcount
+	mov r2, #equ32_cvt32_separator
+	bl str32_charcount
 	mov length_arr, r0
 	pop {r0-r3}
 
 	add length_arr, length_arr, #1
 
 	cmp size, #2
-	bge deci32_string_to_intarray_word
+	bge cvt32_string_to_intarray_word
 
 	mov temp, length_arr
 	mov temp2, #0x1
 
-	deci32_string_to_intarray_lessthanword:
+	cvt32_string_to_intarray_lessthanword:
 		tst temp, #0x1
 		addne temp, temp, #0x1
 		lsr temp, temp, #0x1
 		sub temp2, temp2, #0x1
 		cmp temp2, size
-		bge deci32_string_to_intarray_lessthanword
+		bge cvt32_string_to_intarray_lessthanword
 
-		b deci32_string_to_intarray_malloc
+		b cvt32_string_to_intarray_malloc
 
-	deci32_string_to_intarray_word:
+	cvt32_string_to_intarray_word:
 		sub temp, size, #2
 		lsl temp, length_arr, temp
 
-	deci32_string_to_intarray_malloc:
+	cvt32_string_to_intarray_malloc:
 
 		push {r0-r3}
 		mov r0, temp
@@ -2047,7 +2047,7 @@ deci32_string_to_intarray:
 		pop {r0-r3}
 
 		cmp heap_arr, #0
-		beq deci32_string_to_intarray_common
+		beq cvt32_string_to_intarray_common
 
 		.unreq temp
 		align .req r3
@@ -2061,29 +2061,29 @@ deci32_string_to_intarray:
 
 		mov offset, #0
 
-	deci32_string_to_intarray_loop:
+	cvt32_string_to_intarray_loop:
 		cmp length_arr, #0
-		ble deci32_string_to_intarray_common
+		ble cvt32_string_to_intarray_common
 
 		push {r0-r3}
-		mov r2, #equ32_deci32_separator
-		bl print32_charsearch
+		mov r2, #equ32_cvt32_separator
+		bl str32_charsearch
 		mov length_substr, r0
 		pop {r0-r3}
 
 		cmp length_substr, #-1
-		bne deci32_string_to_intarray_loop_jump
+		bne cvt32_string_to_intarray_loop_jump
 
 		push {r0-r3}
-		bl print32_strlen
+		bl str32_strlen
 		mov length_substr, r0
 		pop {r0-r3}
 
-		deci32_string_to_intarray_loop_jump:
+		cvt32_string_to_intarray_loop_jump:
 
 			push {r0-r3}
 			mov r1, length_substr
-			bl deci32_string_to_int32
+			bl cvt32_string_to_int32
 			mov data, r0
 			pop {r0-r3}
 
@@ -2104,9 +2104,9 @@ deci32_string_to_intarray:
 			add offset, offset, align
 
 			sub length_arr, length_arr, #1
-			b deci32_string_to_intarray_loop
+			b cvt32_string_to_intarray_loop
 
-	deci32_string_to_intarray_common:
+	cvt32_string_to_intarray_common:
 		mov r0, heap_arr
 		pop {r4-r8,pc}
 
@@ -2122,7 +2122,7 @@ deci32_string_to_intarray:
 
 
 /**
- * function deci32_intarray_to_string_deci
+ * function cvt32_intarray_to_string_deci
  * Make String on Decimal System From Array of Integers
  *
  * Parameters
@@ -2133,8 +2133,8 @@ deci32_string_to_intarray:
  *
  * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_intarray_to_string_deci
-deci32_intarray_to_string_deci:
+.globl cvt32_intarray_to_string_deci
+cvt32_intarray_to_string_deci:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_arr        .req r0
 	size            .req r1
@@ -2163,9 +2163,9 @@ deci32_intarray_to_string_deci:
 
 	mov heap_str0, #0
 
-	deci32_intarray_to_string_deci_loop:
+	cvt32_intarray_to_string_deci_loop:
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_deci_common
+		bge cvt32_intarray_to_string_deci_common
 
 		cmp size, #0
 		ldreqb data, [heap_arr]
@@ -2178,16 +2178,16 @@ deci32_intarray_to_string_deci:
 		mov r0, data
 		mov r1, min_length
 		mov r2, signed
-		bl deci32_int32_to_string_deci
+		bl cvt32_int32_to_string_deci
 		mov heap_str1, r0
 		pop {r0-r3}
 
 		cmp heap_str1, #0
-		beq deci32_intarray_to_string_deci_common
+		beq cvt32_intarray_to_string_deci_common
 
 		add heap_arr, heap_arr, align
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_deci_loop_common
+		bge cvt32_intarray_to_string_deci_loop_common
 
 		push {r0-r3}
 		mov r0, #1
@@ -2196,9 +2196,9 @@ deci32_intarray_to_string_deci:
 		pop {r0-r3}
 
 		cmp heap_str2, #0
-		beq deci32_intarray_to_string_deci_common
+		beq cvt32_intarray_to_string_deci_common
 
-		mov data, #equ32_deci32_separator
+		mov data, #equ32_cvt32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
@@ -2207,12 +2207,12 @@ deci32_intarray_to_string_deci:
 		push {r0-r3}
 		mov r0, heap_str1
 		mov r1, heap_str2
-		bl print32_strcat
+		bl str32_strcat
 		mov heap_str3, r0
 		pop {r0-r3}
 
 		cmp heap_str3, #0
-		beq deci32_intarray_to_string_deci_common
+		beq cvt32_intarray_to_string_deci_common
 
 		push {r0-r3}
 		mov r0, heap_str1
@@ -2226,18 +2226,18 @@ deci32_intarray_to_string_deci:
 
 		mov heap_str1, heap_str3
 
-		deci32_intarray_to_string_deci_loop_common:
+		cvt32_intarray_to_string_deci_loop_common:
 
 			/* If Initial Part of Array */
 			cmp heap_str0, #0
 			moveq heap_str0, heap_str1
-			beq deci32_intarray_to_string_deci_loop
+			beq cvt32_intarray_to_string_deci_loop
 
 			/* If Following Parts of Array */
 			push {r0-r3}
 			mov r0, heap_str0
 			mov r1, heap_str1
-			bl print32_strcat
+			bl str32_strcat
 			mov heap_str2, r0
 			pop {r0-r3}
 
@@ -2253,9 +2253,9 @@ deci32_intarray_to_string_deci:
 
 			mov heap_str0, heap_str2
 
-			b deci32_intarray_to_string_deci_loop
+			b cvt32_intarray_to_string_deci_loop
 
-	deci32_intarray_to_string_deci_common:
+	cvt32_intarray_to_string_deci_common:
 		mov r0, heap_str0
 		pop {r4-r10,pc}
 
@@ -2273,7 +2273,7 @@ deci32_intarray_to_string_deci:
 
 
 /**
- * function deci32_intarray_to_string_hexa
+ * function cvt32_intarray_to_string_hexa
  * Make String on Hexadecimal System From Array of Integers
  *
  * Parameters
@@ -2285,8 +2285,8 @@ deci32_intarray_to_string_deci:
  *
  * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_intarray_to_string_hexa
-deci32_intarray_to_string_hexa:
+.globl cvt32_intarray_to_string_hexa
+cvt32_intarray_to_string_hexa:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_arr        .req r0
 	size            .req r1
@@ -2320,9 +2320,9 @@ deci32_intarray_to_string_hexa:
 
 	mov heap_str0, #0
 
-	deci32_intarray_to_string_hexa_loop:
+	cvt32_intarray_to_string_hexa_loop:
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_hexa_common
+		bge cvt32_intarray_to_string_hexa_common
 
 		cmp size, #0
 		ldreqb data, [heap_arr]
@@ -2336,16 +2336,16 @@ deci32_intarray_to_string_hexa:
 		mov r1, min_length
 		mov r2, signed
 		mov r3, base_mark
-		bl deci32_int32_to_string_hexa
+		bl cvt32_int32_to_string_hexa
 		mov heap_str1, r0
 		pop {r0-r3}
 
 		cmp heap_str1, #0
-		beq deci32_intarray_to_string_hexa_common
+		beq cvt32_intarray_to_string_hexa_common
 
 		add heap_arr, heap_arr, align
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_hexa_loop_common
+		bge cvt32_intarray_to_string_hexa_loop_common
 
 		push {r0-r3}
 		mov r0, #1
@@ -2354,9 +2354,9 @@ deci32_intarray_to_string_hexa:
 		pop {r0-r3}
 
 		cmp heap_str2, #0
-		beq deci32_intarray_to_string_hexa_common
+		beq cvt32_intarray_to_string_hexa_common
 
-		mov data, #equ32_deci32_separator
+		mov data, #equ32_cvt32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
@@ -2365,12 +2365,12 @@ deci32_intarray_to_string_hexa:
 		push {r0-r3}
 		mov r0, heap_str1
 		mov r1, heap_str2
-		bl print32_strcat
+		bl str32_strcat
 		mov heap_str3, r0
 		pop {r0-r3}
 
 		cmp heap_str3, #0
-		beq deci32_intarray_to_string_hexa_common
+		beq cvt32_intarray_to_string_hexa_common
 
 		push {r0-r3}
 		mov r0, heap_str1
@@ -2384,18 +2384,18 @@ deci32_intarray_to_string_hexa:
 
 		mov heap_str1, heap_str3
 
-		deci32_intarray_to_string_hexa_loop_common:
+		cvt32_intarray_to_string_hexa_loop_common:
 
 			/* If Initial Part of Array */
 			cmp heap_str0, #0
 			moveq heap_str0, heap_str1
-			beq deci32_intarray_to_string_hexa_loop
+			beq cvt32_intarray_to_string_hexa_loop
 
 			/* If Following Parts of Array */
 			push {r0-r3}
 			mov r0, heap_str0
 			mov r1, heap_str1
-			bl print32_strcat
+			bl str32_strcat
 			mov heap_str2, r0
 			pop {r0-r3}
 
@@ -2411,9 +2411,9 @@ deci32_intarray_to_string_hexa:
 
 			mov heap_str0, heap_str2
 
-			b deci32_intarray_to_string_hexa_loop
+			b cvt32_intarray_to_string_hexa_loop
 
-	deci32_intarray_to_string_hexa_common:
+	cvt32_intarray_to_string_hexa_common:
 		mov r0, heap_str0
 		pop {r4-r11,pc}
 
@@ -2432,7 +2432,7 @@ deci32_intarray_to_string_hexa:
 
 
 /**
- * function deci32_intarray_to_string_bin
+ * function cvt32_intarray_to_string_bin
  * Make String on Binary System From Array of Integers
  *
  * Parameters
@@ -2443,8 +2443,8 @@ deci32_intarray_to_string_hexa:
  *
  * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_intarray_to_string_bin
-deci32_intarray_to_string_bin:
+.globl cvt32_intarray_to_string_bin
+cvt32_intarray_to_string_bin:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_arr        .req r0
 	size            .req r1
@@ -2473,9 +2473,9 @@ deci32_intarray_to_string_bin:
 
 	mov heap_str0, #0
 
-	deci32_intarray_to_string_bin_loop:
+	cvt32_intarray_to_string_bin_loop:
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_bin_common
+		bge cvt32_intarray_to_string_bin_common
 
 		cmp size, #0
 		ldreqb data, [heap_arr]
@@ -2488,16 +2488,16 @@ deci32_intarray_to_string_bin:
 		mov r0, data
 		mov r1, min_length
 		mov r2, base_mark
-		bl deci32_int32_to_string_bin
+		bl cvt32_int32_to_string_bin
 		mov heap_str1, r0
 		pop {r0-r3}
 
 		cmp heap_str1, #0
-		beq deci32_intarray_to_string_bin_common
+		beq cvt32_intarray_to_string_bin_common
 
 		add heap_arr, heap_arr, align
 		cmp heap_arr, heap_arr_length
-		bge deci32_intarray_to_string_bin_loop_common
+		bge cvt32_intarray_to_string_bin_loop_common
 
 		push {r0-r3}
 		mov r0, #1
@@ -2506,9 +2506,9 @@ deci32_intarray_to_string_bin:
 		pop {r0-r3}
 
 		cmp heap_str2, #0
-		beq deci32_intarray_to_string_bin_common
+		beq cvt32_intarray_to_string_bin_common
 
-		mov data, #equ32_deci32_separator
+		mov data, #equ32_cvt32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
@@ -2517,12 +2517,12 @@ deci32_intarray_to_string_bin:
 		push {r0-r3}
 		mov r0, heap_str1
 		mov r1, heap_str2
-		bl print32_strcat
+		bl str32_strcat
 		mov heap_str3, r0
 		pop {r0-r3}
 
 		cmp heap_str3, #0
-		beq deci32_intarray_to_string_bin_common
+		beq cvt32_intarray_to_string_bin_common
 
 		push {r0-r3}
 		mov r0, heap_str1
@@ -2536,18 +2536,18 @@ deci32_intarray_to_string_bin:
 
 		mov heap_str1, heap_str3
 
-		deci32_intarray_to_string_bin_loop_common:
+		cvt32_intarray_to_string_bin_loop_common:
 
 			/* If Initial Part of Array */
 			cmp heap_str0, #0
 			moveq heap_str0, heap_str1
-			beq deci32_intarray_to_string_bin_loop
+			beq cvt32_intarray_to_string_bin_loop
 
 			/* If Following Parts of Array */
 			push {r0-r3}
 			mov r0, heap_str0
 			mov r1, heap_str1
-			bl print32_strcat
+			bl str32_strcat
 			mov heap_str2, r0
 			pop {r0-r3}
 
@@ -2563,9 +2563,9 @@ deci32_intarray_to_string_bin:
 
 			mov heap_str0, heap_str2
 
-			b deci32_intarray_to_string_bin_loop
+			b cvt32_intarray_to_string_bin_loop
 
-	deci32_intarray_to_string_bin_common:
+	cvt32_intarray_to_string_bin_common:
 		mov r0, heap_str0
 		pop {r4-r10,pc}
 
@@ -2583,7 +2583,7 @@ deci32_intarray_to_string_bin:
 
 
 /**
- * function deci32_string_to_farray
+ * function cvt32_string_to_farray
  * Make Array of Single Precision Floats From String on Decimal System
  * This function detects defined separators (commas on default) between each floats.
  *
@@ -2593,8 +2593,8 @@ deci32_intarray_to_string_bin:
  *
  * Return: r0 (Heap of Array, 0 as not succeeded)
  */
-.globl deci32_string_to_farray
-deci32_string_to_farray:
+.globl cvt32_string_to_farray
+cvt32_string_to_farray:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_str      .req r0
 	length_str    .req r1
@@ -2610,14 +2610,14 @@ deci32_string_to_farray:
 	/* Check Separators */
 
 	push {r0-r3}
-	mov r2, #equ32_deci32_separator
-	bl print32_charcount
+	mov r2, #equ32_cvt32_separator
+	bl str32_charcount
 	mov length_arr, r0
 	pop {r0-r3}
 
 	add length_arr, length_arr, #1
 
-	deci32_string_to_farray_malloc:
+	cvt32_string_to_farray_malloc:
 
 		push {r0-r3}
 		mov r0, length_arr
@@ -2626,33 +2626,33 @@ deci32_string_to_farray:
 		pop {r0-r3}
 
 		cmp heap_arr, #0
-		beq deci32_string_to_farray_common
+		beq cvt32_string_to_farray_common
 
 		mov offset, #0
 
-	deci32_string_to_farray_loop:
+	cvt32_string_to_farray_loop:
 		cmp length_arr, #0
-		ble deci32_string_to_farray_common
+		ble cvt32_string_to_farray_common
 
 		push {r0-r3}
-		mov r2, #equ32_deci32_separator
-		bl print32_charsearch
+		mov r2, #equ32_cvt32_separator
+		bl str32_charsearch
 		mov length_substr, r0
 		pop {r0-r3}
 
 		cmp length_substr, #-1
-		bne deci32_string_to_farray_loop_jump
+		bne cvt32_string_to_farray_loop_jump
 
 		push {r0-r3}
-		bl print32_strlen
+		bl str32_strlen
 		mov length_substr, r0
 		pop {r0-r3}
 
-		deci32_string_to_farray_loop_jump:
+		cvt32_string_to_farray_loop_jump:
 
 			push {r0-r3}
 			mov r1, length_substr
-			bl deci32_string_to_float32
+			bl cvt32_string_to_float32
 			mov data, r0
 			pop {r0-r3}
 
@@ -2668,9 +2668,9 @@ deci32_string_to_farray:
 			add offset, offset, #4
 
 			sub length_arr, length_arr, #1
-			b deci32_string_to_farray_loop
+			b cvt32_string_to_farray_loop
 
-	deci32_string_to_farray_common:
+	cvt32_string_to_farray_common:
 		mov r0, heap_arr
 		pop {r4-r7,pc}
 
@@ -2685,7 +2685,7 @@ deci32_string_to_farray:
 
 
 /**
- * function deci32_farray_to_string
+ * function cvt32_farray_to_string
  * Make String (Decimal System) From Single Precision Floats
  *
  * Parameters
@@ -2696,8 +2696,8 @@ deci32_string_to_farray:
  *
  * Return: r0 (Heap of String, 0 as not succeeded)
  */
-.globl deci32_farray_to_string
-deci32_farray_to_string:
+.globl cvt32_farray_to_string
+cvt32_farray_to_string:
 	/* Auto (Local) Variables, but just Aliases */
 	heap_arr        .req r0
 	min_integer     .req r1
@@ -2721,24 +2721,24 @@ deci32_farray_to_string:
 
 	mov heap_str0, #0
 
-	deci32_farray_to_string_loop:
+	cvt32_farray_to_string_loop:
 		cmp heap_arr, heap_arr_length
-		bge deci32_farray_to_string_common
+		bge cvt32_farray_to_string_common
 
 		ldr data, [heap_arr]
 
 		push {r0-r3}
 		mov r0, data
-		bl deci32_float32_to_string
+		bl cvt32_float32_to_string
 		mov heap_str1, r0
 		pop {r0-r3}
 
 		cmp heap_str1, #0
-		beq deci32_farray_to_string_common
+		beq cvt32_farray_to_string_common
 
 		add heap_arr, heap_arr, #4
 		cmp heap_arr, heap_arr_length
-		bge deci32_farray_to_string_loop_common
+		bge cvt32_farray_to_string_loop_common
 
 		push {r0-r3}
 		mov r0, #1
@@ -2747,9 +2747,9 @@ deci32_farray_to_string:
 		pop {r0-r3}
 
 		cmp heap_str2, #0
-		beq deci32_farray_to_string_common
+		beq cvt32_farray_to_string_common
 
-		mov data, #equ32_deci32_separator
+		mov data, #equ32_cvt32_separator
 		strb data, [heap_str2]
 
 		mov data, #0x00                          @ Ascii Code of Null
@@ -2758,12 +2758,12 @@ deci32_farray_to_string:
 		push {r0-r3}
 		mov r0, heap_str1
 		mov r1, heap_str2
-		bl print32_strcat
+		bl str32_strcat
 		mov heap_str3, r0
 		pop {r0-r3}
 
 		cmp heap_str3, #0
-		beq deci32_farray_to_string_common
+		beq cvt32_farray_to_string_common
 
 		push {r0-r3}
 		mov r0, heap_str1
@@ -2777,18 +2777,18 @@ deci32_farray_to_string:
 
 		mov heap_str1, heap_str3
 
-		deci32_farray_to_string_loop_common:
+		cvt32_farray_to_string_loop_common:
 
 			/* If Initial Part of Array */
 			cmp heap_str0, #0
 			moveq heap_str0, heap_str1
-			beq deci32_farray_to_string_loop
+			beq cvt32_farray_to_string_loop
 
 			/* If Following Parts of Array */
 			push {r0-r3}
 			mov r0, heap_str0
 			mov r1, heap_str1
-			bl print32_strcat
+			bl str32_strcat
 			mov heap_str2, r0
 			pop {r0-r3}
 
@@ -2804,9 +2804,9 @@ deci32_farray_to_string:
 
 			mov heap_str0, heap_str2
 
-			b deci32_farray_to_string_loop
+			b cvt32_farray_to_string_loop
 
-	deci32_farray_to_string_common:
+	cvt32_farray_to_string_common:
 		mov r0, heap_str0
 		pop {r4-r9,pc}
 

@@ -82,13 +82,15 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 4
 .include "system32/library/print32.s"
 .balign 4
+.include "system32/library/str32.s"
+.balign 4
 .include "system32/library/draw32.s"
 .balign 4
 .include "system32/library/snd32.s"
 .balign 4
 .include "system32/library/math32.s"
 .balign 4
-.include "system32/library/deci32.s"
+.include "system32/library/cvt32.s"
 .balign 4
 .include "system32/library/bcd32.s"
 .balign 4

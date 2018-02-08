@@ -254,7 +254,7 @@ os_fiq:
 
 	push {lr}
 	mov r0, r2
-	bl deci32_hexa_to_deci
+	bl cvt32_hexa_to_deci
 	pop {lr}
 
 	macro32_print_number_double r0, r1, 80, 388, 16

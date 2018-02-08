@@ -49,8 +49,8 @@ void _user_start()
 		_stopwatch_start();
 		fb32_clear_color( COLOR32_NAVYBLUE );
 
-		String num_string = deci32_int32_to_string_deci( time, 0, 0 );
-		print32_string( num_string, 0, 0, print32_strlen( num_string ) );
+		String num_string = cvt32_int32_to_string_deci( time, 0, 0 );
+		print32_string( num_string, 0, 0, str32_strlen( num_string ) );
 
 		start_sec = vfp32_fmul( os_fiq_sec, delta_sec );
 		start_sec = vfp32_fadd( start_sec, 90.0 );

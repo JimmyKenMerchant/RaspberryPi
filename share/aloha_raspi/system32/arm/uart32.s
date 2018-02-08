@@ -388,7 +388,7 @@ uart32_uartint:
 		ldr r0, uart32_uartint_buffer
 		mov r1, #1
 		mov r2, #0x1B                    @ Ascii Code of Escape
-		bl print32_charsearch
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 
@@ -400,7 +400,7 @@ uart32_uartint:
 		ldr r0, uart32_uartint_buffer
 		mov r1, #1
 		mov r2, #0x08                    @ Ascii Code of Back Space
-		bl print32_charsearch
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 
@@ -412,7 +412,7 @@ uart32_uartint:
 		ldr r0, uart32_uartint_buffer
 		mov r1, #1
 		mov r2, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
-		bl print32_charsearch
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 
@@ -439,7 +439,7 @@ uart32_uartint:
 		mov r1, #3
 		ldr r2, uart32_uartint_esc_up
 		mov r3, #3
-		bl print32_strsearch
+		bl str32_strsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -450,7 +450,7 @@ uart32_uartint:
 		mov r1, #3
 		ldr r2, uart32_uartint_esc_down
 		mov r3, #3
-		bl print32_strsearch
+		bl str32_strsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -461,7 +461,7 @@ uart32_uartint:
 		mov r1, #3
 		ldr r2, uart32_uartint_esc_right
 		mov r3, #3
-		bl print32_strsearch
+		bl str32_strsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -472,7 +472,7 @@ uart32_uartint:
 		mov r1, #3
 		ldr r2, uart32_uartint_esc_left
 		mov r3, #3
-		bl print32_strsearch
+		bl str32_strsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -515,7 +515,7 @@ uart32_uartint:
 
 			push {r0-r3}
 			mov r0, heap
-			bl print32_strlen
+			bl str32_strlen
 			mov temp, r0
 			pop {r0-r3}
 			cmp count, temp
@@ -590,7 +590,7 @@ uart32_uartint:
 			push {r0-r3}
 			add r0, heap, count
 			add r0, r0, #1      @ Over Character to Be Deleted
-			bl print32_strlen
+			bl str32_strlen
 			mov temp, r0
 			pop {r0-r3}
 			add temp, temp, #1  @ Add One For Null Character

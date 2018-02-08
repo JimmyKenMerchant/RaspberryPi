@@ -249,28 +249,28 @@ void _user_start()
 
 	_sounddecode( sound );
 
-	print32_string( str_ready, 300, 300, print32_strlen( str_ready ) );
+	print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
 
 	while(true) {
 		while( true ) {
 			if ( _gpio_detect( 20 ) ) {
 				_soundclear();
-				print32_string( str_ready, 300, 300, print32_strlen( str_ready ) );
+				print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
 				break;
 			}
 			if ( _gpio_detect( 21 ) ) {
 				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
-				print32_string( str_music1, 300, 300, print32_strlen( str_music1 ) );
+				print32_string( str_music1, 300, 300, str32_strlen( str_music1 ) );
 				break;
 			}
 			if ( _gpio_detect( 22 ) ) {
 				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
-				print32_string( str_music2, 300, 300, print32_strlen( str_music2 ) );
+				print32_string( str_music2, 300, 300, str32_strlen( str_music2 ) );
 				break;
 			}
 			if ( _gpio_detect( 23 ) ) {
 				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
-				print32_string( str_music3, 300, 300, print32_strlen( str_music3 ) );
+				print32_string( str_music3, 300, 300, str32_strlen( str_music3 ) );
 				break;
 			}
 			if ( _gpio_detect( 24 ) ) {

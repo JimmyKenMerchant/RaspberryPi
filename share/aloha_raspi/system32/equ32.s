@@ -27,10 +27,10 @@
 .equ equ32_dma32_cb_snd32_size,                0x1000     @ Decimal 4096
 .equ equ32_snd32_dma_channel,                  0
 .equ equ32_gpio32_gpiomask,                    0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
-.equ equ32_deci32_int32_to_string_bin_false,   0x30
-.equ equ32_deci32_int32_to_string_bin_true,    0x31
-.equ equ32_deci32_float32_to_string_min_expo,  1
-.equ equ32_deci32_separator,                   0x2C       @ Ascii Code of Comma: Separator for *array_to_string*
+.equ equ32_cvt32_int32_to_string_bin_false,    0x30
+.equ equ32_cvt32_int32_to_string_bin_true,     0x31
+.equ equ32_cvt32_float32_to_string_min_expo,   1
+.equ equ32_cvt32_separator,                    0x2C       @ Ascii Code of Comma: Separator for *array_to_string*
 .equ equ32_uart32_uartint_buffer_size,         4
 
 /**
