@@ -1835,7 +1835,7 @@ arm32_srem:
 
 /**
  * function arm32_cmp
- * Compare Two Values and Return NZCV ALU Flags (Bit[31:28])
+ * Arithmetic Comparison by Subtraction and Return NZCV ALU Flags (Bit[31:28])
  *
  * Parameters
  * r0: Value1, Must Be Type of Integer
@@ -1854,6 +1854,33 @@ arm32_cmp:
 	and value1, value1, #0xF0000000
 
 	arm32_cmp_common:
+		mov pc, lr
+
+.unreq value1
+.unreq value2
+
+
+/**
+ * function arm32_tst
+ * Logical Comparison by Logical AND and Return NZCV ALU Flags (Bit[31:28])
+ *
+ * Parameters
+ * r0: Value1, Must Be Type of Integer
+ * r1: Value2, Must Be Type of Integer
+ *
+ * Return: r0 (NZCV ALU Flags (Bit[31:28]))
+ */
+.globl arm32_tst
+arm32_tst:
+	/* Auto (Local) Variables, but just Aliases */
+	value1         .req r0
+	value2         .req r1
+
+	tst value1, value2
+	mrs value1, apsr
+	and value1, value1, #0xF0000000
+
+	arm32_tst_common:
 		mov pc, lr
 
 .unreq value1

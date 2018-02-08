@@ -43,30 +43,31 @@ typedef enum _command_list {
 	 * This command inserts "\r\n" when each data of array is ended.
 	 */
 	pict,
-	add, // Integer addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
+	add, // Integer signed addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
 	sub,
 	mul,
 	div,
 	rem,
-	uadd,
+	uadd, // Integer unsigned addition, "uadd %D %S1 %S2": D = S1 + S2. 0x0 through 0xFFFFFFFF.
 	usub,
 	umul,
 	udiv,
 	urem,
-	and,
-	not,
-	or,
-	xor,
-	lsl,
-	lsr,
-	rand,
-	cmp, // Compare two values of integer, "cmp %S1 %S2": Reflects NZCV flags.
+	and, // Logical AND, "and %D %S1 %S2"
+	not, // Logical NOT, "not %D %S1"
+	or, // Logical OR, "or %D %S1 %S2"
+	xor, // Logical exclusive OR, "xor %D %S1 %S2"
+	lsl, // Logical shift left, "lsl %D %S1 %S2"
+	lsr, // Logical shift right, "lsr %D %S1 %S2"
+	rand, // Random value 0-255, "rand %D"
+	cmp, // Arithmetic comparison, "cmp %S1 %S2": Reflects NZCV flags.
+	tst, // Logical comparison, "tst %S1 %S2": Reflects NZCV flags.
 	badd, // Binary-coded decimal, "badd %D %S1 %S2": D = S1 + S2. -9,999,999,999,999,999 through 9,999,999,999,999,999.
 	bsub,
 	bmul,
 	bdiv,
 	brem,
-	bcmp,
+	bcmp, // Compare two values of binary-coded decimal, "bcmp %S1 %S2": Reflects NZCV flags.
 	fadd, // Floating point addition, "fadd %D %S1 %S2": D = S1 + S2.
 	fsub, // Floating point subtruction, "fsub %D %S1 %S2": D = S1 - S2.
 	fmul,
@@ -322,6 +323,11 @@ void _user_start()
 							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 3, "cmp\0", 3 ) ) {
 							command_type = cmp;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 0; // No Direction
+						} else if ( str32_strmatch( temp_str, 3, "tst\0", 3 ) ) {
+							command_type = tst;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0; // No Direction
@@ -746,6 +752,10 @@ print32_debug( var_temp2.u32, 400, 436 );
 								break;
 							case cmp:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+
+								break;
+							case tst:
+								status_nzcv = arm32_tst( _load_32( array_source ), _load_32( array_source + 4 ) );
 
 								break;
 							case badd:

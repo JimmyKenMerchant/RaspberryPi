@@ -254,11 +254,22 @@ extern int32 arm32_srem(
 
 
 /**
- * Compare Two Values and Return NZCV ALU Flags (Bit[31:28])
+ * Arithmetic Comparison by Subtraction and Return NZCV ALU Flags (Bit[31:28])
  *
  * Return: NZCV ALU Flags (Bit[31:28])
  */
 extern uint32 arm32_cmp(
+	uint32 value1,
+	uint32 value2
+);
+
+
+/**
+ * Logical Comparison by Logical AND and Return NZCV ALU Flags (Bit[31:28])
+ *
+ * Return: NZCV ALU Flags (Bit[31:28])
+ */
+extern uint32 arm32_tst(
 	uint32 value1,
 	uint32 value2
 );
