@@ -80,7 +80,7 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 4
 .include "system32/library/fb32.s"            @ Having Section .data
 .balign 4
-.include "system32/library/print32.s"
+.include "system32/library/print32.s"         @ Having Section .data
 .balign 4
 .include "system32/library/str32.s"
 .balign 4

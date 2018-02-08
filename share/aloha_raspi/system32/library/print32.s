@@ -16,16 +16,32 @@
  *
  */
 
+.section	.data
+
+/**
+ * Considering security, in some case, we should not increase CPU's privilege level by SVC,
+ * because the level may grant the right to access memory without any restriction. 
+ * Functions in this file have possible random accesses to memory area. So, these functions should not be granted any high privilege level.
+ */
 .globl PRINT32_FONT_BASE
 .globl PRINT32_FONT_WIDTH
 .globl PRINT32_FONT_HEIGHT
 .globl PRINT32_FONT_COLOR
 .globl PRINT32_FONT_BACKCOLOR
-PRINT32_FONT_BASE:      .word FONT_MONO_12PX_ASCII_NULL
-PRINT32_FONT_WIDTH:     .word 8
-PRINT32_FONT_HEIGHT:    .word 12
-PRINT32_FONT_COLOR:     .word 0xFFFFFFFF
-PRINT32_FONT_BACKCOLOR: .word 0xFF000000
+PRINT32_FONT_BASE:         .word FONT_MONO_12PX_ASCII_NULL
+PRINT32_FONT_WIDTH:        .word 8
+PRINT32_FONT_HEIGHT:       .word 12
+PRINT32_FONT_COLOR:        .word 0xFFFFFFFF
+PRINT32_FONT_BACKCOLOR:    .word 0xFF000000
+_print32_string_esc_count: .word 0x00
+
+.section	.library_system32
+
+PRINT32_FONT_BASE_ADDR:      .word PRINT32_FONT_BASE
+PRINT32_FONT_WIDTH_ADDR:     .word PRINT32_FONT_WIDTH
+PRINT32_FONT_HEIGHT_ADDR:    .word PRINT32_FONT_HEIGHT
+PRINT32_FONT_COLOR_ADDR:     .word PRINT32_FONT_COLOR
+PRINT32_FONT_BACKCOLOR_ADDR: .word PRINT32_FONT_BACKCOLOR
 
 /**
  * function print32_set_caret
@@ -142,11 +158,16 @@ print32_hexa:
 
 	push {r4-r10,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	ldr color, PRINT32_FONT_COLOR
-	ldr back_color, PRINT32_FONT_BACKCOLOR
-	ldr char_width, PRINT32_FONT_WIDTH
-	ldr char_height, PRINT32_FONT_HEIGHT
-	ldr font_ascii_base, PRINT32_FONT_BASE
+	ldr color, PRINT32_FONT_COLOR_ADDR
+	ldr color, [color]
+	ldr back_color, PRINT32_FONT_BACKCOLOR_ADDR
+	ldr back_color, [back_color]
+	ldr char_width, PRINT32_FONT_WIDTH_ADDR
+	ldr char_width, [char_width]
+	ldr char_height, PRINT32_FONT_HEIGHT_ADDR
+	ldr char_height, [char_height]
+	ldr font_ascii_base, PRINT32_FONT_BASE_ADDR
+	ldr font_ascii_base, [font_ascii_base]
 
 	mov length_max, #equ32_print32_hexa_length_max
 
@@ -235,18 +256,26 @@ print32_string:
 	font_ascii_base   .req r8
 	string_byte       .req r9
 	width             .req r10
-	tab_length        .req r11
+	esc_count         .req r11
 
 	push {r4-r11,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
-	ldr color, PRINT32_FONT_COLOR
-	ldr back_color, PRINT32_FONT_BACKCOLOR
-	ldr char_width, PRINT32_FONT_WIDTH
-	ldr char_height, PRINT32_FONT_HEIGHT
-	ldr font_ascii_base, PRINT32_FONT_BASE
+	ldr color, PRINT32_FONT_COLOR_ADDR
+	ldr color, [color]
+	ldr back_color, PRINT32_FONT_BACKCOLOR_ADDR
+	ldr back_color, [back_color]
+	ldr char_width, PRINT32_FONT_WIDTH_ADDR
+	ldr char_width, [char_width]
+	ldr char_height, PRINT32_FONT_HEIGHT_ADDR
+	ldr char_height, [char_height]
+	ldr font_ascii_base, PRINT32_FONT_BASE_ADDR
+	ldr font_ascii_base, [font_ascii_base]
 
 	ldr width, PRINT32_FB32_WIDTH
 	ldr width, [width]
+
+	ldr esc_count, print32_string_esc_count
+	ldr esc_count, [esc_count]
 
 	print32_string_loop:
 		cmp length, #0                           @ `for (; length > 0; length--)`
@@ -256,8 +285,11 @@ print32_string:
 		cmp string_byte, #0                      @ NULL Character (End of String) Checker
 		beq print32_string_success               @ Break Loop if Null Character
 
+		cmp esc_count, #0x0
+		bne print32_string_loop_escape
+
 		cmp string_byte, #0x09
-		moveq tab_length, #equ32_print32_string_tab_length
+		moveq string_byte, #equ32_print32_string_tab_length
 		beq print32_string_loop_tab
 
 		cmp string_byte, #0x0A
@@ -265,6 +297,10 @@ print32_string:
 
 		cmp string_byte, #0x0D
 		beq print32_string_loop_carriagereturn
+
+		cmp string_byte, #0x1B
+		moveq esc_count, #-1                     @ esc_count Decreases in Progress at Minus Signed Number
+		beq print32_string_loop_common
 
 		/* Clear the Block by Color */
 
@@ -306,7 +342,7 @@ print32_string:
 			b print32_string_loop_common
 
 		print32_string_loop_tab:
-			cmp tab_length, #0               @ `for (; tab_length > 0; tab_length--)`
+			cmp string_byte, #0                        @ `for ( uint32 string_byte = equ32_print32_string_tab_length; string_byte > 0; string_byte-- )`
 			ble print32_string_loop_common
 
 			add x_coord, x_coord, char_width
@@ -315,8 +351,36 @@ print32_string:
 			movge x_coord, #0
 			addge y_coord, y_coord, char_height
 
-			sub tab_length, tab_length, #1
+			sub string_byte, string_byte, #1
 			b print32_string_loop_tab
+
+		print32_string_loop_escape:
+
+			/* Check Whether Character is A-Z and a-z */
+			cmp string_byte, #0x41                 @ Ascii Code of A (Start of Alphabetical Characters)
+			sublt esc_count, esc_count, #1
+			blt print32_string_loop_common
+
+			cmp string_byte, #0x5B                 @ Ascii Code of [ (Next of Capital Z)
+			blt print32_string_loop_escape_sequence
+
+			cmp string_byte, #0x61                 @ Ascii Code of a (0x5B through 0x60 Are Special Symbols) 
+			sublt esc_count, esc_count, #1
+			blt print32_string_loop_common
+
+			cmp string_byte, #0x7B                 @ Ascii Code of { (Next of Small z)
+			subge esc_count, esc_count, #1
+			bge print32_string_loop_common
+
+			print32_string_loop_escape_sequence:
+				push {r0-r3}
+				mvn r1, esc_count                      @ Length of String, Next of Escape Character through A-Z, a-z
+				add esc_count, esc_count, #1
+				add r0, string_point, esc_count        @ Next of Escape Character
+				bl print32_esc_sequence
+				pop {r0-r3}
+
+				mov esc_count, #0
 
 		print32_string_loop_common:
 			add string_point, string_point, #1
@@ -331,6 +395,8 @@ print32_string:
 		mov r0, length                             @ Return with Number of Characters Which Were Not Drawn
 
 	print32_string_common:
+		ldr length, print32_string_esc_count
+		str esc_count, [length]
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
 		pop {r4-r11,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
@@ -346,7 +412,42 @@ print32_string:
 .unreq font_ascii_base
 .unreq string_byte
 .unreq width
-.unreq tab_length
+.unreq esc_count
+
+print32_string_esc_count: .word _print32_string_esc_count
+
+
+/**
+ * function print32_esc_sequence
+ * Escape Sequence
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Length of String
+ *
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error: Number of Characters Which Were Not Drawn
+ */
+.globl print32_esc_sequence
+print32_esc_sequence:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	length            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+
+	push {lr}
+
+	print32_esc_sequence_success:
+		mov r0, #0                                 @ Return with Success
+		b print32_esc_sequence_common
+
+	print32_esc_sequence_error:
+		mov r0, #1                                 @ Return with Number of Characters Which Were Not Drawn
+
+	print32_esc_sequence_common:
+		pop {pc}
+
+.unreq string_point
+.unreq length
 
 
 /**
@@ -477,11 +578,16 @@ print32_number:
 	push {r4-r11,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                      @ Similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
-	ldr color, PRINT32_FONT_COLOR
-	ldr back_color, PRINT32_FONT_BACKCOLOR
-	ldr char_width, PRINT32_FONT_WIDTH
-	ldr char_height, PRINT32_FONT_HEIGHT
-	ldr font_ascii_base, PRINT32_FONT_BASE
+	ldr color, PRINT32_FONT_COLOR_ADDR
+	ldr color, [color]
+	ldr back_color, PRINT32_FONT_BACKCOLOR_ADDR
+	ldr back_color, [back_color]
+	ldr char_width, PRINT32_FONT_WIDTH_ADDR
+	ldr char_width, [char_width]
+	ldr char_height, PRINT32_FONT_HEIGHT_ADDR
+	ldr char_height, [char_height]
+	ldr font_ascii_base, PRINT32_FONT_BASE_ADDR
+	ldr font_ascii_base, [font_ascii_base]
 
 	ldr width, PRINT32_FB32_WIDTH
 	ldr width, [width]

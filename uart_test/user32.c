@@ -1182,7 +1182,7 @@ bool command_print( String target_str ) {
 			_uarttx( temp_str, temp_str_index );
 			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
 			_uarttx( "\x1B\0", 1 );
-			//if ( print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) FB32_Y_CARET = 0;
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else {
