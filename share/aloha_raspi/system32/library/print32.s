@@ -369,10 +369,11 @@ print32_string:
 			blt print32_string_loop_common
 
 			cmp string_byte, #0x7B                 @ Ascii Code of { (Next of Small z)
-			addlt esc_count, esc_count, #1
+			addge esc_count, esc_count, #1
 			bge print32_string_loop_common
 
 			print32_string_loop_escape_sequence:
+
 				push {r0,r3}
 				mov r3, esc_count                      @ Length of String, Next of Escape Character through A-Z, a-z
 				sub esc_count, esc_count, #1
@@ -444,10 +445,13 @@ print32_esc_sequence:
 
 	push {r4-r5,lr}
 	
-	sub temp, length, #1
-	ldrb byte, [string_point, temp]
+	/**
+	 * This string indicates the next of escape character, e.g., "[2J".
+	 * To obtain the last character, length becomes the index by subtracting one.
+	 */
+	sub length, length, #1
+	ldrb byte, [string_point, length]
 
-macro32_debug byte, 400, 388
 macro32_debug_hexa string_point, 400, 400, 16
 
 	/**
@@ -469,6 +473,9 @@ macro32_debug_hexa string_point, 400, 400, 16
 
 	b print32_esc_sequence_common
 
+	.unreq byte
+	number .req r4
+
 	print32_esc_sequence_h:
 		mov x_coord, #0
 		mov y_coord, #0
@@ -489,6 +496,45 @@ macro32_debug_hexa string_point, 400, 400, 16
 		b print32_esc_sequence_common
 
 	print32_esc_sequence_m:
+		add string_point, string_point, #1
+		/**
+		 * Now, this string indicates the next of square bracket right.
+		 * Searching values in the string, e.g., "30;41".
+		 * length is already subtracted by one for use as an index for the last character,
+		 * so additionally about to be subtracted by one.
+		 */
+		sub length, length, #1
+
+		print32_esc_sequence_m_loop:
+
+			push {r0-r3}
+			mov r1, length
+			mov r2, #0x3B                          @ Ascii Code of Semicolon
+			bl str32_charsearch
+			mov temp, r0
+			pop {r0-r3}
+
+macro32_debug temp, 400, 432
+
+			cmp temp, #-1                          @ If Semicolon Is Not Searched
+			moveq temp, length
+
+			push {r0-r3}
+			mov r1, temp
+			bl cvt32_string_to_int32
+			mov number, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, number
+			bl print32_esc_sequence_font
+			pop {r0-r3}
+
+			add temp, temp, #1                     @ Indicates Length Untill Semicolon Inclusively
+			sub length, temp
+			cmp length, #0
+			addgt string_point, string_point, temp
+			bgt print32_esc_sequence_m_loop
 
 	print32_esc_sequence_common:
 		mov r0, x_coord
@@ -499,8 +545,32 @@ macro32_debug_hexa string_point, 400, 400, 16
 .unreq x_coord
 .unreq y_coord
 .unreq length
-.unreq byte
+.unreq number
 .unreq temp
+
+
+/**
+ * function print32_esc_sequence_font
+ * Escape Sequence Specially About "m", Changing Attributes of Font
+ *
+ * Parameters
+ * r0: Number
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl print32_esc_sequence_font
+print32_esc_sequence_font:
+	/* Auto (Local) Variables, but just Aliases */
+	number      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+
+	push {lr}
+	
+macro32_debug number, 400, 448
+
+	print32_esc_sequence_font_common:
+		pop {pc}
+
+.unreq number
 
 
 /**
