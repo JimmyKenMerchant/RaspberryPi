@@ -42,6 +42,9 @@ PRINT32_FONT_WIDTH_ADDR:     .word PRINT32_FONT_WIDTH
 PRINT32_FONT_HEIGHT_ADDR:    .word PRINT32_FONT_HEIGHT
 PRINT32_FONT_COLOR_ADDR:     .word PRINT32_FONT_COLOR
 PRINT32_FONT_BACKCOLOR_ADDR: .word PRINT32_FONT_BACKCOLOR
+PRINT32_FB32_X_CARET:        .word FB32_X_CARET
+PRINT32_FB32_Y_CARET:        .word FB32_Y_CARET
+
 
 /**
  * function print32_set_caret
@@ -109,9 +112,9 @@ print32_set_caret:
 	print32_set_caret_common:
 		.unreq width
 		temp .req r2
-		ldr temp, print32_set_caret_addr_x_caret
+		ldr temp, PRINT32_FB32_X_CARET
 		str x_coord, [temp]
-		ldr temp, print32_set_caret_addr_y_caret
+		ldr temp, PRINT32_FB32_Y_CARET
 		str y_coord, [temp]
 		pop {r4-r5} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
@@ -123,9 +126,6 @@ print32_set_caret:
 .unreq height
 .unreq x_coord
 .unreq y_coord
-
-print32_set_caret_addr_x_caret: .word FB32_X_CARET
-print32_set_caret_addr_y_caret: .word FB32_Y_CARET
 
 
 /**
@@ -299,7 +299,7 @@ print32_string:
 		beq print32_string_loop_carriagereturn
 
 		cmp string_byte, #0x1B
-		moveq esc_count, #-1                     @ esc_count Decreases in Progress at Minus Signed Number
+		moveq esc_count, #1                     @ esc_count Increases in Progress
 		beq print32_string_loop_common
 
 		/* Clear the Block by Color */
@@ -358,27 +358,29 @@ print32_string:
 
 			/* Check Whether Character is A-Z and a-z */
 			cmp string_byte, #0x41                 @ Ascii Code of A (Start of Alphabetical Characters)
-			sublt esc_count, esc_count, #1
+			addlt esc_count, esc_count, #1
 			blt print32_string_loop_common
 
 			cmp string_byte, #0x5B                 @ Ascii Code of [ (Next of Capital Z)
 			blt print32_string_loop_escape_sequence
 
 			cmp string_byte, #0x61                 @ Ascii Code of a (0x5B through 0x60 Are Special Symbols) 
-			sublt esc_count, esc_count, #1
+			addlt esc_count, esc_count, #1
 			blt print32_string_loop_common
 
 			cmp string_byte, #0x7B                 @ Ascii Code of { (Next of Small z)
-			subge esc_count, esc_count, #1
+			addlt esc_count, esc_count, #1
 			bge print32_string_loop_common
 
 			print32_string_loop_escape_sequence:
-				push {r0-r3}
-				mvn r1, esc_count                      @ Length of String, Next of Escape Character through A-Z, a-z
-				add esc_count, esc_count, #1
-				add r0, string_point, esc_count        @ Next of Escape Character
+				push {r0,r3}
+				mov r3, esc_count                      @ Length of String, Next of Escape Character through A-Z, a-z
+				sub esc_count, esc_count, #1
+				sub r0, string_point, esc_count        @ Next of Escape Character
 				bl print32_esc_sequence
-				pop {r0-r3}
+				mov y_coord, r1
+				mov x_coord, r0
+				pop {r0,r3}
 
 				mov esc_count, #0
 
@@ -423,31 +425,82 @@ print32_string_esc_count: .word _print32_string_esc_count
  *
  * Parameters
  * r0: Pointer of Array of String
- * r1: Length of String
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Length of String
  *
- * Return: r0 (0 as sucess, 1 as error)
+ * Return: r0 (X Coordinate), r1 (Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
 .globl print32_esc_sequence
 print32_esc_sequence:
 	/* Auto (Local) Variables, but just Aliases */
 	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	length            .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
+	length            .req r3 @ Parameter, Register for Argument, Scratch Register
+	byte              .req r4
+	temp              .req r5
 
-	push {lr}
+	push {r4-r5,lr}
+	
+	sub temp, length, #1
+	ldrb byte, [string_point, temp]
 
-	print32_esc_sequence_success:
-		mov r0, #0                                 @ Return with Success
+macro32_debug byte, 400, 388
+macro32_debug_hexa string_point, 400, 400, 16
+
+	/**
+	 * As opposed to the original, this function uses a simplified escape sequence.
+	 * e.g. All [J sequence menas clearing all screen even if you append number other than 2.
+	 */
+
+	cmp byte, #0x48
+	beq print32_esc_sequence_h                @ [0H Sequence, Set Cursor Upper Left Corner
+
+	cmp byte, #0x4A
+	beq print32_esc_sequence_j                @ [2J Sequence, Clear All Screen
+
+	cmp byte, #0x4B
+	beq print32_esc_sequence_k                @ [0K Sequence, Clear From Cursor to End of Line
+
+	cmp byte, #0x6D
+	beq print32_esc_sequence_m                @ [<number>m Sequence, Set Font Attribute
+
+	b print32_esc_sequence_common
+
+	print32_esc_sequence_h:
+		mov x_coord, #0
+		mov y_coord, #0
+
 		b print32_esc_sequence_common
 
-	print32_esc_sequence_error:
-		mov r0, #1                                 @ Return with Number of Characters Which Were Not Drawn
+	print32_esc_sequence_j:
+		ldr temp, PRINT32_FONT_BACKCOLOR_ADDR
+		ldr temp, [temp]
+		push {r0-r3}
+		mov r0, temp
+		bl fb32_clear_color
+		pop {r0-r3}
+
+		b print32_esc_sequence_common
+
+	print32_esc_sequence_k:
+		b print32_esc_sequence_common
+
+	print32_esc_sequence_m:
 
 	print32_esc_sequence_common:
-		pop {pc}
+		mov r0, x_coord
+		mov r1, y_coord
+		pop {r4-r5,pc}
 
 .unreq string_point
+.unreq x_coord
+.unreq y_coord
 .unreq length
+.unreq byte
+.unreq temp
 
 
 /**
