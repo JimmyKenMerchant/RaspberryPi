@@ -33,6 +33,7 @@ PRINT32_FONT_WIDTH:         .word 8
 PRINT32_FONT_HEIGHT:        .word 12
 PRINT32_FONT_COLOR:         .word 0xFFFFFFFF
 PRINT32_FONT_BACKCOLOR:     .word 0xFF000000
+PRINT32_FONT_UNDERLINE:     .word 0
 _print32_string_esc_count:  .word 0x00
 _print32_string_buffer:     .space equ32_print32_string_buffer_size
 .balign 4
@@ -44,6 +45,7 @@ PRINT32_FONT_WIDTH_ADDR:     .word PRINT32_FONT_WIDTH
 PRINT32_FONT_HEIGHT_ADDR:    .word PRINT32_FONT_HEIGHT
 PRINT32_FONT_COLOR_ADDR:     .word PRINT32_FONT_COLOR
 PRINT32_FONT_BACKCOLOR_ADDR: .word PRINT32_FONT_BACKCOLOR
+PRINT32_FONT_UNDERLINE_ADDR: .word PRINT32_FONT_UNDERLINE
 PRINT32_FB32_X_CARET:        .word FB32_X_CARET
 PRINT32_FB32_Y_CARET:        .word FB32_Y_CARET
 
@@ -330,9 +332,28 @@ print32_string:
 		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
 
-		add x_coord, x_coord, char_width
-		cmp x_coord, width
-		blt print32_string_loop_common
+		/* Underline If Needed */
+
+		ldr ip, PRINT32_FONT_UNDERLINE_ADDR
+		ldr ip, [ip]
+		cmp ip, #0
+		beq print32_string_loop_jump
+
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+		ldr r0, [font_ascii_base, #0x5F << 2]    @ Ascii Code of Underline
+		mov r3, color
+		push {char_width,char_height}            @ Push Character Width and Hight
+		bl fb32_char
+		add sp, sp, #8
+		cmp r0, #0                               @ Compare Return 0
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+		bne print32_string_error
+
+		print32_string_loop_jump:
+
+			add x_coord, x_coord, char_width
+			cmp x_coord, width
+			blt print32_string_loop_common
 
 		print32_string_loop_linefeed:
 			mov x_coord, #0
@@ -477,7 +498,7 @@ print32_esc_sequence:
 	sub length, length, #1
 	ldrb byte, [string_point, length]
 
-macro32_debug_hexa string_point, 400, 400, 16
+/*macro32_debug_hexa string_point, 400, 400, 16*/
 
 	/**
 	 * As opposed to the original, this function uses a simplified escape sequence.
@@ -539,8 +560,6 @@ macro32_debug_hexa string_point, 400, 400, 16
 			mov temp, r0
 			pop {r0-r3}
 
-macro32_debug temp, 400, 432
-
 			cmp temp, #-1                          @ If Semicolon Is Not Searched
 			moveq temp, length
 
@@ -593,6 +612,8 @@ print32_esc_sequence_font:
 
 	push {lr}
 
+/*macro32_debug number, 400, 448*/
+
 	ldr depth, print32_esc_sequence_font_fb32_depth
 	ldr depth, [depth]
 	cmp depth, #0
@@ -603,6 +624,7 @@ print32_esc_sequence_font:
 
 	cmp depth, #16
 	bne print32_esc_sequence_common
+
 	ldr color_base, print32_esc_sequence_font_color16
 
 	print32_esc_sequence_font_jump:
@@ -614,14 +636,16 @@ print32_esc_sequence_font:
 		bge print32_esc_sequence_font_backcolor
 		cmp number, #0x30
 		bge print32_esc_sequence_font_color
-
-		/* Number Zero, Set Default Attributes */
-		mov color, #0xFFFFFFFF
-		ldr temp, PRINT32_FONT_COLOR_ADDR
-		str color, [temp]
-		mov color, #0xFF000000
-		ldr temp, PRINT32_FONT_BACKCOLOR_ADDR
-		str color, [temp]
+		cmp number, #0x27
+		beq print32_esc_sequence_font_clearinverse
+		cmp number, #0x24
+		beq print32_esc_sequence_font_clearunderline
+		cmp number, #0x07
+		beq print32_esc_sequence_font_setreverse
+		cmp number, #0x04
+		beq print32_esc_sequence_font_setunderline
+		cmp number, #0
+		beq print32_esc_sequence_font_setdefault
 
 		b print32_esc_sequence_font_common
 
@@ -641,8 +665,50 @@ print32_esc_sequence_font:
 		str color, [temp]
 		b print32_esc_sequence_font_common
 
+	print32_esc_sequence_font_clearinverse:
+		ldr color_base, PRINT32_FONT_COLOR_ADDR
+		ldr color, PRINT32_FONT_BACKCOLOR_ADDR
+		ldr number, [color_base]
+		ldr temp, [color]
+		str temp, [color_base]
+		str number, [color]
+		b print32_esc_sequence_font_common
+
+	print32_esc_sequence_font_clearunderline:
+		mov number, #0
+		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
+		str number, [temp]
+		b print32_esc_sequence_font_common
+
+	print32_esc_sequence_font_setreverse:
+		ldr color_base, PRINT32_FONT_COLOR_ADDR
+		ldr color, PRINT32_FONT_BACKCOLOR_ADDR
+		ldr number, [color_base]
+		ldr temp, [color]
+		str temp, [color_base]
+		str number, [color]
+		b print32_esc_sequence_font_common
+
+	print32_esc_sequence_font_setunderline:
+		mov number, #1
+		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
+		str number, [temp]
+		b print32_esc_sequence_font_common
+
+	print32_esc_sequence_font_setdefault:
+		/* Number Zero, Set Default Attributes */
+		mov color, #0xFFFFFFFF
+		ldr temp, PRINT32_FONT_COLOR_ADDR
+		str color, [temp]
+		mov color, #0xFF000000
+		ldr temp, PRINT32_FONT_BACKCOLOR_ADDR
+		str color, [temp]
+		mov number, #0
+		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
+		str number, [temp]
+
 	print32_esc_sequence_font_common:
-		macro32_debug number, 400, 448
+		mov r0, #0
 		pop {pc}
 
 .unreq number
