@@ -22,6 +22,7 @@
 .equ equ32_i2c32_timeout,                      0x00FF0000
 .equ equ32_print32_hexa_length_max,            0x00000FF0
 .equ equ32_print32_string_tab_length,          4
+.equ equ32_print32_string_buffer_size,         16
 .equ equ32_dma32_cb_max,                       0x1400     @ Decimal 5120
 .equ equ32_dma32_cb_snd32_start,               0
 .equ equ32_dma32_cb_snd32_size,                0x1000     @ Decimal 4096

@@ -28,12 +28,14 @@
 .globl PRINT32_FONT_HEIGHT
 .globl PRINT32_FONT_COLOR
 .globl PRINT32_FONT_BACKCOLOR
-PRINT32_FONT_BASE:         .word FONT_MONO_12PX_ASCII_NULL
-PRINT32_FONT_WIDTH:        .word 8
-PRINT32_FONT_HEIGHT:       .word 12
-PRINT32_FONT_COLOR:        .word 0xFFFFFFFF
-PRINT32_FONT_BACKCOLOR:    .word 0xFF000000
-_print32_string_esc_count: .word 0x00
+PRINT32_FONT_BASE:          .word FONT_MONO_12PX_ASCII_NULL
+PRINT32_FONT_WIDTH:         .word 8
+PRINT32_FONT_HEIGHT:        .word 12
+PRINT32_FONT_COLOR:         .word 0xFFFFFFFF
+PRINT32_FONT_BACKCOLOR:     .word 0xFF000000
+_print32_string_esc_count:  .word 0x00
+_print32_string_buffer:     .space equ32_print32_string_buffer_size
+.balign 4
 
 .section	.library_system32
 
@@ -356,34 +358,56 @@ print32_string:
 
 		print32_string_loop_escape:
 
+			push {string_point}
+			ldr string_point, print32_string_buffer
+			sub esc_count, esc_count, #1
+			strb string_byte, [string_point, esc_count]
+			add esc_count, esc_count, #1
+
 			/* Check Whether Character is A-Z and a-z */
 			cmp string_byte, #0x41                 @ Ascii Code of A (Start of Alphabetical Characters)
 			addlt esc_count, esc_count, #1
-			blt print32_string_loop_common
+			blt print32_string_loop_escape_common
 
 			cmp string_byte, #0x5B                 @ Ascii Code of [ (Next of Capital Z)
 			blt print32_string_loop_escape_sequence
 
 			cmp string_byte, #0x61                 @ Ascii Code of a (0x5B through 0x60 Are Special Symbols) 
 			addlt esc_count, esc_count, #1
-			blt print32_string_loop_common
+			blt print32_string_loop_escape_common
 
 			cmp string_byte, #0x7B                 @ Ascii Code of { (Next of Small z)
 			addge esc_count, esc_count, #1
-			bge print32_string_loop_common
+			bge print32_string_loop_escape_common
 
 			print32_string_loop_escape_sequence:
 
 				push {r0,r3}
 				mov r3, esc_count                      @ Length of String, Next of Escape Character through A-Z, a-z
-				sub esc_count, esc_count, #1
-				sub r0, string_point, esc_count        @ Next of Escape Character
+				mov r0, string_point
 				bl print32_esc_sequence
 				mov y_coord, r1
 				mov x_coord, r0
 				pop {r0,r3}
 
+				/* Reflects Changes of Attributes About Font  */
+				ldr color, PRINT32_FONT_COLOR_ADDR
+				ldr color, [color]
+				ldr back_color, PRINT32_FONT_BACKCOLOR_ADDR
+				ldr back_color, [back_color]
+				ldr char_width, PRINT32_FONT_WIDTH_ADDR
+				ldr char_width, [char_width]
+				ldr char_height, PRINT32_FONT_HEIGHT_ADDR
+				ldr char_height, [char_height]
+				ldr font_ascii_base, PRINT32_FONT_BASE_ADDR
+				ldr font_ascii_base, [font_ascii_base]
+
 				mov esc_count, #0
+
+			print32_string_loop_escape_common:
+				cmp esc_count, #equ32_print32_string_buffer_size
+				movge esc_count, #equ32_print32_string_buffer_size
+				pop {string_point}
 
 		print32_string_loop_common:
 			add string_point, string_point, #1
@@ -418,6 +442,7 @@ print32_string:
 .unreq esc_count
 
 print32_string_esc_count: .word _print32_string_esc_count
+print32_string_buffer:    .word _print32_string_buffer
 
 
 /**
@@ -521,7 +546,7 @@ macro32_debug temp, 400, 432
 
 			push {r0-r3}
 			mov r1, temp
-			bl cvt32_string_to_int32
+			bl cvt32_string_to_hexa
 			mov number, r0
 			pop {r0-r3}
 
@@ -562,15 +587,72 @@ macro32_debug temp, 400, 432
 print32_esc_sequence_font:
 	/* Auto (Local) Variables, but just Aliases */
 	number      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	depth       .req r1
+	color_base  .req r2
+	color       .req r3
 
 	push {lr}
-	
-macro32_debug number, 400, 448
+
+	ldr depth, print32_esc_sequence_font_fb32_depth
+	ldr depth, [depth]
+	cmp depth, #0
+	beq print32_esc_sequence_common
+	cmp depth, #32
+	ldreq color_base, print32_esc_sequence_font_color32
+	beq print32_esc_sequence_font_jump
+
+	cmp depth, #16
+	bne print32_esc_sequence_common
+	ldr color_base, print32_esc_sequence_font_color16
+
+	print32_esc_sequence_font_jump:
+
+		.unreq depth
+		temp .req r1
+
+		cmp number, #0x40
+		bge print32_esc_sequence_font_backcolor
+		cmp number, #0x30
+		bge print32_esc_sequence_font_color
+
+		/* Number Zero, Set Default Attributes */
+		mov color, #0xFFFFFFFF
+		ldr temp, PRINT32_FONT_COLOR_ADDR
+		str color, [temp]
+		mov color, #0xFF000000
+		ldr temp, PRINT32_FONT_BACKCOLOR_ADDR
+		str color, [temp]
+
+		b print32_esc_sequence_font_common
+
+	print32_esc_sequence_font_backcolor:
+		and number, number, #0xF
+		lsl number, number, #2                           @ Substitute of Multiplication by 4
+		ldr color, [color_base, number]
+		ldr temp, PRINT32_FONT_BACKCOLOR_ADDR
+		str color, [temp]
+		b print32_esc_sequence_font_common
+
+	print32_esc_sequence_font_color:
+		and number, number, #0xF
+		lsl number, number, #2                           @ Substitute of Multiplication by 4
+		ldr color, [color_base, number]
+		ldr temp, PRINT32_FONT_COLOR_ADDR
+		str color, [temp]
+		b print32_esc_sequence_font_common
 
 	print32_esc_sequence_font_common:
+		macro32_debug number, 400, 448
 		pop {pc}
 
 .unreq number
+.unreq temp
+.unreq color_base
+.unreq color
+
+print32_esc_sequence_font_color16:    .word COLOR16_BLACK
+print32_esc_sequence_font_color32:    .word COLOR32_BLACK
+print32_esc_sequence_font_fb32_depth: .word FB32_DEPTH
 
 
 /**
