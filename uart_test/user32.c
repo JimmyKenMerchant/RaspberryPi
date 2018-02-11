@@ -18,6 +18,7 @@
 #define rawdata_maxlength  16
 
 String pass_space_label( String target_str ); 
+bool line_clean( String target_str ); 
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
 bool console_rollup(); 
@@ -132,6 +133,8 @@ typedef struct _dictionary {
 
 bool flag_execute;
 
+obj buffer_zero; // Zero Buffer
+
 void _user_start()
 {
 
@@ -155,6 +158,8 @@ void _user_start()
 	var_temp.u32 = 0;
 	flex32 var_temp2;
 	var_temp2.u32 = 0;
+	flex32 var_temp3;
+	var_temp3.u32 = 0;
 	flex32 direction;
 	direction.u32 = 0;
 	dictionary label_list;
@@ -167,6 +172,8 @@ void _user_start()
 	String dst_str = null;
 	String temp_str = null;
 	String temp_str2 = null;
+
+	buffer_zero = heap32_malloc( UART32_UARTMALLOC_MAXROW / 4 );
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
@@ -870,7 +877,17 @@ void _user_start()
 								dst_str = UART32_UARTINT_HEAP;
 								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
 								src_str = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, 0, str32_strlen( src_str ) + 1 ); // Add Null Character
+
+								/* Pass Spaces and Label */
+								temp_str = pass_space_label( dst_str );
+								var_temp.u32 = temp_str - dst_str;
+								temp_str2 = pass_space_label( src_str );
+								var_temp2.u32 = temp_str2 - src_str;
+
+								var_temp3.u32 = str32_strlen( temp_str2 );
+								if ( var_temp3.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp3.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
+								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, var_temp2.u32, var_temp3.u32 + 1 ); // Add Null Character
+								line_clean( dst_str );
 
 								break;
 							case clr:
@@ -898,10 +915,16 @@ void _user_start()
 							case push:
 								if ( _uartsetheap(  UART32_UARTMALLOC_LENGTH - stack_offset ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
-								//heap32_mfill( (obj)dst_str, 0 );
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								src_str = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, 0, str32_strlen( src_str ) + 1 ); // Add Null Character
+
+								/* Pass Spaces and Label */
+								temp_str = pass_space_label( src_str );
+								var_temp.u32 = temp_str - src_str;
+								var_temp2.u32 = str32_strlen( temp_str );
+								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, var_temp.u32, var_temp2.u32 + 1 ); // Add Null Character
+								line_clean( dst_str );
+
 								stack_offset++;
 
 								break;
@@ -910,10 +933,16 @@ void _user_start()
 								stack_offset--;
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
-								//heap32_mfill( (obj)dst_str, 0 );
 								if ( _uartsetheap( UART32_UARTMALLOC_LENGTH - stack_offset ) ) break;
 								src_str = UART32_UARTINT_HEAP;
-								heap32_mcopy( (obj)dst_str, 0, (obj)src_str, 0, str32_strlen( src_str ) + 1 ); // Add Null Character
+
+								/* Pass Spaces and Label */
+								temp_str = pass_space_label( dst_str );
+								var_temp.u32 = temp_str - dst_str;
+								var_temp2.u32 = str32_strlen( src_str );
+								if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
+								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, 0, var_temp2.u32 + 1 ); // Add Null Character
+								line_clean( dst_str );
 
 								break;
 							case ptr:
@@ -975,6 +1004,7 @@ void _user_start()
 						var_temp2.u32 = str32_strlen( str_direction );
 						if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
 						heap32_mcopy( (obj)UART32_UARTINT_HEAP, var_temp.u32, (obj)str_direction, 0, var_temp2.u32 + 1 ); // Add Null Character
+						line_clean( UART32_UARTINT_HEAP );
 						str_direction = (String)heap32_mfree( (obj)str_direction );
 
 						break;
@@ -1006,7 +1036,6 @@ void _user_start()
 								heap32_mfree( var_temp.u32 );
 						}
 						heap32_mfill( array_rawdata, 0 );
-						heap32_mfill( buffer_line, 0 ); // Clean Content in Previous Line
 
 						/* Print Commands Untill Line with Null Character */
 						for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -1043,6 +1072,7 @@ void _user_start()
 					/* If You Command "run", It Starts Execution */
 					/* Retrieve Previous Content in Line that is Wrote Meta Command */
 					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
+					line_clean( UART32_UARTINT_HEAP );
 
 					flag_execute = true;
 					pipe_type = search_command;
@@ -1103,6 +1133,7 @@ print32_debug( var_temp.u32, 400, 300  );
 					var_temp.u32 = cvt32_string_to_int32( temp_str, str32_strlen( temp_str ) );
 					/* Retrieve Previous Content in Line that is Wrote Meta Command */
 					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
+					line_clean( UART32_UARTINT_HEAP );
 					if ( var_temp.u32 < initial_line ) var_temp.u32 = initial_line;
 					if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
@@ -1154,6 +1185,14 @@ String pass_space_label( String target_str ) {
 		}
 	}
 	return target_str;
+}
+
+
+/* Clean Back of Line After Null Character */
+bool line_clean( String target_str ) {
+	uint32 length_temp = str32_strlen( target_str ); // Ascii Code of Space
+	heap32_mcopy( (obj)target_str, length_temp, buffer_zero, 0, UART32_UARTMALLOC_MAXROW - length_temp ); // Add Null Character
+	return TRUE;
 }
 
 
