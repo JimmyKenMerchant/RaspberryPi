@@ -612,7 +612,7 @@ uart32_uartint:
 			bl uart32_uarttx
 			pop {r0-r3}
 
-			/* This Makes Move Cursor Right  */
+			/* Reflect New Characters */
 			push {r0-r3}
 			add r0, heap, count
 			mov r1, temp 

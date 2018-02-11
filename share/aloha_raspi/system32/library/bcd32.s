@@ -1649,6 +1649,11 @@ bcd32_deci_div64_pre:
 	mov cal_upper, #0
 	mov carry_flag, #0
 
+	/* If Divisor is Zero  */
+	cmp lower_2, #0
+	cmpeq upper_2, #0
+	beq bcd32_deci_div64_pre_common
+
 	bcd32_deci_div64_pre_loop:
 
 		/* Just Subtraction Untill Divisor Becomes Greater than or Equal to Dividend */
@@ -1730,10 +1735,19 @@ bcd32_deci_div64:
 	mov cal_lower, #0
 	mov cal_upper, #0
 
-	clz temp1_lower, upper_2
+	/* Leading Zero of Dividend */
+	clz temp1_lower, upper_1
 	cmp temp1_lower, #32
-	clzge temp1_lower, lower_2
+	clzge temp1_lower, lower_1
 	addge temp1_lower, temp1_lower, #32
+
+	/* Leading Zero of Divisor */
+	clz temp1_upper, upper_2
+	cmp temp1_upper, #32
+	clzge temp1_upper, lower_2
+	addge temp1_upper, temp1_upper, #32
+
+	sub temp1_lower, temp1_upper, temp1_lower
 
 	mov shift, #0
 
@@ -1846,15 +1860,23 @@ bcd32_deci_rem64_pre:
 
 	push {r4-r5,lr}
 
-	bcd32_deci_rem64_pre_loop:
+	mov dup_lower_1, lower_1
+	mov dup_upper_1, upper_1
 
-		mov dup_lower_1, lower_1
-		mov dup_upper_1, upper_1
+	/* If Divisor is Zero  */
+	cmp lower_2, #0
+	cmpeq upper_2, #0
+	beq bcd32_deci_rem64_pre_common
+
+	bcd32_deci_rem64_pre_loop:
 
 		push {r2-r3}
 		bl bcd32_deci_sub64
 		pop {r2-r3}
 		bcs bcd32_deci_rem64_pre_common @ If Carry Set/ Unsigned Higher or Same (hs)
+
+		mov dup_lower_1, lower_1
+		mov dup_upper_1, upper_1
 
 		b bcd32_deci_rem64_pre_loop
 
@@ -1891,28 +1913,30 @@ bcd32_deci_rem64:
 	upper_1        .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	lower_2        .req r2 @ Parameter, Register for Argument, Scratch Register
 	upper_2        .req r3 @ Parameter, Register for Argument, Scratch Register
-	cal_lower      .req r4
-	cal_upper      .req r5
-	shift          .req r6
-	temp1_lower    .req r7
-	temp1_upper    .req r8
-	temp2_lower    .req r9
-	temp2_upper    .req r10
+	shift          .req r4
+	temp1_lower    .req r5
+	temp1_upper    .req r6
 
 	/**
 	 * To speed up, this function refers handwrinting method to calculate division,
 	 * i.e., two-dimensional method that is using exponent in base 10.
 	 */
 
-	push {r4-r10,lr}
+	push {r4-r6,lr}
 
-	mov cal_lower, #0
-	mov cal_upper, #0
-
-	clz temp1_lower, upper_2
+	/* Leading Zero of Dividend */
+	clz temp1_lower, upper_1
 	cmp temp1_lower, #32
-	clzge temp1_lower, lower_2
+	clzge temp1_lower, lower_1
 	addge temp1_lower, temp1_lower, #32
+
+	/* Leading Zero of Divisor */
+	clz temp1_upper, upper_2
+	cmp temp1_upper, #32
+	clzge temp1_upper, lower_2
+	addge temp1_upper, temp1_upper, #32
+
+	sub temp1_lower, temp1_upper, temp1_lower
 
 	mov shift, #0
 
@@ -1934,33 +1958,6 @@ bcd32_deci_rem64:
 		mov temp1_upper, r1
 		pop {r0-r3}
 
-		push {r0-r3}
-		mov r2, temp1_lower
-		mov r3, temp1_upper
-		bl bcd32_deci_rem64_pre
-		mov temp2_lower, r0
-		mov temp2_upper, r1
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, temp2_lower
-		mov r1, temp2_upper
-		mov r2, shift
-		bl bcd32_deci_shift64
-		mov temp2_lower, r0
-		mov temp2_upper, r1
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, cal_lower
-		mov r1, cal_upper
-		mov r2, temp2_lower
-		mov r3, temp2_upper
-		bl bcd32_deci_add64
-		mov cal_lower, r0
-		mov cal_upper, r1
-		pop {r0-r3}
-
 		push {r2-r3}
 		mov r2, temp1_lower
 		mov r3, temp1_upper
@@ -1976,17 +1973,13 @@ bcd32_deci_rem64:
 		b bcd32_deci_rem64_loop
 
 	bcd32_deci_rem64_common:
-		pop {r4-r10,pc}
+		pop {r4-r6,pc}
 
 .unreq lower_1
 .unreq upper_1
 .unreq lower_2
 .unreq upper_2
-.unreq cal_lower
-.unreq cal_upper
 .unreq shift
 .unreq temp1_lower
 .unreq temp1_upper
-.unreq temp2_lower
-.unreq temp2_upper
 

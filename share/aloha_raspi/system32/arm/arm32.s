@@ -1609,6 +1609,9 @@ arm32_udiv:
 
 	mov answer, #0
 
+	cmp divisor, #0
+	beq arm32_udiv_common
+
 	clz lz_dividend, dividend
 	clz lz_divisor, divisor
 
@@ -1724,7 +1727,8 @@ arm32_sdiv:
 	movlt sign_divisor, #1
 	mvnlt divisor, divisor
 	addlt divisor, divisor, #1
-	movge sign_divisor, #0
+	movgt sign_divisor, #0
+	beq arm32_sdiv_common
 
 	clz lz_dividend, dividend
 	clz lz_divisor, divisor

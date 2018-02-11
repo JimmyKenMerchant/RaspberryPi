@@ -34,6 +34,7 @@ PRINT32_FONT_HEIGHT:        .word 12
 PRINT32_FONT_COLOR:         .word 0xFFFFFFFF
 PRINT32_FONT_BACKCOLOR:     .word 0xFF000000
 PRINT32_FONT_UNDERLINE:     .word 0
+PRINT32_FONT_BOLD:          .word 0
 _print32_string_esc_count:  .word 0x00
 _print32_string_buffer:     .space equ32_print32_string_buffer_size
 .balign 4
@@ -46,6 +47,9 @@ PRINT32_FONT_HEIGHT_ADDR:    .word PRINT32_FONT_HEIGHT
 PRINT32_FONT_COLOR_ADDR:     .word PRINT32_FONT_COLOR
 PRINT32_FONT_BACKCOLOR_ADDR: .word PRINT32_FONT_BACKCOLOR
 PRINT32_FONT_UNDERLINE_ADDR: .word PRINT32_FONT_UNDERLINE
+PRINT32_FONT_BOLD_ADDR:      .word PRINT32_FONT_BOLD
+PRINT32_FB32_WIDTH:          .word FB32_WIDTH
+PRINT32_FB32_HEIGHT:         .word FB32_HEIGHT
 PRINT32_FB32_X_CARET:        .word FB32_X_CARET
 PRINT32_FB32_Y_CARET:        .word FB32_Y_CARET
 
@@ -65,8 +69,8 @@ PRINT32_FB32_Y_CARET:        .word FB32_Y_CARET
 .globl print32_set_caret
 print32_set_caret:
 	/* Auto (Local) Variables, but just Aliases */
-	chars             .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	xy_coord          .req r1 @ Parameter, Register for Argument, Scratch Register
+	chars             .req r0
+	xy_coord          .req r1
 	width             .req r2
 	height            .req r3
 	x_coord           .req r4
@@ -148,10 +152,10 @@ print32_set_caret:
 .globl print32_hexa
 print32_hexa:
 	/* Auto (Local) Variables, but just Aliases */
-	byte_point        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	length            .req r3 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	byte_point        .req r0
+	x_coord           .req r1
+	y_coord           .req r2
+	length            .req r3
 	color             .req r4
 	back_color        .req r5
 	char_width        .req r6
@@ -249,10 +253,10 @@ print32_hexa:
 .globl print32_string
 print32_string:
 	/* Auto (Local) Variables, but just Aliases */
-	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	length            .req r3 @ Parameter, Register for Argument and Result, Scratch Register
+	string_point      .req r0
+	x_coord           .req r1
+	y_coord           .req r2
+	length            .req r3
 	color             .req r4
 	back_color        .req r5
 	char_width        .req r6
@@ -332,24 +336,44 @@ print32_string:
 		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
 		bne print32_string_error
 
-		/* Underline If Needed */
+		print32_string_loop_bold:
+			/* Bold If Indicated */
 
-		ldr ip, PRINT32_FONT_UNDERLINE_ADDR
-		ldr ip, [ip]
-		cmp ip, #0
-		beq print32_string_loop_jump
+			ldr ip, PRINT32_FONT_BOLD_ADDR
+			ldr ip, [ip]
+			cmp ip, #0
+			beq print32_string_loop_underline
 
-		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
-		ldr r0, [font_ascii_base, #0x5F << 2]    @ Ascii Code of Underline
-		mov r3, color
-		push {char_width,char_height}            @ Push Character Width and Hight
-		bl fb32_char
-		add sp, sp, #8
-		cmp r0, #0                               @ Compare Return 0
-		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
-		bne print32_string_error
+			push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+			ldr r0, [font_ascii_base, string_byte]   @ Character Pointer
+			add r1, r1, #1                           @ Slide One Pixel to Right
+			mov r3, color
+			push {char_width,char_height}            @ Push Character Width and Hight
+			bl fb32_char
+			add sp, sp, #8
+			cmp r0, #0                               @ Compare Return 0
+			pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+			bne print32_string_error
 
-		print32_string_loop_jump:
+		print32_string_loop_underline:
+			/* Underline If Indicated */
+
+			ldr ip, PRINT32_FONT_UNDERLINE_ADDR
+			ldr ip, [ip]
+			cmp ip, #0
+			beq print32_string_loop_setcoord
+
+			push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+			ldr r0, [font_ascii_base, #0x5F << 2]    @ Ascii Code of Underline
+			mov r3, color
+			push {char_width,char_height}            @ Push Character Width and Hight
+			bl fb32_char
+			add sp, sp, #8
+			cmp r0, #0                               @ Compare Return 0
+			pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+			bne print32_string_error
+
+		print32_string_loop_setcoord:
 
 			add x_coord, x_coord, char_width
 			cmp x_coord, width
@@ -482,10 +506,10 @@ print32_string_buffer:    .word _print32_string_buffer
 .globl print32_esc_sequence
 print32_esc_sequence:
 	/* Auto (Local) Variables, but just Aliases */
-	string_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
-	length            .req r3 @ Parameter, Register for Argument, Scratch Register
+	string_point      .req r0
+	x_coord           .req r1
+	y_coord           .req r2
+	length            .req r3
 	byte              .req r4
 	temp              .req r5
 
@@ -505,6 +529,18 @@ print32_esc_sequence:
 	 * e.g. All [J sequence menas clearing all screen even if you append number other than 2.
 	 */
 
+	cmp byte, #0x41
+	beq print32_esc_sequence_a                @ [A Sequence, Cursor Up
+
+	cmp byte, #0x42
+	beq print32_esc_sequence_b                @ [B Sequence, Cursor Down
+
+	cmp byte, #0x43
+	beq print32_esc_sequence_c                @ [C Sequence, Cursor Forward
+
+	cmp byte, #0x44
+	beq print32_esc_sequence_d                @ [D Sequence, Cursor Back
+
 	cmp byte, #0x48
 	beq print32_esc_sequence_h                @ [0H Sequence, Set Cursor Upper Left Corner
 
@@ -521,6 +557,42 @@ print32_esc_sequence:
 
 	.unreq byte
 	number .req r4
+
+	print32_esc_sequence_a:
+		ldr temp, PRINT32_FONT_HEIGHT_ADDR
+		ldr temp, [temp]
+		sub y_coord, y_coord, temp
+		cmp y_coord, #0
+		movlt y_coord, #0
+		b print32_esc_sequence_common
+
+	print32_esc_sequence_b:
+		ldr temp, PRINT32_FONT_HEIGHT_ADDR
+		ldr temp, [temp]
+		add y_coord, y_coord, temp
+		ldr temp, PRINT32_FB32_HEIGHT
+		ldr temp, [temp]
+		cmp y_coord, temp
+		subge y_coord, y_coord, temp
+		b print32_esc_sequence_common
+
+	print32_esc_sequence_c:
+		ldr temp, PRINT32_FONT_WIDTH_ADDR
+		ldr temp, [temp]
+		add x_coord, x_coord, temp
+		ldr temp, PRINT32_FB32_WIDTH
+		ldr temp, [temp]
+		cmp x_coord, temp
+		subge x_coord, x_coord, temp
+		b print32_esc_sequence_common
+
+	print32_esc_sequence_d:
+		ldr temp, PRINT32_FONT_WIDTH_ADDR
+		ldr temp, [temp]
+		sub x_coord, x_coord, temp
+		cmp x_coord, #0
+		movlt x_coord, #0
+		b print32_esc_sequence_common
 
 	print32_esc_sequence_h:
 		mov x_coord, #0
@@ -539,7 +611,68 @@ print32_esc_sequence:
 		b print32_esc_sequence_common
 
 	print32_esc_sequence_k:
+		sub length, length, #1
+		ldrb number, [string_point, length]      @ Get Number
+
+		/**
+		 * fb32_block_color in fb32.s
+		 * Parameters
+		 * r0: Color (16-bit or 32-bit)
+		 * r1: X Coordinate
+		 * r2: Y Coordinate
+		 * r3: Character Width in Pixels
+		 * r4: Character Height in Pixels
+		 */
+
+		ldr string_point, PRINT32_FONT_BACKCOLOR_ADDR @ Get Background Color to r0
+		ldr string_point, [string_point]
+		ldr temp, PRINT32_FONT_HEIGHT_ADDR
+		ldr temp, [temp]
+
+		cmp number, #0x32                        @ Ascii Code of 2
+		beq print32_esc_sequence_k_entire        @ Clear Entire Line
+		cmp number, #0x31                        @ Ascii Code of 1
+		beq print32_esc_sequence_k_begin         @ Clear Beginning of Line through Right Side of Cursor
+
+		/* If Zero or Default, Clear Left Side of Cursor through End of Line */
+
+		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+		ldr number, PRINT32_FONT_WIDTH_ADDR
+		ldr number, [number]
+		add r1, x_coord, number                  @ Left Side of Cursor
+		ldr r3, PRINT32_FB32_WIDTH
+		ldr r3, [r3]
+		sub r3, r3, r1                           @ Width of Area to Clear
+		push {temp} 
+		bl fb32_block_color
+		add sp, sp, #4
+		pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+
 		b print32_esc_sequence_common
+
+		print32_esc_sequence_k_entire:
+
+			push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+			mov r1, #0
+			ldr r3, PRINT32_FB32_WIDTH
+			ldr r3, [r3]
+			push {temp} 
+			bl fb32_block_color
+			add sp, sp, #4
+			pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+
+			b print32_esc_sequence_common
+
+		print32_esc_sequence_k_begin:
+			push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+			mov r3, x_coord
+			mov r1, #0
+			push {temp} 
+			bl fb32_block_color
+			add sp, sp, #4
+			pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+
+			b print32_esc_sequence_common
 
 	print32_esc_sequence_m:
 		add string_point, string_point, #1
@@ -605,7 +738,7 @@ print32_esc_sequence:
 .globl print32_esc_sequence_font
 print32_esc_sequence_font:
 	/* Auto (Local) Variables, but just Aliases */
-	number      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	number      .req r0
 	depth       .req r1
 	color_base  .req r2
 	color       .req r3
@@ -640,10 +773,14 @@ print32_esc_sequence_font:
 		beq print32_esc_sequence_font_clearinverse
 		cmp number, #0x24
 		beq print32_esc_sequence_font_clearunderline
+		cmp number, #0x21
+		beq print32_esc_sequence_font_clearbold
 		cmp number, #0x07
 		beq print32_esc_sequence_font_setreverse
 		cmp number, #0x04
 		beq print32_esc_sequence_font_setunderline
+		cmp number, #0x01
+		beq print32_esc_sequence_font_setbold
 		cmp number, #0
 		beq print32_esc_sequence_font_setdefault
 
@@ -680,6 +817,12 @@ print32_esc_sequence_font:
 		str number, [temp]
 		b print32_esc_sequence_font_common
 
+	print32_esc_sequence_font_clearbold:
+		mov number, #0
+		ldr temp, PRINT32_FONT_BOLD_ADDR
+		str number, [temp]
+		b print32_esc_sequence_font_common
+
 	print32_esc_sequence_font_setreverse:
 		ldr color_base, PRINT32_FONT_COLOR_ADDR
 		ldr color, PRINT32_FONT_BACKCOLOR_ADDR
@@ -695,6 +838,12 @@ print32_esc_sequence_font:
 		str number, [temp]
 		b print32_esc_sequence_font_common
 
+	print32_esc_sequence_font_setbold:
+		mov number, #1
+		ldr temp, PRINT32_FONT_BOLD_ADDR
+		str number, [temp]
+		b print32_esc_sequence_font_common
+
 	print32_esc_sequence_font_setdefault:
 		/* Number Zero, Set Default Attributes */
 		mov color, #0xFFFFFFFF
@@ -705,6 +854,8 @@ print32_esc_sequence_font:
 		str color, [temp]
 		mov number, #0
 		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
+		str number, [temp]
+		ldr temp, PRINT32_FONT_BOLD_ADDR
 		str number, [temp]
 
 	print32_esc_sequence_font_common:
@@ -738,11 +889,11 @@ print32_esc_sequence_font_fb32_depth: .word FB32_DEPTH
 .globl print32_number_double
 print32_number_double:
 	/* Auto (Local) Variables, but just Aliases */
-	number_lower      .req r0  @ Parameter, Register for Argument and Result, Scratch Register
-	number_upper      .req r1  @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r2  @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord           .req r3  @ Parameter, Register for Argument, Scratch Register
-	length            .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	number_lower      .req r0
+	number_upper      .req r1
+	x_coord           .req r2
+	y_coord           .req r3
+	length            .req r4
 	length_lower      .req r5
 
 	push {r4-r5,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
@@ -833,10 +984,10 @@ print32_number_double:
 .globl print32_number
 print32_number:
 	/* Auto (Local) Variables, but just Aliases */
-	number          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord         .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	y_coord         .req r2 @ Parameter, Register for Argument, Scratch Register
-	length          .req r3 @ Parameter, have to PUSH/POP in ARM C lang Regulation
+	number          .req r0
+	x_coord         .req r1
+	y_coord         .req r2
+	length          .req r3
 	color           .req r4
 	back_color      .req r5
 	char_width      .req r6
@@ -951,10 +1102,6 @@ print32_number:
 .unreq bitmask
 
 
-PRINT32_FB32_WIDTH:  .word FB32_WIDTH
-PRINT32_FB32_HEIGHT: .word FB32_HEIGHT
-
-
 /**
  * function print32_debug_hexa
  * Print Hexadecimal Values in Heap for Debug Use
@@ -970,10 +1117,10 @@ PRINT32_FB32_HEIGHT: .word FB32_HEIGHT
 .globl print32_debug_hexa
 print32_debug_hexa:
 	/* Auto (Local) Variables, but just Aliases */
-	pointer           .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
-	length            .req r3 @ Parameter, Register for Argument, Scratch Register
+	pointer           .req r0
+	x_coord           .req r1
+	y_coord           .req r2
+	length            .req r3
 
 	push {lr}
 	
@@ -1002,9 +1149,9 @@ print32_debug_hexa:
 .globl print32_debug
 print32_debug:
 	/* Auto (Local) Variables, but just Aliases */
-	register          .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	x_coord           .req r1 @ Parameter, Register for Argument, Scratch Register
-	y_coord           .req r2 @ Parameter, Register for Argument, Scratch Register
+	register          .req r0
+	x_coord           .req r1
+	y_coord           .req r2
 	length            .req r3
 
 	mov length, #8

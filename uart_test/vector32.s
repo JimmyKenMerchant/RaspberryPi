@@ -118,8 +118,8 @@ os_reset:
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #32                                              @ 32 Lines
-	mov r1, #16                                              @ 16 Words, 64 Bytes
+	mov r0, #128                                             @ 128 Lines Minus 1 Line for #0, 127 Lines Available
+	mov r1, #16                                              @ 16 Words, 64 Bytes per Each Row
 	bl uart32_uartmalloc
 	pop {r0-r3,lr}
 
