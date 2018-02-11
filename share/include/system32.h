@@ -279,6 +279,13 @@ extern uint32 arm32_tst(
  * system32/arm/uart32.s
  ********************************/
 
+extern String UART32_UARTINT_HEAP;
+extern uint32 UART32_UARTINT_BUSY_ADDR;
+extern uint32 UART32_UARTINT_COUNT_ADDR;
+extern uint32 UART32_UARTMALLOC_LENGTH;
+extern uint32 UART32_UARTMALLOC_NUMBER;
+extern uint32 UART32_UARTMALLOC_MAXROW;
+
 __attribute__((noinline)) uint32 _uartinit
 (
 	uint32 div_int,
@@ -436,8 +443,6 @@ extern float32 vfp32_fdiv
  * system32/library/fb32.s
  ********************************/
 
-/* Constants */
-
 extern uint32 FB32_FRAMEBUFFER;
 extern uint32 FB32_DOUBLEBUFFER_BACK;
 extern uint32 FB32_DOUBLEBUFFER_FRONT;
@@ -539,6 +544,14 @@ extern uint32 fb32_clear_color
 /********************************
  * system32/library/print32.s
  ********************************/
+
+extern uint32 PRINT32_FONT_BASE;
+extern uint32 PRINT32_FONT_WIDTH;
+extern uint32 PRINT32_FONT_HEIGHT;
+extern uint32 PRINT32_FONT_COLOR;
+extern uint32 PRINT32_FONT_BACKCOLOR;
+extern bool PRINT32_FONT_UNDERLINE;
+extern bool PRINT32_FONT_BOLD;
 
 /**
  * Set Caret Position from Return Vlue of `print_*` functions

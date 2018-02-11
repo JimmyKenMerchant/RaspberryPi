@@ -28,13 +28,17 @@
 .globl PRINT32_FONT_HEIGHT
 .globl PRINT32_FONT_COLOR
 .globl PRINT32_FONT_BACKCOLOR
+.globl PRINT32_FONT_UNDERLINE
+.globl PRINT32_FONT_BOLD
 PRINT32_FONT_BASE:          .word FONT_MONO_12PX_ASCII_NULL
 PRINT32_FONT_WIDTH:         .word 8
 PRINT32_FONT_HEIGHT:        .word 12
 PRINT32_FONT_COLOR:         .word 0xFFFFFFFF
 PRINT32_FONT_BACKCOLOR:     .word 0xFF000000
-PRINT32_FONT_UNDERLINE:     .word 0
-PRINT32_FONT_BOLD:          .word 0
+PRINT32_FONT_UNDERLINE:     .byte 0
+.balign 4
+PRINT32_FONT_BOLD:          .byte 0
+.balign 4
 _print32_string_esc_count:  .word 0x00
 _print32_string_buffer:     .space equ32_print32_string_buffer_size
 .balign 4
@@ -340,7 +344,7 @@ print32_string:
 			/* Bold If Indicated */
 
 			ldr ip, PRINT32_FONT_BOLD_ADDR
-			ldr ip, [ip]
+			ldrb ip, [ip]
 			cmp ip, #0
 			beq print32_string_loop_underline
 
@@ -359,7 +363,7 @@ print32_string:
 			/* Underline If Indicated */
 
 			ldr ip, PRINT32_FONT_UNDERLINE_ADDR
-			ldr ip, [ip]
+			ldrb ip, [ip]
 			cmp ip, #0
 			beq print32_string_loop_setcoord
 
@@ -814,13 +818,13 @@ print32_esc_sequence_font:
 	print32_esc_sequence_font_clearunderline:
 		mov number, #0
 		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
-		str number, [temp]
+		strb number, [temp]
 		b print32_esc_sequence_font_common
 
 	print32_esc_sequence_font_clearbold:
 		mov number, #0
 		ldr temp, PRINT32_FONT_BOLD_ADDR
-		str number, [temp]
+		strb number, [temp]
 		b print32_esc_sequence_font_common
 
 	print32_esc_sequence_font_setreverse:
@@ -835,13 +839,13 @@ print32_esc_sequence_font:
 	print32_esc_sequence_font_setunderline:
 		mov number, #1
 		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
-		str number, [temp]
+		strb number, [temp]
 		b print32_esc_sequence_font_common
 
 	print32_esc_sequence_font_setbold:
 		mov number, #1
 		ldr temp, PRINT32_FONT_BOLD_ADDR
-		str number, [temp]
+		strb number, [temp]
 		b print32_esc_sequence_font_common
 
 	print32_esc_sequence_font_setdefault:
@@ -854,9 +858,9 @@ print32_esc_sequence_font:
 		str color, [temp]
 		mov number, #0
 		ldr temp, PRINT32_FONT_UNDERLINE_ADDR
-		str number, [temp]
+		strb number, [temp]
 		ldr temp, PRINT32_FONT_BOLD_ADDR
-		str number, [temp]
+		strb number, [temp]
 
 	print32_esc_sequence_font_common:
 		mov r0, #0

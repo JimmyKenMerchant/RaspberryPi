@@ -667,9 +667,9 @@ uart32_uartint:
 
 	uart32_uartint_common:
 
-macro32_debug_hexa heap, 100, 112, 36
-macro32_debug_hexa buffer, 100, 124, equ32_uart32_uartint_buffer_size
-macro32_debug escape_offset, 100, 136
+/*macro32_debug_hexa heap, 100, 112, 36*/
+/*macro32_debug_hexa buffer, 100, 124, equ32_uart32_uartint_buffer_size*/
+/*macro32_debug escape_offset, 100, 136*/
 
 		pop {r4-r7,pc}
 

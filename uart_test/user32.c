@@ -16,19 +16,11 @@
 #define label_maxchar      2 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
 #define link_stacksize     32
 #define rawdata_maxlength  16
-#define color              COLOR32_WHITE
-#define back_color         COLOR32_BLACK
 
 String pass_space_label( String target_str ); 
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
-
-extern String UART32_UARTINT_HEAP;
-extern uint32 UART32_UARTINT_BUSY_ADDR;
-extern uint32 UART32_UARTINT_COUNT_ADDR;
-extern uint32 UART32_UARTMALLOC_LENGTH;
-extern uint32 UART32_UARTMALLOC_NUMBER;
-extern uint32 UART32_UARTMALLOC_MAXROW;
+bool console_rollup(); 
 
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
 typedef enum _command_list {
@@ -176,7 +168,9 @@ void _user_start()
 	String temp_str = null;
 	String temp_str2 = null;
 
-	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) FB32_Y_CARET = 0;
+	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
+
+	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
 	_uarttx( str_aloha, str32_strlen( str_aloha ) );
 
 	if ( ! _uartsetheap( initial_line ) ) {
@@ -651,7 +645,7 @@ void _user_start()
 										}
 
 										var_temp.u32 = cvt32_string_to_intarray( dst_str, str32_strlen( dst_str ), _load_32( array_source + 12 ) );
-print32_debug( var_temp.u32, 400, 400 );
+//print32_debug( var_temp.u32, 400, 400 );
 										_store_32( array_rawdata + 4 * i, var_temp.u32 );
 										str_direction = cvt32_int32_to_string_deci( i, 1, 0 );
 										break;
@@ -663,7 +657,7 @@ print32_debug( var_temp.u32, 400, 400 );
 								var_temp.u32 = _load_32( array_source );
 								if ( var_temp.u32 >= rawdata_maxlength ) break;
 								var_temp2.u32 = _load_32( array_rawdata + 4 * var_temp.u32 );
-print32_debug( var_temp2.u32, 400, 436 );
+//print32_debug( var_temp2.u32, 400, 436 );
 								heap32_mfree( var_temp2.u32 );
 								_store_32( array_rawdata + 4 * var_temp.u32, 0 );
 
@@ -1021,12 +1015,17 @@ print32_debug( var_temp2.u32, 400, 436 );
 							_uarttx( "|\0", 1 );
 							_uarttx( str_process_counter, str32_strlen( str_process_counter ) );
 							_uarttx( "| \0", 2 );
+							if ( print32_set_caret( print32_string( "|\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+							if ( print32_set_caret( print32_string( str_process_counter, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_process_counter ) ) ) ) console_rollup();
+							if ( print32_set_caret( print32_string( "| \0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
 							heap32_mfree( (obj)str_process_counter );
 
 							var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
 							if ( var_temp.u32 == 0 ) break;
 							_uarttx( UART32_UARTINT_HEAP, str32_strlen( UART32_UARTINT_HEAP ) );
 							_uarttx( "\r\n\0", 2 );
+							if ( print32_set_caret( print32_string( UART32_UARTINT_HEAP, FB32_X_CARET, FB32_Y_CARET, str32_strlen( UART32_UARTINT_HEAP ) ) ) ) console_rollup();
+							if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
 						}
 						pipe_type = search_command;
 						flag_execute = false;
@@ -1048,6 +1047,7 @@ print32_debug( var_temp2.u32, 400, 436 );
 					flag_execute = true;
 					pipe_type = search_command;
 					_uarttx( "\x1B[2J\x1B[H\0", 7 ); // Clear All Screen and Move Cursor to Upper Left
+					//if ( print32_set_caret( print32_string( "\x1B[2J\x1B[H\0", FB32_X_CARET, FB32_Y_CARET, 7 ) ) ) console_rollup();
 
 					/* Labels Enumuration */
 					for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -1164,31 +1164,31 @@ bool command_print( String target_str ) {
 		if ( str32_strindex( temp_str, "\\n\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\n\0" );
 			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
 			_uarttx( "\r\n\0", 2 );
-			if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( str32_strindex( temp_str, "\\s\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\s\0" );
 			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
 			_uarttx( " \0", 1 );
-			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( str32_strindex( temp_str, "\\e\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\e\0" );
 			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
 			_uarttx( "\x1B\0", 1 );
-			if ( print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else {
 			temp_str_index = str32_strlen( temp_str );
 			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) FB32_Y_CARET = 0;
+			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
 			temp_str += temp_str_index;
 		}
 	}
@@ -1213,8 +1213,26 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 			}
 		}
 		_uarttx( "\r\n\0", 2 );
-		if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) FB32_Y_CARET = 0;
+		if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
 	}
+	return TRUE;
+}
+
+bool console_rollup() {
+	fb32_image(
+			FB32_ADDR,
+			0,
+			-PRINT32_FONT_HEIGHT,
+			FB32_WIDTH,
+			FB32_HEIGHT,
+			0,
+			0,
+			0,
+			0
+	);
+	FB32_X_CARET = 0;
+	FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
+	print32_string( "\e[2K", FB32_X_CARET, FB32_Y_CARET, 4 );
 	return TRUE;
 }
 

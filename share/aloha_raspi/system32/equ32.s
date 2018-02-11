@@ -12,9 +12,9 @@
  */
 
 .equ equ32_bcm32_display_width,                800
-.equ equ32_bcm32_display_height,               640
+.equ equ32_bcm32_display_height,               648
 .equ equ32_bcm32_width,                        800
-.equ equ32_bcm32_height,                       640
+.equ equ32_bcm32_height,                       648
 .equ equ32_bcm32_alpha,                        16
 .equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
 .equ equ32_usb2032_timeout,                    0x00000FF0
