@@ -43,6 +43,12 @@ hid32_hid_activate:
 
 	push {r4-r11,lr}
 
+	/**
+	 * Wrote on February 12, 2018.
+	 * If you connect the HID through Hub, several value of the device descriptor is lost on receive.
+	 * Plus, other descriptors, such as the configuration descriptor are received as the device descriptor.
+	 */
+
 	mov num_config, character
 	mov num_interface, transfer_size
 
@@ -116,7 +122,6 @@ macro32_debug response, 0, 62
 macro32_debug temp, 0, 74
 macro32_debug_hexa buffer_rx, 0, 86, 64
 */
-
 
 	ldrb temp, [buffer_rx, #4]
 	cmp temp, #0                                   @ Device Class is HID or Not

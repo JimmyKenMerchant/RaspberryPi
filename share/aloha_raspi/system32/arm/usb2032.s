@@ -49,6 +49,20 @@
  *
  */
 
+/**
+ * On this system, for convenience, usb2032_* uses "Ticket".
+ * If any device is detected by usb2032_hub_search_device, you will get the returned value as below. The address of the device is already assigned.
+ *
+ * Ticket:
+ *    Bit[6:0]: Address of Device, If Zero, Not Allocated Address
+ *    Bit[13:7]: Port Number
+ *    Bit[20:14]: Address of Hub
+ *    Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
+ *
+ * You can use this ticket for functions such as for activation of Hubs.
+ * If you use any device with direct connection, ticket is not needed. Just use zero for the argument of each function.
+ */
+
 
 /**
  * function usb2032_get_buffer_in
