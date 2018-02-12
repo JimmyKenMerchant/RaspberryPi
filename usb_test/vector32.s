@@ -130,13 +130,6 @@ os_debug:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
-	ldr r0, string_hello                      @ Pointer of Array of String
-	macro32_print_string r0, 0, 0, 22
-	macro32_print_hexa r0, 0, 50, 22
-
-	ldr r0, string_test                       @ Pointer of Array of String
-	macro32_print_string r0, 0, 100, 100
-
 	bl bcm32_poweron_usb
 
 macro32_debug r0 500 90
@@ -244,34 +237,6 @@ os_fiq:
 	str r1, [r0]
 .endif
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_systemtimer_base
-
-	ldr r0, [r0, #equ32_systemtimer_counter_lower] @ Get Lower 32 Bits
-	ldr r1, sys_timer_previous
-	sub r2, r0, r1
-	str r0, sys_timer_previous
-
-	push {lr}
-	mov r0, r2
-	bl cvt32_hexa_to_deci
-	pop {lr}
-
-	macro32_print_number_double r0, r1, 80, 388, 16
-
-	ldr r0, timer_sub
-	ldr r1, timer_main
-
-	add r0, r0, #1
-	cmp r0, #10
-	addge r1, #1
-	movge r0, #0
-
-	str r0, timer_sub
-	str r1, timer_main
-
-	macro32_print_number_double r0, r1, 80, 400, 16
-
 	/* Get HID IN */
 
 	/* Buffer */
@@ -290,10 +255,10 @@ os_fiq:
 	mov r4, r0
 	pop {r0-r3,lr}
 
-macro32_debug r2, 300, 0
-macro32_debug r4, 300, 12
-macro32_debug r3, 300, 24
-macro32_debug_hexa r3, 300, 36, 8
+macro32_debug r2, 320, 0
+macro32_debug r4, 320, 12
+macro32_debug r3, 320, 24
+macro32_debug_hexa r3, 320, 36, 8
 
 	push {lr}
 	mov r0, r3

@@ -62,7 +62,7 @@ hid32_hid_activate:
 	buffer_rq .req r3
 
 	push {r0-r3}
-	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
+	mov r0, #24                                 @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
 	bl usb2032_get_buffer_in
 	mov buffer_rx, r0
 	pop {r0-r3}
@@ -72,7 +72,7 @@ hid32_hid_activate:
 	/* Get Device Descriptor */
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	mov r0, #10                                 @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
@@ -234,7 +234,8 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		pop {r0-r3}
 
 		/* Set Idle */
-
+		/* Use for Mouse, etc. */
+		/*
 		push {r0-r3}
 		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 		bl usb2032_get_buffer_out
@@ -260,8 +261,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r1
 		pop {r0-r3}
 
-macro32_debug response, 0, 312
-macro32_debug temp, 0, 324
+		*/
 
 		/* Get Device Descriptor Again */
 
@@ -329,8 +329,8 @@ macro32_debug temp, 0, 324
 		orr character, character, addr_device, lsl #18 @ Device Address
 		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
 
-		mov transfer_size, #32                         @ Transfer Size is 64 Bytes
-		orr transfer_size, transfer_size, #4<<19       @ Transfer Packet is 8 Packets
+		mov transfer_size, #64                         @ Transfer Size is 64 Bytes
+		orr transfer_size, transfer_size, #8<<19       @ Transfer Packet is 8 Packets
 		orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 		push {r0-r3}
@@ -341,12 +341,25 @@ macro32_debug temp, 0, 324
 		mov temp, r1
 		pop {r0-r3}
 
+macro32_debug_hexa buffer_rx, 0, 184, 64
+macro32_debug response, 0, 100
+macro32_debug temp, 0, 112
+macro32_debug_hexa buffer_rx, 0, 184, 64
+
+		/**
+		 * We should get descriptors again for more details. But on some devices with split-control,
+		 * transferring multiple packets makes halt because the rest of data length doesn't meet maximum packet size. 
+		 * e.g., receiving 10 bytes where the maximum packet size is 8 bytes gets 2 packets, but the last packet is only 2 bytes.
+		 * This case may make halt on transferring. To hide this, we change the transfer size from original to a factor of maximum packet size.
+	   	 */
+		/*
 		ldrb response, [buffer_rx, #2]                     @ Total Length
 
-macro32_debug response, 0, 348
+macro32_debug response, 0, 124
+		*/
 
 		/* Get Configuration, Interface, Endpoint Descriptors Again */
-
+		/*
 		push {r0-r3}
 		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 		bl usb2032_get_buffer_out
@@ -382,7 +395,7 @@ macro32_debug response, 0, 348
 			addge temp, temp, #1
 			bge hid32_hid_activate_loop2
 
-macro32_debug temp, 0, 360
+macro32_debug temp, 0, 136
 	
 		orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet is 8 Packets
 		orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
@@ -395,11 +408,6 @@ macro32_debug temp, 0, 360
 		mov temp, r1
 		pop {r0-r3}
 
-macro32_debug response, 0, 560
-macro32_debug temp, 0, 572
-sub buffer_rx, buffer_rx, #4
-macro32_debug_hexa buffer_rx, 0, 584, 64
-add buffer_rx, buffer_rx, #4
 
 		cmp response, #2
 		bne hid32_hid_activate_success            @ If Not STALL
@@ -411,7 +419,8 @@ add buffer_rx, buffer_rx, #4
 		mov response, r0
 		pop {r0-r3}
 
-macro32_debug response, 0, 608
+macro32_debug response, 0, 256
+	*/
 
 	/* Get HID Report */
 
@@ -465,8 +474,7 @@ macro32_debug response, 0, 608
  * r2: Ticket Issued by usb2032_hub_search_device, or Device Address as Direct Connection
  * r3: Buffer
  *
- * Return: r0 (Status of Channel, -1 and -2 as Error)
- * Error(-1): Failed Memory Allocation
+ * Return: r0 (Response of USB Transaction)
  */
 .globl hid32_hid_get
 hid32_hid_get:
@@ -530,3 +538,76 @@ hid32_hid_get:
 .unreq temp
 .unreq num_endpoint
 .unreq addr_device
+
+
+/**
+ * function hid32_keyboard_get
+ * Return Ascii Code of Pushed Key on Keyboard
+ *
+ * Parameters
+ * r0: Channel 0-15
+ * r1: Number of Endpoint (Starting from 1)
+ * r2: Ticket Issued by usb2032_hub_search_device, or Device Address as Direct Connection
+ * r3: Buffer
+ *
+ * Return: r0 (Ascii Code of Pused Key on Keyboard, If -1 NAK or Any Transaction Error)
+ */
+.globl hid32_keyboard_get
+hid32_keyboard_get:
+	/* Auto (Local) Variables, but just Aliases */
+	channel         .req r0
+	character       .req r1
+	ticket          .req r2
+	buffer          .req r3
+	data            .req r4
+	response        .req r5
+	base            .req r6
+
+	push {r4-r5,lr}
+
+	push {r0-r3}
+	bl hid32_hid_get
+	mov response, r0
+	pop {r0-r3}
+
+	tst response, #0x4                     @ ACK
+	beq hid32_keyboard_get_error
+
+	.unreq response
+	byte .req r5
+
+	/* In Data of Keyboard is 8 Bytes, but in This Case, First 4 bytes are Needed */
+	ldr data, [buffer]
+	tst data, #0x2                         @ Modifier Is Shift
+	ldreq base, hid32_keyboard_get_ascii
+	ldrne base, hid32_keyboard_get_ascii_shift
+	lsr data, data, #16
+	and data, data, #0xFF
+	cmp data, #0x39                        @ 0x0 - 0x38 Are Real Characters
+	ldrlo byte, [base, data]
+	mov r0, byte
+
+	b hid32_keyboard_get_common
+
+	hid32_keyboard_get_error:
+		mvn r0, #0                         @ Error with -1
+
+	hid32_keyboard_get_common:
+		macro32_dsb ip                     @ Ensure Completion of Instructions Before
+		pop {r4-r5,pc}
+
+.unreq channel
+.unreq character
+.unreq ticket
+.unreq buffer
+.unreq data
+.unreq byte
+.unreq base
+
+hid32_keyboard_get_ascii:        .word _hid32_keyboard_get_ascii
+hid32_keyboard_get_ascii_shift:  .word _hid32_keyboard_get_ascii_shift
+_hid32_keyboard_get_ascii: .ascii "\0\0\0\0abcdefghijklmnopqrstuvwxyz1234567890\xD\x1B\x8\x9 -=[]\\#;'`,./"
+.space 7 @ Total 64 Bytes (0x40 Bytest)
+_hid32_keyboard_get_ascii_shift: .ascii "\0\0\0\0ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()\xD\x1B\x8\x9 _+{}|-:\"~<>?"
+.space 7 @ Total 64 Bytes (0x40 Bytest)
+
