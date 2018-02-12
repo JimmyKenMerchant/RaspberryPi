@@ -132,10 +132,11 @@ os_debug:
 
 	bl bcm32_poweron_usb
 
-macro32_debug r0 500 90
+/*macro32_debug r0 500 90*/
 
 	bl usb2032_otg_host_reset_bcm
 
+/*
 macro32_debug r0 500 102
 
 	mov r1, #equ32_peripherals_base
@@ -169,12 +170,18 @@ macro32_debug r0 500 150
 	ldr r0, [r1, #equ32_usb20_otg_hptxfsiz]
 
 macro32_debug r0 500 162
+*/
 
 	mov r0, #2
 	mov r1, #0
 	bl usb2032_hub_activate
 
-macro32_debug r0 500 174
+macro32_debug r0 500 200
+
+	cmp r0, #-2                                   @ Whether No Hub
+	moveq r0, #0
+	streq r0, os_fiq_usbticket
+	beq os_debug_jump
 
 	push {r0-r1}
 	mov r1, r0
@@ -183,7 +190,11 @@ macro32_debug r0 500 174
 	mov r3, r0
 	pop {r0-r1}
 
-.ifndef __ARMV6
+/**
+ * Type B has an ethernet interface on the port #0.
+ * So if you serach another device, you need to search these again.
+ */
+.ifdef __B
 	push {r0-r1}
 	mov r1, r0
 	mov r0, #2
@@ -194,20 +205,22 @@ macro32_debug r0 500 174
 
 	str r3, os_fiq_usbticket
 
-macro32_debug r3 500 186
+macro32_debug r3 500 212
 
-	mov r0, #2
-	mov r1, #1
-	mov r2, #0
-	ldr r3, os_fiq_usbticket        @ Ticket
+	os_debug_jump:
 
-	bl hid32_hid_activate
+		mov r0, #2
+		mov r1, #1
+		mov r2, #0
+		ldr r3, os_fiq_usbticket        @ Ticket
 
-macro32_debug r0 500 198
+		bl hid32_hid_activate
+		cmp r0, #1                      @ Wheter Direct Connection, If So Function Returns Just 1
+		streq r0, os_fiq_usbticket
 
-	pop {r0-r8,lr}
+macro32_debug r0 500 224
 
-	mov pc, lr
+		pop {r0-r8,pc}
 
 os_irq:
 	push {r0-r12}
@@ -215,7 +228,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r7,lr}
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
@@ -240,34 +253,25 @@ os_fiq:
 	/* Get HID IN */
 
 	/* Buffer */
-	push {lr}
 	mov r0, #10                      @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl usb2032_get_buffer_in
 	mov r3, r0
-	pop {lr}
 
 	mov r0, #2                      @ Channel
 	mov r1, #1                      @ Endpoint
 	ldr r2, os_fiq_usbticket        @ Ticket
 
-	push {r0-r3,lr}
-	bl hid32_hid_get
-	mov r4, r0
-	pop {r0-r3,lr}
+	push {r1-r3}
+	bl hid32_keyboard_get
+	pop {r1-r3}
 
-macro32_debug r2, 320, 0
-macro32_debug r4, 320, 12
-macro32_debug r3, 320, 24
-macro32_debug_hexa r3, 320, 36, 8
+macro32_debug r0, 500, 254
 
-	push {lr}
 	mov r0, r3
 	bl usb2032_clear_buffer_in
-	pop {lr}
 
 	macro32_dsb ip
-	pop {r0-r7}
-	mov pc, lr
+	pop {r0-r7,pc}
 
 /**
  * Variables

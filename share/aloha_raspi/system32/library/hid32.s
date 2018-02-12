@@ -329,8 +329,8 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr character, character, addr_device, lsl #18 @ Device Address
 		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
 
-		mov transfer_size, #64                         @ Transfer Size is 64 Bytes
-		orr transfer_size, transfer_size, #8<<19       @ Transfer Packet is 8 Packets
+		mov transfer_size, #32                         @ Transfer Size is 32 Bytes
+		orr transfer_size, transfer_size, #4<<19       @ Transfer Packet is 4 Packets
 		orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 		push {r0-r3}
@@ -563,12 +563,15 @@ hid32_keyboard_get:
 	response        .req r5
 	base            .req r6
 
-	push {r4-r5,lr}
+	push {r4-r6,lr}
 
 	push {r0-r3}
 	bl hid32_hid_get
 	mov response, r0
 	pop {r0-r3}
+
+macro32_debug ticket, 320, 0
+macro32_debug buffer, 320, 12
 
 	tst response, #0x4                     @ ACK
 	beq hid32_keyboard_get_error
@@ -578,23 +581,29 @@ hid32_keyboard_get:
 
 	/* In Data of Keyboard is 8 Bytes, but in This Case, First 4 bytes are Needed */
 	ldr data, [buffer]
+
+macro32_debug data, 320, 24
+
 	tst data, #0x2                         @ Modifier Is Shift
 	ldreq base, hid32_keyboard_get_ascii
 	ldrne base, hid32_keyboard_get_ascii_shift
 	lsr data, data, #16
 	and data, data, #0xFF
 	cmp data, #0x39                        @ 0x0 - 0x38 Are Real Characters
-	ldrlo byte, [base, data]
-	mov r0, byte
+	ldrlob byte, [base, data]
 
-	b hid32_keyboard_get_common
+	b hid32_keyboard_get_success
 
 	hid32_keyboard_get_error:
 		mvn r0, #0                         @ Error with -1
+		b hid32_keyboard_get_common
+
+	hid32_keyboard_get_success:
+		mov r0, byte
 
 	hid32_keyboard_get_common:
 		macro32_dsb ip                     @ Ensure Completion of Instructions Before
-		pop {r4-r5,pc}
+		pop {r4-r6,pc}
 
 .unreq channel
 .unreq character
