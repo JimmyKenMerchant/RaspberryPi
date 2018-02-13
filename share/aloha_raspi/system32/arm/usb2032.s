@@ -362,7 +362,7 @@ usb2032_hub_activate:
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #18<<18                                      @ wLength
+	orr temp, temp, #18<<16                                      @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, #64                             @ Maximam Packet Size
@@ -422,7 +422,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 	orr temp, temp, addr_device, lsl #16                         @ wValue, address
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #0<<18                                       @ wLength
+	orr temp, temp, #0<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, #64                            @ Maximam Packet Size
@@ -462,7 +462,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr temp, temp, #1<<16                                       @ wValue, Descriptor Index
 		str temp, [buffer_rq]
 		mov temp, #0                                                 @ wIndex
-		orr temp, temp, #0<<18                                       @ wLength
+		orr temp, temp, #0<<16                                       @ wLength
 		str temp, [buffer_rq, #4]
 
 		mov character, #64                             @ Maximam Packet Size
@@ -731,7 +731,7 @@ usb2032_hub_search_device:
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #18<<18                                      @ wLength
+	orr temp, temp, #18<<16                                      @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, #64                              @ Maximam Packet Size
@@ -1068,7 +1068,7 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			orr temp, temp, timeout, lsl #16                             @ wValue, address
 			str temp, [buffer_rq]
 			mov temp, #0                                                 @ wIndex
-			orr temp, temp, #0<<18                                       @ wLength
+			orr temp, temp, #0<<16                                       @ wLength
 			str temp, [buffer_rq, #4]
 
 			tst response, #equ32_usb20_status_hubport_lowspeed

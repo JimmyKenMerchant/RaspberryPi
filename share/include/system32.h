@@ -294,6 +294,18 @@ __attribute__((noinline)) uint32 _uartinit
 	uint32 ctl
 );
 
+__attribute__((noinline)) uint32 _uartsettest
+(
+	uint32 tcr
+);
+
+__attribute__((noinline)) uint32 _uarttestwrite
+(
+	uchar8 value
+);
+
+__attribute__((noinline)) uchar8 _uarttestread();
+
 __attribute__((noinline)) uint32 _uartsetint
 (
 	uint32 int_fifo,

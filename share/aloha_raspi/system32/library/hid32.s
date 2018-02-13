@@ -7,8 +7,6 @@
  *
  */
 
-HID32_USB2032_ADDRESS_LENGTH: .word USB2032_ADDRESS_LENGTH
-
 
 /**
  * function hid32_hid_activate
@@ -46,16 +44,20 @@ hid32_hid_activate:
 	/**
 	 * Wrote on February 12, 2018.
 	 * If you connect the HID through Hub, several value of the device descriptor is lost on receive.
-	 * Plus, other descriptors, such as the configuration descriptor are received as the device descriptor.
+	 * Plus, other descriptors, such as the configuration descriptor are received as the device descriptor or STALL.
+	 * This seems to be because of lower versions of usb devices.
 	 */
 
 	mov num_config, character
 	mov num_interface, transfer_size
 
 	cmp ticket, #0
-	movne addr_device, ticket
+	movne addr_device, ticket                   @ If Ticket Exist (Connected Through Hub)
 	andne addr_device, addr_device, #0x0000007F @ Device Address
-	moveq addr_device, #0
+	movne packet_max, #64
+
+	moveq addr_device, #0                       @ If No Ticket (Connected Directly), No Address Yet
+	moveq packet_max, #8                        @ Consider of Low Speed Device
 
 	mov split_ctl, ticket
 	bic split_ctl, split_ctl, #0xFF000000       @ Mask Only Bit[20:14]: Address of Hub and Bit[13:7]: Port Number and 
@@ -92,19 +94,40 @@ hid32_hid_activate:
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #8<<18                                       @ wLength
+	orr temp, temp, #18<<16                                      @ wLength
 	str temp, [buffer_rq, #4]
 
-	mov character, #8                              @ Maximam Packet Size
+	mov character, packet_max                      @ Maximam Packet Size
 	orr character, character, #0<<11               @ Endpoint Number
 	orr character, character, #1<<15               @ In(1)/Out(0)
 	orr character, character, #0<<16               @ Endpoint Type
 	orr character, character, addr_device, lsl #18 @ Device Address
 	orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
 
-	mov transfer_size, #8                          @ Transfer Size is 8 Bytes
-	orr transfer_size, transfer_size, #1<<19       @ Transfer Packet is 1 Packet
-	orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+	/**
+	 * On some devices with split-control,
+	 * transferring multiple packets makes halt because the rest of data length doesn't meet maximum packet size. 
+	 * e.g., receiving 10 bytes where the maximum packet size is 8 bytes gets 2 packets, but the last packet is only 2 bytes.
+	 * This case may make halt on transferring. To hide this, we change the transfer size from original to a factor of maximum packet size.
+	 */
+
+	mov response, #18
+	tst response, #0b0111
+	bicne response, response, #0b0111
+	addne response, response, #0b1000
+
+	mov transfer_size, response                    @ Transfer Size is 24 Bytes (Actually 18 Bytes)
+
+	add response, response, packet_max
+	sub response, response, #1
+	mov temp, #0
+	hid32_hid_activate_devdesc_packet:
+		subs response, response, packet_max
+		addge temp, temp, #1
+		bge hid32_hid_activate_devdesc_packet
+
+	orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet
+	orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 	push {r0-r3}
 	push {split_ctl,buffer_rx}
@@ -117,22 +140,23 @@ hid32_hid_activate:
 	cmp response, #0
 	bne hid32_hid_activate_error3
 
-/*
-macro32_debug response, 0, 62
-macro32_debug temp, 0, 74
-macro32_debug_hexa buffer_rx, 0, 86, 64
-*/
+macro32_debug response, 0, 100
+macro32_debug temp, 0, 112
+macro32_debug_hexa buffer_rx, 0, 124, 64
 
 	ldrb temp, [buffer_rx, #4]
 	cmp temp, #0                                   @ Device Class is HID or Not
+	cmpne temp, #0xFF                              @ On Lower Version of USB with Direct Access in Case
 	bne hid32_hid_activate_error2
 
 	ldrb packet_max, [buffer_rx, #7]
+	cmp packet_max, #0xFF                          @ On Lower Version of USB with Direct Access in Case
+	moveq packet_max, #8
 
 	cmp addr_device, #0
 	bne hid32_hid_activate_jump
 
-	/* Set Address  */
+	/* Set Address as #1 If Direct Connection */
 
 	push {r0-r3}
 	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
@@ -143,17 +167,14 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 	beq hid32_hid_activate_error1
 	mov buffer_rq, temp
 
-	ldr temp, HID32_USB2032_ADDRESS_LENGTH
-	ldr addr_device, [temp]
-	add addr_device, addr_device, #1
-	str addr_device, [temp]
+	mov addr_device, #1
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 	orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
 	orr temp, temp, addr_device, lsl #16                         @ wValue, address
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #0<<18                                       @ wLength
+	orr temp, temp, #0<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, packet_max                     @ Maximam Packet Size
@@ -194,7 +215,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
 		str temp, [buffer_rq]
 		mov temp, #0                                                 @ wIndex
-		orr temp, temp, #0<<18                                       @ wLength
+		orr temp, temp, #0<<16                                       @ wLength
 		str temp, [buffer_rq, #4]
 
 		mov character, #8                              @ Maximam Packet Size
@@ -239,8 +260,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		pop {r0-r3}
 
 		/* Set Idle */
-		/* Use for Mouse, etc. */
-		/*
+
 		push {r0-r3}
 		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 		bl usb2032_get_buffer_out
@@ -266,46 +286,9 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r1
 		pop {r0-r3}
 
-		*/
-
-		/* Get Device Descriptor Again */
-
-		push {r0-r3}
-		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error1
-		mov buffer_rq, temp
-
-		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
-		orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
-		orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
-		str temp, [buffer_rq]
-		mov temp, #0                                                 @ wIndex
-		orr temp, temp, #18<<16                                      @ wLength
-		str temp, [buffer_rq, #4]
-
-		mov character, packet_max                      @ Maximam Packet Size
-		orr character, character, #0<<11               @ Endpoint Number
-		orr character, character, #1<<15               @ In(1)/Out(0)
-		orr character, character, #0<<16               @ Endpoint Type
-		orr character, character, addr_device, lsl #18 @ Device Address
-		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
-
-		mov transfer_size, #18                         @ Transfer Size is 18 Bytes
-		orr transfer_size, transfer_size, #3<<19       @ Transfer Packet is 3 Packets
-		orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
+		/* If Connected with Hub, Pass Getting Other Descriptors */
+		cmp addr_device, #1
+		bne hid32_hid_activate_success
 
 		/* Get Configuration, Interface, Endpoint Descriptors  */
 
@@ -324,7 +307,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr temp, temp, #equ32_usb20_val_descriptor_configuration<<16 @ wValue, Descriptor Type
 		str temp, [buffer_rq]
 		mov temp, #0                                                  @ wIndex
-		orr temp, temp, #32<<16                                       @ wLength
+		orr temp, temp, #16<<16   @ Configuration Descriptor is 9 Bytes Fixed, But Needed A Factor of 8 in Case
 		str temp, [buffer_rq, #4]	
 
 		mov character, packet_max                      @ Maximam Packet Size
@@ -334,9 +317,23 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		orr character, character, addr_device, lsl #18 @ Device Address
 		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
 
-		mov transfer_size, #32                         @ Transfer Size is 32 Bytes
-		orr transfer_size, transfer_size, #4<<19       @ Transfer Packet is 4 Packets
-		orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+		mov response, #16 
+		tst response, #0b0111
+		bicne response, response, #0b0111
+		addne response, response, #0b1000
+
+		mov transfer_size, response                    @ Transfer Size is 16 Bytes (Actually 9 Bytes)
+
+		add response, response, packet_max
+		sub response, response, #1
+		mov temp, #0
+		hid32_hid_activate_configdesc_packet:
+			subs response, response, packet_max
+			addge temp, temp, #1
+			bge hid32_hid_activate_configdesc_packet
+
+		orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet
+		orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
 		push {r0-r3}
 		push {split_ctl,buffer_rx}
@@ -346,21 +343,12 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r1
 		pop {r0-r3}
 
-macro32_debug_hexa buffer_rx, 0, 184, 64
-macro32_debug response, 0, 100
-macro32_debug temp, 0, 112
-macro32_debug_hexa buffer_rx, 0, 184, 64
+macro32_debug response, 0, 148
+macro32_debug temp, 0, 160
+macro32_debug_hexa buffer_rx, 0, 172, 64
 
-		/**
-		 * We should get descriptors again for more details. But on some devices with split-control,
-		 * transferring multiple packets makes halt because the rest of data length doesn't meet maximum packet size. 
-		 * e.g., receiving 10 bytes where the maximum packet size is 8 bytes gets 2 packets, but the last packet is only 2 bytes.
-		 * This case may make halt on transferring. To hide this, we change the transfer size from original to a factor of maximum packet size.
-	   	 */
 		/*
 		ldrb response, [buffer_rx, #2]                     @ Total Length
-
-macro32_debug response, 0, 124
 		*/
 
 		/* Get Configuration, Interface, Endpoint Descriptors Again */
@@ -399,8 +387,6 @@ macro32_debug response, 0, 124
 			subs response, response, packet_max
 			addge temp, temp, #1
 			bge hid32_hid_activate_loop2
-
-macro32_debug temp, 0, 136
 	
 		orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet is 8 Packets
 		orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
@@ -424,7 +410,6 @@ macro32_debug temp, 0, 136
 		mov response, r0
 		pop {r0-r3}
 
-macro32_debug response, 0, 256
 	*/
 
 	/* Get HID Report */
@@ -594,8 +579,29 @@ macro32_debug data, 320, 24
 	ldrne base, hid32_keyboard_get_ascii_shift
 	lsr data, data, #16
 	and data, data, #0xFF
+
 	cmp data, #0x39                        @ 0x0 - 0x38 Are Real Characters
 	ldrlob byte, [base, data]
+	blo hid32_keyboard_get_success
+
+	mov byte, #0x001B
+	orr byte, byte, #0x5B00
+
+	cmp data, #0x52                        @ Up Arrow
+	orreq byte, byte, #0x410000            @ Escape Sequence, Cursor Up, Esc[A (Shown by Little Endian Order)
+	beq hid32_keyboard_get_success
+
+	cmp data, #0x51                        @ Down Arrow
+	orreq byte, byte, #0x420000            @ Escape Sequence, Cursor Down, Esc[B (Shown by Little Endian Order)
+	beq hid32_keyboard_get_success
+
+	cmp data, #0x50                        @ Left Arrow
+	orreq byte, byte, #0x440000            @ Escape Sequence, Cursor Left, Esc[D (Shown by Little Endian Order)
+	beq hid32_keyboard_get_success
+
+	cmp data, #0x4F                        @ Right Arrow
+	orreq byte, byte, #0x430000            @ Escape Sequence, Cursor Right, Esc[C (Shown by Little Endian Order)
+	beq hid32_keyboard_get_success
 
 	b hid32_keyboard_get_success
 

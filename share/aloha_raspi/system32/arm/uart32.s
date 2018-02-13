@@ -64,6 +64,91 @@ uart32_uartinit:
 
 
 /**
+ * function uart32_uartsettest
+ * Set Test Control
+ *
+ * Parameters
+ * r0: Test Control
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl uart32_uartsettest
+uart32_uartsettest:
+	/* Auto (Local) Variables, but just Aliases */
+	reg_tcr        .req r0
+	addr_uart      .req r1
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	str reg_tcr, [addr_uart, #equ32_uart0_tcr]
+
+	macro32_dsb ip
+
+	uart32_uartsettest_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq reg_tcr
+.unreq addr_uart
+
+
+/**
+ * function uart32_uarttestwrite
+ * Write Data to RxFIFO from Test Data
+ *
+ * Parameters
+ * r0: Value to Write (8 or 7 Bit)
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl uart32_uarttestwrite
+uart32_uarttestwrite:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0
+	addr_uart    .req r1
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	str value, [addr_uart, #equ32_uart0_tdr]
+
+	uart32_uarttestwrite_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq value
+.unreq addr_uart
+
+
+/**
+ * function uart32_uarttestread
+ * Read TxFIFO from Test Data
+ *
+ * Return: r0 (Popped Value of TxFIFO)
+ */
+.globl uart32_uarttestread
+uart32_uarttestread:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0
+	addr_uart    .req r1
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	ldr value, [addr_uart, #equ32_uart0_tdr]
+
+	uart32_uarttestread_common:
+		mov pc, lr
+
+.unreq value
+.unreq addr_uart
+
+
+/**
  * function uart32_uartsetint
  * Set UART Interrupt
  * Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx)

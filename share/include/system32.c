@@ -148,45 +148,66 @@ __attribute__((noinline)) uint32 _uartinit( uint32 div_int, uint32 div_frac, uin
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
+__attribute__((noinline)) uint32 _uartsettest( uint32 tcr )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x15");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclrint()
+__attribute__((noinline)) uint32 _uarttestwrite( uchar8 value )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x16");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
+__attribute__((noinline)) uchar8 _uarttestread()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x17");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
+__attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x18");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclrrx()
+__attribute__((noinline)) uint32 _uartclrint()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x19");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
+__attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1A");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x1B");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _uartclrrx()
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x1C");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x1D");
 	return result;
 }
 

@@ -258,7 +258,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x1A                            @ Prevent Overflow SVC Table
+	cmp ip, #0x1D                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -352,26 +352,38 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x15:
-		bl uart32_uartsetint
+		bl uart32_uartsettest
 		b _os_svc_common
 
 	_os_svc_0x16:
-		bl uart32_uartclrint
+		bl uart32_uarttestwrite
 		b _os_svc_common
 
 	_os_svc_0x17:
-		bl uart32_uarttx
+		bl uart32_uarttestread
 		b _os_svc_common
 
 	_os_svc_0x18:
-		bl uart32_uartrx
+		bl uart32_uartsetint
 		b _os_svc_common
 
 	_os_svc_0x19:
-		bl uart32_uartclrrx
+		bl uart32_uartclrint
 		b _os_svc_common
 
 	_os_svc_0x1A:
+		bl uart32_uarttx
+		b _os_svc_common
+
+	_os_svc_0x1B:
+		bl uart32_uartrx
+		b _os_svc_common
+
+	_os_svc_0x1C:
+		bl uart32_uartclrrx
+		b _os_svc_common
+
+	_os_svc_0x1D:
 		bl uart32_uartsetheap
 		b _os_svc_common
 
