@@ -98,7 +98,7 @@ hid32_hid_activate:
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #8<<16                                       @ wLength
+	orr temp, temp, #18<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, packet_max                      @ Maximam Packet Size
@@ -115,7 +115,7 @@ hid32_hid_activate:
 	 * This case may make halt on transferring. To hide this, we change the transfer size from original to a factor of maximum packet size.
 	 */
 
-	mov response, #8
+	mov response, #18
 	tst response, #0b0111
 	bicne response, response, #0b0111
 	addne response, response, #0b1000

@@ -83,7 +83,7 @@ usb2032_get_buffer_in:
 	add num_words, num_words, #8
 
 	push {r1-r3}
-	bl heap32_malloc
+	bl heap32_malloc_noncache
 	pop {r1-r3}
 
 	/* DMA Needs 32 Bytes aligned */
@@ -183,7 +183,7 @@ usb2032_get_buffer_out:
 			add num_words, num_words, #8		
 
 			push {r1-r3}
-			bl heap32_malloc
+			bl heap32_malloc_noncache
 			pop {r1-r3}
 
 			str num_words, [array, order]
@@ -1406,12 +1406,12 @@ usb2032_transaction:
 	buffer             .req r3
 	split_ctl          .req r4
 	temp               .req r5
-	packet_max         .req r6
-	packet             .req r7
-	timeout_nyet       .req r8
-	transfer_size_rsv  .req r9
-	response           .req r10
-	transfer_size_last .req r11
+	exe_sender         .req r6
+	exe_receiver       .req r7
+	packet_max         .req r8
+	packet             .req r9
+	timeout_nyet       .req r10
+	transfer_size_rsv  .req r11
 
 	push {r4-r11,lr}
 
@@ -1424,7 +1424,13 @@ usb2032_transaction:
 	beq usb2032_transaction_error1
 
 	.unreq temp
-	buffer_rx .req r5
+	exe_setter .req r5
+
+	ldr exe_setter, USB2032_SETTER
+	ldr exe_sender, USB2032_SENDER
+	ldr exe_receiver, USB2032_RECEIVER
+
+	mov timeout_nyet, #equ32_usb2032_timeout_nyet
 
 	macro32_dsb ip
 
@@ -1435,66 +1441,37 @@ usb2032_transaction:
 	bl arm32_cache_operation_heap             @ To PoC
 	pop {r0-r3}
 
-	tst split_ctl, #0x80000000                @ Bit[31]: Disable(0)/Enable(1) Split Control
-	tstne character, #0x8000                  @ Bit[15]: Endpoint Direction, 0 Out, 1, In
-	moveq transfer_size_rsv, #0
-	moveq timeout_nyet, #equ32_usb2032_timeout_nyet
+	mov transfer_size_rsv, #0
+
+	tst split_ctl, #0x80000000
 	beq usb2032_transaction_main
 
 	/**
-	 * In split transaction on receiving (In), we needed to treat each packet manually.
+	 * In Split Transaction, we needed to treat each packet manually.
 	 * Caution that if you exceed the transfer size which is intended by device,
 	 * Device Returns STALL.
 	 */
 
 	bic split_ctl, split_ctl, #0x00010000                    @ Clear Complete Bit[16] Just in Case
-
-	/* Get Number of Transaction Packets */
-	bic packet, transfer_size, #0xE0000000                   @ Clear PING Bit[31] and PID bit[30:29]
-	lsr packet, packet, #19                                  @ Get Only Value of Packet Count
-
-	/* If Transaction Packet is Only One */
-	cmp packet, #1
-	movle transfer_size_rsv, #0                              @ If Transfer is Only One Packet
-	movle buffer_rx, buffer
-	movle timeout_nyet, #equ32_usb2032_timeout_nyet
-	ble usb2032_transaction_main
-
-	/* If Multiple Packets */
-
-	/* Get Value of Max. Packet  */
-	lsl packet_max, character, #21
-	lsr packet_max, packet_max, #21                          @ Get Only Value of Max. Packet
-
-	/* Get Receive Buffer  */
-	lsr buffer_rx, packet_max, #2                            @ Substitution of division by 4
-	push {r0-r3}
-	mov r0, buffer_rx
-	bl usb2032_get_buffer_in
-	mov buffer_rx, r0
-	cmp buffer_rx, #0
-	pop {r0-r3}
-	beq usb2032_transaction_error1
-
 	mov transfer_size_rsv, transfer_size
 
+	bic packet, transfer_size_rsv, #0xE0000000               @ Clear PING Bit[31] and PID bit[30:29]
+	lsr packet, packet, #19                                  @ Get Only Value of Packet Count
+	cmp packet, #1
+	movle transfer_size_rsv, #0                              @ If Transfer is Only One Packet
+	ble usb2032_transaction_main
+
 	usb2032_transaction_split:
+
+		lsl packet_max, character, #21
+		lsr packet_max, packet_max, #21                      @ Get Only Value of Max. Packet
+
+		bic packet, transfer_size_rsv, #0xE0000000           @ Clear PING Bit[31] and PID bit[30:29]
+		lsr packet, packet, #19                              @ Get Only Value of Packet Count
 
 		tst split_ctl, #0x00010000                           @ If Already in Multi-packets Sequence of Split
 		bicne split_ctl, split_ctl, #0x00010000              @ Clear Bit[16]
 		addne buffer, buffer, packet_max                     @ Slide Buffer Position
-
-		/**
-		 * On manual treating of split control, using incrementing buffer causes mulfunctions.
-		 * Use another buffer for receiving.
-		 */
-
-		mov timeout_nyet, buffer                             @ Swap Buffers
-		mov buffer, buffer_rx
-		mov buffer_rx, timeout_nyet
-
-		bic packet, transfer_size_rsv, #0xE0000000           @ Clear PING Bit[31] and PID bit[30:29]
-		lsr packet, packet, #19                              @ Get Only Value of Packet Count
 
 		cmp packet, #1                                       @ If Last Packet
 		movle transfer_size, transfer_size_rsv
@@ -1511,8 +1488,11 @@ usb2032_transaction:
 		sub transfer_size_rsv, transfer_size_rsv, packet_max @ Subtract Size of Packet to Transfer Size
 
 		eor transfer_size_rsv, transfer_size_rsv, #1<<30     @ Alternate PID DATA0 and DATA1
-
-		mov timeout_nyet, #equ32_usb2032_timeout_nyet
+		
+		.unreq packet_max
+		.unreq packet
+		response           .req r8
+		transfer_size_last .req r9
 
 	usb2032_transaction_main:
 
@@ -1521,23 +1501,20 @@ usb2032_transaction:
 
 		push {r0-r3}
 		push {split_ctl}
-		ldr ip, USB2032_SETTER
-		blx ip
+		blx exe_setter
 		add sp, sp, #4
 		cmp r0, #1
 		pop {r0-r3}
 		beq usb2032_transaction_error2
 
 		push {r0-r3}
-		ldr ip, USB2032_SENDER
-		blx ip
+		blx exe_sender
 		cmp r0, #1
 		pop {r0-r3}
 		beq usb2032_transaction_error2
 
 		push {r0-r3}
-		ldr ip, USB2032_RECEIVER
-		blx ip
+		blx exe_receiver
 		mov response, r0
 		mov transfer_size_last, r1
 		pop {r0-r3}
@@ -1545,66 +1522,22 @@ usb2032_transaction:
 		tst response, #0x80000000             @ Time Out Bit[31]
 		bne usb2032_transaction_error3
 
-		tst response, #0x20                   @ NYET Bit[5]
-		subne timeout_nyet, timeout_nyet, #1 
-		bne usb2032_transaction_main
-
 		tst split_ctl, #0x80000000            @ Test Split Enable Bit[31]
 		beq usb2032_transaction_main_common
 
 		tst split_ctl, #0x00010000            @ Test Complete Bit[16] If Split Enable
-		bne usb2032_transaction_complete
+		bne usb2032_transaction_main_common
 
 		orr split_ctl, split_ctl, #0x00010000 @ Complete Bit[16] High If No Complete
 		b usb2032_transaction_main            @ Complete Transaction
 
-		usb2032_transaction_complete:
-			tst character, #0x8000                    @ Bit[15]: Endpoint Direction, 0 Out, 1, In
-			beq usb2032_transaction_main_common       @ If Out
-
-			/* If Transaction Packet is Only One */
-			cmp buffer, buffer_rx
-			beq usb2032_transaction_main_common
-
-			push {r0-r3}
-			mov r0, buffer
-			bl heap32_clear_align
-			mov r1, #0                                @ Invalidate
-			bl arm32_cache_operation_heap             @ From PoC
-			pop {r0-r3}
-
-			mov timeout_nyet, buffer                  @ Swap Back Buffers
-			mov buffer, buffer_rx
-			mov buffer_rx, timeout_nyet
-
-			.unreq timeout_nyet
-			byte .req r8
-
-			mov packet, packet_max
-			sub packet, packet, #1
-			usb2032_transaction_complete_loop:
-				ldrb byte, [buffer_rx, packet]
-				strb byte, [buffer, packet]
-				sub packet, packet, #1
-				cmp packet, #0
-				bge usb2032_transaction_complete_loop
-
-			push {r0-r3}
-			mov r0, buffer
-			bl heap32_clear_align
-			mov r1, #1                                @ Clean
-			bl arm32_cache_operation_heap             @ To PoC
-			pop {r0-r3}
+		usb2032_transaction_main_common:
+			tst response, #0x20                  @ NYET Bit[5]
+			subne timeout_nyet, timeout_nyet, #1 
+			bne usb2032_transaction_main
 
 			cmp transfer_size_rsv, #0
 			bne usb2032_transaction_split
-
-			push {r0-r3}
-			mov r0, buffer_rx
-			bl usb2032_clear_buffer_in
-			pop {r0-r3}
-
-		usb2032_transaction_main_common:
 
 			push {r0-r3}
 			mov r0, buffer
@@ -1643,13 +1576,13 @@ usb2032_transaction:
 .unreq transfer_size
 .unreq buffer
 .unreq split_ctl
-.unreq buffer_rx
-.unreq packet_max
-.unreq packet
-.unreq byte
-.unreq transfer_size_rsv
+.unreq exe_setter
+.unreq exe_sender
+.unreq exe_receiver
 .unreq response
 .unreq transfer_size_last
+.unreq timeout_nyet
+.unreq transfer_size_rsv
 
 
 /**
