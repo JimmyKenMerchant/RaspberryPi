@@ -54,10 +54,9 @@ hid32_hid_activate:
 	cmp ticket, #0
 	movne addr_device, ticket                   @ If Ticket Exist (Connected Through Hub)
 	andne addr_device, addr_device, #0x0000007F @ Device Address
-	movne packet_max, #64
-
 	moveq addr_device, #0                       @ If No Ticket (Connected Directly), No Address Yet
-	moveq packet_max, #8                        @ Consider of Low Speed Device
+
+	mov packet_max, #8                          @ Consider of Low Speed Device Even If Connected Through Hi-speed Hub
 
 	mov split_ctl, ticket
 	bic split_ctl, split_ctl, #0xFF000000       @ Mask Only Bit[20:14]: Address of Hub and Bit[13:7]: Port Number and 
@@ -79,6 +78,11 @@ hid32_hid_activate:
 
 	/* Get Device Descriptor */
 
+	/**
+	 * Overall, on each low speed device, the method for accurate collection of descriptors varies.
+	 * e.g., if you get the device descriptor overing 8 maximum packets, you'll get the latter half of this. 
+	 */
+
 	push {r0-r3}
 	mov r0, #10                                 @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
 	bl usb2032_get_buffer_out
@@ -94,7 +98,7 @@ hid32_hid_activate:
 	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
 	str temp, [buffer_rq]
 	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #18<<16                                      @ wLength
+	orr temp, temp, #8<<16                                       @ wLength
 	str temp, [buffer_rq, #4]
 
 	mov character, packet_max                      @ Maximam Packet Size
@@ -111,7 +115,7 @@ hid32_hid_activate:
 	 * This case may make halt on transferring. To hide this, we change the transfer size from original to a factor of maximum packet size.
 	 */
 
-	mov response, #18
+	mov response, #8
 	tst response, #0b0111
 	bicne response, response, #0b0111
 	addne response, response, #0b1000
@@ -137,12 +141,12 @@ hid32_hid_activate:
 	mov temp, r1
 	pop {r0-r3}
 
-	cmp response, #0
-	bne hid32_hid_activate_error3
-
 macro32_debug response, 0, 100
 macro32_debug temp, 0, 112
 macro32_debug_hexa buffer_rx, 0, 124, 64
+
+	cmp response, #0
+	bne hid32_hid_activate_error3
 
 	ldrb temp, [buffer_rx, #4]
 	cmp temp, #0                                   @ Device Class is HID or Not
