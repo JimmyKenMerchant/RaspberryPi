@@ -1424,11 +1424,9 @@ usb2032_transaction:
 	beq usb2032_transaction_error1
 
 	.unreq temp
-	exe_setter .req r5
+	buffer_dup .req r5
 
-	ldr exe_setter, USB2032_SETTER
-	ldr exe_sender, USB2032_SENDER
-	ldr exe_receiver, USB2032_RECEIVER
+	mov buffer_dup, buffer
 
 	mov timeout_nyet, #equ32_usb2032_timeout_nyet
 
@@ -1501,20 +1499,23 @@ usb2032_transaction:
 
 		push {r0-r3}
 		push {split_ctl}
-		blx exe_setter
+		ldr ip, USB2032_SETTER
+		blx ip
 		add sp, sp, #4
 		cmp r0, #1
 		pop {r0-r3}
 		beq usb2032_transaction_error2
 
 		push {r0-r3}
-		blx exe_sender
+		ldr ip, USB2032_SENDER
+		blx ip
 		cmp r0, #1
 		pop {r0-r3}
 		beq usb2032_transaction_error2
 
 		push {r0-r3}
-		blx exe_receiver
+		ldr ip, USB2032_RECEIVER
+		blx ip
 		mov response, r0
 		mov transfer_size_last, r1
 		pop {r0-r3}
@@ -1538,6 +1539,8 @@ usb2032_transaction:
 
 			cmp transfer_size_rsv, #0
 			bne usb2032_transaction_split
+
+			mov buffer, buffer_dup
 
 			push {r0-r3}
 			mov r0, buffer
@@ -1576,7 +1579,7 @@ usb2032_transaction:
 .unreq transfer_size
 .unreq buffer
 .unreq split_ctl
-.unreq exe_setter
+.unreq buffer_dup
 .unreq exe_sender
 .unreq exe_receiver
 .unreq response
