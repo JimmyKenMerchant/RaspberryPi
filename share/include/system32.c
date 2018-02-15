@@ -211,6 +211,41 @@ __attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
 	return result;
 }
 
+__attribute__((noinline)) uint32 _otg_host_reset_bcm()
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x1E");
+	return result;
+}
+
+__attribute__((noinline)) int32 _hub_activate( uint32 channel, uint32 ticket )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x1F");
+	return result;
+}
+
+__attribute__((noinline)) int32 _hub_search_device( uint32 channel, uint32 address_hub )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x20");
+	return result;
+}
+
+__attribute__((noinline)) int32 _hid_activate( uint32 channel, uint32 number_configuration, uint32 number_interface, uint32 ticket )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x21");
+	return result;
+}
+
+__attribute__((noinline)) int32 _keyboard_get( uint32 channel, uint32 number_endpoint, uint32 ticket )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x22");
+	return result;
+}
+
 bool _gpio_detect( uchar8 gpio_number )
 {
 	int32 value = _load_32( _gpio_base|_gpio_gpeds0 );

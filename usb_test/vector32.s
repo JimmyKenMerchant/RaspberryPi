@@ -252,11 +252,6 @@ os_fiq:
 
 	/* Get HID IN */
 
-	/* Buffer */
-	mov r0, #10                      @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-	bl usb2032_get_buffer_in
-	mov r3, r0
-
 	mov r0, #2                      @ Channel
 	mov r1, #1                      @ Endpoint
 	ldr r2, os_fiq_usbticket        @ Ticket
@@ -266,9 +261,6 @@ os_fiq:
 	pop {r1-r3}
 
 macro32_debug r0, 500, 254
-
-	mov r0, r3
-	bl usb2032_clear_buffer_in
 
 	macro32_dsb ip
 	pop {r0-r7,pc}

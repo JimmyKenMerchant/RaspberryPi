@@ -650,6 +650,7 @@ heap32_align_32:
 		cmp block_start, block_size
 		bhs heap32_align_32_error
 
+		/* Must Pass Original Address of Start Point Because of Erasing Size Indicator */
 		add block_start, block_start, #4
 		tst block_start, #0x1F                  @ Check If 32 Bytes Align or Not
 

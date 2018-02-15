@@ -335,6 +335,26 @@ __attribute__((noinline)) uint32 _uartsetheap
 
 
 /********************************
+ * system32/arm/usb2032.s
+ ********************************/
+
+__attribute__((noinline)) uint32 _otg_host_reset_bcm();
+
+__attribute__((noinline)) int32 _hub_activate
+(
+	uint32 channel,
+	uint32 ticket
+);
+
+__attribute__((noinline)) int32 _hub_search_device
+(
+	uint32 channel,
+	uint32 address_hub 
+);
+
+
+
+/********************************
  * system32/arm/gpio32.s
  ********************************/
 
@@ -1014,6 +1034,24 @@ __attribute__((noinline)) uint32 _soundclear();
 extern uint32 snd32_musiclen
 (
 	music_code* music
+);
+
+
+/********************************
+ * system32/library/hid32.s
+ ********************************/
+
+__attribute__((noinline)) int32 _hid_activate(
+	uint32 channel,
+	uint32 number_configuration,
+	uint32 number_interface,
+	uint32 ticket
+);
+
+__attribute__((noinline)) int32 _keyboard_get(
+	uint32 channel,
+	uint32 number_endpoint,
+	uint32 ticket
 );
 
 

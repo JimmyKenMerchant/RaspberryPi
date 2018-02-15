@@ -156,12 +156,11 @@ hid32_hid_activate:
 
 		ldrb temp, [buffer_rx, #4]
 		cmp temp, #0                                   @ Device Class is HID or Not
-		cmpne temp, #0xFF                              @ On Lower Version of USB with Direct Access in Case
 		bne hid32_hid_activate_error2
 
 		ldrb packet_max, [buffer_rx, #7]
-		cmp packet_max, #0xFF                          @ On Lower Version of USB with Direct Access in Case
-		moveq packet_max, #8
+		cmp packet_max, #0x0                           @ Failure of Obtaining Device Discriptor 
+		beq hid32_hid_activate_error2
 
 		cmp addr_device, #0
 		bne hid32_hid_activate_jump
@@ -506,7 +505,6 @@ hid32_hid_get:
  * r0: Channel 0-15
  * r1: Number of Endpoint (Starting from 1)
  * r2: Ticket Issued by usb2032_hub_search_device, or Device Address as Direct Connection
- * r3: Buffer
  *
  * Return: r0 (Ascii Code of Pused Key on Keyboard, If -1 NAK or Any Transaction Error)
  */
@@ -523,6 +521,12 @@ hid32_keyboard_get:
 
 	push {r4-r6,lr}
 
+	push {r0-r2}
+	mov r0, #2                             @ 4 Bytes by 2 Words Equals 8 Bytes
+	bl usb2032_get_buffer_in
+	mov buffer, r0
+	pop {r0-r2}
+
 	push {r0-r3}
 	bl hid32_hid_get
 	mov response, r0
@@ -531,16 +535,21 @@ hid32_keyboard_get:
 macro32_debug ticket, 320, 0
 macro32_debug buffer, 320, 12
 
+	/* In Data of Keyboard is 8 Bytes, but in This Case, First 4 bytes are Needed */
+	ldr data, [buffer]
+
+macro32_debug data, 320, 24
+
+	push {r0-r3}
+	mov r0, buffer
+	bl usb2032_clear_buffer_in
+	pop {r0-r3}
+
 	tst response, #0x4                     @ ACK
 	beq hid32_keyboard_get_error
 
 	.unreq response
 	byte .req r5
-
-	/* In Data of Keyboard is 8 Bytes, but in This Case, First 4 bytes are Needed */
-	ldr data, [buffer]
-
-macro32_debug data, 320, 24
 
 	tst data, #0x2                         @ Modifier Is Shift
 	ldreq base, hid32_keyboard_get_ascii

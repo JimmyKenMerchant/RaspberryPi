@@ -258,7 +258,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x1D                            @ Prevent Overflow SVC Table
+	cmp ip, #0x22                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -385,6 +385,26 @@ _os_svc:
 
 	_os_svc_0x1D:
 		bl uart32_uartsetheap
+		b _os_svc_common
+
+	_os_svc_0x1E:
+		bl usb2032_otg_host_reset_bcm
+		b _os_svc_common
+
+	_os_svc_0x1F:
+		bl usb2032_hub_activate
+		b _os_svc_common
+
+	_os_svc_0x20:
+		bl usb2032_hub_search_device
+		b _os_svc_common
+
+	_os_svc_0x21:
+		bl hid32_hid_activate
+		b _os_svc_common
+
+	_os_svc_0x22:
+		bl hid32_keyboard_get
 		b _os_svc_common
 
 	_os_svc_common:
