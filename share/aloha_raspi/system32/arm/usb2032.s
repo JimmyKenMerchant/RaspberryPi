@@ -245,7 +245,7 @@ usb2032_clear_halt:
 	mov split_ctl, buffer_rq
 
 	push {r0-r3}
-	mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
@@ -334,11 +334,16 @@ usb2032_hub_activate:
 	andne addr_device, addr_device, #0x0000007F @ Bit[6:0]: Device Address
 	moveq addr_device, #0
 
+	/**
+	 * This function's max. packet size is fixed to 64 bytes.
+	 * If you want multiple settings on maximum packet size for direct connection, detecting device speed from root hub is needed.
+	 */
+
 	.unreq ticket
 	character .req r1
 
 	push {r0-r3}
-	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
+	mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
 	bl usb2032_get_buffer_in
 	mov buffer_rx, r0
 	pop {r0-r3}
@@ -348,7 +353,7 @@ usb2032_hub_activate:
 	/* Get Device Descriptor */
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
@@ -405,7 +410,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 	/* Set Address  */
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
@@ -449,7 +454,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		/* Set Configuration */
 
 		push {r0-r3}
-		mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -487,7 +492,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		/* Remote Wakeup  */
 
 		push {r0-r3}
-		mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -530,7 +535,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		/* Get Hub Descriptor  */
 
 		push {r0-r3}
-		mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -590,7 +595,7 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
 		usb2032_hub_activate_powerport_loop:
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -707,7 +712,7 @@ usb2032_hub_search_device:
 	mov split_ctl, #0x0
 
 	push {r0-r3}
-	mov r0, #24                        @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
+	mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
 	bl usb2032_get_buffer_in
 	mov buffer_rx, r0
 	pop {r0-r3}
@@ -717,7 +722,7 @@ usb2032_hub_search_device:
 	/* Get Device Descriptor */
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
@@ -762,7 +767,7 @@ usb2032_hub_search_device:
 	/* Get Hub Descriptor  */
 
 	push {r0-r3}
-	mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl usb2032_get_buffer_out
 	mov temp, r0
 	pop {r0-r3}
@@ -817,7 +822,7 @@ usb2032_hub_search_device:
 		usb2032_hub_search_device_main_loop:
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -852,7 +857,7 @@ usb2032_hub_search_device:
 			/* Clear Connection Change */
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -887,7 +892,7 @@ usb2032_hub_search_device:
 			/* Set Reset Change */
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -914,7 +919,7 @@ usb2032_hub_search_device:
 			/* Get Port Status */
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -962,7 +967,7 @@ usb2032_hub_search_device:
 			/* Clear Reset Change */
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -997,7 +1002,7 @@ usb2032_hub_search_device:
 			/* Get Status Again and Ensure Resetting Process is Completed */
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -1051,7 +1056,7 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			/* Set Address  */
 
 			push {r0-r3}
-			mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+			mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 			bl usb2032_get_buffer_out
 			mov temp, r0
 			pop {r0-r3}
@@ -1406,18 +1411,16 @@ usb2032_transaction:
 	buffer             .req r3
 	split_ctl          .req r4
 	temp               .req r5
-	exe_sender         .req r6
-	exe_receiver       .req r7
-	packet_max         .req r8
-	packet             .req r9
-	timeout_nyet       .req r10
-	transfer_size_rsv  .req r11
+	packet_max         .req r6
+	packet             .req r7
+	timeout_nyet       .req r8
+	transfer_size_rsv  .req r9
 
-	push {r4-r11,lr}
+	push {r4-r9,lr}
 
-	add sp, sp, #36                                                        @ r4-r11 and lr offset 36 bytes
+	add sp, sp, #28                                                        @ r4-r9 and lr offset 28 bytes
 	pop {split_ctl}                                                        @ Get Fifth Argument
-	sub sp, sp, #40 	
+	sub sp, sp, #32 	
 
 	ldr temp, USB2032_STATUS
 	tst temp, #0x1
@@ -1489,8 +1492,8 @@ usb2032_transaction:
 		
 		.unreq packet_max
 		.unreq packet
-		response           .req r8
-		transfer_size_last .req r9
+		response           .req r6
+		transfer_size_last .req r7
 
 	usb2032_transaction_main:
 
@@ -1572,7 +1575,7 @@ usb2032_transaction:
 
 	usb2032_transaction_common:
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r11,pc}
+		pop {r4-r9,pc}
 
 .unreq channel
 .unreq character
@@ -1580,8 +1583,6 @@ usb2032_transaction:
 .unreq buffer
 .unreq split_ctl
 .unreq buffer_dup
-.unreq exe_sender
-.unreq exe_receiver
 .unreq response
 .unreq transfer_size_last
 .unreq timeout_nyet

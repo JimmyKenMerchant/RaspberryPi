@@ -75,7 +75,7 @@ hid32_hid_activate:
 	hid32_hid_activate_getbuffer:
 
 		push {r0-r3}
-		mov r0, #24                                 @ 4 Bytes by 16 Words Equals 64 Bytes (Plus 8 Words for Alignment)
+		mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
 		bl usb2032_get_buffer_in
 		mov buffer_rx, r0
 		pop {r0-r3}
@@ -90,7 +90,7 @@ hid32_hid_activate:
 		 */
 
 		push {r0-r3}
-		mov r0, #10                                 @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -169,7 +169,7 @@ hid32_hid_activate:
 		/* Set Address as #1 If Direct Connection */
 
 		push {r0-r3}
-		mov r0, #10                        @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -212,7 +212,7 @@ hid32_hid_activate:
 		/* Set Configuration  */
 
 		push {r0-r3}
-		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -248,7 +248,7 @@ hid32_hid_activate:
 		/* Remote Wakeup  */
 
 		push {r0-r3}
-		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -272,7 +272,7 @@ hid32_hid_activate:
 		/* Set Idle */
 
 		push {r0-r3}
-		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -303,7 +303,7 @@ hid32_hid_activate:
 		/* Get Configuration, Interface, Endpoint Descriptors  */
 
 		push {r0-r3}
-		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
 		mov temp, r0
 		pop {r0-r3}
@@ -332,15 +332,15 @@ hid32_hid_activate:
 		bicne response, response, #0b0111
 		addne response, response, #0b1000
 
-		mov transfer_size, response                    @ Transfer Size is 24 Bytes (Actually 18 Bytes)
+		mov transfer_size, response                    @ Transfer Size
 
 		add response, response, packet_max
 		sub response, response, #1
 		mov temp, #0
-		hid32_hid_activate_devconfig_packet:
+		hid32_hid_activate_configdesc_packet:
 			subs response, response, packet_max
 			addge temp, temp, #1
-			bge hid32_hid_activate_devconfig_packet
+			bge hid32_hid_activate_configdesc_packet
 
 		orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet
 		orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
@@ -357,71 +357,12 @@ macro32_debug response, 0, 148
 macro32_debug temp, 0, 160
 macro32_debug_hexa buffer_rx, 0, 172, 64
 
-		/*
-		ldrb response, [buffer_rx, #2]                     @ Total Length
-		*/
+		ldrb response, [buffer_rx, #0xE]                     @ Interface Class (Interface #0)
 
-		/* Get Configuration, Interface, Endpoint Descriptors Again */
-		/*
-		push {r0-r3}
-		mov r0, #10                         @ 4 Bytes by 2 Words Equals 8 Bytes (Plus 8 Words for Alighment)
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error1
-		mov buffer_rq, temp
+macro32_debug response, 0, 196
 
-		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_get_descriptor<<8            @ bRequest
-		orr temp, temp, #0<<16                                        @ wValue, Descriptor Index
-		orr temp, temp, #equ32_usb20_val_descriptor_configuration<<16 @ wValue, Descriptor Type
-		str temp, [buffer_rq]
-		mov temp, #0                                                  @ wIndex
-		orr temp, temp, response, lsl #16                             @ wLength
-		str temp, [buffer_rq, #4]
-
-		mov character, packet_max                      @ Maximam Packet Size
-		orr character, character, #0<<11               @ Endpoint Number
-		orr character, character, #1<<15               @ In(1)/Out(0)
-		orr character, character, #0<<16               @ Endpoint Type
-		orr character, character, addr_device, lsl #18 @ Device Address
-		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
-
-		mov transfer_size, response                    @ Transfer Size
-
-		add response, response, packet_max
-		sub response, response, #1
-		mov temp, #0
-		hid32_hid_activate_loop2:
-			subs response, response, packet_max
-			addge temp, temp, #1
-			bge hid32_hid_activate_loop2
-	
-		orr transfer_size, transfer_size, temp, lsl #19 @ Transfer Packet is 8 Packets
-		orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-
-		cmp response, #2
-		bne hid32_hid_activate_success            @ If Not STALL
-
-		push {r0-r3}
-		mov r2, #0
-		mov r3, split_ctl
-		bl usb2032_clear_halt
-		mov response, r0
-		pop {r0-r3}
-		*/
-
-	/* Get HID Report */
+		cmp response, #3                                     @ Interface Class is HID
+		bne hid32_hid_activate_error2
 
 		b hid32_hid_activate_success
 
@@ -511,6 +452,7 @@ hid32_hid_get:
 
 	hid32_hid_get_direct:
 
+		mov addr_device, ticket
 		/**
 		 * Consider of Low Speed Device, Full Speed Deice Needs to Make Max. Packet Size to 64 Bytes Though
 		 * If you want multiple settings on maximum packet size for direct connection, detecting device speed from root hub is needed.
