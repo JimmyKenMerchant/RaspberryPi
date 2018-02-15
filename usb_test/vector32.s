@@ -121,9 +121,17 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
 
+	push {r0-r3,lr}
+	bl bcm32_poweron_usb
+	pop {r0-r3,lr}
+
 	mov pc, lr
 
 os_debug:
+	push {r0-r8,lr}
+	pop {r0-r8,pc}
+
+os_debug_bypass:
 	push {r0-r8,lr}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
@@ -251,7 +259,7 @@ os_fiq:
 .endif
 
 	/* Get HID IN */
-
+	/*
 	mov r0, #2                      @ Channel
 	mov r1, #1                      @ Endpoint
 	ldr r2, os_fiq_usbticket        @ Ticket
@@ -261,6 +269,7 @@ os_fiq:
 	pop {r1-r3}
 
 macro32_debug r0, 500, 254
+	*/
 
 	macro32_dsb ip
 	pop {r0-r7,pc}

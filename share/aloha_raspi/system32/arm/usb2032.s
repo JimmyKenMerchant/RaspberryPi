@@ -1496,6 +1496,7 @@ usb2032_transaction:
 		transfer_size_last .req r7
 
 	usb2032_transaction_main:
+		macro32_dsb ip
 
 		cmp timeout_nyet, #0
 		ble usb2032_transaction_success
