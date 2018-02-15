@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-.equ __DEBUG, 1
+/*.equ __DEBUG, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -127,11 +127,7 @@ os_reset:
 
 	mov pc, lr
 
-os_debug:
-	push {r0-r8,lr}
-	pop {r0-r8,pc}
-
-os_debug_bypass:
+os_debug_:
 	push {r0-r8,lr}
 	
 	ldr r0, ADDR32_COLOR32_NAVYBLUE

@@ -1044,7 +1044,6 @@ extern uint32 snd32_musiclen
 __attribute__((noinline)) int32 _hid_activate(
 	uint32 channel,
 	uint32 number_configuration,
-	uint32 number_interface,
 	uint32 ticket
 );
 

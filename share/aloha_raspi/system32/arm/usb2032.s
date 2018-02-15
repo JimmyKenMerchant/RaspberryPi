@@ -57,7 +57,7 @@
  *    Bit[6:0]: Address of Device, If Zero, Not Allocated Address
  *    Bit[13:7]: Port Number
  *    Bit[20:14]: Address of Hub
- *    Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
+ *    Bit[30:29]: 00b High Speed,10b Full Speed, 11b Low Speed
  *
  * You can use this ticket for functions such as for activation of Hubs.
  * If you use any device with direct connection, ticket is not needed. Just use zero for the argument of each function.
@@ -300,21 +300,22 @@ usb2032_clear_halt:
 /**
  * function usb2032_hub_activate
  * Search and Activate Hub
+ * Caution! This Function Is Only Available for One of USB2.0 High Speed Hub.
  *
  * Parameters
  * r0: Channel 0-15
  * r1: Ticket Issued by usb2032_hub_search_device, or 0 as Direct Connection
  *
- * Return: r0 (Device Address, -1 and -2 as Error)
+ * Return: r0 (Ticket of Hub, -1, -2, and -3 as Error)
  * Error(-1): Failed Memory Allocation
  * Error(-2): No Hub
- * Error(-3): Failure of Communication (Stall on Critical Point/Time Out)
+ * Error(-3): Failure of Communication (Stall on Critical Point/Time Out) or No Connection
  */
 .globl usb2032_hub_activate
 usb2032_hub_activate:
 	/* Auto (Local) Variables, but just Aliases */
 	channel         .req r0
-	ticket          .req r1
+	character       .req r1
 	transfer_size   .req r2
 	buffer_rq       .req r3
 	split_ctl       .req r4
@@ -324,72 +325,88 @@ usb2032_hub_activate:
 	device_class    .req r8
 	i               .req r9
 	addr_device     .req r10
+	ticket          .req r11
 
-	push {r4-r10,lr}
+	push {r4-r11,lr}
+
+	mov ticket, character
+
+	mov buffer_rx, #0                  @ To Check Whether Allocated or Not
 
 	mov split_ctl, #0x0                @ High Speed Hub Only
+
+	tst ticket, #0x60000000            @ Check High Speed
+	bne usb2032_hub_activate_error2
 
 	cmp ticket, #0
 	movne addr_device, ticket
 	andne addr_device, addr_device, #0x0000007F @ Bit[6:0]: Device Address
-	moveq addr_device, #0
+	bne usb2032_hub_activate_buffer
 
-	/**
-	 * This function's max. packet size is fixed to 64 bytes.
-	 * If you want multiple settings on maximum packet size for direct connection, detecting device speed from root hub is needed.
-	 */
-
-	.unreq ticket
-	character .req r1
+	mov addr_device, #0
 
 	push {r0-r3}
-	mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
-	bl usb2032_get_buffer_in
-	mov buffer_rx, r0
-	pop {r0-r3}
-	cmp buffer_rx, #0
-	beq usb2032_hub_activate_error1
-
-	/* Get Device Descriptor */
-
-	push {r0-r3}
-	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-	bl usb2032_get_buffer_out
+	ldr ip, USB2032_ROOTHUB
+	blx ip
 	mov temp, r0
 	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_hub_activate_error1
-	mov buffer_rq, temp
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
-	orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
-	orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
-	orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
-	str temp, [buffer_rq]
-	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #18<<16                                      @ wLength
-	str temp, [buffer_rq, #4]
+	tst temp, #equ32_usb20_status_hubport_connection
+	beq usb2032_hub_activate_error3
 
-	mov character, #64                             @ Maximam Packet Size
-	orr character, character, #0<<11               @ Endpoint Number
-	orr character, character, #1<<15               @ In(1)/Out(0)
-	orr character, character, #0<<16               @ Endpoint Type
-	orr character, character, addr_device, lsl #18 @ Device Address              @ Device Address
+	tst temp, #equ32_usb20_status_hubport_highspeed
+	beq usb2032_hub_activate_error2
 
-	mov transfer_size, #18                         @ Transfer Size is 18 Bytes
-	orr transfer_size, transfer_size, #1<<19       @ Transfer Packet is 1 Packet
-	orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+	usb2032_hub_activate_buffer:
 
-	push {r0-r3}
-	push {split_ctl,buffer_rx}
-	bl usb2032_control
-	add sp, sp, #8
-	mov response, r0
-	mov temp, r1
-	pop {r0-r3}
+		push {r0-r3}
+		mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
+		bl usb2032_get_buffer_in
+		mov buffer_rx, r0
+		pop {r0-r3}
+		cmp buffer_rx, #0
+		beq usb2032_hub_activate_error1
 
-	cmp response, #0
-	bne usb2032_hub_activate_error3
+		/* Get Device Descriptor */
+
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq usb2032_hub_activate_error1
+		mov buffer_rq, temp
+
+		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
+		orr temp, temp, #0<<16                                       @ wValue, Descriptor Index
+		orr temp, temp, #equ32_usb20_val_descriptor_device<<16       @ wValue, Descriptor Type
+		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #18<<16                                      @ wLength
+		str temp, [buffer_rq, #4]
+
+		mov character, #64                             @ Maximam Packet Size
+		orr character, character, #0<<11               @ Endpoint Number
+		orr character, character, #1<<15               @ In(1)/Out(0)
+		orr character, character, #0<<16               @ Endpoint Type
+		orr character, character, addr_device, lsl #18 @ Device Address              @ Device Address
+
+		mov transfer_size, #18                         @ Transfer Size is 18 Bytes
+		orr transfer_size, transfer_size, #1<<19       @ Transfer Packet is 1 Packet
+		orr transfer_size, transfer_size, #0x40000000  @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		cmp response, #0
+		bne usb2032_hub_activate_error3
 
 /*
 macro32_debug response, 0, 62
@@ -397,59 +414,61 @@ macro32_debug temp, 0, 74
 macro32_debug_hexa buffer_rx, 0, 86, 64
 */
 
-	ldrb device_class, [buffer_rx, #4]
-	cmp device_class, #9                                 @ Device Class is Hub or Not
-	bne usb2032_hub_activate_error2
+		ldrb device_class, [buffer_rx, #4]
+		cmp device_class, #9                                 @ Device Class is Hub or Not
+		bne usb2032_hub_activate_error2
 
-	.unreq device_class
-	num_ports .req r8
+		.unreq device_class
+		num_ports .req r8
 
-	cmp addr_device, #0
-	bne usb2032_hub_activate_jump
+		cmp addr_device, #0
+		bne usb2032_hub_activate_config
 
-	/* Set Address  */
+		/* Set Address  */
 
-	push {r0-r3}
-	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-	bl usb2032_get_buffer_out
-	mov temp, r0
-	pop {r0-r3}
-	cmp temp, #0
-	beq usb2032_hub_activate_error1
-	mov buffer_rq, temp
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq usb2032_hub_activate_error1
+		mov buffer_rq, temp
 
-	ldr addr_device, USB2032_ADDRESS_LENGTH
-	add addr_device, addr_device, #1
-	str addr_device, USB2032_ADDRESS_LENGTH
+		ldr addr_device, USB2032_ADDRESS_LENGTH
+		add addr_device, addr_device, #1
+		str addr_device, USB2032_ADDRESS_LENGTH
 
-	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-	orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
-	orr temp, temp, addr_device, lsl #16                         @ wValue, address
-	str temp, [buffer_rq]
-	mov temp, #0                                                 @ wIndex
-	orr temp, temp, #0<<16                                       @ wLength
-	str temp, [buffer_rq, #4]
+		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
+		orr temp, temp, addr_device, lsl #16                         @ wValue, address
+		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #0<<16                                       @ wLength
+		str temp, [buffer_rq, #4]
 
-	mov character, #64                            @ Maximam Packet Size
-	orr character, character, #0<<11              @ Endpoint Number
-	orr character, character, #0<<15              @ In(1)/Out(0)
-	orr character, character, #0<<16              @ Endpoint Type
-	orr character, character, #0<<18              @ Device Address
+		mov character, #64                            @ Maximam Packet Size
+		orr character, character, #0<<11              @ Endpoint Number
+		orr character, character, #0<<15              @ In(1)/Out(0)
+		orr character, character, #0<<16              @ Endpoint Type
+		orr character, character, #0<<18              @ Device Address
 
-	mov transfer_size, #0                         @ Transfer Size is 0 Bytes
+		mov transfer_size, #0                         @ Transfer Size is 0 Bytes
 
-	push {r0-r3}
-	push {split_ctl,buffer_rx}
-	bl usb2032_control
-	add sp, sp, #8
-	mov response, r0
-	mov temp, r1
-	pop {r0-r3}
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
 
-	cmp response, #0
-	bne usb2032_hub_activate_error3
+		cmp response, #0
+		bne usb2032_hub_activate_error3
 
-	usb2032_hub_activate_jump:
+		mov ticket, addr_device
+
+	usb2032_hub_activate_config:
 
 		/* Set Configuration */
 
@@ -646,16 +665,17 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
 		b usb2032_hub_activate_common
 
 	usb2032_hub_activate_success:
-		mov r0, addr_device
+		mov r0, ticket
 
 	usb2032_hub_activate_common:
 		push {r0-r3}
 		mov r0, buffer_rx
-		bl usb2032_clear_buffer_in
+		cmp r0, #0                        @ If Not Allocated
+		blne usb2032_clear_buffer_in
 		pop {r0-r3}
 
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
-		pop {r4-r10,pc}
+		pop {r4-r11,pc}
 
 .unreq channel
 .unreq character
@@ -668,6 +688,7 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
 .unreq num_ports
 .unreq i
 .unreq addr_device
+.unreq ticket
 
 
 /**
@@ -675,17 +696,18 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
  * Search, Reset and Set Address to a Device to Be Attached to Any Port of Targeted Hub
  * This function search and reset one device only.
  * If you attached multiple devices, call this function again after enumeration of the device prior detected. 
+ * Caution! This Function Is Only Available for One of USB2.0 High Speed Hub.
  *
  * Parameters
  * r0: Channel 0-15
- * r1: Hub Address
+ * r1: Ticket of Hub
  *
- * Return: r0 (Ticket Described Below, 0 as Not Detected, -1 and -2 as Error)
+ * Return: r0 (Ticket of Detected Device Described Below, 0 as Not Detected, -1, -2, and -3 as Error)
  * Ticket:
  *    Bit[6:0]: Address of Device, If Zero, Not Allocated Address
  *    Bit[13:7]: Port Number
  *    Bit[20:14]: Address of Hub
- *    Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
+ *    Bit[30:29]: 00b High Speed,10b Full Speed, 11b Low Speed
  * Error(-1): Failed Memory Allocation
  * Error(-2): No Hub
  * Error(-3): Failure of Reset Process to Detected Device
@@ -708,8 +730,16 @@ usb2032_hub_search_device:
 
 	push {r4-r11,lr}
 
-	mov addr_device, character
-	mov split_ctl, #0x0
+	mov buffer_rx, #0                                            @ To Check Whether Allocated or Not
+
+	mov split_ctl, #0x0                                          @ High Speed Hub Only
+
+	mov addr_device, character                                   @ Translate Ticket to Address
+
+	tst addr_device, #0x60000000                                 @ Check High Speed
+	bne usb2032_hub_search_device_error2
+
+	and addr_device, addr_device, #0x0000007F                    @ Bit[6:0]: Device Address
 
 	push {r0-r3}
 	mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
@@ -1109,9 +1139,9 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			orreq r0, r0, addr_device                 @ Device Address
 
 			cmp split_ctl, #0
-			orrne r0, r0, #0x80000000
-			tst character, #1<<25
 			orrne r0, r0, #0x40000000
+			tst character, #1<<25
+			orrne r0, r0, #0x20000000
 
 			b usb2032_hub_search_device_common
 
@@ -1139,7 +1169,8 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 	usb2032_hub_search_device_common:
 		push {r0-r3}
 		mov r0, buffer_rx
-		bl usb2032_clear_buffer_in
+		cmp r0, #0                        @ If Not Allocated
+		blne usb2032_clear_buffer_in
 		pop {r0-r3}
 
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
@@ -1344,10 +1375,15 @@ macro32_debug ip 500 324
 USB2032_SETTER:                 .word 0x00
 USB2032_SENDER:                 .word 0x00
 USB2032_RECEIVER:               .word 0x00
-
 usb2032_otg_host_setter_addr:   .word usb2032_otg_host_setter
 usb2032_otg_host_sender_addr:   .word usb2032_otg_host_sender
 usb2032_otg_host_receiver_addr: .word usb2032_otg_host_receiver
+
+/**
+ * Variable to be used to know status of the root hub.
+ */
+USB2032_ROOTHUB:                .word 0x00
+usb2032_otg_host_roothub_addr:  .word usb2032_otg_host_roothub
 
 /**
  * Activated (1) / Deactivated (0) Bit[0]
@@ -1887,6 +1923,70 @@ usb2032_otg_host_setter:
 
 
 /**
+ * function usb2032_otg_host_roothub
+ * Get Root Hub Staus 
+ * Caution! Returned Status is Limited. Device Speed, Power On, Reset, Suspend, Overcurrent, Port Enable, and Port Connection.
+ *
+ * Return: r0 (Status Similar to Value From GET_STATUS)
+ */
+.globl usb2032_otg_host_roothub
+usb2032_otg_host_roothub:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base .req r0
+	hprt           .req r1
+	status         .req r2
+
+	mov status, #0
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_usb20_otg_base
+	add memorymap_base, memorymap_base, #equ32_usb20_otg_host_base
+	ldr hprt, [memorymap_base, #equ32_usb20_otg_hprt]
+
+	macro32_dsb ip                                                     @ Ensure Completion of Instructions Before
+
+	/* Bit[18:17]: Port Speed, 00b High Spped, 10b Low Speed, 01b Full Speed */
+	tst hprt, #0x60000
+	orreq status, status, #equ32_usb20_status_hubport_highspeed
+	tst hprt, #0x40000
+	orrne status, status, #equ32_usb20_status_hubport_lowspeed
+
+	/* Bit[12]: Power On */
+	tst hprt, #0x1000
+	orrne status, status, #equ32_usb20_status_hubport_power
+
+	/* Bit[8]: Reset */
+	tst hprt, #0x100
+	orrne status, status, #equ32_usb20_status_hubport_reset
+
+	/* Bit[7]: Suspend */
+	tst hprt, #0x80
+	orrne status, status, #equ32_usb20_status_hubport_suspend
+
+	/* Bit[4]: Overcurrent */
+	tst hprt, #0x10
+	orrne status, status, #equ32_usb20_status_hubport_overcurrent
+
+	/* Bit[2]: Port Enable */
+	tst hprt, #0x4
+	orrne status, status, #equ32_usb20_status_hubport_enable
+
+	/* Bit[0]: Port Connection */
+	tst hprt, #0x1
+	orrne status, status, #equ32_usb20_status_hubport_connection
+
+	usb2032_otg_host_roothub_success:
+		mov r0, status                                                     @ Return with Success
+
+	usb2032_otg_host_roothub_common:
+		mov pc, lr
+
+.unreq memorymap_base
+.unreq hprt
+.unreq status
+
+
+/**
  * function usb2032_otg_host_reset_bcm
  * Reset and Enable USB2.0 OTG of BCM2835-2837
  * In addition to this function, you may need to power on the USB implementation in SoC.
@@ -2110,6 +2210,9 @@ usb2032_otg_host_reset_bcm:
 
 			ldr temp, usb2032_otg_host_receiver_addr
 			str temp, USB2032_RECEIVER
+
+			ldr temp, usb2032_otg_host_roothub_addr
+			str temp, USB2032_ROOTHUB
 	
 			ldr temp, USB2032_STATUS
 			orr temp, temp, #0x1

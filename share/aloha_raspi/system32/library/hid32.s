@@ -7,21 +7,23 @@
  *
  */
 
+HID32_USB2032_ROOTHUB_ADDR:        .word USB2032_ROOTHUB
+HID32_USB2032_ADDRESS_LENGTH_ADDR: .word USB2032_ADDRESS_LENGTH
 
 /**
  * function hid32_hid_activate
  * Search and Activate Human Interface Device (HID) of USB2.0
+ * Caution! This Function Only Activates Interface #0 of The Assigned Configuration.
  *
  * Parameters
  * r0: Channel 0-15
  * r1: Number of Configuration for HID on Device (Starting from 1)
- * r2: Number of Interface for HID on Device (Starting from 0)
- * r3: Ticket Issued by usb2032_hub_search_device, or 0 as Direct Connection
+ * r2: Ticket Issued by usb2032_hub_search_device, or 0 as Direct Connection
  *
- * Return: r0 (Device Address, -1 and -2 as Error)
+ * Return: r0 (Ticket of HID, -1, -2, and -3 as Error)
  * Error(-1): Failed Memory Allocation
  * Error(-2): No HID
- * Error(-3): Failure of Communication (Stall on Critical Point/Time Out)
+ * Error(-3): Failure of Communication (Stall on Critical Point/Time Out) or No Connection
  */
 .globl hid32_hid_activate
 hid32_hid_activate:
@@ -29,20 +31,22 @@ hid32_hid_activate:
 	channel         .req r0
 	character       .req r1
 	transfer_size   .req r2
-	ticket          .req r3
+	buffer_rq       .req r3
 	split_ctl       .req r4
 	buffer_rx       .req r5
 	response        .req r6
 	temp            .req r7
 	num_config      .req r8
-	num_interface   .req r9
-	addr_device     .req r10
-	packet_max      .req r11
+	addr_device     .req r9
+	packet_max      .req r10
+	ticket          .req r11
 
 	push {r4-r11,lr}
 
 	mov num_config, character
-	mov num_interface, transfer_size
+	mov ticket, transfer_size
+
+	mov buffer_rx, #0                               @ To Check Whether Allocated or Not
 
 	cmp ticket, #0
 	beq hid32_hid_activate_direct
@@ -53,24 +57,37 @@ hid32_hid_activate:
 	bic split_ctl, split_ctl, #0xFF000000           @ Mask for Bit[20:14]: Address of Hub, and Bit[13:7]: Port Number
 	bic split_ctl, split_ctl, #0x00E00000
 	lsr split_ctl, split_ctl, #7
-	tst ticket, #0x80000000
-	orrne split_ctl, split_ctl, #0x80000000         @ Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
 	tst ticket, #0x40000000
+	orrne split_ctl, split_ctl, #0x80000000         @ Bit[30:29]: 00b High Speed,10b Full Speed, 11b Low Speed
+	tst ticket, #0x20000000
 	movne packet_max, #8                            @ Low Speed
 	moveq packet_max, #64                           @ High/Full Speed
 	b hid32_hid_activate_getbuffer
 
 	hid32_hid_activate_direct:
 
+		mov split_ctl, #0
 		mov addr_device, #0                         @ If No Ticket (Connected Directly), No Address Yet
-		/**
-		 * Consider of Low Speed Device, Full Speed Deice Needs to Make Max. Packet Size to 64 Bytes Though
-		 * If you want multiple settings on maximum packet size for direct connection, detecting device speed from root hub is needed.
-		 */
-		mov packet_max, #8
 
-		.unreq ticket
-		buffer_rq .req r3
+		push {r0-r3}
+		ldr ip, HID32_USB2032_ROOTHUB_ADDR
+		ldr ip, [ip]
+		blx ip
+		mov temp, r0
+		pop {r0-r3}
+
+		tst temp, #equ32_usb20_status_hubport_connection
+		beq hid32_hid_activate_error3
+
+		tst temp, #equ32_usb20_status_hubport_lowspeed
+		movne packet_max, #8
+		movne ticket, #0b11<<29
+		bne hid32_hid_activate_getbuffer
+
+		mov packet_max, #64
+
+		tst temp, #equ32_usb20_status_hubport_highspeed
+		moveq ticket, #0b10<<29                    @ Full Speed
 
 	hid32_hid_activate_getbuffer:
 
@@ -112,7 +129,8 @@ hid32_hid_activate:
 		orr character, character, #1<<15               @ In(1)/Out(0)
 		orr character, character, #0<<16               @ Endpoint Type
 		orr character, character, addr_device, lsl #18 @ Device Address
-		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
 
 		/**
 		 * On some devices with split-control,
@@ -166,6 +184,11 @@ hid32_hid_activate:
 		bne hid32_hid_activate_jump
 
 		/* Set Address as #1 If Direct Connection */
+		ldr temp, HID32_USB2032_ADDRESS_LENGTH_ADDR
+		ldr addr_device, [temp]
+		add addr_device, addr_device, #1
+		str addr_device, [temp]
+		orr ticket, ticket, addr_device
 
 		push {r0-r3}
 		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
@@ -191,7 +214,8 @@ hid32_hid_activate:
 		orr character, character, #0<<15              @ In(1)/Out(0)
 		orr character, character, #0<<16              @ Endpoint Type
 		orr character, character, #0<<18              @ Device Address
-		orr character, character, #1<<25              @ Full and High Speed(0)/Low Speed(1)
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
 
 		mov transfer_size, #0                         @ Transfer Size is 0 Bytes
 
@@ -232,7 +256,8 @@ hid32_hid_activate:
 		orr character, character, #0<<15               @ In(1)/Out(0)
 		orr character, character, #0<<16               @ Endpoint Type
 		orr character, character, addr_device, lsl #18 @ Device Address
-		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
 
 		mov transfer_size, #0                          @ Transfer Size is 0 Bytes
 
@@ -283,7 +308,7 @@ hid32_hid_activate:
 		orr temp, temp, #equ32_usb20_req_hid_set_idle<<8             @ bRequest
 		orr temp, temp, #0<<16                                       @ wValue
 		str temp, [buffer_rq]
-		mov temp, num_interface                                      @ wIndex
+		mov temp, #0                                                 @ wIndex, Interface Number
 		orr temp, temp, #0<<16                                       @ wLength
 		str temp, [buffer_rq, #4]
 
@@ -324,7 +349,8 @@ hid32_hid_activate:
 		orr character, character, #1<<15               @ In(1)/Out(0)
 		orr character, character, #0<<16               @ Endpoint Type
 		orr character, character, addr_device, lsl #18 @ Device Address
-		orr character, character, #1<<25               @ Full and High Speed(0)/Low Speed(1)
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
 
 		mov response, #16
 		tst response, #0b0111
@@ -378,12 +404,13 @@ macro32_debug response, 0, 196
 		b hid32_hid_activate_common
 
 	hid32_hid_activate_success:
-		mov r0, addr_device
+		mov r0, ticket
 
 	hid32_hid_activate_common:
 		push {r0-r3}
 		mov r0, buffer_rx
-		bl usb2032_clear_buffer_in
+		cmp r0, #0                        @ If Not Allocated
+		blne usb2032_clear_buffer_in
 		pop {r0-r3}
 
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
@@ -398,9 +425,9 @@ macro32_debug response, 0, 196
 .unreq response
 .unreq temp
 .unreq num_config
-.unreq num_interface
 .unreq addr_device
 .unreq packet_max
+.unreq ticket
 
 
 /**
@@ -410,7 +437,7 @@ macro32_debug response, 0, 196
  * Parameters
  * r0: Channel 0-15
  * r1: Number of Endpoint (Starting from 1)
- * r2: Ticket Issued by usb2032_hub_search_device, or Device Address as Direct Connection
+ * r2: Ticket Issued by hid32_hid_activate
  * r3: Buffer
  *
  * Return: r0 (Response of USB Transaction)
@@ -432,54 +459,44 @@ hid32_hid_get:
 
 	mov num_endpoint, character
 
-	tst ticket, #0x001FC000                         @ Bit[20:14]: Address of Hub
-	beq hid32_hid_get_direct
-
 	mov addr_device, ticket
 	and addr_device, addr_device, #0x0000007F       @ Device Address
 	mov split_ctl, ticket
 	bic split_ctl, split_ctl, #0xFF000000           @ Mask for Bit[20:14]: Address of Hub, and Bit[13:7]: Port Number
 	bic split_ctl, split_ctl, #0x00E00000
 	lsr split_ctl, split_ctl, #7
-	tst ticket, #0x80000000
-	orrne split_ctl, split_ctl, #0x80000000         @ Bit[31:30]: 00b High Speed,10b Full Speed, 11b Low Speed
 	tst ticket, #0x40000000
+	orrne split_ctl, split_ctl, #0x80000000         @ Bit[30:29]: 00b High Speed,10b Full Speed, 11b Low Speed
+	tst ticket, #0x20000000
 	movne packet_max, #8                            @ Low Speed
 	moveq packet_max, #64                           @ High/Full Speed
 
-	b hid32_hid_get_transaction
-
-	hid32_hid_get_direct:
-
-		mov addr_device, ticket
-		/**
-		 * Consider of Low Speed Device, Full Speed Deice Needs to Make Max. Packet Size to 64 Bytes Though
-		 * If you want multiple settings on maximum packet size for direct connection, detecting device speed from root hub is needed.
-		 */
-		mov packet_max, #8                            @ Direct Connection
+	tst ticket, #0x001FC000                         @ Bit[20:14]: Address of Hub
+	biceq split_ctl, split_ctl, #0x80000000         @ If Direct Connection, No Split Control
 
 	.unreq ticket
 	transfer_size .req r2
 
-	hid32_hid_get_transaction:
+	mov character, packet_max                       @ Maximam Packet Size
+	orr character, character, num_endpoint, lsl #11 @ Endpoint Number
+	orr character, character, #1<<15                @ In(1)/Out(0)
+	orr character, character, #3<<16                @ Endpoint Type
+	orr character, character, addr_device, lsl #18  @ Device Address
+	cmp packet_max, #8
+	orreq character, character, #1<<25              @ Full and High Speed(0)/Low Speed(1)
 
-		mov character, packet_max                       @ Maximam Packet Size
-		orr character, character, num_endpoint, lsl #11 @ Endpoint Number
-		orr character, character, #1<<15                @ In(1)/Out(0)
-		orr character, character, #3<<16                @ Endpoint Type
-		orr character, character, addr_device, lsl #18  @ Device Address
-		orr character, character, #1<<25                @ Full and High Speed(0)/Low Speed(1)
+	mov transfer_size, #8                           @ Transfer Size is 8 Bytes
+	orr transfer_size, transfer_size, #0x00080000   @ Transfer Packet is 1 Packet
+	orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
 
-		mov transfer_size, #8                           @ Transfer Size is 8 Bytes
-		orr transfer_size, transfer_size, #0x00080000   @ Transfer Packet is 1 Packet
-		orr transfer_size, transfer_size, #0x40000000   @ Data Type is DATA1, Otherwise, meet Data Toggle Error
+	macro32_dsb ip
 
-		push {r0-r3}
-		push {split_ctl}
-		bl usb2032_transaction
-		add sp, sp, #4
-		mov response, r0
-		pop {r0-r3}
+	push {r0-r3}
+	push {split_ctl}
+	bl usb2032_transaction
+	add sp, sp, #4
+	mov response, r0
+	pop {r0-r3}
 
 	hid32_hid_get_common:
 		mov r0, response
@@ -504,7 +521,7 @@ hid32_hid_get:
  * Parameters
  * r0: Channel 0-15
  * r1: Number of Endpoint (Starting from 1)
- * r2: Ticket Issued by usb2032_hub_search_device, or Device Address as Direct Connection
+ * r2: Ticket Issued by usb2032_hub_search_device, or hid32_hid_activate
  *
  * Return: r0 (Ascii Code of Pused Key on Keyboard, If -1 NAK or Any Transaction Error)
  */
