@@ -77,7 +77,7 @@ gpio_sequence gpio[] =
 	0
 };
 
-void _user_start()
+int32 _user_start()
 {
 	while(true) {
 		_gpioset( gpio, gpio32_gpiolen( gpio ) , 0, -1 );
@@ -86,4 +86,6 @@ void _user_start()
 		_gpioclear( 1 );
 		_sleep( 1000000 );
 	}
+
+	return EXIT_SUCCESS;
 }

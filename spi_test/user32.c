@@ -10,10 +10,11 @@
 #include "system32.h"
 #include "system32.c"
 
-void _user_start()
+int32 _user_start()
 {
-	fb32_clear_color( COLOR32_BLUE );
-	while (true) {
-		_sleep( 100000 );
+	
+	while(True) {
 	}
+
+	return EXIT_SUCCESS;
 }

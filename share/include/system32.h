@@ -129,7 +129,7 @@ __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int3
 
 /* Regular Functions */
 
-void _user_start();
+int32 _user_start();
 
 bool _gpio_detect( uchar8 gpio_number );
 

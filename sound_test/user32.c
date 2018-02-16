@@ -240,7 +240,7 @@ music_code interrupt1[] =
 	0xFFFF
 };
 
-void _user_start()
+int32 _user_start()
 {
 	String str_ready = "Get Ready?\0";
 	String str_music1 = "Music No.1\0";
@@ -288,4 +288,6 @@ void _user_start()
 			}
 		}
 	}
+
+	return EXIT_SUCCESS;
 }

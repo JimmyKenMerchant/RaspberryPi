@@ -14,7 +14,7 @@ extern float32 os_fiq_sec;
 extern float32 os_fiq_min;
 extern float32 os_fiq_hour;
 
-void _user_start()
+int32 _user_start()
 {
 	float32 start_sec;
 
@@ -105,4 +105,6 @@ void _user_start()
 
 		_sleep( 100000 );
 	}
+
+	return EXIT_SUCCESS;
 }

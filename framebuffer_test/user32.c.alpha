@@ -10,7 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 
-void _user_start()
+int32 _user_start()
 {
 
 	String string1 = "ALOHA!\n\tHello World, Everyone!\0";
@@ -156,4 +156,6 @@ void _user_start()
 		if ( vfp32_fgt( end_fdegree, 360.0 ) ) end_fdegree = -360.0;
 		_sleep( 100000 );
 	}
+
+	return EXIT_SUCCESS;
 }

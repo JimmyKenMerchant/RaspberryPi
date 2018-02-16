@@ -135,7 +135,7 @@ bool flag_execute;
 
 obj buffer_zero; // Zero Buffer
 
-void _user_start()
+int32 _user_start()
 {
 
 	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
@@ -1163,6 +1163,8 @@ print32_debug( var_temp.u32, 400, 300  );
 			}
 		}
 	}
+
+	return EXIT_SUCCESS;
 }
 
 

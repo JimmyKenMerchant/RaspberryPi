@@ -8,10 +8,13 @@
  */
 
 #include "system32.h"
+#include "system32.c"
 
-void _user_start()
+int32 _user_start()
 {
 	
-	while(1) {
+	while(True) {
 	}
+
+	return EXIT_SUCCESS;
 }

@@ -17,14 +17,14 @@ int32 ticket_hid;
 
 int32 response;
 
-void _user_start()
+int32 _user_start()
 {
 	usb_channel = 0;
 	obj string = heap32_malloc( 2 );
 
 	_sleep( 500000 );
 
-	if ( ! init_usb_keyboard() ) return;
+	if ( ! init_usb_keyboard() ) return EXIT_FAILURE;
 
 	while(True) {
 		response = _keyboard_get( usb_channel, 1, ticket_hid );
@@ -38,6 +38,8 @@ print32_debug( response, 500, 206 );
 	}
 
 	heap32_mfree( string );
+
+	return EXIT_SUCCESS;
 }
 
 

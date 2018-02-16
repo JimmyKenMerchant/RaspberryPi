@@ -234,11 +234,10 @@ _os_reset:
 	ldr ip, ADDR32_SYSTEM32_STACKPOINTER
 	mov sp, ip
 
-	push {r0-r3}
+	push {r1-r3}
 	bl _user_start
-	pop {r0-r3}
+	pop {r1-r3}
 
-	mvn r0, #0x0
 	macro32_debug r0, 120, 120
 	_os_reset_loop:
 		b _os_reset_loop

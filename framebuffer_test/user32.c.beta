@@ -10,7 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 
-void _user_start()
+int32 _user_start()
 {
 
 	String string = "ALOHA!\n\tHello World, Everyone!\0";
@@ -188,4 +188,6 @@ void _user_start()
 
 		_sleep( 1000000 );
 	}
+
+	return EXIT_SUCCESS;
 }
