@@ -28,11 +28,13 @@ _os_irq_addr:                   .word _os_irq
 _os_fiq_addr:                   .word _os_fiq
 
 _os_reset:
+	/*
 	mov r0, sp                                @ Store Previous Stack Pointer
 	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
 	mov sp, #0x7400                           @ Stack Pointer to 0x7400 for SVC mode
                                                   @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
 	push {r0-r1,lr}
+	*/
 
 	/* SVC mode FIQ Disable and IRQ Disable, Current Mode */
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
@@ -236,16 +238,24 @@ _os_reset:
 	bl _user_start
 	pop {r0-r3}
 
+	mvn r0, #0x0
+	macro32_debug r0, 120, 120
+	_os_reset_loop:
+		b _os_reset_loop
+
+	/* We are in user mode, so we can't back to SVC mode by setting CPSR */
+
+	/*
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
-
 	mov fp, #0x7400                          @ Retrieve Previous Stack Pointer (SP), VBAR,and Link Register
-	ldr r0, [fp, #-8]                        @ SP
-	ldr r1, [fp, #-4]                        @ VBAR
-	ldr lr, [fp]                             @ Link Register
+	ldr r0, [fp, #-12]                       @ SP
+	ldr r1, [fp, #-8]                        @ VBAR
+	ldr lr, [fp, #-4]                        @ Link Register
 	mov sp, r0                               @ Retrieve SP
 	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
 	mov pc, lr
+	*/
 
 
 _os_undefined_instruction:

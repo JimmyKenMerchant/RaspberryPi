@@ -166,9 +166,11 @@ hid32_hid_activate:
 		mov temp, r1
 		pop {r0-r3}
 
+/*
 macro32_debug response, 0, 100
 macro32_debug temp, 0, 112
 macro32_debug_hexa buffer_rx, 0, 124, 64
+*/
 
 		cmp response, #0
 		bne hid32_hid_activate_error2                  @ Failure of Communication
@@ -238,13 +240,17 @@ macro32_debug_hexa buffer_rx, 0, 124, 64
 		cmp response, #0
 		bne hid32_hid_activate_error2                        @ Failure of Communication
 
+/*
 macro32_debug response, 0, 148
 macro32_debug temp, 0, 160
 macro32_debug_hexa buffer_rx, 0, 172, 64
+*/
 
 		ldrb response, [buffer_rx, #0xE]                     @ Interface Class (Interface #0)
 
+/*
 macro32_debug response, 0, 196
+*/
 
 		cmp response, #3                                     @ Interface Class is HID
 		bne hid32_hid_activate_error1
@@ -562,13 +568,17 @@ hid32_keyboard_get:
 	mov response, r0
 	pop {r0-r3}
 
+/*
 macro32_debug ticket, 320, 0
 macro32_debug buffer, 320, 12
+*/
 
 	/* In Data of Keyboard is 8 Bytes, but in This Case, First 4 bytes are Needed */
 	ldr data, [buffer]
 
+/*
 macro32_debug data, 320, 24
+*/
 
 	push {r0-r3}
 	mov r0, buffer
