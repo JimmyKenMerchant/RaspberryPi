@@ -19,6 +19,7 @@ int32 response;
 
 int32 _user_start()
 {
+
 	usb_channel = 0;
 	obj string = heap32_malloc( 2 );
 
@@ -29,9 +30,10 @@ int32 _user_start()
 	while(True) {
 		response = _keyboard_get( usb_channel, 1, ticket_hid );
 		arm32_dsb();
-print32_debug( response, 500, 206 );
+//print32_debug( response, 500, 206 );
 		if ( response > 0 ) {
 			_store_32( string, response );
+			arm32_dsb();
 			print32_set_caret( print32_string( (String)string, FB32_X_CARET, FB32_Y_CARET, str32_strlen( (String)string ) ) );
 		}
 		_sleep( 10000 );
@@ -73,6 +75,8 @@ print32_debug( ticket_hid, 500, 242 );
 
 	ticket_hid = _hid_activate( usb_channel, 1, ticket_hid );
 	arm32_dsb();
+
+	//_hid_setidle( usb_channel, 0, ticket_hid );
 
 	return True;
 }

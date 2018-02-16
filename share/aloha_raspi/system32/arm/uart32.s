@@ -65,10 +65,12 @@ uart32_uartinit:
 
 /**
  * function uart32_uartsettest
- * Set Test Control
+ * Set Test Control and Transmit/Receive On/Off
  *
  * Parameters
  * r0: Test Control
+ * r1: Tx On(1), Off(0)
+ * r2: Rx On(1), Off(0)
  *
  * Return: r0 (0 as Success)
  */
@@ -76,13 +78,32 @@ uart32_uartinit:
 uart32_uartsettest:
 	/* Auto (Local) Variables, but just Aliases */
 	reg_tcr        .req r0
-	addr_uart      .req r1
+	tx_on          .req r1
+	rx_on          .req r2
+	addr_uart      .req r3
 
 	mov addr_uart, #equ32_peripherals_base
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
 	add addr_uart, addr_uart, #equ32_uart0_base_lower
 
 	str reg_tcr, [addr_uart, #equ32_uart0_tcr]
+	
+	macro32_dsb ip
+
+	.unreq reg_tcr
+	reg_cr .req r0
+
+	ldr reg_cr, [addr_uart, #equ32_uart0_cr]
+
+	tst tx_on, #1
+	orrne reg_cr, reg_cr, #equ32_uart0_cr_txe
+	biceq reg_cr, reg_cr, #equ32_uart0_cr_txe
+
+	tst rx_on, #1
+	orrne reg_cr, reg_cr, #equ32_uart0_cr_rxe
+	biceq reg_cr, reg_cr, #equ32_uart0_cr_rxe
+
+	str reg_cr, [addr_uart, #equ32_uart0_cr]
 
 	macro32_dsb ip
 
@@ -90,7 +111,9 @@ uart32_uartsettest:
 		mov r0, #0
 		mov pc, lr
 
-.unreq reg_tcr
+.unreq reg_cr
+.unreq tx_on
+.unreq rx_on
 .unreq addr_uart
 
 

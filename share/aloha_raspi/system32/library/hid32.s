@@ -326,7 +326,7 @@ macro32_debug response, 0, 196
 		orr temp, temp, #0<<16                                       @ wLength
 		str temp, [buffer_rq, #4]
 
-		mov character, #8                              @ Maximam Packet Size
+		mov character, packet_max                      @ Maximam Packet Size
 		orr character, character, #0<<11               @ Endpoint Number
 		orr character, character, #0<<15               @ In(1)/Out(0)
 		orr character, character, #0<<16               @ Endpoint Type
@@ -375,7 +375,7 @@ macro32_debug response, 0, 196
 		bne hid32_hid_activate_error2                  @ Failure of Communication
 
 		/* Set Idle */
-
+		/*
 		push {r0-r3}
 		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
 		bl usb2032_get_buffer_out
@@ -403,6 +403,7 @@ macro32_debug response, 0, 196
 
 		cmp response, #0
 		bne hid32_hid_activate_error2                  @ Failure of Communication
+		*/
 
 		b hid32_hid_activate_success
 
@@ -447,6 +448,130 @@ macro32_debug response, 0, 196
 .unreq addr_device
 .unreq packet_max
 .unreq ticket
+
+
+/**
+ * function hid32_hid_setidle
+ * Set Idle of HID, Use for Mouse, etc.
+ *
+ * Parameters
+ * r0: Channel 0-15
+ * r1: Number of Interface (Starting from 0)
+ * r2: Ticket Issued by hid32_hid_activate
+ *
+ * Return: r0 (0 as Success, -1 and -2 as Error)
+ * Error(-1): Failure of Communication (Stall on Critical Point/Time Out)
+ * Error(-2): Failed Memory Allocation
+ */
+.globl hid32_hid_setidle
+hid32_hid_setidle:
+	/* Auto (Local) Variables, but just Aliases */
+	channel         .req r0
+	character       .req r1
+	ticket          .req r2
+	buffer_rq       .req r3
+	split_ctl       .req r4
+	buffer_rx       .req r5
+	response        .req r6
+	packet_max      .req r7
+	num_interface   .req r8
+	addr_device     .req r9
+	temp            .req r10
+
+	push {r4-r10,lr}
+
+	mov num_interface, character
+
+	mov addr_device, ticket
+	and addr_device, addr_device, #0x0000007F       @ Device Address
+	mov split_ctl, ticket
+	bic split_ctl, split_ctl, #0xFF000000           @ Mask for Bit[20:14]: Address of Hub, and Bit[13:7]: Port Number
+	bic split_ctl, split_ctl, #0x00E00000
+	lsr split_ctl, split_ctl, #7
+	tst ticket, #0x40000000
+	orrne split_ctl, split_ctl, #0x80000000         @ Bit[30:29]: 00b High Speed,10b Full Speed, 11b Low Speed
+	tst ticket, #0x20000000
+	movne packet_max, #8                            @ Low Speed
+	moveq packet_max, #64                           @ High/Full Speed
+
+	tst ticket, #0x001FC000                         @ Bit[20:14]: Address of Hub
+	biceq split_ctl, split_ctl, #0x80000000         @ If Direct Connection, No Split Control
+
+	.unreq ticket
+	transfer_size .req r2
+
+	/* Set Idle */
+
+	push {r0-r3}
+	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+	bl usb2032_get_buffer_out
+	mov temp, r0
+	pop {r0-r3}
+	cmp temp, #0
+	beq hid32_hid_setidle_error2
+	mov buffer_rq, temp
+
+	mov temp, #equ32_usb20_reqt_recipient_interface|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
+	orr temp, temp, #equ32_usb20_req_hid_set_idle<<8             @ bRequest
+	orr temp, temp, #0<<16                                       @ wValue
+	str temp, [buffer_rq]
+	mov temp, num_interface                                      @ wIndex, Interface Number
+	orr temp, temp, #0<<16                                       @ wLength
+	str temp, [buffer_rq, #4]
+
+	mov character, packet_max                       @ Maximam Packet Size
+	orr character, character, #0<<11                @ Endpoint Number
+	orr character, character, #0<<15                @ In(1)/Out(0)
+	orr character, character, #0<<16                @ Endpoint Type
+	orr character, character, addr_device, lsl #18  @ Device Address
+	cmp packet_max, #8
+	orreq character, character, #1<<25              @ Full and High Speed(0)/Low Speed(1)
+
+	mov transfer_size, #0                           @ Transfer Size is 0 Bytes
+	mov buffer_rx, #0                               @ No Use
+
+	push {r0-r3}
+	push {split_ctl,buffer_rx}
+	bl usb2032_control
+	add sp, sp, #8
+	mov response, r0
+	mov temp, r1
+	pop {r0-r3}
+
+/*
+macro32_debug response, 0, 148
+macro32_debug temp, 0, 160
+*/
+
+	cmp response, #0
+	beq hid32_hid_setidle_success
+
+	hid32_hid_setidle_error1:
+		mvn r0, #0
+		b hid32_hid_setidle_common
+
+	hid32_hid_setidle_error2:
+		mvn r0, #1
+		b hid32_hid_setidle_common
+
+	hid32_hid_setidle_success:
+		mov r0, #0
+
+	hid32_hid_setidle_common:
+		macro32_dsb ip                    @ Ensure Completion of Instructions Before
+		pop {r4-r10,pc}
+
+.unreq channel
+.unreq character
+.unreq transfer_size
+.unreq buffer_rq
+.unreq split_ctl
+.unreq buffer_rx
+.unreq response
+.unreq packet_max
+.unreq num_interface
+.unreq addr_device
+.unreq temp
 
 
 /**

@@ -267,7 +267,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x22                            @ Prevent Overflow SVC Table
+	cmp ip, #0x23                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -413,6 +413,10 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x22:
+		bl hid32_hid_setidle
+		b _os_svc_common
+
+	_os_svc_0x23:
 		bl hid32_keyboard_get
 		b _os_svc_common
 

@@ -296,7 +296,9 @@ __attribute__((noinline)) uint32 _uartinit
 
 __attribute__((noinline)) uint32 _uartsettest
 (
-	uint32 tcr
+	uint32 tcr,
+	bool tx_on,
+	bool rx_on
 );
 
 __attribute__((noinline)) uint32 _uarttestwrite
@@ -1044,6 +1046,12 @@ extern uint32 snd32_musiclen
 __attribute__((noinline)) int32 _hid_activate(
 	uint32 channel,
 	uint32 number_configuration,
+	uint32 ticket
+);
+
+__attribute__((noinline)) int32 _hid_setidle(
+	uint32 channel,
+	uint32 number_interface,
 	uint32 ticket
 );
 
