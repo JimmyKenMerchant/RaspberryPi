@@ -306,10 +306,11 @@ usb2032_clear_halt:
  * r0: Channel 0-15
  * r1: Ticket Issued by usb2032_hub_search_device, or 0 as Direct Connection
  *
- * Return: r0 (Ticket of Hub, -1, -2, and -3 as Error)
- * Error(-1): Failed Memory Allocation
- * Error(-2): No Hub
- * Error(-3): Failure of Communication (Stall on Critical Point/Time Out) or No Connection
+ * Return: r0 (Ticket of Hub, 0, -1, -2, and -3 as Error)
+ * Error(0): No Connection
+ * Error(-1): No Hub
+ * Error(-2): Failure of Communication (Stall on Critical Point/Time Out)
+ * Error(-3): Failed Memory Allocation
  */
 .globl usb2032_hub_activate
 usb2032_hub_activate:
@@ -336,7 +337,7 @@ usb2032_hub_activate:
 	mov split_ctl, #0x0                @ High Speed Hub Only
 
 	tst ticket, #0x60000000            @ Check High Speed
-	bne usb2032_hub_activate_error2
+	bne usb2032_hub_activate_error1
 
 	cmp ticket, #0
 	movne addr_device, ticket
@@ -352,10 +353,10 @@ usb2032_hub_activate:
 	pop {r0-r3}
 
 	tst temp, #equ32_usb20_status_hubport_connection
-	beq usb2032_hub_activate_error3
+	beq usb2032_hub_activate_error0
 
 	tst temp, #equ32_usb20_status_hubport_highspeed
-	beq usb2032_hub_activate_error2
+	beq usb2032_hub_activate_error1
 
 	usb2032_hub_activate_buffer:
 
@@ -365,7 +366,7 @@ usb2032_hub_activate:
 		mov buffer_rx, r0
 		pop {r0-r3}
 		cmp buffer_rx, #0
-		beq usb2032_hub_activate_error1
+		beq usb2032_hub_activate_error3
 
 		/* Get Device Descriptor */
 
@@ -375,7 +376,7 @@ usb2032_hub_activate:
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq usb2032_hub_activate_error1
+		beq usb2032_hub_activate_error3
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -406,7 +407,7 @@ usb2032_hub_activate:
 		pop {r0-r3}
 
 		cmp response, #0
-		bne usb2032_hub_activate_error3
+		bne usb2032_hub_activate_error2                      @ Failure of Communication
 
 /*
 macro32_debug response, 0, 62
@@ -416,7 +417,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 
 		ldrb device_class, [buffer_rx, #4]
 		cmp device_class, #9                                 @ Device Class is Hub or Not
-		bne usb2032_hub_activate_error2
+		bne usb2032_hub_activate_error1
 
 		.unreq device_class
 		num_ports .req r8
@@ -432,7 +433,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq usb2032_hub_activate_error1
+		beq usb2032_hub_activate_error3
 		mov buffer_rq, temp
 
 		ldr addr_device, USB2032_ADDRESS_LENGTH
@@ -464,7 +465,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		pop {r0-r3}
 
 		cmp response, #0
-		bne usb2032_hub_activate_error3
+		bne usb2032_hub_activate_error2                      @ Failure of Communication
 
 		mov ticket, addr_device
 
@@ -478,7 +479,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq usb2032_hub_activate_error1
+		beq usb2032_hub_activate_error3
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
@@ -506,7 +507,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		pop {r0-r3}
 
 		cmp response, #0
-		bne usb2032_hub_activate_error3
+		bne usb2032_hub_activate_error2                      @ Failure of Communication
 
 		/* Remote Wakeup  */
 
@@ -516,7 +517,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq usb2032_hub_activate_error1
+		beq usb2032_hub_activate_error3
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
@@ -533,7 +534,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		pop {r0-r3}
 
 		cmp response, #0
-		bne usb2032_hub_activate_error3
+		bne usb2032_hub_activate_error2                      @ Failure of Communication
 
 		/* Set Local Power  */
 		/*
@@ -559,7 +560,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq usb2032_hub_activate_error1
+		beq usb2032_hub_activate_error3
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -590,7 +591,7 @@ macro32_debug_hexa buffer_rx, 0, 86, 64
 		pop {r0-r3}
 
 		cmp response, #0
-		bne usb2032_hub_activate_error3
+		bne usb2032_hub_activate_error2                      @ Failure of Communication
 
 /*
 macro32_debug response, 0, 112
@@ -619,7 +620,7 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_activate_error1
+			beq usb2032_hub_activate_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
@@ -639,7 +640,7 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
 			pop {r0-r3}
 
 			cmp response, #0
-			bne usb2032_hub_activate_error3
+			bne usb2032_hub_activate_error2                      @ Failure of Communication
 
 			add i, i, #1
 			cmp i, num_ports
@@ -651,6 +652,10 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
 			pop {r0-r3}
 
 			b usb2032_hub_activate_success
+
+	usb2032_hub_activate_error0:
+		mov r0, #0                        @ Return with 0
+		b usb2032_hub_activate_common
 
 	usb2032_hub_activate_error1:
 		mvn r0, #0                        @ Return with -1
@@ -702,15 +707,16 @@ macro32_debug_hexa buffer_rx, 0, 136, 64
  * r0: Channel 0-15
  * r1: Ticket of Hub
  *
- * Return: r0 (Ticket of Detected Device Described Below, 0 as Not Detected, -1, -2, and -3 as Error)
+ * Return: r0 (Ticket of Detected Device Described Below, 0, -1, -2, and -3 as Error)
  * Ticket:
  *    Bit[6:0]: Address of Device, If Zero, Not Allocated Address
  *    Bit[13:7]: Port Number
  *    Bit[20:14]: Address of Hub
  *    Bit[30:29]: 00b High Speed,10b Full Speed, 11b Low Speed
- * Error(-1): Failed Memory Allocation
- * Error(-2): No Hub
- * Error(-3): Failure of Reset Process to Detected Device
+ * Error(0): Any Device Was Not Detected (No Connection)
+ * Error(-1): No Hub
+ * Error(-2): Failure of Communication (Stall on Critical Point/Time Out)
+ * Error(-3): Failed Memory Allocation
  */
 .globl usb2032_hub_search_device
 usb2032_hub_search_device:
@@ -737,7 +743,7 @@ usb2032_hub_search_device:
 	mov addr_device, character                                   @ Translate Ticket to Address
 
 	tst addr_device, #0x60000000                                 @ Check High Speed
-	bne usb2032_hub_search_device_error2
+	bne usb2032_hub_search_device_error1
 
 	and addr_device, addr_device, #0x0000007F                    @ Bit[6:0]: Device Address
 
@@ -747,7 +753,7 @@ usb2032_hub_search_device:
 	mov buffer_rx, r0
 	pop {r0-r3}
 	cmp buffer_rx, #0
-	beq usb2032_hub_search_device_error1
+	beq usb2032_hub_search_device_error3
 
 	/* Get Device Descriptor */
 
@@ -757,7 +763,7 @@ usb2032_hub_search_device:
 	mov temp, r0
 	pop {r0-r3}
 	cmp temp, #0
-	beq usb2032_hub_search_device_error1
+	beq usb2032_hub_search_device_error3
 	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -787,9 +793,12 @@ usb2032_hub_search_device:
 	mov temp, r1
 	pop {r0-r3}
 
+	cmp response, #0
+	bne usb2032_hub_search_device_error2                 @ Failure of Communication
+
 	ldrb device_class, [buffer_rx, #4]
 	cmp device_class, #9                                 @ Device Class is Hub or Not
-	bne usb2032_hub_search_device_error2
+	bne usb2032_hub_search_device_error1
 
 	.unreq device_class
 	num_ports .req r8
@@ -802,7 +811,7 @@ usb2032_hub_search_device:
 	mov temp, r0
 	pop {r0-r3}
 	cmp temp, #0
-	beq usb2032_hub_search_device_error1
+	beq usb2032_hub_search_device_error3
 	mov buffer_rq, temp
 
 	mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -832,7 +841,10 @@ usb2032_hub_search_device:
 	mov temp, r1
 	pop {r0-r3}
 
-	ldrb num_ports, [buffer_rx, #2]                   @ Get Number of Ports
+	cmp response, #0
+	bne usb2032_hub_search_device_error2                @ Failure of Communication
+
+	ldrb num_ports, [buffer_rx, #2]                     @ Get Number of Ports
 
 	usb2032_hub_search_device_main:
 		mov i, #1
@@ -857,7 +869,7 @@ usb2032_hub_search_device:
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_search_device_error1
+			beq usb2032_hub_search_device_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -876,6 +888,9 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
+			cmp response, #0
+			bne usb2032_hub_search_device_error2                         @ Failure of Communication
+
 			ldr response, [buffer_rx]                                    @ Get Status
 			tst response, #equ32_usb20_status_hubport_connection_change  @ Connection Change Detection
 			beq usb2032_hub_search_device_main_loop_common
@@ -892,7 +907,7 @@ usb2032_hub_search_device:
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_search_device_error1
+			beq usb2032_hub_search_device_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
@@ -919,6 +934,9 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
+			cmp response, #0
+			bne usb2032_hub_search_device_error2                         @ Failure of Communication
+
 			/* Set Reset Change */
 
 			push {r0-r3}
@@ -927,7 +945,7 @@ usb2032_hub_search_device:
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_search_device_error1
+			beq usb2032_hub_search_device_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
@@ -946,6 +964,9 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
+			cmp response, #0
+			bne usb2032_hub_search_device_error2                         @ Failure of Communication
+
 			/* Get Port Status */
 
 			push {r0-r3}
@@ -954,7 +975,7 @@ usb2032_hub_search_device:
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_search_device_error1
+			beq usb2032_hub_search_device_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -979,7 +1000,7 @@ usb2032_hub_search_device:
 
 			usb2032_hub_search_device_main_loop_resetwait:
 				cmp timeout, #0
-				ble usb2032_hub_search_device_error3
+				ble usb2032_hub_search_device_error2
 
 				push {r0-r3}
 				push {split_ctl,buffer_rx}
@@ -988,6 +1009,9 @@ usb2032_hub_search_device:
 				mov response, r0
 				mov temp, r1
 				pop {r0-r3}
+
+				cmp response, #0
+				bne usb2032_hub_search_device_error2                         @ Failure of Communication
 
 				ldr response, [buffer_rx]                                    @ Get Status
 				tst response, #equ32_usb20_status_hubport_enable
@@ -1002,7 +1026,7 @@ usb2032_hub_search_device:
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_search_device_error1
+			beq usb2032_hub_search_device_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
@@ -1029,6 +1053,9 @@ usb2032_hub_search_device:
 			mov temp, r1
 			pop {r0-r3}
 
+			cmp response, #0
+			bne usb2032_hub_search_device_error2                         @ Failure of Communication
+
 			/* Get Status Again and Ensure Resetting Process is Completed */
 
 			push {r0-r3}
@@ -1037,7 +1064,7 @@ usb2032_hub_search_device:
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_search_device_error1
+			beq usb2032_hub_search_device_error3
 			mov buffer_rq, temp
 
 			mov temp, #equ32_usb20_reqt_recipient_other|equ32_usb20_reqt_type_class|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -1062,7 +1089,7 @@ usb2032_hub_search_device:
 
 			usb2032_hub_search_device_main_loop_completewait:
 				cmp timeout, #0
-				ble usb2032_hub_search_device_error3
+				ble usb2032_hub_search_device_error2
 
 				push {r0-r3}
 				push {split_ctl,buffer_rx}
@@ -1071,6 +1098,9 @@ usb2032_hub_search_device:
 				mov response, r0
 				mov temp, r1
 				pop {r0-r3}
+
+				cmp response, #0
+				bne usb2032_hub_search_device_error2                         @ Failure of Communication
 
 				ldr response, [buffer_rx]                                    @ Get Status
 				tst response, #equ32_usb20_status_hubport_connection_change
@@ -1091,7 +1121,7 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			mov temp, r0
 			pop {r0-r3}
 			cmp temp, #0
-			beq usb2032_hub_activate_error1
+			beq usb2032_hub_activate_error3
 			mov buffer_rq, temp
 
 			ldr timeout, USB2032_ADDRESS_LENGTH
@@ -1131,6 +1161,9 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 			mov temp, r1
 			pop {r0-r3}
 
+			cmp response, #0
+			bne usb2032_hub_search_device_error2      @ Failure of Communication
+
 			mov r0, i, lsl #7                         @ Hub Port Number
 			orr r0, r0, addr_device, lsl #14          @ Hub Address
 
@@ -1150,7 +1183,7 @@ macro32_debug_hexa buffer_rx, 0, 536, 64
 				cmp i, num_ports
 				ble usb2032_hub_search_device_main_loop
 
-				mov r0, #0
+				mov r0, #0                @ Return with 0
 
 				b usb2032_hub_search_device_common
 

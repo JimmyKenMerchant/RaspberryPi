@@ -20,10 +20,11 @@ HID32_USB2032_ADDRESS_LENGTH_ADDR: .word USB2032_ADDRESS_LENGTH
  * r1: Number of Configuration for HID on Device (Starting from 1)
  * r2: Ticket Issued by usb2032_hub_search_device, or 0 as Direct Connection
  *
- * Return: r0 (Ticket of HID, -1, -2, and -3 as Error)
- * Error(-1): Failed Memory Allocation
- * Error(-2): No HID
- * Error(-3): Failure of Communication (Stall on Critical Point/Time Out) or No Connection
+ * Return: r0 (Ticket of HID, 0, -1, -2, and -3 as Error)
+ * Error(0): No Connection
+ * Error(-1): No HID
+ * Error(-2): Failure of Communication (Stall on Critical Point/Time Out)
+ * Error(-3): Failed Memory Allocation
  */
 .globl hid32_hid_activate
 hid32_hid_activate:
@@ -77,7 +78,7 @@ hid32_hid_activate:
 		pop {r0-r3}
 
 		tst temp, #equ32_usb20_status_hubport_connection
-		beq hid32_hid_activate_error3
+		beq hid32_hid_activate_error0
 
 		tst temp, #equ32_usb20_status_hubport_lowspeed
 		movne packet_max, #8
@@ -97,7 +98,7 @@ hid32_hid_activate:
 		mov buffer_rx, r0
 		pop {r0-r3}
 		cmp buffer_rx, #0
-		beq hid32_hid_activate_error1
+		beq hid32_hid_activate_error3
 
 		/* Get Device Descriptor */
 
@@ -112,7 +113,7 @@ hid32_hid_activate:
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq hid32_hid_activate_error1
+		beq hid32_hid_activate_error3
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -165,164 +166,20 @@ hid32_hid_activate:
 		mov temp, r1
 		pop {r0-r3}
 
-	macro32_debug response, 0, 100
-	macro32_debug temp, 0, 112
-	macro32_debug_hexa buffer_rx, 0, 124, 64
+macro32_debug response, 0, 100
+macro32_debug temp, 0, 112
+macro32_debug_hexa buffer_rx, 0, 124, 64
 
 		cmp response, #0
-		bne hid32_hid_activate_error3
+		bne hid32_hid_activate_error2                  @ Failure of Communication
 
 		ldrb temp, [buffer_rx, #4]
-		cmp temp, #0                                   @ Device Class is HID or Not
-		bne hid32_hid_activate_error2
+		cmp temp, #0                                   @ Device Class is Zero (Described in Interface Descriptor) or Not
+		bne hid32_hid_activate_error1
 
 		ldrb packet_max, [buffer_rx, #7]
 		cmp packet_max, #0x0                           @ Failure of Obtaining Device Discriptor 
 		beq hid32_hid_activate_error2
-
-		cmp addr_device, #0
-		bne hid32_hid_activate_jump
-
-		/* Set Address as #1 If Direct Connection */
-		ldr temp, HID32_USB2032_ADDRESS_LENGTH_ADDR
-		ldr addr_device, [temp]
-		add addr_device, addr_device, #1
-		str addr_device, [temp]
-		orr ticket, ticket, addr_device
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error1
-		mov buffer_rq, temp
-
-		mov addr_device, #1
-
-		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
-		orr temp, temp, addr_device, lsl #16                         @ wValue, address
-		str temp, [buffer_rq]
-		mov temp, #0                                                 @ wIndex
-		orr temp, temp, #0<<16                                       @ wLength
-		str temp, [buffer_rq, #4]
-
-		mov character, packet_max                     @ Maximam Packet Size
-		orr character, character, #0<<11              @ Endpoint Number
-		orr character, character, #0<<15              @ In(1)/Out(0)
-		orr character, character, #0<<16              @ Endpoint Type
-		orr character, character, #0<<18              @ Device Address
-		cmp packet_max, #8
-		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
-
-		mov transfer_size, #0                         @ Transfer Size is 0 Bytes
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-		cmp response, #0
-		bne hid32_hid_activate_error3
-
-	hid32_hid_activate_jump:
-
-		/* Set Configuration  */
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error1
-		mov buffer_rq, temp
-
-		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
-		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
-		str temp, [buffer_rq]
-		mov temp, #0                                                 @ wIndex
-		orr temp, temp, #0<<16                                       @ wLength
-		str temp, [buffer_rq, #4]
-
-		mov character, #8                              @ Maximam Packet Size
-		orr character, character, #0<<11               @ Endpoint Number
-		orr character, character, #0<<15               @ In(1)/Out(0)
-		orr character, character, #0<<16               @ Endpoint Type
-		orr character, character, addr_device, lsl #18 @ Device Address
-		cmp packet_max, #8
-		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
-
-		mov transfer_size, #0                          @ Transfer Size is 0 Bytes
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-		/* Remote Wakeup  */
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error1
-		mov buffer_rq, temp
-
-		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
-		orr temp, temp, #equ32_usb20_val_device_remote_wakeup<<16    @ wValue
-		str temp, [buffer_rq]
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-		/* Set Idle */
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error1
-		mov buffer_rq, temp
-
-		mov temp, #equ32_usb20_reqt_recipient_interface|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_hid_set_idle<<8             @ bRequest
-		orr temp, temp, #0<<16                                       @ wValue
-		str temp, [buffer_rq]
-		mov temp, #0                                                 @ wIndex, Interface Number
-		orr temp, temp, #0<<16                                       @ wLength
-		str temp, [buffer_rq, #4]
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-		/* If Connected with Hub, Pass Getting Other Descriptors */
-		cmp addr_device, #1
-		/*bne hid32_hid_activate_success*/
 
 		/* Get Configuration, Interface, Endpoint Descriptors  */
 
@@ -332,7 +189,7 @@ hid32_hid_activate:
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #0
-		beq hid32_hid_activate_error1
+		beq hid32_hid_activate_error3
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
@@ -378,6 +235,9 @@ hid32_hid_activate:
 		mov temp, r1
 		pop {r0-r3}
 
+		cmp response, #0
+		bne hid32_hid_activate_error2                        @ Failure of Communication
+
 macro32_debug response, 0, 148
 macro32_debug temp, 0, 160
 macro32_debug_hexa buffer_rx, 0, 172, 64
@@ -387,9 +247,162 @@ macro32_debug_hexa buffer_rx, 0, 172, 64
 macro32_debug response, 0, 196
 
 		cmp response, #3                                     @ Interface Class is HID
+		bne hid32_hid_activate_error1
+
+		cmp addr_device, #0
+		bne hid32_hid_activate_jump
+
+		/* Set Address as #1 If Direct Connection */
+		ldr temp, HID32_USB2032_ADDRESS_LENGTH_ADDR
+		ldr addr_device, [temp]
+		add addr_device, addr_device, #1
+		str addr_device, [temp]
+		orr ticket, ticket, addr_device
+
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq hid32_hid_activate_error3
+		mov buffer_rq, temp
+
+		mov addr_device, #1
+
+		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
+		orr temp, temp, addr_device, lsl #16                         @ wValue, address
+		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #0<<16                                       @ wLength
+		str temp, [buffer_rq, #4]
+
+		mov character, packet_max                     @ Maximam Packet Size
+		orr character, character, #0<<11              @ Endpoint Number
+		orr character, character, #0<<15              @ In(1)/Out(0)
+		orr character, character, #0<<16              @ Endpoint Type
+		orr character, character, #0<<18              @ Device Address
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
+
+		mov transfer_size, #0                         @ Transfer Size is 0 Bytes
+
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		cmp response, #0
 		bne hid32_hid_activate_error2
 
+	hid32_hid_activate_jump:
+
+		/* Set Configuration  */
+
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq hid32_hid_activate_error3
+		mov buffer_rq, temp
+
+		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
+		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
+		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #0<<16                                       @ wLength
+		str temp, [buffer_rq, #4]
+
+		mov character, #8                              @ Maximam Packet Size
+		orr character, character, #0<<11               @ Endpoint Number
+		orr character, character, #0<<15               @ In(1)/Out(0)
+		orr character, character, #0<<16               @ Endpoint Type
+		orr character, character, addr_device, lsl #18 @ Device Address
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
+
+		mov transfer_size, #0                          @ Transfer Size is 0 Bytes
+
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		cmp response, #0
+		bne hid32_hid_activate_error2                  @ Failure of Communication
+
+		/* Remote Wakeup  */
+
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq hid32_hid_activate_error3
+		mov buffer_rq, temp
+
+		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
+		orr temp, temp, #equ32_usb20_val_device_remote_wakeup<<16    @ wValue
+		str temp, [buffer_rq]
+
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		cmp response, #0
+		bne hid32_hid_activate_error2                  @ Failure of Communication
+
+		/* Set Idle */
+
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq hid32_hid_activate_error3
+		mov buffer_rq, temp
+
+		mov temp, #equ32_usb20_reqt_recipient_interface|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_hid_set_idle<<8             @ bRequest
+		orr temp, temp, #0<<16                                       @ wValue
+		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex, Interface Number
+		orr temp, temp, #0<<16                                       @ wLength
+		str temp, [buffer_rq, #4]
+
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		cmp response, #0
+		bne hid32_hid_activate_error2                  @ Failure of Communication
+
 		b hid32_hid_activate_success
+
+	hid32_hid_activate_error0:
+		mov r0, #0                        @ Return with 0
+		b hid32_hid_activate_common
 
 	hid32_hid_activate_error1:
 		mvn r0, #0                        @ Return with -1
