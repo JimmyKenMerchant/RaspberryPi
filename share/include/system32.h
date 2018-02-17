@@ -296,17 +296,22 @@ __attribute__((noinline)) uint32 _uartinit
 
 __attribute__((noinline)) uint32 _uartsettest
 (
-	uint32 tcr,
+	bool rdr_on,
 	bool tx_on,
 	bool rx_on
 );
 
 __attribute__((noinline)) uint32 _uarttestwrite
 (
-	uchar8 value
+	String address_heap,
+	uint32 size
 );
 
-__attribute__((noinline)) uchar8 _uarttestread();
+__attribute__((noinline)) uint32 _uarttestread(
+
+	String address_heap,
+	uint32 size
+);
 
 __attribute__((noinline)) uint32 _uartsetint
 (

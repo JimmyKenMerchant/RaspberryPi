@@ -180,8 +180,49 @@ macro32_debug_hexa buffer_rx, 0, 124, 64
 		bne hid32_hid_activate_error1
 
 		ldrb packet_max, [buffer_rx, #7]
-		cmp packet_max, #0x0                           @ Failure of Obtaining Device Discriptor 
+		cmp packet_max, #0x0                           @ Failure of Obtaining Device Discriptor
+
 		beq hid32_hid_activate_error2
+
+		/* Set Configuration  */
+
+		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer_out
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq hid32_hid_activate_error3
+		mov buffer_rq, temp
+
+		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
+		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
+		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
+		str temp, [buffer_rq]
+		mov temp, #0                                                 @ wIndex
+		orr temp, temp, #0<<16                                       @ wLength
+		str temp, [buffer_rq, #4]
+
+		mov character, packet_max                      @ Maximam Packet Size
+		orr character, character, #0<<11               @ Endpoint Number
+		orr character, character, #0<<15               @ In(1)/Out(0)
+		orr character, character, #0<<16               @ Endpoint Type
+		orr character, character, addr_device, lsl #18 @ Device Address
+		cmp packet_max, #8
+		orreq character, character, #1<<25             @ Full and High Speed(0)/Low Speed(1)
+
+		mov transfer_size, #0                          @ Transfer Size is 0 Bytes
+
+		push {r0-r3}
+		push {split_ctl,buffer_rx}
+		bl usb2032_control
+		add sp, sp, #8
+		mov response, r0
+		mov temp, r1
+		pop {r0-r3}
+
+		cmp response, #0
+		bne hid32_hid_activate_error2                  @ Failure of Communication
 
 		/* Get Configuration, Interface, Endpoint Descriptors  */
 
@@ -258,7 +299,8 @@ macro32_debug response, 0, 196
 		cmp addr_device, #0
 		bne hid32_hid_activate_jump
 
-		/* Set Address as #1 If Direct Connection */
+		/* Set Address to #1 If Direct Connection */
+
 		ldr temp, HID32_USB2032_ADDRESS_LENGTH_ADDR
 		ldr addr_device, [temp]
 		add addr_device, addr_device, #1
@@ -307,7 +349,7 @@ macro32_debug response, 0, 196
 
 	hid32_hid_activate_jump:
 
-		/* Set Configuration  */
+		/* Remote Wakeup  */
 
 		push {r0-r3}
 		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
@@ -319,12 +361,9 @@ macro32_debug response, 0, 196
 		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
-		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
+		orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
+		orr temp, temp, #equ32_usb20_val_device_remote_wakeup<<16    @ wValue
 		str temp, [buffer_rq]
-		mov temp, #0                                                 @ wIndex
-		orr temp, temp, #0<<16                                       @ wLength
-		str temp, [buffer_rq, #4]
 
 		mov character, packet_max                      @ Maximam Packet Size
 		orr character, character, #0<<11               @ Endpoint Number
@@ -346,64 +385,6 @@ macro32_debug response, 0, 196
 
 		cmp response, #0
 		bne hid32_hid_activate_error2                  @ Failure of Communication
-
-		/* Remote Wakeup  */
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
-
-		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
-		orr temp, temp, #equ32_usb20_val_device_remote_wakeup<<16    @ wValue
-		str temp, [buffer_rq]
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-		cmp response, #0
-		bne hid32_hid_activate_error2                  @ Failure of Communication
-
-		/* Set Idle */
-		/*
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
-
-		mov temp, #equ32_usb20_reqt_recipient_interface|equ32_usb20_reqt_type_class|equ32_usb20_reqt_host_to_device @ bmRequest Type
-		orr temp, temp, #equ32_usb20_req_hid_set_idle<<8             @ bRequest
-		orr temp, temp, #0<<16                                       @ wValue
-		str temp, [buffer_rq]
-		mov temp, #0                                                 @ wIndex, Interface Number
-		orr temp, temp, #0<<16                                       @ wLength
-		str temp, [buffer_rq, #4]
-
-		push {r0-r3}
-		push {split_ctl,buffer_rx}
-		bl usb2032_control
-		add sp, sp, #8
-		mov response, r0
-		mov temp, r1
-		pop {r0-r3}
-
-		cmp response, #0
-		bne hid32_hid_activate_error2                  @ Failure of Communication
-		*/
 
 		b hid32_hid_activate_success
 
@@ -667,7 +648,7 @@ hid32_hid_get:
  * r1: Number of Endpoint (Starting from 1)
  * r2: Ticket Issued by usb2032_hub_search_device, or hid32_hid_activate
  *
- * Return: r0 (Ascii Code of Pused Key on Keyboard, If -1 NAK or Any Transaction Error)
+ * Return: r0 (Pointer of Ascii Codes of Pushed Keys on Keyboard, If 0 NAK, Any Transaction Error, or Memory Allocation Fails)
  */
 .globl hid32_keyboard_get
 hid32_keyboard_get:
@@ -676,17 +657,24 @@ hid32_keyboard_get:
 	character       .req r1
 	ticket          .req r2
 	buffer          .req r3
-	data            .req r4
-	response        .req r5
-	base            .req r6
+	data_lower      .req r4
+	data_upper      .req r5
+	response        .req r6
+	base            .req r7
+	i               .req r8
+	j               .req r9
+	increment       .req r10
 
-	push {r4-r6,lr}
+	push {r4-r10,lr}
 
 	push {r0-r2}
 	mov r0, #2                             @ 4 Bytes by 2 Words Equals 8 Bytes
 	bl usb2032_get_buffer_in
 	mov buffer, r0
 	pop {r0-r2}
+
+	cmp buffer, #0
+	beq hid32_keyboard_get_error
 
 	push {r0-r3}
 	bl hid32_hid_get
@@ -698,8 +686,9 @@ macro32_debug ticket, 320, 0
 macro32_debug buffer, 320, 12
 */
 
-	/* In Data of Keyboard is 8 Bytes, but in This Case, First 4 bytes are Needed */
-	ldr data, [buffer]
+	/* In Data of Keyboard is 8 Bytes */
+	ldr data_lower, [buffer]
+	ldr data_upper, [buffer, #4]
 
 /*
 macro32_debug data, 320, 24
@@ -713,58 +702,121 @@ macro32_debug data, 320, 24
 	tst response, #0x4                     @ ACK
 	beq hid32_keyboard_get_error
 
-	.unreq response
-	byte .req r5
+	/* If we get any arrows at all, we need 24 bytes, because 6 bytes are for characters and 3 bytes needs per one arrow */
 
-	tst data, #0x2                         @ Modifier Is Shift
+	push {r0-r2}
+	mov r0, #7                             @ 4 Bytes by 7 Words Equals 28 Bytes
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0-r2}
+
+	cmp buffer, #0
+	beq hid32_keyboard_get_error
+
+	.unreq channel
+	temp  .req r0
+	.unreq character
+	shift .req r1
+	.unreq ticket
+	maxi  .req r2
+	.unreq response
+	byte  .req r6
+
+	tst data_lower, #0x2                   @ Modifier Is Shift
 	ldreq base, hid32_keyboard_get_ascii
 	ldrne base, hid32_keyboard_get_ascii_shift
-	lsr data, data, #16
-	and data, data, #0xFF
+	lsr data_lower, data_lower, #16        @ First and Second Bytes Are for Modifier and Reserved
+	
+	mov increment, #0
+	mov i, #0
+	mov maxi, #1
 
-	cmp data, #0x39                        @ 0x0 - 0x38 Are Real Characters
-	ldrlob byte, [base, data]
-	blo hid32_keyboard_get_success
+	hid32_keyboard_get_loop:
+		mov shift, #0
+		mov byte, #0xFF
+		lsl i, i, #3                       @ Substitute of Multiplication by 8
+		lsl byte, byte, i
 
-	mov byte, #0x001B
-	orr byte, byte, #0x5B00
+		and temp, data_lower, byte
+		lsr temp, temp, i
 
-	cmp data, #0x52                        @ Up Arrow
-	orreq byte, byte, #0x410000            @ Escape Sequence, Cursor Up, Esc[A (Shown by Little Endian Order)
-	beq hid32_keyboard_get_success
+		cmp temp, #0x39                    @ 0x0 - 0x38 Are Real Characters
+		ldrlob byte, [base, temp]
+		movlo j, #1
+		blo hid32_keyboard_get_loop_store
 
-	cmp data, #0x51                        @ Down Arrow
-	orreq byte, byte, #0x420000            @ Escape Sequence, Cursor Down, Esc[B (Shown by Little Endian Order)
-	beq hid32_keyboard_get_success
+		mov byte, #0x001B
+		orr byte, byte, #0x5B00
 
-	cmp data, #0x50                        @ Left Arrow
-	orreq byte, byte, #0x440000            @ Escape Sequence, Cursor Left, Esc[D (Shown by Little Endian Order)
-	beq hid32_keyboard_get_success
+		cmp temp, #0x52                    @ Up Arrow
+		orreq byte, byte, #0x410000        @ Escape Sequence, Cursor Up, Esc[A (Shown by Little Endian Order)
+		moveq j, #3
+		beq hid32_keyboard_get_loop_store
 
-	cmp data, #0x4F                        @ Right Arrow
-	orreq byte, byte, #0x430000            @ Escape Sequence, Cursor Right, Esc[C (Shown by Little Endian Order)
-	beq hid32_keyboard_get_success
+		cmp temp, #0x51                    @ Down Arrow
+		orreq byte, byte, #0x420000        @ Escape Sequence, Cursor Down, Esc[B (Shown by Little Endian Order)
+		moveq j, #3
+		beq hid32_keyboard_get_loop_store
 
-	b hid32_keyboard_get_success
+		cmp temp, #0x50                    @ Left Arrow
+		orreq byte, byte, #0x440000        @ Escape Sequence, Cursor Left, Esc[D (Shown by Little Endian Order)
+		moveq j, #3
+		beq hid32_keyboard_get_loop_store
+
+		cmp temp, #0x4F                    @ Right Arrow
+		orreq byte, byte, #0x430000        @ Escape Sequence, Cursor Right, Esc[C (Shown by Little Endian Order)
+		moveq j, #3
+		beq hid32_keyboard_get_loop_store
+
+		b hid32_keyboard_get_success
+
+		hid32_keyboard_get_loop_store:
+			mov temp, #0xFF
+			lsl temp, temp, shift
+			and temp, byte, temp
+			lsr temp, temp, shift
+			strb temp, [buffer, increment]
+			add increment, increment, #1
+			add shift, shift, #8
+			subs j, j, #1
+			bgt hid32_keyboard_get_loop_store
+
+		hid32_keyboard_get_loop_common:
+			lsr i, i, #3                           @ Division of Multiplication by 8
+			add i, i, #1
+			cmp i, maxi
+			ble hid32_keyboard_get_loop
+
+			cmp maxi, #1                           @ If Loop for Lower Half of Data
+			moveq i, #0
+			moveq maxi, #3
+			moveq data_lower, data_upper
+			beq hid32_keyboard_get_loop
+
+			b hid32_keyboard_get_success
 
 	hid32_keyboard_get_error:
-		mvn r0, #0                         @ Error with -1
+		mov r0, #0                         @ Error with -0
 		b hid32_keyboard_get_common
 
 	hid32_keyboard_get_success:
-		mov r0, byte
+		mov r0, buffer
 
 	hid32_keyboard_get_common:
 		macro32_dsb ip                     @ Ensure Completion of Instructions Before
-		pop {r4-r6,pc}
+		pop {r4-r10,pc}
 
-.unreq channel
-.unreq character
-.unreq ticket
+.unreq temp
+.unreq shift
+.unreq maxi
 .unreq buffer
-.unreq data
+.unreq data_lower
+.unreq data_upper
 .unreq byte
 .unreq base
+.unreq i
+.unreq j
+.unreq increment
 
 hid32_keyboard_get_ascii:        .word _hid32_keyboard_get_ascii
 hid32_keyboard_get_ascii_shift:  .word _hid32_keyboard_get_ascii_shift

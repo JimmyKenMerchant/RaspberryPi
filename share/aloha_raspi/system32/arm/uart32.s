@@ -65,10 +65,10 @@ uart32_uartinit:
 
 /**
  * function uart32_uartsettest
- * Set Test Control and Transmit/Receive On/Off
+ * Test Data On/Off and Transmit/Receive On/Off
  *
  * Parameters
- * r0: Test Control
+ * r0: Test Data On(1), Off(0)
  * r1: Tx On(1), Off(0)
  * r2: Rx On(1), Off(0)
  *
@@ -77,44 +77,54 @@ uart32_uartinit:
 .globl uart32_uartsettest
 uart32_uartsettest:
 	/* Auto (Local) Variables, but just Aliases */
-	reg_tcr        .req r0
+	tdr_on         .req r0
 	tx_on          .req r1
 	rx_on          .req r2
 	addr_uart      .req r3
+	temp           .req r4
+
+	push {r4}
 
 	mov addr_uart, #equ32_peripherals_base
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
 	add addr_uart, addr_uart, #equ32_uart0_base_lower
 
-	str reg_tcr, [addr_uart, #equ32_uart0_tcr]
-	
+	ldr temp, [addr_uart, #equ32_uart0_tcr]
+
 	macro32_dsb ip
 
-	.unreq reg_tcr
-	reg_cr .req r0
+	tst tdr_on, #1
+	orrne temp, temp, #0b10
+	biceq temp, temp, #0b10
 
-	ldr reg_cr, [addr_uart, #equ32_uart0_cr]
+	str temp, [addr_uart, #equ32_uart0_tcr]
+
+	ldr temp, [addr_uart, #equ32_uart0_cr]
+
+	macro32_dsb ip
 
 	tst tx_on, #1
-	orrne reg_cr, reg_cr, #equ32_uart0_cr_txe
-	biceq reg_cr, reg_cr, #equ32_uart0_cr_txe
+	orrne temp, temp, #equ32_uart0_cr_txe
+	biceq temp, temp, #equ32_uart0_cr_txe
 
 	tst rx_on, #1
-	orrne reg_cr, reg_cr, #equ32_uart0_cr_rxe
-	biceq reg_cr, reg_cr, #equ32_uart0_cr_rxe
+	orrne temp, temp, #equ32_uart0_cr_rxe
+	biceq temp, temp, #equ32_uart0_cr_rxe
 
-	str reg_cr, [addr_uart, #equ32_uart0_cr]
+	str temp, [addr_uart, #equ32_uart0_cr]
 
 	macro32_dsb ip
 
 	uart32_uartsettest_common:
+		pop {r4}
 		mov r0, #0
 		mov pc, lr
 
-.unreq reg_cr
+.unreq tdr_on
 .unreq tx_on
 .unreq rx_on
 .unreq addr_uart
+.unreq temp
 
 
 /**
@@ -122,27 +132,56 @@ uart32_uartsettest:
  * Write Data to RxFIFO from Test Data
  *
  * Parameters
- * r0: Value to Write (8 or 7 Bit)
+ * r0: Heap for Transmit Data
+ * r1: Transfer Size (Bytes)
  *
- * Return: r0 (0 as Success)
+ * Return: r0 (0 as success)
  */
 .globl uart32_uarttestwrite
 uart32_uarttestwrite:
 	/* Auto (Local) Variables, but just Aliases */
-	value        .req r0
-	addr_uart    .req r1
+	heap         .req r0
+	size_tx      .req r1
+	byte         .req r2
+	temp         .req r3
+	addr_uart    .req r4
+
+	push {r4}
 
 	mov addr_uart, #equ32_peripherals_base
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
 	add addr_uart, addr_uart, #equ32_uart0_base_lower
 
-	str value, [addr_uart, #equ32_uart0_tdr]
+	cmp size_tx, #0
+	ble uart32_uarttestwrite_success
+
+	uart32_uarttestwrite_fifo:
+		ldr temp, [addr_uart, #equ32_uart0_fr]
+
+/*
+macro32_debug temp, 0, 100
+*/
+
+		tst temp, #equ32_uart0_fr_rxff           @ RxFIFO is Full
+		ldreqb byte, [heap]                      @ If Having Space on RxFIFO
+		streqb byte, [addr_uart, #equ32_uart0_tdr]
+		addeq heap, heap, #1
+		subeq size_tx, size_tx, #1
+
+		cmp size_tx, #0
+		bgt uart32_uarttestwrite_fifo
+
+	uart32_uarttestwrite_success:
+		mov r0, #0
 
 	uart32_uarttestwrite_common:
-		mov r0, #0
+		pop {r4}
 		mov pc, lr
 
-.unreq value
+.unreq heap
+.unreq size_tx
+.unreq byte
+.unreq temp
 .unreq addr_uart
 
 
@@ -150,24 +189,56 @@ uart32_uarttestwrite:
  * function uart32_uarttestread
  * Read TxFIFO from Test Data
  *
- * Return: r0 (Popped Value of TxFIFO)
+ * Parameters
+ * r0: Heap for Receive Data
+ * r1: Transfer Size (Bytes)
+ *
+ * Return: r0 (0 as success)
  */
 .globl uart32_uarttestread
 uart32_uarttestread:
 	/* Auto (Local) Variables, but just Aliases */
-	value        .req r0
-	addr_uart    .req r1
+	heap         .req r0
+	size_rx      .req r1
+	byte         .req r2
+	temp         .req r3
+	addr_uart    .req r4
+
+	push {r4}
 
 	mov addr_uart, #equ32_peripherals_base
 	add addr_uart, addr_uart, #equ32_uart0_base_upper
 	add addr_uart, addr_uart, #equ32_uart0_base_lower
 
-	ldr value, [addr_uart, #equ32_uart0_tdr]
+	uart32_uarttestread_fifo:
+		ldr temp, [addr_uart, #equ32_uart0_fr]
+
+/*
+macro32_debug temp, 0, 112
+*/
+
+		tst temp, #equ32_uart0_fr_txfe
+		bne uart32_uarttestread_fifo                @ If Empty on TxFIFO
+
+		ldr byte, [addr_uart, #equ32_uart0_tdr]     @ If Having Data on TxFIFO (12-bit Word, 8-bit is Data)
+		strb byte, [heap]
+		add heap, heap, #1
+		sub size_rx, size_rx, #1
+
+		cmp size_rx, #0
+		bgt uart32_uarttestread_fifo
+
+	uart32_uarttestread_success:
+		mov r0, #0
 
 	uart32_uarttestread_common:
+		pop {r4}
 		mov pc, lr
 
-.unreq value
+.unreq heap
+.unreq size_rx
+.unreq byte
+.unreq temp
 .unreq addr_uart
 
 

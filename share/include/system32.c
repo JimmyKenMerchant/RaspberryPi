@@ -148,21 +148,21 @@ __attribute__((noinline)) uint32 _uartinit( uint32 div_int, uint32 div_frac, uin
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsettest( uint32 tcr, bool tx_on, bool rx_on )
+__attribute__((noinline)) uint32 _uartsettest( bool tdr_on, bool tx_on, bool rx_on )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x15");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uarttestwrite( uchar8 value )
+__attribute__((noinline)) uint32 _uarttestwrite( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x16");
 	return result;
 }
 
-__attribute__((noinline)) uchar8 _uarttestread()
+__attribute__((noinline)) uint32 _uarttestread( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x17");

@@ -301,6 +301,7 @@ usb2032_clear_halt:
  * function usb2032_hub_activate
  * Search and Activate Hub
  * Caution! This Function Is Only Available for One of USB2.0 High Speed Hub.
+ * This Function Is Only Available for No Composite Device, i.e, Configuration Number is Fixed to #1.
  *
  * Parameters
  * r0: Channel 0-15
