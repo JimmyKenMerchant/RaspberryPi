@@ -176,80 +176,88 @@ __attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclrint()
+__attribute__((noinline)) String _uartint_emulate( uint32 max_size, bool flag_mirror, uchar8 character_rx )
 {
-	register uint32 result asm("r0");
+	register String result asm("r0");
 	asm volatile ("svc #0x19");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
+
+__attribute__((noinline)) uint32 _uartclrint()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1A");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
+__attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1B");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclrrx()
+__attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1C");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
+__attribute__((noinline)) uint32 _uartclrrx()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1D");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _otg_host_reset_bcm()
+__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1E");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hub_activate( uint32 channel, uint32 ticket )
+__attribute__((noinline)) uint32 _otg_host_reset_bcm()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1F");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hub_search_device( uint32 channel, uint32 address_hub )
+__attribute__((noinline)) int32 _hub_activate( uint32 channel, uint32 ticket )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x20");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hid_activate( uint32 channel, uint32 number_configuration, uint32 ticket )
+__attribute__((noinline)) int32 _hub_search_device( uint32 channel, uint32 address_hub )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x21");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hid_setidle( uint32 channel, uint32 number_interface, uint32 ticket )
+__attribute__((noinline)) int32 _hid_activate( uint32 channel, uint32 number_configuration, uint32 ticket )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x22");
 	return result;
 }
 
-__attribute__((noinline)) int32 _keyboard_get( uint32 channel, uint32 number_endpoint, uint32 ticket )
+__attribute__((noinline)) int32 _hid_setidle( uint32 channel, uint32 number_interface, uint32 ticket )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x23");
+	return result;
+}
+
+__attribute__((noinline)) String _keyboard_get( uint32 channel, uint32 number_endpoint, uint32 ticket )
+{
+	register String result asm("r0");
+	asm volatile ("svc #0x24");
 	return result;
 }
 

@@ -267,7 +267,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x23                            @ Prevent Overflow SVC Table
+	cmp ip, #0x24                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -377,46 +377,50 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x19:
-		bl uart32_uartclrint
+		bl uart32_uartint_emulate
 		b _os_svc_common
 
 	_os_svc_0x1A:
-		bl uart32_uarttx
+		bl uart32_uartclrint
 		b _os_svc_common
 
 	_os_svc_0x1B:
-		bl uart32_uartrx
+		bl uart32_uarttx
 		b _os_svc_common
 
 	_os_svc_0x1C:
-		bl uart32_uartclrrx
+		bl uart32_uartrx
 		b _os_svc_common
 
 	_os_svc_0x1D:
-		bl uart32_uartsetheap
+		bl uart32_uartclrrx
 		b _os_svc_common
 
 	_os_svc_0x1E:
-		bl usb2032_otg_host_reset_bcm
+		bl uart32_uartsetheap
 		b _os_svc_common
 
 	_os_svc_0x1F:
-		bl usb2032_hub_activate
+		bl usb2032_otg_host_reset_bcm
 		b _os_svc_common
 
 	_os_svc_0x20:
-		bl usb2032_hub_search_device
+		bl usb2032_hub_activate
 		b _os_svc_common
 
 	_os_svc_0x21:
-		bl hid32_hid_activate
+		bl usb2032_hub_search_device
 		b _os_svc_common
 
 	_os_svc_0x22:
-		bl hid32_hid_setidle
+		bl hid32_hid_activate
 		b _os_svc_common
 
 	_os_svc_0x23:
+		bl hid32_hid_setidle
+		b _os_svc_common
+
+	_os_svc_0x24:
 		bl hid32_keyboard_get
 		b _os_svc_common
 

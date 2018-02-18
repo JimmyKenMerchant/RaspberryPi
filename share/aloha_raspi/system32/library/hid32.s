@@ -642,6 +642,7 @@ hid32_hid_get:
 /**
  * function hid32_keyboard_get
  * Return Ascii Code of Pushed Key on Keyboard
+ * Note that this function makes new memory space to be needed to make the memory free.
  *
  * Parameters
  * r0: Channel 0-15
@@ -664,8 +665,9 @@ hid32_keyboard_get:
 	i               .req r8
 	j               .req r9
 	increment       .req r10
+	modifier        .req r11
 
-	push {r4-r10,lr}
+	push {r4-r11,lr}
 
 	push {r0-r2}
 	mov r0, #2                             @ 4 Bytes by 2 Words Equals 8 Bytes
@@ -722,9 +724,12 @@ macro32_debug data, 320, 24
 	.unreq response
 	byte  .req r6
 
+	mov modifier, #0
+
 	tst data_lower, #0x2                   @ Modifier Is Shift
 	ldreq base, hid32_keyboard_get_ascii
 	ldrne base, hid32_keyboard_get_ascii_shift
+	orrne modifier, modifier, #0x2
 	lsr data_lower, data_lower, #16        @ First and Second Bytes Are for Modifier and Reserved
 	
 	mov increment, #0
@@ -744,6 +749,9 @@ macro32_debug data, 320, 24
 		ldrlob byte, [base, temp]
 		movlo j, #1
 		blo hid32_keyboard_get_loop_store
+
+		cmp temp, #0x87                    @ International1
+		beq hid32_keyboard_get_loop_intl1
 
 		mov byte, #0x001B
 		orr byte, byte, #0x5B00
@@ -769,6 +777,11 @@ macro32_debug data, 320, 24
 		beq hid32_keyboard_get_loop_store
 
 		b hid32_keyboard_get_success
+
+		hid32_keyboard_get_loop_intl1:
+			tst modifier, #0x2
+			movne byte, #0x5F            @ Ascii Code of Underbar
+			moveq byte, #0x5C            @ Ascii Code of Backslash
 
 		hid32_keyboard_get_loop_store:
 			mov temp, #0xFF
@@ -804,7 +817,7 @@ macro32_debug data, 320, 24
 
 	hid32_keyboard_get_common:
 		macro32_dsb ip                     @ Ensure Completion of Instructions Before
-		pop {r4-r10,pc}
+		pop {r4-r11,pc}
 
 .unreq temp
 .unreq shift
@@ -817,6 +830,7 @@ macro32_debug data, 320, 24
 .unreq i
 .unreq j
 .unreq increment
+.unreq modifier
 
 hid32_keyboard_get_ascii:        .word _hid32_keyboard_get_ascii
 hid32_keyboard_get_ascii_shift:  .word _hid32_keyboard_get_ascii_shift

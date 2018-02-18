@@ -94,8 +94,8 @@ uart32_uartsettest:
 	macro32_dsb ip
 
 	tst tdr_on, #1
-	orrne temp, temp, #0b10
-	biceq temp, temp, #0b10
+	orrne temp, temp, #0b11
+	biceq temp, temp, #0b11
 
 	str temp, [addr_uart, #equ32_uart0_tcr]
 
@@ -158,9 +158,9 @@ uart32_uarttestwrite:
 	uart32_uarttestwrite_fifo:
 		ldr temp, [addr_uart, #equ32_uart0_fr]
 
-/*
+
 macro32_debug temp, 0, 100
-*/
+
 
 		tst temp, #equ32_uart0_fr_rxff           @ RxFIFO is Full
 		ldreqb byte, [heap]                      @ If Having Space on RxFIFO
@@ -503,11 +503,10 @@ uart32_uartint:
 	heap          .req r2
 	count         .req r3
 	temp          .req r4
-	temp2         .req r5
-	escape_offset .req r6
-	buffer        .req r7
+	flag_escape   .req r5
+	buffer        .req r6
 
-	push {r4-r7,lr}
+	push {r4-r6,lr}
 
 	ldr temp, UART32_UARTINT_BUSY
 	tst temp, #0x1
@@ -521,11 +520,10 @@ uart32_uartint:
 
 	ldr count, UART32_UARTINT_COUNT
 
-	ldr escape_offset, uart32_escape_offset
+	ldr flag_escape, uart32_flag_escape
 
 	push {r0-r3}
 	ldr r0, uart32_uartint_buffer
-	add r0, r0, escape_offset
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uartrx
 	mov temp, r0
@@ -544,7 +542,6 @@ uart32_uartint:
 	/* Mirror Received Data to Teletype */
 	push {r0-r3}
 	ldr r0, uart32_uartint_buffer
-	add r0, r0, escape_offset
 	mov r1, #1                       @ 1 Bytes
 	bl uart32_uarttx
 	pop {r0-r3}
@@ -562,6 +559,9 @@ uart32_uartint:
 
 	uart32_uartint_verify:
 
+		cmp flag_escape, #1
+		beq uart32_uartint_escseq        @ If in Escape Sequence
+
 		/* Check Escape */
 		push {r0-r3}
 		ldr r0, uart32_uartint_buffer
@@ -572,7 +572,8 @@ uart32_uartint:
 		pop {r0-r3}
 
 		cmp temp, #-1
-		bne uart32_uartint_escseq        @ If in Escape Sequence
+		movne flag_escape, #1
+		bne uart32_uartint_escseq_common @ If Start of Escape Sequence
 
 		/* Check Back Space */
 		push {r0-r3}
@@ -615,10 +616,9 @@ uart32_uartint:
 
 		push {r0-r3}
 		ldr r0, uart32_uartint_buffer
-		mov r1, #3
-		ldr r2, uart32_uartint_esc_up
-		mov r3, #3
-		bl str32_strsearch
+		mov r1, #1
+		mov r2, #0x41                    @ Ascii Codes of A
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -626,10 +626,9 @@ uart32_uartint:
 
 		push {r0-r3}
 		ldr r0, uart32_uartint_buffer
-		mov r1, #3
-		ldr r2, uart32_uartint_esc_down
-		mov r3, #3
-		bl str32_strsearch
+		mov r1, #1
+		mov r2, #0x42                    @ Ascii Codes of B
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -637,10 +636,9 @@ uart32_uartint:
 
 		push {r0-r3}
 		ldr r0, uart32_uartint_buffer
-		mov r1, #3
-		ldr r2, uart32_uartint_esc_right
-		mov r3, #3
-		bl str32_strsearch
+		mov r1, #1
+		mov r2, #0x43                    @ Ascii Codes of C
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
@@ -648,19 +646,13 @@ uart32_uartint:
 
 		push {r0-r3}
 		ldr r0, uart32_uartint_buffer
-		mov r1, #3
-		ldr r2, uart32_uartint_esc_left
-		mov r3, #3
-		bl str32_strsearch
+		mov r1, #1
+		mov r2, #0x44                    @ Ascii Codes of D
+		bl str32_charsearch
 		mov temp, r0
 		pop {r0-r3}
 		cmp temp, #-1
 		bne uart32_uartint_escseq_left
-
-		/* If Passed Through */
-		add escape_offset, escape_offset, #1
-		cmp escape_offset, #equ32_uart32_uartint_buffer_size
-		movge escape_offset, #0
 
 		b uart32_uartint_escseq_common
 
@@ -733,19 +725,10 @@ uart32_uartint:
 
 		uart32_uartint_escseq_clear:
 			str count, UART32_UARTINT_COUNT
-			mov escape_offset, #0
-
-			mov temp, #0
-			mov temp2, #0
-			ldr buffer, uart32_uartint_buffer
-			uart32_uartint_escseq_clear_loop:
-				strb temp, [buffer, temp2]
-				add temp2, temp2, #1
-				cmp temp2, #equ32_uart32_uartint_buffer_size
-				blt uart32_uartint_escseq_clear_loop
+			mov flag_escape, #0
 
 		uart32_uartint_escseq_common:
-			str escape_offset, uart32_escape_offset
+			str flag_escape, uart32_flag_escape
 			b uart32_uartint_success
 
 	uart32_uartint_backspace:
@@ -784,6 +767,8 @@ uart32_uartint:
 			add sp, sp, #4
 			pop {r0-r3}
 
+			sub temp, temp, #1  @ Subtract One For Null Character for Use Later
+
 			/* Send Esc[K (Clear From Cursor Right) */
 			push {r0-r3}
 			ldr r0, uart32_uartint_esc_clrline
@@ -799,7 +784,6 @@ uart32_uartint:
 			pop {r0-r3}
 
 			/* Move Cursor Left Because of Renewed Back Half */
-			sub temp, temp, #1  @ Subtract One For Null Character
 			uart32_uartint_backspace_jmp_loop:
 				cmp temp, #0
 				ble uart32_uartint_backspace_jmp_common
@@ -847,18 +831,16 @@ uart32_uartint:
 	uart32_uartint_common:
 
 /*macro32_debug_hexa heap, 100, 112, 36*/
-/*macro32_debug_hexa buffer, 100, 124, equ32_uart32_uartint_buffer_size*/
-/*macro32_debug escape_offset, 100, 136*/
+/*macro32_debug flag_escape, 100, 124*/
 
-		pop {r4-r7,pc}
+		pop {r4-r6,pc}
 
 .unreq max_size
 .unreq flag_mirror
 .unreq heap
 .unreq count
 .unreq temp
-.unreq temp2
-.unreq escape_offset
+.unreq flag_escape
 .unreq buffer
 
 .globl UART32_UARTINT_HEAP
@@ -870,7 +852,7 @@ UART32_UARTINT_COUNT_ADDR:   .word UART32_UARTINT_COUNT
 UART32_UARTINT_COUNT:        .word 0x00
 UART32_UARTINT_BUSY_ADDR:    .word UART32_UARTINT_BUSY
 UART32_UARTINT_BUSY:         .word 0x00
-uart32_escape_offset:        .word 0x00
+uart32_flag_escape:          .word 0x00
 uart32_uartint_cr:           .word _uart32_uartint_cr
 _uart32_uartint_cr:          .ascii "\x0D\0"
 .balign 4
@@ -909,8 +891,467 @@ _uart32_uartint_esc_homecs:  .ascii "\x1B[H\0"         @ Esc(0x1B)[H (Esc(0x1B)[
 .balign 4
 
 uart32_uartint_buffer:       .word _uart32_uartint_buffer
-_uart32_uartint_buffer:      .space equ32_uart32_uartint_buffer_size
+_uart32_uartint_buffer:      .word 0x00 
 .balign 4
+
+
+/**
+ * function uart32_uartint_emulate
+ * Emulation of UART Interrupt Handler
+ * Note that this function makes new memory space to be needed to make the memory free.
+ *
+ * Parameters
+ * r0: Number of Maximum Size of Heap (Bytes)
+ * r1: Mirror Data to Teletype (1) or Send ACK (0)
+ * r2: Character to Be Virtually Received
+ *
+ * Return: r0 (Pointer of String to Be Virtually Transmitted by UART, If Zero No Heap or Memory Allocation Fails)
+ */
+.globl uart32_uartint_emulate
+uart32_uartint_emulate:
+	/* Auto (Local) Variables, but just Aliases */
+	max_size      .req r0
+	flag_mirror   .req r1
+	heap          .req r2
+	count         .req r3
+	temp          .req r4
+	flag_escape   .req r5
+	buffer        .req r6
+	character_rx  .req r7
+	string_tx     .req r8
+	string_tx_dup .req r9
+
+	push {r4-r9,lr}
+
+	mov character_rx, heap
+	ldr string_tx, uart32_uartint_emulate_dummy_str
+
+	ldr temp, UART32_UARTINT_BUSY
+	tst temp, #0x1
+	bne uart32_uartint_emulate_errornak      @ If Busy
+
+	ldr heap, UART32_UARTINT_HEAP
+	cmp heap, #0
+	beq uart32_uartint_emulate_error         @ If No Heap
+
+	ldr count, UART32_UARTINT_COUNT
+
+	ldr flag_escape, uart32_flag_escape
+
+	/* Virtually Received */
+	strb character_rx, _uart32_uartint_buffer
+
+	/* If Succeed to Receive */
+
+	cmp flag_mirror, #0
+	beq uart32_uartint_emulate_sendack
+
+	/* Mirror Received Data to Teletype */
+	push {r0-r3}
+	mov r0, string_tx
+	ldr r1, uart32_uartint_buffer
+	bl str32_strcat
+	mov string_tx, r0
+	pop {r0-r3}
+
+	cmp string_tx, #0
+	beq uart32_uartint_emulate_error
+
+	b uart32_uartint_emulate_verify
+
+	uart32_uartint_emulate_sendack:
+
+		/* Send ACK (Acknowledgement) */
+		push {r0-r3}
+		mov r0, string_tx
+		ldr r1, uart32_uartint_ack
+		bl str32_strcat
+		mov string_tx, r0
+		pop {r0-r3}
+
+		cmp string_tx, #0
+		beq uart32_uartint_emulate_error
+
+	uart32_uartint_emulate_verify:
+
+		cmp flag_escape, #1
+		beq uart32_uartint_emulate_escseq        @ If in Escape Sequence
+
+		/* Check Escape */
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x1B                    @ Ascii Code of Escape
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+
+		cmp temp, #-1
+		movne flag_escape, #1
+		bne uart32_uartint_emulate_escseq_common @ If Start of Escape Sequence
+
+		/* Check Back Space */
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x08                    @ Ascii Code of Back Space
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+
+		cmp temp, #-1
+		bne uart32_uartint_emulate_backspace
+
+		/* Check Carriage Return */
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+
+		cmp temp, #-1
+		bne uart32_uartint_emulate_carriagereturn
+
+		/* Store Data to Actual Memory Space from Buffer */
+		ldr temp, uart32_uartint_buffer
+		ldrb temp, [temp]
+		strb temp, [heap, count]
+
+		/* Slide Offset Count */
+		add count, count, #1
+		cmp count, max_size
+		subge count, count, #1           @ If Exceeds Maximum Size of Heap, Stay Count
+		str count, UART32_UARTINT_COUNT
+
+		b uart32_uartint_emulate_success
+
+	uart32_uartint_emulate_escseq:
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x41                    @ Ascii Codes of A
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_emulate_escseq_up
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x42                    @ Ascii Codes of B
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_emulate_escseq_down
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x43                    @ Ascii Codes of C
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_emulate_escseq_right
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1
+		mov r2, #0x44                    @ Ascii Codes of D
+		bl str32_charsearch
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #-1
+		bne uart32_uartint_emulate_escseq_left
+
+		b uart32_uartint_emulate_escseq_common
+
+		uart32_uartint_emulate_escseq_up:
+
+			/* Send Move Cursor Down Because Of Overshoot */
+			push {r0-r3}
+			mov r0, string_tx
+			ldr r1, uart32_uartint_esc_down
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+			
+			mov string_tx, string_tx_dup
+
+			b uart32_uartint_emulate_escseq_clear
+
+		uart32_uartint_emulate_escseq_down:
+
+			/* Send Move Cursor Up Because Of Overshoot */
+			push {r0-r3}
+			mov r0, string_tx
+			ldr r1, uart32_uartint_esc_up
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+			
+			mov string_tx, string_tx_dup
+
+			b uart32_uartint_emulate_escseq_clear
+
+		uart32_uartint_emulate_escseq_right:
+
+			add count, count, #1
+			cmp count, max_size
+			bge uart32_uartint_emulate_escseq_right_over @ If Exceeds Maximum Size of Heap, Stay Count
+
+			push {r0-r3}
+			mov r0, heap
+			bl str32_strlen
+			mov temp, r0
+			pop {r0-r3}
+			cmp count, temp
+			ble uart32_uartint_emulate_escseq_clear
+
+			uart32_uartint_emulate_escseq_right_over:
+
+				/* Count Overshoots Length of List */
+				sub count, count, #1
+
+				/* Send Move Cursor Left Because Of Overshoot */
+				push {r0-r3}
+				mov r0, string_tx
+				ldr r1, uart32_uartint_esc_left
+				bl str32_strcat
+				mov string_tx_dup, r0
+				pop {r0-r3}
+
+				cmp string_tx_dup, #0
+				beq uart32_uartint_emulate_error
+
+				push {r0-r3}
+				mov r0, string_tx
+				bl heap32_mfree
+				pop {r0-r3}
+				
+				mov string_tx, string_tx_dup
+
+				b uart32_uartint_emulate_escseq_clear
+
+		uart32_uartint_emulate_escseq_left:
+			
+			sub count, count, #1
+			cmp count, #0
+			bge uart32_uartint_emulate_escseq_clear
+
+			/* Count Becomes Minus */
+
+			mov count, #0
+
+			/* Send Move Cursor Right Because Of Overshoot */
+			push {r0-r3}
+			mov r0, string_tx
+			ldr r1, uart32_uartint_esc_right
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+			
+			mov string_tx, string_tx_dup
+
+		uart32_uartint_emulate_escseq_clear:
+			str count, UART32_UARTINT_COUNT
+			mov flag_escape, #0
+
+		uart32_uartint_emulate_escseq_common:
+			str flag_escape, uart32_flag_escape
+			b uart32_uartint_emulate_success
+
+	uart32_uartint_emulate_backspace:
+
+		sub count, count, #1
+		cmp count, #0
+		bge uart32_uartint_emulate_backspace_jmp
+
+		/* Send Move Cursor Right Because of Overshoot */
+		push {r0-r3}
+		mov r0, string_tx
+		ldr r1, uart32_uartint_esc_right
+		bl str32_strcat
+		mov string_tx_dup, r0
+		pop {r0-r3}
+
+		cmp string_tx_dup, #0
+		beq uart32_uartint_emulate_error
+
+		push {r0-r3}
+		mov r0, string_tx
+		bl heap32_mfree
+		pop {r0-r3}
+		
+		mov string_tx, string_tx_dup
+
+		b uart32_uartint_emulate_success
+
+		uart32_uartint_emulate_backspace_jmp:
+
+			/* Get Length of Back Half to Be Concatenated */
+			push {r0-r3}
+			add r0, heap, count
+			add r0, r0, #1      @ Over Character to Be Deleted
+			bl str32_strlen
+			mov temp, r0
+			pop {r0-r3}
+			add temp, temp, #1  @ Add One For Null Character
+
+			push {r0-r3}
+			mov r0, heap
+			mov r1, count
+			mov r2, heap
+			add r3, count, #1   @ Over Character to Be Deleted
+			push {temp}
+			bl heap32_mcopy
+			add sp, sp, #4
+			pop {r0-r3}
+
+			sub temp, temp, #1  @ Subtract One For Null Character for Use Later
+
+			/* Send Esc[K (Clear From Cursor Right) */
+			push {r0-r3}
+			mov r0, string_tx
+			ldr r1, uart32_uartint_esc_clrline
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+			
+			mov string_tx, string_tx_dup
+
+			/* Reflect New Characters */
+			push {r0-r3}
+			mov r0, string_tx
+			add r1, heap, count
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+			
+			mov string_tx, string_tx_dup
+
+			/* Move Cursor Left Because of Renewed Back Half */
+			uart32_uartint_emulate_backspace_jmp_loop:
+				cmp temp, #0
+				ble uart32_uartint_emulate_backspace_jmp_common
+
+				push {r0-r3}
+				mov r0, string_tx
+				ldr r1, uart32_uartint_esc_left
+				bl str32_strcat
+				mov string_tx_dup, r0
+				pop {r0-r3}
+
+				cmp string_tx_dup, #0
+				beq uart32_uartint_emulate_error
+
+				push {r0-r3}
+				mov r0, string_tx
+				bl heap32_mfree
+				pop {r0-r3}
+				
+				mov string_tx, string_tx_dup
+
+				sub temp, temp, #1
+				b uart32_uartint_emulate_backspace_jmp_loop
+
+			uart32_uartint_emulate_backspace_jmp_common:
+				str count, UART32_UARTINT_COUNT
+				b uart32_uartint_emulate_success
+
+	uart32_uartint_emulate_carriagereturn:
+
+		mov temp, #1
+		str temp, UART32_UARTINT_BUSY
+
+		b uart32_uartint_emulate_success
+
+	uart32_uartint_emulate_errornak:
+
+		/* Send NAK (Negative-acknowledgement) */
+		push {r0-r3}
+		mov r0, string_tx
+		ldr r1, uart32_uartint_nak
+		bl str32_strcat
+		mov string_tx, r0
+		pop {r0-r3}
+
+		b uart32_uartint_emulate_common
+
+	uart32_uartint_emulate_error:
+
+		mov r0, #0
+
+		b uart32_uartint_emulate_common
+
+	uart32_uartint_emulate_success:
+		mov r0, string_tx
+
+	uart32_uartint_emulate_common:
+
+macro32_debug r0, 100, 112
+macro32_debug_hexa r0, 100, 124, 64
+
+		pop {r4-r9,pc}
+
+.unreq max_size
+.unreq flag_mirror
+.unreq heap
+.unreq count
+.unreq temp
+.unreq flag_escape
+.unreq buffer
+.unreq character_rx
+.unreq string_tx
+.unreq string_tx_dup
+
+uart32_uartint_emulate_dummy_str: .word _uart32_uartint_emulate_dummy_str
+_uart32_uartint_emulate_dummy_str: .word 0x00
 
 
 /**

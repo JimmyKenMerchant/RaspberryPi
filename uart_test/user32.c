@@ -13,7 +13,7 @@
 #define initial_line       1
 #define argument_maxlength 8
 #define label_maxlength    16
-#define label_maxchar      2 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
+#define label_maxchar      4 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
 #define link_stacksize     32
 #define rawdata_maxlength  16
 
@@ -21,7 +21,13 @@ String pass_space_label( String target_str );
 bool line_clean( String target_str ); 
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
-bool console_rollup(); 
+bool console_rollup();
+bool init_usb_keyboard( uint32 usb_channel );
+int32 ticket_hub; // Use in init_usb_keyboard()
+int32 ticket_hid; // Use in init_usb_keyboard()
+
+String kb_str; // String for USB Keyboard Input
+bool kb_enable; // Enabling Flag for USB Keyboard Input
 
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
 typedef enum _command_list {
@@ -117,10 +123,14 @@ typedef enum _pipe_list {
 
 
 typedef union _flex32 {
-	float32 f32;
+	char8 s8;
+	uchar8 u8;
+	int16 s16;
+	uint16 u16;
 	int32 s32;
 	uint32 u32;
 	obj object;
+	float32 f32;
 } flex32;
 
 
@@ -173,12 +183,19 @@ int32 _user_start()
 	String temp_str = null;
 	String temp_str2 = null;
 
-	buffer_zero = heap32_malloc( UART32_UARTMALLOC_MAXROW / 4 );
+	buffer_zero = heap32_malloc( UART32_UARTMALLOC_MAXROW + 1 / 4 ); // Add for Null Character
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
 	_uarttx( str_aloha, str32_strlen( str_aloha ) );
+
+	if ( init_usb_keyboard( 0 ) ) {
+		kb_enable = true;
+		_uartsettest( false, true, false );
+	} else {
+		kb_enable = false;
+	}
 
 	if ( ! _uartsetheap( initial_line ) ) {
 		str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
@@ -1162,6 +1179,21 @@ print32_debug( var_temp.u32, 400, 300  );
 				}
 			}
 		}
+		if ( kb_enable ) {
+			kb_str = _keyboard_get( 0, 1, ticket_hid );
+			arm32_dsb();
+			if ( kb_str > 0 ) {
+print32_debug( kb_str, 500, 254 );
+				for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
+					var_temp.u8 = _load_8( (obj)kb_str + i );
+					temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
+					print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) );
+					heap32_mfree( (obj)temp_str );
+				}
+				heap32_mfree( (obj)kb_str );
+			}
+			_sleep( 10000 );
+		}
 	}
 
 	return EXIT_SUCCESS;
@@ -1277,3 +1309,41 @@ bool console_rollup() {
 	return TRUE;
 }
 
+bool init_usb_keyboard( uint32 usb_channel )
+{
+
+	_sleep( 100000 );
+
+	_otg_host_reset_bcm();
+
+	ticket_hub = _hub_activate( usb_channel, 0 );
+	arm32_dsb();
+
+print32_debug( ticket_hub, 500, 230 );
+
+	if ( ticket_hub == -2 ) {
+		ticket_hid = 0; // Direct Connection
+	} else if ( ticket_hub > 0 ) {
+		ticket_hid = _hub_search_device( usb_channel, ticket_hub );
+#ifdef __B
+		arm32_dsb();
+		ticket_hid = _hub_search_device( usb_channel, ticket_hub );
+#endif
+	} else {
+		return False;
+	}
+	arm32_dsb();
+
+print32_debug( ticket_hid, 500, 242 );
+
+	if ( ticket_hid <= 0 ) return False;
+
+	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Activation of Device
+
+	ticket_hid = _hid_activate( usb_channel, 1, ticket_hid );
+	arm32_dsb();
+
+	//_hid_setidle( usb_channel, 0, ticket_hid );
+
+	return True;
+}

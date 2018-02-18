@@ -319,6 +319,13 @@ __attribute__((noinline)) uint32 _uartsetint
 	uint32 int_mask
 );
 
+__attribute__((noinline)) String _uartint_emulate
+(
+	uint32 max_size,
+	bool flag_mirror,
+	uchar8 character_rx
+);
+
 __attribute__((noinline)) uint32 _uartclrint();
 
 __attribute__((noinline)) uint32 _uarttx
@@ -1060,7 +1067,7 @@ __attribute__((noinline)) int32 _hid_setidle(
 	uint32 ticket
 );
 
-__attribute__((noinline)) int32 _keyboard_get(
+__attribute__((noinline)) String _keyboard_get(
 	uint32 channel,
 	uint32 number_endpoint,
 	uint32 ticket

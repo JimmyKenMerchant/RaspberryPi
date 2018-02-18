@@ -14,24 +14,21 @@ bool init_usb_keyboard();
 uint32 usb_channel; // 0-15
 int32 ticket_hub;
 int32 ticket_hid;
-
-obj response;
+String kb_str;
 
 int32 _user_start()
 {
 
 	usb_channel = 0;
 
-	_sleep( 500000 );
-
 	if ( ! init_usb_keyboard() ) return EXIT_FAILURE;
 
 	while(True) {
-		response = _keyboard_get( usb_channel, 1, ticket_hid );
+		kb_str = _keyboard_get( usb_channel, 1, ticket_hid );
 		arm32_dsb();
-		if ( response > 0 ) {
-			print32_set_caret( print32_string( (String)response, FB32_X_CARET, FB32_Y_CARET, str32_strlen( (String)response ) ) );
-			heap32_mfree( response );
+		if ( kb_str ) {
+			print32_set_caret( print32_string( kb_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( kb_str ) ) );
+			heap32_mfree( (obj)kb_str );
 		}
 		_sleep( 10000 );
 	}
@@ -42,6 +39,9 @@ int32 _user_start()
 
 bool init_usb_keyboard()
 {
+
+	_sleep( 100000 );
+
 	_otg_host_reset_bcm();
 
 	ticket_hub = _hub_activate( usb_channel, 0 );

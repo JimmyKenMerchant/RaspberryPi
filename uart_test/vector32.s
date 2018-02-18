@@ -123,6 +123,10 @@ os_reset:
 	bl uart32_uartmalloc
 	pop {r0-r3,lr}
 
+	push {r0-r3,lr}
+	bl bcm32_poweron_usb
+	pop {r0-r3,lr}
+
 	mov pc, lr
 
 os_irq:

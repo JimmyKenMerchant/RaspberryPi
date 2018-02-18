@@ -8,6 +8,8 @@
 
 * GPIO 47 (ACT LED) as Output
 
+* USB as Output
+
 * HDMI as VIDEO Output
 
 **Compatibility**
