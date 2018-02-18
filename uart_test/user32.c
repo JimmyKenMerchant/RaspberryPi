@@ -17,6 +17,9 @@
 #define link_stacksize     32
 #define rawdata_maxlength  16
 
+bool input_keyboard();
+bool set_cursor();
+bool process_counter();
 bool text_sender( String target_str );
 String pass_space_label( String target_str );
 bool line_clean( String target_str ); 
@@ -27,7 +30,6 @@ bool init_usb_keyboard( uint32 usb_channel );
 int32 ticket_hub; // Use in init_usb_keyboard()
 int32 ticket_hid; // Use in init_usb_keyboard()
 
-String kb_str; // String for USB Keyboard Input
 bool kb_enable; // Enabling Flag for USB Keyboard Input
 
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
@@ -150,8 +152,7 @@ int32 _user_start()
 {
 
 	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
-	String str_serialmode = "\e[31mSerial Mode\e[0m\r\n\0";
-	String str_process_counter = null;
+	String str_serialmode = "\x1B[31mSerial Mode\x1B[0m\r\n\0";
 	String str_direction = null;
 	obj array_source = heap32_malloc( argument_maxlength );
 	obj array_argpointer = heap32_malloc( argument_maxlength );
@@ -201,11 +202,7 @@ int32 _user_start()
 	}
 
 	if ( ! _uartsetheap( initial_line ) ) {
-		str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-		text_sender( "|\0" );
-		text_sender( str_process_counter );
-		text_sender( "| \0" );
-		heap32_mfree( (obj)str_process_counter );
+		process_counter();
 	}
 
 	flag_execute = false;
@@ -862,10 +859,12 @@ int32 _user_start()
 								break;
 							case input:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
+								text_sender( ">>\0" );
 								text_sender( UART32_UARTINT_HEAP );
 								_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 								while (true) {
+									input_keyboard();
 									if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) break;
 								}
 
@@ -1060,12 +1059,7 @@ int32 _user_start()
 						/* Print Commands Untill Line with Null Character */
 						for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 							_uartsetheap( i );
-							str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-							text_sender( "|\0" );
-							text_sender( str_process_counter );
-							text_sender( "| \0" );
-							heap32_mfree( (obj)str_process_counter );
-
+							process_counter();
 							var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
 							if ( var_temp.u32 == 0 ) break;
 							text_sender( UART32_UARTINT_HEAP );
@@ -1103,15 +1097,12 @@ int32 _user_start()
 						}
 						var_temp.u32 = str32_charsearch( temp_str, 1, 0x2E ); // Ascii Code of Period
 						if ( var_temp.u32 != -1 ) {
-print32_debug( var_temp.u32, 400, 300  );
+//print32_debug( var_temp.u32, 400, 300  );
 							temp_str++;
 							var_temp.u32 = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 							if ( var_temp.u32 == -1 ) { // If Not Initialized
 								text_sender( "Error! No Initialized Label: \0" );
-								str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-								text_sender( str_process_counter );
-								text_sender( "\r\n\0" );
-								heap32_mfree( (obj)str_process_counter );
+								process_counter();
 								pipe_type = termination;
 								break; // Break from for loop, NOT IF STATEMENT
 							}
@@ -1152,11 +1143,7 @@ print32_debug( var_temp.u32, 400, 300  );
 					if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
-					str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-					text_sender( "|\0" );
-					text_sender( str_process_counter );
-					text_sender( "| \0" );
-					heap32_mfree( (obj)str_process_counter );
+					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
 					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
@@ -1165,35 +1152,86 @@ print32_debug( var_temp.u32, 400, 300  );
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
-					str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-					text_sender( "|\0" );
-					text_sender( str_process_counter );
-					text_sender( "| \0" );
-					heap32_mfree( (obj)str_process_counter );
+					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
 					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
 			}
 		}
-		if ( kb_enable ) {
-			kb_str = _keyboard_get( 0, 1, ticket_hid );
-			arm32_dsb();
-			if ( kb_str > 0 ) {
-print32_debug( kb_str, 500, 254 );
-				for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
-					var_temp.u8 = _load_8( (obj)kb_str + i );
-					temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
-					print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) );
-					heap32_mfree( (obj)temp_str );
-				}
-				heap32_mfree( (obj)kb_str );
-			}
-			_sleep( 10000 );
-		}
+		input_keyboard();
 	}
 
 	return EXIT_SUCCESS;
+}
+
+
+bool input_keyboard() {
+	flex32 var_temp;
+	var_temp.u32 = 0;
+	if ( kb_enable ) {
+		String kb_str = _keyboard_get( 0, 1, ticket_hid );
+		arm32_dsb();
+		if ( kb_str > 0 ) {
+			// Erase Cursor
+			var_temp.u32 = _load_32( UART32_UARTINT_COUNT_ADDR );
+			if ( (uchar8)_load_8( (obj)UART32_UARTINT_HEAP + var_temp.u32 ) ) {
+				// If Other than Null Character (Assumes Real Character)
+				print32_string( UART32_UARTINT_HEAP + var_temp.u32, FB32_X_CARET, FB32_Y_CARET, 1 );
+			} else {
+				// If Null Character
+				print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 );
+			}
+			for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
+				var_temp.u8 = _load_8( (obj)kb_str + i );
+				String temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
+				if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();
+				heap32_mfree( (obj)temp_str );
+			}
+			if ( FB32_X_CARET ) set_cursor(); // If Not On Left Edge by Carriage Return
+			heap32_mfree( (obj)kb_str );
+		}
+		_sleep( 40000 );
+	}
+
+	return true;
+}
+
+
+bool set_cursor() {
+	// Same as Carriage Return
+	print32_string( "\x1B[7m \x1B[0m\0", FB32_X_CARET, FB32_Y_CARET, 9 );
+	uint32 count = _load_32( UART32_UARTINT_COUNT_ADDR );
+	if ( count ) {
+		// If Count is Bigger than 0
+		if ( print32_set_caret( print32_string( "\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 3 ) ) ) console_rollup();
+		if ( print32_set_caret( print32_string( UART32_UARTINT_HEAP + count - 1, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+	}
+	if ( count < UART32_UARTMALLOC_MAXROW - 1 ) { // If Count Reaches Maximum, Do Nothing
+		if ( print32_set_caret( print32_string( "\x1B[C\0", FB32_X_CARET, FB32_Y_CARET, 3 ) ) ) console_rollup();
+		if ( (uchar8)_load_8( (obj)UART32_UARTINT_HEAP + count + 1 ) ) {
+			// If Other than Null Character (Assumes Real Character)
+			if ( print32_set_caret( print32_string( UART32_UARTINT_HEAP + count + 1, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+		} else {
+			// If Null Character
+			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+
+		}
+		if ( print32_set_caret( print32_string( "\x1B[D\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 6 ) ) ) console_rollup();
+	}
+
+	return true;
+}
+
+
+bool process_counter() {
+	String str_process_counter = cvt32_int32_to_string_deci( UART32_UARTMALLOC_NUMBER, 2, 0 ); // Min. 2 Digit, Unsigned
+	text_sender( "|\0" );
+	text_sender( str_process_counter );
+	text_sender( "| \0" );
+	heap32_mfree( (obj)str_process_counter );
+
+	return true;
 }
 
 
@@ -1305,7 +1343,7 @@ bool console_rollup() {
 	);
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
-	print32_string( "\e[2K", FB32_X_CARET, FB32_Y_CARET, 4 );
+	print32_string( "\x1B[2K", FB32_X_CARET, FB32_Y_CARET, 4 );
 	return TRUE;
 }
 
@@ -1340,10 +1378,12 @@ print32_debug( ticket_hid, 500, 242 );
 
 	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Activation of Device
 
-	ticket_hid = _hid_activate( usb_channel, 1, ticket_hid );
+	uint32 response = _hid_activate( usb_channel, 1, ticket_hid );
 	arm32_dsb();
+
+	if ( response != ticket_hid ) return false;
 
 	//_hid_setidle( usb_channel, 0, ticket_hid );
 
-	return True;
+	return true;
 }

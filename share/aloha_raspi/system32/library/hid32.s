@@ -693,7 +693,7 @@ macro32_debug buffer, 320, 12
 	ldr data_upper, [buffer, #4]
 
 /*
-macro32_debug data, 320, 24
+macro32_debug data_lower, 320, 24
 */
 
 	push {r0-r3}

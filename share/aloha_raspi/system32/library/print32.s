@@ -289,6 +289,8 @@ print32_string:
 	ldr esc_count, print32_string_esc_count
 	ldr esc_count, [esc_count]
 
+	macro32_dsb ip
+
 	print32_string_loop:
 		cmp length, #0                           @ `for (; length > 0; length--)`
 		ble print32_string_success
@@ -314,7 +316,7 @@ print32_string:
 		beq print32_string_loop_carriagereturn
 
 		cmp string_byte, #0x1B
-		moveq esc_count, #1                     @ esc_count Increases in Progress
+		moveq esc_count, #1                      @ esc_count Increases in Progress
 		beq print32_string_loop_common
 
 		/* Clear the Block by Color */
@@ -462,6 +464,8 @@ print32_string:
 
 				mov esc_count, #0
 
+				macro32_dsb ip
+
 			print32_string_loop_escape_common:
 				cmp esc_count, #equ32_print32_string_buffer_size
 				movge esc_count, #equ32_print32_string_buffer_size
@@ -484,6 +488,7 @@ print32_string:
 		str esc_count, [length]
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
+		macro32_dsb ip
 		pop {r4-r11,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 
 .unreq string_point
@@ -499,6 +504,7 @@ print32_string:
 .unreq width
 .unreq esc_count
 
+.balign 4
 print32_string_esc_count: .word _print32_string_esc_count
 print32_string_buffer:    .word _print32_string_buffer
 
@@ -729,6 +735,7 @@ print32_esc_sequence:
 	print32_esc_sequence_common:
 		mov r0, x_coord
 		mov r1, y_coord
+		macro32_dsb ip
 		pop {r4-r5,pc}
 
 .unreq string_point
@@ -873,6 +880,7 @@ print32_esc_sequence_font:
 
 	print32_esc_sequence_font_common:
 		mov r0, #0
+		macro32_dsb ip
 		pop {pc}
 
 .unreq number
@@ -1094,6 +1102,7 @@ print32_number:
 	print32_number_common:
 		lsl x_coord, x_coord, #16
 		add r1, x_coord, y_coord
+		macro32_dsb ip
 		pop {r4-r11,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
                         @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 

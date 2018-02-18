@@ -609,6 +609,14 @@ uart32_uartint:
 		cmp count, max_size
 		subge count, count, #1           @ If Exceeds Maximum Size of Heap, Stay Count
 		str count, UART32_UARTINT_COUNT
+		blt uart32_uartint_success
+
+		/* Cursor Left If Reaching Maximum Size of Line */
+		push {r0-r3}
+		ldr r0, uart32_uartint_esc_left
+		mov r1, #3
+		bl uart32_uarttx
+		pop {r0-r3}
 
 		b uart32_uartint_success
 
@@ -1024,6 +1032,25 @@ uart32_uartint_emulate:
 		cmp count, max_size
 		subge count, count, #1           @ If Exceeds Maximum Size of Heap, Stay Count
 		str count, UART32_UARTINT_COUNT
+		blt uart32_uartint_emulate_success
+
+		/* Cursor Left If Reaching Maximum Size of Line */
+		push {r0-r3}
+		mov r0, string_tx
+		ldr r1, uart32_uartint_esc_left
+		bl str32_strcat
+		mov string_tx_dup, r0
+		pop {r0-r3}
+
+		cmp string_tx_dup, #0
+		beq uart32_uartint_emulate_error
+
+		push {r0-r3}
+		mov r0, string_tx
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov string_tx, string_tx_dup
 
 		b uart32_uartint_emulate_success
 
@@ -1333,10 +1360,9 @@ uart32_uartint_emulate:
 		mov r0, string_tx
 
 	uart32_uartint_emulate_common:
-
-macro32_debug r0, 100, 112
-macro32_debug_hexa r0, 100, 124, 64
-
+/*macro32_debug r0, 100, 112*/
+/*macro32_debug_hexa r0, 100, 124, 64*/
+		macro32_dsb ip
 		pop {r4-r9,pc}
 
 .unreq max_size
