@@ -17,7 +17,8 @@
 #define link_stacksize     32
 #define rawdata_maxlength  16
 
-String pass_space_label( String target_str ); 
+bool text_sender( String target_str );
+String pass_space_label( String target_str );
 bool line_clean( String target_str ); 
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
@@ -149,6 +150,7 @@ int32 _user_start()
 {
 
 	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
+	String str_serialmode = "\e[31mSerial Mode\e[0m\r\n\0";
 	String str_process_counter = null;
 	String str_direction = null;
 	obj array_source = heap32_malloc( argument_maxlength );
@@ -188,20 +190,21 @@ int32 _user_start()
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
-	_uarttx( str_aloha, str32_strlen( str_aloha ) );
-
+	
 	if ( init_usb_keyboard( 0 ) ) {
 		kb_enable = true;
 		_uartsettest( false, true, false );
 	} else {
 		kb_enable = false;
+		if ( print32_set_caret( print32_string( str_serialmode, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_serialmode ) ) ) ) console_rollup();
+		_uarttx( str_aloha, str32_strlen( str_aloha ) );
 	}
 
 	if ( ! _uartsetheap( initial_line ) ) {
 		str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-		_uarttx( "|\0", 1 );
-		_uarttx( str_process_counter, str32_strlen( str_process_counter ) );
-		_uarttx( "| \0", 2 );
+		text_sender( "|\0" );
+		text_sender( str_process_counter );
+		text_sender( "| \0" );
 		heap32_mfree( (obj)str_process_counter );
 	}
 
@@ -859,7 +862,7 @@ int32 _user_start()
 								break;
 							case input:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-								_uarttx( UART32_UARTINT_HEAP, str32_strlen( UART32_UARTINT_HEAP ) );
+								text_sender( UART32_UARTINT_HEAP );
 								_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 								while (true) {
@@ -1049,8 +1052,8 @@ int32 _user_start()
 						heap32_mfill( label_list.number, 0 );
 						label_list.length = 0;
 						for ( uint32 i = 0; i < rawdata_maxlength; i++ ) {
-								var_temp.u32 = _load_32( array_rawdata + 4 * i );
-								heap32_mfree( var_temp.u32 );
+							var_temp.u32 = _load_32( array_rawdata + 4 * i );
+							heap32_mfree( var_temp.u32 );
 						}
 						heap32_mfill( array_rawdata, 0 );
 
@@ -1058,20 +1061,15 @@ int32 _user_start()
 						for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 							_uartsetheap( i );
 							str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-							_uarttx( "|\0", 1 );
-							_uarttx( str_process_counter, str32_strlen( str_process_counter ) );
-							_uarttx( "| \0", 2 );
-							if ( print32_set_caret( print32_string( "|\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
-							if ( print32_set_caret( print32_string( str_process_counter, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_process_counter ) ) ) ) console_rollup();
-							if ( print32_set_caret( print32_string( "| \0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
+							text_sender( "|\0" );
+							text_sender( str_process_counter );
+							text_sender( "| \0" );
 							heap32_mfree( (obj)str_process_counter );
 
 							var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
 							if ( var_temp.u32 == 0 ) break;
-							_uarttx( UART32_UARTINT_HEAP, str32_strlen( UART32_UARTINT_HEAP ) );
-							_uarttx( "\r\n\0", 2 );
-							if ( print32_set_caret( print32_string( UART32_UARTINT_HEAP, FB32_X_CARET, FB32_Y_CARET, str32_strlen( UART32_UARTINT_HEAP ) ) ) ) console_rollup();
-							if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
+							text_sender( UART32_UARTINT_HEAP );
+							text_sender( "\r\n\0" );
 						}
 						pipe_type = search_command;
 						flag_execute = false;
@@ -1093,8 +1091,7 @@ int32 _user_start()
 
 					flag_execute = true;
 					pipe_type = search_command;
-					_uarttx( "\x1B[2J\x1B[H\0", 7 ); // Clear All Screen and Move Cursor to Upper Left
-					//if ( print32_set_caret( print32_string( "\x1B[2J\x1B[H\0", FB32_X_CARET, FB32_Y_CARET, 7 ) ) ) console_rollup();
+					text_sender( "\x1B[2J\x1B[H\0" ); // Clear All Screen and Move Cursor to Upper Left
 
 					/* Labels Enumuration */
 					for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -1110,10 +1107,10 @@ print32_debug( var_temp.u32, 400, 300  );
 							temp_str++;
 							var_temp.u32 = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 							if ( var_temp.u32 == -1 ) { // If Not Initialized
-								_uarttx( "Error! No Initialized Label: \0", 29 );
+								text_sender( "Error! No Initialized Label: \0" );
 								str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-								_uarttx( str_process_counter, str32_strlen( str_process_counter ) );
-								_uarttx( "\r\n\0", 2 );
+								text_sender( str_process_counter );
+								text_sender( "\r\n\0" );
 								heap32_mfree( (obj)str_process_counter );
 								pipe_type = termination;
 								break; // Break from for loop, NOT IF STATEMENT
@@ -1138,7 +1135,7 @@ print32_debug( var_temp.u32, 400, 300  );
 
 				} else if ( str32_strmatch( UART32_UARTINT_HEAP, 3, "set\0", 3 ) ) {
 					/* If You Command "set <LineNumber>", It Sets Line */
-					_uarttx( "\x1B[2J\x1B[H\0", 7 ); // Clear All Screen and Move Cursor to Upper Left
+					text_sender( "\x1B[2J\x1B[H\0" ); // Clear All Screen and Move Cursor to Upper Left
 					temp_str = UART32_UARTINT_HEAP;
 					var_temp.u32 = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 					if ( var_temp.u32 == -1 ) {
@@ -1156,24 +1153,24 @@ print32_debug( var_temp.u32, 400, 300  );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
 					str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-					_uarttx( "|\0", 1 );
-					_uarttx( str_process_counter, str32_strlen( str_process_counter ) );
-					_uarttx( "| \0", 2 );
+					text_sender( "|\0" );
+					text_sender( str_process_counter );
+					text_sender( "| \0" );
 					heap32_mfree( (obj)str_process_counter );
-					_uarttx( UART32_UARTINT_HEAP, str32_strlen( UART32_UARTINT_HEAP ) );
+					text_sender( UART32_UARTINT_HEAP );
 					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
-					_uarttx( "\r\n\0", 2 ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
+					text_sender( "\r\n\0" ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
 					str_process_counter = cvt32_int32_to_string_hexa( UART32_UARTMALLOC_NUMBER, 2, 0, 0 ); // Min. 2 Digit, Unsigned
-					_uarttx( "|\0", 1 );
-					_uarttx( str_process_counter, str32_strlen( str_process_counter ) );
-					_uarttx( "| \0", 2 );
+					text_sender( "|\0" );
+					text_sender( str_process_counter );
+					text_sender( "| \0" );
 					heap32_mfree( (obj)str_process_counter );
-					_uarttx( UART32_UARTINT_HEAP, str32_strlen( UART32_UARTINT_HEAP ) );
+					text_sender( UART32_UARTINT_HEAP );
 					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
@@ -1197,6 +1194,17 @@ print32_debug( kb_str, 500, 254 );
 	}
 
 	return EXIT_SUCCESS;
+}
+
+
+bool text_sender( String target_str ) {
+	uint32 length = str32_strlen( target_str );
+	if ( kb_enable ) {
+		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
+	} else {
+		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	}
+	return true;
 }
 
 
@@ -1236,32 +1244,25 @@ bool command_print( String target_str ) {
 	while ( str32_strlen( temp_str ) ) {
 		if ( str32_strindex( temp_str, "\\n\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\n\0" );
-			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
-			_uarttx( "\r\n\0", 2 );
-			if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
+			text_sender( temp_str );
+			text_sender( "\r\n\0" );
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( str32_strindex( temp_str, "\\s\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\s\0" );
-			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
-			_uarttx( " \0", 1 );
-			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+			text_sender( temp_str );
+			text_sender( " \0" );
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( str32_strindex( temp_str, "\\e\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\e\0" );
-			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
-			_uarttx( "\x1B\0", 1 );
-			if ( print32_set_caret( print32_string( "\x1B\0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+			text_sender( temp_str );
+			text_sender( "\x1B\0" );
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else {
 			temp_str_index = str32_strlen( temp_str );
-			_uarttx( temp_str, temp_str_index );
-			if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, temp_str_index ) ) ) console_rollup();
+			text_sender( temp_str );
 			temp_str += temp_str_index;
 		}
 	}
@@ -1285,8 +1286,7 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 				command_print( false_str );
 			}
 		}
-		_uarttx( "\r\n\0", 2 );
-		if ( print32_set_caret( print32_string( "\r\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) ) ) console_rollup();
+		text_sender( "\r\n\0" );
 	}
 	return TRUE;
 }

@@ -300,6 +300,9 @@ print32_string:
 		cmp esc_count, #0x0
 		bne print32_string_loop_escape
 
+		cmp string_byte, #0x08
+		beq print32_string_loop_backspace
+
 		cmp string_byte, #0x09
 		moveq string_byte, #equ32_print32_string_tab_length
 		beq print32_string_loop_tab
@@ -404,6 +407,12 @@ print32_string:
 
 			sub string_byte, string_byte, #1
 			b print32_string_loop_tab
+
+		print32_string_loop_backspace:
+			sub x_coord, x_coord, char_width
+			cmp x_coord, #0
+			movle x_coord, #0
+			b print32_string_loop_common
 
 		print32_string_loop_escape:
 
