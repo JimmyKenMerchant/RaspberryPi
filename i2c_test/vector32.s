@@ -157,59 +157,35 @@ os_debug:
 	bl heap32_malloc
 	pop {r1-r3}
 
-	mov addr, #0x0034       @ Most Significant at First, Little Endian
-	orr addr, addr, #0x1200 @ Least Significant at Second, Little Endian
+	mov data, #0xAB000000
+	orr data, data, #0x00CD0000
+	orr data, data, #0x0000EF00
+	orr data, data, #0x00000001
 
-	mov data, #0xAB
-	orr addr, addr, data, lsl #16
-	
-	str addr, [heap]
+	str data, [heap]
 
-macro32_debug_hexa heap, 100, 88, 3
+macro32_debug_hexa heap, 100, 136, 8
 
 	/* Actual Write of Data */
 	push {r0-r3}
-	mov r1, #0b01010000     @ Device Address, Address Bit[7:1] to Bit[6:0]
-	mov r2, #3              @ Transfer Size  
-	bl i2c32_i2ctx
-
-macro32_debug r0, 100, 100
-
+	mov r1, #0
+	mov r2, #0x0001
+	mov r3, #4
+	bl rom32_romwrite_i2c
 	pop {r0-r3}
 
-	/* Wait for 5ms to write */
 	push {r0-r3}
-	mov r0, #0x1400         @ Decimal 5120
-	bl arm32_sleep
+	mov r1, #0
+	mov r2, #0x0002
+	mov r3, #4
+	bl rom32_romread_i2c
 	pop {r0-r3}
 
-	/* Dummy Write to Stay Current Address*/
+macro32_debug_hexa heap, 100, 148, 8
+
 	push {r0-r3}
-	mov r1, #0b01010000     @ Device Address, Address Bit[7:1] to Bit[6:0]
-	mov r2, #2              @ Transfer Size  
-	bl i2c32_i2ctx
-
-macro32_debug r0, 100, 112
-
+	bl heap32_mfree
 	pop {r0-r3}
-
-	/* Wait for 5ms to write */
-	push {r0-r3}
-	mov r0, #0x1400         @ Decimal 5120
-	bl arm32_sleep
-	pop {r0-r3}
-
-	/* Read */
-	push {r0-r3}
-	mov r1, #0b01010000     @ Device Address, Address Bit[7:1] to Bit[6:0]
-	mov r2, #1              @ Transfer Size 
-	bl i2c32_i2crx
-
-macro32_debug r0, 100, 124
-
-	pop {r0-r3}
-
-macro32_debug_hexa heap, 100, 136, 3
 
 	pop {pc}
 

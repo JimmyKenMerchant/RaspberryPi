@@ -404,7 +404,7 @@ heap32_malloc_noncache:
  *
  * Usage: r0-r4
  * Return: r0 (0 as Success, 1 as Error)
- * Error: Pointer of Start Address is Null (0)
+ * Error: Pointer of Start Address is Null (0) or Not in Heap Area
  */
 .globl heap32_mfree
 heap32_mfree:
@@ -472,25 +472,51 @@ heap32_mfree:
  * Parameters
  * r0: Pointer of Start Address of Memory Space
  *
- * Return: r0 (Size of Memory Space by Byte)
+ * Return: r0 (Size of Memory Space by Byte, -1 as Error)
+ * Error: Pointer of Start Address is Null (0) or Not in Heap Area
  */
 .globl heap32_mcount
 heap32_mcount:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	block_size       .req r1
+	heap_start       .req r2
+	heap_size        .req r3
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp block_start, #0
+	beq heap32_mcount_error
 
 	sub block_start, block_start, #4            @ Slide Minus 4 Bytes for Size Indicator of Memory Space
 	ldr block_size, [block_start]
-	sub block_size, block_size, #4
+	add block_size, block_start, block_size
 
-	mov block_start, block_size
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
+	add heap_size, heap_start, heap_size
+
+	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
+	bhi heap32_mcount_error                     @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
+
+	cmp block_start, heap_start
+	blo heap32_mcount_error
+
+	sub block_size, block_size, block_start
+	sub block_start, block_size, #4
+
+	b heap32_mcount_common
+
+	heap32_mcount_error:
+		mvn r0, #0
 
 	heap32_mcount_common:
 		mov pc, lr
 
 .unreq block_start
 .unreq block_size
+.unreq heap_start
+.unreq heap_size
 
 
 /**

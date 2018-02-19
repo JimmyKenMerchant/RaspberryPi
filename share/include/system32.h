@@ -1708,7 +1708,7 @@ extern obj heap32_malloc( uint32 block_size );
 
 extern uint32 heap32_mfree( obj heap );
 
-extern uint32 heap32_mcount( obj heap );
+extern int32 heap32_mcount( obj heap );
 
 extern uint32 heap32_mfill( obj heap, uint32 data );
 

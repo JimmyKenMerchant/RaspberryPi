@@ -98,6 +98,8 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 4
 .include "system32/library/hid32.s"
 .balign 4
+.include "system32/library/rom32.s"
+.balign 4
 .include "system32/library/font_mono_12px.s"
 .balign 4
 .include "system32/library/color.s"

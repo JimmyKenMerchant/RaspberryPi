@@ -1336,7 +1336,8 @@ bool command_print( String target_str ) {
 
 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
-	uint32 size_array = heap32_mcount( array ); 
+	int32 size_array = heap32_mcount( array );
+	if ( size_array == -1 ) return false;
 	if ( size_indicator > 2 ) size_indicator = 2;
 	uint32 count_array = size_array >> size_indicator;
 	size_indicator = 1 << size_indicator;
