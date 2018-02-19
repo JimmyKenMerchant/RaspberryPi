@@ -194,7 +194,7 @@ int32 _user_start()
 	
 	if ( init_usb_keyboard( 0 ) ) {
 		kb_enable = true;
-		_uartsettest( false, true, false );
+		_uartsettest( false, false, false );
 	} else {
 		kb_enable = false;
 		if ( print32_set_caret( print32_string( str_serialmode, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_serialmode ) ) ) ) console_rollup();
@@ -861,7 +861,12 @@ int32 _user_start()
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								text_sender( ">>\0" );
 								text_sender( UART32_UARTINT_HEAP );
-								_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
+								var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
+								if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
+									var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
+									text_sender( "\x1B[D\0" );
+								}
+								_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 								while (true) {
 									input_keyboard();
@@ -1063,11 +1068,17 @@ int32 _user_start()
 							var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
 							if ( var_temp.u32 == 0 ) break;
 							text_sender( UART32_UARTINT_HEAP );
-							text_sender( "\r\n\0" );
+							if ( i < UART32_UARTMALLOC_LENGTH - 1 ) text_sender( "\r\n\0" ); // If Not Last Line
 						}
+						
 						pipe_type = search_command;
 						flag_execute = false;
-						_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
+						var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
+						if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
+							var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
+							text_sender( "\x1B[D\0" );
+						}
+						_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 						_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 
 						break;
@@ -1145,7 +1156,12 @@ int32 _user_start()
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
-					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
+					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
+					if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
+						var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
+						text_sender( "\x1B[D\0" );
+					}
+					_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
 					text_sender( "\r\n\0" ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
@@ -1154,7 +1170,12 @@ int32 _user_start()
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
-					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
+					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
+					if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
+						var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
+						text_sender( "\x1B[D\0" );
+					}
+					_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
 			}
@@ -1185,7 +1206,11 @@ bool input_keyboard() {
 			for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
 				var_temp.u8 = _load_8( (obj)kb_str + i );
 				String temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
-				if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();
+				if ( temp_str ) { // If Not Error(0)
+					if ( str32_charsearch( temp_str, 1, 0x15 ) == -1 ) { // If Not NAK
+						if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();
+					}
+				}
 				heap32_mfree( (obj)temp_str );
 			}
 			if ( FB32_X_CARET ) set_cursor(); // If Not On Left Edge by Carriage Return
@@ -1199,9 +1224,8 @@ bool input_keyboard() {
 
 
 bool set_cursor() {
-	// Same as Carriage Return
-	print32_string( "\x1B[7m \x1B[0m\0", FB32_X_CARET, FB32_Y_CARET, 9 );
 	uint32 count = _load_32( UART32_UARTINT_COUNT_ADDR );
+	print32_string( "\x1B[7m \x1B[0m\0", FB32_X_CARET, FB32_Y_CARET, 9 );
 	if ( count ) {
 		// If Count is Bigger than 0
 		if ( print32_set_caret( print32_string( "\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 3 ) ) ) console_rollup();
@@ -1215,7 +1239,6 @@ bool set_cursor() {
 		} else {
 			// If Null Character
 			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
-
 		}
 		if ( print32_set_caret( print32_string( "\x1B[D\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 6 ) ) ) console_rollup();
 	}
@@ -1242,6 +1265,7 @@ bool text_sender( String target_str ) {
 	} else {
 		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
 	}
+
 	return true;
 }
 
@@ -1264,6 +1288,7 @@ String pass_space_label( String target_str ) {
 			}
 		}
 	}
+
 	return target_str;
 }
 
@@ -1272,7 +1297,8 @@ String pass_space_label( String target_str ) {
 bool line_clean( String target_str ) {
 	uint32 length_temp = str32_strlen( target_str ); // Ascii Code of Space
 	heap32_mcopy( (obj)target_str, length_temp, buffer_zero, 0, UART32_UARTMALLOC_MAXROW - length_temp ); // Add Null Character
-	return TRUE;
+
+	return true;
 }
 
 
@@ -1304,7 +1330,8 @@ bool command_print( String target_str ) {
 			temp_str += temp_str_index;
 		}
 	}
-	return TRUE; 
+
+	return true; 
 }
 
 
@@ -1317,7 +1344,7 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 	for ( uint32 i = 0; i < count_array; i++ ) {
 		uint32 data = _load_32( array + size_indicator * i );
 		for ( int32 j = length_data - 1; j >= 0; j-- ) {
-			uint32 bit = data & TRUE << j;
+			uint32 bit = data & true << j;
 			if ( bit ) {
 				command_print( true_str );
 			} else {
@@ -1326,8 +1353,10 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 		}
 		text_sender( "\r\n\0" );
 	}
-	return TRUE;
+
+	return true;
 }
+
 
 bool console_rollup() {
 	fb32_image(
@@ -1344,20 +1373,22 @@ bool console_rollup() {
 	FB32_X_CARET = 0;
 	FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
 	print32_string( "\x1B[2K", FB32_X_CARET, FB32_Y_CARET, 4 );
-	return TRUE;
+
+	return true;
 }
+
 
 bool init_usb_keyboard( uint32 usb_channel )
 {
 
-	_sleep( 100000 );
+	_sleep( 200000 );
 
 	_otg_host_reset_bcm();
 
 	ticket_hub = _hub_activate( usb_channel, 0 );
 	arm32_dsb();
 
-print32_debug( ticket_hub, 500, 230 );
+//print32_debug( ticket_hub, 500, 230 );
 
 	if ( ticket_hub == -2 ) {
 		ticket_hid = 0; // Direct Connection
@@ -1368,13 +1399,13 @@ print32_debug( ticket_hub, 500, 230 );
 		ticket_hid = _hub_search_device( usb_channel, ticket_hub );
 #endif
 	} else {
-		return False;
+		return false;
 	}
 	arm32_dsb();
 
-print32_debug( ticket_hid, 500, 242 );
+//print32_debug( ticket_hid, 500, 242 );
 
-	if ( ticket_hid <= 0 ) return False;
+	if ( ticket_hid <= 0 ) return false;
 
 	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Activation of Device
 

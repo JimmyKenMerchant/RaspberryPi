@@ -238,7 +238,9 @@ _os_reset:
 	bl _user_start
 	pop {r1-r3}
 
-	macro32_debug r0, 120, 120
+	ldr r0, _os_reset_remark_addr
+	macro32_print_string r0 0 0 22
+	macro32_debug r0, 0, 12
 	_os_reset_loop:
 		b _os_reset_loop
 
@@ -256,11 +258,21 @@ _os_reset:
 	mov pc, lr
 	*/
 
+_os_reset_remark_addr: .word _os_reset_remark
+_os_reset_remark:     .ascii "\x1B[0mOS End With Value:\0"
+.balign 4
+
 
 _os_undefined_instruction:
-	macro32_debug lr, 0, 0
+	ldr r0, _os_undefined_instruction_remark_addr
+	macro32_print_string r0 0 0 29
+	macro32_debug lr, 0, 12
 	_os_undefined_instruction_loop:
 		b _os_undefined_instruction_loop
+
+_os_undefined_instruction_remark_addr: .word _os_undefined_instruction_remark
+_os_undefined_instruction_remark:      .ascii "\x1B[0mUndefined Instruction At:\0"
+.balign 4
 
 
 _os_svc:
@@ -430,15 +442,29 @@ _os_svc:
 
 
 _os_prefetch_abort:
-	macro32_debug lr, 0, 240
+	ldr r0, _os_prefetch_abort_remark_addr
+	macro32_print_string r0 0 0 22
+	sub lr, lr, #4                           @ lr is Incremented by 4
+	macro32_debug lr, 0, 12
 	_os_prefetch_abort_loop:
 		b _os_prefetch_abort_loop
 
+_os_prefetch_abort_remark_addr: .word _os_prefetch_abort_remark
+_os_prefetch_abort_remark:      .ascii "\x1B[0mPrefetch Abort At:\0"
+.balign 4
+
 
 _os_data_abort:
-	macro32_debug lr, 240, 240
+	ldr r0, _os_data_abort_remark_addr
+	macro32_print_string r0 0 0 18
+	sub lr, lr, #8                           @ lr is Incremented by 8
+	macro32_debug lr, 0, 12
 	_os_data_abort_loop:
 		b _os_data_abort_loop
+
+_os_data_abort_remark_addr: .word _os_data_abort_remark
+_os_data_abort_remark:      .ascii "\x1B[0mData Abort At:\0"
+.balign 4
 
 
 _os_irq:

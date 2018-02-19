@@ -599,6 +599,9 @@ uart32_uartint:
 		cmp temp, #-1
 		bne uart32_uartint_carriagereturn
 
+		cmp count, max_size
+		subge count, max_size, #1
+
 		/* Store Data to Actual Memory Space from Buffer */
 		ldr temp, uart32_uartint_buffer
 		ldrb temp, [temp]
@@ -607,7 +610,7 @@ uart32_uartint:
 		/* Slide Offset Count */
 		add count, count, #1
 		cmp count, max_size
-		subge count, count, #1           @ If Exceeds Maximum Size of Heap, Stay Count
+		subge count, max_size, #1       @ If Exceeds Maximum Size of Heap, Stay Count
 		str count, UART32_UARTINT_COUNT
 		blt uart32_uartint_success
 
@@ -1022,6 +1025,9 @@ uart32_uartint_emulate:
 		cmp temp, #-1
 		bne uart32_uartint_emulate_carriagereturn
 
+		cmp count, max_size
+		subge count, max_size, #1
+
 		/* Store Data to Actual Memory Space from Buffer */
 		ldr temp, uart32_uartint_buffer
 		ldrb temp, [temp]
@@ -1030,7 +1036,7 @@ uart32_uartint_emulate:
 		/* Slide Offset Count */
 		add count, count, #1
 		cmp count, max_size
-		subge count, count, #1           @ If Exceeds Maximum Size of Heap, Stay Count
+		subge count, max_size, #1        @ If Exceeds Maximum Size of Heap, Stay Count
 		str count, UART32_UARTINT_COUNT
 		blt uart32_uartint_emulate_success
 
