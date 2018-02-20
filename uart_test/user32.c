@@ -18,6 +18,9 @@
 #define rawdata_maxlength  16
 
 bool input_keyboard();
+bool input_keyboard_continue_flag;
+String input_keyboard_kb_str;
+bool input_keyboard_translation( String kb_str );
 bool set_cursor();
 bool process_counter();
 bool text_sender( String target_str );
@@ -34,7 +37,7 @@ bool kb_enable; // Enabling Flag for USB Keyboard Input
 
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
 typedef enum _command_list {
-	null,
+	list_null,
 	end,
 	sleep, // Sleep microseconds by integer "Sleep %S1"
 	arr, // Make raw data array of integer, "arr %D %S1 %S2 %S3": D = number of array made of S1 - S2. S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
@@ -148,8 +151,7 @@ bool flag_execute;
 
 obj buffer_zero; // Zero Buffer
 
-int32 _user_start()
-{
+int32 _user_start() {
 
 	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_serialmode = "\x1B[31mSerial Mode\x1B[0m\r\n\0";
@@ -185,6 +187,9 @@ int32 _user_start()
 	String dst_str = null;
 	String temp_str = null;
 	String temp_str2 = null;
+
+	input_keyboard_continue_flag = false;
+	input_keyboard_kb_str = null;
 
 	buffer_zero = heap32_malloc( UART32_UARTMALLOC_MAXROW + 1 / 4 ); // Add for Null Character
 
@@ -1188,33 +1193,24 @@ int32 _user_start()
 
 
 bool input_keyboard() {
-	flex32 var_temp;
-	var_temp.u32 = 0;
 	if ( kb_enable ) {
 		String kb_str = _keyboard_get( 0, 1, ticket_hid );
 		arm32_dsb();
-		if ( kb_str > 0 ) {
-			// Erase Cursor
-			var_temp.u32 = _load_32( UART32_UARTINT_COUNT_ADDR );
-			if ( (uchar8)_load_8( (obj)UART32_UARTINT_HEAP + var_temp.u32 ) ) {
-				// If Other than Null Character (Assumes Real Character)
-				print32_string( UART32_UARTINT_HEAP + var_temp.u32, FB32_X_CARET, FB32_Y_CARET, 1 );
-			} else {
-				// If Null Character
-				print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 );
-			}
-			for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
-				var_temp.u8 = _load_8( (obj)kb_str + i );
-				String temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
-				if ( temp_str ) { // If Not Error(0)
-					if ( str32_charsearch( temp_str, 1, 0x15 ) == -1 ) { // If Not NAK
-						if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();
-					}
+		if ( kb_str > 0 ) { // If Key Status Changed
+			if ( input_keyboard_kb_str != null ) { // If Not Initial
+				if ( str32_strmatch( input_keyboard_kb_str, str32_strlen( input_keyboard_kb_str ), kb_str, str32_strlen( kb_str ) ) ) {
+					input_keyboard_continue_flag = true;				
+				} else {
+					heap32_mfree( (obj)input_keyboard_kb_str );
+					input_keyboard_continue_flag = false;				
 				}
-				heap32_mfree( (obj)temp_str );
 			}
-			if ( FB32_X_CARET ) set_cursor(); // If Not On Left Edge by Carriage Return
-			heap32_mfree( (obj)kb_str );
+			input_keyboard_translation( kb_str );
+			if ( ! input_keyboard_continue_flag ) input_keyboard_kb_str = kb_str;
+		}
+
+		if ( input_keyboard_continue_flag ) { // If Pushing Key Continues
+			input_keyboard_translation( input_keyboard_kb_str );
 		}
 		_sleep( 40000 );
 	}
@@ -1222,6 +1218,32 @@ bool input_keyboard() {
 	return true;
 }
 
+
+bool input_keyboard_translation( String kb_str ) {
+	flex32 var_temp;
+	// Erase Cursor
+	var_temp.u32 = _load_32( UART32_UARTINT_COUNT_ADDR );
+	if ( (uchar8)_load_8( (obj)UART32_UARTINT_HEAP + var_temp.u32 ) ) {
+		// If Other than Null Character (Assumes Real Character)
+		print32_string( UART32_UARTINT_HEAP + var_temp.u32, FB32_X_CARET, FB32_Y_CARET, 1 );
+	} else {
+		// If Null Character
+		print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 );
+	}
+	for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
+		var_temp.u8 = _load_8( (obj)kb_str + i );
+		String temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
+		if ( temp_str ) { // If Not Error(0)
+			if ( str32_charsearch( temp_str, 1, 0x15 ) == -1 ) { // If Not NAK
+				if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();
+			}
+			heap32_mfree( (obj)temp_str );
+		}
+	}
+	if ( FB32_X_CARET ) set_cursor(); // If Not On Left Edge by Carriage Return
+
+	return true;
+}
 
 bool set_cursor() {
 	uint32 count = _load_32( UART32_UARTINT_COUNT_ADDR );

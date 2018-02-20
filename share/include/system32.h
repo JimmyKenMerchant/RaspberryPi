@@ -47,22 +47,31 @@
 #define bool unsigned char
 #endif
 #ifndef true
-#define true 1
+#define true ((bool)1)
 #endif
 #ifndef false
-#define false 0
+#define false ((bool)0)
 #endif
 #ifndef True
-#define True 1
+#define True ((bool)1)
 #endif
 #ifndef False
-#define False 0
+#define False ((bool)0)
 #endif
 #ifndef TRUE
-#define TRUE 1
+#define TRUE ((bool)1)
 #endif
 #ifndef FALSE
-#define FALSE 0
+#define FALSE ((bool)0)
+#endif
+#ifndef null 
+#define null 0
+#endif
+#ifndef NULL 
+#define NULL 0
+#endif
+#ifndef Null 
+#define Null 0
 #endif
 
 #define obj uint32
