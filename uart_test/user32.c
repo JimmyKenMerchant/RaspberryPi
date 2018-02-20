@@ -24,6 +24,7 @@ bool input_keyboard_translation( String kb_str );
 bool set_cursor();
 bool process_counter();
 bool text_sender( String target_str );
+bool text_sender_length( String target_str, uint32 length );
 String pass_space_label( String target_str );
 bool line_clean( String target_str ); 
 bool command_print( String target_str ); 
@@ -37,7 +38,7 @@ bool kb_enable; // Enabling Flag for USB Keyboard Input
 
 /* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
 typedef enum _command_list {
-	list_null,
+	null_command_list,
 	end,
 	sleep, // Sleep microseconds by integer "Sleep %S1"
 	arr, // Make raw data array of integer, "arr %D %S1 %S2 %S3": D = number of array made of S1 - S2. S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
@@ -48,6 +49,8 @@ typedef enum _command_list {
 	 * This command inserts "\r\n" when each data of array is ended.
 	 */
 	pict,
+	save, // Save lines to EEPROM, "save %S1 %S2 %S3": Save lines from number S1 to chip S3 (Bit[2:0]). Length is S2.
+	load, // Load lines from EEPROM, jump to the last line to be loaded, "load %S1 %S2 %S3": Load lines to number S1 from chip S3 (Bit[2:0]). Length is S2.
 	add, // Integer signed addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
 	sub,
 	mul,
@@ -161,7 +164,7 @@ int32 _user_start() {
 	obj array_link = heap32_malloc( link_stacksize );
 	uint32 array_link_offset = 0;
 	obj array_rawdata = heap32_malloc( rawdata_maxlength ); // Two Dimentional Array
-	obj buffer_line = heap32_malloc( UART32_UARTMALLOC_MAXROW / 4 );
+	obj buffer_line = heap32_malloc( UART32_UARTMALLOC_MAXROW + 1 / 4 ); // Add for Null Character
 	uint32 length_arg = 0;
 	uint32 length_temp = 0;
 	uint32 var_index = 0;
@@ -175,6 +178,8 @@ int32 _user_start() {
 	var_temp2.u32 = 0;
 	flex32 var_temp3;
 	var_temp3.u32 = 0;
+	flex32 var_temp4;
+	var_temp4.u32 = 0;
 	flex32 direction;
 	direction.u32 = 0;
 	dictionary label_list;
@@ -254,12 +259,22 @@ int32 _user_start() {
 							command_type = free;
 							length_arg = 1;
 							pipe_type = enumurate_variables;
-							var_index = 0; // Only Last One Is Needed to Translate to Integer
+							var_index = 0;
 						} else if ( str32_strmatch( temp_str, 4, "pict\0", 4 ) ) {
 							command_type = pict;
 							length_arg = 4;
 							pipe_type = enumurate_variables;
 							var_index = 2; // Only Last Two Is Needed to Translate to Integer
+						} else if ( str32_strmatch( temp_str, 4, "save\0", 4 ) ) {
+							command_type = save;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 0;
+						} else if ( str32_strmatch( temp_str, 4, "load\0", 4 ) ) {
+							command_type = load;
+							length_arg = 3;
+							pipe_type = enumurate_variables;
+							var_index = 0;
 						} else if ( str32_strmatch( temp_str, 3, "add\0", 3 ) ) {
 							command_type = add;
 							length_arg = 3;
@@ -705,6 +720,39 @@ int32 _user_start() {
 								command_pict( temp_str, temp_str2, var_temp.object, var_temp2.u32 ); 
 
 								break;
+							case save:
+								var_temp.u32 = 0; // Memory Address
+								var_temp2.u32 = _load_32( array_source ); // First Line Number to Save
+								if ( var_temp2.u32 < initial_line ) var_temp2.u32 = initial_line;
+								var_temp3.u32 = _load_32( array_source + 4 ); // Length of Lines to Save
+								var_temp3.u32 += var_temp2.u32; // End Point
+								if ( var_temp3.u32 > UART32_UARTMALLOC_LENGTH ) var_temp3.u32 = UART32_UARTMALLOC_LENGTH;
+								var_temp4.u32 = _load_32( array_source + 8 ); // Chip Select
+								for ( uint32 i = var_temp2.u32; i < var_temp3.u32; i++ ) {
+									_uartsetheap( i );
+									if ( _romwrite_i2c( (obj)UART32_UARTINT_HEAP, var_temp4.u32, var_temp.u32, str32_strlen( UART32_UARTINT_HEAP ) + 1 ) ) break; // Add One for Null
+									var_temp.u32 += UART32_UARTMALLOC_MAXROW + 1; // Add One for Null Character
+								}
+
+								break;
+							case load:
+								var_temp.u32 = 0; // Memory Address
+								var_temp2.u32 = _load_32( array_source ); // First Line Number to Save
+								if ( var_temp2.u32 < initial_line ) var_temp2.u32 = initial_line;
+								var_temp3.u32 = _load_32( array_source + 4 ); // Length of Lines to Save
+								var_temp3.u32 += var_temp2.u32; // End Point
+								if ( var_temp3.u32 > UART32_UARTMALLOC_LENGTH ) var_temp3.u32 = UART32_UARTMALLOC_LENGTH;
+								var_temp4.u32 = _load_32( array_source + 8 ); // Chip Select
+								for ( uint32 i = var_temp2.u32; i < var_temp3.u32; i++ ) {
+									_uartsetheap( i );
+									if ( _romread_i2c( buffer_line, var_temp4.u32, var_temp.u32, UART32_UARTMALLOC_MAXROW + 1 ) ) break;
+									heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
+									line_clean( UART32_UARTINT_HEAP );
+									var_temp.u32 += UART32_UARTMALLOC_MAXROW + 1; // Add One for Null Character
+								}
+								current_line = UART32_UARTMALLOC_NUMBER - 1; // Next Line Becomes Last Line to Be Loaded
+
+								break;
 							case add:
 								direction.s32 = _load_32( array_source + 4 ) + _load_32( array_source + 8 );
 								str_direction = cvt32_int32_to_string_deci( direction.s32, 1, 1 );
@@ -1083,6 +1131,8 @@ int32 _user_start() {
 							var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
 							text_sender( "\x1B[D\0" );
 						}
+						/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
+						heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
 						_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 						_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 
@@ -1158,7 +1208,7 @@ int32 _user_start() {
 					if ( var_temp.u32 < initial_line ) var_temp.u32 = initial_line;
 					if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
-					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
 					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
@@ -1172,7 +1222,7 @@ int32 _user_start() {
 					text_sender( "\r\n\0" ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
 					if ( _uartsetheap( UART32_UARTMALLOC_NUMBER + 1 ) ) _uartsetheap( initial_line );
 					/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
-					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen(UART32_UARTINT_HEAP) + 1 ); // Add Null
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
 					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
@@ -1212,7 +1262,7 @@ bool input_keyboard() {
 		if ( input_keyboard_continue_flag ) { // If Pushing Key Continues
 			input_keyboard_translation( input_keyboard_kb_str );
 		}
-		_sleep( 40000 );
+		_sleep( 50000 );
 	}
 
 	return true;
@@ -1292,6 +1342,17 @@ bool text_sender( String target_str ) {
 }
 
 
+bool text_sender_length( String target_str, uint32 length ) {
+	if ( kb_enable ) {
+		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
+	} else {
+		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	}
+
+	return true;
+}
+
+
 String pass_space_label( String target_str ) {
 
 	/* Pass Spaces  */
@@ -1330,25 +1391,25 @@ bool command_print( String target_str ) {
 	while ( str32_strlen( temp_str ) ) {
 		if ( str32_strindex( temp_str, "\\n\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\n\0" );
-			text_sender( temp_str );
+			text_sender_length( temp_str, temp_str_index );
 			text_sender( "\r\n\0" );
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( str32_strindex( temp_str, "\\s\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\s\0" );
-			text_sender( temp_str );
+			text_sender_length( temp_str, temp_str_index );
 			text_sender( " \0" );
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else if ( str32_strindex( temp_str, "\\e\0" ) != -1 ) {
 			temp_str_index = str32_strindex( temp_str, "\\e\0" );
-			text_sender( temp_str );
+			text_sender_length( temp_str, temp_str_index );
 			text_sender( "\x1B\0" );
 			temp_str += temp_str_index;
 			temp_str += 2;
 		} else {
 			temp_str_index = str32_strlen( temp_str );
-			text_sender( temp_str );
+			text_sender_length( temp_str, temp_str_index );
 			temp_str += temp_str_index;
 		}
 	}
@@ -1404,12 +1465,12 @@ bool console_rollup() {
 bool init_usb_keyboard( uint32 usb_channel )
 {
 
-	_sleep( 200000 );
-
 	_otg_host_reset_bcm();
 
 	ticket_hub = _hub_activate( usb_channel, 0 );
 	arm32_dsb();
+
+	_sleep( 1000000 );
 
 //print32_debug( ticket_hub, 500, 230 );
 
@@ -1430,7 +1491,7 @@ bool init_usb_keyboard( uint32 usb_channel )
 
 	if ( ticket_hid <= 0 ) return false;
 
-	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Activation of Device
+	_sleep( 1000000 ); // Hub Port is Powerd On, So Wait for Activation of Device
 
 	uint32 response = _hid_activate( usb_channel, 1, ticket_hid );
 	arm32_dsb();

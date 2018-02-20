@@ -8,11 +8,15 @@
 
 **Output/Input**
 
+* GPIO 2 as SDA1 (Use for EEPROM)
+
+* GPIO 3 as SCL1 (Use for EEPROM)
+
 * GPIO 14 as TXD0
 
 * GPIO 15 as RXD0
 
-* USB as Output
+* USB as Output (Use for Keyboard)
 
 * HDMI as VIDEO Output
 

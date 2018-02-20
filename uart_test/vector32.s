@@ -26,6 +26,7 @@
 .include "vector32/os.s"
 
 os_reset:
+	push {lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
@@ -74,6 +75,13 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 2
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 2 ALT 0 as SDA1
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 3
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3       @ Set GPIO 3 ALT 0 as SCL1
+	str r1, [r0, #equ32_gpio_gpfsel00]
+
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 14
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 14 ALT 0 as TXD0
@@ -95,39 +103,47 @@ os_reset:
 
 	macro32_clean_cache r1, ip
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl bcm32_get_framebuffer
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	/* UART 115200 Baud */
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #5                                               @ Integer Divisor, 9216000 / 16 Multiplies by 115200 Equals 5
 	mov r1, #0                                               @ Fractional Divisor
 	mov r2, #0b11<<equ32_uart0_lcrh_sps|equ32_uart0_lcrh_fen @ Line Control
 	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe           @ Coontrol
 	bl uart32_uartinit
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
 	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
 	/* But Now on Only Using Rx Timeout */
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
 	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
 	bl uart32_uartsetint
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #128                                             @ 128 Lines Minus 1 Line for #0, 127 Lines Available
 	mov r1, #16                                              @ 16 Words, 64 Bytes per Each Row
 	bl uart32_uartmalloc
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl bcm32_poweron_usb
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	mov pc, lr
+	push {r0-r3}
+	mov r0, #0xF0           @ Divisor of Clock to Decimal 240 for 1MHz
+	mov r1, #0x0030         @ Delay
+	orr r1, r1, #0x00300000 @ Delay
+	mov r2, #0x40           @ Clock Stretch Timeout
+	bl i2c32_i2cinit
+	pop {r0-r3}
+
+	pop {pc}
 
 os_irq:
 	push {r0-r12,lr}
