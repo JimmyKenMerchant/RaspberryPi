@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-.equ __DEBUG, 1
+/*.equ __DEBUG, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -92,6 +92,14 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3,lr}
 
+	push {r0-r3,lr}
+	mov r0, #0xF0           @ Divisor of Clock to Decimal 240 for 1MHz
+	mov r1, #0x0030         @ Delay
+	orr r1, r1, #0x00300000 @ Delay
+	mov r2, #0x40           @ Clock Stretch Timeout
+	bl i2c32_i2cinit
+	pop {r0-r3,lr}
+
 	mov pc, lr
 
 os_irq:
@@ -157,9 +165,9 @@ os_debug:
 	bl heap32_malloc
 	pop {r1-r3}
 
-	mov data, #0xAB000000
-	orr data, data, #0x00CD0000
-	orr data, data, #0x0000EF00
+	mov data, #0xEF000000
+	orr data, data, #0x00020000
+	orr data, data, #0x0000AB00
 	orr data, data, #0x00000001
 
 	str data, [heap]
@@ -169,14 +177,14 @@ macro32_debug_hexa heap, 100, 136, 8
 	/* Actual Write of Data */
 	push {r0-r3}
 	mov r1, #0
-	mov r2, #0x0001
+	mov r2, #0x000F
 	mov r3, #4
 	bl rom32_romwrite_i2c
 	pop {r0-r3}
 
 	push {r0-r3}
 	mov r1, #0
-	mov r2, #0x0002
+	mov r2, #0x0010
 	mov r3, #4
 	bl rom32_romread_i2c
 	pop {r0-r3}

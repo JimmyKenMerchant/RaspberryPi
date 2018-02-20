@@ -1075,6 +1075,25 @@ __attribute__((noinline)) String _keyboard_get(
 
 
 /********************************
+ * system32/library/rom32.s
+ ********************************/
+
+__attribute__((noinline)) int32 _romread_i2c(
+	uint32 address_heap,
+	uint32 chip_select,
+	uint32 address_memory, 
+	uint32 length
+);
+
+__attribute__((noinline)) int32 _romwrite_i2c(
+	uint32 address_heap,
+	uint32 chip_select,
+	uint32 address_memory, 
+	uint32 length
+);
+
+
+/********************************
  * system32/library/math32.s
  ********************************/
 

@@ -15,14 +15,15 @@
  * Parameters
  * r0: Heap to Write Data
  * r1: Chip Select (Bit[2:0])
- * r2: Address (Bit[15:0])
+ * r2: Memory Address in EEPROM (Bit[15:0])
  * r3: Length to Read (Bytes)
  *
- * Return: r0 (0 as Success, -1, 1, 2, and 3 as Error)
+ * Return: r0 (0 as Success, -1, 1-4 as Error)
  * Error(-1): Memory Allocation Fails
  * Error(1): Device Address Error (Derived From I2C)
  * Error(2): Clock Stretch Timeout (Derived From I2C)
  * Error(3): Transaction Error on Checking Process (Derived From I2C)
+ * Error(4): No Heap Area (Derived From I2C)
  */
 .globl rom32_romread_i2c
 rom32_romread_i2c:
@@ -35,17 +36,6 @@ rom32_romread_i2c:
 	temp            .req r5
 
 	push {r4-r5,lr}
-
-	push {r0-r3}
-	bl heap32_mcount
-	mov temp, r0
-	pop {r0-r3}
-
-	cmp temp, #-1
-	beq rom32_romread_i2c_error
-
-	cmp length, temp
-	movgt length, temp                @ Prevent Overflow
 
 	push {r0-r3}
 	add r0, #1
@@ -135,14 +125,15 @@ macro32_debug temp, 0, 112
  * Parameters
  * r0: Heap to Write Data
  * r1: Chip Select (Bit[2:0])
- * r2: Address (Bit[15:0])
+ * r2: Memory Address in EEPROM (Bit[15:0])
  * r3: Length to Write (Bytes)
  *
- * Return: r0 (0 as Success, -1, 1, 2, and 3 as Error)
+ * Return: r0 (0 as Success, -1, 1-4 as Error)
  * Error(-1): Memory Allocation Fails
  * Error(1): Device Address Error (Derived From I2C)
  * Error(2): Clock Stretch Timeout (Derived From I2C)
  * Error(3): Transaction Error on Checking Process (Derived From I2C)
+ * Error(4): No Heap Area (Derived From I2C)
  */
 .globl rom32_romwrite_i2c
 rom32_romwrite_i2c:
@@ -155,17 +146,6 @@ rom32_romwrite_i2c:
 	temp            .req r5
 
 	push {r4-r5,lr}
-
-	push {r0-r3}
-	bl heap32_mcount
-	mov temp, r0
-	pop {r0-r3}
-
-	cmp temp, #-1
-	beq rom32_romread_i2c_error
-
-	cmp length, temp
-	movgt length, temp                @ Prevent Overflow
 
 	tst length, #0b11                 @ Check Bit[1:0]
 	addne temp, length, #0b100        @ Add 4 If Value Exists on Bit[1:0]

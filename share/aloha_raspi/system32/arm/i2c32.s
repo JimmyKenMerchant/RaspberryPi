@@ -63,10 +63,11 @@ i2c32_i2cinit:
  * r1: Device Address
  * r2: Transfer Size (Bytes)
  *
- * Return: r0 (0 as success, 1 , 2 and 3 as error)
+ * Return: r0 (0 as success, 1-4 as error)
  * Error(1): Device Address Error
  * Error(2): Clock Stretch Timeout
  * Error(3): Transaction Error on Checking Process
+ * Error(4): No Heap Area
  */
 .globl i2c32_i2ctx
 i2c32_i2ctx:
@@ -79,7 +80,18 @@ i2c32_i2ctx:
 	temp         .req r5
 	addr_i2c     .req r6
 
-	push {r4-r6}
+	push {r4-r6,lr}
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	beq i2c32_i2ctx_error4
+
+	cmp size_tx, temp
+	movgt size_tx, temp                          @ Prevent Overflow
 
 	mov addr_i2c, #equ32_peripherals_base
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
@@ -140,13 +152,16 @@ macro32_debug temp, 0, 100
 		mov r0, #3
 		b i2c32_i2ctx_common
 
+	i2c32_i2ctx_error4:
+		mov r0, #4
+		b i2c32_i2ctx_common
+
 	i2c32_i2ctx_success:
 		mov r0, #0
 
 	i2c32_i2ctx_common:
 		str temp, [addr_i2c, #equ32_i2c_s]                   @ For Write Clear
-		pop {r4-r6}
-		mov pc, lr
+		pop {r4-r6,pc}
 
 .unreq heap
 .unreq addr_device
@@ -166,10 +181,11 @@ macro32_debug temp, 0, 100
  * r1: Device Address
  * r2: Transfer Size (Bytes)
  *
- * Return: r0 (0 as success, 1 , 2 and 3 as error)
+ * Return: r0 (0 as success, 1-4 as error)
  * Error(1): Device Address Error
  * Error(2): Clock Stretch Timeout
  * Error(3): Transaction Error on Checking Process
+ * Error(4): No Heap Area
  */
 .globl i2c32_i2crx
 i2c32_i2crx:
@@ -182,7 +198,18 @@ i2c32_i2crx:
 	temp         .req r5
 	addr_i2c     .req r6
 
-	push {r4-r6}
+	push {r4-r6,lr}
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	beq i2c32_i2crx_error4
+
+	cmp size_rx, temp
+	movgt size_rx, temp                          @ Prevent Overflow
 
 	mov addr_i2c, #equ32_peripherals_base
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
@@ -244,6 +271,10 @@ macro32_debug temp, 0, 112
 		mov r0, #3
 		b i2c32_i2crx_common
 
+	i2c32_i2crx_error4:
+		mov r0, #4
+		b i2c32_i2crx_common
+
 	i2c32_i2crx_success:
 		mov r0, #0
 
@@ -252,8 +283,7 @@ macro32_debug temp, 0, 112
 		ldr temp, [addr_i2c, #equ32_i2c_c]
 		bic temp, temp, #equ32_i2c_c_read
 		str temp, [addr_i2c, #equ32_i2c_c]
-		pop {r4-r6}
-		mov pc, lr
+		pop {r4-r6,pc}
 
 .unreq heap
 .unreq addr_device
