@@ -1494,7 +1494,7 @@ bool console_rollup() {
 bool init_usb_keyboard( uint32 usb_channel )
 {
 
-	_otg_host_reset_bcm();
+	if ( _otg_host_reset_bcm() ) return false;
 	arm32_dsb();
 
 	ticket_hub = _hub_activate( usb_channel, 0 );

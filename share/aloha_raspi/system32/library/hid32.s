@@ -751,6 +751,7 @@ macro32_debug data_lower, 320, 24
 		blo hid32_keyboard_get_loop_store
 
 		cmp temp, #0x87                    @ International1
+		moveq j, #1
 		beq hid32_keyboard_get_loop_intl1
 
 		mov byte, #0x001B

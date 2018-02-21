@@ -602,6 +602,18 @@ uart32_uartint:
 		cmp count, max_size
 		subge count, max_size, #1
 
+		push {r0-r3}
+		mov r0, heap
+		bl str32_strlen
+		mov temp, r0
+		pop {r0-r3}
+		sub temp, temp, #1               @ Most Significant Insert Position
+
+		cmp count, temp
+		addlt temp, temp, #1             @ Retrieve Length of Characters on Line
+		cmplt temp, max_size
+		blt uart32_uartint_insert
+
 		/* Store Data to Actual Memory Space from Buffer */
 		ldr temp, uart32_uartint_buffer
 		ldrb temp, [temp]
@@ -819,6 +831,105 @@ uart32_uartint:
 
 		b uart32_uartint_success
 
+	uart32_uartint_insert:
+
+		/* Get Length of Back Half to Be Concatenated */
+		push {r0-r3}
+		add r0, heap, count
+		bl str32_strlen
+		mov temp, r0
+		pop {r0-r3}
+		add temp, temp, #1  @ Add One For Null Character
+		
+		tst temp, #0b11
+		addne buffer, temp, #0b100
+		/* Substitute of Division by 4 */
+		lsr buffer, buffer, #2
+
+		push {r0-r3}
+		mov r0, buffer
+		bl heap32_malloc
+		mov buffer, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, buffer 
+		mov r1, #0
+		mov r2, heap
+		mov r3, count
+		push {temp}
+		bl heap32_mcopy
+		add sp, sp, #4
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, heap
+		add r1, count, #1   @ Get Space For New Character
+		mov r2, buffer 
+		mov r3, #0
+		push {temp}
+		bl heap32_mcopy
+		add sp, sp, #4
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, buffer
+		bl heap32_mfree
+		pop {r0-r3}
+
+		sub temp, temp, #1  @ Subtract One For Null Character for Use Later
+
+		ldr buffer, uart32_uartint_buffer
+		ldrb buffer, [buffer]
+		strb buffer, [heap, count]
+
+		/* Send Esc[K (Clear From Cursor Right) */
+		push {r0-r3}
+		ldr r0, uart32_uartint_esc_clrline
+		mov r1, #3
+		bl uart32_uarttx
+		pop {r0-r3}
+
+		/* Reflect New Characters */
+		push {r0-r3}
+		add r0, heap, count
+		add r0, r0, #1
+		mov r1, temp 
+		bl uart32_uarttx
+		pop {r0-r3}
+
+		/* Move Cursor Left Because of Renewed Back Half */
+		uart32_uartint_insert_loop:
+			cmp temp, #0
+			ble uart32_uartint_insert_common
+
+			push {r0-r3}
+			ldr r0, uart32_uartint_esc_left
+			mov r1, #3
+			bl uart32_uarttx
+			pop {r0-r3}
+
+			sub temp, temp, #1
+			b uart32_uartint_insert_loop
+
+		uart32_uartint_insert_common:
+
+			/* Slide Offset Count */
+			add count, count, #1
+			cmp count, max_size
+			subge count, max_size, #1        @ If Exceeds Maximum Size of Heap, Stay Count
+			str count, UART32_UARTINT_COUNT
+			blt uart32_uartint_success
+
+			/* Cursor Left If Reaching Maximum Size of Line */
+			push {r0-r3}
+			ldr r0, uart32_uartint_esc_left
+			mov r1, #3
+			bl uart32_uarttx
+			pop {r0-r3}
+
+			b uart32_uartint_success
+
 	uart32_uartint_error:
 		/* If No Heap, Overrun, or Busy to Receive */
 		push {r0-r3}
@@ -1027,6 +1138,18 @@ uart32_uartint_emulate:
 
 		cmp count, max_size
 		subge count, max_size, #1
+
+		push {r0-r3}
+		mov r0, heap
+		bl str32_strlen
+		mov temp, r0
+		pop {r0-r3}
+		sub temp, temp, #1               @ Most Significant Insert Position
+
+		cmp count, temp
+		addlt temp, temp, #1             @ Retrieve Length of Characters on Line
+		cmplt temp, max_size
+		blt uart32_uartint_emulate_insert
 
 		/* Store Data to Actual Memory Space from Buffer */
 		ldr temp, uart32_uartint_buffer
@@ -1344,6 +1467,149 @@ uart32_uartint_emulate:
 
 		b uart32_uartint_emulate_success
 
+	uart32_uartint_emulate_insert:
+
+		/* Get Length of Back Half to Be Concatenated */
+		push {r0-r3}
+		add r0, heap, count
+		bl str32_strlen
+		mov temp, r0
+		pop {r0-r3}
+		add temp, temp, #1  @ Add One For Null Character
+		
+		tst temp, #0b11
+		addne buffer, temp, #0b100
+		/* Substitute of Division by 4 */
+		lsr buffer, buffer, #2
+
+		push {r0-r3}
+		mov r0, buffer
+		bl heap32_malloc
+		mov buffer, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, buffer 
+		mov r1, #0
+		mov r2, heap
+		mov r3, count
+		push {temp}
+		bl heap32_mcopy
+		add sp, sp, #4
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, heap
+		add r1, count, #1   @ Get Space For New Character
+		mov r2, buffer 
+		mov r3, #0
+		push {temp}
+		bl heap32_mcopy
+		add sp, sp, #4
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, buffer
+		bl heap32_mfree
+		pop {r0-r3}
+
+		sub temp, temp, #1  @ Subtract One For Null Character for Use Later
+
+		ldr buffer, uart32_uartint_buffer
+		ldrb buffer, [buffer]
+		strb buffer, [heap, count]
+
+		/* Send Esc[K (Clear From Cursor Right) */
+		push {r0-r3}
+		mov r0, string_tx
+		ldr r1, uart32_uartint_esc_clrline
+		bl str32_strcat
+		mov string_tx_dup, r0
+		pop {r0-r3}
+
+		cmp string_tx_dup, #0
+		beq uart32_uartint_emulate_error
+
+		push {r0-r3}
+		mov r0, string_tx
+		bl heap32_mfree
+		pop {r0-r3}
+		
+		mov string_tx, string_tx_dup
+
+		/* Reflect New Characters */
+		push {r0-r3}
+		mov r0, string_tx
+		add r1, heap, count
+		add r1, r1, #1
+		bl str32_strcat
+		mov string_tx_dup, r0
+		pop {r0-r3}
+
+		cmp string_tx_dup, #0
+		beq uart32_uartint_emulate_error
+
+		push {r0-r3}
+		mov r0, string_tx
+		bl heap32_mfree
+		pop {r0-r3}
+		
+		mov string_tx, string_tx_dup
+
+		/* Move Cursor Left Because of Renewed Back Half */
+		uart32_uartint_emulate_insert_loop:
+			cmp temp, #0
+			ble uart32_uartint_emulate_insert_common
+
+			push {r0-r3}
+			mov r0, string_tx
+			ldr r1, uart32_uartint_esc_left
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+				
+			mov string_tx, string_tx_dup
+
+			sub temp, temp, #1
+			b uart32_uartint_emulate_insert_loop
+
+		uart32_uartint_emulate_insert_common:
+
+			/* Slide Offset Count */
+			add count, count, #1
+			cmp count, max_size
+			subge count, max_size, #1        @ If Exceeds Maximum Size of Heap, Stay Count
+			str count, UART32_UARTINT_COUNT
+			blt uart32_uartint_emulate_success
+
+			/* Cursor Left If Reaching Maximum Size of Line */
+			push {r0-r3}
+			mov r0, string_tx
+			ldr r1, uart32_uartint_esc_left
+			bl str32_strcat
+			mov string_tx_dup, r0
+			pop {r0-r3}
+
+			cmp string_tx_dup, #0
+			beq uart32_uartint_emulate_error
+
+			push {r0-r3}
+			mov r0, string_tx
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov string_tx, string_tx_dup
+
+			b uart32_uartint_emulate_success
+
 	uart32_uartint_emulate_errornak:
 
 		/* Send NAK (Negative-acknowledgement) */
@@ -1354,7 +1620,7 @@ uart32_uartint_emulate:
 		mov string_tx, r0
 		pop {r0-r3}
 
-		b uart32_uartint_emulate_common
+		b uart32_uartint_emulate_success
 
 	uart32_uartint_emulate_error:
 
