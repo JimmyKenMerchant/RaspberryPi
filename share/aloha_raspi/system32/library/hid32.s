@@ -795,6 +795,7 @@ macro32_debug data_lower, 320, 24
 			bgt hid32_keyboard_get_loop_store
 
 		hid32_keyboard_get_loop_common:
+			macro32_dsb ip 
 			lsr i, i, #3                           @ Division of Multiplication by 8
 			add i, i, #1
 			cmp i, maxi
