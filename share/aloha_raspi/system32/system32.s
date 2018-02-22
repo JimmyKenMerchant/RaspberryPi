@@ -49,6 +49,8 @@
 .balign 4
 .include "system32/arm/vfp32.s"
 .balign 4
+.include "system32/arm/heap32.s"
+.balign 4
 
 /**
  * Place Label to First Address of Data Memory Section (including .bss)
@@ -93,8 +95,6 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .include "system32/library/cvt32.s"
 .balign 4
 .include "system32/library/bcd32.s"
-.balign 4
-.include "system32/library/heap32.s"
 .balign 4
 .include "system32/library/hid32.s"
 .balign 4
