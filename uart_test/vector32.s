@@ -10,7 +10,7 @@
 /* Define Debug Status */
 .equ __DEBUG, 1
 .equ __MATH32_PRECISION_HIGH, 1
-.equ __SOUND, 1
+/*.equ __SOUND, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
