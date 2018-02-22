@@ -9,6 +9,7 @@
 
 #include "system32.h"
 #include "system32.c"
+#include "sound32.h"
 
 #define initial_line       1
 #define argument_maxlength 8
@@ -32,6 +33,12 @@ typedef enum _command_list {
 	 * This command inserts "\r\n" when each data of array is ended.
 	 */
 	pict,
+	/**
+	 * "snd" does sequential outputting sound. "snd %S1 %S2":
+	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
+	 */
+	snd,
+	clrsnd, // Clear sound at all. "clrsnd"
 	save, // Save lines to EEPROM, "save %D %S1 %S2": Save lines from D to the chip number in S2 (Bit[2:0]). The length of lines is the value in S1.
 	load, // Load lines from EEPROM, jump to the last line to be loaded, "load %D %S1 %S2": Load lines to D from the chip number in S2 (Bit[2:0]). The length of lines is the value in S1.
 	add, // Integer signed addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
@@ -203,6 +210,8 @@ int32 _user_start() {
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
+	_sounddecode( sound );
+
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
 	
 	if ( init_usb_keyboard( 0 ) ) {
@@ -273,6 +282,15 @@ int32 _user_start() {
 							length_arg = 4;
 							pipe_type = enumurate_variables;
 							var_index = 2; // Only Last Two Is Needed to Translate to Integer
+						} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
+							command_type = snd;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 0;
+						} else if ( str32_strmatch( temp_str, 6, "clrsnd\0", 6 ) ) {
+							command_type = clrsnd;
+							length_arg = 0;
+							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 4, "save\0", 4 ) ) {
 							command_type = save;
 							length_arg = 3;
@@ -748,6 +766,19 @@ int32 _user_start() {
 								command_pict( temp_str, temp_str2, var_temp.object, var_temp2.u32 ); 
 
 								break;
+							case snd:
+								var_temp.u32 = _load_32( array_source );
+								if ( var_temp.u32 >=  rawdata_maxlength ) break;
+								var_temp.object = _load_32( array_rawdata + 4 * var_temp.u32 );
+								var_temp2.s32 = _load_32( array_source + 4 );
+
+								_soundset( (music_code*)var_temp.object, snd32_musiclen( (music_code*)var_temp.object ) , 0, var_temp2.s32 );
+
+								break;
+							case clrsnd:
+								_soundclear();
+
+								break;
 							case save:
 								var_temp.u32 = 0; // Memory Address
 								var_temp2.u32 = _load_32( array_argpointer ); // First Line Number to Save
@@ -940,7 +971,8 @@ int32 _user_start() {
 								break;
 							case input:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-								text_sender( UART32_UARTINT_HEAP );
+								temp_str = pass_space_label( UART32_UARTINT_HEAP );
+								text_sender( temp_str );
 								var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
 								if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
 									var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;

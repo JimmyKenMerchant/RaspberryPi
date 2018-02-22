@@ -8,6 +8,8 @@
 
 **Output/Input**
 
+* GPIO12 as Output of PWM0 (If you uncomment __SOUND on the top of vector.s)
+
 * GPIO 2 as SDA1 (Use for EEPROM)
 
 * GPIO 3 as SCL1 (Use for EEPROM)

@@ -10,6 +10,7 @@
 /* Define Debug Status */
 .equ __DEBUG, 1
 .equ __MATH32_PRECISION_HIGH, 1
+/*.equ __SOUND, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -83,6 +84,10 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
+.ifdef __SOUND
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 12
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 12 PWM0
+.endif
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 14
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 14 ALT 0 as TXD0
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 15
@@ -143,6 +148,41 @@ os_reset:
 	bl i2c32_i2cinit
 	pop {r0-r3}
 
+.ifdef __SOUND
+	/**
+	 * PWM
+	 * Makes 19.2Mhz (From Oscillator).
+	 * Sampling Rate 32000hz, Bit Depth 8bit (Max. Range is 300, but is Actually 255 on This)
+	 */
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_cm_base_lower
+	add r0, r0, #equ32_cm_base_upper
+
+	mov r1, #equ32_cm_passwd
+	add r1, r1, #2 << equ32_cm_div_integer
+	str r1, [r0, #equ32_cm_pwmdiv]
+
+	mov r1, #equ32_cm_passwd
+	add r1, r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc        @ 19.2Mhz
+	str r1, [r0, #equ32_cm_pwmctl]
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_pwm_base_lower
+	add r0, r0, #equ32_pwm_base_upper
+
+	mov r1, #300
+	str r1, [r0, #equ32_pwm_rng1]
+
+	mov r1, #equ32_pwm_dmac_enable
+	orr r1, r1, #7<<equ32_pwm_dmac_panic
+	orr r1, r1, #7<<equ32_pwm_dmac_dreq
+	str r1, [r0, #equ32_pwm_dmac]
+
+	mov r1, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
+	str r1, [r0, #equ32_pwm_ctl]
+.endif
+
 	pop {pc}
 
 os_irq:
@@ -184,6 +224,14 @@ os_fiq:
 	addne r0, r0, #equ32_gpio_gpset1
 	mov r1, #equ32_gpio47
 	str r1, [r0]
+
+	macro32_dsb ip
+.endif
+
+.ifdef __SOUND
+	push {r0-r3}
+	bl snd32_soundplay
+	pop {r0-r3}
 
 	macro32_dsb ip
 .endif
