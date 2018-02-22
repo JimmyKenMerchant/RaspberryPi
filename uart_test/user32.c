@@ -11,21 +11,32 @@
 #include "system32.c"
 #include "sound32.h"
 
-#define initial_line       1
-#define argument_maxlength 8
-#define label_maxlength    16
-#define label_maxchar      4 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
-#define link_stacksize     32
-#define rawdata_maxlength  16
+#define initial_line         1
+#define argument_maxlength   8
+#define label_maxlength      16
+#define label_maxchar        4 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
+#define link_stacksize       32
+#define rawdata_maxlength    16
+#define stack_offset_default 2
 
+/**
+ * On this program, the last line will be used as input buffer.
+ * If you use "push" command, the data is stored to the line that the number is length of lines minus "stack_offset".
+ * After you use "push" command, "stack_offset" will be incremented. After you use "pop" command, "stack_offset" will be decremented.
+ */
 
-/* D: Line Number for Direction, S1: Line Number Stored First Source, S2: Line Number Stored Second Source... */
+/* D: Number of Line for Destination, S: Number of Line Stored Source */
 typedef enum _command_list {
 	null_command_list,
 	end,
-	print, // Print string, "print %D %S1": Print string from D. The length of lines is the value in S1. If S1 is zero or undefined, the value becomes one. 
-	sleep, // Sleep microseconds by integer "Sleep %S1"
-	arr, // Make raw data array of integer, "arr %D %S1 %S2 %S3": D = number of array made of S1 - S2. S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
+	print, // Print string, "print %D %S1": Print string from D. The length of lines is the number in S1. If S1 is zero or undefined, the value becomes one. 
+	sleep, // Sleep microseconds by integer "Sleep %S1": Number in S1 means micro seconds to sleep.
+	/**
+	 * "arr" makes raw data array of integer, "arr %D %S1 %S2 %S3":
+	 * This command stores the number of raw data array to D. Number in S1 is the start line to be referenced. Number in S2 is length of line.
+	 * Number in S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
+	 */
+	arr,
 	free, // Free memory space for raw data array, "free %S1": Free memory space for array whose number is indicated in S1.
 	/**
 	 * "pict" does sequential printing with judging bit value in raw data of array from MSB to LSB, "pict %S1 %S2 %S3 %S4":
@@ -181,6 +192,7 @@ int32 _user_start() {
 	uint32 var_index = 0;
 	uint32 current_line = 0;
 	uint32 status_nzcv = 0;
+	uint32 stack_offset = stack_offset_default; // Stack offset for "push" and "pop", from the last line decremental order.
 	pipe_list pipe_type = search_command;
 	command_list command_type = null;
 	flex32 var_temp;
@@ -197,7 +209,6 @@ int32 _user_start() {
 	label_list.number = heap32_malloc( label_maxlength ); // 4 Bytes (32-bit Integer) per Number
 	label_list.length = 0;
 	direction.s32 = 0;
-	uint32 stack_offset = 1; // Stack offset for "push" and "pop", 1 is minimam, from the last line decremental order.
 	String src_str = null;
 	String dst_str = null;
 	String temp_str = null;
@@ -271,7 +282,7 @@ int32 _user_start() {
 							command_type = arr;
 							length_arg = 4;
 							pipe_type = enumurate_variables;
-							var_index = 3; // Only Last One Is Needed to Translate to Integer
+							var_index = 1; // 0 is Destination to Be Stored Number of Raw Data Array
 						} else if ( str32_strmatch( temp_str, 4, "free\0", 4 ) ) {
 							command_type = free;
 							length_arg = 1;
@@ -719,12 +730,13 @@ int32 _user_start() {
 								for ( uint32 i = 0; i < rawdata_maxlength; i++ ) {
 									var_temp.u32 = _load_32( array_rawdata + 4 * i );
 									if ( var_temp.u32 == 0 ) {
-										var_temp.u32 = _load_32( array_argpointer + 4 );
-										var_temp2.u32 = _load_32( array_argpointer + 8 );
+										var_temp.u32 = _load_32( array_source + 4 );
+										var_temp2.u32 = _load_32( array_source + 8 );
+										var_temp2.u32 += var_temp.u32;
 										if ( _uartsetheap( var_temp.u32 ) ) break;
 										dst_str = pass_space_label( UART32_UARTINT_HEAP );
 										var_temp.u32++;
-										for ( uint32 j = var_temp.u32; j <= var_temp2.u32; j++ ) {
+										for ( uint32 j = var_temp.u32; j < var_temp2.u32; j++ ) {
 											temp_str = dst_str;
 											if ( _uartsetheap( j ) ) break;
 											temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
@@ -971,19 +983,27 @@ int32 _user_start() {
 								break;
 							case input:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-								temp_str = pass_space_label( UART32_UARTINT_HEAP );
-								text_sender( temp_str );
-								var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
-								if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
-									var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
-									text_sender( "\x1B[D\0" );
-								}
-								_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
+								dst_str = UART32_UARTINT_HEAP;
+								if ( _uartsetheap( UART32_UARTMALLOC_LENGTH - 1 ) ) break;
+								src_str = UART32_UARTINT_HEAP;
+								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+
+								_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
-								while (true) {
+
+								while ( true ) {
 									input_keyboard( true );
 									if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) break;
 								}
+
+								/* Pass Spaces and Label */
+								temp_str = pass_space_label( dst_str );
+								var_temp.u32 = temp_str - dst_str;
+								var_temp2.u32 = str32_strlen( src_str );
+								if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
+								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, 0, var_temp2.u32 + 1 ); // Add Null Character
+								line_clean( dst_str );
+								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clear Line to Be Used as Input Buffer
 
 								break;
 							case scmp:
@@ -1039,7 +1059,7 @@ int32 _user_start() {
 
 								break;
 							case push:
-								if ( _uartsetheap(  UART32_UARTMALLOC_LENGTH - stack_offset ) ) break;
+								if ( _uartsetheap( UART32_UARTMALLOC_LENGTH - stack_offset ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								src_str = UART32_UARTINT_HEAP;
@@ -1055,7 +1075,7 @@ int32 _user_start() {
 
 								break;
 							case pop:
-								if ( stack_offset <= 1 ) break;
+								if ( stack_offset <= stack_offset_default ) break;
 								stack_offset--;
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
