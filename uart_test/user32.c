@@ -13,8 +13,15 @@
 
 #define initial_line         1
 #define argument_maxlength   8
-#define label_maxlength      16
-#define label_maxchar        4 // Word (4 bytes) 1 Means 4 Bytes, Last 1 Bytes is for Null Character
+#define label_maxlength      64 // Maximum Limitation of Length of Labels
+
+/**
+ * Maximum limitation of the length of characters on each label.
+ * The number means word (4 bytes), i.e., 1 Means 4 Bytes. The last 1 Bytes is for null character.
+ * E.g., if you define 4, actual maximum length is 15 bytes (16 minus 1 for null character).
+ */
+#define label_maxchar        4 
+
 #define link_stacksize       32
 #define rawdata_maxlength    16
 #define stack_offset_default 2
@@ -49,6 +56,7 @@ typedef enum _command_list {
 	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
 	 */
 	snd,
+	intsnd, // Interruption of the main sound by another sound, "intsnd %S1 %S2": Similar to "snd".
 	clrsnd, // Clear sound at all. "clrsnd"
 	save, // Save lines to EEPROM, "save %D %S1 %S2": Save lines from D to the chip number in S2 (Bit[2:0]). The length of lines is the value in S1.
 	load, // Load lines from EEPROM, jump to the last line to be loaded, "load %D %S1 %S2": Load lines to D from the chip number in S2 (Bit[2:0]). The length of lines is the value in S1.
@@ -258,12 +266,6 @@ int32 _user_start() {
 							length_arg = 0;
 							pipe_type = go_nextline;
 							pipe_type = go_nextline;
-						} else if ( str32_strlen( temp_str ) == 0 ) {
-							/* Stop Execution If No Content in Line */
-							/* Labels with No Initialization Becomes This Type */
-							command_type = null;
-							length_arg = 0;
-							pipe_type = termination;
 						} else if ( str32_strmatch( temp_str, 3, "end\0", 3 ) ) {
 							command_type = null;
 							length_arg = 0;
@@ -295,6 +297,11 @@ int32 _user_start() {
 							var_index = 2; // Only Last Two Is Needed to Translate to Integer
 						} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
 							command_type = snd;
+							length_arg = 2;
+							pipe_type = enumurate_variables;
+							var_index = 0;
+						} else if ( str32_strmatch( temp_str, 6, "intsnd\0", 6 ) ) {
+							command_type = intsnd;
 							length_arg = 2;
 							pipe_type = enumurate_variables;
 							var_index = 0;
@@ -787,6 +794,15 @@ int32 _user_start() {
 								_soundset( (music_code*)var_temp.object, snd32_musiclen( (music_code*)var_temp.object ) , 0, var_temp2.s32 );
 
 								break;
+							case intsnd:
+								var_temp.u32 = _load_32( array_source );
+								if ( var_temp.u32 >=  rawdata_maxlength ) break;
+								var_temp.object = _load_32( array_rawdata + 4 * var_temp.u32 );
+								var_temp2.s32 = _load_32( array_source + 4 );
+
+								_soundinterrupt( (music_code*)var_temp.object, snd32_musiclen( (music_code*)var_temp.object ) , 0, var_temp2.s32 );
+
+								break;
 							case clrsnd:
 								_soundclear();
 
@@ -1222,11 +1238,7 @@ int32 _user_start() {
 					pipe_type = search_command;
 					text_sender( "\x1B[2J\x1B[H\0" ); // Clear All Screen and Move Cursor to Upper Left
 
-					if ( ! command_label() ) {
-						text_sender( "Error! No Initialized Label: \0" );
-						process_counter();
-						pipe_type = termination;
-					}
+					command_label();
 
 					_uartsetheap( initial_line );
 
@@ -1409,7 +1421,12 @@ String pass_space_label( String target_str ) {
 		if ( length_temp != -1 ) {
 			target_str += length_temp;
 			/* Pass Spaces After Label */
-			while ( str32_charsearch( target_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space 
+			if (  str32_charsearch( target_str, 1, 0x20 ) != -1 ) {
+				while ( str32_charsearch( target_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space 
+					target_str++;
+				}
+			} else { // If Not Initialized
+				_store_8( (obj)target_str, 0x20 ); // Ascii Code of Space
 				target_str++;
 			}
 		}
@@ -1505,7 +1522,7 @@ bool command_label() {
 			temp_str++;
 			var_temp.u32 = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
 			if ( var_temp.u32 == -1 ) { // If Not Initialized
-				return false; // Break from for loop, NOT IF STATEMENT
+				var_temp.u32 = str32_strlen( temp_str );
 			}
 			if ( var_temp.u32 > label_maxchar * 4 - 1 ) var_temp.u32 = label_maxchar * 4 - 1; // Subtract One for Null Character
 			var_temp2.u32 = temp_str - UART32_UARTINT_HEAP;
@@ -1543,8 +1560,7 @@ bool console_rollup() {
 }
 
 
-bool init_usb_keyboard( uint32 usb_channel )
-{
+bool init_usb_keyboard( uint32 usb_channel ) {
 
 	if ( _otg_host_reset_bcm() ) return false;
 	arm32_dsb();

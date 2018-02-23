@@ -50,7 +50,7 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
+	mov r1, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	str r1, [r0, #equ32_armtimer_predivider]
 
 	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
@@ -62,7 +62,7 @@ os_reset:
 	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
 	str r1, [r0, #equ32_armtimer_control]
 
-	/* So We can get a 10hz Timer Interrupt (100000/10000) */
+	/* So We can get a 10hz Timer Interrupt (120000/10000) */
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
