@@ -49,7 +49,7 @@ os_reset:
 	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
 	str r1, [r0, #equ32_armtimer_load]
 
-	mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16|equ32_armtimer_23bit_counter @ Prescaler 1/16 to 100K
+	mov r1, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
 
 	str r1, [r0, #equ32_armtimer_control]
 
@@ -292,7 +292,7 @@ os_fiq:
 	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
 	str r1, [r0, #equ32_armtimer_load]        @ Reset Counter
 
-	mov r1, #equ32_armtimer_enable|equ32_armtimer_interrupt_enable|equ32_armtimer_prescale_16|equ32_armtimer_23bit_counter @ Prescaler 1/16 to 100K
+	mov r1, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
 
 	str r1, [r0, #equ32_armtimer_control]
 

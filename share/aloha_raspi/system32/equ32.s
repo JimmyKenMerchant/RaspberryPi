@@ -107,18 +107,18 @@
 .equ equ32_armtimer_predivider,   0x1C
 .equ equ32_armtimer_freerunning,  0x20 @ BCM Only
 
-.equ equ32_armtimer_freerun_prescale,       16     @ Bit[23:16] Use with `LSL`
-.equ equ32_armtimer_freerun_enable,         0x200  @ Bit[9]
-.equ equ32_armtimer_halt_debug,             0x100  @ Bit[8] Halted in Debug halted mode
-.equ equ32_armtimer_enable,                 0x80   @ Bit[7]
-.equ equ32_armtimer_periodic,               0x40   @ Bit[6] Not used in BCM2835-2837, always in Free running mode
-.equ equ32_armtimer_interrupt_enable,       0x20   @ Bit[5]
-.equ equ32_armtimer_prescale_1,             0b0000 @ Bit[3:2]
-.equ equ32_armtimer_prescale_16,            0b0100 @ Bit[3:2]
-.equ equ32_armtimer_prescale_256,           0b1000 @ Bit[3:2]
-.equ equ32_armtimer_prescale_bcm_1,         0b1100 @ Bit[3:2] BCM Only
-.equ equ32_armtimer_23bit_counter,          0x2    @ Bit[1] Or 16-bit counters (0)
-.equ equ32_armtimer_oneshot,                0x1    @ Bit[0] Not used in BCM2835-2837, always in Wrapping mode
+.equ equ32_armtimer_ctl_freerun_prescale,  16     @ Bit[23:16] Use with `LSL`
+.equ equ32_armtimer_ctl_freerun_enable,    0x200  @ Bit[9]
+.equ equ32_armtimer_ctl_halt_debug,        0x100  @ Bit[8] Halted in Debug halted mode
+.equ equ32_armtimer_ctl_enable,            0x80   @ Bit[7]
+.equ equ32_armtimer_ctl_periodic,          0x40   @ Bit[6] Not used in BCM2835-2837, always in Free running mode
+.equ equ32_armtimer_ctl_interrupt_enable,  0x20   @ Bit[5]
+.equ equ32_armtimer_ctl_prescale_1,        0b0000 @ Bit[3:2]
+.equ equ32_armtimer_ctl_prescale_16,       0b0100 @ Bit[3:2]
+.equ equ32_armtimer_ctl_prescale_256,      0b1000 @ Bit[3:2]
+.equ equ32_armtimer_ctl_prescale_bcm_1,    0b1100 @ Bit[3:2] BCM Only
+.equ equ32_armtimer_ctl_23bit_counter,     0x2    @ Bit[1] Or 16-bit counters (0)
+.equ equ32_armtimer_ctl_oneshot,           0x1    @ Bit[0] Not used in BCM2835-2837, always in Wrapping mode
 
 .equ equ32_gpio_gpfsel00,     0x00 @ GPIO 0-9   Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
 .equ equ32_gpio_gpfsel10,     0x04 @ GPIO 10-19 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
@@ -491,6 +491,13 @@
 .equ equ32_cm_gp2div,          0x00000084 @ Clock Manager General Purpose 2 (GP2) Clock Divisor
 .equ equ32_cm_pwmctl,          0x000000A0 @ Clock Manager PWM Clock Control
 .equ equ32_cm_pwmdiv,          0x000000A4 @ Clock Manager PWM Clock Divisor
+
+.equ equ32_cm_gp0,             0x00000070 @ Clock Manager General Purpose 0 (GPO) Base
+.equ equ32_cm_gp1,             0x00000078 @ Clock Manager General Purpose 1 (GP1) Base
+.equ equ32_cm_gp2,             0x00000080 @ Clock Manager General Purpose 2 (GP2) Base
+.equ equ32_cm_pwm,             0x000000A0 @ Clock Manager PWM Base
+.equ equ32_cm_ctl,             0x00000000 @ Offset for Clock Control of Clock Manager
+.equ equ32_cm_div,             0x00000004 @ Offset for Clock divisors of Clock Manager
 
 .equ equ32_cm_passwd,              0x5A000000 @ Password of Clock Manager, To Write, Set This on CTL and DIV Registers
 
