@@ -1897,7 +1897,7 @@ arm32_tst:
  *
  * Parameters
  * r0: Timer Control
- * r1: Reload
+ * r1: load
  * r2: Pre-divider
  *
  * Return: r0 (0 as Success)
@@ -1906,31 +1906,41 @@ arm32_tst:
 arm32_armtimer:
 	/* Auto (Local) Variables, but just Aliases */
 	timer_ctl      .req r0
-	reload         .req r1
+	load           .req r1
 	predivider     .req r2
 	memorymap_base .req r3
+	temp           .req r4
+
+	push {r4,lr}
 
 	mov memorymap_base, #equ32_peripherals_base
 	orr memorymap_base, memorymap_base, #equ32_armtimer_base
 
-	str timer_ctl, [memorymap_base, #equ32_armtimer_control]
-	str reload, [memorymap_base, #equ32_armtimer_reload]
+	ldr temp, [memorymap_base, #equ32_armtimer_control]
+	bic temp, temp, #equ32_armtimer_ctl_enable
+	str temp, [memorymap_base, #equ32_armtimer_control]
+
+	macro32_dsb ip
+
+	str load, [memorymap_base, #equ32_armtimer_load]
 	str predivider, [memorymap_base, #equ32_armtimer_predivider]
+	str timer_ctl, [memorymap_base, #equ32_armtimer_control]
 
 	macro32_dsb ip
 
 	arm32_armtimer_common:
 		mov r0, #0
-		mov pc, lr
+		pop {r4,pc}
 
 .unreq timer_ctl
-.unreq reload
+.unreq load
 .unreq predivider
 .unreq memorymap_base
+.unreq temp
 
 
 /**
- * function arm32_clockmanger
+ * function arm32_clockmanager
  * Set for Clock Manager
  *
  * Parameters
@@ -1940,8 +1950,8 @@ arm32_armtimer:
  *
  * Return: r0 (0 as Success)
  */
-.globl arm32_clockmanger
-arm32_clockmanger:
+.globl arm32_clockmanager
+arm32_clockmanager:
 	/* Auto (Local) Variables, but just Aliases */
 	clocktype_base .req r0
 	clk_ctl        .req r1
@@ -1958,34 +1968,34 @@ arm32_clockmanger:
 
 	/* Stop Clock */
 	ldr temp, [memorymap_base, #equ32_cm_ctl]
-	orr temp, #equ32_cm_passwd
+	orr temp, temp, #equ32_cm_passwd
 	bic temp, temp, #equ32_cm_ctl_enab
 	str temp, [memorymap_base, #equ32_cm_ctl]
 
 	/* Wait for Safe Stopping */
-	arm32_clockmanger_loop:
+	arm32_clockmanager_loop:
 		ldr temp, [memorymap_base, #equ32_cm_ctl]
 		tst temp, #equ32_cm_ctl_busy
-		bne arm32_clockmanger_loop
+		bne arm32_clockmanager_loop
 
 	/* Set Divisors */
-	orr clk_divisors, #equ32_cm_passwd
+	orr clk_divisors, clk_divisors, #equ32_cm_passwd
 	str clk_divisors, [memorymap_base, #equ32_cm_div]
 
 	/* Set Control Except Enable */
-	orr clk_ctl, #equ32_cm_passwd
-	bic clk_ctl, #equ32_cm_ctl_enab
+	orr clk_ctl, clk_ctl, #equ32_cm_passwd
+	bic clk_ctl, clk_ctl, #equ32_cm_ctl_enab
 	str clk_ctl, [memorymap_base, #equ32_cm_ctl]
 
 	macro32_dsb ip
 
 	/* Enable Clock */
 	ldr temp, [memorymap_base, #equ32_cm_ctl]
-	orr temp, #equ32_cm_passwd
+	orr temp, temp, #equ32_cm_passwd
 	orr temp, temp, #equ32_cm_ctl_enab
 	str temp, [memorymap_base, #equ32_cm_ctl]
 
-	arm32_clockmanger_common:
+	arm32_clockmanager_common:
 		macro32_dsb ip
 		mov r0, #0
 		mov pc, lr

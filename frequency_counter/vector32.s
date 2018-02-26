@@ -25,6 +25,7 @@
 .include "vector32/os.s"
 
 os_reset:
+	push {lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
@@ -38,24 +39,15 @@ os_reset:
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_armtimer_base
-
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
-	str r1, [r0, #equ32_armtimer_predivider]
-
+	/**
+	 * Get a 1hz Timer Interrupt (100000/100000).
+	 */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
 	mov r1, #0x10000
 	add r1, r1, #0x8600
 	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
-	str r1, [r0, #equ32_armtimer_load]
-
-	mov r1, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-
-	str r1, [r0, #equ32_armtimer_control]
-
-	/**
-	 * So We need to get a 1hz Timer Interrupt (100000/100000).
-	 */
+	mov r2, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
@@ -93,29 +85,26 @@ os_reset:
 	 * And Div by 32 (Default Range) Equals 200KHz.
 	 * Data is Just 1, so Voltage Will Be One 32th to Full if Lowpass Filter is Attached.
 	 */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_cm_base_lower
-	add r0, r0, #equ32_cm_base_upper
 
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #3 << equ32_cm_div_integer
-	str r1, [r0, #equ32_cm_pwmdiv]
+	/**
+	 * Clock Manager for PWM.
+	 */
+	mov r0, #equ32_cm_pwm
+	mov r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc           @ 19.2Mhz
+	mov r2, #3 << equ32_cm_div_integer
+	bl arm32_clockmanager
 
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc        @ 19.2Mhz
-	str r1, [r0, #equ32_cm_pwmctl]
-
+	/**
+	 * PWM Enable
+	 */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_pwm_base_lower
 	add r0, r0, #equ32_pwm_base_upper
-
 	mov r1, #1
 	str r1, [r0, #equ32_pwm_dat1]
-
 	mov r1, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_pwen1
 	str r1, [r0, #equ32_pwm_ctl]
-
 
 	/**
 	 * Set GPCLK0 to 5.00Mhz
@@ -123,18 +112,14 @@ os_reset:
 	 * The counted value has a minus error toward the right value.
 	 */
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_cm_base_lower
-	add r0, r0, #equ32_cm_base_upper
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #100 << equ32_cm_div_integer
-	str r1, [r0, #equ32_cm_gp0div]
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld       @ 500Mhz
-	str r1, [r0, #equ32_cm_gp0ctl]
+	/**
+	 * Clock Manager for GPCLK0.
+	 */
+	mov r0, #equ32_cm_gp0
+	mov r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld          @ 500Mhz
+	mov r2, #100 << equ32_cm_div_integer
+	bl arm32_clockmanager
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #400
@@ -161,11 +146,11 @@ os_reset:
 
 	macro32_clean_cache r1, ip
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl bcm32_get_framebuffer
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	mov pc, lr
+	pop {pc}	
 
 os_debug:
 	push {lr}
@@ -229,7 +214,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r4}                              @ r5-r7 is used across modes
+	push {r0-r4,lr}                           @ r5-r7 is used across modes
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -274,9 +259,7 @@ os_fiq:
 	mul r0, r0, multiply
 	add r0, r0, basement
 
-	push {lr}
 	bl cvt32_hexa_to_deci
-	pop {lr}
 
 	macro32_print_number_double r0, r1, 100, 200, 16
 
@@ -284,21 +267,14 @@ os_fiq:
 
 	mov freq_count, #0
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_armtimer_base
-
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
 	mov r1, #0x10000
 	add r1, r1, #0x8600
 	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
-	str r1, [r0, #equ32_armtimer_load]        @ Reset Counter
+	mov r2, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
 
-	mov r1, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-
-	str r1, [r0, #equ32_armtimer_control]
-
-	macro32_dsb ip                            @ Ensure to Enable Timer
-	pop {r0-r4}
-	mov pc, lr
+	pop {r0-r4,pc}
 
 .unreq multiply
 .unreq basement
