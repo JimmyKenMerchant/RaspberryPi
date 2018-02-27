@@ -113,13 +113,21 @@ int32 _user_start()
 
 	String answer_str = bcd32_badd( string_num, str32_strlen( string_num ), string_num0, str32_strlen( string_num0 ) );
 	print32_set_caret( print32_string( answer_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( answer_str ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( (obj)answer_str );
 
+	uint32 answer_ufixpoint = vfp32_f32toufix32( 4.125, 16 );
+	print32_set_caret( print32_number( answer_ufixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	uint32 answer_fixpoint = vfp32_f32tofix32( 4.125, 16 );
-	print32_set_caret( print32_number( answer_fixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	int32 answer_sfixpoint = vfp32_f32tosfix32( 4.125, 16 );
+	print32_set_caret( print32_number( answer_sfixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	answer_sfixpoint = vfp32_f32tosfix32( -1.75, 8 );
+	print32_set_caret( print32_number( answer_sfixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	while(1) {
 		_sleep( 100000 );
