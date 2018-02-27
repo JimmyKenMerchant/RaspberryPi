@@ -50,7 +50,7 @@ vfp32_hexatof32:
 
 /**
  * function vfp32_f32tosfix32
- * Convert from Single Precision Float (IEEE754 Format) to Unsigned (Absolute) Value by Fixed Point
+ * Convert from Single Precision Float (IEEE754 Format) to Signed Value by Fixed Point
  *
  * Parameters
  * r0: Value, Must Be Single Precision Float
