@@ -1940,6 +1940,36 @@ arm32_armtimer:
 
 
 /**
+ * function arm32_armtimer_reload
+ * Reload Counter for Arm Timer, SP804 and Its Derivatives
+ *
+ * Parameters
+ * r0: Reload
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl arm32_armtimer_reload
+arm32_armtimer_reload:
+	/* Auto (Local) Variables, but just Aliases */
+	reload         .req r0
+	memorymap_base .req r1
+
+	mov memorymap_base, #equ32_peripherals_base
+	orr memorymap_base, memorymap_base, #equ32_armtimer_base
+
+	str reload, [memorymap_base, #equ32_armtimer_reload]
+
+	macro32_dsb ip
+
+	arm32_armtimer_reload_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq reload
+.unreq memorymap_base
+
+
+/**
  * function arm32_clockmanager
  * Set for Clock Manager
  *

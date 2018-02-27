@@ -116,6 +116,11 @@ int32 _user_start()
 
 	heap32_mfree( (obj)answer_str );
 
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	uint32 answer_fixpoint = vfp32_f32tofix32( 4.125, 16 );
+	print32_set_caret( print32_number( answer_fixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+
 	while(1) {
 		_sleep( 100000 );
 	}

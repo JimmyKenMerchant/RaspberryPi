@@ -7,6 +7,93 @@
  *
  */
 
+/**
+ * function vfp32_f32tofix32
+ * Convert from Single Precision Float (IEEE754 Format) to Unsigned (Absolute) Value by Fixed Point
+ *
+ * Parameters
+ * r0: Value, Must Be Single Precision Float
+ * r1: Digits of Fractional Places, 0-32
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl vfp32_f32tofix32
+vfp32_f32tofix32:
+	/* Auto (Local) Variables, but just Aliases */
+	value           .req r0
+	fraction_digits .req r1
+	exponent        .req r2
+	value_msw       .req r3 @ Most Significant Words
+	value_mlw       .req r4 @ Least Significant Words
+
+	push {r4,lr}
+
+	mov value_msw, #0
+	mov value_mlw, #0
+
+	/* Extract Exponent Bit[30:23] */
+	mov exponent, #0x7F000000
+	orr exponent, exponent, #0x00800000
+	and exponent, value, exponent
+	lsr exponent, exponent, #23
+
+	sub exponent, exponent, #127
+
+	/* Set Bit[23], Next to Fraction Bit[22:0] to Show Hidden Integer Place, One */
+	bic value, value, #0xFF000000
+	orr value, value, #0x00800000
+
+	cmp exponent, #0
+	bgt vfp32_f32tofix32_exponentplus
+	blt vfp32_f32tofix32_exponentminus
+	b vfp32_f32tofix32_digits
+
+	vfp32_f32tofix32_exponentplus:
+		lsl value_msw, value_msw, #1
+		lsls value, value, #1                    @ Substitute of Multiplication by 2
+		addcs value_msw, value_msw, #1
+		subs exponent, exponent, #1
+		bgt vfp32_f32tofix32_exponentplus
+		b vfp32_f32tofix32_digits
+
+	vfp32_f32tofix32_exponentminus:
+		lsr value_mlw, value_mlw, #1
+		lsrs value, value, #1                    @ Substitute of Division by 2
+		addcs value_mlw, value_mlw, #0x80000000
+		subs exponent, exponent, #-1
+		blt vfp32_f32tofix32_exponentminus
+		b vfp32_f32tofix32_digits
+
+	vfp32_f32tofix32_digits:
+		subs fraction_digits, fraction_digits, #23 @ Default 23 Digits of Decimal Places
+		bgt vfp32_f32tofix32_digits_more
+		blt vfp32_f32tofix32_digits_less
+		b vfp32_f32tofix32_common
+
+		vfp32_f32tofix32_digits_more:
+			lsl value, value, #1                 @ Substitute of Multiplication by 2
+			lsls value_mlw, value_mlw, #1
+			addcs value, value, #1
+			subs fraction_digits, fraction_digits, #1
+			bgt vfp32_f32tofix32_digits_more
+			b vfp32_f32tofix32_common
+
+		vfp32_f32tofix32_digits_less:
+			lsr value, value, #1                 @ Substitute of Division by 2
+			lsrs value_msw, value_msw, #1
+			addcs value, value, #0x80000000
+			subs fraction_digits, fraction_digits, #-1
+			blt vfp32_f32tofix32_digits_less
+
+	vfp32_f32tofix32_common:
+		pop {r4,pc}
+
+.unreq value
+.unreq fraction_digits
+.unreq exponent
+.unreq value_msw
+.unreq value_mlw
+
 
 /**
  * function vfp32_f32tohexa
