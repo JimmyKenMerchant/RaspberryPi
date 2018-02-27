@@ -21,6 +21,8 @@
 #include "system32.c"
 #include "sound32.h"
 
+#define timer_count_default 10000
+
 /**
  * Sound Index is made of an array of 16-bit Blocks.
  * Bit[11:0]: Length of Wave, 0 to 4095.
@@ -76,6 +78,9 @@ int32 _user_start()
 	String str_music1 = "Music No.1\0";
 	String str_music2 = "Music No.2\0";
 	String str_music3 = "Music No.3\0";
+	int32 timer_count_divisor = 1;
+
+	_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 
 	_sounddecode( sound );
 
@@ -107,15 +112,22 @@ int32 _user_start()
 				break;
 			}
 			if ( _gpio_detect( 25 ) ) {
+				timer_count_divisor++;
+				if ( timer_count_divisor > timer_count_default / 2 ) timer_count_divisor = timer_count_default / 2;
+				_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				break;
 			}
 			if ( _gpio_detect( 26 ) ) {
+				timer_count_divisor--;
+				if ( timer_count_divisor < 1 ) timer_count_divisor = 1;
+				_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				break;
 			}
 			if ( _gpio_detect( 27 ) ) {
 				_soundinterrupt( interrupt1, snd32_musiclen( interrupt1 ) , 0, 1 );
 				break;
 			}
+			_sleep( 500000 );
 		}
 	}
 

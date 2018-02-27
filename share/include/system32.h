@@ -172,6 +172,11 @@ __attribute__((noinline)) void _store_32( uint32 address, int32 data );
 
 __attribute__((noinline)) int32 _load_32( uint32 address );
 
+__attribute__((noinline)) uint32 _armtimer( uint32 timer_ctl, uint32 load, uint32 predivider );
+
+__attribute__((noinline)) uint32 _armtimer_reload( uint32 reload );
+
+__attribute__((noinline)) uint32 _clockmanager( uint32 clocktype_base, uint32 clk_ctl, uint32 clk_divisors );
 
 /* Regular Functions */
 

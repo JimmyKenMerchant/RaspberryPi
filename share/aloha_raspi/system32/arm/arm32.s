@@ -1898,7 +1898,7 @@ arm32_tst:
  * Parameters
  * r0: Timer Control
  * r1: load
- * r2: Pre-divider
+ * r2: Predivider
  *
  * Return: r0 (0 as Success)
  */
