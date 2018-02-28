@@ -117,7 +117,7 @@ os_reset:
 	 * Makes 19.2Mhz (From Oscillator). Div by 2 Equals 9.6Mhz.
 	 */
 	mov r0, #equ32_cm_pwm
-	mov r1, #equ32_cm_ctl_mash_1
+	mov r1, #equ32_cm_ctl_mash_0
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
 	mov r2, #2 << equ32_cm_div_integer
 	bl arm32_clockmanager

@@ -58,6 +58,7 @@ typedef enum _command_list {
 	snd,
 	intsnd, // Interruption of the main sound by another sound, "intsnd %S1 %S2": Similar to "snd".
 	clrsnd, // Clear sound at all. "clrsnd"
+	beat, // Change the beat of sound, "beat %S1": Beat is 120000 divided by the integer in S1, e.g., 10000 in S1 sets the beat to 12Hz.
 	save, // Save lines to EEPROM, "save %D %S1 %S2": Save lines from D to the chip number in S2 (Bit[2:0]). The length of lines is the value in S1.
 	load, // Load lines from EEPROM, jump to the last line to be loaded, "load %D %S1 %S2": Load lines to D from the chip number in S2 (Bit[2:0]). The length of lines is the value in S1.
 	add, // Integer signed addition, "add %D %S1 %S2": D = S1 + S2. -2,147,483,648 through 2,147,483,647.
@@ -102,6 +103,9 @@ typedef enum _command_list {
 	input, // Input to the line, "input %D".
 	scmp, // String Compare
 	mov, // Copy, "mov %D %S1".
+	apd, // Append, "mov %D %S1".
+	vlen, // Vertical Length, "vlen %D %S1".
+	hlen, // Horizontal Length, "hlen %D %S1".
 	clr, // Clear the line, "clr %D".
 	jmp, // Jump to the line, "jmp %S1": Next line will be the number in S1.
 	call, // Jump to the line and store number of current line to array (Last In First Out) for link.
@@ -309,6 +313,11 @@ int32 _user_start() {
 							command_type = clrsnd;
 							length_arg = 0;
 							pipe_type = execute_command;
+						} else if ( str32_strmatch( temp_str, 4, "beat\0", 4 ) ) {
+							command_type = beat;
+							length_arg = 1;
+							pipe_type = enumurate_variables;
+							var_index = 0;
 						} else if ( str32_strmatch( temp_str, 4, "save\0", 4 ) ) {
 							command_type = save;
 							length_arg = 3;
@@ -523,6 +532,18 @@ int32 _user_start() {
 							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 3, "mov\0", 3 ) ) {
 							command_type = mov;
+							length_arg = 2;
+							pipe_type = execute_command;
+						} else if ( str32_strmatch( temp_str, 3, "apd\0", 3 ) ) {
+							command_type = apd;
+							length_arg = 2;
+							pipe_type = execute_command;
+						} else if ( str32_strmatch( temp_str, 4, "vlen\0", 4 ) ) {
+							command_type = vlen;
+							length_arg = 2;
+							pipe_type = execute_command;
+						} else if ( str32_strmatch( temp_str, 4, "hlen\0", 4 ) ) {
+							command_type = hlen;
 							length_arg = 2;
 							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 3, "clr\0", 3 ) ) {
@@ -807,6 +828,11 @@ int32 _user_start() {
 								_soundclear();
 
 								break;
+							case beat:
+								var_temp.u32 = _load_32( array_source );
+								_armtimer_reload( var_temp.u32 - 1 );
+
+								break;
 							case save:
 								var_temp.u32 = 0; // Memory Address
 								var_temp2.u32 = _load_32( array_argpointer ); // First Line Number to Save
@@ -1050,6 +1076,44 @@ int32 _user_start() {
 								if ( var_temp3.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp3.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
 								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, var_temp2.u32, var_temp3.u32 + 1 ); // Add Null Character
 								line_clean( dst_str );
+
+								break;
+							case apd:
+								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
+								dst_str = UART32_UARTINT_HEAP;
+								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
+								src_str = UART32_UARTINT_HEAP;
+
+								/* Pass Spaces and Label */
+								var_temp.u32 = str32_strlen( dst_str );
+								temp_str2 = pass_space_label( src_str );
+								var_temp2.u32 = temp_str2 - src_str;
+
+								var_temp3.u32 = str32_strlen( temp_str2 );
+								if ( var_temp3.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp3.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
+								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, var_temp2.u32, var_temp3.u32 + 1 ); // Add Null Character
+								line_clean( dst_str );
+
+								break;
+							case vlen:
+								var_temp.u32 = _load_32( array_argpointer + 4 );
+								direction.u32 = 0;
+
+								for ( uint32 i = var_temp.u32; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+									if ( _uartsetheap( i ) ) break;
+									temp_str = pass_space_label( UART32_UARTINT_HEAP );
+									if ( ! str32_strlen( temp_str ) ) break;
+									direction.u32++;
+								}
+								str_direction = cvt32_int32_to_string_deci( direction.u32, 1, 0 );
+
+								break;
+							case hlen:
+								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
+
+								temp_str = pass_space_label( UART32_UARTINT_HEAP );
+								direction.u32 = str32_strlen( temp_str );
+								str_direction = cvt32_int32_to_string_deci( direction.u32, 1, 0 );
 
 								break;
 							case clr:
