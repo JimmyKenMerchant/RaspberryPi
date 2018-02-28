@@ -499,27 +499,27 @@
 .equ equ32_cm_ctl,             0x00000000 @ Offset for Clock Control of Clock Manager
 .equ equ32_cm_div,             0x00000004 @ Offset for Clock divisors of Clock Manager
 
-.equ equ32_cm_passwd,              0x5A000000 @ Password of Clock Manager, To Write, Set This on CTL and DIV Registers
+.equ equ32_cm_passwd,          0x5A000000 @ Password of Clock Manager, To Write, Set This on CTL and DIV Registers
 
-.equ equ32_cm_ctl_mash_0,          0x00000000 @ Integer Division
-.equ equ32_cm_ctl_mash_1,          0x00000200 @ 1-stage Mash
-.equ equ32_cm_ctl_mash_2,          0x00000400 @ 2-stage Mash
-.equ equ32_cm_ctl_mash_3,          0x00000600 @ 3-stage Mash
-.equ equ32_cm_ctl_flip,            0x00000100 @ Invert Output
-.equ equ32_cm_ctl_busy,            0x00000080 @ Running
-.equ equ32_cm_ctl_kill,            0x00000020 @ Kill
-.equ equ32_cm_ctl_enab,            0x00000010 @ Enable
-.equ equ32_cm_ctl_src_gnd,         0x00000000 @ GND (0 Hz)
-.equ equ32_cm_ctl_src_osc,         0x00000001 @ Oscillator (19.2Mhz)
-.equ equ32_cm_ctl_src_deb0,        0x00000002 @ Test Debug 0 (0 Hz)
-.equ equ32_cm_ctl_src_deb1,        0x00000003 @ Test Debug 1 (0 Hz)
-.equ equ32_cm_ctl_src_plla,        0x00000004 @ PLL A (0Hz?)
-.equ equ32_cm_ctl_src_pllc,        0x00000005 @ PLL C (1000Mhz but depends on CPU Clock?)
-.equ equ32_cm_ctl_src_plld,        0x00000006 @ PLL D (500Mhz)
-.equ equ32_cm_ctl_src_hdmi,        0x00000007 @ HDMI Auxiliary (216Mhz?)
+.equ equ32_cm_ctl_mash_0,      0x00000000 @ Integer Division
+.equ equ32_cm_ctl_mash_1,      0x00000200 @ 1-stage Mash
+.equ equ32_cm_ctl_mash_2,      0x00000400 @ 2-stage Mash
+.equ equ32_cm_ctl_mash_3,      0x00000600 @ 3-stage Mash
+.equ equ32_cm_ctl_flip,        0x00000100 @ Invert Output
+.equ equ32_cm_ctl_busy,        0x00000080 @ Running
+.equ equ32_cm_ctl_kill,        0x00000020 @ Kill
+.equ equ32_cm_ctl_enab,        0x00000010 @ Enable
+.equ equ32_cm_ctl_src_gnd,     0x00000000 @ GND (0 Hz)
+.equ equ32_cm_ctl_src_osc,     0x00000001 @ Oscillator (19.2Mhz)
+.equ equ32_cm_ctl_src_deb0,    0x00000002 @ Test Debug 0 (0 Hz)
+.equ equ32_cm_ctl_src_deb1,    0x00000003 @ Test Debug 1 (0 Hz)
+.equ equ32_cm_ctl_src_plla,    0x00000004 @ PLL A (0Hz?)
+.equ equ32_cm_ctl_src_pllc,    0x00000005 @ PLL C (1000Mhz but depends on CPU Clock?)
+.equ equ32_cm_ctl_src_plld,    0x00000006 @ PLL D (500Mhz)
+.equ equ32_cm_ctl_src_hdmi,    0x00000007 @ HDMI Auxiliary (216Mhz?)
 
 .equ equ32_cm_div_integer,     12 @ LSL Bit[23:12]
-.equ equ32_cm_div_fraction,    0  @ Bit[11:0] (Valid on [9:0]?)
+.equ equ32_cm_div_fraction,    0  @ Bit[11:0] (Fractional Value is Bit[11:0] Divided by 1024. Valid Bit[9:0])
 
 
 /**

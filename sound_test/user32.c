@@ -22,6 +22,7 @@
 #include "sound32.h"
 
 #define timer_count_default 10000
+#define clock_divisor_int_defualt 2
 
 /**
  * Sound Index is made of an array of 16-bit Blocks.
@@ -79,6 +80,7 @@ int32 _user_start()
 	String str_music2 = "Music No.2\0";
 	String str_music3 = "Music No.3\0";
 	int32 timer_count_divisor = 1;
+	uint32 clock_divisor_fraction = 0;
 
 	_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 
@@ -109,6 +111,10 @@ int32 _user_start()
 				break;
 			}
 			if ( _gpio_detect( 24 ) ) {
+				/* Tuner Using Fractional Divisor, but Noise Exist */
+				clock_divisor_fraction += 1;
+				if ( clock_divisor_fraction > 1023 ) clock_divisor_fraction = 1023;
+				_clockmanager( _cm_pwm, _cm_ctl_mash_1|_cm_ctl_src_osc, clock_divisor_int_defualt<<_cm_div_integer|clock_divisor_fraction<<_cm_div_fraction );
 				break;
 			}
 			if ( _gpio_detect( 25 ) ) {
