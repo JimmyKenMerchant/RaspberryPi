@@ -35,6 +35,8 @@
 .balign 4
 .include "system32/arm/arm32.s"
 .balign 4
+.include "system32/arm/clk32.s"
+.balign 4
 .include "system32/arm/dma32.s"
 .balign 4
 .include "system32/arm/uart32.s"
@@ -50,8 +52,6 @@
 .include "system32/arm/vfp32.s"
 .balign 4
 .include "system32/arm/heap32.s"
-.balign 4
-.include "system32/arm/clk32.s"
 .balign 4
 
 /**

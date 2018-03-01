@@ -9,22 +9,22 @@
 
 .globl CLK32_YEAR
 .globl CLK32_USECOND
-.globl CLK32_ALLDAY
+.globl CLK32_YEARDAY
 .globl CLK32_MONTH
+.globl CLK32_WEEK
 .globl CLK32_DAY
 .globl CLK32_HOUR
 .globl CLK32_MINUTE
 .globl CLK32_SECOND
-.globl CLK32_WEEK
 CLK32_YEAR:    .word 0x00
-CLK32_USECOND: .word 0x00
-CLK32_ALLDAY:  .word 0x00
+CLK32_USECOND: .word 0x00 @ Microseconds Under Seconds
+CLK32_YEARDAY: .word 0x00 @ The day of the year
 CLK32_MONTH:   .byte 0x00
-CLK32_DAY:     .byte 0x00
+CLK32_WEEK:    .byte 0x00 @ 0-6, Saturday to Friday
+CLK32_DAY:     .byte 0x00 @ The day of the month
 CLK32_HOUR:    .byte 0x00
 CLK32_MINUTE:  .byte 0x00
 CLK32_SECOND:  .byte 0x00
-CLK32_WEEK:    .byte 0x00
 .balign 4
 
 CLK32_SYSTEM_UPPER: .word 0x00
@@ -48,40 +48,110 @@ CLK32_DEC:     .byte 31
 
 
 /**
- * function clk32_set_clock
- * Set Current Time to Clock
+ * function clk32_set_clock_year
+ * Set Current Time (Year to Day) to Clock
  *
  * Parameters
  * r0: Year
  * r1: Month
- * r2: Day
- * r3: Hour
- * r4: Minute
- * r5: Second
+ * r2: Day of Month
  *
  * Return: r0 (0 as Success)
  */
-.globl clk32_set_clock
-clk32_set_clock:
+.globl clk32_set_clock_year
+clk32_set_clock_year:
 	/* Auto (Local) Variables, but just Aliases */
 	year           .req r0
 	month          .req r1
 	day            .req r2
-	hour           .req r3
-	minute         .req r4
-	second         .req r5
-	memorymap_base .req r6
-	count_low      .req r7
-	count_high     .req r8
+	yearday        .req r3
+	memorymap_base .req r4
+	temp           .req r5
+	leap_year      .req r6
 
-	push {r4-r8,lr}
+	push {r4-r6,lr}
 
-	add sp, sp, #24                                  @ r4-r8 and lr offset 24 bytes
-	pop {minute,second}                              @ Get Fifth and Sixth Arguments
-	sub sp, sp, #32                                  @ Retrieve SP
-
+	/* Limiter of Month */
 	cmp month, #12
 	movgt month, #12
+	cmp month, #0
+	movle month, #1
+
+	/* Limiter of Day */
+	cmp day, #31
+	movgt day, #31
+	cmp day, #0
+	movle day, #1
+
+	str year, CLK32_YEAR
+	strb month, CLK32_MONTH
+	strb day, CLK32_DAY
+
+	push {r0-r3}
+	bl clk32_check_week
+	mov temp, r0
+	pop {r0-r3}
+
+	strb temp, CLK32_WEEK
+
+	push {r0-r3}
+	bl clk32_check_leapyear
+	mov leap_year, r0
+	pop {r0-r3}
+
+	ldr memorymap_base, CLK32_MONTHS
+	mov yearday, #0
+	sub month, month, #1
+
+	clk32_set_clock_year_yearday:
+		ldrb temp, [memorymap_base, month]
+		cmp month, #2
+		cmpeq leap_year, #1
+		addeq temp, temp, #1
+		add yearday, yearday, temp
+		subs month, month, #1
+		bgt clk32_set_clock_year_yearday
+	
+	add yearday, yearday, day
+	str yearday, CLK32_YEARDAY
+
+	macro32_dsb ip
+
+	clk32_set_clock_year_common:
+		mov r0, #0
+		pop {r4-r6,pc}
+
+.unreq year
+.unreq month
+.unreq day
+.unreq yearday
+.unreq memorymap_base
+.unreq temp
+.unreq leap_year
+
+
+/**
+ * function clk32_set_clock_hour
+ * Set Current Time (Hour to Second) to Clock
+ *
+ * Parameters
+ * r0: Hour
+ * r1: Minute
+ * r2: Second
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl clk32_set_clock_hour
+clk32_set_clock_hour:
+	/* Auto (Local) Variables, but just Aliases */
+	hour           .req r0
+	minute         .req r1
+	second         .req r2
+	memorymap_base .req r3
+	count_low      .req r4
+	count_high     .req r5
+
+	push {r4-r5,lr}
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
@@ -93,68 +163,28 @@ clk32_set_clock:
 	str count_low, CLK32_SYSTEM_LOWER
 	str count_high, CLK32_SYSTEM_UPPER
 
-	.unreq count_low
-	.unreq count_high
-	leap_year .req r7
-	allday    .req r8
-
-	str year, CLK32_YEAR
-	strb month, CLK32_MONTH
-	strb day, CLK32_DAY
+	strb hour, CLK32_HOUR
 	strb minute, CLK32_MINUTE
 	strb second, CLK32_SECOND
 
-	.unreq minute
 	.unreq second
-	temp  .req r4
-	temp2 .req r5
+	usecond .req r2
 
-	mov temp, #0
-	str temp, CLK32_USECOND
-
-	push {r0-r3}
-	bl clk32_check_week
-	mov temp, r0
-	pop {r0-r3}
-
-	str temp, CLK32_WEEK
-
-	push {r0-r3}
-	bl clk32_check_leapyear
-	mov leap_year, r0
-	pop {r0-r3}
-
-	ldr memorymap_base, CLK32_MONTHS
-	mov allday, #0
-	sub month, month, #1
-
-	clk32_set_clock_allday:
-		ldr temp, [memorymap_base, month]
-		cmp month, #2
-		cmpeq leap_year, #1
-		addeq temp, temp, #1
-		add allday, allday, temp
-		subs month, month, #1
-		bgt clk32_set_clock_allday
-	
-	add allday, allday, day
-	
-	strh allday, CLK32_ALLDAY
+	mov usecond, #0
+	str usecond, CLK32_USECOND
 
 	macro32_dsb ip
 
-	clk32_set_clock_common:
-		pop {r4-r8,pc}
+	clk32_set_clock_hour_common:
+		mov r0, #0
+		pop {r4-r5,pc}
 
-.unreq year
-.unreq month
-.unreq day
 .unreq hour
-.unreq temp
-.unreq temp2
+.unreq minute
+.unreq usecond
 .unreq memorymap_base
-.unreq leap_year
-.unreq allday
+.unreq count_low
+.unreq count_high
 
 
 /**
@@ -201,7 +231,8 @@ clk32_get_clock:
 
 	ldr year, CLK32_YEAR
 	ldr usecond, CLK32_USECOND
-	ldr day, CLK32_ALLDAY
+	ldr day, CLK32_YEARDAY
+	ldrb hour, CLK32_HOUR
 	ldrb minute, CLK32_MINUTE
 	ldrb second, CLK32_SECOND
 
@@ -215,12 +246,12 @@ clk32_get_clock:
 	subs count_low_now, count_low_now, count_low_past
 	sublo count_high_now, count_high_now, #1
 	sub count_high_now, count_high_now, count_high_past
-	cmp count_low_now, #0                               @ If Minus Singed
+	cmp count_low_now, #0                               @ If Signed Minus
 	mvnlt count_low_now, count_low_now
-	addlt count_low_now, count_low_now, #1
-	cmp count_high_now, #0                              @ If Minus Singed
+	addlt count_low_now, count_low_now, #1              @ Absolute Value
+	cmp count_high_now, #0                              @ If Signed Minus
 	mvnlt count_high_now, count_high_now
-	addlt count_high_now, count_high_now, #1
+	addlt count_high_now, count_high_now, #1            @ Absolute Value
 
 	.unreq count_low_past
 	.unreq count_high_past
@@ -228,70 +259,101 @@ clk32_get_clock:
 	temp2 .req r9
 
 	clk32_get_clock_correction:
-		/* Micro Seconds  */
+		/* Micro Seconds */
 
-		mov temp2, #0xF4000
-		add temp2, temp2, #0x240                            @ Decimal 1000000
+		mov temp, #0xF4000
+		add temp, temp, #0x240                            @ Decimal 1000000
 
 		push {r0-r3}
 		mov r0, count_low_now
-		mov r1, temp2
+		mov r1, temp
 		bl arm32_urem
-		mov r0, temp
+		mov temp2, r0
 		pop {r0-r3}
 
-		sub count_low_now, count_low_now, temp
+		sub count_low_now, count_low_now, temp2
 
-		add usecond, usecond, temp
-		cmp usecond, temp2
-		subge usecond, temp2
+		add usecond, usecond, temp2
+		cmp usecond, temp
+		subge usecond, usecond, temp
 		addge second, second, #1
 		str usecond, CLK32_USECOND 
 
 		/* Seconds */
 
-		mov temp, #60
-		mul temp2, temp2, temp
+		mov temp, #0xF4000
+		add temp, temp, #0x240                            @ Decimal 1000000
+		mov temp2, #60
+		mul temp2, temp, temp2
 
 		push {r0-r3}
 		mov r0, count_low_now
 		mov r1, temp2
 		bl arm32_urem
-		mov r0, temp
+		mov temp2, r0
 		pop {r0-r3}
 
-		sub count_low_now, count_low_now, temp
+		sub count_low_now, count_low_now, temp2
 
-		add second, second, temp
+		push {r0-r3}
+		mov r0, temp2
+		mov r1, temp
+		bl arm32_udiv
+		mov temp2, r0
+		pop {r0-r3}
+
+		add second, second, temp2
 		cmp second, #60
-		subge second, #60
+		subge second, second, #60
 		addge hour, hour, #1
 		strb second, CLK32_SECOND 
 
 		/* Minutes */
 
-		mov temp, #60
-		mul temp2, temp2, temp
+		mov temp, #0xF4000
+		add temp, temp, #0x240                            @ Decimal 1000000
+		mov temp2, #60
+		mul temp, temp, temp2
+		mov temp2, #60
+		mul temp2, temp, temp2
+
+		/**
+		 * Maximum Value of 32-bit is 4,294,967,295 (micro seconds in this case).
+		 * Besides, 1 hour is 3,600,000,000 micro seconds.
+		 * If the count can be divided by 3,600,000,000, it indicates that 1 hour is passed.
+		 */
+		push {r0-r3}
+		mov r0, count_low_now
+		mov r1, temp2
+		bl arm32_udiv
+		cmp r0, #1
+		pop {r0-r3}
+		addge hour, hour, #1
 
 		push {r0-r3}
 		mov r0, count_low_now
 		mov r1, temp2
 		bl arm32_urem
-		mov r0, temp
+		mov temp2, r0
 		pop {r0-r3}
 
-		sub count_low_now, count_low_now, temp
+		push {r0-r3}
+		mov r0, temp2
+		mov r1, temp
+		bl arm32_udiv
+		mov temp2, r0
+		pop {r0-r3}
 
-		add minute, minute, temp
+		add minute, minute, temp2
 		cmp minute, #60
-		subge minute, #60
+		subge minute, minute, #60
 		addge hour, hour, #1
 		strb minute, CLK32_MINUTE
 
 		/* Hours */
 
 		cmp hour, #24
-		subge hour, #24
+		subge hour, hour, #24
 		addge day, day, #1
 		strb hour, CLK32_HOUR
 
@@ -304,9 +366,11 @@ clk32_get_clock:
 
 		/* There is No Zero Day */
 		cmp day, temp2 
-		subgt day, temp2
+		subgt day, day, temp2
 		addgt year, year, #1
-		str day, CLK32_ALLDAY
+		str day, CLK32_YEARDAY
+
+		str year, CLK32_YEAR
 
 		sub count_high_now, count_high_now, #1
 		cmp count_high_now, #0
@@ -318,24 +382,25 @@ clk32_get_clock:
 		mov month, #1
 
 	clk32_get_clock_monthday:
-		ldr temp2, [temp, month]
+		ldrb temp2, [temp, month]
 		subs day, day, temp2
 		addgt month, month, #1
-		bgt clk32_set_clock_allday
+		bgt clk32_get_clock_monthday
 
 		add day, day, temp2
 
-		str month, CLK32_MONTH
-		str day, CLK32_DAY
+		strb month, CLK32_MONTH
+		strb day, CLK32_DAY
 	
 		push {r0-r3}
 		bl clk32_check_week
 		mov temp, r0
 		pop {r0-r3}
 
-		str temp, CLK32_WEEK
+		strb temp, CLK32_WEEK
 
 	clk32_get_clock_common:
+		mov r0, #0
 		pop {r4-r11,pc}
 
 .unreq year
@@ -410,8 +475,8 @@ clk32_check_leapyear:
 		pop {pc}
 
 .unreq year
-.unreq temp
 .unreq leap_year
+.unreq temp
 
 
 /**
@@ -432,7 +497,7 @@ clk32_check_week:
 	month         .req r1
 	day           .req r2
 	century       .req r3 @ Zero Base, Not Ordinary
-	trans_year    .req r4
+	temp          .req r4
 	trans_century .req r5
 
 	push {r4-r5,lr}
@@ -444,9 +509,9 @@ clk32_check_week:
 	/* January and February Considered as 13th and 14th of Previous Year */
 	cmp month, #2
 	suble year, year, #1
-	add month, month, #12
+	addle month, month, #12
 
-	/* Get Century  */
+	/* Get Century */
 	push {r0-r2}
 	mov r1, #100
 	bl arm32_udiv
@@ -461,19 +526,24 @@ clk32_check_week:
 
 	/* Transformation of Month */
 	add month, month, #1
-	mov trans_year, #13
-	mul month, month, trans_year
+	mov temp, #13
+	mul month, month, temp
 	push {r0-r3}
 	mov r0, month
 	mov r1, #5
 	bl arm32_udiv
-	mov month, r0
+	mov temp, r0
 	pop {r0-r3}
+
+	mov month, temp
+
+	.unreq temp
+	trans_year .req r4
 
 	lsr trans_year, year, #2       @ Substitute of Division by 4
 	lsr trans_century, century, #2 @ Substitute of Division by 4
 
-	/* Another Transformation of Year */
+	/* Another Transformation of Century */
 	lsl century, century, #1       @ Substitute of Multiplication by 2
 
 	add day, day, month

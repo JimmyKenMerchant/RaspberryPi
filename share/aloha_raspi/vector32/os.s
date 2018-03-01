@@ -279,7 +279,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x29                            @ Prevent Overflow SVC Table
+	cmp ip, #0x2C                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -357,102 +357,114 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x11:
-		bl snd32_sounddecode
+		bl clk32_set_clock_year
 		b _os_svc_common
 
 	_os_svc_0x12:
-		bl snd32_soundset
+		bl clk32_set_clock_hour
 		b _os_svc_common
 
 	_os_svc_0x13:
-		bl snd32_soundinterrupt
+		bl clk32_get_clock
 		b _os_svc_common
 
 	_os_svc_0x14:
-		bl snd32_soundclear
+		bl snd32_sounddecode
 		b _os_svc_common
 
 	_os_svc_0x15:
-		bl gpio32_gpioset
+		bl snd32_soundset
 		b _os_svc_common
 
 	_os_svc_0x16:
-		bl gpio32_gpioclear
+		bl snd32_soundinterrupt
 		b _os_svc_common
 
 	_os_svc_0x17:
-		bl uart32_uartinit
+		bl snd32_soundclear
 		b _os_svc_common
 
 	_os_svc_0x18:
-		bl uart32_uartsettest
+		bl gpio32_gpioset
 		b _os_svc_common
 
 	_os_svc_0x19:
-		bl uart32_uarttestwrite
+		bl gpio32_gpioclear
 		b _os_svc_common
 
 	_os_svc_0x1A:
-		bl uart32_uarttestread
+		bl uart32_uartinit
 		b _os_svc_common
 
 	_os_svc_0x1B:
-		bl uart32_uartsetint
+		bl uart32_uartsettest
 		b _os_svc_common
 
 	_os_svc_0x1C:
-		bl uart32_uartint_emulate
+		bl uart32_uarttestwrite
 		b _os_svc_common
 
 	_os_svc_0x1D:
-		bl uart32_uartclrint
+		bl uart32_uarttestread
 		b _os_svc_common
 
 	_os_svc_0x1E:
-		bl uart32_uarttx
+		bl uart32_uartsetint
 		b _os_svc_common
 
 	_os_svc_0x1F:
-		bl uart32_uartrx
+		bl uart32_uartint_emulate
 		b _os_svc_common
 
 	_os_svc_0x20:
-		bl uart32_uartclrrx
+		bl uart32_uartclrint
 		b _os_svc_common
 
 	_os_svc_0x21:
-		bl uart32_uartsetheap
+		bl uart32_uarttx
 		b _os_svc_common
 
 	_os_svc_0x22:
-		bl usb2032_otg_host_reset_bcm
+		bl uart32_uartrx
 		b _os_svc_common
 
 	_os_svc_0x23:
-		bl usb2032_hub_activate
+		bl uart32_uartclrrx
 		b _os_svc_common
 
 	_os_svc_0x24:
-		bl usb2032_hub_search_device
+		bl uart32_uartsetheap
 		b _os_svc_common
 
 	_os_svc_0x25:
-		bl hid32_hid_activate
+		bl usb2032_otg_host_reset_bcm
 		b _os_svc_common
 
 	_os_svc_0x26:
-		bl hid32_hid_setidle
+		bl usb2032_hub_activate
 		b _os_svc_common
 
 	_os_svc_0x27:
-		bl hid32_keyboard_get
+		bl usb2032_hub_search_device
 		b _os_svc_common
 
 	_os_svc_0x28:
-		bl rom32_romread_i2c
+		bl hid32_hid_activate
 		b _os_svc_common
 
 	_os_svc_0x29:
+		bl hid32_hid_setidle
+		b _os_svc_common
+
+	_os_svc_0x2A:
+		bl hid32_keyboard_get
+		b _os_svc_common
+
+	_os_svc_0x2B:
+		bl rom32_romread_i2c
+		b _os_svc_common
+
+	_os_svc_0x2C:
 		bl rom32_romwrite_i2c
 		b _os_svc_common
 

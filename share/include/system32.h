@@ -314,6 +314,27 @@ extern uint32 arm32_tst(
 
 
 /********************************
+ * system32/library/clk32.s
+ ********************************/
+
+extern uint32 CLK32_YEAR;
+extern uint32 CLK32_USECOND;
+extern uint32 CLK32_YEARDAY;
+extern uchar8 CLK32_MONTH;
+extern uchar8 CLK32_WEEK;
+extern uchar8 CLK32_DAY;
+extern uchar8 CLK32_HOUR;
+extern uchar8 CLK32_MINUTE;
+extern uchar8 CLK32_SECOND;
+
+__attribute__((noinline)) uint32 _set_clock_year( uint32 year, uchar8 month, uchar8 day );
+
+__attribute__((noinline)) uint32 _set_clock_hour( uchar8 hour, uchar8 minute, uchar8 second );
+
+__attribute__((noinline)) uint32 _get_clock();
+
+
+/********************************
  * system32/arm/uart32.s
  ********************************/
 
@@ -403,7 +424,6 @@ __attribute__((noinline)) int32 _hub_search_device
 	uint32 channel,
 	uint32 address_hub 
 );
-
 
 
 /********************************
