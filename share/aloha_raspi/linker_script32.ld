@@ -40,13 +40,14 @@ SECTIONS {
 	. = 0xC000;
 	.arm_system32 : {
 		system32.o(.arm_system32)
-		. = 0x4000;
+		. = 0x6000;
 	}
-	. = 0x10000;
+	. = 0x12000;
 	.library_system32 : {
 		system32.o(.library_system32)
-		. += 0x00100000;
+		. = 0x00100000;
 	}
+	. = 0x112000;
 	.text : {
 		*(.text)
 	}

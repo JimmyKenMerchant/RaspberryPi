@@ -51,6 +51,8 @@
 .balign 4
 .include "system32/arm/heap32.s"
 .balign 4
+.include "system32/arm/clk32.s"
+.balign 4
 
 /**
  * Place Label to First Address of Data Memory Section (including .bss)
