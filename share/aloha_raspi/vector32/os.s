@@ -357,15 +357,15 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x11:
-		bl clk32_set_clock_year
+		bl clk32_calender_init
 		b _os_svc_common
 
 	_os_svc_0x12:
-		bl clk32_set_clock_hour
+		bl clk32_clock_init
 		b _os_svc_common
 
 	_os_svc_0x13:
-		bl clk32_get_clock
+		bl clk32_get_time
 		b _os_svc_common
 
 	_os_svc_0x14:

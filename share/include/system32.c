@@ -120,21 +120,21 @@ __attribute__((noinline)) uint32 _clockmanager( uint32 clocktype_base, uint32 cl
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_clock_year( uint32 year, uchar8 month, uchar8 day )
+__attribute__((noinline)) uint32 _calender_init( uint32 year, uchar8 month, uchar8 day )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x11");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_clock_hour( uchar8 hour, uchar8 minute, uchar8 second )
+__attribute__((noinline)) uint32 _clock_init( uchar8 hour, uchar8 minute, uchar8 second, uint32 usecond )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x12");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _get_clock()
+__attribute__((noinline)) uint32 _get_time()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x13");

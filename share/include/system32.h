@@ -318,20 +318,39 @@ extern uint32 arm32_tst(
  ********************************/
 
 extern uint32 CLK32_YEAR;
-extern uint32 CLK32_USECOND;
 extern uint32 CLK32_YEARDAY;
+extern uint32 CLK32_YEAR_INIT;
+extern uint32 CLK32_YEARDAY_INIT;
+extern uchar8 CLK32_UTC;
 extern uchar8 CLK32_MONTH;
 extern uchar8 CLK32_WEEK;
-extern uchar8 CLK32_DAY;
+extern uchar8 CLK32_MONTHDAY;
 extern uchar8 CLK32_HOUR;
 extern uchar8 CLK32_MINUTE;
 extern uchar8 CLK32_SECOND;
+extern uchar8 CLK32_HOUR_INIT;
+extern uchar8 CLK32_MINUTE_INIT;
+extern uchar8 CLK32_SECOND_INIT;
+extern uint32 CLK32_USECOND;
+extern uint32 CLK32_USECOND_INIT;
 
-__attribute__((noinline)) uint32 _set_clock_year( uint32 year, uchar8 month, uchar8 day );
+__attribute__((noinline)) uint32 _calender_init( uint32 year, uchar8 month, uchar8 day );
 
-__attribute__((noinline)) uint32 _set_clock_hour( uchar8 hour, uchar8 minute, uchar8 second );
+__attribute__((noinline)) uint32 _clock_init( uchar8 hour, uchar8 minute, uchar8 second, uint32 usecond );
 
-__attribute__((noinline)) uint32 _get_clock();
+__attribute__((noinline)) uint32 _get_time();
+
+extern uint32 clk32_check_leapyear
+(
+	uint32 year
+);
+
+extern uint32 clk32_check_week
+(
+	uint32 year,
+	uchar8 month,
+	uchar8 day_of_month
+);
 
 
 /********************************

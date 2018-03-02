@@ -129,8 +129,28 @@ int32 _user_start()
 	print32_set_caret( print32_number( answer_sfixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
+	uint32 answer_leapyear = clk32_check_leapyear( 2001 );
+	print32_set_caret( print32_number( answer_leapyear, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	uint32 answer_week = clk32_check_week( 2017, 12, 19 );
+	print32_set_caret( print32_number( answer_week, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	_calender_init( 2018, 12, 31 );
+	_clock_init( 23, 59, 50, 0 );
 	while(1) {
-		_sleep( 100000 );
+		_get_time();
+		print32_number( CLK32_YEAR, FB32_X_CARET, FB32_Y_CARET, 8 );
+		print32_number( CLK32_YEARDAY, FB32_X_CARET, FB32_Y_CARET + 12, 8 );
+		print32_number( CLK32_MONTH, FB32_X_CARET, FB32_Y_CARET + 24, 8 );
+		print32_number( CLK32_WEEK, FB32_X_CARET, FB32_Y_CARET + 36, 8 );
+		print32_number( CLK32_MONTHDAY, FB32_X_CARET, FB32_Y_CARET + 48, 8 );
+		print32_number( CLK32_HOUR, FB32_X_CARET, FB32_Y_CARET + 60, 8 );
+		print32_number( CLK32_MINUTE, FB32_X_CARET, FB32_Y_CARET + 72, 8 );
+		print32_number( CLK32_SECOND, FB32_X_CARET, FB32_Y_CARET + 84, 8 );
+		print32_number( CLK32_USECOND, FB32_X_CARET, FB32_Y_CARET + 96, 8 );
+		_sleep( 1000000 );
 	}
 
 	return EXIT_SUCCESS;
