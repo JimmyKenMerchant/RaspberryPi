@@ -39,6 +39,16 @@ typedef enum _command_list {
 	print, // Print string, "print %D %S1": Print string from D. The length of lines is the number in S1. If S1 is zero or undefined, the value becomes one. 
 	sleep, // Sleep microseconds by integer "Sleep %S1": Number in S1 means micro seconds to sleep.
 	/**
+	 * Set calender and clock, "stime %S1 %S2 %S3 %S4 %S5 %S6 %S7":
+	 * Year in S1, Month in S2, Day in S3, Hour in S4, Minute in S5, Second in S6, Micro Second in S7.
+	 */
+	stime,
+	/**
+	 * Get calender and clock, "gtime %D1 %D2 %D3 %D4 %D5 %D6 %D7 %D8":
+	 * Year in S1, Month in S2, Week in S3, Day in S4, Hour in S5, Minute in S6, Second in S7, Micro Second in S8.
+	 */
+	gtime,
+	/**
 	 * "arr" makes raw data array of integer, "arr %D %S1 %S2 %S3":
 	 * This command stores the number of raw data array to D. Number in S1 is the start line to be referenced. Number in S2 is length of line.
 	 * Number in S3 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
@@ -106,7 +116,6 @@ typedef enum _command_list {
 	apd, // Append, "mov %D %S1".
 	vlen, // Vertical Length, "vlen %D %S1".
 	hlen, // Horizontal Length, "hlen %D %S1".
-	clr, // Clear the line, "clr %D".
 	jmp, // Jump to the line, "jmp %S1": Next line will be the number in S1.
 	call, // Jump to the line and store number of current line to array (Last In First Out) for link.
 	ret, // Return to the line stored in array for link.
@@ -137,7 +146,7 @@ typedef enum _command_list {
 
 typedef enum _pipe_list {
 	search_command,
-	enumurate_variables,
+	enumurate_sources,
 	execute_command,
 	go_nextline,
 	termination
@@ -171,6 +180,7 @@ bool input_keyboard_set_cursor();
 bool process_counter();
 bool text_sender( String target_str );
 bool text_sender_length( String target_str, uint32 length );
+bool line_writer( uint32 line_number, String target_str ); 
 bool line_clean( String target_str ); 
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
@@ -201,7 +211,7 @@ int32 _user_start() {
 	obj buffer_line = heap32_malloc( UART32_UARTMALLOC_MAXROW + 1 / 4 ); // Add for Null Character
 	uint32 length_arg = 0;
 	uint32 length_temp = 0;
-	uint32 var_index = 0;
+	uint32 src_index = 0;
 	uint32 current_line = 0;
 	uint32 status_nzcv = 0;
 	uint32 stack_offset = stack_offset_default; // Stack offset for "push" and "pop", from the last line decremental order.
@@ -277,38 +287,47 @@ int32 _user_start() {
 						} else if ( str32_strmatch( temp_str, 5, "print\0", 5 ) ) {
 							command_type = print;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Start Point
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Start Point
 						} else if ( str32_strmatch( temp_str, 5, "sleep\0", 5 ) ) {
 							command_type = sleep;
 							length_arg = 1;
-							pipe_type = enumurate_variables;
-							var_index = 0;
+							pipe_type = enumurate_sources;
+							src_index = 0;
+						} else if ( str32_strmatch( temp_str, 5, "stime\0", 5 ) ) {
+							command_type = stime;
+							length_arg = 7;
+							pipe_type = enumurate_sources;
+							src_index = 0;
+						} else if ( str32_strmatch( temp_str, 5, "gtime\0", 5 ) ) {
+							command_type = gtime;
+							length_arg = 8;
+							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 3, "arr\0", 3 ) ) {
 							command_type = arr;
 							length_arg = 4;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Destination to Be Stored Number of Raw Data Array
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Destination to Be Stored Number of Raw Data Array
 						} else if ( str32_strmatch( temp_str, 4, "free\0", 4 ) ) {
 							command_type = free;
 							length_arg = 1;
-							pipe_type = enumurate_variables;
-							var_index = 0;
+							pipe_type = enumurate_sources;
+							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 4, "pict\0", 4 ) ) {
 							command_type = pict;
 							length_arg = 4;
-							pipe_type = enumurate_variables;
-							var_index = 2; // Only Last Two Is Needed to Translate to Integer
+							pipe_type = enumurate_sources;
+							src_index = 2; // Only Last Two Is Needed to Translate to Integer
 						} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
 							command_type = snd;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0;
+							pipe_type = enumurate_sources;
+							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 6, "intsnd\0", 6 ) ) {
 							command_type = intsnd;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0;
+							pipe_type = enumurate_sources;
+							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 6, "clrsnd\0", 6 ) ) {
 							command_type = clrsnd;
 							length_arg = 0;
@@ -316,98 +335,98 @@ int32 _user_start() {
 						} else if ( str32_strmatch( temp_str, 4, "beat\0", 4 ) ) {
 							command_type = beat;
 							length_arg = 1;
-							pipe_type = enumurate_variables;
-							var_index = 0;
+							pipe_type = enumurate_sources;
+							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 4, "save\0", 4 ) ) {
 							command_type = save;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Start Point
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Start Point
 						} else if ( str32_strmatch( temp_str, 4, "load\0", 4 ) ) {
 							command_type = load;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Start Point
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Start Point
 						} else if ( str32_strmatch( temp_str, 3, "add\0", 3 ) ) {
 							command_type = add;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "sub\0", 3 ) ) {
 							command_type = sub;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "mul\0", 3 ) ) {
 							command_type = mul;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "div\0", 3 ) ) {
 							command_type = div;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "rem\0", 3 ) ) {
 							command_type = rem;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "uadd\0", 4 ) ) {
 							command_type = uadd;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "usub\0", 4 ) ) {
 							command_type = usub;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "umul\0", 4 ) ) {
 							command_type = umul;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "udiv\0", 4 ) ) {
 							command_type = udiv;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "urem\0", 4 ) ) {
 							command_type = urem;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "and\0", 3 ) ) {
 							command_type = and;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "not\0", 3 ) ) {
 							command_type = not;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 2, "or\0", 2 ) ) {
 							command_type = or;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "xor\0", 3 ) ) {
 							command_type = xor;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "lsl\0", 3 ) ) {
 							command_type = lsl;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "lsr\0", 3 ) ) {
 							command_type = lsr;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "rand\0", 4 ) ) {
 							command_type = rand;
 							length_arg = 1;
@@ -415,113 +434,113 @@ int32 _user_start() {
 						} else if ( str32_strmatch( temp_str, 3, "cmp\0", 3 ) ) {
 							command_type = cmp;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0; // No Direction
+							pipe_type = enumurate_sources;
+							src_index = 0; // No Direction
 						} else if ( str32_strmatch( temp_str, 3, "tst\0", 3 ) ) {
 							command_type = tst;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0; // No Direction
+							pipe_type = enumurate_sources;
+							src_index = 0; // No Direction
 						} else if ( str32_strmatch( temp_str, 4, "badd\0", 4 ) ) {
 							command_type = badd;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "bsub\0", 4 ) ) {
 							command_type = bsub;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "bmul\0", 4 ) ) {
 							command_type = bmul;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "bdiv\0", 4 ) ) {
 							command_type = bdiv;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "brem\0", 4 ) ) {
 							command_type = brem;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "bcmp\0", 4 ) ) {
 							command_type = bcmp;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0; // No Direction
+							pipe_type = enumurate_sources;
+							src_index = 0; // No Direction
 						} else if ( str32_strmatch( temp_str, 4, "fadd\0", 4 ) ) {
 							command_type = fadd;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fsub\0", 4 ) ) {
 							command_type = fsub;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fmul\0", 4 ) ) {
 							command_type = fmul;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fdiv\0", 4 ) ) {
 							command_type = fdiv;
 							length_arg = 3;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 5, "fsqrt\0", 5 ) ) {
 							command_type = fsqrt;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "frad\0", 4 ) ) {
 							command_type = frad;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fsin\0", 4 ) ) {
 							command_type = fsin;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fcos\0", 4 ) ) {
 							command_type = fcos;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "ftan\0", 4 ) ) {
 							command_type = ftan;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 3, "fln\0", 3 ) ) {
 							command_type = fln;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "flog\0", 4 ) ) {
 							command_type = flog;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fabs\0", 4 ) ) {
 							command_type = fabs;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fneg\0", 4 ) ) {
 							command_type = fneg;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 1; // 0 is Direction
+							pipe_type = enumurate_sources;
+							src_index = 1; // 0 is Direction
 						} else if ( str32_strmatch( temp_str, 4, "fcmp\0", 4 ) ) {
 							command_type = fcmp;
 							length_arg = 2;
-							pipe_type = enumurate_variables;
-							var_index = 0; // No Direction
+							pipe_type = enumurate_sources;
+							src_index = 0; // No Direction
 						} else if ( str32_strmatch( temp_str, 5, "input\0", 5 ) ) {
 							command_type = input;
 							length_arg = 1;
@@ -545,10 +564,6 @@ int32 _user_start() {
 						} else if ( str32_strmatch( temp_str, 4, "hlen\0", 4 ) ) {
 							command_type = hlen;
 							length_arg = 2;
-							pipe_type = execute_command;
-						} else if ( str32_strmatch( temp_str, 3, "clr\0", 3 ) ) {
-							command_type = clr;
-							length_arg = 1;
 							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 3, "jmp\0", 3 ) ) {
 							command_type = jmp;
@@ -704,9 +719,9 @@ int32 _user_start() {
 
 						break;
 
-					case enumurate_variables:
+					case enumurate_sources:
 
-						if ( _uartsetheap( _load_32( array_argpointer + 4 * var_index ) ) ) _uartsetheap( initial_line );
+						if ( _uartsetheap( _load_32( array_argpointer + 4 * src_index ) ) ) _uartsetheap( initial_line );
 
 						/*  Pass Spaces and Label*/
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
@@ -716,12 +731,12 @@ int32 _user_start() {
 								var_temp.s32 = cvt32_string_to_int32( temp_str, str32_strlen( temp_str ) );
 								var_temp.f32 = vfp32_s32tof32( var_temp.s32 );
 							}
-							_store_32( array_source + 4 * var_index, var_temp.s32 );
+							_store_32( array_source + 4 * src_index, var_temp.s32 );
 						} else if ( command_type >= badd ){ // Type of Binary-coded Decimal
 							var_temp.u32 = str32_charindex( temp_str, 0x2E ); // Ascii Code of Period
 							if ( var_temp.u32 == -1 ) var_temp.u32 = str32_strlen( temp_str );
-							_store_32( array_source + 8 * var_index, (obj)temp_str );
-							_store_32( array_source + 8 * var_index + 4, var_temp.u32 );
+							_store_32( array_source + 8 * src_index, (obj)temp_str );
+							_store_32( array_source + 8 * src_index + 4, var_temp.u32 );
 						} else { // Type of 32-bit Signed Integer
 							if( str32_charindex( temp_str, 0x2E ) != -1 ) { // Ascii Code of Period
 								var_temp.f32 = cvt32_string_to_float32( temp_str, str32_strlen( temp_str ) );
@@ -729,11 +744,11 @@ int32 _user_start() {
 							} else {
 								var_temp.s32 = cvt32_string_to_int32( temp_str, str32_strlen( temp_str ) );
 							}
-							_store_32( array_source + 4 * var_index, var_temp.s32 );
+							_store_32( array_source + 4 * src_index, var_temp.s32 );
 						}
 
-						var_index++;
-						if ( var_index >= length_arg ) pipe_type = execute_command;
+						src_index++;
+						if ( src_index >= length_arg ) pipe_type = execute_command;
 
 						break;
 
@@ -753,6 +768,57 @@ int32 _user_start() {
 								break;
 							case sleep:
 								_sleep( _load_32( array_source ) );
+
+								break;
+							case stime:
+								_calender_init(
+										_load_32( array_source ),
+										_load_8( array_source + 4 ),
+										_load_8( array_source + 8 )
+										);
+
+								_clock_init(
+										_load_8( array_source + 12 ),
+										_load_8( array_source + 16 ),
+										_load_8( array_source + 20 ),
+										_load_32( array_source + 24 )
+										);
+
+								break;
+							case gtime:
+								_get_time();
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_YEAR, 1, 0 );
+								line_writer( _load_32( array_argpointer ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_MONTH, 1, 0 );
+								line_writer( _load_32( array_argpointer + 4 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_WEEK, 1, 0 );
+								line_writer( _load_32( array_argpointer + 8 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_MONTHDAY, 1, 0 );
+								line_writer( _load_32( array_argpointer + 12 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_HOUR, 1, 0 );
+								line_writer( _load_32( array_argpointer + 16 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_MINUTE, 1, 0 );
+								line_writer( _load_32( array_argpointer + 20 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_SECOND, 1, 0 );
+								line_writer( _load_32( array_argpointer + 24 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								str_direction = cvt32_int32_to_string_deci( (int32)CLK32_USECOND, 1, 0 );
+								line_writer( _load_32( array_argpointer + 28 ), str_direction );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
 								break;
 							case arr:
 								for ( uint32 i = 0; i < rawdata_maxlength; i++ ) {
@@ -1116,11 +1182,6 @@ int32 _user_start() {
 								str_direction = cvt32_int32_to_string_deci( direction.u32, 1, 0 );
 
 								break;
-							case clr:
-								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-
-								break;
 							case jmp:
 								current_line = _load_32( array_argpointer ) - 1;
 
@@ -1223,14 +1284,7 @@ int32 _user_start() {
 
 						pipe_type = go_nextline;
 						if ( str_direction == null ) break;
-						if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
-						/* Pass Spaces and Label */
-						temp_str = pass_space_label( UART32_UARTINT_HEAP );
-						var_temp.u32 = temp_str - UART32_UARTINT_HEAP;
-						var_temp2.u32 = str32_strlen( str_direction );
-						if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
-						heap32_mcopy( (obj)UART32_UARTINT_HEAP, var_temp.u32, (obj)str_direction, 0, var_temp2.u32 + 1 ); // Add Null Character
-						line_clean( UART32_UARTINT_HEAP );
+						line_writer( _load_32( array_argpointer ), str_direction );
 						str_direction = (String)heap32_mfree( (obj)str_direction );
 
 						break;
@@ -1467,6 +1521,25 @@ bool text_sender_length( String target_str, uint32 length ) {
 	} else {
 		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
 	}
+
+	return true;
+}
+
+
+bool line_writer( uint32 line_number, String target_str ) {
+	flex32 var_temp;
+	flex32 var_temp2;
+
+	arm32_dsb();
+
+	if ( _uartsetheap( line_number ) ) return false;
+	/* Pass Spaces and Label */
+	String temp_str = pass_space_label( UART32_UARTINT_HEAP );
+	var_temp.u32 = temp_str - UART32_UARTINT_HEAP;
+	var_temp2.u32 = str32_strlen( target_str );
+	if ( var_temp2.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp2.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
+	heap32_mcopy( (obj)UART32_UARTINT_HEAP, var_temp.u32, (obj)target_str, 0, var_temp2.u32 + 1 ); // Add Null Character
+	line_clean( UART32_UARTINT_HEAP );
 
 	return true;
 }

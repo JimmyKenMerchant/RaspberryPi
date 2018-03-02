@@ -129,8 +129,10 @@
 
 /**
  * System calls
- * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed.
+ * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed to acccess SVC mode.
  * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
+ * SVC mode disables IRQ and FIQ, so if you want any atomic fucntion you can use system calls.
+ * E.g., _sleep using the upper and the lower system counter.
  */
 
 __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
