@@ -131,8 +131,6 @@
  * System calls
  * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed to acccess SVC mode.
  * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
- * SVC mode disables IRQ and FIQ, so if you want any atomic fucntion you can use system calls.
- * E.g., _sleep using the upper and the lower system counter.
  */
 
 __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
@@ -323,7 +321,7 @@ extern uint32 CLK32_YEAR;
 extern uint32 CLK32_YEARDAY;
 extern uint32 CLK32_YEAR_INIT;
 extern uint32 CLK32_YEARDAY_INIT;
-extern char8 CLK32_UTC;
+extern int32 CLK32_UTC; // Minus Sign Exists
 extern uchar8 CLK32_MONTH;
 extern uchar8 CLK32_WEEK;
 extern uchar8 CLK32_MONTHDAY;
@@ -340,7 +338,7 @@ __attribute__((noinline)) uint32 _calender_init( uint32 year, uchar8 month, ucha
 
 __attribute__((noinline)) uint32 _clock_init( uchar8 hour, uchar8 minute, uchar8 second, uint32 usecond );
 
-__attribute__((noinline)) uint32 _correct_utc( char8 distance_utc );
+__attribute__((noinline)) uint32 _correct_utc( int32 distance_utc );
 
 __attribute__((noinline)) uint32 _get_time();
 

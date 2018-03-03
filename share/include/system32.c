@@ -8,14 +8,6 @@
  */
 
 /**
- * System calls
- * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed to acccess SVC mode.
- * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
- * SVC mode disables IRQ and FIQ, so if you want any atomic fucntion you can use system calls.
- * E.g., _sleep using the upper and the lower system counter.
- */
-
-/**
  * In SVC mode, Regular Registers Stay, but SP, LR, and SPSR are Banked.
  * So, as SVCm, you need to have only r0-r3 registers to execute functions.
  */
@@ -142,7 +134,7 @@ __attribute__((noinline)) uint32 _clock_init( uchar8 hour, uchar8 minute, uchar8
 	return result;
 }
 
-__attribute__((noinline)) uint32 _correct_utc( char8 distance_utc )
+__attribute__((noinline)) uint32 _correct_utc( int32 distance_utc )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x13");

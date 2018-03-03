@@ -626,12 +626,18 @@ arm32_stopwatch_start:
 	memorymap_base .req r0 @ Scratch Register
 	count_low      .req r1 @ Scratch Register
 	count_high     .req r2 @ Scratch Register
+	save_cpsr      .req r3
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
 
+	/* For Atomic Procedure */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
 	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
 	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+	msr cpsr_c, save_cpsr
 
 	macro32_dsb ip
 
@@ -644,6 +650,7 @@ arm32_stopwatch_start:
 .unreq memorymap_base
 .unreq count_low
 .unreq count_high
+.unreq save_cpsr
 
 
 /**
@@ -660,14 +667,20 @@ arm32_stopwatch_end:
 	count_high     .req r2 @ Scratch Register
 	time_low       .req r3 @ Scratch Register
 	time_high      .req r4
+	save_cpsr      .req r5
 
-	push {r4}
+	push {r4,r5}
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
 
+	/* For Atomic Procedure */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
 	ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ In Case of Interrupt, Load Lower Bits First
 	ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
+	msr cpsr_c, save_cpsr
 
 	ldr count_low, ARM32_STOPWATCH_LOW                                 @ Get Lower 32 Bits
 	ldr count_high, ARM32_STOPWATCH_HIGH                               @ Get Higher 32 Bits
@@ -683,7 +696,7 @@ arm32_stopwatch_end:
 	mov r0, time_low
 
 	arm32_stopwatch_end_common:
-		pop {r4}
+		pop {r4,r5}
 		mov pc, lr
 
 .unreq memorymap_base
@@ -691,6 +704,7 @@ arm32_stopwatch_end:
 .unreq count_high
 .unreq time_low
 .unreq time_high
+.unreq save_cpsr
 
 
 /**
@@ -711,25 +725,37 @@ arm32_sleep:
 	count_high     .req r3 @ Scratch Register
 	time_low       .req r4
 	time_high      .req r5
+	save_cpsr      .req r6
 
-	push {r4-r5}
+	push {r4-r6}
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+
+	/* For Atomic Procedure */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
 	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
 	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+	msr cpsr_c, save_cpsr
+
 	adds count_low, usecond                                             @ Add with Changing Status Flags
 	adc count_high, #0                                                  @ Add with Carry Flag
 
 	arm32_sleep_loop:
-		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower] @ In Case of Interrupt, Load Lower Bits First
+		mrs save_cpsr, cpsr
+		orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+		msr cpsr_c, ip
+		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]
 		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
+		msr cpsr_c, save_cpsr
 		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
 		blo arm32_sleep_common                                      @ End Loop If Higher Timer Reaches
 		cmpeq count_low, time_low                                   @ Compare Lower 32 Bits If Higher 32 Bits Are Same
 		bhi arm32_sleep_loop
 
 	arm32_sleep_common:
-		pop {r4-r5}
+		pop {r4-r6}
 		mov pc, lr
 
 .unreq usecond
@@ -738,6 +764,7 @@ arm32_sleep:
 .unreq count_high
 .unreq time_low
 .unreq time_high
+.unreq save_cpsr
 
 
 /**

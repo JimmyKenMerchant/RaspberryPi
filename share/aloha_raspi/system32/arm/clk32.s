@@ -32,7 +32,7 @@ CLK32_YEAR:         .word 0x00
 CLK32_YEARDAY:      .word 0x00 @ The day of the year
 CLK32_YEAR_INIT:    .word 0x00
 CLK32_YEARDAY_INIT: .word 0x00 @ The day of the year
-CLK32_UTC:          .byte 0x00 @ Coordinated Universal Time
+CLK32_UTC:          .word 0x00 @ Coordinated Universal Time, Minus Sign Exists
 CLK32_MONTH:        .byte 0x00
 CLK32_WEEK:         .byte 0x00 @ 0-6, Saturday to Friday
 CLK32_MONTHDAY:     .byte 0x00 @ The day of the month
@@ -163,13 +163,20 @@ clk32_clock_init:
 	memorymap_base .req r4
 	count_low      .req r5
 	count_high     .req r6
+	save_cpsr      .req r7
 
-	push {r4-r6,lr}
+	push {r4-r7,lr}
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+
+	/* For Atomic Procedure */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
 	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
 	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+	msr cpsr_c, save_cpsr
 
 	macro32_dsb ip
 
@@ -185,7 +192,7 @@ clk32_clock_init:
 
 	clk32_clock_init_common:
 		mov r0, #0
-		pop {r4-r6,pc}
+		pop {r4-r7,pc}
 
 .unreq hour
 .unreq minute
@@ -194,6 +201,7 @@ clk32_clock_init:
 .unreq memorymap_base
 .unreq count_low
 .unreq count_high
+.unreq save_cpsr
 
 
 /**
@@ -208,69 +216,104 @@ clk32_clock_init:
 .globl clk32_correct_utc
 clk32_correct_utc:
 	/* Auto (Local) Variables, but just Aliases */
-	year            .req r0
-	yearday         .req r1
-	hour            .req r2
-	distance_utc    .req r3
-	leap_year       .req r4
+	year              .req r0
+	yearday           .req r1
+	hour              .req r2
+	distance_utc      .req r3
+	swap              .req r4
+	prev_distance_utc .req r5
 
-	push {r4,lr}
+	push {r4-r5,lr}
 
 	mov distance_utc, year
 
 	ldr year, CLK32_YEAR_INIT
 	ldr yearday, CLK32_YEARDAY_INIT
 	ldrb hour, CLK32_HOUR_INIT
+	ldr prev_distance_utc, CLK32_UTC
+	/* Store New Distance from UTC */
+	str distance_utc, CLK32_UTC
 
 	macro32_dsb ip
+	
+	/* If Previous Distance from UTC Is Not Zero, Back to UTC Then Correct Time for New Distance from UTC Again */
+	cmp prev_distance_utc, #0
+	beq clk32_correct_utc_main
 
-	push {r0-r3}
-	bl clk32_check_leapyear
-	mov leap_year, r0
-	pop {r0-r3}
+	mov swap, distance_utc
+	mov distance_utc, prev_distance_utc
+	mov prev_distance_utc, swap
 
-	/* Hours */
-	add hour, hour, distance_utc
-	cmp hour, #24
-	subge hour, hour, #24
-	addge yearday, yearday, #1
-	cmp hour, #0
-	addlt hour, hour, #24
-	sublt yearday, yearday, #1
+	.unreq swap
+	leap_year .req r4
 
-	/* All Days */
-	cmp leap_year, #1
-	.unreq leap_year
-	allday .req r4
-	moveq allday, #0x160
-	addeq allday, allday, #0xE    @ Decimal 366
-	movne allday, #0x160
-	addne allday, allday, #0xD    @ Decimal 365
+	/* Convert Plus and Minus Sign to Back to UTC */
+	mvn distance_utc, distance_utc
+	add distance_utc, distance_utc, #1
 
-	/* There is No Zero Day */
-	cmp yearday, allday
-	subgt yearday, yearday, allday
-	addgt year, year, #1
+	clk32_correct_utc_main:
 
-	/* But If Past Year */
-	cmp yearday, #0
-	movle yearday, allday
-	suble year, year, #1
+		/* Hours */
+		add hour, hour, distance_utc
+		cmp hour, #24
+		subge hour, hour, #24
+		addge yearday, yearday, #1
+		cmp hour, #0
+		addlt hour, hour, #24
+		sublt yearday, yearday, #1
 
-	strb distance_utc, CLK32_UTC
-	strb hour, CLK32_HOUR
-	str yearday, CLK32_YEARDAY
-	str year, CLK32_YEAR
+		/* If Past Year */
+		cmp yearday, #0
+		suble year, year, #1          @ If Past Year
+
+		push {r0-r3}
+		bl clk32_check_leapyear
+		mov leap_year, r0
+		pop {r0-r3}
+
+		/* Amount of Days of Year */
+		cmp leap_year, #1
+
+		.unreq leap_year
+		allday .req r4
+
+		moveq allday, #0x160
+		addeq allday, allday, #0xE    @ Decimal 366
+		movne allday, #0x160
+		addne allday, allday, #0xD    @ Decimal 365
+
+		/* Past Year */
+		cmp yearday, #0
+		movle yearday, allday
+		ble clk32_correct_utc_main_common
+
+		/* Current Year */
+		cmp yearday, allday
+		subgt yearday, yearday, allday
+		addgt year, year, #1
+
+		clk32_correct_utc_main_common:
+
+			/* If Previous UTC Distance is Backed, Correct Time for New UTC Distance Again Except New Distance is Zero */
+			cmp prev_distance_utc, #0
+			movne distance_utc, prev_distance_utc
+			movne prev_distance_utc, #0 
+			bne clk32_correct_utc_main
+
+			strb hour, CLK32_HOUR_INIT
+			str yearday, CLK32_YEARDAY_INIT
+			str year, CLK32_YEAR_INIT
 
 	clk32_correct_utc_common:
 		mov r0, #0
-		pop {r4,pc}
+		pop {r4-r5,pc}
 
 .unreq year
 .unreq yearday
 .unreq hour
 .unreq distance_utc
 .unreq allday
+.unreq prev_distance_utc
 
 
 /**
@@ -291,7 +334,7 @@ clk32_get_time:
 	usecond         .req r6
 	memorymap_base  .req r7
 	count_low_past  .req r8
-	count_high_past .req r9
+	save_cpsr       .req r9
 	count_low_now   .req r10
 	count_high_now  .req r11
 
@@ -299,8 +342,17 @@ clk32_get_time:
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+
+	/* For Atomic Procedure */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
 	ldr count_low_now, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
 	ldr count_high_now, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+	msr cpsr_c, save_cpsr
+
+	.unreq save_cpsr
+	count_high_past .req r9
 
 	ldr count_low_past, CLK32_SYSTEM_LOWER
 	ldr count_high_past, CLK32_SYSTEM_UPPER
