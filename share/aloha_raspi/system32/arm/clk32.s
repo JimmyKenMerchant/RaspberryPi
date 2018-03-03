@@ -197,6 +197,83 @@ clk32_clock_init:
 
 
 /**
+ * function clk32_correct_utc
+ * Time Correction From UTC
+ *
+ * Parameters
+ * r0: Distance from UTC
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl clk32_correct_utc
+clk32_correct_utc:
+	/* Auto (Local) Variables, but just Aliases */
+	year            .req r0
+	yearday         .req r1
+	hour            .req r2
+	distance_utc    .req r3
+	leap_year       .req r4
+
+	push {r4,lr}
+
+	mov distance_utc, year
+
+	ldr year, CLK32_YEAR_INIT
+	ldr yearday, CLK32_YEARDAY_INIT
+	ldrb hour, CLK32_HOUR_INIT
+
+	macro32_dsb ip
+
+	push {r0-r3}
+	bl clk32_check_leapyear
+	mov leap_year, r0
+	pop {r0-r3}
+
+	/* Hours */
+	add hour, hour, distance_utc
+	cmp hour, #24
+	subge hour, hour, #24
+	addge yearday, yearday, #1
+	cmp hour, #0
+	addlt hour, hour, #24
+	sublt yearday, yearday, #1
+
+	/* All Days */
+	cmp leap_year, #1
+	.unreq leap_year
+	allday .req r4
+	moveq allday, #0x160
+	addeq allday, allday, #0xE    @ Decimal 366
+	movne allday, #0x160
+	addne allday, allday, #0xD    @ Decimal 365
+
+	/* There is No Zero Day */
+	cmp yearday, allday
+	subgt yearday, yearday, allday
+	addgt year, year, #1
+
+	/* But If Past Year */
+	cmp yearday, #0
+	movle yearday, allday
+	suble year, year, #1
+
+	strb distance_utc, CLK32_UTC
+	strb hour, CLK32_HOUR
+	str yearday, CLK32_YEARDAY
+	str year, CLK32_YEAR
+
+	clk32_correct_utc_common:
+		mov r0, #0
+		pop {r4,pc}
+
+.unreq year
+.unreq yearday
+.unreq hour
+.unreq distance_utc
+.unreq allday
+
+
+/**
  * function clk32_get_time
  * Get Current Time From Clock
  *
@@ -281,7 +358,6 @@ clk32_get_time:
 		cmp usecond, temp
 		subge usecond, usecond, temp
 		addge second, second, #1
-		str usecond, CLK32_USECOND 
 
 		/* Seconds */
 
@@ -310,7 +386,6 @@ clk32_get_time:
 		cmp second, #60
 		subge second, second, #60
 		addge minute, minute, #1
-		strb second, CLK32_SECOND 
 
 		/* Minutes */
 
@@ -352,14 +427,12 @@ clk32_get_time:
 		cmp minute, #60
 		subge minute, minute, #60
 		addge hour, hour, #1
-		strb minute, CLK32_MINUTE
 
 		/* Hours */
 
 		cmp hour, #24
 		subge hour, hour, #24
 		addge yearday, yearday, #1
-		strb hour, CLK32_HOUR
 
 		/* All Days */
 		cmp leap_year, #1
@@ -372,15 +445,19 @@ clk32_get_time:
 		cmp yearday, temp2 
 		subgt yearday, yearday, temp2
 		addgt year, year, #1
-		str yearday, CLK32_YEARDAY
-
-		str year, CLK32_YEAR
 
 		sub count_high_now, count_high_now, #1
 		cmp count_high_now, #0
 		mvnge count_low_now, #0     @ 0xFFFFFFFF
 		addge usecond, usecond, #1  @ Remainder of Higher Half
 		bge clk32_get_time_correction
+
+		str usecond, CLK32_USECOND 
+		strb second, CLK32_SECOND 
+		strb minute, CLK32_MINUTE
+		strb hour, CLK32_HOUR
+		str yearday, CLK32_YEARDAY
+		str year, CLK32_YEAR
 
 		.unreq yearday
 		monthday .req r2
