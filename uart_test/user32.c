@@ -626,13 +626,9 @@ int32 _user_start() {
 							length_arg = 0;
 							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 5, "label\0", 5 ) ) {
-							command_type = null;
+							command_type = label;
 							length_arg = 0;
-							pipe_type = go_nextline;
-							heap32_mfill( label_list.name, 0 );
-							heap32_mfill( label_list.number, 0 );
-							label_list.length = 0;
-							command_label();
+							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 5, "clear\0", 5 ) ) {
 							/* Clear All Lines */
 							for (uint32 i = 0; i < UART32_UARTMALLOC_LENGTH; i++ ) {
@@ -1278,6 +1274,13 @@ int32 _user_start() {
 								if ( ! ( status_nzcv & 0x20000000 ) ) current_line++;
 
 								break;
+							case label:
+								heap32_mfill( label_list.name, 0 );
+								heap32_mfill( label_list.number, 0 );
+								label_list.length = 0;
+								command_label();
+
+								break;
 							default:
 								break;
 						}
@@ -1435,7 +1438,7 @@ bool input_keyboard( bool cursor_left_edge ) {
 		if ( input_keyboard_continue_flag ) { // If Holding Key-pushing
 			input_keyboard_translation( input_keyboard_kb_str, cursor_left_edge );
 		}
-		_sleep( 10000 );
+		_sleep( 20000 );
 	}
 
 	return true;
