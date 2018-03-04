@@ -720,51 +720,41 @@ arm32_stopwatch_end:
 arm32_sleep:
 	/* Auto (Local) Variables, but just Aliases */
 	usecond        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base .req r1 @ Scratch Register
-	count_low      .req r2 @ Scratch Register
-	count_high     .req r3 @ Scratch Register
-	time_low       .req r4
-	time_high      .req r5
-	save_cpsr      .req r6
+	count_low      .req r1 @ Scratch Register
+	count_high     .req r2 @ Scratch Register
+	time_low       .req r3 @ Scratch Register
+	time_high      .req r4
 
-	push {r4-r6}
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+	push {r4,lr}
 
-	/* For Atomic Procedure */
-	mrs save_cpsr, cpsr
-	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, ip
-	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
-	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
-	msr cpsr_c, save_cpsr
+	push {r0}
+	bl arm32_timestamp
+	mov count_high, r1
+	mov count_low, r0
+	pop {r0}
 
-	adds count_low, usecond                                             @ Add with Changing Status Flags
-	adc count_high, #0                                                  @ Add with Carry Flag
+	adds count_low, usecond                                     @ Add with Changing Status Flags
+	adc count_high, #0                                          @ Add with Carry Flag
 
 	arm32_sleep_loop:
-		mrs save_cpsr, cpsr
-		orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
-		msr cpsr_c, ip
-		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]
-		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
-		msr cpsr_c, save_cpsr
+		push {r0-r2}
+		bl arm32_timestamp
+		mov time_low, r0
+		mov time_high, r1
+		pop {r0-r2}
 		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
 		blo arm32_sleep_common                                      @ End Loop If Higher Timer Reaches
 		cmpeq count_low, time_low                                   @ Compare Lower 32 Bits If Higher 32 Bits Are Same
 		bhi arm32_sleep_loop
 
 	arm32_sleep_common:
-		pop {r4-r6}
-		mov pc, lr
+		pop {r4,pc}
 
 .unreq usecond
-.unreq memorymap_base
 .unreq count_low
 .unreq count_high
 .unreq time_low
 .unreq time_high
-.unreq save_cpsr
 
 
 /**
@@ -1916,6 +1906,58 @@ arm32_tst:
 
 .unreq value1
 .unreq value2
+
+
+/**
+ * function arm32_timestamp
+ * Get 64-bit Timestamp from System Timer
+ *
+ * Return: r0 (Lower 32 Bits of Timestamp), r1 (Higher 32 Bits of Timestamp)
+ */
+.globl arm32_timestamp
+arm32_timestamp:
+	/* Auto (Local) Variables, but just Aliases */
+	count_low      .req r0
+	count_high     .req r1
+	save_cpsr      .req r2
+	memorymap_base .req r3
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+
+	/* For Atomic Procedure, Set FIQ and IRQ Disable to CPSR */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
+
+	macro32_dsb ip
+
+	/**
+	 * Mills,D.L. & Venters,S. 2012 Timestamp Capture Principle.
+	 * https://www.eecis.udel.edu/~mills/stamp.html
+	 *
+	 * Reference About 64-bit Counter in 32-bit System
+	 * (As of March 4, 2018) https://stackoverflow.com/questions/5162673/how-to-read-two-32bit-counters-as-a-64bit-integer-without-race-condition
+	 */
+	arm32_timestamp_loop:
+		ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+		ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
+		macro32_dsb ip
+		ldr ip, [memorymap_base, #equ32_systemtimer_counter_higher]         @ Get Higher 32 Bits
+		cmp count_high, ip
+		bne arm32_timestamp_loop
+
+	/* Return CPSR */
+	msr cpsr_c, save_cpsr
+
+	arm32_timestamp_common:
+		macro32_dsb ip
+		mov pc, lr
+
+.unreq count_low
+.unreq count_high
+.unreq save_cpsr
+.unreq memorymap_base
 
 
 /**

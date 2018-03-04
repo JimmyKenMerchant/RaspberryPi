@@ -160,25 +160,16 @@ clk32_clock_init:
 	minute         .req r1
 	second         .req r2
 	usecond        .req r3
-	memorymap_base .req r4
-	count_low      .req r5
-	count_high     .req r6
-	save_cpsr      .req r7
+	count_low      .req r4
+	count_high     .req r5
 
-	push {r4-r7,lr}
+	push {r4-r5,lr}
 
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_systemtimer_base
-
-	/* For Atomic Procedure */
-	mrs save_cpsr, cpsr
-	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, ip
-	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
-	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
-	msr cpsr_c, save_cpsr
-
-	macro32_dsb ip
+	push {r0-r3}
+	bl arm32_timestamp
+	mov count_low, r0
+	mov count_high, r1
+	pop {r0-r3}
 
 	str count_low, CLK32_SYSTEM_LOWER
 	str count_high, CLK32_SYSTEM_UPPER
@@ -192,16 +183,14 @@ clk32_clock_init:
 
 	clk32_clock_init_common:
 		mov r0, #0
-		pop {r4-r7,pc}
+		pop {r4-r5,pc}
 
 .unreq hour
 .unreq minute
 .unreq second
 .unreq usecond
-.unreq memorymap_base
 .unreq count_low
 .unreq count_high
-.unreq save_cpsr
 
 
 /**
@@ -332,36 +321,22 @@ clk32_get_time:
 	minute          .req r4
 	second          .req r5
 	usecond         .req r6
-	memorymap_base  .req r7
+	leap_year       .req r7
 	count_low_past  .req r8
-	save_cpsr       .req r9
+	count_high_past .req r9
 	count_low_now   .req r10
 	count_high_now  .req r11
 
 	push {r4-r11,lr}
 
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_systemtimer_base
-
-	/* For Atomic Procedure */
-	mrs save_cpsr, cpsr
-	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, ip
-	ldr count_low_now, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
-	ldr count_high_now, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
-	msr cpsr_c, save_cpsr
-
-	.unreq save_cpsr
-	count_high_past .req r9
+	push {r0-r3}
+	bl arm32_timestamp
+	mov count_low_now, r0
+	mov count_high_now, r1
+	pop {r0-r3}
 
 	ldr count_low_past, CLK32_SYSTEM_LOWER
 	ldr count_high_past, CLK32_SYSTEM_UPPER
-
-	.unreq memorymap_base
-	leap_year .req r7
-
-	macro32_dsb ip
-
 	ldr year, CLK32_YEAR_INIT
 	ldr yearday, CLK32_YEARDAY_INIT
 	ldrb hour, CLK32_HOUR_INIT

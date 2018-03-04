@@ -33,7 +33,7 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
 	* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
 ```assembly
 /**
- * function system32_sleep
+ * function arm32_sleep
  * Sleep in Micro Seconds
  *
  * Parameters
@@ -41,38 +41,41 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
  *
  * Usage: r0-r5
  */
-.globl system32_sleep
-system32_sleep:
+.globl arm32_sleep
+arm32_sleep:
 	/* Auto (Local) Variables, but just Aliases */
 	usecond        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	memorymap_base .req r1 @ Scratch Register
-	count_low      .req r2 @ Scratch Register
-	count_high     .req r3 @ Scratch Register
-	time_low       .req r4
-	time_high      .req r5
+	count_low      .req r1 @ Scratch Register
+	count_high     .req r2 @ Scratch Register
+	time_low       .req r3 @ Scratch Register
+	time_high      .req r4
 
-	push {r4-r5}
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_systemtimer_base
-	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
-	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
-	adds count_low, usecond                                             @ Add with Changing Status Flags
-	adc count_high, #0                                                  @ Add with Carry Flag
+	push {r4,lr}
 
-	system32_sleep_loop:
-		ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower] @ In Case of Interrupt, Load Lower Bits First
-		ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
+	push {r0}
+	bl arm32_timestamp
+	mov count_high, r1
+	mov count_low, r0
+	pop {r0}
+
+	adds count_low, usecond                                     @ Add with Changing Status Flags
+	adc count_high, #0                                          @ Add with Carry Flag
+
+	arm32_sleep_loop:
+		push {r0-r2}
+		bl arm32_timestamp
+		mov time_low, r0
+		mov time_high, r1
+		pop {r0-r2}
 		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
 		blo arm32_sleep_common                                      @ End Loop If Higher Timer Reaches
 		cmpeq count_low, time_low                                   @ Compare Lower 32 Bits If Higher 32 Bits Are Same
 		bhi arm32_sleep_loop
 
-	system32_sleep_common:
-		pop {r4-r5}
-		mov pc, lr
+	arm32_sleep_common:
+		pop {r4,pc}
 
 .unreq usecond
-.unreq memorymap_base
 .unreq count_low
 .unreq count_high
 .unreq time_low
