@@ -696,12 +696,27 @@ extern uint32 print32_set_caret
 
 
 /**
- * rint String with 1 Byte Character
+ * Print String with 1 Byte Character
  *
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
  * Error: Number of Characters Which Were Not Drawn
  */
 extern uint64 print32_string
+(
+	String string,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 length
+);
+
+
+/**
+ * No Print String with 1 Byte Character, But Get Changes of X and Y coordinates
+ *
+ * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Error: Number of Characters Which Were Not Drawn
+ */
+extern uint64 print32_string_dummy
 (
 	String string,
 	int32 x_coord,

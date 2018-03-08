@@ -59,8 +59,8 @@ typedef enum _command_list {
 	 * "pict" does sequential printing with judging bit value in raw data of array from MSB to LSB, "pict %S1 %S2 %S3 %S4":
 	 * S1 is the string when true (1), S2 is the string when false (0), S3 is number of Array, S4 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
 	 * This command inserts "\r\n" when each data of array is ended. But the x coordinate offsets to the original point of the start of this command.
-	 * On the end of this command, the x coordinate stands the next of the right side of the string which this command made.
-	 * Besides, the y coordinate stands the original point of the start of this command.
+	 * On the end of this command, the x coordinate stands the original point of this command.
+	 * Besides, the y coordinate stands the bottom of the last string.
 	 */
 	pict,
 	/**
@@ -1548,6 +1548,10 @@ bool text_sender( String target_str ) {
 		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
 	} else {
 		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+		if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
+			FB32_X_CARET = 0;
+			FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
+		}
 	}
 
 	return true;
@@ -1655,9 +1659,9 @@ bool command_print( String target_str ) {
 
 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
+	arm32_dsb();
 	int32 size_array = heap32_mcount( array );
-	int32 x_caret_origin = FB32_X_CARET;
-	int32 y_caret_origin = FB32_Y_CARET;
+	uint32 x_offset = arm32_udiv( FB32_X_CARET, PRINT32_FONT_WIDTH );
 	if ( size_array == -1 ) return false;
 	if ( size_indicator > 2 ) size_indicator = 2;
 	uint32 count_array = size_array >> size_indicator;
@@ -1674,9 +1678,10 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 			}
 		}
 		text_sender( "\r\n\0" );
-		FB32_X_CARET = x_caret_origin;
+		for ( uint32 j = 0; j < x_offset; j++ ) {
+			text_sender( "\x1B[C\0" );
+		}
 	}
-	FB32_Y_CARET = y_caret_origin;
 
 	return true;
 }
