@@ -63,11 +63,17 @@ typedef enum _command_list {
 	 * Besides, the y coordinate stands the bottom of the last string.
 	 */
 	pict,
+	csr, // Set cursor, "csr %S1 %S2": Set row (Y Coordinate) in S1, and column (X Coordinate) in S2.
+	/**
+	 * "fnt" sets configurations of font. "fnt %S1 %S2":
+	 * The font width in S1 (max is 8), the font height in S2 (max is 12).
+	 * Caution that this command supports for the keyboard mode. On distance terminals, font configuration does not change.
+	 */
+	fnt,
 	/**
 	 * "snd" does sequential outputting sound. "snd %S1 %S2":
 	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
 	 */
-	fnt, // Sets configurations of font. "fnt %S1 %S2": The font width in S1 (max is 8), the font height in S2 (max is 12).
 	snd,
 	intsnd, // Interruption of the main sound by another sound, "intsnd %S1 %S2": Similar to "snd".
 	clrsnd, // Clear sound at all. "clrsnd"
@@ -336,6 +342,11 @@ int32 _user_start() {
 							length_arg = 4;
 							pipe_type = enumurate_sources;
 							src_index = 2; // Only Last Two Is Needed to Translate to Integer
+						} else if ( str32_strmatch( temp_str, 3, "csr\0", 3 ) ) {
+							command_type = csr;
+							length_arg = 2;
+							pipe_type = enumurate_sources;
+							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 3, "fnt\0", 3 ) ) {
 							command_type = fnt;
 							length_arg = 2;
@@ -889,6 +900,22 @@ int32 _user_start() {
 								var_temp2.u32 = _load_32( array_source + 12 );
 
 								command_pict( temp_str, temp_str2, var_temp.object, var_temp2.u32 ); 
+
+								break;
+							case csr:
+								text_sender( "\x1B[\0" );
+
+								var_temp.u32 = _load_32( array_source );
+								str_direction = cvt32_int32_to_string_deci( var_temp.u32, 1, 0 );
+								text_sender( str_direction );
+								text_sender( ";\0" );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
+
+								var_temp.u32 = _load_32( array_source + 4 );
+								str_direction = cvt32_int32_to_string_deci( var_temp.u32, 1, 0 );
+								text_sender( str_direction );
+								text_sender( "H\0" );
+								str_direction = (String)heap32_mfree( (obj)str_direction );
 
 								break;
 							case fnt:

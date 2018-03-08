@@ -18,7 +18,7 @@
 
 * GPIO 15 as RXD0
 
-* USB as Output (Use for Keyboard)
+* USB as Output (Use for Keyboard): It is experimental and needed your USB and electrical acknowledgment.
 
 * HDMI as VIDEO Output
 
