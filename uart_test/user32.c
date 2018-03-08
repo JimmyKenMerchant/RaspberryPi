@@ -58,13 +58,16 @@ typedef enum _command_list {
 	/**
 	 * "pict" does sequential printing with judging bit value in raw data of array from MSB to LSB, "pict %S1 %S2 %S3 %S4":
 	 * S1 is the string when true (1), S2 is the string when false (0), S3 is number of Array, S4 is block size (0 = 1 bytes; 1 = 2 bytes; 2 = 4 bytes).
-	 * This command inserts "\r\n" when each data of array is ended.
+	 * This command inserts "\r\n" when each data of array is ended. But the x coordinate offsets to the original point of the start of this command.
+	 * On the end of this command, the x coordinate stands the next of the right side of the string which this command made.
+	 * Besides, the y coordinate stands the original point of the start of this command.
 	 */
 	pict,
 	/**
 	 * "snd" does sequential outputting sound. "snd %S1 %S2":
 	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
 	 */
+	fnt, // Sets configurations of font. "fnt %S1 %S2": The font width in S1 (max is 8), the font height in S2 (max is 12).
 	snd,
 	intsnd, // Interruption of the main sound by another sound, "intsnd %S1 %S2": Similar to "snd".
 	clrsnd, // Clear sound at all. "clrsnd"
@@ -187,8 +190,9 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 bool command_label(); // Label Enumeration
 bool console_rollup();
 bool init_usb_keyboard( uint32 usb_channel );
+bool startup_executer();
 
-/* Varuables on Global Scope  */
+/* Variables on Global Scope */
 bool input_keyboard_continue_flag;
 String input_keyboard_kb_str;
 bool kb_enable; // Enabling Flag for USB Keyboard Input
@@ -198,9 +202,17 @@ dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
 
+/* Start Up */
+bool startup;
+String startup_command1 = "load %0 .a .b\r\0";
+String startup_command2 = ".a 64\r\0";
+String startup_command3 = ".b 0b00\r\0";
+String startup_command4 = "run\r\0";
+uint32 startup_length = 4;
+
 int32 _user_start() {
 
-	String str_aloha = "Aloha Calc Version 0.8.5 Alpha: Copyright (C) 2018 Kenta Ishii\r\n\0";
+	String str_aloha = "Aloha Calc Version 0.9.0 Beta: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_serialmode = "\x1B[31mSerial Mode\x1B[0m\r\n\0";
 	String str_direction = null;
 	obj array_source = heap32_malloc( argument_maxlength );
@@ -254,6 +266,12 @@ int32 _user_start() {
 		kb_enable = false;
 		if ( print32_set_caret( print32_string( str_serialmode, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_serialmode ) ) ) ) console_rollup();
 		_uarttx( str_aloha, str32_strlen( str_aloha ) );
+	}
+
+	if ( _gpio_in( 21 ) ) {
+		startup = true;
+	} else {
+		startup = false;
 	}
 
 	if ( ! _uartsetheap( initial_line ) ) {
@@ -318,6 +336,11 @@ int32 _user_start() {
 							length_arg = 4;
 							pipe_type = enumurate_sources;
 							src_index = 2; // Only Last Two Is Needed to Translate to Integer
+						} else if ( str32_strmatch( temp_str, 3, "fnt\0", 3 ) ) {
+							command_type = fnt;
+							length_arg = 2;
+							pipe_type = enumurate_sources;
+							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
 							command_type = snd;
 							length_arg = 2;
@@ -868,6 +891,13 @@ int32 _user_start() {
 								command_pict( temp_str, temp_str2, var_temp.object, var_temp2.u32 ); 
 
 								break;
+							case fnt:
+								PRINT32_FONT_WIDTH = _load_32( array_source );
+								PRINT32_FONT_HEIGHT = _load_32( array_source + 4 );
+								if ( PRINT32_FONT_WIDTH > 8 ) PRINT32_FONT_WIDTH = 8;
+								if ( PRINT32_FONT_HEIGHT > 12 ) PRINT32_FONT_WIDTH = 12;
+
+								break;
 							case snd:
 								var_temp.u32 = _load_32( array_source );
 								if ( var_temp.u32 >=  rawdata_maxlength ) break;
@@ -1412,6 +1442,7 @@ int32 _user_start() {
 			}
 		}
 		if ( ! flag_execute ) input_keyboard( false );
+		if ( startup ) startup_executer();
 	}
 
 	return EXIT_SUCCESS;
@@ -1456,6 +1487,9 @@ bool input_keyboard_translation( String kb_str, bool cursor_left_edge ) {
 		// If Null Character
 		print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 );
 	}
+
+	arm32_dsb();
+
 	for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
 		var_temp.u8 = _load_8( (obj)kb_str + i );
 		String temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
@@ -1490,6 +1524,8 @@ bool input_keyboard_set_cursor() {
 		}
 		if ( print32_set_caret( print32_string( "\x1B[D\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 6 ) ) ) console_rollup();
 	}
+
+	arm32_dsb();
 
 	return true;
 }
@@ -1620,6 +1656,8 @@ bool command_print( String target_str ) {
 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
 	int32 size_array = heap32_mcount( array );
+	int32 x_caret_origin = FB32_X_CARET;
+	int32 y_caret_origin = FB32_Y_CARET;
 	if ( size_array == -1 ) return false;
 	if ( size_indicator > 2 ) size_indicator = 2;
 	uint32 count_array = size_array >> size_indicator;
@@ -1636,7 +1674,9 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 			}
 		}
 		text_sender( "\r\n\0" );
+		FB32_X_CARET = x_caret_origin;
 	}
+	FB32_Y_CARET = y_caret_origin;
 
 	return true;
 }
@@ -1740,3 +1780,27 @@ bool init_usb_keyboard( uint32 usb_channel ) {
 
 	return true;
 }
+
+
+bool startup_executer() {
+	if ( startup_length >= 4 ) {
+		input_keyboard_translation( startup_command1, false );
+		startup_length--;
+	} else if ( startup_length >= 3 ) {
+		input_keyboard_translation( startup_command2, false );
+		startup_length--;
+	} else if ( startup_length >= 2 ) {
+		input_keyboard_translation( startup_command3, false );
+		startup_length--;
+	} else if ( startup_length >= 1 ) {
+		input_keyboard_translation( startup_command4, false );
+		startup_length--;
+	}
+
+	if ( startup_length <= 0 ) {
+		startup = false;
+	}
+
+	return true;
+}
+

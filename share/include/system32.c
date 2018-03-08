@@ -326,7 +326,7 @@ __attribute__((noinline)) int32 _romwrite_i2c( uint32 address_heap, uint32 chip_
 bool _gpio_detect( uchar8 gpio_number )
 {
 	int32 value = _load_32( _gpio_base|_gpio_gpeds0 );
-	if (value & 1 << gpio_number ) {
+	if ( value & 1 << gpio_number ) {
 		value = 1 << gpio_number;
 		_store_32( _gpio_base|_gpio_gpeds0, value );
 		return true;
@@ -334,3 +334,14 @@ bool _gpio_detect( uchar8 gpio_number )
 		return false;
 	}
 }
+
+bool _gpio_in( uchar8 gpio_number )
+{
+	int32 value = _load_32( _gpio_base|_gpio_gplev0 );
+	if ( value & 1 << gpio_number ) {
+		return true;
+	} else {
+		return false;
+	}
+}
+

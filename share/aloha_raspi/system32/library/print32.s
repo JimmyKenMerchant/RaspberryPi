@@ -33,8 +33,8 @@
 PRINT32_FONT_BASE:          .word FONT_MONO_12PX_ASCII_NULL
 PRINT32_FONT_WIDTH:         .word 8
 PRINT32_FONT_HEIGHT:        .word 12
-PRINT32_FONT_COLOR:         .word 0xFFFFFFFF
-PRINT32_FONT_BACKCOLOR:     .word 0xFF000000
+PRINT32_FONT_COLOR:         .word equ32_print32_font_color
+PRINT32_FONT_BACKCOLOR:     .word equ32_print32_font_backcolor
 PRINT32_FONT_UNDERLINE:     .byte 0
 .balign 4
 PRINT32_FONT_BOLD:          .byte 0
@@ -530,9 +530,11 @@ print32_esc_sequence:
 	y_coord           .req r2
 	length            .req r3
 	byte              .req r4
-	temp              .req r5
+	number            .req r5
+	temp              .req r6
+	temp2             .req r7
 
-	push {r4-r5,lr}
+	push {r4-r7,lr}
 	
 	/**
 	 * This string indicates the next of escape character, e.g., "[2J".
@@ -548,74 +550,111 @@ print32_esc_sequence:
 	 * e.g. All [J sequence menas clearing all screen even if you append number other than 2.
 	 */
 
-	cmp byte, #0x41
-	beq print32_esc_sequence_a                @ [A Sequence, Cursor Up
-
-	cmp byte, #0x42
-	beq print32_esc_sequence_b                @ [B Sequence, Cursor Down
-
-	cmp byte, #0x43
-	beq print32_esc_sequence_c                @ [C Sequence, Cursor Forward
-
 	cmp byte, #0x44
-	beq print32_esc_sequence_d                @ [D Sequence, Cursor Back
-
-	cmp byte, #0x48
-	beq print32_esc_sequence_h                @ [0H Sequence, Set Cursor Upper Left Corner
-
-	cmp byte, #0x4A
-	beq print32_esc_sequence_j                @ [2J Sequence, Clear All Screen
-
-	cmp byte, #0x4B
-	beq print32_esc_sequence_k                @ [0K Sequence, Clear From Cursor to End of Line
-
-	cmp byte, #0x6D
-	beq print32_esc_sequence_m                @ [<number>m Sequence, Set Font Attribute
+	bgt print32_esc_sequence_jump
+	cmp byte, #0x41
+	bge print32_esc_sequence_cursor
 
 	b print32_esc_sequence_common
 
-	.unreq byte
-	number .req r4
+	print32_esc_sequence_jump:
 
-	print32_esc_sequence_a:
-		ldr temp, PRINT32_FONT_HEIGHT_ADDR
-		ldr temp, [temp]
-		sub y_coord, y_coord, temp
-		cmp y_coord, #0
-		movlt y_coord, #0
+		cmp byte, #0x48
+		beq print32_esc_sequence_h                @ [<1-based row>;<1-based column>H Sequence, Set Cursor Upper Left Corner
+		cmp byte, #0x4A
+		beq print32_esc_sequence_j                @ [2J Sequence, Clear All Screen
+		cmp byte, #0x4B
+		beq print32_esc_sequence_k                @ [<number>K Sequence, Clear Line
+		cmp byte, #0x6D
+		beq print32_esc_sequence_m                @ [<number>m Sequence, Set Font Attribute
+
 		b print32_esc_sequence_common
 
-	print32_esc_sequence_b:
-		ldr temp, PRINT32_FONT_HEIGHT_ADDR
-		ldr temp, [temp]
-		add y_coord, y_coord, temp
-		ldr temp, PRINT32_FB32_HEIGHT
-		ldr temp, [temp]
-		cmp y_coord, temp
-		subge y_coord, y_coord, temp
-		b print32_esc_sequence_common
+	print32_esc_sequence_cursor:
+		add string_point, string_point, #1
+		/**
+		 * Now, this string indicates the next of square bracket right.
+		 * Searching values in the string, e.g., "30;41".
+		 * length is already subtracted by one for use as an index for the last character,
+		 * so additionally about to be subtracted by one.
+		 */
+		sub length, length, #1
 
-	print32_esc_sequence_c:
-		ldr temp, PRINT32_FONT_WIDTH_ADDR
-		ldr temp, [temp]
-		add x_coord, x_coord, temp
-		ldr temp, PRINT32_FB32_WIDTH
-		ldr temp, [temp]
-		cmp x_coord, temp
-		subge x_coord, x_coord, temp
-		b print32_esc_sequence_common
+		push {r0-r3}
+		mov r1, length
+		bl cvt32_string_to_deci
+		bl cvt32_deci_to_hexa
+		mov number, r0
+		pop {r0-r3}
 
-	print32_esc_sequence_d:
-		ldr temp, PRINT32_FONT_WIDTH_ADDR
-		ldr temp, [temp]
-		sub x_coord, x_coord, temp
-		cmp x_coord, #0
-		movlt x_coord, #0
-		b print32_esc_sequence_common
+		cmp byte, #0x41
+		beq print32_esc_sequence_cursor_a         @ [<1-based number>A Sequence, Cursor Up
+		cmp byte, #0x42
+		beq print32_esc_sequence_cursor_b         @ [<1-based number>B Sequence, Cursor Down
+		cmp byte, #0x43
+		beq print32_esc_sequence_cursor_c         @ [<1-based number>C Sequence, Cursor Forward
+		cmp byte, #0x44
+		beq print32_esc_sequence_cursor_d         @ [<1-based number>D Sequence, Cursor Back
+
+		print32_esc_sequence_cursor_a:
+			ldr temp, PRINT32_FONT_HEIGHT_ADDR
+			ldr temp, [temp]
+
+			print32_esc_sequence_cursor_a_loop:
+				sub y_coord, y_coord, temp
+				cmp y_coord, #0
+				movlt y_coord, #0
+				subs number, number, #1
+				ble print32_esc_sequence_common
+				b print32_esc_sequence_cursor_a_loop
+
+		print32_esc_sequence_cursor_b:
+			ldr temp, PRINT32_FONT_HEIGHT_ADDR
+			ldr temp, [temp]
+			ldr temp2, PRINT32_FB32_HEIGHT
+			ldr temp2, [temp2]
+
+			print32_esc_sequence_cursor_b_loop:
+				add y_coord, y_coord, temp
+				cmp y_coord, temp2
+				subge y_coord, y_coord, temp
+				subs number, number, #1
+				ble print32_esc_sequence_common
+				b print32_esc_sequence_cursor_b_loop
+
+		print32_esc_sequence_cursor_c:
+			ldr temp, PRINT32_FONT_WIDTH_ADDR
+			ldr temp, [temp]
+			ldr temp2, PRINT32_FB32_WIDTH
+			ldr temp2, [temp2]
+
+			print32_esc_sequence_cursor_c_loop:
+				add x_coord, x_coord, temp
+				cmp x_coord, temp2
+				subge x_coord, x_coord, temp
+				subs number, number, #1
+				ble print32_esc_sequence_common
+				b print32_esc_sequence_cursor_c_loop
+
+		print32_esc_sequence_cursor_d:
+			ldr temp, PRINT32_FONT_WIDTH_ADDR
+			ldr temp, [temp]
+
+			print32_esc_sequence_cursor_d_loop:
+				sub x_coord, x_coord, temp
+				cmp x_coord, #0
+				movlt x_coord, #0
+				subs number, number, #1
+				ble print32_esc_sequence_common
+				b print32_esc_sequence_cursor_d_loop
 
 	print32_esc_sequence_h:
-		mov x_coord, #0
-		mov y_coord, #0
+		push {r0}
+		mov r1, length
+		bl print32_esc_sequence_cursorhome
+		mov y_coord, r1
+		mov x_coord, r0
+		pop {r0}
 
 		b print32_esc_sequence_common
 
@@ -736,14 +775,141 @@ print32_esc_sequence:
 		mov r0, x_coord
 		mov r1, y_coord
 		macro32_dsb ip
-		pop {r4-r5,pc}
+		pop {r4-r7,pc}
 
 .unreq string_point
 .unreq x_coord
 .unreq y_coord
 .unreq length
+.unreq byte
 .unreq number
 .unreq temp
+.unreq temp2
+
+
+/**
+ * function print32_esc_sequence_cursorhome
+ * Escape Sequence Specially About "H", Changing Cursor Position
+ *
+ * Parameters
+ * r0: string_point
+ * r1: length
+ *
+ * Return: r0 (X Coordinate), r1 (Y Coordinate)
+ */
+.globl print32_esc_sequence_cursorhome
+print32_esc_sequence_cursorhome:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point  .req r0
+	length        .req r1
+	char_width    .req r2
+	char_height   .req r3
+	number_row    .req r4
+	number_column .req r5
+	temp          .req r6
+	y_coord       .req r7
+	fb_width      .req r8
+	fb_height     .req r9
+
+	push {r4-r9,lr}
+
+	/* [<1-based row>;<1-based column>h */
+
+	add string_point, string_point, #1
+	/**
+	 * Now, this string indicates the next of square bracket right.
+	 * Searching values in the string, e.g., "30;41".
+	 * length is already subtracted by one for use as an index for the last character,
+	 * so additionally about to be subtracted by one.
+	 */
+	sub length, length, #1
+
+	push {r0-r3}
+	mov r2, #0x3B                          @ Ascii Code of Semicolon
+	bl str32_charsearch
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1                          @ If Semicolon Is Not Searched
+	beq print32_esc_sequence_cursorhome_default
+
+	push {r0-r3}
+	mov r1, temp
+	bl cvt32_string_to_deci
+	bl cvt32_deci_to_hexa
+	mov number_row, r0
+	pop {r0-r3}
+
+	add temp, temp, #1                     @ Indicates Length Untill Semicolon Inclusively
+	sub length, temp
+	cmp length, #0
+	addge string_point, string_point, temp
+	blt print32_esc_sequence_cursorhome_default
+
+	push {r0-r3}
+	bl cvt32_string_to_deci
+	bl cvt32_deci_to_hexa
+	mov number_column, r0
+	pop {r0-r3}
+
+	.unreq temp
+	x_coord .req r6
+
+	mov x_coord, #0
+	mov y_coord, #0
+
+	cmp number_row, #0
+	moveq number_row, #1
+	cmp number_column, #0
+	moveq number_column, #1
+
+	ldr char_width, PRINT32_FONT_WIDTH_ADDR
+	ldr char_width, [char_width]
+	ldr char_height, PRINT32_FONT_HEIGHT_ADDR
+	ldr char_height, [char_height]
+	ldr fb_width, PRINT32_FB32_WIDTH
+	ldr fb_width, [fb_width]
+	ldr fb_height, PRINT32_FB32_HEIGHT
+	ldr fb_height, [fb_height]
+
+	macro32_dsb ip
+
+	print32_esc_sequence_cursorhome_row:
+		subs number_row, number_row, #1
+		ble print32_esc_sequence_cursorhome_column
+		add y_coord, y_coord, char_height
+		cmp y_coord, fb_height
+		subge y_coord, y_coord, char_height
+		b print32_esc_sequence_cursorhome_row
+
+	print32_esc_sequence_cursorhome_column:
+		subs number_column, number_column, #1
+		ble print32_esc_sequence_cursorhome_common
+		add x_coord, x_coord, char_width
+		cmp x_coord, fb_width
+		subge x_coord, x_coord, char_width
+		b print32_esc_sequence_cursorhome_column
+
+	print32_esc_sequence_cursorhome_default:
+		mov x_coord, #0
+		mov y_coord, #0
+
+	print32_esc_sequence_cursorhome_common:
+		macro32_dsb ip
+		mov r0, x_coord
+		mov r1, y_coord
+		pop {r4-r9,pc}
+
+.unreq string_point
+.unreq length
+.unreq char_width
+.unreq char_height
+.unreq number_row
+.unreq number_column
+.unreq x_coord
+.unreq y_coord
+.unreq fb_width
+.unreq fb_height
 
 
 /**

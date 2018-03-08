@@ -714,7 +714,7 @@ arm32_stopwatch_end:
  * Parameters
  * r0: Micro Seconds to Sleep
  *
- * Usage: r0-r5
+ * Return: r0 (0 as Success)
  */
 .globl arm32_sleep
 arm32_sleep:
@@ -748,6 +748,7 @@ arm32_sleep:
 		bhi arm32_sleep_loop
 
 	arm32_sleep_common:
+		mov r0, #0
 		pop {r4,pc}
 
 .unreq usecond

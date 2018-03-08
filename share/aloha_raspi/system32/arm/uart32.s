@@ -605,12 +605,10 @@ uart32_uartint:
 		push {r0-r3}
 		mov r0, heap
 		bl str32_strlen
-		mov temp, r0
+		mov temp, r0                     @ Most Significant Insert Position
 		pop {r0-r3}
-		sub temp, temp, #1               @ Most Significant Insert Position
 
 		cmp count, temp
-		addlt temp, temp, #1             @ Retrieve Length of Characters on Line
 		cmplt temp, max_size
 		blt uart32_uartint_insert
 
@@ -841,16 +839,21 @@ uart32_uartint:
 		pop {r0-r3}
 		add temp, temp, #1  @ Add One For Null Character
 		
+		/* Calculate Buffer, If Remainder of 4 Exists, Add 4 */
 		tst temp, #0b11
 		addne buffer, temp, #0b100
-		/* Substitute of Division by 4 */
-		lsr buffer, buffer, #2
+		moveq buffer, temp
+		lsr buffer, buffer, #2  @ Substitute of Division by 4
 
 		push {r0-r3}
 		mov r0, buffer
 		bl heap32_malloc
 		mov buffer, r0
 		pop {r0-r3}
+
+		/* If Memory Allocation Failed */
+		cmp buffer, #0
+		beq uart32_uartint_insert_common
 
 		push {r0-r3}
 		mov r0, buffer 
@@ -1142,12 +1145,10 @@ uart32_uartint_emulate:
 		push {r0-r3}
 		mov r0, heap
 		bl str32_strlen
-		mov temp, r0
+		mov temp, r0                     @ Most Significant Insert Position
 		pop {r0-r3}
-		sub temp, temp, #1               @ Most Significant Insert Position
 
 		cmp count, temp
-		addlt temp, temp, #1             @ Retrieve Length of Characters on Line
 		cmplt temp, max_size
 		blt uart32_uartint_emulate_insert
 
@@ -1477,16 +1478,21 @@ uart32_uartint_emulate:
 		pop {r0-r3}
 		add temp, temp, #1  @ Add One For Null Character
 		
+		/* Calculate Buffer, If Remainder of 4 Exists, Add 4 */
 		tst temp, #0b11
 		addne buffer, temp, #0b100
-		/* Substitute of Division by 4 */
-		lsr buffer, buffer, #2
+		moveq buffer, temp
+		lsr buffer, buffer, #2  @ Substitute of Division by 4
 
 		push {r0-r3}
 		mov r0, buffer
 		bl heap32_malloc
 		mov buffer, r0
 		pop {r0-r3}
+
+		/* If Memory Allocation Failed */
+		cmp buffer, #0
+		beq uart32_uartint_emulate_insert_common
 
 		push {r0-r3}
 		mov r0, buffer 
@@ -1500,7 +1506,7 @@ uart32_uartint_emulate:
 
 		push {r0-r3}
 		mov r0, heap
-		add r1, count, #1   @ Get Space For New Character
+		add r1, count, #1       @ Get Space For New Character
 		mov r2, buffer 
 		mov r3, #0
 		push {temp}
@@ -1513,7 +1519,7 @@ uart32_uartint_emulate:
 		bl heap32_mfree
 		pop {r0-r3}
 
-		sub temp, temp, #1  @ Subtract One For Null Character for Use Later
+		sub temp, temp, #1      @ Subtract One For Null Character for Use Later
 
 		ldr buffer, uart32_uartint_buffer
 		ldrb buffer, [buffer]
