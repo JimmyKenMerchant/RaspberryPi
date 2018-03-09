@@ -27,7 +27,7 @@ GPIO32_MASK:                .word equ32_gpio32_gpiomask
  * Bit[1]: GPIO 1 Output Low(0)/High(1)
  * ...
  * Bit[29]: GPIO 29 Output Low(0)/High(1)
- * Bit[30]: Stay Prior Status of GPIO Which Are Assigned as Zero in the Block
+ * Bit[30]: Stay Prior Status of GPIO Which Are Assigned as Zero in the Current Block
  * Bit[31]: Always Need of Set(1)
  * Note that if a beat is all zero, this beat means the end of sequence.  
  */

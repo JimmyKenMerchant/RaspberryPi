@@ -86,6 +86,13 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5       @ Set GPIO 15 ALT 0 as RXD0
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0      @ Clear GPIO 20
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0     @ Set GPIO 20 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_6      @ Clear GPIO 26
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel20]
+
 	/* Obtain Framebuffer from VideoCore IV */
 
 	mov r0, #32
@@ -226,6 +233,10 @@ os_fiq:
 
 	macro32_dsb ip
 .endif
+
+	push {r0-r3}
+	bl gpio32_gpioplay
+	pop {r0-r3}
 
 	pop {r0-r7,pc}
 

@@ -11,6 +11,11 @@
 #include "system32.c"
 #include "sound32.h"
 
+/**
+ * Length of Initial Loading on Start Up
+ */
+#define startup_load_length  "5"
+
 #define initial_line         1
 #define argument_maxlength   8
 #define label_maxlength      64 // Maximum Limitation of Length of Labels
@@ -70,6 +75,14 @@ typedef enum _command_list {
 	 * Caution that this command supports for the keyboard mode. On distance terminals, font configuration does not change.
 	 */
 	fnt,
+	/**
+	 * "gpio" does sequential outputting from GPIO. "gpio %S1 %S2":
+	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
+	 * Each bit of raw data represents status of GPIO pins, e.g., Bit[3] represents GPIO 3, 0 as low and 1 as high.
+	 * GPIO 2-27 are only available, plus setting out is needed for each GPIO.
+	 */
+	gpio,
+	clrgpio, // Clear outputting from GPIO. "clrgpio %S1": clear all (0) / stay GPIO current status (1) in S1.
 	/**
 	 * "snd" does sequential outputting sound. "snd %S1 %S2":
 	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
@@ -211,7 +224,7 @@ obj buffer_zero; // Zero Buffer
 /* Start Up */
 bool startup;
 String startup_command1 = "load %0 .a .b\r\0";
-String startup_command2 = ".a 64\r\0";
+String startup_command2 = ".a " startup_load_length "\r\0";
 String startup_command3 = ".b 0b00\r\0";
 String startup_command4 = "run\r\0";
 uint32 startup_length = 4;
@@ -350,6 +363,16 @@ int32 _user_start() {
 						} else if ( str32_strmatch( temp_str, 3, "fnt\0", 3 ) ) {
 							command_type = fnt;
 							length_arg = 2;
+							pipe_type = enumurate_sources;
+							src_index = 0;
+						} else if ( str32_strmatch( temp_str, 4, "gpio\0", 4 ) ) {
+							command_type = gpio;
+							length_arg = 2;
+							pipe_type = enumurate_sources;
+							src_index = 0;
+						} else if ( str32_strmatch( temp_str, 7, "clrgpio\0", 7 ) ) {
+							command_type = clrgpio;
+							length_arg = 1;
 							pipe_type = enumurate_sources;
 							src_index = 0;
 						} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
@@ -925,6 +948,18 @@ int32 _user_start() {
 								if ( PRINT32_FONT_HEIGHT > 12 ) PRINT32_FONT_WIDTH = 12;
 
 								break;
+							case gpio:
+								var_temp.u32 = _load_32( array_source );
+								if ( var_temp.u32 >=  rawdata_maxlength ) break;
+								var_temp.object = _load_32( array_rawdata + 4 * var_temp.u32 );
+								var_temp2.s32 = _load_32( array_source + 4 );
+								_gpioset( (gpio_sequence*)var_temp.object, gpio32_gpiolen( (gpio_sequence*)var_temp.object ) , 0, var_temp2.s32 );
+
+								break;
+							case clrgpio:
+								_gpioclear( _load_32( array_source ) );
+
+								break;
 							case snd:
 								var_temp.u32 = _load_32( array_source );
 								if ( var_temp.u32 >=  rawdata_maxlength ) break;
@@ -977,7 +1012,7 @@ int32 _user_start() {
 								var_temp4.u32 = _load_32( array_source + 8 ); // Chip Select
 								for ( uint32 i = var_temp2.u32; i < var_temp3.u32; i++ ) {
 									_uartsetheap( i );
-									if ( _romread_i2c( buffer_line, var_temp4.u32, var_temp.u32, UART32_UARTMALLOC_MAXROW + 1 ) ) break;
+									if ( _romread_i2c( buffer_line, var_temp4.u32, var_temp.u32, UART32_UARTMALLOC_MAXROW ) ) break; // Stay Null Character at End
 									heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
 									line_clean( UART32_UARTINT_HEAP );
 									var_temp.u32 += UART32_UARTMALLOC_MAXROW + 1; // Add One for Null Character
