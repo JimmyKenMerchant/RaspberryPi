@@ -179,7 +179,7 @@ extern uint32 ARM32_STOPWATCH_HIGH;
 
 __attribute__((noinline)) void _stopwatch_start();
 
-__attribute__((noinline)) uint32 _stopwatch_end();
+__attribute__((noinline)) uint64 _stopwatch_end();
 
 __attribute__((noinline)) void _sleep( uint32 u_seconds );
 
@@ -196,6 +196,8 @@ __attribute__((noinline)) int16 _load_16( uint32 address );
 __attribute__((noinline)) void _store_32( uint32 address, int32 data );
 
 __attribute__((noinline)) int32 _load_32( uint32 address );
+
+__attribute__((noinline)) uint64 _timestamp();
 
 __attribute__((noinline)) uint32 _armtimer( uint32 timer_ctl, uint32 load, uint32 predivider );
 
@@ -342,6 +344,8 @@ __attribute__((noinline)) uint32 _clock_init( uchar8 hour, uchar8 minute, uchar8
 __attribute__((noinline)) uint32 _correct_utc( int32 distance_utc );
 
 __attribute__((noinline)) uint32 _get_time();
+
+__attribute__((noinline)) uint32 _set_time( uint64 timestamp );
 
 extern uint32 clk32_check_leapyear
 (

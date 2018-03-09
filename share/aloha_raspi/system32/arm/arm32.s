@@ -623,21 +623,12 @@ ARM32_STOPWATCH_HIGH: .word 0x00
 .globl arm32_stopwatch_start
 arm32_stopwatch_start:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base .req r0 @ Scratch Register
-	count_low      .req r1 @ Scratch Register
-	count_high     .req r2 @ Scratch Register
-	save_cpsr      .req r3
+	count_low      .req r0 @ Scratch Register
+	count_high     .req r1 @ Scratch Register
 
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_systemtimer_base
+	push {lr}
 
-	/* For Atomic Procedure */
-	mrs save_cpsr, cpsr
-	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, ip
-	ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
-	ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
-	msr cpsr_c, save_cpsr
+	bl arm32_timestamp
 
 	macro32_dsb ip
 
@@ -645,66 +636,49 @@ arm32_stopwatch_start:
 	str count_high, ARM32_STOPWATCH_HIGH
 
 	arm32_stopwatch_start_common:
-		mov pc, lr
+		pop {pc}
 
-.unreq memorymap_base
 .unreq count_low
 .unreq count_high
-.unreq save_cpsr
 
 
 /**
  * function arm32_stopwatch_end
  * End of Stopwatch
  *
- * Return: r0 (Lower 32 Bits of Count Time)
+ * Return: r0 (Lower 32 Bits of Count Time), r1 (Upper 32 Bits of Count Time)
  */
 .globl arm32_stopwatch_end
 arm32_stopwatch_end:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base .req r0 @ Register for Result, Scratch Register
-	count_low      .req r1 @ Scratch Register
-	count_high     .req r2 @ Scratch Register
-	time_low       .req r3 @ Scratch Register
-	time_high      .req r4
-	save_cpsr      .req r5
+	count_low      .req r0 @ Scratch Register
+	count_high     .req r1 @ Scratch Register
+	time_low       .req r2 @ Scratch Register
+	time_high      .req r3
 
-	push {r4,r5}
+	push {lr}
 
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_systemtimer_base
-
-	/* For Atomic Procedure */
-	mrs save_cpsr, cpsr
-	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, ip
-	ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ In Case of Interrupt, Load Lower Bits First
-	ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher]
-	msr cpsr_c, save_cpsr
+	push {r0-r1}
+	bl arm32_timestamp
+	mov time_low, r0
+	mov time_high, r1
+	pop {r0-r1}
 
 	ldr count_low, ARM32_STOPWATCH_LOW                                 @ Get Lower 32 Bits
 	ldr count_high, ARM32_STOPWATCH_HIGH                               @ Get Higher 32 Bits
 
-	subs time_low, time_low, count_low                                 @ Subtract with Changing Status Flags
-	sbc time_high, time_high, count_high                               @ Subtract with Carry Flag
-
 	macro32_dsb ip
 
-	str time_low, ARM32_STOPWATCH_LOW
-	str time_high, ARM32_STOPWATCH_HIGH
-
-	mov r0, time_low
+	subs count_low, time_low, count_low                                @ Subtract with Changing Status Flags
+	sbc count_high, time_high, count_high                              @ Subtract with Carry Flag
 
 	arm32_stopwatch_end_common:
-		pop {r4,r5}
-		mov pc, lr
+		pop {pc}
 
-.unreq memorymap_base
 .unreq count_low
 .unreq count_high
 .unreq time_low
 .unreq time_high
-.unreq save_cpsr
 
 
 /**

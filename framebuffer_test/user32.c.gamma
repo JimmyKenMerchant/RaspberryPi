@@ -129,6 +129,10 @@ int32 _user_start()
 	print32_set_caret( print32_number( answer_sfixpoint, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
+	uint64 answer_timestamp = _timestamp();
+	print32_set_caret( print32_number_double( answer_timestamp, FB32_X_CARET, FB32_Y_CARET, 16 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
 	uint32 answer_leapyear = clk32_check_leapyear( 2001 );
 	print32_set_caret( print32_number( answer_leapyear, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );

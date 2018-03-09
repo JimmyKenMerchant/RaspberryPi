@@ -1,10 +1,14 @@
-# UART Test
+# Aloha Calc
 
 * Author: Kenta Ishii
 * License: MIT
 * License URL: https://opensource.org/licenses/MIT
 
 ## Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
+
+**About Aloha Calc**
+
+* "Aloha Calc" is a programmable calculator. "Aloha Calc" runs the script, "Aloha Mini Language", that resembles assembly languages. Several commands of "Aloha Mini Language" are derived from BASIC, but its syntax is just simple, e.g., `add %1 %2 %3` means `%1 = %2 + %3` in natural (% is prefix for line numbers). This simplicity is not only usable for learning assembly language, but also usable for development with a flowchart.
 
 **Output/Input**
 

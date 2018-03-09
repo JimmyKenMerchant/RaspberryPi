@@ -160,19 +160,19 @@ clk32_clock_init:
 	minute         .req r1
 	second         .req r2
 	usecond        .req r3
-	count_low      .req r4
-	count_high     .req r5
+	timestamp_low  .req r4
+	timestamp_high .req r5
 
 	push {r4-r5,lr}
 
 	push {r0-r3}
 	bl arm32_timestamp
-	mov count_low, r0
-	mov count_high, r1
+	mov timestamp_low, r0
+	mov timestamp_high, r1
 	pop {r0-r3}
 
-	str count_low, CLK32_SYSTEM_LOWER
-	str count_high, CLK32_SYSTEM_UPPER
+	str timestamp_low, CLK32_SYSTEM_LOWER
+	str timestamp_high, CLK32_SYSTEM_UPPER
 
 	strb hour, CLK32_HOUR_INIT
 	strb minute, CLK32_MINUTE_INIT
@@ -189,8 +189,8 @@ clk32_clock_init:
 .unreq minute
 .unreq second
 .unreq usecond
-.unreq count_low
-.unreq count_high
+.unreq timestamp_low
+.unreq timestamp_high
 
 
 /**
@@ -314,29 +314,54 @@ clk32_correct_utc:
 .globl clk32_get_time
 clk32_get_time:
 	/* Auto (Local) Variables, but just Aliases */
-	year            .req r0
-	month           .req r1
-	yearday         .req r2
-	hour            .req r3
-	minute          .req r4
-	second          .req r5
-	usecond         .req r6
-	leap_year       .req r7
-	count_low_past  .req r8
-	count_high_past .req r9
-	count_low_now   .req r10
-	count_high_now  .req r11
+	timestamp_low   .req r0
+	timestamp_high  .req r1
+
+	push {lr}
+
+	bl arm32_timestamp
+	bl clk32_set_time
+
+	clk32_get_time_common:
+		pop {pc}
+
+.unreq timestamp_low
+.unreq timestamp_high
+
+
+/**
+ * function clk32_set_time
+ * Set Time From Time Stamp
+ *
+ * Parameters
+ * r0: Lower 32 Bits of Time Stamp
+ * r1: Upper 32 Bits of Time Stamp
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl clk32_set_time
+clk32_set_time:
+	/* Auto (Local) Variables, but just Aliases */
+	year                .req r0
+	month               .req r1
+	yearday             .req r2
+	hour                .req r3
+	minute              .req r4
+	second              .req r5
+	usecond             .req r6
+	leap_year           .req r7
+	timestamp_low_past  .req r8
+	timestamp_high_past .req r9
+	timestamp_low       .req r10
+	timestamp_high      .req r11
 
 	push {r4-r11,lr}
 
-	push {r0-r3}
-	bl arm32_timestamp
-	mov count_low_now, r0
-	mov count_high_now, r1
-	pop {r0-r3}
+	mov timestamp_low, year
+	mov timestamp_high, month
 
-	ldr count_low_past, CLK32_SYSTEM_LOWER
-	ldr count_high_past, CLK32_SYSTEM_UPPER
+	ldr timestamp_low_past, CLK32_SYSTEM_LOWER
+	ldr timestamp_high_past, CLK32_SYSTEM_UPPER
 	ldr year, CLK32_YEAR_INIT
 	ldr yearday, CLK32_YEARDAY_INIT
 	ldrb hour, CLK32_HOUR_INIT
@@ -351,35 +376,35 @@ clk32_get_time:
 	mov leap_year, r0
 	pop {r0-r3}
 
-	subs count_low_now, count_low_now, count_low_past
-	sublo count_high_now, count_high_now, #1
-	sub count_high_now, count_high_now, count_high_past
-	cmp count_low_now, #0                               @ If Signed Minus
-	mvnlt count_low_now, count_low_now
-	addlt count_low_now, count_low_now, #1              @ Absolute Value
-	cmp count_high_now, #0                              @ If Signed Minus
-	mvnlt count_high_now, count_high_now
-	addlt count_high_now, count_high_now, #1            @ Absolute Value
+	subs timestamp_low, timestamp_low, timestamp_low_past
+	sublo timestamp_high, timestamp_high, #1
+	sub timestamp_high, timestamp_high, timestamp_high_past
+	cmp timestamp_low, #0                               @ If Signed Minus
+	mvnlt timestamp_low, timestamp_low
+	addlt timestamp_low, timestamp_low, #1              @ Absolute Value
+	cmp timestamp_high, #0                              @ If Signed Minus
+	mvnlt timestamp_high, timestamp_high
+	addlt timestamp_high, timestamp_high, #1            @ Absolute Value
 
-	.unreq count_low_past
-	.unreq count_high_past
+	.unreq timestamp_low_past
+	.unreq timestamp_high_past
 	temp  .req r8
 	temp2 .req r9
 
-	clk32_get_time_correction:
+	clk32_set_time_correction:
 		/* Micro Seconds */
 
 		mov temp, #0xF4000
 		add temp, temp, #0x240                            @ Decimal 1000000
 
 		push {r0-r3}
-		mov r0, count_low_now
+		mov r0, timestamp_low
 		mov r1, temp
 		bl arm32_urem
 		mov temp2, r0
 		pop {r0-r3}
 
-		sub count_low_now, count_low_now, temp2
+		sub timestamp_low, timestamp_low, temp2
 
 		add usecond, usecond, temp2
 		cmp usecond, temp
@@ -394,13 +419,13 @@ clk32_get_time:
 		mul temp2, temp, temp2
 
 		push {r0-r3}
-		mov r0, count_low_now
+		mov r0, timestamp_low
 		mov r1, temp2
 		bl arm32_urem
 		mov temp2, r0
 		pop {r0-r3}
 
-		sub count_low_now, count_low_now, temp2
+		sub timestamp_low, timestamp_low, temp2
 
 		push {r0-r3}
 		mov r0, temp2
@@ -429,7 +454,7 @@ clk32_get_time:
 		 * If the count can be divided by 3,600,000,000, it indicates that 1 hour is passed.
 		 */
 		push {r0-r3}
-		mov r0, count_low_now
+		mov r0, timestamp_low
 		mov r1, temp2
 		bl arm32_udiv
 		cmp r0, #1
@@ -437,7 +462,7 @@ clk32_get_time:
 		addge hour, hour, #1
 
 		push {r0-r3}
-		mov r0, count_low_now
+		mov r0, timestamp_low
 		mov r1, temp2
 		bl arm32_urem
 		mov temp2, r0
@@ -473,11 +498,11 @@ clk32_get_time:
 		subgt yearday, yearday, temp2
 		addgt year, year, #1
 
-		sub count_high_now, count_high_now, #1
-		cmp count_high_now, #0
-		mvnge count_low_now, #0     @ 0xFFFFFFFF
+		sub timestamp_high, timestamp_high, #1
+		cmp timestamp_high, #0
+		mvnge timestamp_low, #0     @ 0xFFFFFFFF
 		addge usecond, usecond, #1  @ Remainder of Higher Half
-		bge clk32_get_time_correction
+		bge clk32_set_time_correction
 
 		str usecond, CLK32_USECOND 
 		strb second, CLK32_SECOND 
@@ -492,11 +517,11 @@ clk32_get_time:
 		ldr temp, CLK32_MONTHS
 		mov month, #1
 
-	clk32_get_time_monthday:
+	clk32_set_time_monthday:
 		ldrb temp2, [temp, month]
 		subs monthday, monthday, temp2
 		addgt month, month, #1
-		bgt clk32_get_time_monthday
+		bgt clk32_set_time_monthday
 
 		add monthday, monthday, temp2
 
@@ -510,7 +535,7 @@ clk32_get_time:
 
 		strb temp, CLK32_WEEK
 
-	clk32_get_time_common:
+	clk32_set_time_common:
 		mov r0, #0
 		pop {r4-r11,pc}
 
@@ -524,8 +549,8 @@ clk32_get_time:
 .unreq leap_year
 .unreq temp
 .unreq temp2
-.unreq count_low_now
-.unreq count_high_now
+.unreq timestamp_low
+.unreq timestamp_high
 
 
 /**
