@@ -670,7 +670,8 @@ arm32_stopwatch_end:
 	macro32_dsb ip
 
 	subs count_low, time_low, count_low                                @ Subtract with Changing Status Flags
-	sbc count_high, time_high, count_high                              @ Subtract with Carry Flag
+	sublo time_high, time_high, #1
+	sub count_high, time_high, count_high                              @ Subtract with Carry Flag
 
 	arm32_stopwatch_end_common:
 		pop {pc}

@@ -141,12 +141,14 @@ int32 _user_start()
 	print32_set_caret( print32_number( answer_week, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	_calender_init( 2018, 12, 31 );
-	_clock_init( 23, 59, 50, 0 );
+	_calender_init( 2018, 1, 1 );
+	_clock_init( 0, 0, 0, 0 );
 	_correct_utc( -9 );
-	_correct_utc( -1 );
+	_correct_utc( 0 );
+	uint64 time_simulation = 60000000;
 	while(1) {
-		_get_time();
+		//_get_time();
+		_set_time( time_simulation );
 		print32_number( CLK32_YEAR, FB32_X_CARET, FB32_Y_CARET, 8 );
 		print32_number( CLK32_YEARDAY, FB32_X_CARET, FB32_Y_CARET + 12, 8 );
 		print32_number( CLK32_MONTH, FB32_X_CARET, FB32_Y_CARET + 24, 8 );
@@ -157,6 +159,7 @@ int32 _user_start()
 		print32_number( CLK32_SECOND, FB32_X_CARET, FB32_Y_CARET + 84, 8 );
 		print32_number( CLK32_USECOND, FB32_X_CARET, FB32_Y_CARET + 96, 8 );
 		print32_number( CLK32_UTC, FB32_X_CARET, FB32_Y_CARET + 108, 8 );
+		time_simulation += 60000000;
 		_sleep( 1000000 );
 	}
 

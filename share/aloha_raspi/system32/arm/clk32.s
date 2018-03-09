@@ -379,12 +379,6 @@ clk32_set_time:
 	subs timestamp_low, timestamp_low, timestamp_low_past
 	sublo timestamp_high, timestamp_high, #1
 	sub timestamp_high, timestamp_high, timestamp_high_past
-	cmp timestamp_low, #0                               @ If Signed Minus
-	mvnlt timestamp_low, timestamp_low
-	addlt timestamp_low, timestamp_low, #1              @ Absolute Value
-	cmp timestamp_high, #0                              @ If Signed Minus
-	mvnlt timestamp_high, timestamp_high
-	addlt timestamp_high, timestamp_high, #1            @ Absolute Value
 
 	.unreq timestamp_low_past
 	.unreq timestamp_high_past
