@@ -152,8 +152,8 @@ typedef enum _command_list {
 	skplt,
 	skpcs, // Skip one line if carry flag is set (Unsigned Higher or Equal)
 	skpcc, // Skip one line if carry flag is not set (Unsigned Lower)
-	label, // Re-enumeration of labels
-	clear, // Clear all in every Line
+	label, // Re-enumeration of labels from the line, "label".
+	clear, // Clear all in every Line then end, "clear".
 	run, // Meta Command: Runs script from list number zero
 	set // Meta Command: Set Line
 } command_list;
@@ -206,7 +206,7 @@ bool line_writer( uint32 line_number, String target_str );
 bool line_clean( String target_str ); 
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
-bool command_label(); // Label Enumeration
+bool command_label( uint32 start_line_number ); // Label Enumeration
 bool console_rollup();
 bool init_usb_keyboard( uint32 usb_channel );
 bool startup_executer();
@@ -287,7 +287,7 @@ int32 _user_start() {
 		_uarttx( str_aloha, str32_strlen( str_aloha ) );
 	}
 
-	if ( _gpio_in( 21 ) ) {
+	if ( _gpio_in( 22 ) ) {
 		startup = true;
 	} else {
 		startup = false;
@@ -1370,7 +1370,7 @@ int32 _user_start() {
 								heap32_mfill( label_list.name, 0 );
 								heap32_mfill( label_list.number, 0 );
 								label_list.length = 0;
-								command_label();
+								command_label( current_line );
 
 								break;
 							default:
@@ -1451,7 +1451,7 @@ int32 _user_start() {
 					pipe_type = search_command;
 					text_sender( "\x1B[2J\x1B[H\0" ); // Clear All Screen and Move Cursor to Upper Left
 
-					command_label();
+					command_label( initial_line );
 
 					_uartsetheap( initial_line );
 
@@ -1749,14 +1749,16 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 }
 
 
-bool command_label() {
+bool command_label( uint32 start_line_number ) {
 	flex32 var_temp;
 	var_temp.u32 = 0;
 	flex32 var_temp2;
 	var_temp2.u32 = 0;
 
+	if ( start_line_number < initial_line ) start_line_number = initial_line;
+
 	/* Labels Enumuration */
-	for ( uint32 i = initial_line; i < UART32_UARTMALLOC_LENGTH; i++ ) {
+	for ( uint32 i = start_line_number; i < UART32_UARTMALLOC_LENGTH; i++ ) {
 		_uartsetheap( i );
 		String temp_str = UART32_UARTINT_HEAP;
 		/* Pass Spaces */
@@ -1780,7 +1782,7 @@ bool command_label() {
 			_store_32( label_list.number + 4 * label_list.length, i );
 			label_list.length++;
 			/* Maximum Length of Label List is 16 */
-			if ( label_list.length > label_maxlength ) label_list.length = label_maxlength;
+			if ( label_list.length >= label_maxlength ) break;
 		}
 	}
 

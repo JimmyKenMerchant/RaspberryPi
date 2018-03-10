@@ -8,7 +8,16 @@
 
 **About Aloha Calc**
 
-* "Aloha Calc" is a programmable calculator. "Aloha Calc" runs the script, "Aloha Mini Language", that resembles assembly languages. Several commands of "Aloha Mini Language" are derived from BASIC, but its syntax is just simple, e.g., `add %1 %2 %3` means `%1 = %2 + %3` in natural (% is prefix for line numbers). This simplicity is not only usable for learning assembly language, but also usable for development with a flowchart.
+* "Aloha Calc" is a programmable calculator. "Aloha Calc" runs the script, "Aloha Mini Language", that resembles assembly languages. Several commands of "Aloha Mini Language" are derived from BASIC, but its syntax is just simpler than BASIC, e.g., `add %1 %2 %3` means `%1 = %2 + %3` in natural (% is prefix for line numbers). This simplicity is not only usable for learning assembly language, but also usable for development with a flowchart. "Aloha Mini Language" has no need of declaration any type for variables. Variables, for source or destination, are assigned by each line number or label.
+
+```
+|01| * Example of "Aloha Mini Language" to say "Hello World!".
+|02| * ".greeting" is a label which is prefixed by a period.
+|03| print .greeting
+|04| .greeting Hello World!
+|05| end
+|06| run
+```
 
 **Output/Input**
 
