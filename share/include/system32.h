@@ -1390,7 +1390,7 @@ extern float32 stat32_fmedian( obj array, uint32 length );
 
 extern float32 stat32_fmode( obj array, uint32 length );
 
-extern float32 stat32_forder( obj array, uint32 length, bool decreasing );
+extern obj stat32_forder( obj array, uint32 length, bool decreasing );
 
 
 /********************************

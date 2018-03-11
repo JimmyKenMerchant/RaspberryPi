@@ -305,12 +305,12 @@ stat32_forder:
 	beq stat32_forder_common
 
 	push {r0-r3}
-	mov r0, array_heap_ordered
-	mov r1, #0 
 	mov r2, array_heap
-	mov r3, #0
 	lsl temp, length, #2
 	push {temp}
+	mov r0, array_heap_ordered
+	mov r1, #0 
+	mov r3, #0
 	bl heap32_mcopy
 	add sp, sp, #4
 	pop {r0-r3}
@@ -318,7 +318,7 @@ stat32_forder:
 	.unreq temp
 	flag_swapped .req r3
 
-	mov flag_swapped, #0
+	mov flag_swapped, #1
 
 	cmp order, #1
 	bge stat32_forder_decreasing

@@ -12,13 +12,23 @@
 
 int32 _user_start()
 {
-	String string_arr0 = "0.01,0.1,3.01,4.1,5.01,6.1,7.2222\0";
+	String string_arr0 = "3.0,4.0,1.0,2.0\0";
 
 	obj arr0 = cvt32_string_to_farray( string_arr0, str32_strlen( string_arr0 ) );
-	stat32_forder( arr0, heap32_mcount( arr0 ) / 4, 0 );
 	String dup_string_arr0 = cvt32_farray_to_string( arr0, 1, 8, 0 );
-
 	print32_set_caret( print32_string( dup_string_arr0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( dup_string_arr0 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	obj arr1 = stat32_forder( arr0, heap32_mcount( arr0 ) / 4, 0 );
+
+	String dup_string_arr1 = cvt32_farray_to_string( arr1, 1, 8, 0 );
+	print32_set_caret( print32_string( dup_string_arr1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( dup_string_arr1 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	heap32_mfree( arr0 );
+	heap32_mfree( arr1 );
+	heap32_mfree( (obj)dup_string_arr0 );
+	heap32_mfree( (obj)dup_string_arr1 );
 
 	while(1) {
 
