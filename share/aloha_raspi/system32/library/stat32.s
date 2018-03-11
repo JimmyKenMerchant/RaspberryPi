@@ -39,6 +39,7 @@ stat32_fmean:
 	pop {r0-r1}
 
 	cmp temp, #-1
+	vmoveq vfp_sum, temp
 	beq stat32_fmean_common
 
 	lsr temp, temp, #2                      @ Substitute of Division by 4
@@ -49,15 +50,11 @@ stat32_fmean:
 	vmov vfp_length, length
 	vcvt.f32.u32 vfp_length, vfp_length
 
-	.unreq temp
-	sum .req r2
-
-	mov sum, #0
-	vmov vfp_sum, sum
+	mov temp, #0
+	vmov vfp_sum, temp
 	vcvt.f32.u32 vfp_sum, vfp_sum
 
 	cmp length, #0
-	vmovle sum, vfp_sum
 	ble stat32_fmean_common
 
 	sub length, length, #1
@@ -70,17 +67,16 @@ stat32_fmean:
 		cmp length, #0
 		bge stat32_fmean_sum
 	
-	vdiv.f32 vfp_sum, vfp_sum, vfp_length
-	vmov sum, vfp_sum
+		vdiv.f32 vfp_sum, vfp_sum, vfp_length
 
 	stat32_fmean_common:
-		mov r0, sum
+		vmov r0, vfp_sum
 		vpop {s0-s2}
 		mov pc, lr
 
 .unreq array_heap
 .unreq length
-.unreq sum
+.unreq temp
 .unreq vfp_sum
 .unreq vfp_length
 .unreq vfp_temp
@@ -88,10 +84,10 @@ stat32_fmean:
 
 /**
  * function stat32_fmedian
- * Return Median Mean with Single Precision Float
+ * Return Median with Single Precision Float
  *
  * Parameters
- * r0: Array of Single Precision Float in Heap
+ * r0: Array of Single Precision Float in Heap, Must Be Ordered
  * r1: Length of Array
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
@@ -103,10 +99,9 @@ stat32_fmedian:
 	array_heap         .req r0
 	length             .req r1
 	temp               .req r2
-	array_heap_ordered .req r3
 
 	/* VFP Registers */
-	vfp_sum            .req s0
+	vfp_median         .req s0
 	vfp_temp           .req s1
 
 	vpush {s0-s1}
@@ -117,6 +112,7 @@ stat32_fmedian:
 	pop {r0-r1}
 
 	cmp temp, #-1
+	vmoveq vfp_median, temp
 	beq stat32_fmedian_common
 
 	lsr temp, temp, #2                      @ Substitute of Division by 4
@@ -124,61 +120,46 @@ stat32_fmedian:
 	cmp length, temp
 	movgt length, temp                      @ Prevent Overflow
 
-	push {r0-r2}
-	mov r2, #0
-	bl stat32_forder
-	mov array_heap_ordered, r0
-	pop {r0-r2}
-
-	cmp array_heap_ordered, #0
-	mvneq temp, #0
-	beq stat32_fmedian_common
-
-	.unreq temp
-	median .req r2
-
+	/* Test Even or Odd */
 	tst length, #1
-	lsr length, length, #1
+	lsr length, length, #1                  @ Substitute of Division by 2
 	beq stat32_fmedian_even
 
-	ldr median, [array_heap_ordered, length]
+	vldr vfp_median, [array_heap, length]
 
 	b stat32_fmedian_common
 
 	stat32_fmedian_even:
 
-		vldr vfp_sum, [array_heap_ordered, length]
+		vldr vfp_median, [array_heap, length]
 		sub length, length, #4
-		vldr vfp_temp, [array_heap_ordered, length]
-		vadd.f32 vfp_sum, vfp_sum, vfp_temp
+		vldr vfp_temp, [array_heap, length]
+		vadd.f32 vfp_median, vfp_median, vfp_temp
 
-		mov median, #2
-		vmov vfp_temp, median
+		mov temp, #2
+		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 
-		vdiv.f32 vfp_sum, vfp_sum, vfp_temp
-
-		vmov median, vfp_sum
+		vdiv.f32 vfp_median, vfp_median, vfp_temp
 
 	stat32_fmedian_common:
-		mov r0, median
+		vmov r0, vfp_median
 		vpop {s0-s1}
 		mov pc, lr
 
 .unreq array_heap
 .unreq length
-.unreq median
-.unreq array_heap_ordered
-.unreq vfp_sum
+.unreq temp
+.unreq vfp_median
 .unreq vfp_temp
 
 
 /**
  * function stat32_fmode
- * Return Median Mean with Single Precision Float
+ * Return Mode with Single Precision Float
  *
  * Parameters
- * r0: Array of Single Precision Float in Heap
+ * r0: Array of Single Precision Float in Heap, Must Be Ordered
  * r1: Length of Array
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
@@ -190,18 +171,16 @@ stat32_fmode:
 	array_heap         .req r0
 	length             .req r1
 	temp               .req r2
-	array_heap_ordered .req r3
-	count_next         .req r4
-	count_before       .req r5
-	i                  .req r6
-	shift              .req r7
+	count_now          .req r3
+	count_mode         .req r4
+	i                  .req r5
 
 	/* VFP Registers */
 	vfp_mode           .req s0
-	vfp_temp           .req s1
+	vfp_current        .req s1
 	vfp_previous       .req s2
 
-	push {r4-r7,lr}
+	push {r4-r5,lr}
 	vpush {s0-s2}
 
 	push {r0-r1}
@@ -210,6 +189,7 @@ stat32_fmode:
 	pop {r0-r1}
 
 	cmp temp, #-1
+	vmoveq vfp_mode, temp
 	beq stat32_fmode_common
 
 	lsr temp, temp, #2                      @ Substitute of Division by 4
@@ -217,61 +197,57 @@ stat32_fmode:
 	cmp length, temp
 	movgt length, temp                      @ Prevent Overflow
 
-	push {r0-r2}
-	mov r2, #0
-	bl stat32_forder
-	mov array_heap_ordered, r0
-	pop {r0-r2}
-
-	cmp array_heap_ordered, #0
-	mvneq temp, #0
-	beq stat32_fmode_common
-
 	mov i, #0
-	lsl shift, i, #2
-	vldr vfp_previous, [array_heap_ordered, shift]
+	lsl temp, i, #2                         @ Substitute of Multiplication by 4
+	vldr vfp_previous, [array_heap, temp]
 	vmov vfp_mode, vfp_previous 
 
 	add i, i, #1
 	cmp i, length
 	bge stat32_fmode_common
 
-	mov count_next, #1
-	mov count_before, #0
+	mov count_now, #1
+	mov count_mode, #0
 
 	stat32_fmode_loop:
-		lsl shift, i, #2
-		vldr vfp_temp, [array_heap_ordered, shift]
-		vcmp.f32 vfp_previous, vfp_temp
+		lsl temp, i, #2
+		vldr vfp_current, [array_heap, temp]
+		vcmp.f32 vfp_previous, vfp_current
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		addeq count_next, count_next, #1
+		addeq count_now, count_now, #1
 		beq stat32_fmode_loop_common
 
-		cmp count_next, count_before
+		/* If Current Value Is Different from Previous One */
+		cmp count_now, count_mode
 		vmovgt vfp_mode, vfp_previous 
-		movgt count_before, count_next
+		movgt count_mode, count_now
+
+		/* Reset Count */
+		mov count_now, #1
 
 		stat32_fmode_loop_common:
-			vmov vfp_previous, vfp_temp
+			vmov vfp_previous, vfp_current
 			add i, i, #1
 			cmp i, length
 			blt stat32_fmode_loop
 
+			/* Last Check */
+			cmp count_now, count_mode
+			vmovgt vfp_mode, vfp_previous 
+
 	stat32_fmode_common:
 		vmov r0, vfp_mode
 		vpop {s0-s2}
-		pop {r4-r7,pc}
+		pop {r4-r5,pc}
 
 .unreq array_heap
 .unreq length
 .unreq temp
-.unreq array_heap_ordered
-.unreq count_next
-.unreq count_before
+.unreq count_now
+.unreq count_mode
 .unreq i
-.unreq shift
 .unreq vfp_mode
-.unreq vfp_temp
+.unreq vfp_current
 .unreq vfp_previous
 
 

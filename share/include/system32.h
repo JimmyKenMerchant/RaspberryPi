@@ -1381,6 +1381,19 @@ extern obj math32_vec_crossproduct
 
 
 /********************************
+ * system32/library/stat32.s
+ ********************************/
+
+extern float32 stat32_fmean( obj array, uint32 length );
+
+extern float32 stat32_fmedian( obj array, uint32 length );
+
+extern float32 stat32_fmode( obj array, uint32 length );
+
+extern float32 stat32_forder( obj array, uint32 length, bool decreasing );
+
+
+/********************************
  * system32/library/cvt32.s
  ********************************/
 
