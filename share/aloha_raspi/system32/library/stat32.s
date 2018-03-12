@@ -31,6 +31,7 @@ stat32_fmean:
 	vfp_length     .req s1
 	vfp_temp       .req s2
 
+	push {lr}
 	vpush {s0-s2}
 
 	push {r0-r1}
@@ -58,12 +59,13 @@ stat32_fmean:
 	ble stat32_fmean_common
 
 	sub length, length, #1
-	lsl length, length, #2                  @ Substitute of Multiplication by 4
 
 	stat32_fmean_sum:
-		vldr vfp_temp, [array_heap, length]
+		lsl temp, length, #2                    @ Substitute of Multiplication by 4
+		add temp, array_heap, temp              @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_temp, [temp]
 		vadd.f32 vfp_sum, vfp_sum, vfp_temp
-		sub length, length, #4
+		sub length, length, #1
 		cmp length, #0
 		bge stat32_fmean_sum
 	
@@ -72,7 +74,7 @@ stat32_fmean:
 	stat32_fmean_common:
 		vmov r0, vfp_sum
 		vpop {s0-s2}
-		mov pc, lr
+		pop {pc}
 
 .unreq array_heap
 .unreq length
@@ -104,6 +106,7 @@ stat32_fmedian:
 	vfp_median         .req s0
 	vfp_temp           .req s1
 
+	push {lr}
 	vpush {s0-s1}
 
 	push {r0-r1}
@@ -125,15 +128,17 @@ stat32_fmedian:
 	lsr length, length, #1                  @ Substitute of Division by 2
 	beq stat32_fmedian_even
 
-	vldr vfp_median, [array_heap, length]
+	add length, array_heap, length          @ vldr/vstr Can't Offset by Value in ARM Register
+	vldr vfp_median, [length]
 
 	b stat32_fmedian_common
 
 	stat32_fmedian_even:
-
-		vldr vfp_median, [array_heap, length]
+		lsl length, length, #2                  @ Substitute of Multiplication by 4
+		add length, array_heap, length          @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_median, [length]
 		sub length, length, #4
-		vldr vfp_temp, [array_heap, length]
+		vldr vfp_temp, [length]
 		vadd.f32 vfp_median, vfp_median, vfp_temp
 
 		mov temp, #2
@@ -145,7 +150,7 @@ stat32_fmedian:
 	stat32_fmedian_common:
 		vmov r0, vfp_median
 		vpop {s0-s1}
-		mov pc, lr
+		pop {pc}
 
 .unreq array_heap
 .unreq length
@@ -183,6 +188,12 @@ stat32_fmode:
 	push {r4-r5,lr}
 	vpush {s0-s2}
 
+	/* If Length is 0 or Minus (Overing Limit) */
+	cmp length, #0
+	mvnle temp, #0
+	vmovle vfp_mode, temp
+	ble stat32_fmode_common
+
 	push {r0-r1}
 	bl heap32_mcount
 	mov temp, r0
@@ -197,12 +208,11 @@ stat32_fmode:
 	cmp length, temp
 	movgt length, temp                      @ Prevent Overflow
 
-	mov i, #0
-	lsl temp, i, #2                         @ Substitute of Multiplication by 4
-	vldr vfp_previous, [array_heap, temp]
+	vldr vfp_previous, [array_heap]
 	vmov vfp_mode, vfp_previous 
 
-	add i, i, #1
+	/* If Length is 1 */
+	mov i, #1
 	cmp i, length
 	bge stat32_fmode_common
 
@@ -210,8 +220,9 @@ stat32_fmode:
 	mov count_mode, #0
 
 	stat32_fmode_loop:
-		lsl temp, i, #2
-		vldr vfp_current, [array_heap, temp]
+		lsl temp, i, #2                               @ Substitute of Multiplication by 4
+		add temp, array_heap, temp                    @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_current, [temp]
 		vcmp.f32 vfp_previous, vfp_current
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 		addeq count_now, count_now, #1
@@ -290,10 +301,10 @@ stat32_forder:
 	moveq array_heap_ordered, #0
 	beq stat32_forder_common
 
-	lsr temp, temp, #2                      @ Substitute of Division by 4
+	lsr temp, temp, #2                              @ Substitute of Division by 4
 
 	cmp length, temp
-	movgt length, temp                      @ Prevent Overflow
+	movgt length, temp                              @ Prevent Overflow
 
 	push {r0-r3}
 	mov r0, length
@@ -319,6 +330,7 @@ stat32_forder:
 	flag_swapped .req r3
 
 	mov flag_swapped, #1
+	sub length, length, #1                          @ Prevent Overflow on Procedure Below
 
 	cmp order, #1
 	bge stat32_forder_decreasing
@@ -330,14 +342,15 @@ stat32_forder:
 		mov i, #0
 		stat32_forder_ascending_loop:
 			lsl shift, i, #2                              @ Substitute of Multiplication by 4
-			vldr vfp_temp, [array_heap_ordered, shift]
+			add shift, array_heap_ordered, shift          @ vldr/vstr Can't Offset by Value in ARM Register
+			vldr vfp_temp, [shift]
 			add shift, shift, #4
-			vldr vfp_temp2, [array_heap_ordered, shift]
+			vldr vfp_temp2, [shift]
 			vcmp.f32 vfp_temp, vfp_temp2
 			vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-			vstrgt vfp_temp, [array_heap_ordered, shift]
+			vstrgt vfp_temp, [shift]
 			subgt shift, shift, #4
-			vstrgt vfp_temp2, [array_heap_ordered, shift]
+			vstrgt vfp_temp2, [shift]
 			movgt flag_swapped, #1
 			add i, i, #1
 			cmp i, length
@@ -352,14 +365,15 @@ stat32_forder:
 		mov i, #0
 		stat32_forder_decreasing_loop:
 			lsl shift, i, #2                              @ Substitute of Multiplication by 4
-			vldr vfp_temp, [array_heap_ordered, shift]
+			add shift, array_heap_ordered, shift          @ vldr/vstr Can't Offset by Value in Register
+			vldr vfp_temp, [shift]
 			add shift, shift, #4
-			vldr vfp_temp2, [array_heap_ordered, shift]
+			vldr vfp_temp2, [shift]
 			vcmp.f32 vfp_temp, vfp_temp2
 			vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-			vstrlt vfp_temp, [array_heap_ordered, shift]
+			vstrlt vfp_temp, [shift]
 			sublt shift, shift, #4
-			vstrlt vfp_temp2, [array_heap_ordered, shift]
+			vstrlt vfp_temp2, [shift]
 			movlt flag_swapped, #1
 			add i, i, #1
 			cmp i, length
