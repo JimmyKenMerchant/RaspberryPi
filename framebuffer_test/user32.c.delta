@@ -12,7 +12,7 @@
 
 int32 _user_start()
 {
-	String string_arr0 = "3.0,3.0,4.0,4.0,1.0,2.0,2.0\0";
+	String string_arr0 = "-3.0,3.0,4.0,4.0,1.0,2.0,2.0\0";
 
 	obj arr0 = cvt32_string_to_farray( string_arr0, str32_strlen( string_arr0 ) );
 	String dup_string_arr0 = cvt32_farray_to_string( arr0, 1, 8, 0 );

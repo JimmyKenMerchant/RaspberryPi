@@ -204,9 +204,7 @@ cvt32_float32_to_string:
 			mov string_integer, string_cmp
 
 			vcvt.f32.s32 vfp_integer, vfp_integer
-			vmov vfp_decimal, float
-			vabs.f32 vfp_integer, vfp_integer               @ Make Absolute Value
-			vabs.f32 vfp_decimal, vfp_decimal               @ Make Absolute Value
+			vmov vfp_decimal, vfp_float
 			vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
 
 	/* Decimal Part */
