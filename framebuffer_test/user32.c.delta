@@ -12,7 +12,7 @@
 
 int32 _user_start()
 {
-	String string_arr0 = "3.0,4.0,1.0,2.0\0";
+	String string_arr0 = "3.0,3.0,4.0,4.0,1.0,2.0,2.0\0";
 
 	obj arr0 = cvt32_string_to_farray( string_arr0, str32_strlen( string_arr0 ) );
 	String dup_string_arr0 = cvt32_farray_to_string( arr0, 1, 8, 0 );
@@ -38,6 +38,11 @@ int32 _user_start()
 	float32 mode1 = stat32_fmode( arr1, heap32_mcount( arr1 ) / 4 );
 	String string_mode1 = cvt32_float32_to_string( mode1, 1, 8, 0 );
 	print32_set_caret( print32_string( string_mode1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_mean1 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	obj arr0_diviation = stat32_fdiviation( arr0, heap32_mcount( arr0 ) / 4, mean1, True );
+	String string_arr0_diviation = cvt32_farray_to_string( arr0_diviation, 1, 8, 0 );
+	print32_set_caret( print32_string( string_arr0_diviation, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arr0_diviation ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( arr0 );

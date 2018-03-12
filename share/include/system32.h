@@ -1384,6 +1384,8 @@ extern obj math32_vec_crossproduct
  * system32/library/stat32.s
  ********************************/
 
+obj stat32_fdiviation( obj array, uint32 length, float32 average, bool bool_signed );
+
 extern float32 stat32_fmean( obj array, uint32 length );
 
 extern float32 stat32_fmedian( obj array, uint32 length );

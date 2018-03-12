@@ -9,6 +9,98 @@
 
 
 /**
+ * function stat32_fdiviation
+ * Return Array of Diviation with Single Precision Float
+ * Note that this function makes new memory space to be needed to make the memory free.
+ *
+ * Parameters
+ * r0: Array of Single Precision Float in Heap
+ * r1: Length of Array
+ * r2: Average Value with Single Precision Float (Calculate Mean/Median/Mode)
+ * r3: Unsigned = Absolute (0) or Signed (1)
+ *
+ * Return: r0 (Pointer of Ordered Array, If Zero Memory Allocation Failed)
+ */
+.globl stat32_fdiviation
+stat32_fdiviation:
+	/* Auto (Local) Variables, but just Aliases */
+	array_heap      .req r0
+	length          .req r1
+	average         .req r2
+	signed          .req r3
+	array_heap_divi .req r4
+	i               .req r5
+	temp            .req r6
+	shift           .req r7
+	shift2          .req r8
+
+	/* VFP Registers */
+	vfp_temp        .req s0
+	vfp_average     .req s1
+
+	push {r4-r8,lr}
+	vpush {s0-s1}
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	moveq array_heap_divi, #0
+	beq stat32_fdiviation_common
+
+	lsr temp, temp, #2                      @ Substitute of Division by 4
+
+	cmp length, temp
+	movgt length, temp                      @ Prevent Overflow
+
+	push {r0-r3}
+	mov r0, length
+	bl heap32_malloc
+	mov array_heap_divi, r0
+	pop {r0-r3}
+
+	cmp array_heap_divi, #0
+	beq stat32_fdiviation_common
+
+	vmov vfp_average, average
+
+	mov i, #0
+
+	stat32_fdiviation_loop:
+		lsl temp, i, #2                            @ Substitute of Multiplication by 4
+		add shift, array_heap, temp                @ vldr/vstr Can't Offset by Value in ARM Register
+		add shift2, array_heap_divi, temp          @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_temp, [shift]
+		vsub.f32 vfp_temp, vfp_temp, vfp_average
+		cmp signed, #0
+		vabseq.f32 vfp_temp, vfp_temp
+		vstr vfp_temp, [shift2]
+
+		add i, i, #1
+		cmp i, length
+		blt stat32_fdiviation_loop
+
+	stat32_fdiviation_common:
+		mov r0, array_heap_divi
+		vpop {s0-s1}
+		pop {r4-r8,pc}
+
+.unreq array_heap
+.unreq length
+.unreq average
+.unreq signed
+.unreq array_heap_divi
+.unreq i
+.unreq temp
+.unreq shift
+.unreq shift2
+.unreq vfp_temp
+.unreq vfp_average
+
+
+/**
  * function stat32_fmean
  * Return Arithmetic Mean with Single Precision Float
  *
@@ -126,6 +218,7 @@ stat32_fmedian:
 	/* Test Even or Odd */
 	tst length, #1
 	lsr length, length, #1                  @ Substitute of Division by 2
+	lsl length, length, #2                  @ Substitute of Multiplication by 4
 	beq stat32_fmedian_even
 
 	add length, array_heap, length          @ vldr/vstr Can't Offset by Value in ARM Register
@@ -134,7 +227,6 @@ stat32_fmedian:
 	b stat32_fmedian_common
 
 	stat32_fmedian_even:
-		lsl length, length, #2                  @ Substitute of Multiplication by 4
 		add length, array_heap, length          @ vldr/vstr Can't Offset by Value in ARM Register
 		vldr vfp_median, [length]
 		sub length, length, #4

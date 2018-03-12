@@ -94,7 +94,7 @@ cvt32_float32_to_string:
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vcmp.f32 vfp_float, vfp_temp
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-		blt cvt32_float32_to_string_convertfloat
+		blt cvt32_float32_to_string_integer
 
 	cvt32_float32_to_string_exceed:
 		add exponent, exponent, #1
@@ -103,16 +103,11 @@ cvt32_float32_to_string:
 		vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
 		bge cvt32_float32_to_string_exceed
 
-	cvt32_float32_to_string_convertfloat:
-		cmp minus, #1
-		vnegeq.f32 vfp_float, vfp_float               @ Convert Absolute to Negative If Negative Originally
-		vmov float, vfp_float
-
 	/* Integer Part */
 
 	cvt32_float32_to_string_integer:
 
-		vmov vfp_integer, float                       @ Signed
+		vmov vfp_integer, vfp_float
 		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
 		vmov integer, vfp_integer
 
@@ -129,6 +124,11 @@ cvt32_float32_to_string:
 		cmp string_integer, #0
 		beq cvt32_float32_to_string_error
 
+		cmp minus, #1
+		bne cvt32_float32_to_string_integer_jump
+
+		/* If Minus Signed */
+
 		push {r0-r3}
 		mov r0, #1
 		bl heap32_malloc
@@ -138,14 +138,14 @@ cvt32_float32_to_string:
 		cmp string_decimal, #0
 		beq cvt32_float32_to_string_error
 
-		mov temp, #0x2E
-		strb temp, [string_decimal]                   @ Store Period Sign
+		mov temp, #0x2D
+		strb temp, [string_decimal]                   @ Store Minus Sign
 		mov temp, #0x00
 		strb temp, [string_decimal, #1]               @ Store Null Character
 
 		push {r0-r3}
-		mov r0, string_integer
-		mov r1, string_decimal
+		mov r0, string_decimal
+		mov r1, string_integer
 		bl str32_strcat
 		mov string_cmp, r0
 		pop {r0-r3}
@@ -165,11 +165,49 @@ cvt32_float32_to_string:
 
 		mov string_integer, string_cmp
 
-		vcvt.f32.s32 vfp_integer, vfp_integer
-		vmov vfp_decimal, float
-		vabs.f32 vfp_integer, vfp_integer               @ Make Absolute Value
-		vabs.f32 vfp_decimal, vfp_decimal               @ Make Absolute Value
-		vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
+		cvt32_float32_to_string_integer_jump:
+
+			push {r0-r3}
+			mov r0, #1
+			bl heap32_malloc
+			mov string_decimal, r0
+			pop {r0-r3}
+
+			cmp string_decimal, #0
+			beq cvt32_float32_to_string_error
+
+			mov temp, #0x2E
+			strb temp, [string_decimal]                   @ Store Period Sign
+			mov temp, #0x00
+			strb temp, [string_decimal, #1]               @ Store Null Character
+
+			push {r0-r3}
+			mov r0, string_integer
+			mov r1, string_decimal
+			bl str32_strcat
+			mov string_cmp, r0
+			pop {r0-r3}
+
+			cmp string_cmp, #0
+			beq cvt32_float32_to_string_error
+
+			push {r0-r3}
+			mov r0, string_integer 
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, string_decimal
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov string_integer, string_cmp
+
+			vcvt.f32.s32 vfp_integer, vfp_integer
+			vmov vfp_decimal, float
+			vabs.f32 vfp_integer, vfp_integer               @ Make Absolute Value
+			vabs.f32 vfp_decimal, vfp_decimal               @ Make Absolute Value
+			vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
 
 	/* Decimal Part */
 
