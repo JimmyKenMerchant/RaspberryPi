@@ -9,8 +9,163 @@
 
 
 /**
- * function stat32_fdiviation
- * Return Array of Diviation with Single Precision Float
+ * function stat32_fstandard_deviation
+ * Return Standard Deviation with Single Precision Float
+ *
+ * Parameters
+ * r0: Array of Single Precision Float in Heap
+ * r1: Length of Array
+ * r2: Bessel's Correction
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl stat32_fstandard_deviation
+stat32_fstandard_deviation:
+	/* Auto (Local) Variables, but just Aliases */
+	array_heap      .req r0
+	length          .req r1
+	correction      .req r2
+
+	/* VFP Registers */
+	vfp_sd          .req s0
+
+	/**
+	 * Standard Deviation (s or Greek Small Letter of Sigma) = Variance^1/2 (Square Root of Variance)
+	 */
+	push {lr}
+	vpush {s0}
+
+	bl stat32_fvariance
+	.unreq array_heap
+	variance .req r0
+
+	vmov vfp_sd, variance
+	vsqrt.f32 vfp_sd, vfp_sd
+
+	stat32_fstandard_deviation_common:
+		vmov r0, vfp_sd
+		vpop {s0}
+		pop {pc}
+
+.unreq variance
+.unreq length
+.unreq correction
+.unreq vfp_sd
+
+
+/**
+ * function stat32_fvariance
+ * Return Variance with Single Precision Float
+ *
+ * Parameters
+ * r0: Array of Single Precision Float in Heap
+ * r1: Length of Array
+ * r2: Bessel's Correction
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl stat32_fvariance
+stat32_fvariance:
+	/* Auto (Local) Variables, but just Aliases */
+	array_heap      .req r0
+	length          .req r1
+	correction      .req r2
+	average         .req r3
+	i               .req r4
+	array_heap_devi .req r5
+	temp            .req r6
+
+	/* VFP Registers */
+	vfp_variance    .req s0
+	vfp_length      .req s1
+	vfp_temp        .req s2
+
+	/**
+	 * Variance = (Sigma[i = 1 to n] (Xn - Xmean)^2) / n (Not Corrected) or n - 1 (Corrected)
+	 * This Formula uses Bessel's correction if Corrected.
+	 */
+	push {r4-r6,lr}
+	vpush {s0-s2}
+
+	push {r0-r2}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r2}
+
+	cmp temp, #-1
+	vmoveq vfp_variance, temp
+	beq stat32_fvariance_common
+
+	lsr temp, temp, #2                       @ Substitute of Division by 4
+
+	cmp length, temp
+	movgt length, temp                       @ Prevent Overflow
+
+	push {r0-r2}
+	bl stat32_fmean
+	mov average, r0
+	pop {r0-r2}
+
+	cmp average, #-1
+	vmoveq vfp_variance, average 
+	beq stat32_fvariance_common
+
+	push {r0-r3}
+	mov r2, average
+	mov r3, #1
+	bl stat32_fdeviation
+	mov array_heap_devi, r0
+	pop {r0-r3}
+
+	cmp array_heap_devi, #0
+	mvneq temp, #0
+	vmoveq vfp_variance, temp
+	beq stat32_fvariance_common
+
+	mov temp, #0
+	vmov vfp_variance, temp
+	vcvt.f32.u32 vfp_variance, vfp_variance
+
+	mov i, #0
+	stat32_fvariance_loop:
+		lsl temp, i, #2                           @ Substitute of Multiplication by 4
+		add temp, array_heap_devi, temp           @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_temp, [temp]
+		vmul.f32 vfp_temp, vfp_temp, vfp_temp
+		vadd.f32 vfp_variance, vfp_variance, vfp_temp
+		add i, i, #1
+		cmp i, length
+		blt stat32_fvariance_loop
+
+		cmp correction, #0
+		subne length, length, #1
+		vmov vfp_length, length
+		vcvt.f32.u32 vfp_length, vfp_length
+		vdiv.f32 vfp_variance, vfp_variance, vfp_length
+
+		mov r0, array_heap_devi
+		bl heap32_mfree
+
+	stat32_fvariance_common:
+		vmov r0, vfp_variance
+		vpop {s0-s2}
+		pop {r4-r6,pc}
+
+.unreq array_heap
+.unreq length
+.unreq correction
+.unreq average
+.unreq i
+.unreq array_heap_devi
+.unreq temp
+.unreq vfp_variance
+.unreq vfp_length
+.unreq vfp_temp
+
+
+/**
+ * function stat32_fdeviation
+ * Return Array of Deviation with Single Precision Float
  * Note that this function makes new memory space to be needed to make the memory free.
  *
  * Parameters
@@ -21,14 +176,14 @@
  *
  * Return: r0 (Pointer of Ordered Array, If Zero Memory Allocation Failed)
  */
-.globl stat32_fdiviation
-stat32_fdiviation:
+.globl stat32_fdeviation
+stat32_fdeviation:
 	/* Auto (Local) Variables, but just Aliases */
 	array_heap      .req r0
 	length          .req r1
 	average         .req r2
 	signed          .req r3
-	array_heap_divi .req r4
+	array_heap_devi .req r4
 	i               .req r5
 	temp            .req r6
 	shift           .req r7
@@ -47,8 +202,8 @@ stat32_fdiviation:
 	pop {r0-r3}
 
 	cmp temp, #-1
-	moveq array_heap_divi, #0
-	beq stat32_fdiviation_common
+	moveq array_heap_devi, #0
+	beq stat32_fdeviation_common
 
 	lsr temp, temp, #2                      @ Substitute of Division by 4
 
@@ -58,20 +213,20 @@ stat32_fdiviation:
 	push {r0-r3}
 	mov r0, length
 	bl heap32_malloc
-	mov array_heap_divi, r0
+	mov array_heap_devi, r0
 	pop {r0-r3}
 
-	cmp array_heap_divi, #0
-	beq stat32_fdiviation_common
+	cmp array_heap_devi, #0
+	beq stat32_fdeviation_common
 
 	vmov vfp_average, average
 
 	mov i, #0
 
-	stat32_fdiviation_loop:
+	stat32_fdeviation_loop:
 		lsl temp, i, #2                            @ Substitute of Multiplication by 4
 		add shift, array_heap, temp                @ vldr/vstr Can't Offset by Value in ARM Register
-		add shift2, array_heap_divi, temp          @ vldr/vstr Can't Offset by Value in ARM Register
+		add shift2, array_heap_devi, temp          @ vldr/vstr Can't Offset by Value in ARM Register
 		vldr vfp_temp, [shift]
 		vsub.f32 vfp_temp, vfp_temp, vfp_average
 		cmp signed, #0
@@ -80,10 +235,10 @@ stat32_fdiviation:
 
 		add i, i, #1
 		cmp i, length
-		blt stat32_fdiviation_loop
+		blt stat32_fdeviation_loop
 
-	stat32_fdiviation_common:
-		mov r0, array_heap_divi
+	stat32_fdeviation_common:
+		mov r0, array_heap_devi
 		vpop {s0-s1}
 		pop {r4-r8,pc}
 
@@ -91,7 +246,7 @@ stat32_fdiviation:
 .unreq length
 .unreq average
 .unreq signed
-.unreq array_heap_divi
+.unreq array_heap_devi
 .unreq i
 .unreq temp
 .unreq shift
