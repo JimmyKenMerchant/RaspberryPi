@@ -9,6 +9,165 @@
 
 
 /**
+ * function stat32_fcorrelation_pearson
+ * Return Pearson Correlation Coefficient with Single Precision Float
+ *
+ * Parameters
+ * r0: First Standard Deviation
+ * r1: Second Standard Deviation
+ * r2: Covariance of First and Second
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl stat32_fcorrelation_pearson
+stat32_fcorrelation_pearson:
+	/* Auto (Local) Variables, but just Aliases */
+	sd1            .req r0
+	sd2            .req r1
+	covariance     .req r2
+
+	/* VFP Registers */
+	vfp_sd1        .req s0
+	vfp_sd2        .req s1
+	vfp_covariance .req s2
+	vfp_rho        .req s3
+
+	/**
+	 * Correlation Coefficient (r or Greek Small Letter Rho) = Covariance Divided by (s1 * s2)
+	 * This Formula uses Bessel's correction if Corrected.
+	 */
+	push {lr}
+	vpush {s0-s3}
+
+	vmov vfp_sd1, sd1
+	vmov vfp_sd2, sd2
+	vmov vfp_covariance, covariance
+	vmul.f32 vfp_sd1, vfp_sd1, vfp_sd2
+	vdiv.f32 vfp_rho, vfp_covariance, vfp_sd1
+
+	stat32_fcorrelation_pearson_common:
+		vmov r0, vfp_rho
+		vpop {s0-s3}
+		pop {pc}
+
+.unreq sd1
+.unreq sd2
+.unreq covariance
+.unreq vfp_sd1
+.unreq vfp_sd2
+.unreq vfp_covariance
+.unreq vfp_rho
+
+
+/**
+ * function stat32_fcovariance
+ * Return Covariance with Single Precision Float
+ *
+ * Parameters
+ * r0: First Deviation Array of Single Precision Float in Heap
+ * r1: Second Deviation Array of Single Precision Float in Heap
+ * r2: length
+ * r3: Bessel's Correction
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl stat32_fcovariance
+stat32_fcovariance:
+	/* Auto (Local) Variables, but just Aliases */
+	array_deviation1 .req r0
+	array_deviation2 .req r1
+	length           .req r2
+	correction       .req r3
+	i                .req r4
+	temp             .req r5
+	shift            .req r6
+	shift2           .req r7
+
+	/* VFP Registers */
+	vfp_covariance   .req s0
+	vfp_deviation1   .req s1
+	vfp_deviation2   .req s2
+	vfp_length       .req s3
+
+	/**
+	 * Covariance = (Sigma[i = 1 to n] Deviation1n * Deviation2n) Divided by n (Not Corrected) or n - 1 (Corrected)
+	 * This Formula uses Bessel's correction if Corrected.
+	 */
+	push {r4-r7,lr}
+	vpush {s0-s3}
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	vmoveq vfp_covariance, temp
+	beq stat32_fcovariance_common
+
+	lsr temp, temp, #2                       @ Substitute of Division by 4
+
+	cmp length, temp
+	movgt length, temp                       @ Prevent Overflow
+
+	push {r0-r3}
+	mov r0, array_deviation2
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	vmoveq vfp_covariance, temp
+	beq stat32_fcovariance_common
+
+	lsr temp, temp, #2                       @ Substitute of Division by 4
+
+	cmp length, temp
+	movgt length, temp                       @ Prevent Overflow
+
+	mov temp, #0
+	vmov vfp_covariance, temp
+	vcvt.f32.u32 vfp_covariance, vfp_covariance
+
+	mov i, #0
+	stat32_fcovariance_loop:
+		lsl temp, i, #2                           @ Substitute of Multiplication by 4
+		add shift, array_deviation1, temp         @ vldr/vstr Can't Offset by Value in ARM Register
+		add shift2, array_deviation2, temp        @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_deviation1, [shift]
+		vldr vfp_deviation2, [shift2]
+		vmul.f32 vfp_deviation1, vfp_deviation1, vfp_deviation2
+		vadd.f32 vfp_covariance, vfp_covariance, vfp_deviation1
+		add i, i, #1
+		cmp i, length
+		blt stat32_fcovariance_loop
+
+		cmp correction, #0
+		subne length, length, #1
+		vmov vfp_length, length
+		vcvt.f32.u32 vfp_length, vfp_length
+		vdiv.f32 vfp_covariance, vfp_covariance, vfp_length
+
+	stat32_fcovariance_common:
+		vmov r0, vfp_covariance
+		vpop {s0-s3}
+		pop {r4-r7,pc}
+
+.unreq array_deviation1
+.unreq array_deviation2
+.unreq length
+.unreq correction
+.unreq i
+.unreq temp
+.unreq shift
+.unreq shift2
+.unreq vfp_covariance
+.unreq vfp_deviation1
+.unreq vfp_deviation2
+.unreq vfp_length
+
+
+/**
  * function stat32_fstandard_deviation
  * Return Standard Deviation with Single Precision Float
  *
@@ -30,7 +189,7 @@ stat32_fstandard_deviation:
 	vfp_sd          .req s0
 
 	/**
-	 * Standard Deviation (s or Greek Small Letter of Sigma) = Variance^1/2 (Square Root of Variance)
+	 * Standard Deviation (s or Greek Small Letter of Sigma) = Variance^1 Divided by 2 (Square Root of Variance)
 	 */
 	push {lr}
 	vpush {s0}
@@ -81,7 +240,7 @@ stat32_fvariance:
 	vfp_temp        .req s2
 
 	/**
-	 * Variance = (Sigma[i = 1 to n] (Xn - Xmean)^2) / n (Not Corrected) or n - 1 (Corrected)
+	 * Variance = (Sigma[i = 1 to n] (Xn - Xmean)^2) Divided by n (Not Corrected) or n - 1 (Corrected)
 	 * This Formula uses Bessel's correction if Corrected.
 	 */
 	push {r4-r6,lr}
@@ -253,6 +412,150 @@ stat32_fdeviation:
 .unreq shift2
 .unreq vfp_temp
 .unreq vfp_average
+
+
+/**
+ * function stat32_fmax
+ * Return Maximum with Single Precision Float
+ *
+ * Parameters
+ * r0: Array of Single Precision Float in Heap
+ * r1: Length of Array
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ * Error(-1): No Heap Area
+ */
+.globl stat32_fmax
+stat32_fmax:
+	/* Auto (Local) Variables, but just Aliases */
+	array_heap     .req r0
+	length         .req r1
+	temp           .req r2
+	i              .req r3
+
+	/* VFP Registers */
+	vfp_max        .req s0
+	vfp_temp       .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	push {r0-r1}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r1}
+
+	cmp temp, #-1
+	vmoveq vfp_max, temp
+	beq stat32_fmax_common
+
+	lsr temp, temp, #2                      @ Substitute of Division by 4
+
+	cmp length, temp
+	movgt length, temp                      @ Prevent Overflow
+
+	cmp length, #0
+	mvnle temp, #0
+	vmovle vfp_max, temp
+	ble stat32_fmax_common
+
+	vldr vfp_max, [array_heap]
+
+	mov i, #1
+	stat32_fmax_loop:
+		lsl temp, i, #2                         @ Substitute of Multiplication by 4
+		add temp, array_heap, temp              @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_temp, [temp]
+		vcmp.f32 vfp_temp, vfp_max
+		vmrs apsr_nzcv, fpscr                   @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovgt vfp_max, vfp_temp
+		add i, i, #1
+		cmp i, length
+		blt stat32_fmax_loop
+
+	stat32_fmax_common:
+		vmov r0, vfp_max
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq array_heap
+.unreq length
+.unreq temp
+.unreq i
+.unreq vfp_max
+.unreq vfp_temp
+
+
+/**
+ * function stat32_fmin
+ * Return Minimum with Single Precision Float
+ *
+ * Parameters
+ * r0: Array of Single Precision Float in Heap
+ * r1: Length of Array
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ * Error(-1): No Heap Area
+ */
+.globl stat32_fmin
+stat32_fmin:
+	/* Auto (Local) Variables, but just Aliases */
+	array_heap     .req r0
+	length         .req r1
+	temp           .req r2
+	i              .req r3
+
+	/* VFP Registers */
+	vfp_min        .req s0
+	vfp_temp       .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	push {r0-r1}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r1}
+
+	cmp temp, #-1
+	vmoveq vfp_min, temp
+	beq stat32_fmin_common
+
+	lsr temp, temp, #2                      @ Substitute of Division by 4
+
+	cmp length, temp
+	movgt length, temp                      @ Prevent Overflow
+
+	cmp length, #0
+	mvnle temp, #0
+	vmovle vfp_min, temp
+	ble stat32_fmin_common
+
+	vldr vfp_min, [array_heap]
+
+	mov i, #1
+	stat32_fmin_loop:
+		lsl temp, i, #2                         @ Substitute of Multiplication by 4
+		add temp, array_heap, temp              @ vldr/vstr Can't Offset by Value in ARM Register
+		vldr vfp_temp, [temp]
+		vcmp.f32 vfp_temp, vfp_min
+		vmrs apsr_nzcv, fpscr                   @ Transfer FPSCR Flags to CPSR's NZCV
+		vmovlt vfp_min, vfp_temp
+		add i, i, #1
+		cmp i, length
+		blt stat32_fmin_loop
+
+	stat32_fmin_common:
+		vmov r0, vfp_min
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq array_heap
+.unreq length
+.unreq temp
+.unreq i
+.unreq vfp_min
+.unreq vfp_temp
 
 
 /**
