@@ -9,6 +9,114 @@
 
 
 /**
+ * function stat32_fttest
+ * Return Student's t-test with Single Precision Float
+ *
+ * Parameters
+ * r0: Mean of Population
+ * r1: Mean of Sample = Observation
+ * r2: Standard Deviation of Sample = Observation
+ * r3: Length of Array (Size) for Sample = Observation
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl stat32_fttest
+stat32_fttest:
+	/* Auto (Local) Variables, but just Aliases */
+	mean_population     .req r0
+	mean_sample         .req r1
+	sd_sample           .req r2
+	size_sample         .req r3
+
+	/* VFP Registers */
+	vfp_mean_population .req s0
+	vfp_mean_sample     .req s1
+	vfp_se              .req s2
+
+	/**
+	 * t-test (t) = Mean of Sample - Mean of Population Divided by Standard Error Where Standard Deviation is Assumed by Sample
+	 */
+	push {lr}
+	vpush {s0-s2}
+
+	push {r0-r1}
+	mov r0, sd_sample
+	mov r1, size_sample
+	bl stat32_fstandard_error
+	mov sd_sample, r0
+	pop {r0-r1}
+
+	.unreq sd_sample
+	se .req r2
+
+	vmov vfp_mean_population, mean_population
+	vmov vfp_mean_sample, mean_sample
+	vmov vfp_se, se
+
+	vsub.f32 vfp_mean_sample, vfp_mean_sample, vfp_mean_population
+
+	.unreq vfp_mean_sample
+	vfp_t .req s1
+
+	vdiv.f32 vfp_t, vfp_t, vfp_se
+
+	stat32_fttest_common:
+		vmov r0, vfp_t
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq mean_population
+.unreq mean_sample
+.unreq se
+.unreq size_sample
+.unreq vfp_mean_population
+.unreq vfp_t
+.unreq vfp_se
+
+
+/**
+ * function stat32_fstandard_error
+ * Return Standard Error with Single Precision Float
+ *
+ * Parameters
+ * r0: Standard Deviation
+ * r1: Length of Array
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl stat32_fstandard_error
+stat32_fstandard_error:
+	/* Auto (Local) Variables, but just Aliases */
+	sd         .req r0
+	length     .req r1
+
+	/* VFP Registers */
+	vfp_se     .req s0
+	vfp_length .req s1
+
+	/**
+	 * Standard Error = Standard Deviation Divided by length(Size of Observation)^1/2
+	 */
+	push {lr}
+	vpush {s0-s1}
+
+	vmov vfp_se, sd
+	vmov vfp_length, length
+	vsqrt.f32 vfp_length, vfp_length
+	vdiv.f32 vfp_se, vfp_se, vfp_length
+
+	stat32_fstandard_error_common:
+		vmov r0, vfp_se
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq sd
+.unreq length
+.unreq vfp_se
+.unreq vfp_length
+
+
+/**
  * function stat32_fcorrelation_pearson
  * Return Pearson Correlation Coefficient with Single Precision Float
  *
