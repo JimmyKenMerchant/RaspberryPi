@@ -426,7 +426,7 @@ math32_tan:
  * Parameters
  * r0: Value, Must Be Type of Single Precision Float
  *
- * Return: r0 (Value, Must Be Type of Single Precision Float and Signed Plus)
+ * Return: r0 (Value by Single Precision Float and Signed Plus)
  */
 .globl math32_ln
 math32_ln:
@@ -559,7 +559,7 @@ math32_ln:
  * Parameters
  * r0: Value, Must Be Type of Single Precision Float
  *
- * Return: r0 (Value, Must Be Type of Single Precision Float and Signed Plus)
+ * Return: r0 (Value by Single Precision Float and Signed Plus)
  */
 .globl math32_log
 math32_log:
@@ -601,16 +601,16 @@ math32_log:
  * Parameters
  * r0: Value, Must Be Type of Unsigned Integer
  *
- * Return: r0 (Value, Must Be Type of Unsigned Integer)
+ * Return: r0 (Value by Unsigned Integer)
  */
 .globl math32_factorial
 math32_factorial:
 	/* Auto (Local) Variables, but just Aliases */
-	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	factorial     .req r1
+	value     .req r0
+	factorial .req r1
 
 	/**
-	 * Capital Letter of Capital Pi Assgins Product
+	 * Capital Letter of Greek Pi Assigns Product
 	 * n! = Pi[k = 1 to n] k
 	 * 0! equals 1.
 	 */
@@ -644,20 +644,20 @@ math32_factorial:
  * Parameters
  * r0: Value, Must Be Type of Unsigned Integer
  *
- * Return: r0 (Value, Must Be Type of Unsigned Integer)
+ * Return: r0 (Value by Unsigned Integer)
  */
 .globl math32_double_factorial
 math32_double_factorial:
 	/* Auto (Local) Variables, but just Aliases */
-	value                .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	double_factorial     .req r1
+	value            .req r0
+	double_factorial .req r1
 
 	/**
-	 * Capital Letter of Capital Pi Assgins Product
+	 * Capital Letter of Greek Pi Assigns Product
 	 * If n is even:
-	 * n!! = Pi[k = 1 to n / 2] 2k (e.g, 6!! = 6 * 4 * 2)
+	 * n!! = Pi[k = 1 to n Div by 2] 2k (e.g, 6!! = 6 X 4 X 2)
 	 * If n is odd:
-	 * n!! = Pi[k = 1 to (n + 1) / 2] 2k - 1 (e.g, 7!! = 7 * 5 * 3 * 1 [note that last 1 is no need of calculation])
+	 * n!! = Pi[k = 1 to (n + 1) Div by 2] 2k - 1 (e.g, 7!! = 7 X 5 X 3 X 1 [note that last 1 is no need of calculation])
 	 * 0!! equals 1. 1!! equals 1.
 	 */
 
@@ -683,6 +683,210 @@ math32_double_factorial:
 
 .unreq value
 .unreq double_factorial
+
+
+/**
+ * function math32_gamma_integer
+ * Return Gamma Function (Variable is Positive Integer)
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Unsigned Integer
+ *
+ * Return: r0 (Value by Unsigned Integer)
+ */
+.globl math32_gamma_integer
+math32_gamma_integer:
+	/* Auto (Local) Variables, but just Aliases */
+	value .req r0
+
+	push {lr}
+
+	/**
+	 * Capital Letter of Greek Gamma Assigns Gamma Function
+	 * Gamma(number of unsigned [positive] integer) = (n - 1)!
+	 */
+
+	sub value, value, #1
+	bl math32_factorial
+
+	math32_gamma_integer_common:
+		pop {pc}
+
+.unreq value
+
+
+/**
+ * function math32_gamma_halfinteger
+ * Return Gamma Function (Variable is Positive Half Integer)
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Unsigned Integer
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl math32_gamma_halfinteger
+math32_gamma_halfinteger:
+	/* Auto (Local) Variables, but just Aliases */
+	value                .req r0
+	double_factorial     .req r1
+	power                .req r2
+	temp                 .req r3
+
+	/* VFP Registers */
+	vfp_double_factorial .req s0
+	vfp_power            .req s1
+	vfp_gamma            .req s2
+
+	push {lr}
+	vpush {s0-s2}
+
+	/**
+	 * Capital Letter of Greek Gamma Assigns Gamma Function
+	 * Gamma(1 Div by 2 + n) = (2n - 1)!! Div by 2^n X Square Root of Pi
+	 * Gamma(N Div by 2) can translate to the form above. n = (N - 1) Div by 2
+	 * I.e.,
+	 * Gamma(1 Div by 2 + (N - 1) Div by 2) = ((N - 1) - 1)!! Div by 2^((N - 1) Div by 2) X Square Root of Pi
+	 * r0 represents N.
+	 */
+
+	cmp value, #0
+	mvneq temp, #0
+	vmoveq vfp_gamma, temp
+	beq math32_gamma_halfinteger_common
+
+	cmp value, #1
+	moveq temp, #1
+	vmoveq vfp_double_factorial, temp
+	vcvteq.f32.u32 vfp_double_factorial, vfp_double_factorial
+	beq math32_gamma_halfinteger_pi
+
+	sub value, value, #1
+
+	push {r0}
+	sub value, value, #1
+	bl math32_double_factorial
+	mov double_factorial, r0
+	pop {r0}
+
+	mov power, #2
+	mov temp, #2
+
+	math32_gamma_halfinteger_loop:
+		subs value, value, #1
+		ble math32_gamma_halfinteger_div
+		mul power, power, temp
+		b math32_gamma_halfinteger_loop
+
+	math32_gamma_halfinteger_div:
+		vmov vfp_double_factorial, double_factorial
+		vcvt.f32.u32 vfp_double_factorial, vfp_double_factorial
+		vmov vfp_power, power
+		vcvt.f32.u32 vfp_power, vfp_power
+		vsqrt.f32 vfp_power, vfp_power                                   @ Half Power
+		vdiv.f32 vfp_double_factorial, vfp_double_factorial, vfp_power
+
+	math32_gamma_halfinteger_pi:
+		vldr vfp_gamma, MATH32_PI
+		vsqrt.f32 vfp_gamma, vfp_gamma
+		vmul.f32 vfp_gamma, vfp_gamma, vfp_double_factorial
+
+	math32_gamma_halfinteger_common:
+		vmov r0, vfp_gamma
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq value
+.unreq double_factorial
+.unreq power
+.unreq temp
+.unreq vfp_double_factorial
+.unreq vfp_power
+.unreq vfp_gamma
+
+
+/**
+ * function math32_gamma_halfinteger_negative
+ * Return Gamma Function (Variable is Negative Half Integer)
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Unsigned Integer and Odd
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl math32_gamma_halfinteger_negative
+math32_gamma_halfinteger_negative:
+	/* Auto (Local) Variables, but just Aliases */
+	value                .req r0
+	double_factorial     .req r1
+	power                .req r2
+	temp                 .req r3
+
+	/* VFP Registers */
+	vfp_double_factorial .req s0
+	vfp_power            .req s1
+	vfp_gamma            .req s2
+
+	push {lr}
+	vpush {s0-s2}
+
+	/**
+	 * Capital Letter of Greek Gamma Assigns Gamma Function
+	 * Gamma(1 Div by 2 - n) = -2^n Div by (2n - 1)!! X Square Root of Pi
+	 * Gamma(-(N Div by 2)) can translate to the form above. n = (N + 1) Div by 2
+	 * I.e.,
+	 * Gamma(1 Div by 2 - (N + 1) Div by 2) = -2^((N + 1) Div by 2) Div by ((N + 1) - 1)!! X Square Root of Pi
+	 * r0 represents N.
+	 */
+
+	cmp value, #0
+	tstne value, #1                              @ Odd/Even Test
+	mvneq temp, #0
+	vmoveq vfp_gamma, temp
+	beq math32_gamma_halfinteger_negative_common
+
+	add value, value, #1
+
+	push {r0}
+	sub value, value, #1
+	bl math32_double_factorial
+	mov double_factorial, r0
+	pop {r0}
+
+	mov power, #-2
+	mov temp, #-2
+
+	lsr value, value, #1                         @ Sustitute of Division by 2 (Half Power)
+
+	math32_gamma_halfinteger_negative_loop:
+		subs value, value, #1
+		ble math32_gamma_halfinteger_negative_div
+		mul power, power, temp
+		b math32_gamma_halfinteger_negative_loop
+
+	math32_gamma_halfinteger_negative_div:
+		vmov vfp_double_factorial, double_factorial
+		vcvt.f32.u32 vfp_double_factorial, vfp_double_factorial
+		vmov vfp_power, power 
+		vcvt.f32.s32 vfp_power, vfp_power
+		vdiv.f32 vfp_power, vfp_power, vfp_double_factorial
+
+	math32_gamma_halfinteger_negative_pi:
+		vldr vfp_gamma, MATH32_PI
+		vsqrt.f32 vfp_gamma, vfp_gamma
+		vmul.f32 vfp_gamma, vfp_gamma, vfp_power
+
+	math32_gamma_halfinteger_negative_common:
+		vmov r0, vfp_gamma
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq value
+.unreq double_factorial
+.unreq power
+.unreq temp
+.unreq vfp_double_factorial
+.unreq vfp_power
+.unreq vfp_gamma
 
 
 /**

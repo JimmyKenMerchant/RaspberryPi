@@ -9,8 +9,8 @@
 
 
 /**
- * function stat32_ttest
- * Return Student's t-test with Single Precision Float
+ * function stat32_ttest1
+ * Return Student's t-test (One Sample) with Single Precision Float
  *
  * Parameters
  * r0: Mean of Population
@@ -20,8 +20,8 @@
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl stat32_ttest
-stat32_ttest:
+.globl stat32_ttest1
+stat32_ttest1:
 	/* Auto (Local) Variables, but just Aliases */
 	mean_population     .req r0
 	mean_sample         .req r1
@@ -60,7 +60,7 @@ stat32_ttest:
 
 	vdiv.f32 vfp_t, vfp_t, vfp_se
 
-	stat32_ttest_common:
+	stat32_ttest1_common:
 		vmov r0, vfp_t
 		vpop {s0-s2}
 		pop {pc}
