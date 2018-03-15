@@ -1384,27 +1384,27 @@ extern obj math32_vec_crossproduct
  * system32/library/stat32.s
  ********************************/
 
-extern float32 stat32_fcorrelation_pearson( float32 standard_deviation1, float32 standard_deviation2, float32 covariance );
+extern float32 stat32_correlation_pearson( float32 standard_deviation1, float32 standard_deviation2, float32 covariance );
 
-extern float32 stat32_fcovariance( obj array_deviation1, obj array_deviation2, uint32 length, bool correction );
+extern float32 stat32_covariance( obj array_deviation1, obj array_deviation2, uint32 length, bool correction );
 
-extern float32 stat32_fstandard_deviation( obj array, uint32 length, bool correction );
+extern float32 stat32_standard_deviation( obj array, uint32 length, bool correction );
 
-extern float32 stat32_fvariance( obj array, uint32 length, bool correction );
+extern float32 stat32_variance( obj array, uint32 length, bool correction );
 
-obj stat32_fdeviation( obj array, uint32 length, float32 average, bool bool_signed );
+obj stat32_deviation( obj array, uint32 length, float32 average, bool bool_signed );
 
-extern float32 stat32_fmax( obj array, uint32 length );
+extern float32 stat32_max( obj array, uint32 length );
 
-extern float32 stat32_fmin( obj array, uint32 length );
+extern float32 stat32_min( obj array, uint32 length );
 
-extern float32 stat32_fmean( obj array, uint32 length );
+extern float32 stat32_mean( obj array, uint32 length );
 
-extern float32 stat32_fmedian( obj array, uint32 length ); // Array Must Be Ordered
+extern float32 stat32_median( obj array, uint32 length ); // Array Must Be Ordered
 
-extern float32 stat32_fmode( obj array, uint32 length ); // Array Must Be Ordered
+extern float32 stat32_mode( obj array, uint32 length ); // Array Must Be Ordered
 
-extern obj stat32_forder( obj array, uint32 length, bool decreasing );
+extern obj stat32_order( obj array, uint32 length, bool decreasing );
 
 
 /********************************

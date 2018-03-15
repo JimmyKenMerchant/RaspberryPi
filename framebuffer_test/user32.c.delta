@@ -25,68 +25,68 @@ int32 _user_start()
 	print32_set_caret( print32_string( dup_string_arr10, FB32_X_CARET, FB32_Y_CARET, str32_strlen( dup_string_arr10 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	obj arr1 = stat32_forder( arr0, heap32_mcount( arr0 ) / 4, 0 );
+	obj arr1 = stat32_order( arr0, heap32_mcount( arr0 ) / 4, 0 );
 
 	String dup_string_arr1 = cvt32_farray_to_string( arr1, 1, 8, 0 );
 	print32_set_caret( print32_string( dup_string_arr1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( dup_string_arr1 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 mean1 = stat32_fmean( arr1, heap32_mcount( arr1 ) / 4 );
+	float32 mean1 = stat32_mean( arr1, heap32_mcount( arr1 ) / 4 );
 	String string_mean1 = cvt32_float32_to_string( mean1, 1, 8, 0 );
 	print32_set_caret( print32_string( string_mean1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_mean1 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 median1 = stat32_fmedian( arr1, heap32_mcount( arr1 ) / 4 );
+	float32 median1 = stat32_median( arr1, heap32_mcount( arr1 ) / 4 );
 	String string_median1 = cvt32_float32_to_string( median1, 1, 8, 0 );
 	print32_set_caret( print32_string( string_median1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_mean1 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 mode1 = stat32_fmode( arr1, heap32_mcount( arr1 ) / 4 );
+	float32 mode1 = stat32_mode( arr1, heap32_mcount( arr1 ) / 4 );
 	String string_mode1 = cvt32_float32_to_string( mode1, 1, 8, 0 );
 	print32_set_caret( print32_string( string_mode1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_mean1 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 max0 = stat32_fmax( arr0, heap32_mcount( arr0 ) / 4 );
+	float32 max0 = stat32_max( arr0, heap32_mcount( arr0 ) / 4 );
 	String string_max0 = cvt32_float32_to_string( max0, 1, 8, 0 );
 	print32_set_caret( print32_string( string_max0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_max0 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 min0 = stat32_fmin( arr0, heap32_mcount( arr0 ) / 4 );
+	float32 min0 = stat32_min( arr0, heap32_mcount( arr0 ) / 4 );
 	String string_min0 = cvt32_float32_to_string( min0, 1, 8, 0 );
 	print32_set_caret( print32_string( string_min0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_min0 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	obj arr0_deviation = stat32_fdeviation( arr0, heap32_mcount( arr0 ) / 4, mean1, True );
+	obj arr0_deviation = stat32_deviation( arr0, heap32_mcount( arr0 ) / 4, mean1, True );
 	String string_arr0_deviation = cvt32_farray_to_string( arr0_deviation, 1, 8, 0 );
 	print32_set_caret( print32_string( string_arr0_deviation, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arr0_deviation ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	obj arr10_deviation = stat32_fdeviation( arr10, heap32_mcount( arr10 ) / 4, mean1, True );
+	obj arr10_deviation = stat32_deviation( arr10, heap32_mcount( arr10 ) / 4, mean1, True );
 	String string_arr10_deviation = cvt32_farray_to_string( arr10_deviation, 1, 8, 0 );
 	print32_set_caret( print32_string( string_arr10_deviation, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arr10_deviation ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 variance0 = stat32_fvariance( arr0, heap32_mcount( arr0 ) / 4, true );
+	float32 variance0 = stat32_variance( arr0, heap32_mcount( arr0 ) / 4, true );
 	String string_variance0 = cvt32_float32_to_string( variance0, 1, 8, 0 );
 	print32_set_caret( print32_string( string_variance0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_variance0 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 sd0 = stat32_fstandard_deviation( arr0, heap32_mcount( arr0 ) / 4, true );
+	float32 sd0 = stat32_standard_deviation( arr0, heap32_mcount( arr0 ) / 4, true );
 	String string_sd0 = cvt32_float32_to_string( sd0, 1, 8, 0 );
 	print32_set_caret( print32_string( string_sd0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_sd0 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 sd10 = stat32_fstandard_deviation( arr10, heap32_mcount( arr10 ) / 4, true );
+	float32 sd10 = stat32_standard_deviation( arr10, heap32_mcount( arr10 ) / 4, true );
 	String string_sd10 = cvt32_float32_to_string( sd10, 1, 8, 0 );
 	print32_set_caret( print32_string( string_sd10, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_sd10 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 covariance_0_10 = stat32_fcovariance( arr0_deviation, arr10_deviation, heap32_mcount( arr0_deviation ) / 4, true );
+	float32 covariance_0_10 = stat32_covariance( arr0_deviation, arr10_deviation, heap32_mcount( arr0_deviation ) / 4, true );
 	String string_covariance_0_10 = cvt32_float32_to_string( covariance_0_10, 1, 8, 0 );
 	print32_set_caret( print32_string( string_covariance_0_10, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_covariance_0_10 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32 correlation_0_10 = stat32_fcorrelation_pearson( sd0, sd10, covariance_0_10 );
+	float32 correlation_0_10 = stat32_correlation_pearson( sd0, sd10, covariance_0_10 );
 	String string_correlation_0_10 = cvt32_float32_to_string( correlation_0_10, 1, 8, 0 );
 	print32_set_caret( print32_string( string_correlation_0_10, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_correlation_0_10 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );

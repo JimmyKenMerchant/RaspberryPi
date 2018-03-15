@@ -595,6 +595,97 @@ math32_log:
 
 
 /**
+ * function math32_factorial
+ * Return Factorial
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Unsigned Integer
+ *
+ * Return: r0 (Value, Must Be Type of Unsigned Integer)
+ */
+.globl math32_factorial
+math32_factorial:
+	/* Auto (Local) Variables, but just Aliases */
+	value         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	factorial     .req r1
+
+	/**
+	 * Capital Letter of Capital Pi Assgins Product
+	 * n! = Pi[k = 1 to n] k
+	 * 0! equals 1.
+	 */
+
+	cmp value, #1
+	movls factorial, #1
+	bls math32_factorial_common
+
+	mov factorial, value
+
+	subs value, value, #1
+	bls math32_factorial_common
+
+	math32_factorial_loop:
+		mul factorial, factorial, value
+		subs value, value, #1
+		bhi math32_factorial_loop
+
+	math32_factorial_common:
+		mov r0, factorial
+		mov pc, lr
+
+.unreq value
+.unreq factorial
+
+
+/**
+ * function math32_double_factorial
+ * Return Double Factorial
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Unsigned Integer
+ *
+ * Return: r0 (Value, Must Be Type of Unsigned Integer)
+ */
+.globl math32_double_factorial
+math32_double_factorial:
+	/* Auto (Local) Variables, but just Aliases */
+	value                .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	double_factorial     .req r1
+
+	/**
+	 * Capital Letter of Capital Pi Assgins Product
+	 * If n is even:
+	 * n!! = Pi[k = 1 to n / 2] 2k (e.g, 6!! = 6 * 4 * 2)
+	 * If n is odd:
+	 * n!! = Pi[k = 1 to (n + 1) / 2] 2k - 1 (e.g, 7!! = 7 * 5 * 3 * 1 [note that last 1 is no need of calculation])
+	 * 0!! equals 1. 1!! equals 1.
+	 */
+
+	cmp value, #1
+	movls double_factorial, #1
+	bls math32_double_factorial_common
+
+	mov double_factorial, value
+
+	sub value, value, #2
+	cmp value, #1
+	bls math32_double_factorial_common
+
+	math32_double_factorial_loop:
+		mul double_factorial, double_factorial, value
+		sub value, value, #2
+		cmp value, #1
+		bhi math32_double_factorial_loop
+
+	math32_double_factorial_common:
+		mov r0, double_factorial
+		mov pc, lr
+
+.unreq value
+.unreq double_factorial
+
+
+/**
  * function math32_mat_multiply
  * Multiplies Two Matrix with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
