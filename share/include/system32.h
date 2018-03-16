@@ -1275,7 +1275,7 @@ extern float32 math32_tan
  * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 5
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
- * Return: Value, Must Be Type of Single Precision Float and Signed Plus
+ * Return: Value by Single Precision Float and Signed Plus
  */
 extern float32 math32_ln
 (
@@ -1287,11 +1287,80 @@ extern float32 math32_ln
  * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
- * Return: Value, Must Be Type of Single Precision Float and Signed Plus
+ * Return: Value by Single Precision Float and Signed Plus
  */
 extern float32 math32_log
 (
 	float32 value
+);
+
+
+/**
+ * Return Factorial
+ *
+ * Return: Value by Unsigned Integer
+ */
+extern uint32 math32_factorial
+(
+	uint32 value
+);
+
+
+/**
+ * Return Double Factorial
+ *
+ * Return: Value by Unsigned Integer
+ */
+extern uint32 math32_double_factorial
+(
+	uint32 value
+);
+
+
+/**
+ * Return Gamma Function (Variable is Positive Integer)
+ *
+ * Return: Value by Unsigned Integer
+ */
+extern uint32 math32_gamma_integer
+(
+	uint32 value
+);
+
+
+/**
+ * Return Gamma Function (Variable is Positive Half Integer)
+ *
+ * Return: Value by Single Precision Float, -1 by Integer as Error
+ */
+extern float32 math32_gamma_halfinteger
+(
+	uint32 value
+);
+
+
+/**
+ * Return Gamma Function (Variable is Negative Half Integer)
+ *
+ * Return: Value by Single Precision Float, -1 by Integer as Error
+ */
+extern float32 math32_gamma_halfinteger_negative
+(
+	uint32 value // Must Be Odd
+);
+
+
+/**
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
+ *
+ * Return: Value by Single Precision Float, -1 by Integer as Error
+ */
+extern float32 math32_hypergeometric_halfinteger
+(
+	uint32 first,
+	uint32 second,
+	uint32 third,
+	float32 fourth
 );
 
 
@@ -1383,6 +1452,10 @@ extern obj math32_vec_crossproduct
 /********************************
  * system32/library/stat32.s
  ********************************/
+
+extern float32 stat32_ttest_1( float32 mean_population, float32 mean_sample, float32 sd_sample, uint32 size_sample );
+
+extern float32 stat32_standard_error( float32 sd, uint32 size );
 
 extern float32 stat32_correlation_pearson( float32 standard_deviation1, float32 standard_deviation2, float32 covariance );
 

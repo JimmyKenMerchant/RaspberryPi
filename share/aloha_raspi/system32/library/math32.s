@@ -891,7 +891,7 @@ math32_gamma_halfinteger_negative:
 
 /**
  * function math32_hypergeometric_halfinteger
- * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series, Untill n = 2
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
  *
  * Parameters
  * r0: First Argument (a), Must Be Type of Unsigned Integer
@@ -909,6 +909,8 @@ math32_hypergeometric_halfinteger:
 	third      .req r2
 	fourth     .req r3
 	temp       .req r4
+	number     .req r5
+	i          .req r6
 
 	/* VFP Registers */
 	vfp_first  .req s0
@@ -918,7 +920,7 @@ math32_hypergeometric_halfinteger:
 	vfp_hyper  .req s4
 	vfp_temp   .req s5
 
-	push {r4,lr}
+	push {r4-r6,lr}
 	vpush {s0-s5}
 
 	/**
@@ -929,10 +931,17 @@ math32_hypergeometric_halfinteger:
 	 * This function calculates 2F1(a Div by 2, b Div by 2; c Div by 2; z).
 	 */
 
+	mov number, #4
+	mov i, #0
+
 	/* n = 0 */
 	mov temp, #1
 	vmov vfp_hyper, temp
 	vcvt.f32.u32 vfp_hyper, vfp_hyper
+
+	add i, i, #1
+	cmp i, number
+	bgt math32_hypergeometric_halfinteger_common
 
 	/* n = 1 */
 	vmov vfp_first, first
@@ -942,109 +951,150 @@ math32_hypergeometric_halfinteger:
 	vmov vfp_third, third
 	vcvt.f32.u32 vfp_third, vfp_third
 	vmov vfp_fourth, fourth
+
 	mov temp, #2
 	vmov vfp_temp, temp
 	vcvt.f32.u32 vfp_temp, vfp_temp
 
+	/* Get a Div by 2, b Div by 2, c Div by 2 */
 	vdiv.f32 vfp_first, vfp_first, vfp_temp
 	vdiv.f32 vfp_second, vfp_second, vfp_temp
 	vdiv.f32 vfp_third, vfp_third, vfp_temp
 
+	/* Calculate One Unit of Series */
 	vmul.f32 vfp_first, vfp_first, vfp_second
 	vdiv.f32 vfp_first, vfp_first, vfp_third
 	vmul.f32 vfp_first, vfp_first, vfp_fourth
 
+	/* Add One Unit to Answer */
 	vadd.f32 vfp_hyper, vfp_hyper, vfp_first
 
-	/* n = 2 */
-	push {r0-r3}
-	add r0, first, #4
-	bl math32_gamma_halfinteger
-	cmp r0, #-1
-	vmov vfp_first, r0
-	pop {r0-r3}
+	add i, i, #1
+	cmp i, number
+	bgt math32_hypergeometric_halfinteger_common
+
+	/* n = 2 and over */
+	math32_hypergeometric_halfinteger_loop:
+
+		mov temp, #2
+		mul temp, i, temp
+
+		/* First Argument, a Div by 2 */
+
+		push {r0-r3}
+		add r0, first, temp 
+		bl math32_gamma_halfinteger
+		cmp r0, #-1
+		vmov vfp_first, r0
+		pop {r0-r3}
+		
+		vmoveq vfp_hyper, vfp_first
+		beq math32_hypergeometric_halfinteger_common
+
+		push {r0-r3}
+		bl math32_gamma_halfinteger
+		cmp r0, #-1
+		vmov vfp_temp, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_temp
+		beq math32_hypergeometric_halfinteger_common
+
+		vdiv.f32 vfp_first, vfp_first, vfp_temp
+
+		/* Second Argument, b Div by 2 */
+
+		push {r0-r3}
+		add r0, second, temp 
+		bl math32_gamma_halfinteger
+		cmp r0, #-1
+		vmov vfp_second, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_second
+		beq math32_hypergeometric_halfinteger_common
+
+		push {r0-r3}
+		mov r0, second
+		bl math32_gamma_halfinteger
+		cmp r0, #1
+		vmov vfp_temp, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_temp
+		beq math32_hypergeometric_halfinteger_common
+
+		vdiv.f32 vfp_second, vfp_second, vfp_temp
+
+		/* Third Argument, c Div by 2 */
+
+		push {r0-r3}
+		add r0, third, temp
+		bl math32_gamma_halfinteger
+		cmp r0, #-1
+		vmov vfp_third, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_third
+		beq math32_hypergeometric_halfinteger_common
+
+		push {r0-r3}
+		mov r0, third
+		bl math32_gamma_halfinteger
+		cmp r0, #-1
+		vmov vfp_temp, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_temp
+		beq math32_hypergeometric_halfinteger_common
+
+		vdiv.f32 vfp_third, vfp_third, vfp_temp
 	
-	vmoveq vfp_hyper, vfp_first
-	beq math32_hypergeometric_halfinteger_common
+		/* Fourth Argument, z (Single Precision Float) */
 
-	push {r0-r3}
-	bl math32_gamma_halfinteger
-	cmp r0, #-1
-	vmov vfp_temp, r0
-	pop {r0-r3}
+		vmov vfp_fourth, fourth
+		vmov vfp_temp, fourth
+		mov temp, i
+		math32_hypergeometric_halfinteger_loop_fourth:
+			vmul.f32 vfp_fourth, vfp_fourth, vfp_temp
+			sub temp, temp, #1
+			cmp temp, #1
+			bgt math32_hypergeometric_halfinteger_loop_fourth
 
-	vmoveq vfp_hyper, vfp_temp
-	beq math32_hypergeometric_halfinteger_common
+		push {r0-r3}
+		mov r0, i
+		bl math32_factorial
+		mov temp, r0
+		pop {r0-r3}
 
-	vdiv.f32 vfp_first, vfp_first, vfp_temp
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vdiv.f32 vfp_fourth, vfp_fourth, vfp_temp
 
-	push {r0-r3}
-	add r0, second, #4
-	bl math32_gamma_halfinteger
-	cmp r0, #-1
-	vmov vfp_second, r0
-	pop {r0-r3}
+		/* Calculate One Unit of Series */
+		vmul.f32 vfp_first, vfp_first, vfp_second
+		vdiv.f32 vfp_first, vfp_first, vfp_third
+		vmul.f32 vfp_first, vfp_first, vfp_fourth
 
-	vmoveq vfp_hyper, vfp_second
-	beq math32_hypergeometric_halfinteger_common
+		/* Add One Unit to Answer */
+		vadd.f32 vfp_hyper, vfp_hyper, vfp_first
 
-	push {r0-r3}
-	mov r0, second
-	bl math32_gamma_halfinteger
-	cmp r0, #1
-	vmov vfp_temp, r0
-	pop {r0-r3}
-
-	vmoveq vfp_hyper, vfp_temp
-	beq math32_hypergeometric_halfinteger_common
-
-	vdiv.f32 vfp_second, vfp_second, vfp_temp
-
-	push {r0-r3}
-	add r0, third, #4
-	bl math32_gamma_halfinteger
-	cmp r0, #-1
-	vmov vfp_third, r0
-	pop {r0-r3}
-
-	vmoveq vfp_hyper, vfp_third
-	beq math32_hypergeometric_halfinteger_common
-
-	push {r0-r3}
-	mov r0, third
-	bl math32_gamma_halfinteger
-	cmp r0, #-1
-	vmov vfp_temp, r0
-	pop {r0-r3}
-
-	vmoveq vfp_hyper, vfp_temp
-	beq math32_hypergeometric_halfinteger_common
-
-	vdiv.f32 vfp_third, vfp_third, vfp_temp
-
-	vmov vfp_fourth, fourth
-	vmul.f32 vfp_fourth, vfp_fourth, vfp_fourth
-	mov temp, #2
-	vmov vfp_temp, temp
-	vcvt.f32.u32 vfp_temp, vfp_temp
-	vdiv.f32 vfp_fourth, vfp_fourth, vfp_temp
-
-	vmul.f32 vfp_first, vfp_first, vfp_second
-	vdiv.f32 vfp_first, vfp_first, vfp_third
-	vmul.f32 vfp_first, vfp_first, vfp_fourth
-
-	vadd.f32 vfp_hyper, vfp_hyper, vfp_first
+		add i, i, #1
+		cmp i, number
+		ble math32_hypergeometric_halfinteger_loop
 
 	math32_hypergeometric_halfinteger_common:
 		vmov r0, vfp_hyper
 		vpop {s0-s5}
-		pop {r4,pc}
+		pop {r4-r6,pc}
 
 .unreq first
 .unreq second
 .unreq third
 .unreq fourth
 .unreq temp
+.unreq number
+.unreq i
 .unreq vfp_first
 .unreq vfp_second
 .unreq vfp_third
@@ -1821,7 +1871,7 @@ math32_mat_rotatey3d:
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value
-	str value, [matrix_result, #8] @ Matrix_result[2], -sin
+	str value, [matrix_result, #8]  @ Matrix_result[2], -sin
 
 	math32_mat_rotatey3d_common:
 		mov r0, matrix_result
@@ -1877,14 +1927,14 @@ math32_mat_rotatez3d:
 	pop {r0}
 
 	str value, [matrix_result]      @ Matrix_result[0], cos
-	str value, [matrix_result, #20]  @ Matrix_result[5], cos
+	str value, [matrix_result, #20] @ Matrix_result[5], cos
 
 	push {r0}
 	bl math32_sin
 	mov value, r0
 	pop {r0}
 
-	str value, [matrix_result, #4] @ Matrix_result[1], sin
+	str value, [matrix_result, #4]  @ Matrix_result[1], sin
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value

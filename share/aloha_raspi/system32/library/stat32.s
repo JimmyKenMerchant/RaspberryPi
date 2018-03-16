@@ -9,19 +9,19 @@
 
 
 /**
- * function stat32_ttest1
+ * function stat32_ttest_1
  * Return Student's t-test (One Sample) with Single Precision Float
  *
  * Parameters
- * r0: Mean of Population
- * r1: Mean of Sample = Observation
- * r2: Standard Deviation of Sample = Observation
- * r3: Length of Array (Size) for Sample = Observation
+ * r0: Mean of Population by Single Precision Float
+ * r1: Mean of Sample = Observation by Single Precision Float
+ * r2: Standard Deviation of Sample = Observation by Single Precision Float
+ * r3: Length of Array (Size) for Sample = Observation by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float)
  */
-.globl stat32_ttest1
-stat32_ttest1:
+.globl stat32_ttest_1
+stat32_ttest_1:
 	/* Auto (Local) Variables, but just Aliases */
 	mean_population     .req r0
 	mean_sample         .req r1
@@ -60,7 +60,7 @@ stat32_ttest1:
 
 	vdiv.f32 vfp_t, vfp_t, vfp_se
 
-	stat32_ttest1_common:
+	stat32_ttest_1_common:
 		vmov r0, vfp_t
 		vpop {s0-s2}
 		pop {pc}
@@ -79,20 +79,20 @@ stat32_ttest1:
  * Return Standard Error with Single Precision Float
  *
  * Parameters
- * r0: Standard Deviation
- * r1: Length of Array
+ * r0: Standard Deviation by Single Precision Float
+ * r1: Length of Array (Size) for Sample = Observation by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float)
  */
 .globl stat32_standard_error
 stat32_standard_error:
 	/* Auto (Local) Variables, but just Aliases */
-	sd         .req r0
-	length     .req r1
+	sd       .req r0
+	size     .req r1
 
 	/* VFP Registers */
-	vfp_se     .req s0
-	vfp_length .req s1
+	vfp_se   .req s0
+	vfp_size .req s1
 
 	/**
 	 * Standard Error = Standard Deviation Divided by length(Size of Observation)^1/2
@@ -101,9 +101,10 @@ stat32_standard_error:
 	vpush {s0-s1}
 
 	vmov vfp_se, sd
-	vmov vfp_length, length
-	vsqrt.f32 vfp_length, vfp_length
-	vdiv.f32 vfp_se, vfp_se, vfp_length
+	vmov vfp_size, size
+	vcvt.f32.u32 vfp_size, vfp_size
+	vsqrt.f32 vfp_size, vfp_size
+	vdiv.f32 vfp_se, vfp_se, vfp_size
 
 	stat32_standard_error_common:
 		vmov r0, vfp_se
@@ -111,9 +112,9 @@ stat32_standard_error:
 		pop {pc}
 
 .unreq sd
-.unreq length
+.unreq size
 .unreq vfp_se
-.unreq vfp_length
+.unreq vfp_size
 
 
 /**
@@ -121,9 +122,9 @@ stat32_standard_error:
  * Return Pearson Correlation Coefficient with Single Precision Float
  *
  * Parameters
- * r0: First Standard Deviation
- * r1: Second Standard Deviation
- * r2: Covariance of First and Second
+ * r0: First Standard Deviation by Single Precision Float
+ * r1: Second Standard Deviation by Single Precision Float
+ * r2: Covariance of First and Second by Single Precision Float
  *
  * Return: r0 (Value by Single Precision Float)
  */
@@ -174,8 +175,8 @@ stat32_correlation_pearson:
  * Parameters
  * r0: First Deviation Array of Single Precision Float in Heap
  * r1: Second Deviation Array of Single Precision Float in Heap
- * r2: length
- * r3: Bessel's Correction
+ * r2: length by Unsigned Integer
+ * r3: Bessel's Correction by Boolean
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  */
@@ -281,8 +282,8 @@ stat32_covariance:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap
- * r1: Length of Array
- * r2: Bessel's Correction
+ * r1: Length of Array by Unsigned Integer
+ * r2: Bessel's Correction by Boolean
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  */
@@ -303,10 +304,14 @@ stat32_standard_deviation:
 	vpush {s0}
 
 	bl stat32_variance
+
 	.unreq array_heap
 	variance .req r0
 
+	cmp variance, #-1
 	vmov vfp_sd, variance
+	beq stat32_standard_deviation_common
+
 	vsqrt.f32 vfp_sd, vfp_sd
 
 	stat32_standard_deviation_common:
@@ -326,8 +331,8 @@ stat32_standard_deviation:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap
- * r1: Length of Array
- * r2: Bessel's Correction
+ * r1: Length of Array by Unsigned Integer
+ * r2: Bessel's Correction by Boolean
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  */
@@ -437,8 +442,8 @@ stat32_variance:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap
- * r1: Length of Array
- * r2: Average Value with Single Precision Float (Calculate Mean/Median/Mode)
+ * r1: Length of Array by Unsigned Integer
+ * r2: Average Value by Single Precision Float (Calculate Mean/Median/Mode)
  * r3: Unsigned = Absolute (0) or Signed (1)
  *
  * Return: r0 (Pointer of Ordered Array, If Zero Memory Allocation Failed)
@@ -528,7 +533,7 @@ stat32_deviation:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap
- * r1: Length of Array
+ * r1: Length of Array by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  * Error(-1): No Heap Area
@@ -600,7 +605,7 @@ stat32_max:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap
- * r1: Length of Array
+ * r1: Length of Array by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  * Error(-1): No Heap Area
@@ -672,7 +677,7 @@ stat32_min:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap
- * r1: Length of Array
+ * r1: Length of Array by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  * Error(-1): No Heap Area
@@ -748,7 +753,7 @@ stat32_mean:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap, Must Be Ordered
- * r1: Length of Array
+ * r1: Length of Array by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  * Error(-1): No Heap Area
@@ -823,7 +828,7 @@ stat32_median:
  *
  * Parameters
  * r0: Array of Single Precision Float in Heap, Must Be Ordered
- * r1: Length of Array
+ * r1: Length of Array by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  * Error(-1): No Heap Area
@@ -927,7 +932,7 @@ stat32_mode:
  *
  * Parameters
  * r0: Pointer of Array of Single Precision Float
- * r1: Length of Array
+ * r1: Length of Array by Unsigned Integer
  * r2: Ascending Order (0)/ Decreasing Order (1)
  *
  * Return: r0 (Pointer of Ordered Array, If Zero Memory Allocation Failed)
