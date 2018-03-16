@@ -610,8 +610,8 @@ math32_factorial:
 	factorial .req r1
 
 	/**
-	 * Capital Letter of Greek Pi Assigns Product
-	 * n! = Pi[k = 1 to n] k
+	 * Capital letter of Greek pi assigns product.
+	 * n! = pi[k = 1 to n] k.
 	 * 0! equals 1.
 	 */
 
@@ -653,11 +653,11 @@ math32_double_factorial:
 	double_factorial .req r1
 
 	/**
-	 * Capital Letter of Greek Pi Assigns Product
+	 * Capital letter of Greek pi assigns product.
 	 * If n is even:
-	 * n!! = Pi[k = 1 to n Div by 2] 2k (e.g, 6!! = 6 X 4 X 2)
+	 * n!! = Pi[k = 1 to n Div by 2] 2k (e.g, 6!! = 6 X 4 X 2).
 	 * If n is odd:
-	 * n!! = Pi[k = 1 to (n + 1) Div by 2] 2k - 1 (e.g, 7!! = 7 X 5 X 3 X 1 [note that last 1 is no need of calculation])
+	 * n!! = Pi[k = 1 to (n + 1) Div by 2] 2k - 1 (e.g, 7!! = 7 X 5 X 3 X 1 [note that last 1 is no need of calculation]).
 	 * 0!! equals 1. 1!! equals 1.
 	 */
 
@@ -702,8 +702,8 @@ math32_gamma_integer:
 	push {lr}
 
 	/**
-	 * Capital Letter of Greek Gamma Assigns Gamma Function
-	 * Gamma(number of unsigned [positive] integer) = (n - 1)!
+	 * Capital letter of Greek gamma assigns gamma function.
+	 * Gamma(number of unsigned [positive] integer) = (n - 1)!.
 	 */
 
 	sub value, value, #1
@@ -741,11 +741,11 @@ math32_gamma_halfinteger:
 	vpush {s0-s2}
 
 	/**
-	 * Capital Letter of Greek Gamma Assigns Gamma Function
-	 * Gamma(1 Div by 2 + n) = (2n - 1)!! Div by 2^n X Square Root of Pi
-	 * Gamma(N Div by 2) can translate to the form above. n = (N - 1) Div by 2
+	 * Capital letter of Greek gamma assigns gamma function.
+	 * Gamma(1 Div by 2 + n) = (2n - 1)!! Div by 2^n X square root of pi.
+	 * Gamma(N Div by 2) can translate to the form above. n = (N - 1) Div by 2.
 	 * I.e.,
-	 * Gamma(1 Div by 2 + (N - 1) Div by 2) = ((N - 1) - 1)!! Div by 2^((N - 1) Div by 2) X Square Root of Pi
+	 * Gamma(1 Div by 2 + (N - 1) Div by 2) = ((N - 1) - 1)!! Div by 2^((N - 1) Div by 2) X square root of pi.
 	 * r0 represents N.
 	 */
 
@@ -830,11 +830,11 @@ math32_gamma_halfinteger_negative:
 	vpush {s0-s2}
 
 	/**
-	 * Capital Letter of Greek Gamma Assigns Gamma Function
-	 * Gamma(1 Div by 2 - n) = -2^n Div by (2n - 1)!! X Square Root of Pi
-	 * Gamma(-(N Div by 2)) can translate to the form above. n = (N + 1) Div by 2
+	 * Capital letter of Greek gamma assigns gamma function.
+	 * Gamma(1 Div by 2 - n) = -2^n Div by (2n - 1)!! X square root of pi.
+	 * Gamma(-(N Div by 2)) can translate to the form above. n = (N + 1) Div by 2.
 	 * I.e.,
-	 * Gamma(1 Div by 2 - (N + 1) Div by 2) = -2^((N + 1) Div by 2) Div by ((N + 1) - 1)!! X Square Root of Pi
+	 * Gamma(1 Div by 2 - (N + 1) Div by 2) = -2^((N + 1) Div by 2) Div by ((N + 1) - 1)!! X square root of pi.
 	 * r0 represents N.
 	 */
 
@@ -887,6 +887,170 @@ math32_gamma_halfinteger_negative:
 .unreq vfp_double_factorial
 .unreq vfp_power
 .unreq vfp_gamma
+
+
+/**
+ * function math32_hypergeometric_halfinteger
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series, Untill n = 2
+ *
+ * Parameters
+ * r0: First Argument (a), Must Be Type of Unsigned Integer
+ * r1: Second Argument (b), Must Be Type of Unsigned Integer
+ * r2: Third Argument (c), Must Be Type of Unsigned Integer
+ * r3: Fourth Argument (z), Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl math32_hypergeometric_halfinteger
+math32_hypergeometric_halfinteger:
+	/* Auto (Local) Variables, but just Aliases */
+	first      .req r0
+	second     .req r1
+	third      .req r2
+	fourth     .req r3
+	temp       .req r4
+
+	/* VFP Registers */
+	vfp_first  .req s0
+	vfp_second .req s1
+	vfp_third  .req s2
+	vfp_fourth .req s3
+	vfp_hyper  .req s4
+	vfp_temp   .req s5
+
+	push {r4,lr}
+	vpush {s0-s5}
+
+	/**
+	 * a^(n) means rising factorial, a X .. (a + n - 1), e.g., 2^(3) = 2 X (2 + 1) X (2 + 2).
+	 * Rising factorial can translate to gamma(a + n) Div by gamma(a).
+	 *
+	 * 2F1(a,b;c;z) = sigma[n=0 to Infinity] (a^(n) X b^(n) Div by c^(n)) X (z^n Div by n!).
+	 * This function calculates 2F1(a Div by 2, b Div by 2; c Div by 2; z).
+	 */
+
+	/* n = 0 */
+	mov temp, #1
+	vmov vfp_hyper, temp
+	vcvt.f32.u32 vfp_hyper, vfp_hyper
+
+	/* n = 1 */
+	vmov vfp_first, first
+	vcvt.f32.u32 vfp_first, vfp_first
+	vmov vfp_second, second 
+	vcvt.f32.u32 vfp_second, vfp_second
+	vmov vfp_third, third
+	vcvt.f32.u32 vfp_third, vfp_third
+	vmov vfp_fourth, fourth
+	mov temp, #2
+	vmov vfp_temp, temp
+	vcvt.f32.u32 vfp_temp, vfp_temp
+
+	vdiv.f32 vfp_first, vfp_first, vfp_temp
+	vdiv.f32 vfp_second, vfp_second, vfp_temp
+	vdiv.f32 vfp_third, vfp_third, vfp_temp
+
+	vmul.f32 vfp_first, vfp_first, vfp_second
+	vdiv.f32 vfp_first, vfp_first, vfp_third
+	vmul.f32 vfp_first, vfp_first, vfp_fourth
+
+	vadd.f32 vfp_hyper, vfp_hyper, vfp_first
+
+	/* n = 2 */
+	push {r0-r3}
+	add r0, first, #4
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_first, r0
+	pop {r0-r3}
+	
+	vmoveq vfp_hyper, vfp_first
+	beq math32_hypergeometric_halfinteger_common
+
+	push {r0-r3}
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_temp, r0
+	pop {r0-r3}
+
+	vmoveq vfp_hyper, vfp_temp
+	beq math32_hypergeometric_halfinteger_common
+
+	vdiv.f32 vfp_first, vfp_first, vfp_temp
+
+	push {r0-r3}
+	add r0, second, #4
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_second, r0
+	pop {r0-r3}
+
+	vmoveq vfp_hyper, vfp_second
+	beq math32_hypergeometric_halfinteger_common
+
+	push {r0-r3}
+	mov r0, second
+	bl math32_gamma_halfinteger
+	cmp r0, #1
+	vmov vfp_temp, r0
+	pop {r0-r3}
+
+	vmoveq vfp_hyper, vfp_temp
+	beq math32_hypergeometric_halfinteger_common
+
+	vdiv.f32 vfp_second, vfp_second, vfp_temp
+
+	push {r0-r3}
+	add r0, third, #4
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_third, r0
+	pop {r0-r3}
+
+	vmoveq vfp_hyper, vfp_third
+	beq math32_hypergeometric_halfinteger_common
+
+	push {r0-r3}
+	mov r0, third
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_temp, r0
+	pop {r0-r3}
+
+	vmoveq vfp_hyper, vfp_temp
+	beq math32_hypergeometric_halfinteger_common
+
+	vdiv.f32 vfp_third, vfp_third, vfp_temp
+
+	vmov vfp_fourth, fourth
+	vmul.f32 vfp_fourth, vfp_fourth, vfp_fourth
+	mov temp, #2
+	vmov vfp_temp, temp
+	vcvt.f32.u32 vfp_temp, vfp_temp
+	vdiv.f32 vfp_fourth, vfp_fourth, vfp_temp
+
+	vmul.f32 vfp_first, vfp_first, vfp_second
+	vdiv.f32 vfp_first, vfp_first, vfp_third
+	vmul.f32 vfp_first, vfp_first, vfp_fourth
+
+	vadd.f32 vfp_hyper, vfp_hyper, vfp_first
+
+	math32_hypergeometric_halfinteger_common:
+		vmov r0, vfp_hyper
+		vpop {s0-s5}
+		pop {r4,pc}
+
+.unreq first
+.unreq second
+.unreq third
+.unreq fourth
+.unreq temp
+.unreq vfp_first
+.unreq vfp_second
+.unreq vfp_third
+.unreq vfp_fourth
+.unreq vfp_hyper
+.unreq vfp_temp
 
 
 /**
