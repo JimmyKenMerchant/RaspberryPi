@@ -93,9 +93,25 @@ int32 _user_start()
 
 	uint32 factorial = math32_factorial( 8 );
 	uint32 double_factorial = math32_double_factorial( 8 );
+	uint32 gamma_integer = math32_gamma_integer( 8 );
+	float32 gamma_halfinteger = math32_gamma_halfinteger( 3 );
+	String string_gamma_halfinteger = cvt32_float32_to_string( gamma_halfinteger, 1, 8, 0 );
+	float32 gamma_halfinteger_negative = math32_gamma_halfinteger_negative( 3 );
+	String string_gamma_halfinteger_negative = cvt32_float32_to_string( gamma_halfinteger_negative, 1, 8, 0 );
+	float32 hypergeometric_halfinteger = math32_hypergeometric_halfinteger( 3, 3, 3, 0.5 );
+	String string_hypergeometric_halfinteger = cvt32_float32_to_string( hypergeometric_halfinteger, 1, 8, 0 );
+
 	print32_set_caret( print32_number( factorial, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_number( double_factorial, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_number( gamma_integer, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_gamma_halfinteger, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_gamma_halfinteger ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_gamma_halfinteger_negative, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_gamma_halfinteger_negative ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_hypergeometric_halfinteger, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_hypergeometric_halfinteger ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( arr0 );
@@ -117,6 +133,9 @@ int32 _user_start()
 	heap32_mfree( (obj)string_sd10 );
 	heap32_mfree( (obj)string_covariance_0_10 );
 	heap32_mfree( (obj)string_correlation_0_10 );
+	heap32_mfree( (obj)string_gamma_halfinteger );
+	heap32_mfree( (obj)string_gamma_halfinteger_negative );
+	heap32_mfree( (obj)string_hypergeometric_halfinteger );
 
 	while(1) {
 

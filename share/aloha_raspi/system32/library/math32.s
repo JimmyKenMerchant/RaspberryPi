@@ -927,11 +927,23 @@ math32_hypergeometric_halfinteger:
 	 * a^(n) means rising factorial, a X .. (a + n - 1), e.g., 2^(3) = 2 X (2 + 1) X (2 + 2).
 	 * Rising factorial can translate to gamma(a + n) Div by gamma(a).
 	 *
-	 * 2F1(a,b;c;z) = sigma[n=0 to Infinity] (a^(n) X b^(n) Div by c^(n)) X (z^n Div by n!).
+	 * 2F1(a,b;c;z) = sigma[n=0 to Infinity] (a^(n) X b^(n) Div by c^(n)) X (z^n Div by n!),
+	 * where |z| < 1.
 	 * This function calculates 2F1(a Div by 2, b Div by 2; c Div by 2; z).
 	 */
 
-	mov number, #4
+	vmov vfp_fourth, fourth
+	vabs.f32 vfp_fourth, vfp_fourth
+	mov temp, #1
+	vmov vfp_temp, temp
+	vcvt.f32.u32 vfp_temp, vfp_temp
+	vcmp.f32 vfp_fourth, vfp_temp
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	mvnge temp, #0
+	vmovge vfp_hyper, temp
+	bge math32_hypergeometric_halfinteger_common
+
+	mov number, #10
 	mov i, #0
 
 	/* n = 0 */
