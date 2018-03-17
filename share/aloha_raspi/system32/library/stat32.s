@@ -7,6 +7,203 @@
  *
  */
 
+STAT32_MATH32_PI: .word MATH32_PI
+
+/**
+ * function stat32_cdf_t
+ * Return Cumulative Distribution Function of Student's t-distribution with Single Precision Float
+ *
+ * Parameters
+ * r0: Correlation Coefficient Single Precision Float
+ * r1: Degrees of Freedom by Unsigned Integer
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl stat32_cdf_t
+stat32_cdf_t:
+	/* Auto (Local) Variables, but just Aliases */
+	t_value     .req r0
+	dof         .req r1 @ Degrees of Freedom
+	temp        .req r2
+
+	/* VFP Registers */
+	vfp_t_value .req s0
+	vfp_dof     .req s1
+	vfp_temp    .req s2
+	vfp_pi      .req s3
+	vfp_item1   .req s4
+	vfp_item2   .req s5
+	vfp_item3   .req s6
+	vfp_item4   .req s7
+
+	/**
+	 * Student's t-distribution
+	 * CDF = 1 / 2 + x X gamma((v + 1) / 2) X 
+	 *       (2F1(1 / 2, (v + 1) / 2; 3 / 2; -(x^2 / v))) / ((pi X v)^1/2 X gamma(v / 2))
+	 * where x is t-value and v is degrees of freedom.
+	 * Reference: https://en.wikipedia.org/wiki/Student%27s_t-distribution 
+	 */
+
+	push {lr}
+	vpush {s0-s7}
+
+	vmov vfp_t_value, t_value
+	vmov vfp_dof, dof
+	vcvt.f32.u32 vfp_dof, vfp_dof
+
+	/* First Item */
+	mov temp, #1
+	vmov vfp_item1, temp
+	vcvt.f32.u32 vfp_item1, vfp_item1
+	mov temp, #2
+	vmov vfp_temp, temp
+	vcvt.f32.u32 vfp_temp, vfp_temp
+	vdiv.f32 vfp_item1, vfp_item1, vfp_temp
+
+	/* Second Item */
+
+	push {r0-r3}
+	add r0, dof, #1
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_item2, r0
+	pop {r0-r3}
+
+	vmoveq vfp_item1, vfp_item2
+	beq stat32_cdf_t_common
+
+	vmul.f32 vfp_item2, vfp_item2, vfp_t_value
+
+	/* Third Item  */
+
+	/* Fourth Argument in hypergeometric_halfinteger */
+	vmul.f32 vfp_temp, vfp_t_value, vfp_t_value
+	vdiv.f32 vfp_temp, vfp_temp, vfp_dof
+	vneg.f32 vfp_temp, vfp_temp
+
+	push {r0-r3}
+	mov r0, #1
+	add r1, dof, #1
+	mov r2, #3
+	vmov r3, vfp_temp
+	bl math32_hypergeometric_halfinteger
+	cmp r0, #-1
+	vmov vfp_item3, r0
+	pop {r0-r3}
+
+	vmoveq vfp_item1, vfp_item3
+	beq stat32_cdf_t_common
+
+	/* Fourth Item */
+
+	push {r0-r3}
+	mov r0, dof
+	bl math32_gamma_halfinteger
+	cmp r0, #-1
+	vmov vfp_item4, r0
+	pop {r0-r3}
+
+	vmoveq vfp_item1, vfp_item4
+	beq stat32_cdf_t_common
+
+	ldr temp, STAT32_MATH32_PI
+	vldr vfp_pi, [temp]
+
+	vmul.f32 vfp_pi, vfp_pi, vfp_dof
+	vsqrt.f32 vfp_pi, vfp_pi
+	
+	vmul.f32 vfp_item4, vfp_pi, vfp_item4
+
+	/* Combine Items */
+
+	vmul.f32 vfp_item2, vfp_item2, vfp_item3
+	vdiv.f32 vfp_item2, vfp_item2, vfp_item4
+	vadd.f32 vfp_item1, vfp_item1, vfp_item2
+
+	stat32_cdf_t_common:
+		vmov r0, vfp_item1
+		vpop {s0-s7}
+		pop {pc}
+
+.unreq t_value
+.unreq dof
+.unreq temp
+.unreq vfp_t_value
+.unreq vfp_dof
+.unreq vfp_temp
+.unreq vfp_pi
+.unreq vfp_item1
+.unreq vfp_item2
+.unreq vfp_item3
+.unreq vfp_item4
+
+
+/**
+ * function stat32_ttest_correlation
+ * Return Student's t-test (Correlation Coefficient) with Single Precision Float
+ *
+ * Parameters
+ * r0: Correlation Coefficient Single Precision Float
+ * r1: Length of Array (Size) for Sample = Observation by Unsigned Integer
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl stat32_ttest_correlation
+stat32_ttest_correlation:
+	/* Auto (Local) Variables, but just Aliases */
+	correlation     .req r0
+	size_sample     .req r1
+	one             .req r2
+
+	/* VFP Registers */
+	vfp_size_sample .req s0
+	vfp_correlation .req s1
+	vfp_one         .req s2
+
+	/**
+	 * Correlation Coefficient
+	 * t-test (t) = (r X (n - 2)^1/2) / (1 - r^2)^1/2,
+	 * where r is coefficient correlation and n is the number of size.
+	 * Reference: http://philschatz.com/statistics-book/contents/m47111.html
+	 */
+	push {lr}
+	vpush {s0-s2}
+
+	sub size_sample, size_sample, #2
+	vmov vfp_size_sample, size_sample
+	vcvt.f32.u32 vfp_size_sample, vfp_size_sample
+	vmov vfp_correlation, correlation
+	mov one, #1
+	vmov vfp_one, one
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vsqrt.f32 vfp_size_sample, vfp_size_sample
+	vmul.f32 vfp_size_sample, vfp_correlation, vfp_size_sample
+
+	.unreq vfp_size_sample
+	vfp_dividend .req s0
+
+	vmul.f32 vfp_correlation, vfp_correlation, vfp_correlation
+	vsub.f32 vfp_correlation, vfp_one, vfp_correlation
+	vsqrt.f32 vfp_correlation, vfp_correlation
+
+	.unreq vfp_correlation
+	vfp_divisor .req s1
+
+	vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+
+	stat32_ttest_correlation_common:
+		vmov r0, vfp_dividend
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq correlation
+.unreq size_sample
+.unreq one
+.unreq vfp_dividend
+.unreq vfp_divisor
+.unreq vfp_one
+
 
 /**
  * function stat32_ttest_1
@@ -34,7 +231,7 @@ stat32_ttest_1:
 	vfp_se              .req s2
 
 	/**
-	 * t-test (t) = Mean of Sample - Mean of Population Divided by Standard Error Where Standard Deviation is Assumed by Sample
+	 * One Sample t-test (t) = Mean of Sample - Mean of Population Divided by Standard Error Where Standard Deviation is Assumed by Sample
 	 */
 	push {lr}
 	vpush {s0-s2}

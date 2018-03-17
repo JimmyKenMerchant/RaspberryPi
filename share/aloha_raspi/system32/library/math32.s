@@ -890,6 +890,224 @@ math32_gamma_halfinteger_negative:
 
 
 /**
+ * function math32_hypergeometric_integer
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Integers) Using Power Series
+ *
+ * Parameters
+ * r0: First Argument (a), Must Be Type of Unsigned Integer
+ * r1: Second Argument (b), Must Be Type of Unsigned Integer
+ * r2: Third Argument (c), Must Be Type of Unsigned Integer
+ * r3: Fourth Argument (z), Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
+ */
+.globl math32_hypergeometric_integer
+math32_hypergeometric_integer:
+	/* Auto (Local) Variables, but just Aliases */
+	first      .req r0
+	second     .req r1
+	third      .req r2
+	fourth     .req r3
+	temp       .req r4
+	number     .req r5
+	i          .req r6
+
+	/* VFP Registers */
+	vfp_first  .req s0
+	vfp_second .req s1
+	vfp_third  .req s2
+	vfp_fourth .req s3
+	vfp_hyper  .req s4
+	vfp_temp   .req s5
+
+	push {r4-r6,lr}
+	vpush {s0-s5}
+
+	/**
+	 * a^(n) means rising factorial, a X .. (a + n - 1), e.g., 2^(3) = 2 X (2 + 1) X (2 + 2).
+	 * Rising factorial can translate to gamma(a + n) Div by gamma(a).
+	 *
+	 * 2F1(a,b;c;z) = sigma[n=0 to Infinity] (a^(n) X b^(n) Div by c^(n)) X (z^n Div by n!),
+	 * where |z| < 1; c is not negative integer.
+	 * This function calculates 2F1(a,b;c;z).
+	 * Reference: https://en.wikipedia.org/wiki/Hypergeometric_function
+	 */
+
+	vmov vfp_fourth, fourth
+	vabs.f32 vfp_fourth, vfp_fourth
+	mov temp, #1
+	vmov vfp_temp, temp
+	vcvt.f32.u32 vfp_temp, vfp_temp
+	vcmp.f32 vfp_fourth, vfp_temp
+	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+	mvnge temp, #0
+	vmovge vfp_hyper, temp
+	bge math32_hypergeometric_integer_common
+
+	mov number, #10
+	mov i, #0
+
+	/* n = 0 */
+	mov temp, #1
+	vmov vfp_hyper, temp
+	vcvt.f32.u32 vfp_hyper, vfp_hyper
+
+	add i, i, #1
+	cmp i, number
+	bgt math32_hypergeometric_integer_common
+
+	/* n = 1 */
+	vmov vfp_first, first
+	vcvt.f32.u32 vfp_first, vfp_first
+	vmov vfp_second, second 
+	vcvt.f32.u32 vfp_second, vfp_second
+	vmov vfp_third, third
+	vcvt.f32.u32 vfp_third, vfp_third
+	vmov vfp_fourth, fourth
+
+	/* Calculate One Unit of Series */
+	vmul.f32 vfp_first, vfp_first, vfp_second
+	vdiv.f32 vfp_first, vfp_first, vfp_third
+	vmul.f32 vfp_first, vfp_first, vfp_fourth
+
+	/* Add One Unit to Answer */
+	vadd.f32 vfp_hyper, vfp_hyper, vfp_first
+
+	add i, i, #1
+	cmp i, number
+	bgt math32_hypergeometric_integer_common
+
+	/* n = 2 and over */
+	math32_hypergeometric_integer_loop:
+
+		mov temp, #2
+		mul temp, i, temp
+
+		/* First Argument, a Div by 2 */
+
+		push {r0-r3}
+		add r0, first, temp 
+		bl math32_gamma_integer
+		cmp r0, #-1
+		vmov vfp_first, r0
+		pop {r0-r3}
+		
+		vmoveq vfp_hyper, vfp_first
+		beq math32_hypergeometric_integer_common
+
+		push {r0-r3}
+		bl math32_gamma_integer
+		cmp r0, #-1
+		vmov vfp_temp, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_temp
+		beq math32_hypergeometric_integer_common
+
+		vdiv.f32 vfp_first, vfp_first, vfp_temp
+
+		/* Second Argument, b Div by 2 */
+
+		push {r0-r3}
+		add r0, second, temp 
+		bl math32_gamma_integer
+		cmp r0, #-1
+		vmov vfp_second, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_second
+		beq math32_hypergeometric_integer_common
+
+		push {r0-r3}
+		mov r0, second
+		bl math32_gamma_integer
+		cmp r0, #1
+		vmov vfp_temp, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_temp
+		beq math32_hypergeometric_integer_common
+
+		vdiv.f32 vfp_second, vfp_second, vfp_temp
+
+		/* Third Argument, c Div by 2 */
+
+		push {r0-r3}
+		add r0, third, temp
+		bl math32_gamma_integer
+		cmp r0, #-1
+		vmov vfp_third, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_third
+		beq math32_hypergeometric_integer_common
+
+		push {r0-r3}
+		mov r0, third
+		bl math32_gamma_integer
+		cmp r0, #-1
+		vmov vfp_temp, r0
+		pop {r0-r3}
+
+		vmoveq vfp_hyper, vfp_temp
+		beq math32_hypergeometric_integer_common
+
+		vdiv.f32 vfp_third, vfp_third, vfp_temp
+	
+		/* Fourth Argument, z (Single Precision Float) */
+
+		vmov vfp_fourth, fourth
+		vmov vfp_temp, fourth
+		mov temp, i
+		math32_hypergeometric_integer_loop_fourth:
+			vmul.f32 vfp_fourth, vfp_fourth, vfp_temp
+			sub temp, temp, #1
+			cmp temp, #1
+			bgt math32_hypergeometric_integer_loop_fourth
+
+		push {r0-r3}
+		mov r0, i
+		bl math32_factorial
+		mov temp, r0
+		pop {r0-r3}
+
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vdiv.f32 vfp_fourth, vfp_fourth, vfp_temp
+
+		/* Calculate One Unit of Series */
+		vmul.f32 vfp_first, vfp_first, vfp_second
+		vdiv.f32 vfp_first, vfp_first, vfp_third
+		vmul.f32 vfp_first, vfp_first, vfp_fourth
+
+		/* Add One Unit to Answer */
+		vadd.f32 vfp_hyper, vfp_hyper, vfp_first
+
+		add i, i, #1
+		cmp i, number
+		ble math32_hypergeometric_integer_loop
+
+	math32_hypergeometric_integer_common:
+		vmov r0, vfp_hyper
+		vpop {s0-s5}
+		pop {r4-r6,pc}
+
+.unreq first
+.unreq second
+.unreq third
+.unreq fourth
+.unreq temp
+.unreq number
+.unreq i
+.unreq vfp_first
+.unreq vfp_second
+.unreq vfp_third
+.unreq vfp_fourth
+.unreq vfp_hyper
+.unreq vfp_temp
+
+
+/**
  * function math32_hypergeometric_halfinteger
  * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
  *
@@ -928,8 +1146,9 @@ math32_hypergeometric_halfinteger:
 	 * Rising factorial can translate to gamma(a + n) Div by gamma(a).
 	 *
 	 * 2F1(a,b;c;z) = sigma[n=0 to Infinity] (a^(n) X b^(n) Div by c^(n)) X (z^n Div by n!),
-	 * where |z| < 1.
+	 * where |z| < 1; c is not negative integer.
 	 * This function calculates 2F1(a Div by 2, b Div by 2; c Div by 2; z).
+	 * Reference: https://en.wikipedia.org/wiki/Hypergeometric_function
 	 */
 
 	vmov vfp_fourth, fourth

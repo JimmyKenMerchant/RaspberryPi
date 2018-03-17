@@ -1351,6 +1351,20 @@ extern float32 math32_gamma_halfinteger_negative
 
 
 /**
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Integers) Using Power Series
+ *
+ * Return: Value by Single Precision Float, -1 by Integer as Error
+ */
+extern float32 math32_hypergeometric_integer
+(
+	uint32 first,
+	uint32 second,
+	uint32 third,
+	float32 fourth // abs(fourth) < 1
+);
+
+
+/**
  * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
  *
  * Return: Value by Single Precision Float, -1 by Integer as Error
@@ -1360,7 +1374,7 @@ extern float32 math32_hypergeometric_halfinteger
 	uint32 first,
 	uint32 second,
 	uint32 third,
-	float32 fourth
+	float32 fourth // abs(fourth) < 1
 );
 
 
