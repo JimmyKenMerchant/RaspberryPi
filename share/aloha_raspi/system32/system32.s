@@ -51,6 +51,8 @@
 .balign 4
 .include "system32/arm/vfp32.s"
 .balign 4
+.include "system32/arm/vfp64.s"
+.balign 4
 .include "system32/arm/heap32.s"
 .balign 4
 

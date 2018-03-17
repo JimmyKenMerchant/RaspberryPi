@@ -574,6 +574,23 @@ extern float32 vfp32_fdiv
 
 
 /********************************
+ * system32/library/vfp64.s
+ ********************************/
+
+extern float64 vfp64_f32tof64( float32 value );
+
+extern float32 vfp64_f64tof32( float64 value );
+
+extern float64 vfp64_s32tof64( int32 value );
+
+extern float64 vfp64_u32tof64( uint32 value );
+
+extern int32 vfp64_f64tos32( float64 value );
+
+extern uint32 vfp64_f64tou32( float64 value );
+
+
+/********************************
  * system32/library/fb32.s
  ********************************/
 
@@ -1298,9 +1315,9 @@ extern float32 math32_log
 /**
  * Return Factorial
  *
- * Return: Value by Unsigned Integer
+ * Return: Value by Double Precision Float
  */
-extern uint32 math32_factorial
+extern float64 math32_factorial
 (
 	uint32 value
 );
@@ -1309,9 +1326,9 @@ extern uint32 math32_factorial
 /**
  * Return Double Factorial
  *
- * Return: Value by Unsigned Integer
+ * Return: Value by Double Precision Float
  */
-extern uint32 math32_double_factorial
+extern float64 math32_double_factorial
 (
 	uint32 value
 );
@@ -1320,9 +1337,9 @@ extern uint32 math32_double_factorial
 /**
  * Return Gamma Function (Variable is Positive Integer)
  *
- * Return: Value by Unsigned Integer
+ * Return: Value by Double Precision Float
  */
-extern uint32 math32_gamma_integer
+extern float64 math32_gamma_integer
 (
 	uint32 value
 );
@@ -1331,9 +1348,9 @@ extern uint32 math32_gamma_integer
 /**
  * Return Gamma Function (Variable is Positive Half Integer)
  *
- * Return: Value by Single Precision Float, -1 by Integer as Error
+ * Return: Value by Double Precision Float, -1 by Integer as Error on Lower 32 Bits
  */
-extern float32 math32_gamma_halfinteger
+extern float64 math32_gamma_halfinteger
 (
 	uint32 value
 );
@@ -1342,9 +1359,9 @@ extern float32 math32_gamma_halfinteger
 /**
  * Return Gamma Function (Variable is Negative Half Integer)
  *
- * Return: Value by Single Precision Float, -1 by Integer as Error
+ * Return: Value by Double Precision Float, -1 by Integer as Error on Lower 32 Bits
  */
-extern float32 math32_gamma_halfinteger_negative
+extern float64 math32_gamma_halfinteger_negative
 (
 	uint32 value // Must Be Odd
 );
@@ -1360,7 +1377,8 @@ extern float32 math32_hypergeometric_integer
 	uint32 first,
 	uint32 second,
 	uint32 third,
-	float32 fourth // abs(fourth) < 1
+	float32 fourth, // abs(fourth) < 1
+	uint32 number_series
 );
 
 
@@ -1374,7 +1392,8 @@ extern float32 math32_hypergeometric_halfinteger
 	uint32 first,
 	uint32 second,
 	uint32 third,
-	float32 fourth // abs(fourth) < 1
+	float32 fourth, // abs(fourth) < 1
+	uint32 number_series
 );
 
 
@@ -1466,6 +1485,10 @@ extern obj math32_vec_crossproduct
 /********************************
  * system32/library/stat32.s
  ********************************/
+
+extern float32 stat32_cdf_t( float32 t_value, uint32 degrees_of_freedom );
+
+extern float32 stat32_ttest_correlation( float32 correlation, uint32 size_sample );
 
 extern float32 stat32_ttest_1( float32 mean_population, float32 mean_sample, float32 sd_sample, uint32 size_sample );
 

@@ -14,7 +14,7 @@ STAT32_MATH32_PI: .word MATH32_PI
  * Return Cumulative Distribution Function of Student's t-distribution with Single Precision Float
  *
  * Parameters
- * r0: Correlation Coefficient Single Precision Float
+ * r0: Student's t-value by Single Precision Float
  * r1: Degrees of Freedom by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
@@ -38,9 +38,11 @@ stat32_cdf_t:
 
 	/**
 	 * Student's t-distribution
-	 * CDF = 1 / 2 + x X gamma((v + 1) / 2) X 
+	 * Cumulative Distribution Function (cdf) 
+	 * cdf = 1 / 2 + x X gamma((v + 1) / 2) X
 	 *       (2F1(1 / 2, (v + 1) / 2; 3 / 2; -(x^2 / v))) / ((pi X v)^1/2 X gamma(v / 2))
-	 * where x is t-value and v is degrees of freedom.
+	 * where x is t-value and v is degrees of freedom (dof assumes integer).
+	 * This cdf equals integral[-infinity to x] probability density function (pdf) dx.
 	 * Reference: https://en.wikipedia.org/wiki/Student%27s_t-distribution 
 	 */
 
@@ -76,7 +78,7 @@ stat32_cdf_t:
 
 	/* Third Item  */
 
-	/* Fourth Argument in hypergeometric_halfinteger */
+	/* Fourth Argument for hypergeometric_halfinteger */
 	vmul.f32 vfp_temp, vfp_t_value, vfp_t_value
 	vdiv.f32 vfp_temp, vfp_temp, vfp_dof
 	vneg.f32 vfp_temp, vfp_temp
@@ -164,6 +166,7 @@ stat32_ttest_correlation:
 	 * Correlation Coefficient
 	 * t-test (t) = (r X (n - 2)^1/2) / (1 - r^2)^1/2,
 	 * where r is coefficient correlation and n is the number of size.
+	 * Student's t-distribution for correletion coefficient uses degrees of freedom as n - 2.
 	 * Reference: http://philschatz.com/statistics-book/contents/m47111.html
 	 */
 	push {lr}
@@ -232,6 +235,7 @@ stat32_ttest_1:
 
 	/**
 	 * One Sample t-test (t) = Mean of Sample - Mean of Population Divided by Standard Error Where Standard Deviation is Assumed by Sample
+	 * Student's t-distribution for one sample uses degrees of freedom as n - 1.
 	 */
 	push {lr}
 	vpush {s0-s2}
