@@ -66,7 +66,7 @@ stat32_cdf_t:
 
 	push {r0-r3}
 	add r0, dof, #1
-	bl math32_gamma_halfinteger
+	bl math64_gamma_halfinteger
 	cmp r0, #-1
 	vmov vfp_item2, r0
 	pop {r0-r3}
@@ -88,7 +88,7 @@ stat32_cdf_t:
 	add r1, dof, #1
 	mov r2, #3
 	vmov r3, vfp_temp
-	bl math32_hypergeometric_halfinteger
+	bl math64_hypergeometric_halfinteger
 	cmp r0, #-1
 	vmov vfp_item3, r0
 	pop {r0-r3}
@@ -100,7 +100,7 @@ stat32_cdf_t:
 
 	push {r0-r3}
 	mov r0, dof
-	bl math32_gamma_halfinteger
+	bl math64_gamma_halfinteger
 	cmp r0, #-1
 	vmov vfp_item4, r0
 	pop {r0-r3}

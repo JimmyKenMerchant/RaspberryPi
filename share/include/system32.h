@@ -1313,91 +1313,6 @@ extern float32 math32_log
 
 
 /**
- * Return Factorial
- *
- * Return: Value by Double Precision Float
- */
-extern float64 math32_factorial
-(
-	uint32 value
-);
-
-
-/**
- * Return Double Factorial
- *
- * Return: Value by Double Precision Float
- */
-extern float64 math32_double_factorial
-(
-	uint32 value
-);
-
-
-/**
- * Return Gamma Function (Variable is Positive Integer)
- *
- * Return: Value by Double Precision Float
- */
-extern float64 math32_gamma_integer
-(
-	uint32 value
-);
-
-
-/**
- * Return Gamma Function (Variable is Positive Half Integer)
- *
- * Return: Value by Double Precision Float, -1 by Integer as Error on Lower 32 Bits
- */
-extern float64 math32_gamma_halfinteger
-(
-	uint32 value
-);
-
-
-/**
- * Return Gamma Function (Variable is Negative Half Integer)
- *
- * Return: Value by Double Precision Float, -1 by Integer as Error on Lower 32 Bits
- */
-extern float64 math32_gamma_halfinteger_negative
-(
-	uint32 value // Must Be Odd
-);
-
-
-/**
- * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Integers) Using Power Series
- *
- * Return: Value by Single Precision Float, -1 by Integer as Error
- */
-extern float32 math32_hypergeometric_integer
-(
-	uint32 first,
-	uint32 second,
-	uint32 third,
-	float32 fourth, // abs(fourth) < 1
-	uint32 number_series
-);
-
-
-/**
- * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
- *
- * Return: Value by Single Precision Float, -1 by Integer as Error
- */
-extern float32 math32_hypergeometric_halfinteger
-(
-	uint32 first,
-	uint32 second,
-	uint32 third,
-	float32 fourth, // abs(fourth) < 1
-	uint32 number_series
-);
-
-
-/**
  * Multiplies Two Matrix with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
@@ -1479,6 +1394,95 @@ extern obj math32_vec_crossproduct
 (
 	obj vector1, // Must Be Three of Vector Size
 	obj vector2 // Must Be Three of Vector Size
+);
+
+
+/********************************
+ * system32/library/math64.s
+ ********************************/
+
+/**
+ * Return Factorial
+ *
+ * Return: Value by Double Precision Float
+ */
+extern float64 math64_factorial
+(
+	uint32 value
+);
+
+
+/**
+ * Return Double Factorial
+ *
+ * Return: Value by Double Precision Float
+ */
+extern float64 math64_double_factorial
+(
+	uint32 value
+);
+
+
+/**
+ * Return Gamma Function (Variable is Positive Integer)
+ *
+ * Return: Value by Double Precision Float
+ */
+extern float64 math64_gamma_integer
+(
+	uint32 value
+);
+
+
+/**
+ * Return Gamma Function (Variable is Positive Half Integer)
+ *
+ * Return: Value by Double Precision Float, -1 by Integer as Error
+ */
+extern float64 math64_gamma_halfinteger
+(
+	uint32 value
+);
+
+
+/**
+ * Return Gamma Function (Variable is Negative Half Integer)
+ *
+ * Return: Value by Double Precision Float, -1 by Integer as Error
+ */
+extern float64 math64_gamma_halfinteger_negative
+(
+	uint32 value // Must Be Odd
+);
+
+
+/**
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Integers) Using Power Series
+ *
+ * Return: Value by Double Precision Float, -1 by Integer as Error
+ */
+extern float64 math64_hypergeometric_integer
+(
+	uint32 first,
+	uint32 second,
+	uint32 third,
+	float32 fourth, // abs(fourth) < 1
+	uint32 number_series
+);
+
+
+/**
+ * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
+ *
+ * Return: Value by Single Precision Float, -1 by Integer as Error
+ */
+extern float64 math64_hypergeometric_halfinteger
+(
+	uint32 first,
+	uint32 second,
+	uint32 third,
+	float32 fourth, // abs(fourth) < 1
+	uint32 number_series
 );
 
 

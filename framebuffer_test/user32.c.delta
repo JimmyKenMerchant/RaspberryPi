@@ -91,16 +91,16 @@ int32 _user_start()
 	print32_set_caret( print32_string( string_correlation_0_10, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_correlation_0_10 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	uint32 factorial = vfp64_f64tou32( math32_factorial( 8 ) );
-	uint32 double_factorial = vfp64_f64tou32( math32_double_factorial( 8 ) );
-	uint32 gamma_integer = vfp64_f64tou32( math32_gamma_integer( 8 ) );
+	uint32 factorial = vfp64_f64tou32( math64_factorial( 8 ) );
+	uint32 double_factorial = vfp64_f64tou32( math64_double_factorial( 8 ) );
+	uint32 gamma_integer = vfp64_f64tou32( math64_gamma_integer( 8 ) );
 
-	float32 gamma_halfinteger = vfp64_f64tof32( math32_gamma_halfinteger( 3 ) );
+	float32 gamma_halfinteger = vfp64_f64tof32( math64_gamma_halfinteger( 2 ) );
 	String string_gamma_halfinteger = cvt32_float32_to_string( gamma_halfinteger, 1, 8, 0 );
-	float32 gamma_halfinteger_negative = vfp64_f64tof32( math32_gamma_halfinteger_negative( 3 ) );
+	float32 gamma_halfinteger_negative = vfp64_f64tof32( math64_gamma_halfinteger( 3 ) );
 	String string_gamma_halfinteger_negative = cvt32_float32_to_string( gamma_halfinteger_negative, 1, 8, 0 );
 
-	float32 hypergeometric_halfinteger = math32_hypergeometric_halfinteger( 1, 20, 3, -0.8, 10 );
+	float32 hypergeometric_halfinteger = vfp64_f64tof32( math64_hypergeometric_halfinteger( 1, 2, 3, -0.8, 16 ) );
 	String string_hypergeometric_halfinteger = cvt32_float32_to_string( hypergeometric_halfinteger, 1, 8, 0 );
 
 	print32_set_caret( print32_number( factorial, FB32_X_CARET, FB32_Y_CARET, 8 ) );
@@ -137,7 +137,7 @@ int32 _user_start()
 	heap32_mfree( (obj)string_correlation_0_10 );
 	heap32_mfree( (obj)string_gamma_halfinteger );
 	heap32_mfree( (obj)string_gamma_halfinteger_negative );
-	heap32_mfree( (obj)string_hypergeometric_halfinteger );
+	//heap32_mfree( (obj)string_hypergeometric_halfinteger );
 
 	while(1) {
 
