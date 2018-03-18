@@ -95,12 +95,12 @@ int32 _user_start()
 	uint32 double_factorial = vfp64_f64tou32( math64_double_factorial( 8 ) );
 	uint32 gamma_integer = vfp64_f64tou32( math64_gamma_integer( 8 ) );
 
-	float32 gamma_halfinteger = vfp64_f64tof32( math64_gamma_halfinteger( 2 ) );
+	float32 gamma_halfinteger = vfp64_f64tof32( math64_gamma_halfinteger( 20 ) );
 	String string_gamma_halfinteger = cvt32_float32_to_string( gamma_halfinteger, 1, 8, 0 );
-	float32 gamma_halfinteger_negative = vfp64_f64tof32( math64_gamma_halfinteger( 3 ) );
+	float32 gamma_halfinteger_negative = vfp64_f64tof32( math64_gamma_halfinteger( 21 ) );
 	String string_gamma_halfinteger_negative = cvt32_float32_to_string( gamma_halfinteger_negative, 1, 8, 0 );
 
-	float32 hypergeometric_halfinteger = vfp64_f64tof32( math64_hypergeometric_halfinteger( 1, 2, 3, -0.8, 16 ) );
+	float32 hypergeometric_halfinteger = vfp64_f64tof32( math64_hypergeometric_halfinteger( 1, 40, 3, -0.1, 80 ) );
 	String string_hypergeometric_halfinteger = cvt32_float32_to_string( hypergeometric_halfinteger, 1, 8, 0 );
 
 	print32_set_caret( print32_number( factorial, FB32_X_CARET, FB32_Y_CARET, 8 ) );

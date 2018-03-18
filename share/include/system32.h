@@ -1457,21 +1457,6 @@ extern float64 math64_gamma_halfinteger_negative
 
 
 /**
- * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Integers) Using Power Series
- *
- * Return: Value by Double Precision Float, -1 by Integer as Error
- */
-extern float64 math64_hypergeometric_integer
-(
-	uint32 first,
-	uint32 second,
-	uint32 third,
-	float32 fourth, // abs(fourth) < 1
-	uint32 number_series
-);
-
-
-/**
  * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
  *
  * Return: Value by Single Precision Float, -1 by Integer as Error

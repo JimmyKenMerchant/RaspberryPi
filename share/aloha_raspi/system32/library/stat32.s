@@ -8,6 +8,7 @@
  */
 
 STAT32_MATH32_PI: .word MATH32_PI
+STAT32_MATH64_PI: .word MATH64_PI
 
 /**
  * function stat32_cdf_t
@@ -16,6 +17,7 @@ STAT32_MATH32_PI: .word MATH32_PI
  * Parameters
  * r0: Student's t-value by Single Precision Float
  * r1: Degrees of Freedom by Unsigned Integer
+ * r2: Number of Power Series
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  */
@@ -24,17 +26,18 @@ stat32_cdf_t:
 	/* Auto (Local) Variables, but just Aliases */
 	t_value     .req r0
 	dof         .req r1 @ Degrees of Freedom
-	temp        .req r2
+	number      .req r2
+	temp        .req r3
 
 	/* VFP Registers */
-	vfp_t_value .req s0
-	vfp_dof     .req s1
-	vfp_temp    .req s2
-	vfp_pi      .req s3
-	vfp_item1   .req s4
-	vfp_item2   .req s5
-	vfp_item3   .req s6
-	vfp_item4   .req s7
+	vfp_t_value .req d0
+	vfp_dof     .req d1
+	vfp_pi      .req d2
+	vfp_item1   .req d3
+	vfp_item2   .req d4
+	vfp_item3   .req d5
+	vfp_item4   .req d6
+	vfp_temp    .req s14
 
 	/**
 	 * Student's t-distribution
@@ -47,20 +50,21 @@ stat32_cdf_t:
 	 */
 
 	push {lr}
-	vpush {s0-s7}
+	vpush {s0-s14}
 
-	vmov vfp_t_value, t_value
-	vmov vfp_dof, dof
-	vcvt.f32.u32 vfp_dof, vfp_dof
+	vmov vfp_temp, t_value
+	vcvt.f64.f32 vfp_t_value, vfp_temp
+	vmov vfp_temp, dof
+	vcvt.f64.u32 vfp_dof, vfp_temp
 
 	/* First Item */
 	mov temp, #1
-	vmov vfp_item1, temp
-	vcvt.f32.u32 vfp_item1, vfp_item1
+	vmov vfp_temp, temp
+	vcvt.f64.u32 vfp_item1, vfp_temp
 	mov temp, #2
 	vmov vfp_temp, temp
-	vcvt.f32.u32 vfp_temp, vfp_temp
-	vdiv.f32 vfp_item1, vfp_item1, vfp_temp
+	vcvt.f64.u32 vfp_item2, vfp_temp
+	vdiv.f64 vfp_item1, vfp_item1, vfp_item2
 
 	/* Second Item */
 
@@ -68,32 +72,37 @@ stat32_cdf_t:
 	add r0, dof, #1
 	bl math64_gamma_halfinteger
 	cmp r0, #-1
-	vmov vfp_item2, r0
+	cmpeq r1, #-1
+	vmov vfp_item2, r0, r1
 	pop {r0-r3}
 
-	vmoveq vfp_item1, vfp_item2
+	vmoveq.f64 vfp_item1, vfp_item2
 	beq stat32_cdf_t_common
 
-	vmul.f32 vfp_item2, vfp_item2, vfp_t_value
+	vmul.f64 vfp_item2, vfp_item2, vfp_t_value
 
 	/* Third Item  */
 
 	/* Fourth Argument for hypergeometric_halfinteger */
-	vmul.f32 vfp_temp, vfp_t_value, vfp_t_value
-	vdiv.f32 vfp_temp, vfp_temp, vfp_dof
-	vneg.f32 vfp_temp, vfp_temp
+	vmul.f64 vfp_item3, vfp_t_value, vfp_t_value
+	vdiv.f64 vfp_item3, vfp_item3, vfp_dof
+	vneg.f64 vfp_item3, vfp_item3
+	vcvt.f32.f64 vfp_temp, vfp_item3
 
 	push {r0-r3}
+	push {number}
 	mov r0, #1
 	add r1, dof, #1
 	mov r2, #3
 	vmov r3, vfp_temp
 	bl math64_hypergeometric_halfinteger
+	add sp, sp, #4
 	cmp r0, #-1
-	vmov vfp_item3, r0
+	cmpeq r1, #-1
+	vmov vfp_item3, r0, r1
 	pop {r0-r3}
 
-	vmoveq vfp_item1, vfp_item3
+	vmoveq.f64 vfp_item1, vfp_item3
 	beq stat32_cdf_t_common
 
 	/* Fourth Item */
@@ -102,42 +111,46 @@ stat32_cdf_t:
 	mov r0, dof
 	bl math64_gamma_halfinteger
 	cmp r0, #-1
-	vmov vfp_item4, r0
+	cmpeq r1, #-1
+	vmov vfp_item4, r0, r1
 	pop {r0-r3}
 
-	vmoveq vfp_item1, vfp_item4
+	vmoveq.f64 vfp_item1, vfp_item4
 	beq stat32_cdf_t_common
 
-	ldr temp, STAT32_MATH32_PI
-	vldr vfp_pi, [temp]
+	ldr temp, STAT32_MATH64_PI
+	vldmia temp, {vfp_pi}
 
-	vmul.f32 vfp_pi, vfp_pi, vfp_dof
-	vsqrt.f32 vfp_pi, vfp_pi
+	vmul.f64 vfp_pi, vfp_pi, vfp_dof
+	vsqrt.f64 vfp_pi, vfp_pi
 	
-	vmul.f32 vfp_item4, vfp_pi, vfp_item4
+	vmul.f64 vfp_item4, vfp_pi, vfp_item4
 
 	/* Combine Items */
 
-	vmul.f32 vfp_item2, vfp_item2, vfp_item3
-	vdiv.f32 vfp_item2, vfp_item2, vfp_item4
-	vadd.f32 vfp_item1, vfp_item1, vfp_item2
+	vmul.f64 vfp_item2, vfp_item2, vfp_item3
+	vdiv.f64 vfp_item2, vfp_item2, vfp_item4
+	vadd.f64 vfp_item1, vfp_item1, vfp_item2
+
+	vcvt.f32.f64 vfp_temp, vfp_item1
 
 	stat32_cdf_t_common:
-		vmov r0, vfp_item1
-		vpop {s0-s7}
+		vmov r0, vfp_temp
+		vpop {s0-s14}
 		pop {pc}
 
 .unreq t_value
 .unreq dof
+.unreq number
 .unreq temp
 .unreq vfp_t_value
 .unreq vfp_dof
-.unreq vfp_temp
 .unreq vfp_pi
 .unreq vfp_item1
 .unreq vfp_item2
 .unreq vfp_item3
 .unreq vfp_item4
+.unreq vfp_temp
 
 
 /**

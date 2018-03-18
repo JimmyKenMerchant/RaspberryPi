@@ -8,7 +8,8 @@
  */
 
 .globl MATH64_PI
-MATH64_PI:             .word 0x40490fdb @ (.float 3.14159265359)
+MATH64_PI_ADDR:        .word MATH64_PI
+MATH64_PI:             .word 0x54442d18, 0x400921fb @ (.double 3.14159265358979324)
 .balign 8
 
 /**
@@ -246,8 +247,8 @@ math64_gamma_halfinteger:
 			vdiv.f64 vfp_double_factorial, vfp_double_factorial, vfp_power
 
 		math64_gamma_halfinteger_odd_pi:
-			vldr vfp_temp, MATH64_PI
-			vcvt.f64.f32 vfp_gamma, vfp_temp
+			ldr temp, MATH64_PI_ADDR
+			vldmia temp, {vfp_gamma}
 			vsqrt.f64 vfp_gamma, vfp_gamma
 			vmul.f64 vfp_gamma, vfp_gamma, vfp_double_factorial
 
@@ -329,8 +330,8 @@ math64_gamma_halfinteger_negative:
 		vdiv.f64 vfp_power, vfp_power, vfp_double_factorial
 
 	math64_gamma_halfinteger_negative_pi:
-		vldr vfp_temp, MATH64_PI
-		vcvt.f64.f32 vfp_gamma, vfp_temp
+		ldr temp, MATH64_PI_ADDR
+		vldmia temp, {vfp_gamma}
 		vsqrt.f64 vfp_gamma, vfp_gamma
 		vmul.f64 vfp_gamma, vfp_gamma, vfp_power
 
@@ -350,6 +351,10 @@ math64_gamma_halfinteger_negative:
 /**
  * function math64_hypergeometric_halfinteger
  * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
+ * The precision of this function Will be reduced when the maximum value of a, b, and c is bigger and the absolute value of z is closer to 1.
+ * To get more precise value, you can increase the number of power series, but it may cause an error because of the saturation of the gamma function.
+ * To hide saturation on the gamma function, this system uses double precision float as the type of value, but it has the limitation.
+ * E.g., if a = 1, b = 40, c = 3, and z = -0.1, the number of 80 for the power series can calculate this function, but the number of 94 can't calculate.
  *
  * Parameters
  * r0: First Argument (a), Must Be Type of Unsigned Integer
@@ -464,6 +469,7 @@ math64_hypergeometric_halfinteger:
 		add r0, first, shift
 		bl math64_gamma_halfinteger
 		cmp r0, #-1
+		cmpeq r1, #-1
 		mov temp, r0
 		vmov vfp_first, r0, r1
 		pop {r0-r3}
@@ -475,6 +481,7 @@ math64_hypergeometric_halfinteger:
 		push {r0-r3}
 		bl math64_gamma_halfinteger
 		cmp r0, #-1
+		cmpeq r1, #-1
 		mov temp, r0
 		vmov vfp_divisor, r0, r1
 		pop {r0-r3}
@@ -491,6 +498,7 @@ math64_hypergeometric_halfinteger:
 		add r0, second, shift
 		bl math64_gamma_halfinteger
 		cmp r0, #-1
+		cmpeq r1, #-1
 		mov temp, r0
 		vmov vfp_second, r0, r1
 		pop {r0-r3}
@@ -503,6 +511,7 @@ math64_hypergeometric_halfinteger:
 		mov r0, second
 		bl math64_gamma_halfinteger
 		cmp r0, #-1
+		cmpeq r1, #-1
 		mov temp, r0
 		vmov vfp_divisor, r0, r1
 		pop {r0-r3}
@@ -519,6 +528,7 @@ math64_hypergeometric_halfinteger:
 		add r0, third, shift
 		bl math64_gamma_halfinteger
 		cmp r0, #-1
+		cmpeq r1, #-1
 		mov temp, r0
 		vmov vfp_third, r0, r1
 		pop {r0-r3}
@@ -531,6 +541,7 @@ math64_hypergeometric_halfinteger:
 		mov r0, third
 		bl math64_gamma_halfinteger
 		cmp r0, #-1
+		cmpeq r1, #-1
 		mov temp, r0
 		vmov vfp_divisor, r0, r1
 		pop {r0-r3}
@@ -595,4 +606,3 @@ math64_hypergeometric_halfinteger:
 .unreq vfp_hyper
 .unreq vfp_divisor
 .unreq vfp_temp
-
