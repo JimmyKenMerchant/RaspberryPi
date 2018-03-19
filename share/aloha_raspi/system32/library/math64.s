@@ -351,8 +351,10 @@ math64_gamma_halfinteger_negative:
 /**
  * function math64_hypergeometric_halfinteger
  * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
- * The precision of this function Will be reduced when the maximum value of a, b, and c is bigger and the absolute value of z is closer to 1.
- * To get more precise value, you can increase the number of power series, but it may cause an error because of the saturation of the gamma function.
+ *
+ * The precision of this function is reduced when the maximum value of a, b, and c is bigger and the absolute value of z is closer to 1.
+ * To get more precise value, you can increase the number of power series,
+ * but it may cause an error ("-0.1" IEEE754 standard) because of the saturation of the gamma function.
  * To hide saturation on the gamma function, this system uses double precision float as the type of value, but it has the limitation.
  * E.g., if a = 1, b = 40, c = 3, and z = -0.1, the number of 80 for the power series can calculate this function, but the number of 94 can't calculate.
  *

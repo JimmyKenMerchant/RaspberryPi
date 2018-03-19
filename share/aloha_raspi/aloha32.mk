@@ -15,7 +15,7 @@
 # `-mcpu=cortex-a53` is unavailable on early GCC versions. You can use `-mcpu=cortex-a7` instead.
 ifeq ($(type), 3b)
 	PRODUCT:=__RASPI3B=1
-	TARGET := -mcpu=cortex-a7 -mfpu=vfp
+	TARGET := -mcpu=cortex-a53 -mfpu=vfp
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 	BASE := __B=1
