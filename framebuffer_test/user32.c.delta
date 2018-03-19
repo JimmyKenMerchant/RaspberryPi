@@ -103,6 +103,12 @@ int32 _user_start()
 	float32 hypergeometric_halfinteger = vfp64_f64tof32( math64_hypergeometric_halfinteger( 1, 40, 3, -0.1, 80 ) );
 	String string_hypergeometric_halfinteger = cvt32_float32_to_string( hypergeometric_halfinteger, 1, 8, 0 );
 
+	float32 cdf_t = stat32_cdf_t( 3.373, 120, 60 );
+	String string_cdf_t = cvt32_float32_to_string( cdf_t, 1, 8, 0 );
+
+	float32 standard_error = stat32_standard_error( sd0, heap32_mcount( arr0 ) / 4 );
+	String string_standard_error = cvt32_float32_to_string( standard_error, 1, 8, 0 );
+
 	print32_set_caret( print32_number( factorial, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_number( double_factorial, FB32_X_CARET, FB32_Y_CARET, 8 ) );
@@ -114,6 +120,10 @@ int32 _user_start()
 	print32_set_caret( print32_string( string_gamma_halfinteger_negative, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_gamma_halfinteger_negative ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_string( string_hypergeometric_halfinteger, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_hypergeometric_halfinteger ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_cdf_t, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_cdf_t ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_standard_error, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_standard_error ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	heap32_mfree( arr0 );
@@ -137,7 +147,9 @@ int32 _user_start()
 	heap32_mfree( (obj)string_correlation_0_10 );
 	heap32_mfree( (obj)string_gamma_halfinteger );
 	heap32_mfree( (obj)string_gamma_halfinteger_negative );
-	//heap32_mfree( (obj)string_hypergeometric_halfinteger );
+	heap32_mfree( (obj)string_hypergeometric_halfinteger );
+	heap32_mfree( (obj)string_cdf_t );
+	heap32_mfree( (obj)string_standard_error );
 
 	while(1) {
 

@@ -17,7 +17,7 @@ STAT32_MATH64_PI: .word MATH64_PI
  * Parameters
  * r0: Student's t-value by Single Precision Float
  * r1: Degrees of Freedom by Unsigned Integer
- * r2: Number of Power Series
+ * r2: Number of Power Series by Unsigned Integer
  *
  * Return: r0 (Value by Single Precision Float, -1 by Integer as Error)
  */

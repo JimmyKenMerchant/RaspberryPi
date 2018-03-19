@@ -361,7 +361,7 @@ math64_gamma_halfinteger_negative:
  * r1: Second Argument (b), Must Be Type of Unsigned Integer
  * r2: Third Argument (c), Must Be Type of Unsigned Integer
  * r3: Fourth Argument (z), Must Be Type of Single Precision Float
- * r4: Number of Power Series
+ * r4: Number of Power Series, Must Be Type of Unsigned Integer
  *
  * Return: r0 (Lower Half of Double Precision Float, -1 by Integer as Error), r1 (Upper Half of Double Precision Float, -1 by Integer as Error)
  */

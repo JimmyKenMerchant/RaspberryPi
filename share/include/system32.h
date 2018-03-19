@@ -1475,7 +1475,7 @@ extern float64 math64_hypergeometric_halfinteger
  * system32/library/stat32.s
  ********************************/
 
-extern float32 stat32_cdf_t( float32 t_value, uint32 degrees_of_freedom );
+extern float32 stat32_cdf_t( float32 t_value, uint32 degrees_of_freedom, uint32 number_series );
 
 extern float32 stat32_ttest_correlation( float32 correlation, uint32 size_sample );
 
