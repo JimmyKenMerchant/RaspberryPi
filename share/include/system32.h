@@ -153,6 +153,7 @@ bool _gpio_in( uchar8 gpio_number ); // Actual Pin Status
 #define _cm_gp0             0x00000070 // Clock Manager General Purpose 0 (GPO) Base
 #define _cm_gp1             0x00000078 // Clock Manager General Purpose 1 (GP1) Base
 #define _cm_gp2             0x00000080 // Clock Manager General Purpose 2 (GP2) Base
+#define _cm_pcm             0x00000098 // Clock Manager PCM Base
 #define _cm_pwm             0x000000A0 // Clock Manager PWM Base
 
 #define _cm_ctl_mash_0      0x00000000 // Integer Division

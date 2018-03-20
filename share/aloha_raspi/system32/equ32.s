@@ -398,6 +398,76 @@
 .equ equ32_spi0_dc_tpanic,     8          @ Write Panic
 .equ equ32_spi0_dc_tdreq,      0          @ Write Request
 
+.equ equ32_pcm_cs_a,           0x00000000 @ Control and Status
+.equ equ32_pcm_fifo_a,         0x00000004
+.equ equ32_pcm_mode_a,         0x00000008
+.equ equ32_pcm_rxc_a,          0x0000000C @ Receive Configuration
+.equ equ32_pcm_txc_a,          0x00000010 @ Transmit Configuration
+.equ equ32_pcm_dreq_a,         0x00000014
+.equ equ32_pcm_inten_a,        0x00000018 @ Interrupt Enable
+.equ equ32_pcm_intstc_a,       0x0000001C @ Interrupt Status and Clear
+.equ equ32_pcm_gray,           0x00000020 @ GRAY Mode Control, Receive Only (Data/Strobe Format)
+
+.equ equ32_pcm_cs_a_stby,      0x02000000 @ RAM (Random Access Memory) Standby Control
+.equ equ32_pcm_cs_a_sync,      0x01000000 @ PCM Clock Sync Helper, Checking Two PCM Clocks by Write/Read Process
+.equ equ32_pcm_cs_a_rxsex,     0x00800000 @ For Signed Rx Data (Middle Value is 0x0), Padding 0 or 1 Untill MSB
+.equ equ32_pcm_cs_a_rxf,       0x00400000 @ RxFIFO is Full
+.equ equ32_pcm_cs_a_txe,       0x00200000 @ TxFIFO is Empty
+.equ equ32_pcm_cs_a_rxd,       0x00100000 @ RxFIFO Contains Data
+.equ equ32_pcm_cs_a_txd,       0x00080000 @ TxFIFO Can Accept Data
+.equ equ32_pcm_cs_a_rxr,       0x00040000 @ RxFIFO Needs Reading by RXTHR (RxFIFO Threshold)
+.equ equ32_pcm_cs_a_txw,       0x00020000 @ TxFIFO Needs Writing by TXTHR (TxFIFO Threshold)
+.equ equ32_pcm_cs_a_rxerr,     0x00010000 @ RxFIFO Overflow Error, Clear Set
+.equ equ32_pcm_cs_a_txerr,     0x00008000 @ TxFIFO Overflow Error, Clear Set
+.equ equ32_pcm_cs_a_rxsync,    0x00004000 @ RxFIFO Sync
+.equ equ32_pcm_cs_a_txsync,    0x00002000 @ TxFIFO Sync
+.equ equ32_pcm_cs_a_dmaen,     0x00000200 @ DMA Enable
+.equ equ32_pcm_cs_a_rxthr,     7          @ Bit[8:7] RxFIFO Threshold (00b as One to 11b as Full)
+.equ equ32_pcm_cs_a_txthr,     5          @ Bit[6:5] TxFIFO Threshold (00b as Empty to 11b as Full)
+.equ equ32_pcm_cs_a_rxclr,     0x00000010 @ Clear RxFIFO, Two PCM Clock are Needed
+.equ equ32_pcm_cs_a_txclr,     0x00000008 @ Clear TxFIFO, Two PCM Clock are Needed
+.equ equ32_pcm_cs_a_txon,      0x00000004 @ Transmit On
+.equ equ32_pcm_cs_a_rxon,      0x00000002 @ Receive On
+.equ equ32_pcm_cs_a_en,        0x00000001 @ Enable PCM
+
+.equ equ32_pcm_mode_a_clk_dis, 0x10000000 @ PCM Clock Disable
+.equ equ32_pcm_mode_a_pdmn,    27         @ Bit[27] Decimation Factor for CIC Filter in PDM (to PCM) Input Mode: 0 is 16, 1 is 32
+.equ equ32_pcm_mode_a_pdme,    0x04000000 @ Pulse Density Modulation (PDM) Input Mode Enable
+.equ equ32_pcm_mode_a_frxp,    0x02000000 @ Pack Two Words in RxFIFO to One Words: 16-bit * 2, LSHW for Channel 1, MSHW for Channel 2
+.equ equ32_pcm_mode_a_ftxp,    0x01000000 @ Pack Two Words in FxFIFO to One Words: 16-bit * 2, LSHW for Channel 1, MSHW for Channel 2
+.equ equ32_pcm_mode_a_clkm,    23         @ Bit[23] PCM Clock Mode: 0 as Output Mode (Outputs Clock), 1 as Input Mode
+.equ equ32_pcm_mode_a_clki,    0x00400000 @ PCM Clock Inverter (PCM Clock is BCLK/SCLK in I2S Style)
+.equ equ32_pcm_mode_a_fsm,     21         @ Bit[21] Frame Sync Mode: 0 as Output Mode (Outputs Framesync), 1 as Input Mode
+.equ equ32_pcm_mode_a_clki,    0x00100000 @ Frame Sync Inverter (Frame Sync is LRCLK/WDCLK in I2S Style)
+.equ equ32_pcm_mode_a_flen,    10         @ Bit[19:10] Frame Length (0 to 1023 Sequencial Bits + 1 Bits)
+.equ equ32_pcm_mode_a_fslen,   0          @ Bit[9:0] Frame Sync Length (0 to 1023 Sequencial Bits), Ordinary Length of High Signal
+
+.equ equ32_pcm_rtxc_a_ch1wex,  0x80000000 @ Channel1 Width Extension, Plus 16 Sequencial Bits to CH1WID (Max. 32 Bits)
+.equ equ32_pcm_rtxc_a_ch1en,   0x40000000 @ Channel1 Enable
+.equ equ32_pcm_rtxc_a_ch1pos,  20         @ Bit[29:20] Channel1 Position (0 to 1023) in Each Frame
+.equ equ32_pcm_rtxc_a_ch1wid,  16         @ Bit[19:16] Channel1 Width (0 to 15 + 8 Bits) in Each Frame
+.equ equ32_pcm_rtxc_a_ch2wex,  0x00008000 @ Channel2 Width Extension, Plus 16 Sequencial Bits to CH1WID (Max. 32 Bits)
+.equ equ32_pcm_rtxc_a_ch2en,   0x00004000 @ Channel2 Enable
+.equ equ32_pcm_rtxc_a_ch2pos,  4          @ Bit[13:4] Channel2 Position (0 to 1023) in Each Frame
+.equ equ32_pcm_rtxc_a_ch2wid,  0          @ Bit[3:0] Channel2 Width (0 to 15 + 8 Bits) in Each Frame
+
+.equ equ32_pcm_dreq_a_tx_panic, 24         @ Bit[30:24] DMA Thereshold on TxFIFO for PANIC Signal
+.equ equ32_pcm_dreq_a_rx_panic, 16         @ Bit[22:16] DMA Thereshold on RxFIFO for PANIC Signal
+.equ equ32_pcm_dreq_a_tx,       8          @ Bit[14:8] DMA Thereshold on TxFIFO for DREQ Signal
+.equ equ32_pcm_dreq_a_rx,       0          @ Bit[6:0] DMA Thereshold on RxFIFO for DREQ Signal
+
+.equ equ32_pcm_int_a_rxerr,     0x00000008 @ Eneble Interrupt on RXERR (In Control and Status)
+.equ equ32_pcm_int_a_txerr,     0x00000004 @ Eneble Interrupt on TXERR (In Control and Status)
+.equ equ32_pcm_int_a_rxr,       0x00000002 @ Eneble Interrupt on RXR (IN Control and Status)
+.equ equ32_pcm_int_a_txw,       0x00000001 @ Eneble Interrupt on TXW (IN Control and Status)
+
+.equ equ32_pcm_gray_rxfifolevel, 16         @ Bit[21:16] Current Level of RxFIFO, Read Only
+.equ equ32_pcm_gray_flushed,     10         @ Bit[15:10] Bits Flushed, Read Only
+.equ equ32_pcm_gray_rxlevel,     4          @ Bit[9:4] Current Level of Bits in Buffer Before Flushing, Read Only
+.equ equ32_pcm_gray_flush,       0x0000004  @ Force Flushing
+.equ equ32_pcm_gray_clr,         0x0000002  @ Reset GRAY Mode and Clear Buffer for GRAY Mode
+.equ equ32_pcm_gray_en,          0x0000001  @ Enable GRAY Mode
+
 .equ equ32_pwm_ctl,      0x00000000
 .equ equ32_pwm_sta,      0x00000004
 .equ equ32_pwm_dmac,     0x00000008
@@ -491,12 +561,15 @@
 .equ equ32_cm_gp1div,          0x0000007C @ Clock Manager General Purpose 1 (GP1) Clock Divisor
 .equ equ32_cm_gp2ctl,          0x00000080 @ Clock Manager General Purpose 2 (GP2) Clock Control
 .equ equ32_cm_gp2div,          0x00000084 @ Clock Manager General Purpose 2 (GP2) Clock Divisor
+.equ equ32_cm_pcmctl,          0x00000098 @ Clock Manager PWM Clock Control
+.equ equ32_cm_pcmdiv,          0x0000009C @ Clock Manager PWM Clock Divisor
 .equ equ32_cm_pwmctl,          0x000000A0 @ Clock Manager PWM Clock Control
 .equ equ32_cm_pwmdiv,          0x000000A4 @ Clock Manager PWM Clock Divisor
 
 .equ equ32_cm_gp0,             0x00000070 @ Clock Manager General Purpose 0 (GPO) Base
 .equ equ32_cm_gp1,             0x00000078 @ Clock Manager General Purpose 1 (GP1) Base
 .equ equ32_cm_gp2,             0x00000080 @ Clock Manager General Purpose 2 (GP2) Base
+.equ equ32_cm_pcm,             0x00000098 @ Clock Manager PCM Base
 .equ equ32_cm_pwm,             0x000000A0 @ Clock Manager PWM Base
 .equ equ32_cm_ctl,             0x00000000 @ Offset for Clock Control of Clock Manager
 .equ equ32_cm_div,             0x00000004 @ Offset for Clock divisors of Clock Manager
