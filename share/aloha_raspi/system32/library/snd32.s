@@ -62,6 +62,7 @@ SND32_STATUS:              .word 0x00
  *
  * Parameters
  * r0: Sound Index
+ * r1: 0 as PWM Mode, 1 as PCM Mode
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Already Initialized
@@ -70,18 +71,19 @@ SND32_STATUS:              .word 0x00
 .globl snd32_sounddecode
 snd32_sounddecode:
 	/* Auto (Local) Variables, but just Aliases */
-	snd_index   .req r0 @ Register for Argument and Result, Scratch Register
-	snd         .req r1 @ Scratch Register
-	status      .req r2 @ Scratch Register
-	i           .req r3 @ Scratch Register
-	wave_length .req r4
-	wave_volume .req r5
-	wave_type   .req r6
-	mem_alloc   .req r7
-	cb          .req r8
-	size_cb     .req r9
+	snd_index   .req r0
+	flag_pcm    .req r1
+	snd         .req r2
+	status      .req r3
+	i           .req r4
+	wave_length .req r5
+	wave_volume .req r6
+	wave_type   .req r7
+	mem_alloc   .req r8
+	cb          .req r9
+	size_cb     .req r10
 
-	push {r4-r9,lr}                           @ Style of Enter/Return (2017 Winter)
+	push {r4-r10,lr}                          @ Style of Enter/Return (2017 Winter)
 
 	ldr status, SND32_STATUS
 	tst status, #0x80000000
@@ -127,6 +129,9 @@ snd32_sounddecode:
 			/* Triangle or Square Wave */
 
 			push {r0-r3}
+			cmp flag_pcm, #1
+			movne r3, #128                             @ Medium in Bytes (Unsigned)
+			moveq r3, #0                               @ Medium in Bytes (Signed)
 			mov r0, mem_alloc
 			mov r1, wave_length
 			cmp wave_volume, #3
@@ -136,7 +141,6 @@ snd32_sounddecode:
 			cmp wave_volume, #1
 			moveq r2, #63
 			movlo r2, #127                             @ Height in Bytes
-			mov r3, #128                               @ Medium in Bytes
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
@@ -176,17 +180,22 @@ snd32_sounddecode:
 
 				push {r0-r6}
 				mov r0, cb
-				mov r1, #5<<equ32_dma_ti_permap
+				mov r3, #equ32_bus_peripherals_base
+				cmp flag_pcm, #1
+				movne r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
+				addne r3, r3, #equ32_pwm_base_lower
+				addne r3, r3, #equ32_pwm_base_upper
+				addne r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
+				moveq r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
+				addeq r3, r3, #equ32_pcm_base_lower
+				addeq r3, r3, #equ32_pcm_base_upper
+				addeq r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
 				bic r1, r1, #equ32_dma_ti_no_wide_bursts
 				orr r1, r1, #0<<equ32_dma_ti_waits
 				orr r1, r1, #0<<equ32_dma_ti_burst_length
 				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
 				orr r1, r1, #equ32_dma_ti_wait_resp
 				mov r2, mem_alloc                                       @ Source Address
-				mov r3, #equ32_bus_peripherals_base
-				add r3, r3, #equ32_pwm_base_lower
-				add r3, r3, #equ32_pwm_base_upper
-				add r3, r3, #equ32_pwm_fif1                             @ Destination Address
 				lsl r4, wave_length, #2	                                @ Transfer Length
 				mov r5, #0                                              @ 2D Stride
 				mov r6, cb                                              @ Next CB Number
@@ -221,9 +230,10 @@ snd32_sounddecode:
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
-		pop {r4-r9,pc}                             @ Style of Enter/Return (2017 Winter)
+		pop {r4-r10,pc}                            @ Style of Enter/Return (2017 Winter)
 
 .unreq snd_index
+.unreq flag_pcm
 .unreq snd
 .unreq status
 .unreq i
@@ -599,6 +609,62 @@ snd32_soundinterrupt:
 .unreq repeat
 .unreq temp
 .unreq temp2
+
+
+/**
+ * function snd32_soundinit_pwm
+ * Sound Initializer for PWM Mode
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl snd32_soundinit_pwm
+snd32_soundinit_pwm:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	value             .req r1
+
+	push {lr}
+
+	/**
+	 * Clock Manager for PWM.
+	 * Makes 19.2Mhz (From Oscillator). Div by 2 Equals 9.6Mhz.
+	 */
+	push {r0-r3}
+	mov r0, #equ32_cm_pwm
+	mov r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #2 << equ32_cm_div_integer
+	bl arm32_clockmanager
+	pop {r0-r3}
+
+	/**
+	 * PWM Enable
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
+	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
+
+	/**
+	 * 9.6Mhz Div By 300 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 8bit (Max. Range is 300, but is Actually 255 on This).
+	 */
+	mov value, #300
+	str value, [memorymap_base, #equ32_pwm_rng1]
+
+	mov value, #equ32_pwm_dmac_enable
+	orr value, value, #7<<equ32_pwm_dmac_panic
+	orr value, value, #7<<equ32_pwm_dmac_dreq
+	str value, [memorymap_base, #equ32_pwm_dmac]
+
+	mov value, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
+	str value, [memorymap_base, #equ32_pwm_ctl]
+
+	snd32_soundinit_pwm_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq memorymap_base
+.unreq value
 
 
 /**

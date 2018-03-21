@@ -1150,7 +1150,7 @@ extern uint64 draw32_line
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _sounddecode( sound_index* sound );
+__attribute__((noinline)) uint32 _sounddecode( sound_index* sound, bool pcm_mode );
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
 

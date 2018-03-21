@@ -473,7 +473,7 @@ heap32_mfree:
  * r0: Pointer of Start Address of Memory Space
  *
  * Return: r0 (Size of Memory Space by Byte, -1 as Error)
- * Error: Pointer of Start Address is Null (0) or Not in Heap Area
+ * Error: Pointer of Start Address is Null (0) or Out of Heap Area
  */
 .globl heap32_mcount
 heap32_mcount:
@@ -801,8 +801,8 @@ heap32_mfill:
  * r2: Pointer of Start Address of Memory Space to be Even, Needed to Have the Same Length to Odd
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Pointer of Start Address is Null (0)
- * Error(2): Sizing is Wrong in Any Memory Space
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong
  */
 .globl heap32_mweave
 heap32_mweave:
@@ -813,62 +813,46 @@ heap32_mweave:
 	block_size_target  .req r3
 	block_size_odd     .req r4
 	block_size_even    .req r5
-	heap_start         .req r6
-	heap_size          .req r7
-	temp               .req r8
+	temp               .req r6
 
-	push {r4-r8}
+	push {r4-r6,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
-	cmp block_start_target, #0
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size_target, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
 	beq heap32_mweave_error1
-	cmp block_start_odd, #0
+
+	push {r0-r3}
+	mov r0, block_start_odd
+	bl heap32_mcount
+	mov block_size_odd, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
 	beq heap32_mweave_error1
-	cmp block_start_even, #0
+
+	push {r0-r3}
+	mov r0, block_start_even
+	bl heap32_mcount
+	mov block_size_even, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
 	beq heap32_mweave_error1
 
-	ldr block_size_target, [block_start_target, #-4]             @ Maximam Size of Allocated Space (Bytes)
-	sub block_size_target, block_size_target, #4                 @ Slide Minus 4 Bytes for Size Indicator of Memory Space
-
-	ldr block_size_odd, [block_start_odd, #-4]
-	sub block_size_odd, block_size_odd, #4
-
-	ldr block_size_even, [block_start_even, #-4]
-	sub block_size_even, block_size_even, #4
-
-	cmp block_size_odd, block_size_even                          @ Check the Same Memory Spaces of Odd and Even
+	cmp block_size_odd, block_size_even
 	bne heap32_mweave_error2
 
 	add temp, block_size_odd, block_size_even
-	cmp temp, block_size_target                                  @ Check Overflow of Memory Space to Be Wove
-	bhi heap32_mweave_error2
+	cmp block_size_target, temp
+	blt heap32_mweave_error2
 
-	add block_size_target, block_start_target, block_size_target
 	add block_size_odd, block_start_odd, block_size_odd
-	add block_size_even, block_start_even, block_size_even
-
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                                   @ Maximam Size of Heap Overall (Bytes)
-	add heap_size, heap_start, heap_size
-
-	cmp block_size_target, heap_size        @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bhi heap32_mweave_error2                @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
-
-	cmp block_size_odd, heap_size
-	bhi heap32_mweave_error2
-
-	cmp block_size_even, heap_size
-	bhi heap32_mweave_error2
-
-	cmp block_start_target, heap_start
-	blo heap32_mweave_error2
-
-	cmp block_start_odd, heap_start
-	blo heap32_mweave_error2
-
-	cmp block_start_even, heap_start
-	blo heap32_mweave_error2
 
 	heap32_mweave_loop:
 		cmp block_start_odd, block_size_odd
@@ -899,8 +883,7 @@ heap32_mweave:
 
 	heap32_mweave_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r8}
-		mov pc, lr
+		pop {r4-r6,pc}
 
 .unreq block_start_target
 .unreq block_start_odd
@@ -908,8 +891,6 @@ heap32_mweave:
 .unreq block_size_target
 .unreq block_size_odd
 .unreq block_size_even
-.unreq heap_start
-.unreq heap_size
 .unreq temp
 
 
@@ -920,12 +901,12 @@ heap32_mweave:
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
- * r2: Height of Wave (32-bit)
- * r3: Medium of Wave (32-bit)
+ * r2: Height of Wave (Signed 32-bit Integer)
+ * r3: Medium of Wave (Signed 32-bit Integer)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Pointer of Start Address is Null (0)
- * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 2
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong | Length is Less Than 2
  */
 .globl heap32_wave_square
 heap32_wave_square:
@@ -936,43 +917,29 @@ heap32_wave_square:
 	medium           .req r3
 	block_point      .req r4
 	block_size       .req r5
-	heap_start       .req r6
-	heap_size        .req r7
+	half             .req r6
+	direction        .req r7
 	flag_odd         .req r8
 	temp             .req r9	
 
-	push {r4-r9}
+	push {r4-r9,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
-
-	cmp block_start, #0
-	beq heap32_wave_square_error1
 
 	cmp length, #2                              @ If Less than 2
 	blo heap32_wave_square_error2
 
-	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
-	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_square_error1
 
 	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_square_error2               @ If Overflow is Expected
-
-	add block_size, block_start, block_size
-
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
-	add heap_size, heap_start, heap_size
-
-	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bhi heap32_wave_square_error2               @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
-	cmp block_start, heap_start
-	blo heap32_wave_square_error2
-
-	.unreq heap_start
-	.unreq heap_size
-	half      .req r6
-	direction .req r7
 
 	/* Examine Length to know Odd/Even on Half */
 
@@ -1033,8 +1000,7 @@ heap32_wave_square:
 
 	heap32_wave_square_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r9}
-		mov pc, lr
+		pop {r4-r9,pc}
 
 .unreq block_start
 .unreq length
@@ -1060,8 +1026,8 @@ heap32_wave_square:
  * r3: Value of Last Half (32-bit)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Pointer of Start Address is Null (0)
- * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 2
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong | Length is Less Than 2
  */
 .globl heap32_wave_random
 heap32_wave_random:
@@ -1072,45 +1038,31 @@ heap32_wave_random:
 	last_half        .req r3
 	block_point      .req r4
 	block_size       .req r5
-	heap_start       .req r6
-	heap_size        .req r7
+	half             .req r6
+	direction        .req r7
 	flag_odd         .req r8
 	temp             .req r9
 	temp2            .req r10
 	temp3            .req r11
 
-	push {r4-r11}
+	push {r4-r11,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
-
-	cmp block_start, #0
-	beq heap32_wave_random_error1
 
 	cmp length, #2                              @ If Less than 2
 	blo heap32_wave_random_error2
 
-	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
-	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_random_error1
 
 	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_random_error2               @ If Overflow is Expected
-
-	add block_size, block_start, block_size
-
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
-	add heap_size, heap_start, heap_size
-
-	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bhi heap32_wave_random_error2               @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
-	cmp block_start, heap_start
-	blo heap32_wave_random_error2
-
-	.unreq heap_start
-	.unreq heap_size
-	half      .req r6
-	direction .req r7
 
 	/* Examine Length to know Odd/Even on Half */
 
@@ -1153,11 +1105,11 @@ heap32_wave_random:
 				subhs temp3, temp, temp2              @ If 16-bit, Get Max. Value in Bit[7:0]
 				movlo temp3, temp                     @ If 8-bit
 
-				push {r0-r3,lr}
+				push {r0-r3}
 				mov r0, temp3
 				bl arm32_random
 				mov temp2, r0
-				pop {r0-r3,lr}
+				pop {r0-r3}
 
 				cmp temp, #0x100
 				blo heap32_wave_random_loop_half_jump2 @ If 8-bit
@@ -1166,12 +1118,12 @@ heap32_wave_random:
 
 				lsr temp3, temp, #8
 
-				push {r0-r3,lr}
+				push {r0-r3}
 				mov r0, temp3
 				bl arm32_random
 				lsl r0, r0, #8
 				add temp2, temp2, r0
-				pop {r0-r3,lr}
+				pop {r0-r3}
 
 				cmp temp2, temp                        @ Ensure Range in Intended Value
 				bhi heap32_wave_random_loop_half_jump1
@@ -1208,8 +1160,7 @@ heap32_wave_random:
 
 	heap32_wave_random_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r11}
-		mov pc, lr
+		pop {r4-r11,pc}
 
 .unreq block_start
 .unreq length
@@ -1233,12 +1184,12 @@ heap32_wave_random:
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
  * r1: Length of Wave (32-bit Words, Must Be 5 and More)
- * r2: Height of Wave (32-bit)
- * r3: Medium of Wave (32-bit)
+ * r2: Height of Wave (Signed 32-bit Integer)
+ * r3: Medium of Wave (Signed 32-bit Integer)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Pointer of Start Address is Null (0)
- * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 5
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong | Length is Less Than 5
  */
 .globl heap32_wave_triangle
 heap32_wave_triangle:
@@ -1249,11 +1200,12 @@ heap32_wave_triangle:
 	medium           .req r3
 	block_point      .req r4
 	block_size       .req r5
-	heap_start       .req r6
-	heap_size        .req r7
+	quarter          .req r6
+    direction        .req r7
 	flag_odd         .req r8
 	temp             .req r9	
 
+	/* VFP Registers */
 	vfp_omega        .req s0 @ d0
 	vfp_delta        .req s1
 	vfp_quarter      .req s2 @ d1
@@ -1264,39 +1216,25 @@ heap32_wave_triangle:
 	vfp_one          .req s7
 	vfp_zero         .req s8
 
-	push {r4-r9}
+	push {r4-r9,lr}
 	vpush {s0-s8}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
-	cmp block_start, #0
-	beq heap32_wave_triangle_error1
-
 	cmp length, #5                              @ If Less than 5
 	blo heap32_wave_triangle_error2
 
-	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
-	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_triangle_error1
 
 	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_triangle_error2             @ If Overflow is Expected
-
-	add block_size, block_start, block_size
-
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
-	add heap_size, heap_start, heap_size
-
-	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bhi heap32_wave_triangle_error2             @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
-	cmp block_start, heap_start
-	blo heap32_wave_triangle_error2
-
-	.unreq heap_start
-	.unreq heap_size
-	quarter   .req r6
-	direction .req r7
 
 	/* Examine Length to know Odd/Even on Half and Quarter */
 
@@ -1335,8 +1273,8 @@ heap32_wave_triangle:
 	vmov vfp_height, height
 
 	vcvt.f32.u32 vfp_quarter, vfp_quarter
-	vcvt.f32.u32 vfp_medium, vfp_medium
-	vcvt.f32.u32 vfp_height, vfp_height
+	vcvt.f32.s32 vfp_medium, vfp_medium
+	vcvt.f32.s32 vfp_height, vfp_height
 
 	vdiv.f32 vfp_delta, vfp_height, vfp_quarter
 
@@ -1358,9 +1296,8 @@ heap32_wave_triangle:
 			vaddne.f32 vfp_value, vfp_base, vfp_value  @ If High on Bit[1] of direction, Plus
 			vsubeq.f32 vfp_value, vfp_base, vfp_value  @ If Low on Bit[1] of direction, Minus
 
-			vcvtr.u32.f32 vfp_value, vfp_value
-			vmov temp, vfp_value
-			str temp, [block_start]
+			vcvtr.s32.f32 vfp_value, vfp_value         @ Signed for Expecting Minus Value
+			vstr vfp_value, [block_start]
 			add block_start, block_start, #4
 			vadd.f32 vfp_omega, vfp_omega, vfp_one
 
@@ -1402,8 +1339,7 @@ heap32_wave_triangle:
 	heap32_wave_triangle_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
 		vpop {s0-s8}
-		pop {r4-r9}
-		mov pc, lr
+		pop {r4-r9,pc}
 
 .unreq block_start
 .unreq length
@@ -1415,7 +1351,6 @@ heap32_wave_triangle:
 .unreq direction 
 .unreq flag_odd
 .unreq temp
-
 .unreq vfp_omega
 .unreq vfp_delta
 .unreq vfp_quarter
@@ -1435,11 +1370,11 @@ heap32_wave_triangle:
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
  * r1: Length of Wave (32-bit Words, Must Be 5 and More)
- * r2: Height of Wave (32-bit)
- * r3: Medium of Wave (32-bit)
+ * r2: Height of Wave (Signed 32-bit Integer)
+ * r3: Medium of Wave (Signed 32-bit Integer)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Pointer of Start Address is Null (0)
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
  * Error(2): Sizing is Wrong in Memory Space | Length is Less Than 5
  */
 .globl heap32_wave_sin
@@ -1451,11 +1386,12 @@ heap32_wave_sin:
 	medium           .req r3
 	block_point      .req r4
 	block_size       .req r5
-	heap_start       .req r6
-	heap_size        .req r7
+	half             .req r6
+	direction        .req r7
 	flag_odd         .req r8
 	temp             .req r9	
 
+	/* VFP Registers */
 	vfp_omega        .req s0 @ d0
 	vfp_delta        .req s1
 	vfp_half         .req s2 @ d1
@@ -1466,39 +1402,25 @@ heap32_wave_sin:
 	vfp_zero         .req s7
 	vfp_pi           .req s8
 
-	push {r4-r9}
+	push {r4-r9,lr}
 	vpush {s0-s8}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
-	cmp block_start, #0
-	beq heap32_wave_sin_error1
-
 	cmp length, #5                              @ If Less than 5
 	blo heap32_wave_sin_error2
 
-	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
-	sub block_size, block_size, #4              @ Slide Minus 4 Bytes for Size Indicator of Memory Space
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_sin_error1
 
 	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
 	bhi heap32_wave_sin_error2                  @ If Overflow is Expected
-
-	add block_size, block_start, block_size
-
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                  @ Maximam Size of Heap Overall (Bytes)
-	add heap_size, heap_start, heap_size
-
-	cmp block_size, heap_size                   @ If You Attempt to Free Already Freed Pointer, You May Meet Overflow of HEAP
-	bhi heap32_wave_sin_error2                  @ Because The Loaded Block_Size Is Invalid, And May It's Potentially So Big Size
-	cmp block_start, heap_start
-	blo heap32_wave_sin_error2
-
-	.unreq heap_start
-	.unreq heap_size
-	half      .req r6
-	direction .req r7
 
 	/* Examine Length to know Odd/Even on Half and Quarter */
 
@@ -1533,8 +1455,8 @@ heap32_wave_sin:
 	vmov vfp_height, height 
 
 	vcvt.f32.u32 vfp_half, vfp_half
-	vcvt.f32.u32 vfp_medium, vfp_medium
-	vcvt.f32.u32 vfp_height, vfp_height
+	vcvt.f32.s32 vfp_medium, vfp_medium
+	vcvt.f32.s32 vfp_height, vfp_height
 
 	vdiv.f32 vfp_delta, vfp_pi, vfp_half
 
@@ -1552,11 +1474,11 @@ heap32_wave_sin:
 
 			vmul.f32 vfp_value, vfp_delta, vfp_omega
 
-			push {r0-r3,lr}
+			push {r0-r3}
 			vmov r0, vfp_value
 			bl math32_sin
 			vmov vfp_value, r0
-			pop {r0-r3,lr}
+			pop {r0-r3}
 
 			tst direction, #1                          @ Check Bit[0] of direction
 			vmulne.f32 vfp_value, vfp_height, vfp_value
@@ -1564,10 +1486,8 @@ heap32_wave_sin:
 
 			vadd.f32 vfp_value, vfp_medium, vfp_value
 
-			vcvtr.u32.f32 vfp_value, vfp_value
-			vmov temp, vfp_value
-
-			str temp, [block_start]
+			vcvtr.s32.f32 vfp_value, vfp_value         @ Signed for Expecting Minus Value
+			vstr vfp_value, [block_start]
 			add block_start, block_start, #4
 			vadd.f32 vfp_omega, vfp_omega, vfp_one
 
@@ -1602,8 +1522,7 @@ heap32_wave_sin:
 	heap32_wave_sin_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
 		vpop {s0-s8}
-		pop {r4-r9}
-		mov pc, lr
+		pop {r4-r9,pc}
 
 heap32_wave_sin_pi: .word MATH32_PI
 
@@ -1617,7 +1536,6 @@ heap32_wave_sin_pi: .word MATH32_PI
 .unreq direction 
 .unreq flag_odd
 .unreq temp
-
 .unreq vfp_omega
 .unreq vfp_delta
 .unreq vfp_half

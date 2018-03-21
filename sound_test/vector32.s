@@ -112,37 +112,9 @@ os_reset:
 	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
-	/**
-	 * Clock Manager for PWM.
-	 * Makes 19.2Mhz (From Oscillator). Div by 2 Equals 9.6Mhz.
-	 */
-	mov r0, #equ32_cm_pwm
-	mov r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #2 << equ32_cm_div_integer
-	bl arm32_clockmanager
-
-	/**
-	 * PWM Enable
-	 */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_pwm_base_lower
-	add r0, r0, #equ32_pwm_base_upper
-
-	/**
-	 * 9.6Mhz Div By 300 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 8bit (Max. Range is 300, but is Actually 255 on This).
-	 */
-	mov r1, #300
-	str r1, [r0, #equ32_pwm_rng1]
-
-	mov r1, #equ32_pwm_dmac_enable
-	orr r1, r1, #7<<equ32_pwm_dmac_panic
-	orr r1, r1, #7<<equ32_pwm_dmac_dreq
-	str r1, [r0, #equ32_pwm_dmac]
-
-	mov r1, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
-	str r1, [r0, #equ32_pwm_ctl]
+	push {r0-r3}
+	bl snd32_soundinit_pwm
+	pop {r0-r3}
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
