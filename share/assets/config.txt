@@ -52,10 +52,10 @@ hdmi_group=0
 #hdmi_mode=1
 
 #Force HDMI Output with Sound
-hdmi_drive=2
+#hdmi_drive=2
 
 #Prevent Composite Video Output When HDMI Is Not Plugged
-hdmi_force_hotplug=1
+#hdmi_force_hotplug=1
 
 #PL011, UART0 Reference Clock. Besides, UART1 Reference Clock is core_freq
 init_uart_clock=9216000

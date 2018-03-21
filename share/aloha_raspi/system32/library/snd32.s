@@ -633,7 +633,7 @@ snd32_soundinit_pwm:
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_0
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #2 << equ32_cm_div_integer
+	mov r2, #2<<equ32_cm_div_integer
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -659,7 +659,91 @@ snd32_soundinit_pwm:
 	mov value, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
 	str value, [memorymap_base, #equ32_pwm_ctl]
 
+	macro32_dsb ip
+
 	snd32_soundinit_pwm_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq memorymap_base
+.unreq value
+
+
+/**
+ * function snd32_soundinit_pcm
+ * Sound Initializer for PCM Mode
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl snd32_soundinit_pcm
+snd32_soundinit_pcm:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	value             .req r1
+
+	push {lr}
+
+	/**
+	 * Clock Manager for PCM Clock.
+	 * Makes 19.2Mhz (From Oscillator). Div by 18.75 Equals 1.024Mhz.
+	 */
+	push {r0-r3}
+	mov r0, #equ32_cm_pcm
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #18<<equ32_cm_div_integer
+	orr r2, r2, #768<<equ32_cm_div_fraction                        @ 0.75 * 1024
+	bl arm32_clockmanager
+	pop {r0-r3}
+
+	/**
+	 * PCM Enable
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
+	add memorymap_base, memorymap_base, #equ32_pcm_base_upper
+
+	mov value, #equ32_pcm_cs_en
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	/* Make I2S Compatible LRCLK/WCLK by 16-bit Depth on Both L and R */
+	mov value, #31<<equ32_pcm_mode_flen
+	orr value, value, #16<<equ32_pcm_mode_fslen
+	str value, [memorymap_base, #equ32_pcm_mode]
+
+	/* Channel 1 and 2 Setting (Only Channel1 is Available) */
+	mov value, #equ32_pcm_rtxc_ch1en
+	orr value, value, #8<<equ32_pcm_rtxc_ch1wid
+	str value, [memorymap_base, #equ32_pcm_txc]
+
+	orr value, value, #7<<equ32_pcm_dreq_tx_panic
+	orr value, value, #7<<equ32_pcm_dreq_tx_dreq
+	str value, [memorymap_base, #equ32_pcm_dreq]
+
+	/* Clear TxFIFO  */
+	ldr value, [memorymap_base, #equ32_pcm_cs]
+	orr value, value, #equ32_pcm_cs_txclr
+	orr value, value, #equ32_pcm_cs_sync
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	snd32_soundinit_pcm_sync:
+		ldr value, [memorymap_base, #equ32_pcm_cs]
+		tst value, #equ32_pcm_cs_sync
+		beq snd32_soundinit_pcm_sync
+
+	/* DMA and PCM Transmit Enable */
+	bic value, value, #equ32_pcm_cs_sync
+	orr value, value, #equ32_pcm_cs_dmaen
+	orr value, value, #equ32_pcm_cs_txon
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	snd32_soundinit_pcm_common:
 		mov r0, #0
 		pop {pc}
 

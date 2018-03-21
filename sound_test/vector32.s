@@ -10,6 +10,8 @@
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
+/*.equ __SOUND_PCM, 1*/
+
 .ifdef __ARMV6
 	.include "vector32/el01_armv6.s"
 	.include "vector32/el3_armv6.s"
@@ -82,11 +84,25 @@ os_reset:
 
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
+.ifdef __SOUND_PCM
+	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8    @ Clear GPIO 18
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_8     @ Set GPIO 18 PCM_CLK
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_9    @ Clear GPIO 19
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_9     @ Set GPIO 19 PCM_FS
+	str r1, [r0, #equ32_gpio_gpfsel10]
+.endif
+
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0    @ Clear GPIO 20
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 20 INPUT
+.ifdef __SOUND_PCM
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 21
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1     @ Set GPIO 21 PCM_DOUT
+.else
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 21
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
+.endif
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 22
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 23
@@ -103,7 +119,9 @@ os_reset:
 
 	ldr r1, [r0, #equ32_gpio_gpren0]
 	orr r1, r1, #equ32_gpio20                                      @ Set GPIO20 Rising Edge Detect
+.ifndef __SOUND_PCM
 	orr r1, r1, #equ32_gpio21                                      @ Set GPIO21 Rising Edge Detect
+.endif
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
 	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
 	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
@@ -111,10 +129,6 @@ os_reset:
 	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 Rising Edge Detect
 	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
-
-	push {r0-r3}
-	bl snd32_soundinit_pwm
-	pop {r0-r3}
 
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
@@ -131,6 +145,14 @@ os_reset:
 
 	push {r0-r3}
 	bl bcm32_get_framebuffer
+	pop {r0-r3}
+
+	push {r0-r3}
+.ifdef __SOUND_PCM
+	bl snd32_soundinit_pcm
+.else
+	bl snd32_soundinit_pwm
+.endif
 	pop {r0-r3}
 	
 	pop {pc}

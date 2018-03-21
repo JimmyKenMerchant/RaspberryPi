@@ -453,8 +453,8 @@
 
 .equ equ32_pcm_dreq_tx_panic, 24         @ Bit[30:24] DMA Thereshold on TxFIFO for PANIC Signal
 .equ equ32_pcm_dreq_rx_panic, 16         @ Bit[22:16] DMA Thereshold on RxFIFO for PANIC Signal
-.equ equ32_pcm_dreq_tx,       8          @ Bit[14:8] DMA Thereshold on TxFIFO for DREQ Signal
-.equ equ32_pcm_dreq_rx,       0          @ Bit[6:0] DMA Thereshold on RxFIFO for DREQ Signal
+.equ equ32_pcm_dreq_tx_dreq,  8          @ Bit[14:8] DMA Thereshold on TxFIFO for DREQ Signal
+.equ equ32_pcm_dreq_rx_dreq,  0          @ Bit[6:0] DMA Thereshold on RxFIFO for DREQ Signal
 
 .equ equ32_pcm_int_rxerr,     0x00000008 @ Eneble Interrupt on RXERR (In Control and Status)
 .equ equ32_pcm_int_txerr,     0x00000004 @ Eneble Interrupt on TXERR (In Control and Status)
