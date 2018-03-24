@@ -24,8 +24,6 @@
 #define timer_count_default 10000
 #define clock_divisor_int_defualt 2
 
-/*#define __SOUND_PCM*/
-
 /**
  * Sound Index is made of an array of 16-bit Blocks.
  * Bit[11:0]: Length of Wave, 0 to 4095.

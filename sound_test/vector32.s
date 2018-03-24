@@ -10,8 +10,6 @@
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
-/*.equ __SOUND_PCM, 1*/
-
 .ifdef __ARMV6
 	.include "vector32/el01_armv6.s"
 	.include "vector32/el3_armv6.s"

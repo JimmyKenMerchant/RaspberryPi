@@ -129,11 +129,7 @@ snd32_sounddecode:
 			/* Triangle or Square Wave */
 
 			push {r0-r3}
-			cmp flag_pcm, #1
-			movne r3, #128                             @ Medium in Bytes (Unsigned)
-			moveq r3, #0                               @ Medium in Bytes (Signed)
 			mov r0, mem_alloc
-			mov r1, wave_length
 			cmp wave_volume, #3
 			moveq r2, #0
 			cmp wave_volume, #2
@@ -141,6 +137,13 @@ snd32_sounddecode:
 			cmp wave_volume, #1
 			moveq r2, #63
 			movlo r2, #127                             @ Height in Bytes
+			cmp flag_pcm, #1
+			movne r3, #128                             @ Medium in Bytes (Unsigned) for PWM
+			moveq r3, #0                               @ Medium in Bytes (Signed) for PCM
+			addeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+			lsleq r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
+			subeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+			mov r1, wave_length                        @ Assign r1 at Last Bacause flag_pcm Requires r1
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
@@ -155,18 +158,23 @@ snd32_sounddecode:
 
 				push {r0-r3}
 				mov r0, mem_alloc
-				mov r1, wave_length
 				cmp wave_volume, #3
 				moveq r2, #31
-				moveq r3, #31
+				moveq r3, r2 
 				cmp wave_volume, #2
 				moveq r2, #63
-				moveq r3, #63
+				moveq r3, r2 
 				cmp wave_volume, #1
 				moveq r2, #127
-				moveq r3, #127
+				moveq r3, r2
 				movlo r2, #255
-				movlo r3, #255
+				movlo r3, r2
+				cmp flag_pcm, #1
+				addeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+				lsleq r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
+				subeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+				moveq r3, r2
+				mov r1, wave_length                        @ Assign r1 at Last Bacause flag_pcm Requires r1
 				bl heap32_wave_random
 				pop {r0-r3}
 

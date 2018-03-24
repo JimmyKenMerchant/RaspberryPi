@@ -9,10 +9,11 @@
 # In GNU Make (gmake on BSD), GNUmakefile will be searched faster than Makefile
 
 # Values of DEFARCH and DEFTYPE are Needed to be Changed for Types of RasPi.
-# type ?= 2b
+#type ?= 2b
 
 # Available fpu info from Features in /proc/cpuinfo of Raspbian
 # `-mcpu=cortex-a53` is unavailable on early GCC versions. You can use `-mcpu=cortex-a7` instead.
+
 ifeq ($(type), 3b)
 	PRODUCT:=__RASPI3B=1
 	TARGET := -mcpu=cortex-a53 -mfpu=vfp
@@ -58,6 +59,17 @@ ifeq ($(type), zerow)
 	GPU := __GPU400=1
 endif
 
+#Default Value for Sound
+sound ?= pwm
+
+ifeq ($(sound), pwm)
+	SND := __SOUND_PWM=1
+endif
+
+ifeq ($(sound), pcm)
+	SND := __SOUND_PCM=1
+endif
+
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
 COMP := arm-none-eabi
 BIT := __AARCH32=1
@@ -65,11 +77,11 @@ BIT := __AARCH32=1
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
-CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(BIT)
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
-ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(BIT)
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy
