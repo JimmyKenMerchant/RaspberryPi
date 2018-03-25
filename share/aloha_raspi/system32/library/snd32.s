@@ -74,19 +74,20 @@ snd32_sounddecode:
 	snd_index   .req r0
 	flag_pcm    .req r1
 	snd         .req r2
-	status      .req r3
-	i           .req r4
+	i           .req r3
+	temp        .req r4
 	wave_length .req r5
 	wave_volume .req r6
 	wave_type   .req r7
 	mem_alloc   .req r8
-	cb          .req r9
-	size_cb     .req r10
+	temp2       .req r9
+	cb          .req r10
+	size_cb     .req r11
 
-	push {r4-r10,lr}                          @ Style of Enter/Return (2017 Winter)
+	push {r4-r11,lr}                          @ Style of Enter/Return (2017 Winter)
 
-	ldr status, SND32_STATUS
-	tst status, #0x80000000
+	ldr temp, SND32_STATUS
+	tst temp, #0x80000000
 	bne snd32_sounddecode_error1              @ If Already Initialized
 
 	mov i, #0
@@ -180,37 +181,139 @@ snd32_sounddecode:
 
 			snd32_sounddecode_main_wave_setcb:
 
+				b snd32_sounddecode_main_wave_setcb_common
+				cmp flag_pcm, #1
+				beq snd32_sounddecode_main_wave_setcb_pcm
+
+				/* PWM */
+
+				push {r0-r3}
+				mov r0, wave_length                        @ Words
+				bl heap32_malloc_noncache
+				cmp r0, #0
+				mov temp, r0
+				pop {r0-r3}		
+
+				beq snd32_sounddecode_error2
+
+				push {r0-r3}
+				mov r0, temp
+				mov r1, mem_alloc
+				mov r2, #128
+				bl heap32_wave_invert
+				cmp r0, #0
+				pop {r0-r3}		
+
+				bne snd32_sounddecode_error2
+
+				lsl wave_length, wave_length, #1
+
+				push {r0-r3}
+				mov r0, wave_length                        @ Words
+				bl heap32_malloc_noncache
+				cmp r0, #0
+				mov temp2, r0
+				pop {r0-r3}		
+
+				beq snd32_sounddecode_error2
+
+				push {r0-r3}
+				mov r0, temp2
+				mov r1, mem_alloc
+				mov r2, temp
+				bl heap32_mweave
+				cmp r0, #0
+				pop {r0-r3}		
+
+				bne snd32_sounddecode_error2
+
 				push {r0-r3}
 				mov r0, mem_alloc
-				mov r1, #1                                @ Clean
-				bl arm32_cache_operation_heap
+				bl heap32_mfree
+				cmp r0, #0
 				pop {r0-r3}
 
-				push {r0-r6}
-				mov r0, cb
-				mov r3, #equ32_bus_peripherals_base
-				cmp flag_pcm, #1
-				movne r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
-				addne r3, r3, #equ32_pwm_base_lower
-				addne r3, r3, #equ32_pwm_base_upper
-				addne r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
-				moveq r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
-				addeq r3, r3, #equ32_pcm_base_lower
-				addeq r3, r3, #equ32_pcm_base_upper
-				addeq r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
-				bic r1, r1, #equ32_dma_ti_no_wide_bursts
-				orr r1, r1, #0<<equ32_dma_ti_waits
-				orr r1, r1, #0<<equ32_dma_ti_burst_length
-				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
-				orr r1, r1, #equ32_dma_ti_wait_resp
-				mov r2, mem_alloc                                       @ Source Address
-				lsl r4, wave_length, #2	                                @ Transfer Length
-				mov r5, #0                                              @ 2D Stride
-				mov r6, cb                                              @ Next CB Number
-				push {r4-r6}
-				bl dma32_set_cb
-				add sp, sp, #12
-				pop {r0-r6}
+				bne snd32_sounddecode_error2
+
+				push {r0-r3}
+				mov r0, temp
+				bl heap32_mfree
+				cmp r0, #0
+				pop {r0-r3}
+
+				bne snd32_sounddecode_error2
+
+				mov mem_alloc, temp2
+
+				b snd32_sounddecode_main_wave_setcb_common
+
+				snd32_sounddecode_main_wave_setcb_pcm:
+					/*
+					lsl wave_length, wave_length, #1
+
+					push {r0-r3}
+					mov r0, wave_length                        @ Words
+					bl heap32_malloc_noncache
+					cmp r0, #0
+					mov temp, r0
+					pop {r0-r3}		
+
+					beq snd32_sounddecode_error2
+
+					push {r0-r3}
+					mov r0, temp
+					mov r1, mem_alloc
+					mov r2, mem_alloc
+					bl heap32_mweave
+					cmp r0, #0
+					pop {r0-r3}		
+
+					bne snd32_sounddecode_error2
+
+					push {r0-r3}
+					mov r0, mem_alloc
+					bl heap32_mfree
+					cmp r0, #0
+					pop {r0-r3}
+
+					bne snd32_sounddecode_error2
+
+					mov mem_alloc, temp
+					*/
+
+				snd32_sounddecode_main_wave_setcb_common:
+
+					push {r0-r3}
+					mov r0, mem_alloc
+					mov r1, #1                                @ Clean
+					bl arm32_cache_operation_heap
+					pop {r0-r3}
+
+					push {r0-r6}
+					mov r0, cb
+					mov r3, #equ32_bus_peripherals_base
+					cmp flag_pcm, #1
+					movne r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
+					addne r3, r3, #equ32_pwm_base_lower
+					addne r3, r3, #equ32_pwm_base_upper
+					addne r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
+					moveq r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
+					addeq r3, r3, #equ32_pcm_base_lower
+					addeq r3, r3, #equ32_pcm_base_upper
+					addeq r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
+					bic r1, r1, #equ32_dma_ti_no_wide_bursts
+					orr r1, r1, #0<<equ32_dma_ti_waits
+					orr r1, r1, #0<<equ32_dma_ti_burst_length
+					orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+					orr r1, r1, #equ32_dma_ti_wait_resp
+					mov r2, mem_alloc                                       @ Source Address
+					lsl r4, wave_length, #2	                                @ Transfer Length
+					mov r5, #0                                              @ 2D Stride
+					mov r6, cb                                              @ Next CB Number
+					push {r4-r6}
+					bl dma32_set_cb
+					add sp, sp, #12
+					pop {r0-r6}
 
 		snd32_sounddecode_main_common:
 
@@ -231,24 +334,26 @@ snd32_sounddecode:
 		b snd32_sounddecode_common
 
 	snd32_sounddecode_success:
-		orr status, status, #0x80000000
-		str status, SND32_STATUS
+		ldr temp, SND32_STATUS
+		orr temp, temp, #0x80000000
+		str temp, SND32_STATUS
 
 		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
 	snd32_sounddecode_common:
-		pop {r4-r10,pc}                            @ Style of Enter/Return (2017 Winter)
+		pop {r4-r11,pc}                            @ Style of Enter/Return (2017 Winter)
 
 .unreq snd_index
 .unreq flag_pcm
 .unreq snd
-.unreq status
 .unreq i
+.unreq temp
 .unreq wave_length
 .unreq wave_volume
 .unreq wave_type
 .unreq mem_alloc
+.unreq temp2
 .unreq cb
 .unreq size_cb
 
@@ -634,6 +739,21 @@ snd32_soundinit_pwm:
 	push {lr}
 
 	/**
+	 * GPIO for PWM
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 12
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 13
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
+	str value, [memorymap_base, #equ32_gpio_gpfsel10]
+
+	macro32_dsb ip
+
+	/**
 	 * Clock Manager for PWM.
 	 * Makes 19.2Mhz (From Oscillator). Div by 2 Equals 9.6Mhz.
 	 */
@@ -658,13 +778,16 @@ snd32_soundinit_pwm:
 	 */
 	mov value, #300
 	str value, [memorymap_base, #equ32_pwm_rng1]
+	mov value, #300
+	str value, [memorymap_base, #equ32_pwm_rng2]
 
 	mov value, #equ32_pwm_dmac_enable
-	orr value, value, #7<<equ32_pwm_dmac_panic
+	orr value, value, #11<<equ32_pwm_dmac_panic
 	orr value, value, #7<<equ32_pwm_dmac_dreq
 	str value, [memorymap_base, #equ32_pwm_dmac]
 
 	mov value, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
+	orr value, value, #equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
 	str value, [memorymap_base, #equ32_pwm_ctl]
 
 	macro32_dsb ip
@@ -690,6 +813,27 @@ snd32_soundinit_pcm:
 	value             .req r1
 
 	push {lr}
+
+	/**
+	 * GPIO for PCM
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8    @ Clear GPIO 18
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_8     @ Set GPIO 18 PCM_CLK
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_9    @ Clear GPIO 19
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_9     @ Set GPIO 19 PCM_FS
+	str value, [memorymap_base, #equ32_gpio_gpfsel10]
+
+	/* GPIO 20 can be set to PCM_DIN, but No Use */
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel20]
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 21
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1     @ Set GPIO 21 PCM_DOUT
+	str value, [memorymap_base, #equ32_gpio_gpfsel20]
+
+	macro32_dsb ip
 
 	/**
 	 * Clock Manager for PCM Clock.
@@ -719,18 +863,28 @@ snd32_soundinit_pcm:
 	/* Make I2S Compatible LRCLK/WCLK by 16-bit Depth on Both L and R */
 	mov value, #31<<equ32_pcm_mode_flen
 	orr value, value, #16<<equ32_pcm_mode_fslen
+	/*
+	orr value, value, #equ32_pcm_mode_ftxp                @ Tx Packed Mode for Both L and R in One Frame
+	*/
 	str value, [memorymap_base, #equ32_pcm_mode]
 
-	/* Channel 1 and 2 Setting (Only Channel1 is Available) */
+	/* Channel 1 and 2 Settings */
+
 	mov value, #equ32_pcm_rtxc_ch1en
 	orr value, value, #8<<equ32_pcm_rtxc_ch1wid
+	/*
+	orr value, value, #equ32_pcm_rtxc_ch2en
+	orr value, value, #16<<equ32_pcm_rtxc_ch2pos
+	orr value, value, #8<<equ32_pcm_rtxc_ch2wid
+	*/
 	str value, [memorymap_base, #equ32_pcm_txc]
 
-	orr value, value, #7<<equ32_pcm_dreq_tx_panic
-	orr value, value, #7<<equ32_pcm_dreq_tx_dreq
+	/* DMA DREQ Settings */
+	orr value, value, #23<<equ32_pcm_dreq_tx_panic
+	orr value, value, #15<<equ32_pcm_dreq_tx_dreq
 	str value, [memorymap_base, #equ32_pcm_dreq]
 
-	/* Clear TxFIFO  */
+	/* Clear TxFIFO, Two PCM Clocks Are Needed */
 	ldr value, [memorymap_base, #equ32_pcm_cs]
 	orr value, value, #equ32_pcm_cs_txclr
 	orr value, value, #equ32_pcm_cs_sync
@@ -738,10 +892,23 @@ snd32_soundinit_pcm:
 
 	macro32_dsb ip
 
-	snd32_soundinit_pcm_sync:
+	snd32_soundinit_pcm_clrtxf:
 		ldr value, [memorymap_base, #equ32_pcm_cs]
 		tst value, #equ32_pcm_cs_sync
-		beq snd32_soundinit_pcm_sync
+		beq snd32_soundinit_pcm_clrtxf
+
+	/* Clear RxFIFO, No need of Clear RxFIFO, but RAM Preperation Needs Four PCM Clocks */
+	ldr value, [memorymap_base, #equ32_pcm_cs]
+	orr value, value, #equ32_pcm_cs_rxclr
+	orr value, value, #equ32_pcm_cs_sync
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	snd32_soundinit_pcm_clrrxf:
+		ldr value, [memorymap_base, #equ32_pcm_cs]
+		tst value, #equ32_pcm_cs_sync
+		beq snd32_soundinit_pcm_clrrxf
 
 	/* DMA and PCM Transmit Enable */
 	bic value, value, #equ32_pcm_cs_sync

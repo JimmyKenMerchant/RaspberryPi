@@ -810,10 +810,11 @@ heap32_mweave:
 	block_start_target .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	block_start_odd    .req r1 @ Parameter, Register for Argument and Result, Scratch Register
 	block_start_even   .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	block_size_target  .req r3
-	block_size_odd     .req r4
-	block_size_even    .req r5
-	temp               .req r6
+	temp               .req r3
+	block_size_target  .req r4
+	block_size_odd     .req r5
+	block_size_even    .req r6
+
 
 	push {r4-r6,lr}
 
@@ -888,10 +889,95 @@ heap32_mweave:
 .unreq block_start_target
 .unreq block_start_odd
 .unreq block_start_even
+.unreq temp
 .unreq block_size_target
 .unreq block_size_odd
 .unreq block_size_even
+
+
+/**
+ * function heap32_wave_invert
+ * Make Inverted Wave from Another Wave
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space for Inverted Wave
+ * r1: Pointer of Start Address of Memory Space for Original Wave
+ * r2: Medium of Wave (Signed 32-bit Integer)
+ *
+ * Return: r0 (0 as Success, 1 or 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong
+ */
+.globl heap32_wave_invert
+heap32_wave_invert:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start_inv    .req r0
+	block_start_origin .req r1
+	medium             .req r2
+	temp               .req r3	
+	offset             .req r4	
+	block_size_origin  .req r5
+
+	push {r4-r5,lr}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov offset, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_invert_error1
+
+	push {r0-r3}
+	mov r0, block_start_origin
+	bl heap32_mcount
+	mov block_size_origin, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_invert_error1
+
+	cmp offset, block_size_origin
+	blt heap32_wave_invert_error2
+
+	mov offset, #0
+
+	heap32_wave_invert_loop:
+		cmp offset, block_size_origin
+		bge heap32_wave_invert_success
+		ldr temp, [block_start_origin, offset]
+		sub temp, temp, medium
+		mvn temp, temp
+		add temp, temp, #1                      @ Two's Complement
+		sub temp, medium, temp
+		str temp, [block_start_inv, offset]
+
+		add offset, offset, #4
+		b heap32_wave_invert_loop
+
+	heap32_wave_invert_error1:
+		mov r0, #1
+		b heap32_wave_invert_common
+
+	heap32_wave_invert_error2:
+		mov r0, #2
+		b heap32_wave_invert_common
+
+	heap32_wave_invert_success:
+		mov r0, #0
+
+	heap32_wave_invert_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4-r5,pc}
+
+.unreq block_start_inv
+.unreq block_start_origin
+.unreq medium
 .unreq temp
+.unreq offset
+.unreq block_size_origin
 
 
 /**
