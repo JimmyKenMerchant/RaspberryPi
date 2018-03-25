@@ -896,6 +896,65 @@ heap32_mweave:
 
 
 /**
+ * function heap32_mpack
+ * Copy Lower 16-bit to Upper 16-bit in One Word
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ */
+.globl heap32_mpack
+heap32_mpack:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start .req r0
+	block_size  .req r1
+	temp        .req r2	
+	shift       .req r3
+
+	push {lr}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	push {r0}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0}
+
+	beq heap32_mpack_error1
+
+	add block_size, block_start, block_size
+
+	heap32_mpack_loop:
+		cmp block_start, block_size
+		bge heap32_mpack_success
+		ldrh temp, [block_start]
+		lsl shift, temp, #16
+		orr temp, temp, shift
+		str temp, [block_start]
+		add block_start, block_start, #4
+		b heap32_mpack_loop
+
+	heap32_mpack_error1:
+		mov r0, #1
+		b heap32_mpack_common
+
+	heap32_mpack_success:
+		mov r0, #0
+
+	heap32_mpack_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq block_start
+.unreq block_size
+.unreq temp
+.unreq shift
+
+
+/**
  * function heap32_wave_invert
  * Make Inverted Wave from Another Wave
  *
@@ -949,8 +1008,6 @@ heap32_wave_invert:
 		bge heap32_wave_invert_success
 		ldr temp, [block_start_origin, offset]
 		sub temp, temp, medium
-		mvn temp, temp
-		add temp, temp, #1                      @ Two's Complement
 		sub temp, medium, temp
 		str temp, [block_start_inv, offset]
 

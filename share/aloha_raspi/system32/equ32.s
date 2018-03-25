@@ -438,7 +438,7 @@
 .equ equ32_pcm_mode_clkm,     23         @ Bit[23] PCM Clock Mode: 0 as Output Mode (Outputs Clock), 1 as Input Mode
 .equ equ32_pcm_mode_clki,     0x00400000 @ PCM Clock Inverter (PCM Clock is BCLK/SCLK in I2S Style)
 .equ equ32_pcm_mode_fsm,      21         @ Bit[21] Frame Sync Mode: 0 as Output Mode (Outputs Framesync), 1 as Input Mode
-.equ equ32_pcm_mode_clki,     0x00100000 @ Frame Sync Inverter (Frame Sync is LRCLK/WDCLK in I2S Style)
+.equ equ32_pcm_mode_fsi,      0x00100000 @ Frame Sync Inverter (Frame Sync is LRCLK/WDCLK in I2S Style)
 .equ equ32_pcm_mode_flen,     10         @ Bit[19:10] Frame Length (0 to 1023 Sequencial Bits + 1 Bits)
 .equ equ32_pcm_mode_fslen,    0          @ Bit[9:0] Frame Sync Length (0 to 1023 Sequencial Bits), Ordinary Length of High Signal
 

@@ -248,38 +248,17 @@ snd32_sounddecode:
 				b snd32_sounddecode_main_wave_setcb_common
 
 				snd32_sounddecode_main_wave_setcb_pcm:
+
+					/* So far, Output Both L and R is Unavailable (Outputs Only L) */
 					/*
-					lsl wave_length, wave_length, #1
-
 					push {r0-r3}
-					mov r0, wave_length                        @ Words
-					bl heap32_malloc_noncache
-					cmp r0, #0
-					mov temp, r0
-					pop {r0-r3}		
-
-					beq snd32_sounddecode_error2
-
-					push {r0-r3}
-					mov r0, temp
-					mov r1, mem_alloc
-					mov r2, mem_alloc
-					bl heap32_mweave
+					mov r0, mem_alloc                         @ Words
+					bl heap32_mpack
 					cmp r0, #0
 					pop {r0-r3}		
-
-					bne snd32_sounddecode_error2
-
-					push {r0-r3}
-					mov r0, mem_alloc
-					bl heap32_mfree
-					cmp r0, #0
-					pop {r0-r3}
-
-					bne snd32_sounddecode_error2
-
-					mov mem_alloc, temp
 					*/
+
+					bne snd32_sounddecode_error2
 
 				snd32_sounddecode_main_wave_setcb_common:
 
@@ -802,7 +781,8 @@ snd32_soundinit_pwm:
 
 /**
  * function snd32_soundinit_pcm
- * Sound Initializer for PCM Mode
+ * Sound Initializer for PCM (I2S) Mode
+ * So far, Outputs Only L
  *
  * Return: r0 (0 as Success)
  */
@@ -863,20 +843,13 @@ snd32_soundinit_pcm:
 	/* Make I2S Compatible LRCLK/WCLK by 16-bit Depth on Both L and R */
 	mov value, #31<<equ32_pcm_mode_flen
 	orr value, value, #16<<equ32_pcm_mode_fslen
-	/*
-	orr value, value, #equ32_pcm_mode_ftxp                @ Tx Packed Mode for Both L and R in One Frame
-	*/
+	orr value, value, #equ32_pcm_mode_clki|equ32_pcm_mode_fsi @ Invert Clock and Frame Sync
+	/*orr value, value, #equ32_pcm_mode_ftxp                    @ Tx Packed Mode for Both L and R in One Frame*/
 	str value, [memorymap_base, #equ32_pcm_mode]
 
-	/* Channel 1 and 2 Settings */
-
+	/* Channel 1 (L) */
 	mov value, #equ32_pcm_rtxc_ch1en
 	orr value, value, #8<<equ32_pcm_rtxc_ch1wid
-	/*
-	orr value, value, #equ32_pcm_rtxc_ch2en
-	orr value, value, #16<<equ32_pcm_rtxc_ch2pos
-	orr value, value, #8<<equ32_pcm_rtxc_ch2wid
-	*/
 	str value, [memorymap_base, #equ32_pcm_txc]
 
 	/* DMA DREQ Settings */
