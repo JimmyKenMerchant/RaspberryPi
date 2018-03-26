@@ -96,7 +96,7 @@ os_reset:
 
 	ldr r1, [r0, #equ32_gpio_gpren0]
 	orr r1, r1, #equ32_gpio20                                      @ Set GPIO20 Rising Edge Detect
-.ifndef __SOUND_PCM
+.ifndef __SOUND_I2S
 	orr r1, r1, #equ32_gpio21                                      @ Set GPIO21 Rising Edge Detect
 .endif
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
@@ -125,8 +125,8 @@ os_reset:
 	pop {r0-r3}
 
 	push {r0-r3}
-.ifdef __SOUND_PCM
-	bl snd32_soundinit_pcm
+.ifdef __SOUND_I2S
+	bl snd32_soundinit_i2s
 .else
 	bl snd32_soundinit_pwm
 .endif

@@ -181,7 +181,6 @@ snd32_sounddecode:
 
 			snd32_sounddecode_main_wave_setcb:
 
-				b snd32_sounddecode_main_wave_setcb_common
 				cmp flag_pcm, #1
 				beq snd32_sounddecode_main_wave_setcb_pcm
 
@@ -249,14 +248,11 @@ snd32_sounddecode:
 
 				snd32_sounddecode_main_wave_setcb_pcm:
 
-					/* So far, Output Both L and R is Unavailable (Outputs Only L) */
-					/*
 					push {r0-r3}
 					mov r0, mem_alloc                         @ Words
 					bl heap32_mpack
 					cmp r0, #0
 					pop {r0-r3}		
-					*/
 
 					bne snd32_sounddecode_error2
 
@@ -780,14 +776,13 @@ snd32_soundinit_pwm:
 
 
 /**
- * function snd32_soundinit_pcm
- * Sound Initializer for PCM (I2S) Mode
- * So far, Outputs Only L
+ * function snd32_soundinit_i2s
+ * Sound Initializer for I2S Mode (Outputs Both L and R Side by 32Khz)
  *
  * Return: r0 (0 as Success)
  */
-.globl snd32_soundinit_pcm
-snd32_soundinit_pcm:
+.globl snd32_soundinit_i2s
+snd32_soundinit_i2s:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base    .req r0
 	value             .req r1
@@ -844,11 +839,11 @@ snd32_soundinit_pcm:
 	mov value, #31<<equ32_pcm_mode_flen
 	orr value, value, #16<<equ32_pcm_mode_fslen
 	orr value, value, #equ32_pcm_mode_clki|equ32_pcm_mode_fsi @ Invert Clock and Frame Sync
-	/*orr value, value, #equ32_pcm_mode_ftxp                    @ Tx Packed Mode for Both L and R in One Frame*/
 	str value, [memorymap_base, #equ32_pcm_mode]
 
-	/* Channel 1 (L) */
-	mov value, #equ32_pcm_rtxc_ch1en
+	/* Channel 1 */
+	mov value, #equ32_pcm_rtxc_ch1en|equ32_pcm_rtxc_ch1wex        @ 32 Bits for Outputs Both L and R
+	orr value, value, #1<<equ32_pcm_rtxc_ch1pos                   @ Make Sure Offset 1 Bit from Frame Sync to Fit I2S Signal Regulation
 	orr value, value, #8<<equ32_pcm_rtxc_ch1wid
 	str value, [memorymap_base, #equ32_pcm_txc]
 
@@ -865,10 +860,10 @@ snd32_soundinit_pcm:
 
 	macro32_dsb ip
 
-	snd32_soundinit_pcm_clrtxf:
+	snd32_soundinit_i2s_clrtxf:
 		ldr value, [memorymap_base, #equ32_pcm_cs]
 		tst value, #equ32_pcm_cs_sync
-		beq snd32_soundinit_pcm_clrtxf
+		beq snd32_soundinit_i2s_clrtxf
 
 	/* Clear RxFIFO, No need of Clear RxFIFO, but RAM Preperation Needs Four PCM Clocks */
 	ldr value, [memorymap_base, #equ32_pcm_cs]
@@ -878,10 +873,10 @@ snd32_soundinit_pcm:
 
 	macro32_dsb ip
 
-	snd32_soundinit_pcm_clrrxf:
+	snd32_soundinit_i2s_clrrxf:
 		ldr value, [memorymap_base, #equ32_pcm_cs]
 		tst value, #equ32_pcm_cs_sync
-		beq snd32_soundinit_pcm_clrrxf
+		beq snd32_soundinit_i2s_clrrxf
 
 	/* DMA and PCM Transmit Enable */
 	bic value, value, #equ32_pcm_cs_sync
@@ -891,7 +886,7 @@ snd32_soundinit_pcm:
 
 	macro32_dsb ip
 
-	snd32_soundinit_pcm_common:
+	snd32_soundinit_i2s_common:
 		mov r0, #0
 		pop {pc}
 

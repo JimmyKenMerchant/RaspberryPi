@@ -88,7 +88,7 @@ int32 _user_start()
 
 	_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 
-#ifdef __SOUND_PCM
+#ifdef __SOUND_I2S
 	_sounddecode( sound, true );
 #else
 	_sounddecode( sound, false );
@@ -103,7 +103,7 @@ int32 _user_start()
 				print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
 				break;
 			}
-#ifndef __SOUND_PCM
+#ifndef __SOUND_I2S
 			if ( _gpio_detect( 21 ) ) {
 				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
 				print32_string( str_music1, 300, 300, str32_strlen( str_music1 ) );

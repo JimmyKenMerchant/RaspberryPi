@@ -66,8 +66,8 @@ ifeq ($(sound), pwm)
 	SND := __SOUND_PWM=1
 endif
 
-ifeq ($(sound), pcm)
-	SND := __SOUND_PCM=1
+ifeq ($(sound), i2s) 
+	SND := __SOUND_I2S=1
 endif
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
