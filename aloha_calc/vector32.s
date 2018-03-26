@@ -76,10 +76,6 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
-.ifdef __SOUND
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 12
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 12 PWM0
-.endif
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 14
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 14 ALT 0 as TXD0
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 15
@@ -136,6 +132,11 @@ os_reset:
 	pop {r0-r3}
 
 	push {r0-r3}
+	mov r0, #128                                             @ 128 Words
+	bl uart32_uartmalloc_client
+	pop {r0-r3}
+
+	push {r0-r3}
 	bl bcm32_poweron_usb
 	pop {r0-r3}
 
@@ -149,7 +150,11 @@ os_reset:
 
 .ifdef __SOUND
 	push {r0-r3}
+.ifdef __SOUND_I2S
+	bl snd32_soundinit_i2s
+.else
 	bl snd32_soundinit_pwm
+.endif
 	pop {r0-r3}
 .endif
 
@@ -160,7 +165,7 @@ os_irq:
 
 	mov r0, #63                                              @ Last Byte For Null Character
 	mov r1, #1
-	bl uart32_uartint
+	bl uart32_uartintrouter
 
 	pop {r0-r12,pc}
 

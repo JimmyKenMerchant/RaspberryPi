@@ -274,13 +274,17 @@ int32 _user_start() {
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
+#ifdef __SOUND_I2S
+	_sounddecode( sound, true );
+#else
 	_sounddecode( sound, false );
+#endif
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
 	
 	if ( init_usb_keyboard( 0 ) ) {
 		kb_enable = true;
-		_uartsettest( false, false, false );
+		_uartclient( true );
 	} else {
 		kb_enable = false;
 		if ( print32_set_caret( print32_string( str_serialmode, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_serialmode ) ) ) ) console_rollup();

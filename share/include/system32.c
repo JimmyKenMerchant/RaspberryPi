@@ -281,59 +281,66 @@ __attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _otg_host_reset_bcm()
+__attribute__((noinline)) uint32 _uartclient( bool mode_client )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x28");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hub_activate( uint32 channel, uint32 ticket )
+__attribute__((noinline)) uint32 _otg_host_reset_bcm()
 {
-	register int32 result asm("r0");
+	register uint32 result asm("r0");
 	asm volatile ("svc #0x29");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hub_search_device( uint32 channel, uint32 address_hub )
+__attribute__((noinline)) int32 _hub_activate( uint32 channel, uint32 ticket )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x2A");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hid_activate( uint32 channel, uint32 number_configuration, uint32 ticket )
+__attribute__((noinline)) int32 _hub_search_device( uint32 channel, uint32 address_hub )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x2B");
 	return result;
 }
 
-__attribute__((noinline)) int32 _hid_setidle( uint32 channel, uint32 number_interface, uint32 ticket )
+__attribute__((noinline)) int32 _hid_activate( uint32 channel, uint32 number_configuration, uint32 ticket )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x2C");
 	return result;
 }
 
+__attribute__((noinline)) int32 _hid_setidle( uint32 channel, uint32 number_interface, uint32 ticket )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x2D");
+	return result;
+}
+
 __attribute__((noinline)) String _keyboard_get( uint32 channel, uint32 number_endpoint, uint32 ticket )
 {
 	register String result asm("r0");
-	asm volatile ("svc #0x2D");
+	asm volatile ("svc #0x2E");
 	return result;
 }
 
 __attribute__((noinline)) int32 _romread_i2c( uint32 address_heap, uint32 chip_select, uint32 address_memory, uint32 length )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2E");
+	asm volatile ("svc #0x2F");
 	return result;
 }
 
 __attribute__((noinline)) int32 _romwrite_i2c( uint32 address_heap, uint32 chip_select, uint32 address_memory, uint32 length )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2F");
+	asm volatile ("svc #0x30");
 	return result;
 }
 

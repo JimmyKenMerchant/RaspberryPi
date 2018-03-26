@@ -433,6 +433,11 @@ __attribute__((noinline)) uint32 _uartsetheap
 	uint32 num_heap
 );
 
+__attribute__((noinline)) uint32 _uartclient
+(
+	bool mode_client
+);
+
 
 /********************************
  * system32/arm/usb2032.s

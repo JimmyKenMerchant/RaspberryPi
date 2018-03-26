@@ -1797,3 +1797,182 @@ uart32_uartsetheap:
 .unreq array
 .unreq heap
 .unreq length_array
+
+
+/**
+ * function uart32_uartint_client
+ * UART Interrupt Handler (Client Side)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): No Heap, Overrun, or Busy
+ */
+.globl uart32_uartint_client
+uart32_uartint_client:
+	/* Auto (Local) Variables, but just Aliases */
+	buffer        .req r0
+	count         .req r1
+	max_size      .req r2
+
+	push {lr}
+
+	ldr count, UART32_UARTINT_CLIENT_COUNT
+	ldr max_size, UART32_UARTINT_CLIENT_LENGTH
+	ldr buffer, UART32_UARTINT_CLIENT_BUFFER
+
+	cmp buffer, #0
+	beq uart32_uartint_client_error         @ If No Buffer
+
+	push {r0-r2}
+	add r0, buffer, count
+	mov r1, #1                              @ 1 Bytes
+	bl uart32_uartrx
+	tst r0, #0x8                            @ Whether Overrun or Not
+	pop {r0-r2}
+
+	bne uart32_uartint_client_error         @ If Overrun
+
+	/* Slide Offset Count */
+	add count, count, #1
+	cmp count, max_size
+	subge count, max_size, #1               @ If Exceeds Maximum Size of Heap, Stay Count
+	str count, UART32_UARTINT_CLIENT_COUNT
+	blt uart32_uartint_client_success
+
+	uart32_uartint_client_error:
+		mov r0, #1
+
+		b uart32_uartint_client_common
+
+	uart32_uartint_client_success:
+		mov r0, #0
+
+	uart32_uartint_client_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq buffer
+.unreq count
+.unreq max_size
+
+.globl UART32_UARTINT_CLIENT_COUNT
+.globl UART32_UARTINT_CLIENT_LENGTH
+.globl UART32_UARTINT_CLIENT_BUFFER
+UART32_UARTINT_CLIENT_COUNT:  .word 0x00
+UART32_UARTINT_CLIENT_LENGTH: .word 0x00
+UART32_UARTINT_CLIENT_BUFFER: .word 0x00
+
+
+/**
+ * function uart32_uartmalloc_client
+ * Make Buffer for UART Receive Interrupt (Client Side)
+ *
+ * Parameters
+ * r0: Size of Buffer (Words)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Memory Allocation Is Not Succeeded
+ */
+.globl uart32_uartmalloc_client
+uart32_uartmalloc_client:
+	/* Auto (Local) Variables, but just Aliases */
+	words_buffer .req r0
+	buffer       .req r1
+
+	push {lr}
+
+	push {r0}
+	add r0, words_buffer, #1           @ Add One Word for Null Character
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0}
+
+	cmp buffer, #0
+	beq uart32_uartmalloc_client_error
+
+	str words_buffer, UART32_UARTINT_CLIENT_LENGTH
+	str buffer, UART32_UARTINT_CLIENT_BUFFER
+	mov words_buffer, #0
+	str words_buffer, UART32_UARTINT_CLIENT_COUNT
+
+	b uart32_uartmalloc_client_success
+
+	uart32_uartmalloc_client_error:
+		mov r0, #1
+		b uart32_uartmalloc_client_common
+
+	uart32_uartmalloc_client_success:
+		mov r0, #0
+
+	uart32_uartmalloc_client_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq words_buffer
+.unreq buffer
+
+
+/**
+ * function uart32_uartclient
+ * Change Mode Host or Client
+ *
+ * Parameters
+ * r0: 0 as Host Mode, 1 as Client Mode
+ *
+ * Return: r0 (0 as success)
+ */
+.globl uart32_uartclient
+uart32_uartclient:
+	/* Auto (Local) Variables, but just Aliases */
+	mode .req r0
+
+	str mode, UART32_UARTCLIENT_MODE
+
+	uart32_uartclient_common:
+		mov r0, #0
+		macro32_dsb ip
+		mov pc, lr
+
+.unreq mode
+
+.globl UART32_UARTCLIENT_MODE
+UART32_UARTCLIENT_MODE: .word 0x00
+
+
+/**
+ * function uart32_uartintrouter
+ * Route UART Interrupt to Host Mode or Client Mode
+ *
+ * Parameters
+ * r0: Number of Maximum Size of Heap (Bytes) in Host Mode
+ * r1: Mirror Data to Teletype (1) or Send ACK (0) in Host Mode
+ *
+ * Return: r0 (Return Value of Host Mode or Client Mode)
+ */
+.globl uart32_uartintrouter
+uart32_uartintrouter:
+	/* Auto (Local) Variables, but just Aliases */
+	max_size    .req r0
+	flag_mirror .req r1
+	mode        .req r2
+
+	push {lr}
+
+	ldr mode, UART32_UARTCLIENT_MODE
+	cmp mode, #1
+	beq uart32_uartintrouter_client
+
+	bl uart32_uartint
+
+	b uart32_uartintrouter_common
+
+	uart32_uartintrouter_client:
+
+		bl uart32_uartint_client
+
+	uart32_uartintrouter_common:
+		pop {pc}
+
+.unreq max_size
+.unreq flag_mirror
+.unreq mode
+

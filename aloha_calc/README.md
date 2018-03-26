@@ -21,7 +21,9 @@
 
 **Output/Input**
 
-* GPIO12 as Output of PWM0 (If you uncomment __SOUND on the top of vector.s)
+* GPIO12 as Output of PWM0 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
+
+* GPIO13 as Output of PWM1 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
 
 * GPIO 2 as SDA1 (Use for EEPROM)
 
@@ -33,7 +35,9 @@
 
 * GPIO 20 and 26 as Output
 
-* USB as Output (Use for Keyboard): It is experimental and needed your USB and electrical acknowledgment.
+* GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s (If you no need, uncomment __SOUND on the top of vector.s)
+
+* USB as Input/Output (Use for Keyboard): It is experimental and needed your USB and electrical acknowledgment.
 
 * HDMI as VIDEO Output
 

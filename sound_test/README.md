@@ -8,11 +8,13 @@
 
 **Output/Input**
 
-* GPIO12 as Output of PWM0
+* GPIO12 as Output of PWM0 on sound=pwm
 
-* GPIO13 as Output of PWM1
+* GPIO13 as Output of PWM1 on sound=pwm
 
-* GPIO20-27 as Input of GPIO for Buttons (Up to 3.3V)
+* GPIO20-27 as Input of GPIO for Buttons (Up to 3.3V) (on sound=i2s, GPIO21 becomes Output of I2S)
+
+* GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s
 
 * HDMI as VIDEO Output
 

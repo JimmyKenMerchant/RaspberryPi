@@ -212,7 +212,7 @@ snd32_sounddecode:
 				bl heap32_malloc_noncache
 				cmp r0, #0
 				mov temp2, r0
-				pop {r0-r3}		
+				pop {r0-r3}
 
 				beq snd32_sounddecode_error2
 

@@ -122,7 +122,7 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 SYSTEM32_HEAP:
 .space 16777216                       @ Filled With Zero in Default, 16M Bytes
 SYSTEM32_HEAP_NONCACHE:
-.space 1048576                        @ 1M Bytes
+.space 16777216                       @ 16M Bytes
 SYSTEM32_HEAP_NONCACHE_END:
 SYSTEM32_HEAP_END:
 
