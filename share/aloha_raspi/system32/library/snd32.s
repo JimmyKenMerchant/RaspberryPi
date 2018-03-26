@@ -191,7 +191,7 @@ snd32_sounddecode:
 				bl heap32_malloc_noncache
 				cmp r0, #0
 				mov temp, r0
-				pop {r0-r3}		
+				pop {r0-r3}
 
 				beq snd32_sounddecode_error2
 
@@ -201,7 +201,7 @@ snd32_sounddecode:
 				mov r2, #128
 				bl heap32_wave_invert
 				cmp r0, #0
-				pop {r0-r3}		
+				pop {r0-r3}
 
 				bne snd32_sounddecode_error2
 
@@ -222,7 +222,7 @@ snd32_sounddecode:
 				mov r2, temp
 				bl heap32_mweave
 				cmp r0, #0
-				pop {r0-r3}		
+				pop {r0-r3}
 
 				bne snd32_sounddecode_error2
 
@@ -252,7 +252,7 @@ snd32_sounddecode:
 					mov r0, mem_alloc                         @ Words
 					bl heap32_mpack
 					cmp r0, #0
-					pop {r0-r3}		
+					pop {r0-r3}
 
 					bne snd32_sounddecode_error2
 
