@@ -1165,8 +1165,8 @@ heap32_wave_square:
  * Parameters
  * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
- * r2: Value of First Half (32-bit)
- * r3: Value of Last Half (32-bit)
+ * r2: Height of Wave (Signed 32-bit Integer)
+ * r3: Medium of Wave (Signed 32-bit Integer)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
@@ -1175,20 +1175,16 @@ heap32_wave_square:
 .globl heap32_wave_random
 heap32_wave_random:
 	/* Auto (Local) Variables, but just Aliases */
-	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	length           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
-	first_half       .req r2 @ Parameter, Register for Argument and Result, Scratch Register
-	last_half        .req r3
-	block_point      .req r4
-	block_size       .req r5
-	half             .req r6
-	direction        .req r7
-	flag_odd         .req r8
-	temp             .req r9
-	temp2            .req r10
-	temp3            .req r11
+	block_start      .req r0
+	length           .req r1
+	height           .req r2
+	medium           .req r3
+	block_size       .req r4
+	temp             .req r5
+	lower            .req r6
+	upper            .req r7
 
-	push {r4-r11,lr}
+	push {r4-r7,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
@@ -1203,90 +1199,63 @@ heap32_wave_random:
 
 	beq heap32_wave_random_error1
 
-	lsl temp, length, #2                        @ Substitution of Multiplication by 4
-	cmp temp, block_size
-	bhi heap32_wave_random_error2               @ If Overflow is Expected
+	lsl length, length, #2                        @ Substitution of Multiplication by 4
+	cmp length, block_size
+	bhi heap32_wave_random_error2
 
-	/* Examine Length to know Odd/Even on Half */
-
-	tst length, #1                              @ If Half is Odd
-	movne flag_odd, #1
-	addne length, length, #1
-	moveq flag_odd, #0
-
-	lsr half, length, #1                        @ Substitution of Division by 2
-
-	lsl length, half, #2                        @ Substitution of Multiplication by 4, Words to Bytes
-
-	/* direction: Plus at First Half(0), Last half (-1) */
-
-	mov direction, #0                           @ Define Direction to Plus at First Half
-
-	add block_point, block_start, length        @ Make First Half
+	add length, block_start, length
 
 	heap32_wave_random_loop:
-		cmp direction, #-1
-		blt heap32_wave_random_success
-		cmp direction, #0
-		moveq temp, first_half          @ Max. Value of First Half
-		movne temp, last_half           @ Max. Value of Last Half
-		
-		heap32_wave_random_loop_half:
-			cmp block_start, block_point
-			bhs heap32_wave_random_loop_common
+		cmp block_start, length
+		bge heap32_wave_random_success
 
-			heap32_wave_random_loop_half_jump1:
+		heap32_wave_random_loop_random:
 
-				/**
-				 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
-				 * Decimal 255/127/63/31/15/7/3/1 is prefered.
-				 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
-				 */
+			/**
+			 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
+			 * Decimal 255/127/63/31/15/7/3/1 is prefered.
+			 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
+			 */
 
-				cmp temp, #0x100
-				bichs temp2, temp, #0xFF              @ If 16-bit, Clear Bit[7:0]
-				subhs temp3, temp, temp2              @ If 16-bit, Get Max. Value in Bit[7:0]
-				movlo temp3, temp                     @ If 8-bit
+			cmp height, #0x100
+			bichs upper, height, #0xFF              @ If 16-bit, Clear Bit[7:0]
+			subhs lower, height, upper              @ If 16-bit, Get Max. Value in Bit[7:0]
+			movlo lower, height                     @ If 8-bit
 
-				push {r0-r3}
-				mov r0, temp3
-				bl arm32_random
-				mov temp2, r0
-				pop {r0-r3}
+			push {r0-r3}
+			mov r0, lower
+			bl arm32_random
+			mov temp, r0
+			pop {r0-r3}
 
-				cmp temp, #0x100
-				blo heap32_wave_random_loop_half_jump2 @ If 8-bit
+			cmp height, #0x100
+			blo heap32_wave_random_loop_common      @ If 8-bit
 
-				/* If 16-bit */
+			/* If 16-bit */
 
-				lsr temp3, temp, #8
+			push {r0-r3}
+			lsr r0, upper, #8
+			bl arm32_random
+			lsl r0, r0, #8
+			add temp, temp, r0
+			pop {r0-r3}
 
-				push {r0-r3}
-				mov r0, temp3
-				bl arm32_random
-				lsl r0, r0, #8
-				add temp2, temp2, r0
-				pop {r0-r3}
-
-				cmp temp2, temp                        @ Ensure Range in Intended Value
-				bhi heap32_wave_random_loop_half_jump1
-
-			heap32_wave_random_loop_half_jump2:
-				str temp2, [block_start]
-				add block_start, block_start, #4
-
-				macro32_dsb ip
-
-				b heap32_wave_random_loop_half
+			cmp temp, height                       @ Ensure Range in Intended Value
+			bhi heap32_wave_random_loop_random
 
 		heap32_wave_random_loop_common:
+			/* 0 or 1, Addition or Subtruction */
+			push {r0-r3}
+			mov r0, #1
+			bl arm32_random
+			cmp r0, #0
+			pop {r0-r3}
+			addeq temp, medium, temp
+			subne temp, medium, temp
+			str temp, [block_start]
+			add block_start, block_start, #4
 
-			add block_point, block_point, length       @ Make Next Half
-
-			tst flag_odd, #1
-			subne block_point, block_point, #4         @ If Odd
-
-			sub direction, direction, #1               @ Make New Direction for Next Half
+			macro32_dsb ip
 
 			b heap32_wave_random_loop
 
@@ -1303,20 +1272,16 @@ heap32_wave_random:
 
 	heap32_wave_random_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r11,pc}
+		pop {r4-r7,pc}
 
 .unreq block_start
 .unreq length
-.unreq first_half
-.unreq last_half
-.unreq block_point
+.unreq height
+.unreq medium
 .unreq block_size
-.unreq half
-.unreq direction
-.unreq flag_odd
 .unreq temp
-.unreq temp2
-.unreq temp3
+.unreq lower
+.unreq upper
 
 
 /**

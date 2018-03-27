@@ -124,9 +124,6 @@ snd32_sounddecode:
 			cmp mem_alloc, #0
 			beq snd32_sounddecode_error2
 
-			cmp wave_type, #3
-			bhs snd32_sounddecode_main_wave_noise      @ If Noise
-
 			/* Triangle or Square Wave */
 
 			push {r0-r3}
@@ -145,6 +142,8 @@ snd32_sounddecode:
 			lsleq r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
 			subeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause flag_pcm Requires r1
+			cmp wave_type, #3
+			bleq heap32_wave_random
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
@@ -153,142 +152,114 @@ snd32_sounddecode:
 			bleq heap32_wave_sin
 			pop {r0-r3}
 
-			b snd32_sounddecode_main_wave_setcb
+			cmp flag_pcm, #1
+			beq snd32_sounddecode_main_wave_pcm
 
-			snd32_sounddecode_main_wave_noise:
+			/* PWM */
+
+			push {r0-r3}
+			mov r0, wave_length                        @ Words
+			bl heap32_malloc_noncache
+			cmp r0, #0
+			mov temp, r0
+			pop {r0-r3}
+
+			beq snd32_sounddecode_error2
+
+			push {r0-r3}
+			mov r0, temp
+			mov r1, mem_alloc
+			mov r2, #128
+			bl heap32_wave_invert
+			cmp r0, #0
+			pop {r0-r3}
+
+			bne snd32_sounddecode_error2
+
+			lsl wave_length, wave_length, #1
+
+			push {r0-r3}
+			mov r0, wave_length                        @ Words
+			bl heap32_malloc_noncache
+			cmp r0, #0
+			mov temp2, r0
+			pop {r0-r3}
+
+			beq snd32_sounddecode_error2
+
+			push {r0-r3}
+			mov r0, temp2
+			mov r1, mem_alloc
+			mov r2, temp
+			bl heap32_mweave
+			cmp r0, #0
+			pop {r0-r3}
+
+			bne snd32_sounddecode_error2
+
+			push {r0-r3}
+			mov r0, mem_alloc
+			bl heap32_mfree
+			cmp r0, #0
+			pop {r0-r3}
+
+			bne snd32_sounddecode_error2
+
+			push {r0-r3}
+			mov r0, temp
+			bl heap32_mfree
+			cmp r0, #0
+			pop {r0-r3}
+
+			bne snd32_sounddecode_error2
+
+			mov mem_alloc, temp2
+
+			b snd32_sounddecode_main_wave_common
+
+			snd32_sounddecode_main_wave_pcm:
+
+				push {r0-r3}
+				mov r0, mem_alloc                         @ Words
+				bl heap32_mpack
+				cmp r0, #0
+				pop {r0-r3}
+
+				bne snd32_sounddecode_error2
+
+			snd32_sounddecode_main_wave_common:
 
 				push {r0-r3}
 				mov r0, mem_alloc
-				cmp wave_volume, #3
-				moveq r2, #31
-				moveq r3, r2 
-				cmp wave_volume, #2
-				moveq r2, #63
-				moveq r3, r2 
-				cmp wave_volume, #1
-				moveq r2, #127
-				moveq r3, r2
-				movlo r2, #255
-				movlo r3, r2
+				mov r1, #1                                @ Clean
+				bl arm32_cache_operation_heap
+				pop {r0-r3}
+
+				push {r0-r6}
+				mov r0, cb
+				mov r3, #equ32_bus_peripherals_base
 				cmp flag_pcm, #1
-				addeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-				lsleq r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
-				subeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-				moveq r3, r2
-				mov r1, wave_length                        @ Assign r1 at Last Bacause flag_pcm Requires r1
-				bl heap32_wave_random
-				pop {r0-r3}
-
-			snd32_sounddecode_main_wave_setcb:
-
-				cmp flag_pcm, #1
-				beq snd32_sounddecode_main_wave_setcb_pcm
-
-				/* PWM */
-
-				push {r0-r3}
-				mov r0, wave_length                        @ Words
-				bl heap32_malloc_noncache
-				cmp r0, #0
-				mov temp, r0
-				pop {r0-r3}
-
-				beq snd32_sounddecode_error2
-
-				push {r0-r3}
-				mov r0, temp
-				mov r1, mem_alloc
-				mov r2, #128
-				bl heap32_wave_invert
-				cmp r0, #0
-				pop {r0-r3}
-
-				bne snd32_sounddecode_error2
-
-				lsl wave_length, wave_length, #1
-
-				push {r0-r3}
-				mov r0, wave_length                        @ Words
-				bl heap32_malloc_noncache
-				cmp r0, #0
-				mov temp2, r0
-				pop {r0-r3}
-
-				beq snd32_sounddecode_error2
-
-				push {r0-r3}
-				mov r0, temp2
-				mov r1, mem_alloc
-				mov r2, temp
-				bl heap32_mweave
-				cmp r0, #0
-				pop {r0-r3}
-
-				bne snd32_sounddecode_error2
-
-				push {r0-r3}
-				mov r0, mem_alloc
-				bl heap32_mfree
-				cmp r0, #0
-				pop {r0-r3}
-
-				bne snd32_sounddecode_error2
-
-				push {r0-r3}
-				mov r0, temp
-				bl heap32_mfree
-				cmp r0, #0
-				pop {r0-r3}
-
-				bne snd32_sounddecode_error2
-
-				mov mem_alloc, temp2
-
-				b snd32_sounddecode_main_wave_setcb_common
-
-				snd32_sounddecode_main_wave_setcb_pcm:
-
-					push {r0-r3}
-					mov r0, mem_alloc                         @ Words
-					bl heap32_mpack
-					cmp r0, #0
-					pop {r0-r3}
-
-					bne snd32_sounddecode_error2
-
-				snd32_sounddecode_main_wave_setcb_common:
-
-					push {r0-r3}
-					mov r0, mem_alloc
-					mov r1, #1                                @ Clean
-					bl arm32_cache_operation_heap
-					pop {r0-r3}
-
-					push {r0-r6}
-					mov r0, cb
-					mov r3, #equ32_bus_peripherals_base
-					cmp flag_pcm, #1
-					movne r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
-					addne r3, r3, #equ32_pwm_base_lower
-					addne r3, r3, #equ32_pwm_base_upper
-					addne r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
-					moveq r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
-					addeq r3, r3, #equ32_pcm_base_lower
-					addeq r3, r3, #equ32_pcm_base_upper
-					addeq r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
-					bic r1, r1, #equ32_dma_ti_no_wide_bursts
-					orr r1, r1, #0<<equ32_dma_ti_waits
-					orr r1, r1, #0<<equ32_dma_ti_burst_length
-					orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
-					orr r1, r1, #equ32_dma_ti_wait_resp
-					mov r2, mem_alloc                                       @ Source Address
-					lsl r4, wave_length, #2	                                @ Transfer Length
-					mov r5, #0                                              @ 2D Stride
-					mov r6, cb                                              @ Next CB Number
-					push {r4-r6}
-					bl dma32_set_cb
-					add sp, sp, #12
-					pop {r0-r6}
+				movne r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
+				addne r3, r3, #equ32_pwm_base_lower
+				addne r3, r3, #equ32_pwm_base_upper
+				addne r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
+				moveq r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
+				addeq r3, r3, #equ32_pcm_base_lower
+				addeq r3, r3, #equ32_pcm_base_upper
+				addeq r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
+				bic r1, r1, #equ32_dma_ti_no_wide_bursts
+				orr r1, r1, #0<<equ32_dma_ti_waits
+				orr r1, r1, #0<<equ32_dma_ti_burst_length
+				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
+				orr r1, r1, #equ32_dma_ti_wait_resp
+				mov r2, mem_alloc                                       @ Source Address
+				lsl r4, wave_length, #2	                                @ Transfer Length
+				mov r5, #0                                              @ 2D Stride
+				mov r6, cb                                              @ Next CB Number
+				push {r4-r6}
+				bl dma32_set_cb
+				add sp, sp, #12
+				pop {r0-r6}
 
 		snd32_sounddecode_main_common:
 
