@@ -813,10 +813,55 @@ sound_index sound[] =
 	3<<14|2<<12|16,  // 0x2FE 2000.0hz Appx. B6  Noise
 	3<<14|2<<12|15,  // 0x2FF 2133.3hz Appx. C7  Noise
 
+	/* High Tones Big */
+
+	2<<14|0<<12|14,  // 0x300 2285.7hz Appx. C#7 Square
+	2<<14|0<<12|13,  // 0x301 2461.5hz Appx. D#7 Square
+	2<<14|0<<12|12,  // 0x302 2666.6hz Appx. E7  Square
+	2<<14|0<<12|11,  // 0x303 2909.1hz Appx. F7  Square
+	2<<14|0<<12|10,  // 0x304 3200,0hz Appx. G7  Square
+	2<<14|0<<12|9,   // 0x305 3555.6hz Appx. A7  Square
+	2<<14|0<<12|8,   // 0x306 4000.0hz Appx. B7  Square
+	2<<14|0<<12|7,   // 0x307 4571.4hz Appx. C#8 Square
+	2<<14|0<<12|6,   // 0x308 5333.3hz Appx. E8  Square
+	2<<14|0<<12|5,   // 0x309 6400.0hz Appx. G8  Square
+	2<<14|0<<12|4,   // 0x30A 8000.0hz Appx. B8  Square
+	2<<14|0<<12|3,   // 0x30B 10666.7hz Square
+
+	/* High Tones Middle */
+
+	2<<14|1<<12|14,  // 0x30C 2285.7hz Appx. C#7 Square
+	2<<14|1<<12|13,  // 0x30D 2461.5hz Appx. D#7 Square
+	2<<14|1<<12|12,  // 0x30E 2666.6hz Appx. E7  Square
+	2<<14|1<<12|11,  // 0x30F 2909.1hz Appx. F7  Square
+	2<<14|1<<12|10,  // 0x310 3200,0hz Appx. G7  Square
+	2<<14|1<<12|9,   // 0x311 3555.6hz Appx. A7  Square
+	2<<14|1<<12|8,   // 0x312 4000.0hz Appx. B7  Square
+	2<<14|1<<12|7,   // 0x313 4571.4hz Appx. C#8 Square
+	2<<14|1<<12|6,   // 0x314 5333.3hz Appx. E8  Square
+	2<<14|1<<12|5,   // 0x315 6400.0hz Appx. G8  Square
+	2<<14|1<<12|4,   // 0x316 8000.0hz Appx. B8  Square
+	2<<14|1<<12|3,   // 0x317 10666.7hz Square
+
+	/* High Tones Small */
+
+	2<<14|2<<12|14,  // 0x318 2285.7hz Appx. C#7 Square
+	2<<14|2<<12|13,  // 0x319 2461.5hz Appx. D#7 Square
+	2<<14|2<<12|12,  // 0x31A 2666.6hz Appx. E7  Square
+	2<<14|2<<12|11,  // 0x31B 2909.1hz Appx. F7  Square
+	2<<14|2<<12|10,  // 0x31C 3200,0hz Appx. G7  Square
+	2<<14|2<<12|9,   // 0x31D 3555.6hz Appx. A7  Square
+	2<<14|2<<12|8,   // 0x31E 4000.0hz Appx. B7  Square
+	2<<14|2<<12|7,   // 0x31F 4571.4hz Appx. C#8 Square
+	2<<14|2<<12|6,   // 0x320 5333.3hz Appx. E8  Square
+	2<<14|2<<12|5,   // 0x321 6400.0hz Appx. G8  Square
+	2<<14|2<<12|4,   // 0x322 8000.0hz Appx. B8  Square
+	2<<14|2<<12|3,   // 0x323 10666.7hz Square
+
 	/* Special Sounds */
 
-	2<<14|3<<12|36,  // 0x300 Silence 
-	3<<14|2<<12|0,   // 0x301 Long Noise
+	2<<14|3<<12|36,  // 0x324 Silence 
+	3<<14|0<<12|0,   // 0x325 Long Noise Big
 
 	0                // End of Index
 };
