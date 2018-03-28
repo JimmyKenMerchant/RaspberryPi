@@ -120,227 +120,255 @@ __attribute__((noinline)) uint32 _armtimer_reload( uint32 reload )
 	return result;
 }
 
+__attribute__((noinline)) uint32 _armtimer_load( uint32 load )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x11");
+	return result;
+}
+
 __attribute__((noinline)) uint32 _clockmanager( uint32 clocktype_base, uint32 clk_ctl, uint32 clk_divisors )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x11");
+	asm volatile ("svc #0x12");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _calender_init( uint32 year, uchar8 month, uchar8 day )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x12");
+	asm volatile ("svc #0x13");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _clock_init( uchar8 hour, uchar8 minute, uchar8 second, uint32 usecond )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x13");
+	asm volatile ("svc #0x14");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _correct_utc( int32 distance_utc )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x14");
+	asm volatile ("svc #0x15");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _get_time()
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x15");
+	asm volatile ("svc #0x16");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _set_time( uint64 timestamp )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x16");
+	asm volatile ("svc #0x17");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _sounddecode( sound_index* sound, bool pcm_mode )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x17");
+	asm volatile ("svc #0x18");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x18");
+	asm volatile ("svc #0x19");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _soundinterrupt( music_code* music, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x19");
+	asm volatile ("svc #0x1A");
 	return result;
 }
 
 __attribute__((noinline)) uint32 _soundclear()
 {
 	register uint32 result asm("r0");
-	asm volatile ("svc #0x1A");
-	return result;
-}
-
-__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat )
-{
-	register uint32 result asm("r0");
 	asm volatile ("svc #0x1B");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpioclear( bool stay )
+__attribute__((noinline)) uint32 _gpioplay()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1C");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartinit( uint32 div_int, uint32 div_frac, uint32 line_ctl, uint32 ctl )
+__attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1D");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsettest( bool tdr_on, bool tx_on, bool rx_on )
+__attribute__((noinline)) uint32 _gpioclear( bool stay )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1E");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uarttestwrite( String address_heap, uint32 size )
+__attribute__((noinline)) uint32 _gpiotoggle( uint32 number_gpio )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1F");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uarttestread( String address_heap, uint32 size )
+__attribute__((noinline)) uint32 _gpiopullud( uint32 control, uint32 number_gpio )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x20");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
+__attribute__((noinline)) uint32 _uartinit( uint32 div_int, uint32 div_frac, uint32 line_ctl, uint32 ctl )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x21");
 	return result;
 }
 
-__attribute__((noinline)) String _uartint_emulate( uint32 max_size, bool flag_mirror, uchar8 character_rx )
+__attribute__((noinline)) uint32 _uartsettest( bool tdr_on, bool tx_on, bool rx_on )
 {
-	register String result asm("r0");
+	register uint32 result asm("r0");
 	asm volatile ("svc #0x22");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclrint()
+__attribute__((noinline)) uint32 _uarttestwrite( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x23");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
+__attribute__((noinline)) uint32 _uarttestread( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x24");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
+__attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x25");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclrrx()
+__attribute__((noinline)) String _uartint_emulate( uint32 max_size, bool flag_mirror, uchar8 character_rx )
 {
-	register uint32 result asm("r0");
+	register String result asm("r0");
 	asm volatile ("svc #0x26");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
+__attribute__((noinline)) uint32 _uartclrint()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x27");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartclient( bool mode_client )
+__attribute__((noinline)) uint32 _uarttx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x28");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _otg_host_reset_bcm()
+__attribute__((noinline)) uint32 _uartrx( String address_heap, uint32 size )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x29");
 	return result;
 }
 
+__attribute__((noinline)) uint32 _uartclrrx()
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x2A");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _uartsetheap( uint32 num_heap )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x2B");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _uartclient( bool mode_client )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x2C");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _otg_host_reset_bcm()
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #0x2D");
+	return result;
+}
+
 __attribute__((noinline)) int32 _hub_activate( uint32 channel, uint32 ticket )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2A");
+	asm volatile ("svc #0x2E");
 	return result;
 }
 
 __attribute__((noinline)) int32 _hub_search_device( uint32 channel, uint32 address_hub )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2B");
+	asm volatile ("svc #0x2F");
 	return result;
 }
 
 __attribute__((noinline)) int32 _hid_activate( uint32 channel, uint32 number_configuration, uint32 ticket )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2C");
+	asm volatile ("svc #0x30");
 	return result;
 }
 
 __attribute__((noinline)) int32 _hid_setidle( uint32 channel, uint32 number_interface, uint32 ticket )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2D");
+	asm volatile ("svc #0x31");
 	return result;
 }
 
 __attribute__((noinline)) String _keyboard_get( uint32 channel, uint32 number_endpoint, uint32 ticket )
 {
 	register String result asm("r0");
-	asm volatile ("svc #0x2E");
+	asm volatile ("svc #0x32");
 	return result;
 }
 
 __attribute__((noinline)) int32 _romread_i2c( uint32 address_heap, uint32 chip_select, uint32 address_memory, uint32 length )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x2F");
+	asm volatile ("svc #0x33");
 	return result;
 }
 
 __attribute__((noinline)) int32 _romwrite_i2c( uint32 address_heap, uint32 chip_select, uint32 address_memory, uint32 length )
 {
 	register int32 result asm("r0");
-	asm volatile ("svc #0x30");
+	asm volatile ("svc #0x34");
 	return result;
 }
 

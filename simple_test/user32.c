@@ -12,6 +12,7 @@
 
 int32 _user_start()
 {
+	_gpiopullud( 2, 20 );
 	
 	while(True) {
 	}

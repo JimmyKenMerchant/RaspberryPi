@@ -7,6 +7,9 @@
  *
  */
 
+/* Define Debug Status */
+/*.equ __DEBUG, 1*/
+
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
@@ -19,47 +22,10 @@
 	.include "vector32/el3_armv7.s"
 .endif
 
-.section	.os_vector32
-.globl _os_start
-_os_start:
-	ldr pc, _os_reset_addr                    @ 0x00 reset
-	ldr pc, _os_undefined_instruction_addr    @ 0x04 (Hyp mode in Hyp mode)
-	ldr pc, _os_supervisor_addr               @ 0x08 (Hyp mode in Hyp mode)
-	ldr pc, _os_prefetch_abort_addr           @ 0x0C (Hyp mode in Hyp mode)
-	ldr pc, _os_data_abort_addr               @ 0x10 (Hyp mode in Hyp mode)
-	ldr pc, _os_reserve_addr                  @ If you call `HVC` in Hyp Mode, It translates to `SVC`
-	ldr pc, _os_irq_addr                      @ 0x18 (Hyp mode in Hyp mode)
-	ldr pc, _os_fiq_addr                      @ 0x1C (Hyp mode in Hyp mode)
-_os_reset_addr:                 .word _os_reset
-_os_undefined_instruction_addr: .word _os_reset
-_os_supervisor_addr:            .word _os_reset
-_os_prefetch_abort_addr:        .word _os_reset
-_os_data_abort_addr:            .word _os_reset
-_os_reserve_addr:               .word _os_reset
-_os_irq_addr:                   .word _os_reset
-_os_fiq_addr:                   .word _os_fiq
+.include "vector32/os.s"
 
-_os_reset:
-	mov r0, sp                                @ Store Previous Stack Pointer
-	mrc p15, 0, r1, c12, c0, 0                @ Last VBAR Address to Retrieve
-	mov sp, #0x8000                           @ Stack Pointer to 0x8000
-                                                  @ Memory size 1G(2^30|1024M) bytes, 0x3D090000 (0x00 - 0x3D08FFFF)
-	push {r0-r1,lr}
-
-	/* SVC mode FIQ Disable and IRQ Disable, Current Mode */
-	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r0
-
-	mov r0, #equ32_fiq_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r0
-
-	mov sp, #0x7000
-
-	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
-	msr cpsr_c, r0
-
-	mov r0, #0x8000
-	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
+os_reset:
+	push {lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
@@ -73,100 +39,72 @@ _os_reset:
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_armtimer_base
-
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
-	str r1, [r0, #equ32_armtimer_predivider]
-
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
-	str r1, [r0, #equ32_armtimer_load]
-
-	mov r1, #0x3E0000                         @ High 2 Bytes
-	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 100K
-	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
-	str r1, [r0, #equ32_armtimer_control]
-
-	/* So We can get a 10hz Timer Interrupt (100000/10000) */
+	/**
+	 * Get a 1hz Timer Interrupt (100000/100000).
+	 */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
+	mov r1, #0x10000
+	add r1, r1, #0x8600
+	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
+	mov r2, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
 
 	/* GPIO */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0   @ Clear GPIO 20
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0   @ Set GPIO 20 INPUT
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1   @ Clear GPIO 21
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1  @ Set GPIO 21 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
+.ifndef __RASPI3B
+	ldr r1, [r0, #equ32_gpio_gpfsel40]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7   @ Clear GPIO 47
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7  @ Set GPIO 47 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
-_os_render:
-	cpsie f
-	_os_render_loop:
-		b _os_render_loop
+	bl bcm32_get_framebuffer
 
-	mov fp, #0x8000                          @ Retrieve Previous Stack Pointer, VBAR,and Link Register
-	ldr r0, [fp, #-8]                        @ Stack Pointer
-	ldr r1, [fp, #-4]                        @ Stack Pointer
-	ldr lr, [fp]                             @ Link Register
-	mov sp, r0
-	mcr p15, 0, r1, c12, c0, 0               @ Retrieve VBAR Address
+	pop {pc}	
+
+os_debug:
+	push {lr}
+	pop {pc}
+
+os_irq:
+	push {r0-r12}
+	pop {r0-r12}
 	mov pc, lr
 
-_os_debug:
-	cpsie f                                  @ cpsie is for enable IRQ (i), FIQ (f) and Abort (a) (all, ifa). cpsid is for disable
-	_os_debug_loop1:
-		b _os_debug_loop1
+os_fiq:
+	push {r0-r4,lr}                           @ r5-r7 is used across modes
 
-_os_fiq:
-	cpsid f                                  @ Disable Aborts (a), FIQ(f), IRQ(i)
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
 
-	push {r0-r12,lr}                         @ Equals to stmfd (stack pointer full, decrement order)
-	mrs r0, spsr
-	push {r0}
-
-	bl _os_fiq_handler
-
-	pop {r0}
-	msr spsr, r0
-	pop {r0-r12,lr}                          @ Equals to ldmfd (stack pointer full, decrement order)
-
-	cpsie f                                  @ Enable Aborts (a), FIQ(f), IRQ(i)
-
-	subs pc, lr, #4
-
-_os_fiq_handler:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
+	mov r0, #21
+	bl gpio32_gpiotoggle
 
-	ldr r1, gpio_toggle
-	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	str r1, gpio_toggle
-
-	cmp r1, #0
-	addeq r0, r0, #equ32_gpio_gpclr0
-	addne r0, r0, #equ32_gpio_gpset0
-	mov r1, #equ32_gpio21
-	str r1, [r0]
+.ifndef __RASPI3B
+	mov r0, #47
+	bl gpio32_gpiotoggle
+.endif
 
 	macro32_dsb ip
 
-	_os_fiq_handler_jump:
-		mov pc, lr
-
-/**
- * Variables
- */
-.balign 4
-gpio_toggle:       .byte 0b00000000
-
-.balign 4
+	pop {r0-r4,pc}
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4

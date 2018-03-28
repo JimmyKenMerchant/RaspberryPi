@@ -6,7 +6,11 @@
 
 **Output/Input**
 
-* GPIO 21 as Output (10Hz Blinker), make sure to attach the appropriate resister to your LED Circuit, otherwise, the LED may be burn out.
+* GPIO 20 as Input to Check Pull Up/Down, make sure to attach the appropriate resister to your LED Circuit, otherwise, the LED may be burn out.
+
+* GPIO 21 as Output (1Hz Blinker), make sure to attach the appropriate resister to your LED Circuit, otherwise, the LED may be burn out.
+
+* GPIO 47 as Output of Embedded LED (1Hz Blinker): Except Pi 3B
 
 **Compatibility**
 

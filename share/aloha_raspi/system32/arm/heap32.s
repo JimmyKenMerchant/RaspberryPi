@@ -1042,7 +1042,7 @@ heap32_wave_invert:
  * Make Square Wave on Memory Space
  *
  * Parameters
- * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r0: Pointer of Start Address of Memory Space to be Made Wave
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
  * r2: Height of Wave (Signed 32-bit Integer)
  * r3: Medium of Wave (Signed 32-bit Integer)
@@ -1163,7 +1163,7 @@ heap32_wave_square:
  * Caution! The Value of Addition of Height and Medium Must Be Within 16-bit (0-65535)
  *
  * Parameters
- * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r0: Pointer of Start Address of Memory Space to be Made Wave
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
  * r2: Height of Wave (Signed 32-bit Integer)
  * r3: Medium of Wave (Signed 32-bit Integer)
@@ -1290,7 +1290,7 @@ heap32_wave_random:
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
- * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r0: Pointer of Start Address of Memory Space to be Made Wave
  * r1: Length of Wave (32-bit Words, Must Be 5 and More)
  * r2: Height of Wave (Signed 32-bit Integer)
  * r3: Medium of Wave (Signed 32-bit Integer)
@@ -1476,7 +1476,7 @@ heap32_wave_triangle:
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
- * r0: Pointer of Start Address of Memory Space to be Made Triangle Wave
+ * r0: Pointer of Start Address of Memory Space to be Made Wave
  * r1: Length of Wave (32-bit Words, Must Be 5 and More)
  * r2: Height of Wave (Signed 32-bit Integer)
  * r3: Medium of Wave (Signed 32-bit Integer)

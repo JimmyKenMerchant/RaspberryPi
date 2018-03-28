@@ -272,3 +272,148 @@ gpio32_gpiolen:
 .unreq sequence_point
 .unreq sequence_word
 .unreq length
+
+
+/**
+ * function gpio32_gpiotoggle
+ * Toggle GPIO High/Low on Output
+ *
+ * Parameters
+ * r0: Number of GPIO to Toggled Output
+ *
+ * Return: r0 (0 as success)
+ */
+.globl gpio32_gpiotoggle
+gpio32_gpiotoggle:
+	/* Auto (Local) Variables, but just Aliases */
+	number         .req r0
+	memorymap_base .req r1
+	temp           .req r2
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	/* Mask */
+	and number, number, #0b111111                      @ Mask Only for 0-63
+
+	cmp number, #31
+	subgt number, number, #32
+
+	mov temp, #1
+	lsl number, temp, number
+
+	bgt gpio32_gpiotoggle_upper
+
+	/* Toggle for GPIO 0-31 */
+	ldr temp, [memorymap_base, #equ32_gpio_gplev0]
+	macro32_dsb ip
+
+	tst number, temp
+	streq number, [memorymap_base, #equ32_gpio_gpset0]
+	beq gpio32_gpiotoggle_common
+
+	str number, [memorymap_base, #equ32_gpio_gpclr0]
+	b gpio32_gpiotoggle_common
+
+	/* Toggle for GPIO 32-63 */
+	gpio32_gpiotoggle_upper:
+		ldr temp, [memorymap_base, #equ32_gpio_gplev1]
+		macro32_dsb ip
+
+		tst number, temp
+		streq number, [memorymap_base, #equ32_gpio_gpset1]
+		beq gpio32_gpiotoggle_common
+
+		str number, [memorymap_base, #equ32_gpio_gpclr1]
+
+	gpio32_gpiotoggle_common:
+		macro32_dsb ip
+		mov r0, #0                                          @ Return with Success
+		mov pc, lr
+
+.unreq number
+.unreq memorymap_base
+.unreq temp
+
+
+/**
+ * function gpio32_gpiopullud
+ * Set GPIO Pull Up/Down Status on IN
+ * This function is only available if GPIO is IN status.
+ *
+ * Parameters
+ * r0: Control Signal (0: Off, 1: Pull Down, 2: Pull Up)
+ * r1: Number of GPIO to Be Controlled
+ *
+ * Return: r0 (0 as success)
+ */
+.globl gpio32_gpiopullud
+gpio32_gpiopullud:
+	/* Auto (Local) Variables, but just Aliases */
+	control        .req r0
+	number         .req r1
+	memorymap_base .req r2
+	temp           .req r3
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	/* Mask */
+	and control, control, #0b11                        @ Mask Only for 0-1
+	and number, number, #0b111111                      @ Mask Only for 0-63
+
+	str control, [memorymap_base, #equ32_gpio_gppud]   @ Set Control Signal
+
+	macro32_dsb ip
+
+	cmp number, #31
+	subgt number, number, #32
+	movgt control, #1
+	movle control, #0
+
+	mov temp, #1
+	lsl number, temp, number
+
+	mov temp, #150                                     @ Wait for 150 Clocks to Set Control Signal
+	gpio32_gpiopullud_wait:
+		subs temp, #1
+		bge gpio32_gpiopullud_wait
+
+	cmp control, #1
+	beq gpio32_gpiopullud_upper
+
+	/* Signal for GPIO 0-31 */
+	str number, [memorymap_base, #equ32_gpio_gppudclk0]
+
+	macro32_dsb ip
+	
+	b gpio32_gpiopullud_close
+
+	/* Signal for GPIO 32-63 */
+	gpio32_gpiopullud_upper:
+		str number, [memorymap_base, #equ32_gpio_gppudclk1]
+
+		macro32_dsb ip
+
+	gpio32_gpiopullud_close:
+
+		mov temp, #150                                      @ Wait for 150 Clocks to Set GPIO Pull Up/Down Status
+		gpio32_gpiopullud_close_wait:
+			subs temp, #1
+			bge gpio32_gpiopullud_close_wait
+
+		mov temp, #0
+		str temp, [memorymap_base, #equ32_gpio_gppud]       @ Clear Control Signal
+		cmp control, #1
+		strne temp, [memorymap_base, #equ32_gpio_gppudclk0] @ Clear Signal for GPIO 0-31
+		streq temp, [memorymap_base, #equ32_gpio_gppudclk1] @ Clear Signal for GPIO 32-63
+
+	gpio32_gpiopullud_common:
+		mov r0, #0                                          @ Return with Success
+		mov pc, lr
+
+.unreq control
+.unreq number
+.unreq memorymap_base
+.unreq temp
+

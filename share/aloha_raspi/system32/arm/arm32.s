@@ -1987,6 +1987,7 @@ arm32_armtimer:
 /**
  * function arm32_armtimer_reload
  * Reload Counter for Arm Timer, SP804 and Its Derivatives
+ * This function is NOT for the immediate change of the timer value.
  *
  * Parameters
  * r0: Reload
@@ -2011,6 +2012,37 @@ arm32_armtimer_reload:
 		mov pc, lr
 
 .unreq reload
+.unreq memorymap_base
+
+
+/**
+ * function arm32_armtimer_load
+ * Load Counter for Arm Timer and Renew Timer Value to Count, SP804 and Its Derivatives
+ * This function is for the immediate change of the timer value.
+ *
+ * Parameters
+ * r0: load
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl arm32_armtimer_load
+arm32_armtimer_load:
+	/* Auto (Local) Variables, but just Aliases */
+	load           .req r0
+	memorymap_base .req r1
+
+	mov memorymap_base, #equ32_peripherals_base
+	orr memorymap_base, memorymap_base, #equ32_armtimer_base
+
+	str load, [memorymap_base, #equ32_armtimer_load]
+
+	macro32_dsb ip
+
+	arm32_armtimer_load_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq load
 .unreq memorymap_base
 
 

@@ -204,6 +204,8 @@ __attribute__((noinline)) uint32 _armtimer( uint32 timer_ctl, uint32 load, uint3
 
 __attribute__((noinline)) uint32 _armtimer_reload( uint32 reload );
 
+__attribute__((noinline)) uint32 _armtimer_load( uint32 load );
+
 __attribute__((noinline)) uint32 _clockmanager( uint32 clocktype_base, uint32 clk_ctl, uint32 clk_divisors );
 
 /* Regular Functions */
@@ -469,21 +471,18 @@ __attribute__((noinline)) int32 _hub_search_device
 
 /* Relative System Calls  */
 
+__attribute__((noinline)) uint32 _gpioplay(); // Clear All (false) or Stay GPIO Status (true)
+
 __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
 
 __attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
 
+__attribute__((noinline)) uint32 _gpiotoggle( uint32 number_gpio ); // Clear All (false) or Stay GPIO Status (true)
+
+__attribute__((noinline)) uint32 _gpiopullud( uint32 control, uint32 number_gpio ); // Clear All (false) or Stay GPIO Status (true)
+
 
 /* Regular Functions */
-
-/**
- * Play GPIO Sequence
- *
- * Return: 0 as success, 1 as error
- * Error: GPIO Sequence is not assigned
- */
-extern uint32 gpio32_gpioplay();
-
 
 /**
  * Count 4-Bytes Beats of GPIO Sequence
