@@ -15,7 +15,7 @@
 
 
 /********************************
- * Unique Definitions
+ * Unique Definitions on General
  ********************************/
 
 /* Constants */
@@ -81,97 +81,20 @@
 #define ObjArray obj*
 
 /**
- * GPIO Control and Status (Limited Between 0-29)
- */
-#ifdef __BCM2835
-	#define _gpio_base   0x20200000
-#else
-	/* BCM2836 and BCM2837 Peripheral Base */
-	#define _gpio_base   0x3F200000
-#endif
-
-#define _gpio_gpfsel00     0x00 // GPIO 0-9   Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
-#define _gpio_gpfsel10     0x04 // GPIO 10-19 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
-#define _gpio_gpfsel20     0x08 // GPIO 20-29 Function Select, each 3 bits, 000 an input, 001 an output, Alt Functions
-
-#define _gpio_gpfsel_0     0 // LSL
-#define _gpio_gpfsel_1     3 // LSL
-#define _gpio_gpfsel_2     6 // LSL
-#define _gpio_gpfsel_3     9 // LSL
-#define _gpio_gpfsel_4     12 // LSL
-#define _gpio_gpfsel_5     15 // LSL
-#define _gpio_gpfsel_6     18 // LSL
-#define _gpio_gpfsel_7     21 // LSL
-#define _gpio_gpfsel_8     24 // LSL
-#define _gpio_gpfsel_9     27 // LSL
-
-#define _gpio_gpfsel_input    0b000
-#define _gpio_gpfsel_output   0b001
-#define _gpio_gpfsel_alt0     0b100
-#define _gpio_gpfsel_alt1     0b101
-#define _gpio_gpfsel_alt2     0b110
-#define _gpio_gpfsel_alt3     0b111
-#define _gpio_gpfsel_alt4     0b011
-#define _gpio_gpfsel_alt5     0b010
-#define _gpio_gpfsel_clear    0b111 // Use With Bit Clear
-
-#define _gpio_gpset0      0x1C // GPIO 0-31, Output Set, each 1 bit, 0 no effect, 1 set Pin
-#define _gpio_gpclr0      0x28 // GPIO 0-31, Output Clear, 0 no effect, 1 clear Pin
-#define _gpio_gplev0      0x34 // GPIO 0-31, Actual Pin Level, 0 law, 1 high
-#define _gpio_gpeds0      0x40 // GPIO 0-31, Event Detect Status, 0 not detect, 1 detect, write 1 to clear
-#define _gpio_gpren0      0x4C // GPIO 0-31, Rising Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
-#define _gpio_gpfen0      0x58 // GPIO 0-31, Falling Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
-#define _gpio_gphen0      0x64 // GPIO 0-31, High Detect, 0 disable, 1 detection corresponds to gpeds_n
-#define _gpio_gplen0      0x70 // GPIO 0-31, Low Detect, 0 disable, 1 detection corresponds to gpeds_n
-#define _gpio_gparen0     0x7C // GPIO 0-31, Async Rising Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
-#define _gpio_gpafen0     0x88 // GPIO 0-31, Async Falling Edge Detect, 0 disable, 1 detection corresponds to gpeds_n
-
-
-/**
  * System calls
  * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed to acccess SVC mode.
  * Plus, peripherals can't be directly accessed to write/read through user mode, and only can be accessed through System calls. 
  */
-
 __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
-
 
 /* Regular Functions */
 
 int32 _user_start();
 
-bool _gpio_detect( uchar8 gpio_number ); // Edge Detect
-bool _gpio_in( uchar8 gpio_number ); // Actual Pin Status
-
 
 /********************************
  * system32/arm/arm32.s
  ********************************/
-
-/* Constants */
-
-#define _cm_gp0             0x00000070 // Clock Manager General Purpose 0 (GPO) Base
-#define _cm_gp1             0x00000078 // Clock Manager General Purpose 1 (GP1) Base
-#define _cm_gp2             0x00000080 // Clock Manager General Purpose 2 (GP2) Base
-#define _cm_pcm             0x00000098 // Clock Manager PCM Base
-#define _cm_pwm             0x000000A0 // Clock Manager PWM Base
-
-#define _cm_ctl_mash_0      0x00000000 // Integer Division
-#define _cm_ctl_mash_1      0x00000200 // 1-stage Mash
-#define _cm_ctl_mash_2      0x00000400 // 2-stage Mash
-#define _cm_ctl_mash_3      0x00000600 // 3-stage Mash
-#define _cm_ctl_flip        0x00000100 // Invert Output
-#define _cm_ctl_src_gnd     0x00000000 // GND (0 Hz)
-#define _cm_ctl_src_osc     0x00000001 // Oscillator (19.2Mhz)
-#define _cm_ctl_src_deb0    0x00000002 // Test Debug 0 (0 Hz)
-#define _cm_ctl_src_deb1    0x00000003 // Test Debug 1 (0 Hz)
-#define _cm_ctl_src_plla    0x00000004 // PLL A (0Hz?)
-#define _cm_ctl_src_pllc    0x00000005 // PLL C (1000Mhz but depends on CPU Clock?)
-#define _cm_ctl_src_plld    0x00000006 // PLL D (500Mhz)
-#define _cm_ctl_src_hdmi    0x00000007 // HDMI Auxiliary (216Mhz?)
-
-#define _cm_div_integer     12 // LSL Bit[23:12]
-#define _cm_div_fraction    0 // Bit[11:0] (Fractional Value is Bit[11:0] Divided by 1024. Valid Bit[9:0])
 
 extern uint32 ARM32_STOPWATCH_LOW;
 extern uint32 ARM32_STOPWATCH_HIGH;
@@ -466,8 +389,27 @@ __attribute__((noinline)) int32 _hub_search_device
 
 /* Constants */
 
-#define gpio_sequence uint32
-
+#define gpio_sequence       uint32
+#define _GPIOTOGGLE_LOW     0
+#define _GPIOTOGGLE_HIGH    1
+#define _GPIOTOGGLE_TOGGLE  2
+#define _GPIOMODE_IN        0b000
+#define _GPIOMODE_OUT       0b001
+#define _GPIOMODE_ALT0      0b100
+#define _GPIOMODE_ALT1      0b101
+#define _GPIOMODE_ALT2      0b110
+#define _GPIOMODE_ALT3      0b111
+#define _GPIOMODE_ALT4      0b011
+#define _GPIOMODE_ALT5      0b010
+#define _GPIOEVENT_RISING   0
+#define _GPIOEVENT_FALLING  1
+#define _GPIOEVENT_HIGH     2
+#define _GPIOEVENT_LOW      3
+#define _GPIOEVENT_ARISING  4
+#define _GPIOEVENT_AFALLING 5
+#define _GPIOPULL_OFF       0
+#define _GPIOPULL_DOWN      1
+#define _GPIOPULL_UP        2
 
 /* Relative System Calls  */
 
@@ -477,9 +419,13 @@ __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, u
 
 __attribute__((noinline)) uint32 _gpioclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
 
-__attribute__((noinline)) uint32 _gpiotoggle( uint32 number_gpio ); // Clear All (false) or Stay GPIO Status (true)
+__attribute__((noinline)) uint32 _gpiotoggle( uint32 number_gpio, uchar8 control );
 
-__attribute__((noinline)) uint32 _gpiopullud( uint32 control, uint32 number_gpio ); // Clear All (false) or Stay GPIO Status (true)
+__attribute__((noinline)) uint32 _gpiomode( uint32 number_gpio, uchar8 function_select );
+
+__attribute__((noinline)) uint32 _gpioevent( uint32 number_gpio, uchar8 event_select, bool on );
+
+__attribute__((noinline)) uint32 _gpiopull( uint32 number_gpio, uchar8 control );
 
 
 /* Regular Functions */
@@ -493,6 +439,38 @@ extern uint32 gpio32_gpiolen
 (
 	gpio_sequence* gpio
 );
+
+
+/********************************
+ * Unique Definitions on GPIO
+ ********************************/
+
+/* Constants */
+
+/**
+ * GPIO Control and Status (Limited Between 0-29)
+ */
+#ifdef __BCM2835
+	#define _gpio_base   0x20200000
+#else
+	/* BCM2836 and BCM2837 Peripheral Base */
+	#define _gpio_base   0x3F200000
+#endif
+
+#define _gpio_gpset0      0x1C // GPIO 0-31, Output Set, each 1 bit, 0 no effect, 1 set Pin
+#define _gpio_gpset1      0x20 // GPIO 32-63, Output Set, each 1 bit, 0 no effect, 1 set Pin
+#define _gpio_gpclr0      0x28 // GPIO 0-31, Output Clear, 0 no effect, 1 clear Pin
+#define _gpio_gpclr1      0x2C // GPIO 32-63, Output Clear, 0 no effect, 1 clear Pin
+#define _gpio_gplev0      0x34 // GPIO 0-31, Actual Pin Level, 0 law, 1 high
+#define _gpio_gplev1      0x38 // GPIO 32-63, Actual Pin Level, 0 law, 1 high
+#define _gpio_gpeds0      0x40 // GPIO 0-31, Event Detect Status, 0 not detect, 1 detect, write 1 to clear
+#define _gpio_gpeds1      0x44 // GPIO 32-63, Event Detect Status, 0 not detect, 1 detect, write 1 to clear
+
+/* Regular Functions */
+
+bool _gpio_detect( uchar8 gpio_number ); // Edge Detect
+
+bool _gpio_in( uchar8 gpio_number ); // Actual Pin Level Status
 
 
 /********************************

@@ -12,9 +12,15 @@
 
 int32 _user_start()
 {
-	_gpiopullud( 2, 20 );
-	
+	_gpiomode( 20, _GPIOMODE_IN );
+	_gpiopull( 20, _GPIOPULL_UP );
+	_gpioevent( 20, _GPIOEVENT_RISING, TRUE );
+
 	while(True) {
+		//if ( _gpio_detect( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_TOGGLE );
+		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_TOGGLE );
+
+		_sleep(1000);
 	}
 
 	return EXIT_SUCCESS;

@@ -54,8 +54,6 @@ os_reset:
 	add r0, r0, #equ32_gpio_base
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0   @ Clear GPIO 20
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0   @ Set GPIO 20 INPUT
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1   @ Clear GPIO 21
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1  @ Set GPIO 21 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
@@ -95,10 +93,12 @@ os_fiq:
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
 	mov r0, #21
+	mov r1, #2
 	bl gpio32_gpiotoggle
 
 .ifndef __RASPI3B
 	mov r0, #47
+	mov r1, #2
 	bl gpio32_gpiotoggle
 .endif
 
