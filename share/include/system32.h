@@ -392,7 +392,7 @@ __attribute__((noinline)) int32 _hub_search_device
 #define gpio_sequence       uint32
 #define _GPIOTOGGLE_LOW     0
 #define _GPIOTOGGLE_HIGH    1
-#define _GPIOTOGGLE_TOGGLE  2
+#define _GPIOTOGGLE_SWAP    2
 #define _GPIOMODE_IN        0b000
 #define _GPIOMODE_OUT       0b001
 #define _GPIOMODE_ALT0      0b100

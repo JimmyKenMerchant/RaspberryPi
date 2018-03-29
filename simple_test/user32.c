@@ -17,8 +17,8 @@ int32 _user_start()
 	_gpioevent( 20, _GPIOEVENT_RISING, TRUE );
 
 	while(True) {
-		//if ( _gpio_detect( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_TOGGLE );
-		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_TOGGLE );
+		//if ( _gpio_detect( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_SWAP );
+		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_SWAP );
 
 		_sleep(1000);
 	}

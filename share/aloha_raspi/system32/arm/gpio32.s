@@ -373,6 +373,8 @@ gpio32_gpiomode:
 	memorymap_base .req r2
 	clear          .req r3
 
+	push {lr}
+
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_gpio_base
 
@@ -381,15 +383,20 @@ gpio32_gpiomode:
 	and number, number, #0b111111                      @ Mask Only for 0-63
 
 	cmp number, #50
-	bge gpio32_gpiomode_50
+	addge memorymap_base, memorymap_base, #4
 	cmp number, #40
-	bge gpio32_gpiomode_40
+	addge memorymap_base, memorymap_base, #4
 	cmp number, #30
-	bge gpio32_gpiomode_30
+	addge memorymap_base, memorymap_base, #4
 	cmp number, #20
-	bge gpio32_gpiomode_20
+	addge memorymap_base, memorymap_base, #4
 	cmp number, #10
-	bge gpio32_gpiomode_10
+	addge memorymap_base, memorymap_base, #4
+
+	push {r1-r3}
+	mov r1, #10
+	bl arm32_urem
+	pop {r1-r3}
 
 	/* GPIO 0-9 */
 	mov clear, #3
@@ -397,93 +404,22 @@ gpio32_gpiomode:
 	lsl control, control, number
 	mov clear, #0b111
 	lsl clear, clear, number
-	ldr number, [memorymap_base, #equ32_gpio_gpfsel00] @ Current Status
+
+	.unreq number
+	temp .req r0
+
+	ldr temp, [memorymap_base]                       @ Current Status
 	macro32_dsb ip
-	bic number, number, clear
-	orr control, control, number
-	str control, [memorymap_base, #equ32_gpio_gpfsel00]
-	b gpio32_gpiomode_common
-
-	/* GPIO 50-59 */
-	gpio32_gpiomode_50:
-		sub number, number, #50
-		mov clear, #3
-		mul number, number, clear
-		lsl control, control, number
-		mov clear, #0b111
-		lsl clear, clear, number
-		ldr number, [memorymap_base, #equ32_gpio_gpfsel50] @ Current Status
-		macro32_dsb ip
-		bic number, number, clear
-		orr control, control, number
-		str control, [memorymap_base, #equ32_gpio_gpfsel50]
-		b gpio32_gpiomode_common
-
-	/* GPIO 40-49 */
-	gpio32_gpiomode_40:
-		sub number, number, #40
-		mov clear, #3
-		mul number, number, clear
-		lsl control, control, number
-		mov clear, #0b111
-		lsl clear, clear, number
-		ldr number, [memorymap_base, #equ32_gpio_gpfsel40] @ Current Status
-		macro32_dsb ip
-		bic number, number, clear
-		orr control, control, number
-		str control, [memorymap_base, #equ32_gpio_gpfsel40]
-		b gpio32_gpiomode_common
-
-	/* GPIO 30-39 */
-	gpio32_gpiomode_30:
-		sub number, number, #30
-		mov clear, #3
-		mul number, number, clear
-		lsl control, control, number
-		mov clear, #0b111
-		lsl clear, clear, number
-		ldr number, [memorymap_base, #equ32_gpio_gpfsel30] @ Current Status
-		macro32_dsb ip
-		bic number, number, clear
-		orr control, control, number
-		str control, [memorymap_base, #equ32_gpio_gpfsel30]
-		b gpio32_gpiomode_common
-
-	/* GPIO 20-29 */
-	gpio32_gpiomode_20:
-		sub number, number, #20
-		mov clear, #3
-		mul number, number, clear
-		lsl control, control, number
-		mov clear, #0b111
-		lsl clear, clear, number
-		ldr number, [memorymap_base, #equ32_gpio_gpfsel20] @ Current Status
-		macro32_dsb ip
-		bic number, number, clear
-		orr control, control, number
-		str control, [memorymap_base, #equ32_gpio_gpfsel20]
-		b gpio32_gpiomode_common
-
-	/* GPIO 10-19 */
-	gpio32_gpiomode_10:
-		sub number, number, #10
-		mov clear, #3
-		mul number, number, clear
-		lsl control, control, number
-		mov clear, #0b111
-		lsl clear, clear, number
-		ldr number, [memorymap_base, #equ32_gpio_gpfsel10] @ Current Status
-		macro32_dsb ip
-		bic number, number, clear
-		orr control, control, number
-		str control, [memorymap_base, #equ32_gpio_gpfsel10]
+	bic temp, temp, clear
+	orr control, control, temp
+	str control, [memorymap_base]
 
 	gpio32_gpiomode_common:
 		macro32_dsb ip
 		mov r0, #0                                         @ Return with Success
-		mov pc, lr
+		pop {pc}
 
-.unreq number
+.unreq temp
 .unreq control
 .unreq memorymap_base
 .unreq clear
@@ -511,189 +447,39 @@ gpio32_gpioevent:
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_gpio_base
+	add memorymap_base, memorymap_base, #equ32_gpio_gpren0
 
 	/* Mask */
 	and event, event, #0b111                           @ Mask Only for 0-7
 	and number, number, #0b111111                      @ Mask Only for 0-63
 
 	cmp event, #5
-	bge gpio32_gpioevent_afen
+	addge memorymap_base, memorymap_base, #12
 	cmp event, #4
-	bge gpio32_gpioevent_aren
+	addge memorymap_base, memorymap_base, #12
 	cmp event, #3
-	bge gpio32_gpioevent_len
+	addge memorymap_base, memorymap_base, #12
 	cmp event, #2
-	bge gpio32_gpioevent_hen
+	addge memorymap_base, memorymap_base, #12
 	cmp event, #1
-	bge gpio32_gpioevent_fen
+	addge memorymap_base, memorymap_base, #12
 
 	.unreq event
 	temp .req r1
 
 	cmp number, #31
 	subgt number, number, #32
+	addgt memorymap_base, memorymap_base, #4
 	mov temp, #1
 	lsl number, temp, number
-	bgt gpio32_gpioevent_renupper
 
 	/* GPIO 0-31 */
-	ldr temp, [memorymap_base, #equ32_gpio_gpren0]
+	ldr temp, [memorymap_base]
 	macro32_dsb ip
 	cmp flag_on, #1
 	orreq temp, temp, number
 	bicne temp, temp, number
-	str temp, [memorymap_base, #equ32_gpio_gpren0]
-
-	b gpio32_gpioevent_common
-
-	gpio32_gpioevent_renupper:
-		/* GPIO 32-63 */
-		ldr temp, [memorymap_base, #equ32_gpio_gpren1]
-		macro32_dsb ip
-		cmp flag_on, #1
-		orreq temp, temp, number
-		bicne temp, temp, number
-		str temp, [memorymap_base, #equ32_gpio_gpren1]
-
-		b gpio32_gpioevent_common
-
-	gpio32_gpioevent_afen:
-		cmp number, #31
-		subgt number, number, #32
-		mov temp, #1
-		lsl number, temp, number
-		bgt gpio32_gpioevent_afen_upper
-
-		/* GPIO 0-31 */
-		ldr temp, [memorymap_base, #equ32_gpio_gpafen0]
-		macro32_dsb ip
-		cmp flag_on, #1
-		orreq temp, temp, number
-		bicne temp, temp, number
-		str temp, [memorymap_base, #equ32_gpio_gpafen0]
-
-		b gpio32_gpioevent_common
-
-		gpio32_gpioevent_afen_upper:
-			/* GPIO 32-63 */
-			ldr temp, [memorymap_base, #equ32_gpio_gpafen1]
-			macro32_dsb ip
-			cmp flag_on, #1
-			orreq temp, temp, number
-			bicne temp, temp, number
-			str temp, [memorymap_base, #equ32_gpio_gpafen1]
-
-			b gpio32_gpioevent_common
-
-	gpio32_gpioevent_aren:
-		cmp number, #31
-		subgt number, number, #32
-		mov temp, #1
-		lsl number, temp, number
-		bgt gpio32_gpioevent_aren_upper
-
-		/* GPIO 0-31 */
-		ldr temp, [memorymap_base, #equ32_gpio_gparen0]
-		macro32_dsb ip
-		cmp flag_on, #1
-		orreq temp, temp, number
-		bicne temp, temp, number
-		str temp, [memorymap_base, #equ32_gpio_gparen0]
-
-		b gpio32_gpioevent_common
-
-		gpio32_gpioevent_aren_upper:
-			/* GPIO 32-63 */
-			ldr temp, [memorymap_base, #equ32_gpio_gparen1]
-			macro32_dsb ip
-			cmp flag_on, #1
-			orreq temp, temp, number
-			bicne temp, temp, number
-			str temp, [memorymap_base, #equ32_gpio_gparen1]
-
-			b gpio32_gpioevent_common
-
-	gpio32_gpioevent_len:
-		cmp number, #31
-		subgt number, number, #32
-		mov temp, #1
-		lsl number, temp, number
-		bgt gpio32_gpioevent_len_upper
-
-		/* GPIO 0-31 */
-		ldr temp, [memorymap_base, #equ32_gpio_gplen0]
-		macro32_dsb ip
-		cmp flag_on, #1
-		orreq temp, temp, number
-		bicne temp, temp, number
-		str temp, [memorymap_base, #equ32_gpio_gplen0]
-
-		b gpio32_gpioevent_common
-
-		gpio32_gpioevent_len_upper:
-			/* GPIO 32-63 */
-			ldr temp, [memorymap_base, #equ32_gpio_gplen1]
-			macro32_dsb ip
-			cmp flag_on, #1
-			orreq temp, temp, number
-			bicne temp, temp, number
-			str temp, [memorymap_base, #equ32_gpio_gplen1]
-
-			b gpio32_gpioevent_common
-
-	gpio32_gpioevent_hen:
-		cmp number, #31
-		subgt number, number, #32
-		mov temp, #1
-		lsl number, temp, number
-		bgt gpio32_gpioevent_hen_upper
-
-		/* GPIO 0-31 */
-		ldr temp, [memorymap_base, #equ32_gpio_gphen0]
-		macro32_dsb ip
-		cmp flag_on, #1
-		orreq temp, temp, number
-		bicne temp, temp, number
-		str temp, [memorymap_base, #equ32_gpio_gphen0]
-
-		b gpio32_gpioevent_common
-
-		gpio32_gpioevent_hen_upper:
-			/* GPIO 32-63 */
-			ldr temp, [memorymap_base, #equ32_gpio_gphen1]
-			macro32_dsb ip
-			cmp flag_on, #1
-			orreq temp, temp, number
-			bicne temp, temp, number
-			str temp, [memorymap_base, #equ32_gpio_gphen1]
-
-			b gpio32_gpioevent_common
-
-	gpio32_gpioevent_fen:
-		cmp number, #31
-		subgt number, number, #32
-		mov temp, #1
-		lsl number, temp, number
-		bgt gpio32_gpioevent_fen_upper
-
-		/* GPIO 0-31 */
-		ldr temp, [memorymap_base, #equ32_gpio_gpfen0]
-		macro32_dsb ip
-		cmp flag_on, #1
-		orreq temp, temp, number
-		bicne temp, temp, number
-		str temp, [memorymap_base, #equ32_gpio_gpfen0]
-
-		b gpio32_gpioevent_common
-
-		gpio32_gpioevent_fen_upper:
-			/* GPIO 32-63 */
-			ldr temp, [memorymap_base, #equ32_gpio_gpfen1]
-			macro32_dsb ip
-			cmp flag_on, #1
-			orreq temp, temp, number
-			bicne temp, temp, number
-			str temp, [memorymap_base, #equ32_gpio_gpfen1]
+	str temp, [memorymap_base]
 
 	gpio32_gpioevent_common:
 		macro32_dsb ip
