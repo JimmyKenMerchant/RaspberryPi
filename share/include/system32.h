@@ -96,6 +96,31 @@ int32 _user_start();
  * system32/arm/arm32.s
  ********************************/
 
+/* Constants */
+
+#define _cm_gp0             0x00000070 // Clock Manager General Purpose 0 (GPO) Base
+#define _cm_gp1             0x00000078 // Clock Manager General Purpose 1 (GP1) Base
+#define _cm_gp2             0x00000080 // Clock Manager General Purpose 2 (GP2) Base
+#define _cm_pcm             0x00000098 // Clock Manager PCM Base
+#define _cm_pwm             0x000000A0 // Clock Manager PWM Base
+
+#define _cm_ctl_mash_0      0x00000000 // Integer Division
+#define _cm_ctl_mash_1      0x00000200 // 1-stage Mash
+#define _cm_ctl_mash_2      0x00000400 // 2-stage Mash
+#define _cm_ctl_mash_3      0x00000600 // 3-stage Mash
+#define _cm_ctl_flip        0x00000100 // Invert Output
+#define _cm_ctl_src_gnd     0x00000000 // GND (0 Hz)
+#define _cm_ctl_src_osc     0x00000001 // Oscillator (19.2Mhz)
+#define _cm_ctl_src_deb0    0x00000002 // Test Debug 0 (0 Hz)
+#define _cm_ctl_src_deb1    0x00000003 // Test Debug 1 (0 Hz)
+#define _cm_ctl_src_plla    0x00000004 // PLL A (0Hz?)
+#define _cm_ctl_src_pllc    0x00000005 // PLL C (1000Mhz but depends on CPU Clock?)
+#define _cm_ctl_src_plld    0x00000006 // PLL D (500Mhz)
+#define _cm_ctl_src_hdmi    0x00000007 // HDMI Auxiliary (216Mhz?)
+
+#define _cm_div_integer     12 // LSL Bit[23:12]
+#define _cm_div_fraction    0 // Bit[11:0] (Fractional Value is Bit[11:0] Divided by 1024. Valid Bit[9:0])
+
 extern uint32 ARM32_STOPWATCH_LOW;
 extern uint32 ARM32_STOPWATCH_HIGH;
 
