@@ -21,7 +21,7 @@
 #include "system32.c"
 #include "sound32.h"
 
-#define timer_count_default 10000
+#define timer_count_default 5000
 #define clock_divisor_int_defualt 2
 
 /**
@@ -92,7 +92,7 @@ int32 _user_start()
 	String str_music2 = "Music No.2\0";
 	String str_music3 = "Music No.3\0";
 	int32 timer_count_divisor = 1;
-	uint32 clock_divisor_fraction = 0;
+	//uint32 clock_divisor_fraction = 0;
 
 	_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 
@@ -106,13 +106,13 @@ int32 _user_start()
 
 	while(true) {
 		while( true ) {
-			if ( _gpio_detect( 20 ) ) {
+			if ( _gpio_detect( 22 ) ) {
 				_soundclear();
 				print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
 				break;
 			}
 #ifndef __SOUND_I2S
-			if ( _gpio_detect( 21 ) ) {
+			if ( _gpio_detect( 23 ) ) {
 				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
 				print32_string( str_music1, 300, 300, str32_strlen( str_music1 ) );
@@ -120,42 +120,54 @@ int32 _user_start()
 				break;
 			}
 #endif
-			if ( _gpio_detect( 22 ) ) {
+			if ( _gpio_detect( 24 ) ) {
 				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
 				print32_string( str_music2, 300, 300, str32_strlen( str_music2 ) );
 				break;
 			}
-			if ( _gpio_detect( 23 ) ) {
+			if ( _gpio_detect( 25 ) ) {
 				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
 				print32_string( str_music3, 300, 300, str32_strlen( str_music3 ) );
 				break;
 			}
-			if ( _gpio_detect( 24 ) ) {
-				/* Tuner Using Fractional Divisor, but Noise Exist */
-				clock_divisor_fraction += 1;
-				if ( clock_divisor_fraction > 1023 ) clock_divisor_fraction = 1023;
-				_clockmanager( _cm_pwm, _cm_ctl_mash_1|_cm_ctl_src_osc, clock_divisor_int_defualt<<_cm_div_integer|clock_divisor_fraction<<_cm_div_fraction );
+			if ( _gpio_detect( 26 ) ) {
+				_soundinterrupt( interrupt1, snd32_musiclen( interrupt1 ) , 0, 1 );
 				break;
 			}
-			if ( _gpio_detect( 25 ) ) {
+			if ( _gpio_detect( 27 ) ) {
+				_soundplay();
+				break;
+			}
+			/*
+			if ( _gpio_in( 26 ) ) {
 				timer_count_divisor++;
 				if ( timer_count_divisor > timer_count_default / 2 ) timer_count_divisor = timer_count_default / 2;
 				_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				break;
 			}
-			if ( _gpio_detect( 26 ) ) {
+
+			if ( _gpio_in( 26 ) ) {
+				// Tuner Using Fractional Divisor, but Noise Exist
+				clock_divisor_fraction += 1;
+				if ( clock_divisor_fraction > 1023 ) clock_divisor_fraction = 1023;
+				_clockmanager( _cm_pwm, _cm_ctl_mash_1|_cm_ctl_src_osc, clock_divisor_int_defualt<<_cm_div_integer|clock_divisor_fraction<<_cm_div_fraction );
+				break;
+			}
+			if ( _gpio_in( 26 ) ) {
 				timer_count_divisor--;
 				if ( timer_count_divisor < 1 ) timer_count_divisor = 1;
 				_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				break;
 			}
-			if ( _gpio_detect( 27 ) ) {
-				_soundinterrupt( interrupt1, snd32_musiclen( interrupt1 ) , 0, 1 );
+			if ( _gpio_detect( 276 ) ) {
+				timer_count_divisor--;
+				if ( timer_count_divisor < 1 ) timer_count_divisor = 1;
+				_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				break;
 			}
-			_sleep( 500000 );
+			*/
 		}
 	}
 

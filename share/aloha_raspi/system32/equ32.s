@@ -88,16 +88,16 @@
 .equ equ32_systemtimer_compare2,         0x14
 .equ equ32_systemtimer_compare3,         0x18
 
-.equ equ32_interrupt_irq_basic_pending,    0x00
-.equ equ32_interrupt_irq_pending1,         0x04
-.equ equ32_interrupt_irq_pending2,         0x08
-.equ equ32_interrupt_fiq_control,          0x0C
-.equ equ32_interrupt_enable_irqs1,         0x10
-.equ equ32_interrupt_enable_irqs2,         0x14
-.equ equ32_interrupt_enable_basic_irqs,    0x18
-.equ equ32_interrupt_disable_irqs1,        0x1C
-.equ equ32_interrupt_disable_irqs2,        0x20
-.equ equ32_interrupt_disable_basic_irqs,   0x24
+.equ equ32_interrupt_pending_basic_irqs, 0x00
+.equ equ32_interrupt_pending_irqs1,      0x04
+.equ equ32_interrupt_pending_irqs2,      0x08
+.equ equ32_interrupt_fiq_control,        0x0C
+.equ equ32_interrupt_enable_irqs1,       0x10
+.equ equ32_interrupt_enable_irqs2,       0x14
+.equ equ32_interrupt_enable_basic_irqs,  0x18
+.equ equ32_interrupt_disable_irqs1,      0x1C
+.equ equ32_interrupt_disable_irqs2,      0x20
+.equ equ32_interrupt_disable_basic_irqs, 0x24
 
 .equ equ32_armtimer_load,         0x00
 .equ equ32_armtimer_value,        0x04 @ Read

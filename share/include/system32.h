@@ -1161,6 +1161,8 @@ __attribute__((noinline)) uint32 _sounddecode( sound_index* sound, bool pcm_mode
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
 
+__attribute__((noinline)) uint32 _soundplay();
+
 __attribute__((noinline)) uint32 _soundinterrupt( music_code* music, uint32 length, uint32 count, int32 repeat );
 
 __attribute__((noinline)) uint32 _soundclear();

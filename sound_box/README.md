@@ -1,4 +1,4 @@
-# Sound Test
+# Sound BOX
 
 * Author: Kenta Ishii
 * License: MIT
@@ -10,25 +10,31 @@
 
 * GPIO12 as Output of PWM0 on sound=pwm
 
-* GPIO13 as Output of PWM1 on sound=pwm
+* GPIO13 as Output of PWM1 on sound=pwm, 180 Degrees Phase-shifted from PWM0
 
-* GPIO20-27 as Input of GPIO for Buttons (Up to 3.3V) (on sound=i2s, GPIO21 becomes Output of I2S)
+* GPIO17 as Output of Synchronization Clock OUT of Sound Box
+
+* GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.
+
+* GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s
 
 * HDMI as VIDEO Output
 
-## GPIO 20-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+## GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
 ## Don't use a minijack on Raspberry Pi as a sound output on this project, because an analogue circuit affects a digital circuit, and vice versa. The minijack does not assume usage on this project. This affection causes possible break of your Raspberry Pi.
 
 **Compatibility**
 
-* (Not Recommended) Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
 
-* (Not Recommended) Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm`
 
-* (Not Recommended) Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b sound=i2s` or `make type=3b sound=pwm`
+
+* Overall, I don't recommend to use high-spec Raspberry Pis. PWM is analogue output that may affect electrical status on Raspberry Pis. Just Pi Zero (5 dollars Online) may match for this project. There is no need of any radio wave unit.
 
 ## Make sure to build your own RC Low-pass Filter.
 

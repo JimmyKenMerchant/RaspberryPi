@@ -33,15 +33,25 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
+	/**
+	 * Enable gpio_int_0 Bit[17] for GPIO0-31 Status
+	 * In my experience, gpio_int_2 Bit[19] for GPIO32-64 Status,
+	 * gpio_int_3 Bit[20] for All Pins Status
+	 */
+	/*
+	mov r1, #0x00020000
+	str r1, [r0, #equ32_interrupt_enable_irqs2]
+	*/
+
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a 12hz Timer Interrupt (120000/10000).
+	 * Get a 24hz Timer Interrupt (120000/5000).
 	 */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r1, #0x1300                           @ 0x1300 High 1 Byte of decimal 4999 (5000 - 1), 16 bits counter on default
+	add r1, r1, #0x87                         @ 0x87 Low 1 Byte of decimal 4999, 16 bits counter on default
 	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
@@ -75,11 +85,12 @@ os_reset:
 
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
+	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 17
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7    @ Set GPIO 17 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel10]
+
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0    @ Clear GPIO 20
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 20 INPUT
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 21
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 22
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 23
@@ -95,10 +106,6 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	ldr r1, [r0, #equ32_gpio_gpren0]
-	orr r1, r1, #equ32_gpio20                                      @ Set GPIO20 Rising Edge Detect
-.ifndef __SOUND_I2S
-	orr r1, r1, #equ32_gpio21                                      @ Set GPIO21 Rising Edge Detect
-.endif
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
 	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
 	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
@@ -135,12 +142,31 @@ os_reset:
 	pop {pc}
 
 os_irq:
-	push {r0-r12}
-	pop {r0-r12}
-	mov pc, lr
+	push {r0-r12,lr}
+/*
+mov r0, #equ32_peripherals_base
+add r0, r0, #equ32_interrupt_base
+ldr r0, [r0, #equ32_interrupt_pending_irqs2]
+macro32_debug r0, 100, 100
+*/
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+	ldr r1, [r0, #equ32_gpio_gpeds0]
+	str r1, [r0, #equ32_gpio_gpeds0]
+
+/*
+macro32_debug r1, 100, 100
+*/
+
+	/*
+	bl snd32_soundplay
+	*/
+
+	pop {r0-r12,pc}
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r7,lr}
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -174,14 +200,15 @@ os_fiq:
 	macro32_dsb ip
 .endif
 
-	push {r0-r3,lr}
-	bl snd32_soundplay
-	pop {r0-r3,lr}
+	mov r0, #17
+	mov r1, #2
+	bl gpio32_gpiotoggle
+
+	/*bl snd32_soundplay*/
 
 	macro32_dsb ip
 
-	pop {r0-r7}
-	mov pc, lr
+	pop {r0-r7,pc}
 
 /**
  * Variables
