@@ -74,7 +74,7 @@ bcm32_mail_blankon:
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000001        @ Value Buffer, State (0 means off, 1 means on)
+	.word 0x00000000        @ Value Buffer, State (1 means off, 0 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_blankon_end:
@@ -86,7 +86,7 @@ bcm32_mail_blankoff:
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000        @ Value Buffer, State (0 means off, 1 means on)
+	.word 0x00000001        @ Value Buffer, State (1 means off, 0 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_blankoff_end:
@@ -150,16 +150,35 @@ bcm32_get_framebuffer:
 	memorymap_base    .req r0
 	temp              .req r1
 
-	ldr temp, bcm32_mail_framebuffer_addr
-	add temp, temp, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+	push {lr}
 
-	push {r0-r3,lr}
-	mov r0, temp
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-	pop {r0-r3,lr}
+	ldr memorymap_base, bcm32_mail_framebuffer_addr
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]                       @ Reset Tag
+	str temp, [memorymap_base, #36]                       @ Reset Tag
+	str temp, [memorymap_base, #56]                       @ Reset Tag
+	str temp, [memorymap_base, #72]                       @ Reset Tag
+	str temp, [memorymap_base, #88]                       @ Reset Tag
+	str temp, [memorymap_base, #104]                      @ Reset Tag
+	ldr temp, bcm32_mail_framebuffer                      @ Get Size
+	add temp, temp, memorymap_base
 
 	macro32_dsb ip
+
+	bcm32_get_framebuffer_loop1:
+		macro32_clean_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_framebuffer_loop1
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_framebuffer_addr
+	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
 
 	ldr memorymap_base, bcm32_mail_framebuffer_addr
 	ldr temp, bcm32_mail_framebuffer                                @ Get Size
@@ -167,11 +186,11 @@ bcm32_get_framebuffer:
 
 	macro32_dsb ip
 
-	bcm32_get_framebuffer_loop:
+	bcm32_get_framebuffer_loop2:
 		macro32_invalidate_cache memorymap_base, ip
 		add memorymap_base, memorymap_base, #4
 		cmp memorymap_base, temp
-		blo bcm32_get_framebuffer_loop
+		blo bcm32_get_framebuffer_loop2
 
 	macro32_dsb ip
 
@@ -204,11 +223,9 @@ bcm32_get_framebuffer:
 
 	macro32_dsb ip
 
-	push {r0-r3,lr}
 	mov r0, temp
 	bl fb32_attach_buffer
 	cmp r0, #0
-	pop {r0-r3,lr}
 	bne bcm32_get_framebuffer_error
 
 	mov r0, #0                               @ Return with Success
@@ -220,7 +237,7 @@ bcm32_get_framebuffer:
 
 	bcm32_get_framebuffer_common:
 		macro32_dsb ip                                     @ Ensure Completion of Instructions Before
-		mov pc, lr
+		pop {pc}
 
 .unreq memorymap_base
 .unreq temp
@@ -248,7 +265,10 @@ bcm32_set_powerstate:
 	temp              .req r3
 
 	ldr memorymap_base, bcm32_mail_setpowerstate_addr
-	ldr temp, bcm32_mail_setpowerstate                          @ Get Size
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]                       @ Reset Tag
+	ldr temp, bcm32_mail_setpowerstate                    @ Get Size
 	add temp, temp, memorymap_base
 
 	str deviceid, [memorymap_base, #20]	
@@ -276,7 +296,7 @@ bcm32_set_powerstate:
 	macro32_dsb ip
 
 	ldr memorymap_base, bcm32_mail_setpowerstate_addr
-	ldr temp, bcm32_mail_setpowerstate                          @ Get Size
+	ldr temp, bcm32_mail_setpowerstate                    @ Get Size
 	add temp, temp, memorymap_base
 
 	macro32_dsb ip
@@ -302,7 +322,7 @@ bcm32_set_powerstate:
 		mvn r0, #0                           @ Return with Error
 
 	bcm32_set_powerstate_common:
-		macro32_dsb ip                           @ Ensure Completion of Instructions Before
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		mov pc, lr
 
 .unreq deviceid
@@ -316,43 +336,181 @@ bcm32_set_powerstate:
  * Power on USB
  * This function is using a vendor-implemented process.
  *
- * Usage: r0-r1
- * Return: r0 (0 as Success, 1 as Error)
+ * Return: r0 (0 ag Success, 1 as Error)
  * Error(1): Powering on USB is not in Success
  */
 .globl bcm32_poweron_usb
 bcm32_poweron_usb:
 	/* Auto (Local) Variables, but just Aliases */
 	temp              .req r0
-	temp2             .req r4
 
-	push {r4}
+	push {lr}
 	
 	mov temp, #0x80
-
-	push {r0-r3,lr}
-	mov r0, temp
 	bl bcm32_mailbox_send
 	bl bcm32_mailbox_read
-	mov temp2, r0
-	pop {r0-r3,lr}
 
-	cmp temp2, #0x80
+	cmp temp, #0x80
 	bne bcm32_poweron_usb_error
 
-	mov r0, #0                                       @ Return with Success
-	b bcm32_poweron_usb_common
+	b bcm32_poweron_usb_success
 
 	bcm32_poweron_usb_error:
 		mov r0, #1                               @ Return with Error
+		b bcm32_poweron_usb_common
+
+	bcm32_poweron_usb_success:
+		mov r0, #0                               @ Return with Success
 
 	bcm32_poweron_usb_common:
 		macro32_dsb ip                           @ Ensure Completion of Instructions Before
-		pop {r4}
-		mov pc, lr
+		pop {pc}
 
 .unreq temp
-.unreq temp2
+
+
+/**
+ * function bcm32_display_on
+ * Display Screen On
+ * This function is using a vendor-implemented process.
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): Request Failures
+ */
+.globl bcm32_display_on
+bcm32_display_on:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	temp              .req r1
+
+	push {lr}
+	
+	ldr memorymap_base, bcm32_mail_blankon_addr
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]                       @ Reset Tag
+	ldr temp, bcm32_mail_blankon                          @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_display_on_loop1:
+		macro32_clean_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_display_on_loop1
+
+	ldr memorymap_base, bcm32_mail_blankon_addr
+	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+
+	ldr memorymap_base, bcm32_mail_blankon_addr
+	ldr temp, bcm32_mail_blankon                          @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_display_on_loop2:
+		macro32_invalidate_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_display_on_loop2
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_blankon_addr
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_display_on_error
+
+	b bcm32_display_on_success
+
+	bcm32_display_on_error:
+		mov r0, #1                               @ Return with Error
+		b bcm32_display_on_common
+
+	bcm32_display_on_success:
+		mov r0, #0                               @ Return with Success
+
+	bcm32_display_on_common:
+		macro32_dsb ip                           @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq memorymap_base
+.unreq temp
+
+
+/**
+ * function bcm32_display_off
+ * Display Screen Off
+ * This function is using a vendor-implemented process.
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): Request Failures
+ */
+.globl bcm32_display_off
+bcm32_display_off:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	temp              .req r1
+
+	push {lr}
+	
+	ldr memorymap_base, bcm32_mail_blankoff_addr
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]                       @ Reset Tag
+	ldr temp, bcm32_mail_blankoff                         @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_display_off_loop1:
+		macro32_clean_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_display_off_loop1
+
+	ldr memorymap_base, bcm32_mail_blankoff_addr
+	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+
+	ldr memorymap_base, bcm32_mail_blankoff_addr
+	ldr temp, bcm32_mail_blankoff                         @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_display_off_loop2:
+		macro32_invalidate_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_display_off_loop2
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_blankoff_addr
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_display_off_error
+
+	b bcm32_display_off_success
+
+	bcm32_display_off_error:
+		mov r0, #1                               @ Return with Error
+		b bcm32_display_off_common
+
+	bcm32_display_off_success:
+		mov r0, #0                               @ Return with Success
+
+	bcm32_display_off_common:
+		macro32_dsb ip                           @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq memorymap_base
+.unreq temp
 
 
 /**
@@ -385,10 +543,10 @@ bcm32_mailbox_read:
 		bne bcm32_mailbox_read_waitforread
 
 	macro32_dsb ip                           @ `DMB` Data Memory Barrier, completes all memory access before
-                                                 @ `DSB` Data Synchronization Barrier, completes all instructions before
-                                                 @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
-                                                 @ to ensure fetching instructions from cache/ memory
-                                                 @ These are useful in multi-core/ threads usage, etc.
+                                             @ `DSB` Data Synchronization Barrier, completes all instructions before
+                                             @ `ISB` Instruction Synchronization Barrier, flushes the pipeline before,
+                                             @ to ensure fetching instructions from cache/ memory
+                                             @ These are useful in multi-core/ threads usage, etc.
 
 	ldr r0, [memorymap_base, read]
 
@@ -464,31 +622,32 @@ bcm32_mailbox_send:
 .unreq status
 .unreq write
 
-.equ bcm32_mailbox_base,         0x0000B800
-.equ bcm32_mailbox_channel0,     0x00
-.equ bcm32_mailbox_channel1,     0x01
-.equ bcm32_mailbox_channel2,     0x02
-.equ bcm32_mailbox_channel3,     0x03
-.equ bcm32_mailbox_channel4,     0x04
-.equ bcm32_mailbox_channel5,     0x05
-.equ bcm32_mailbox_channel6,     0x06
-.equ bcm32_mailbox_channel7,     0x07
-.equ bcm32_mailbox_channel8,     0x08
-.equ bcm32_mailbox0_read,        0x80 @ On Old System of Mailbox (from Single Core), Mailbox is only 0-1 accessible.
-.equ bcm32_mailbox0_poll,        0x90 @ Because, 0-1 are alternatively connected, e.g., read/write Mapping.
-.equ bcm32_mailbox0_sender,      0x94
-.equ bcm32_mailbox0_status,      0x98 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-.equ bcm32_mailbox0_config,      0x9C
-.equ bcm32_mailbox0_write,       0xA0 @ Mailbox 1 Read/ Mailbox 0 Write is the same address
-.equ bcm32_mailbox1_read,        0xA0
-.equ bcm32_mailbox1_poll,        0xB0
-.equ bcm32_mailbox1_sender,      0xB4
-.equ bcm32_mailbox1_status,      0xB8 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
-.equ bcm32_mailbox1_config,      0xBC
-.equ bcm32_mailbox1_write,       0x80 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
-.equ bcm32_mailbox_gpuconfirm,   0x04
-.equ bcm32_mailbox_gpuoffset,    0x40000000 @ If L2 Cache Disabled by `disable_l2cache=1` in config.txt, 0xC0000000
-.equ bcm32_mailbox_armmask,      0x3FFFFFFF
+.equ bcm32_mailbox_base,          0x0000B800
+.equ bcm32_mailbox_channel0,      0x00
+.equ bcm32_mailbox_channel1,      0x01
+.equ bcm32_mailbox_channel2,      0x02
+.equ bcm32_mailbox_channel3,      0x03
+.equ bcm32_mailbox_channel4,      0x04
+.equ bcm32_mailbox_channel5,      0x05
+.equ bcm32_mailbox_channel6,      0x06
+.equ bcm32_mailbox_channel7,      0x07
+.equ bcm32_mailbox_channel8,      0x08
+.equ bcm32_mailbox0_read,         0x80 @ On Old System of Mailbox (from Single Core), Mailbox is only 0-1 accessible.
+.equ bcm32_mailbox0_poll,         0x90 @ Because, 0-1 are alternatively connected, e.g., read/write Mapping.
+.equ bcm32_mailbox0_sender,       0x94
+.equ bcm32_mailbox0_status,       0x98 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+.equ bcm32_mailbox0_config,       0x9C
+.equ bcm32_mailbox0_write,        0xA0 @ Mailbox 1 Read/ Mailbox 0 Write is the same address
+.equ bcm32_mailbox1_read,         0xA0
+.equ bcm32_mailbox1_poll,         0xB0
+.equ bcm32_mailbox1_sender,       0xB4
+.equ bcm32_mailbox1_status,       0xB8 @ MSB has 0 for sender. Next Bit from MSB has 0 for receiver
+.equ bcm32_mailbox1_config,       0xBC
+.equ bcm32_mailbox1_write,        0x80 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
+.equ bcm32_mailbox_gpuconfirm,    0x04
+.equ bcm32_mailbox_gputagconfirm, 0x16
+.equ bcm32_mailbox_gpuoffset,     0x40000000 @ If L2 Cache Disabled by `disable_l2cache=1` in config.txt, 0xC0000000
+.equ bcm32_mailbox_armmask,       0x3FFFFFFF
 
 .equ bcm32_cores_base,                  0x40000000
 .equ bcm32_cores_mailbox_offset,        0x10 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3

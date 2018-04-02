@@ -93,6 +93,17 @@ int32 _user_start();
 
 
 /********************************
+ * system32/vendor/bcm32.s
+ ********************************/
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _display_on();
+
+__attribute__((noinline)) uint32 _display_off();
+
+
+/********************************
  * system32/arm/arm32.s
  ********************************/
 

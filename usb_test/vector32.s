@@ -125,6 +125,14 @@ os_reset:
 	bl bcm32_poweron_usb
 	pop {r0-r3,lr}
 
+	/*
+	push {r0-r3,lr}
+	mov r0, #0x3
+	mov r1, #0b01
+	bl bcm32_set_powerstate
+	pop {r0-r3,lr}
+	*/
+
 	mov pc, lr
 
 os_debug_:

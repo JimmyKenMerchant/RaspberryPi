@@ -6,6 +6,8 @@
 
 **Output/Input**
 
+* GPIO 18 and 19 as Input to Check Display On or Off
+
 * GPIO 20 as Input to Check Pull Up/Down, make sure to attach the appropriate resister to your LED Circuit, otherwise, the LED may be burn out.
 
 * GPIO 21 as Output (1Hz Blinker), make sure to attach the appropriate resister to your LED Circuit, otherwise, the LED may be burn out.

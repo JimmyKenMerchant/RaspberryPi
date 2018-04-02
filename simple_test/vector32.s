@@ -65,7 +65,7 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 
-	bl bcm32_get_framebuffer
+	/*bl bcm32_get_framebuffer*/
 
 	pop {pc}	
 
