@@ -92,6 +92,7 @@ int32 _user_start()
 	String str_music2 = "Music No.2\0";
 	String str_music3 = "Music No.3\0";
 	int32 timer_count_divisor = 1;
+	uint32 detect_parallel = 0;
 	//uint32 clock_divisor_fraction = 0;
 
 	_armtimer_reload( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
@@ -104,41 +105,31 @@ int32 _user_start()
 
 	print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
 
-	while(true) {
-		while( true ) {
-			if ( _gpio_detect( 22 ) ) {
+	while ( true ) {
+		if ( _gpio_detect( 27 ) ) {
+			_soundplay();
+			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
+			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+
+//print32_debug( detect_parallel, 100, 100 );
+
+			if ( detect_parallel == 1<<22 ) {
 				_soundclear();
 				print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
-				break;
-			}
-#ifndef __SOUND_I2S
-			if ( _gpio_detect( 23 ) ) {
+			} else if ( detect_parallel == 1<<23 ) {
 				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
 				print32_string( str_music1, 300, 300, str32_strlen( str_music1 ) );
-				
-				break;
-			}
-#endif
-			if ( _gpio_detect( 24 ) ) {
+			} else if ( detect_parallel == 1<<24 ) {
 				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
 				print32_string( str_music2, 300, 300, str32_strlen( str_music2 ) );
-				break;
-			}
-			if ( _gpio_detect( 25 ) ) {
+			} else if ( detect_parallel == 1<<25 ) {
 				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
 				print32_string( str_music3, 300, 300, str32_strlen( str_music3 ) );
-				break;
-			}
-			if ( _gpio_detect( 26 ) ) {
+			} else if ( detect_parallel == 1<<26 ) {
 				_soundinterrupt( interrupt1, snd32_musiclen( interrupt1 ) , 0, 1 );
-				break;
-			}
-			if ( _gpio_detect( 27 ) ) {
-				_soundplay();
-				break;
 			}
 			/*
 			if ( _gpio_in( 26 ) ) {

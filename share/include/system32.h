@@ -98,9 +98,7 @@ int32 _user_start();
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _display_on();
-
-__attribute__((noinline)) uint32 _display_off();
+__attribute__((noinline)) uint32 _display_off( bool bool_off );
 
 
 /********************************

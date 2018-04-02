@@ -293,7 +293,7 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x01:
-		bl bcm32_display_on
+		mov r0, r0
 		b _os_svc_common
 
 	_os_svc_0x02:

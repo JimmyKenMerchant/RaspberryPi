@@ -68,8 +68,8 @@ BCM32_SIZE:
 bcm32_mail_framebuffer_end:
 
 .balign 16
-bcm32_mail_blankon:
-	.word bcm32_mail_blankon_end - bcm32_mail_blankon @ Size of this Mail
+bcm32_mail_blank:
+	.word bcm32_mail_blank_end - bcm32_mail_blank @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00040002        @ Tag Identifier, Blank Screen
 	.word 0x00000004        @ Value Buffer Size in Bytes
@@ -77,19 +77,7 @@ bcm32_mail_blankon:
 	.word 0x00000000        @ Value Buffer, State (1 means off, 0 means on)
 .balign 4
 	.word 0x00000000        @ End Tag
-bcm32_mail_blankon_end:
-
-.balign 16
-bcm32_mail_blankoff:
-	.word bcm32_mail_blankoff_end - bcm32_mail_blankoff @ Size of this Mail
-	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00040002        @ Tag Identifier, Blank Screen
-	.word 0x00000004        @ Value Buffer Size in Bytes
-	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000001        @ Value Buffer, State (1 means off, 0 means on)
-.balign 4
-	.word 0x00000000        @ End Tag
-bcm32_mail_blankoff_end:
+bcm32_mail_blank_end:
 
 .balign 16
 bcm32_mail_getedid:         @ get EDID (Extended Display Identification Data) from Disply to Get Display Resolution ,etc.
@@ -122,10 +110,8 @@ bcm32_mail_setpowerstate_end:
 .balign 4
 bcm32_mail_framebuffer_addr:
 	.word bcm32_mail_framebuffer   @ Address of bcm32_mail_framebuffer
-bcm32_mail_blankon_addr:
-	.word bcm32_mail_blankon       @ Address of bcm32_mail_blankon
-bcm32_mail_blankoff_addr:
-	.word bcm32_mail_blankoff      @ Address of bcm32_mail_blankoff
+bcm32_mail_blank_addr:
+	.word bcm32_mail_blank         @ Address of bcm32_mail_blank
 bcm32_mail_getedid_addr:
 	.word bcm32_mail_getedid       @ Address of bcm32_mail_getedid
 bcm32_mail_setpowerstate_addr:
@@ -370,81 +356,12 @@ bcm32_poweron_usb:
 
 
 /**
- * function bcm32_display_on
- * Display Screen On
- * This function is using a vendor-implemented process.
- *
- * Return: r0 (0 as Success, 1 as Error)
- * Error(1): Request Failures
- */
-.globl bcm32_display_on
-bcm32_display_on:
-	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	temp              .req r1
-
-	push {lr}
-	
-	ldr memorymap_base, bcm32_mail_blankon_addr
-	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]                       @ Reset Tag
-	ldr temp, bcm32_mail_blankon                          @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_display_on_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_display_on_loop1
-
-	ldr memorymap_base, bcm32_mail_blankon_addr
-	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-
-	ldr memorymap_base, bcm32_mail_blankon_addr
-	ldr temp, bcm32_mail_blankon                          @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_display_on_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_display_on_loop2
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_blankon_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
-	bne bcm32_display_on_error
-
-	b bcm32_display_on_success
-
-	bcm32_display_on_error:
-		mov r0, #1                               @ Return with Error
-		b bcm32_display_on_common
-
-	bcm32_display_on_success:
-		mov r0, #0                               @ Return with Success
-
-	bcm32_display_on_common:
-		macro32_dsb ip                           @ Ensure Completion of Instructions Before
-		pop {pc}
-
-.unreq memorymap_base
-.unreq temp
-
-
-/**
  * function bcm32_display_off
  * Display Screen Off
  * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: 0 as Display On, 1 as Display Off
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error(1): Request Failures
@@ -456,12 +373,15 @@ bcm32_display_off:
 	temp              .req r1
 
 	push {lr}
+
+	mov temp, r0                                          @ Parameter
 	
-	ldr memorymap_base, bcm32_mail_blankoff_addr
+	ldr memorymap_base, bcm32_mail_blank_addr
+	str temp, [memorymap_base, #20]                       @ Set Value
 	mov temp, #0
 	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
 	str temp, [memorymap_base, #16]                       @ Reset Tag
-	ldr temp, bcm32_mail_blankoff                         @ Get Size
+	ldr temp, bcm32_mail_blank                         @ Get Size
 	add temp, temp, memorymap_base
 
 	macro32_dsb ip
@@ -472,13 +392,13 @@ bcm32_display_off:
 		cmp memorymap_base, temp
 		blo bcm32_display_off_loop1
 
-	ldr memorymap_base, bcm32_mail_blankoff_addr
+	ldr memorymap_base, bcm32_mail_blank_addr
 	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
 	bl bcm32_mailbox_send
 	bl bcm32_mailbox_read
 
-	ldr memorymap_base, bcm32_mail_blankoff_addr
-	ldr temp, bcm32_mail_blankoff                         @ Get Size
+	ldr memorymap_base, bcm32_mail_blank_addr
+	ldr temp, bcm32_mail_blank                         @ Get Size
 	add temp, temp, memorymap_base
 
 	macro32_dsb ip
@@ -491,7 +411,7 @@ bcm32_display_off:
 
 	macro32_dsb ip
 
-	ldr memorymap_base, bcm32_mail_blankoff_addr
+	ldr memorymap_base, bcm32_mail_blank_addr
 	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
 	cmp temp, #0x80000000
 	bne bcm32_display_off_error
@@ -645,7 +565,6 @@ bcm32_mailbox_send:
 .equ bcm32_mailbox1_config,       0xBC
 .equ bcm32_mailbox1_write,        0x80 @ Mailbox 0 Read/ Mailbox 1 Write is the same address
 .equ bcm32_mailbox_gpuconfirm,    0x04
-.equ bcm32_mailbox_gputagconfirm, 0x16
 .equ bcm32_mailbox_gpuoffset,     0x40000000 @ If L2 Cache Disabled by `disable_l2cache=1` in config.txt, 0xC0000000
 .equ bcm32_mailbox_armmask,       0x3FFFFFFF
 

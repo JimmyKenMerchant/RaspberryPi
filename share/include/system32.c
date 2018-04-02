@@ -18,14 +18,7 @@ __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int3
 	return result;
 }
 
-__attribute__((noinline)) uint32 _display_on()
-{
-	register uint32 result asm("r0");
-	asm volatile ("svc #0x01");
-	return result;
-}
-
-__attribute__((noinline)) uint32 _display_off()
+__attribute__((noinline)) uint32 _display_off( bool bool_off )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x02");

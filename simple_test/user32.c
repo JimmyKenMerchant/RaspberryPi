@@ -25,11 +25,11 @@ int32 _user_start()
 		//if ( _gpio_detect( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_SWAP );
 		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_SWAP );
 		if ( _gpio_detect( 18 ) ) {
-			value = _display_on();
+			value = _display_off( false );
 			print32_debug( value, 100, 100 );
 		}
 		if ( _gpio_detect( 19 ) ) {
-			value = _display_off();
+			value = _display_off( true );
 			print32_debug( value, 100, 112 );
 		}
 
