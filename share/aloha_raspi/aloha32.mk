@@ -70,6 +70,10 @@ ifeq ($(sound), i2s)
 	SND := __SOUND_I2S=1
 endif
 
+ifeq ($(sound), jack) 
+	SND := __SOUND_JACK=1
+endif
+
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
 COMP := arm-none-eabi
 BIT := __AARCH32=1

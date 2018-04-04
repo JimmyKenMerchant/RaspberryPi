@@ -12,6 +12,10 @@
 
 * GPIO13 as Output of PWM1 on sound=pwm, 180 Degrees Phase-shifted from PWM0
 
+* GPIO40 as Output of PWM0 on sound=jack
+
+* GPIO45 as Output of PWM1 on sound=jack, 180 Degrees Phase-shifted from PWM0
+
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
 * GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.
@@ -20,23 +24,29 @@
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s
 
-* HDMI as VIDEO Output
+* HDMI as VIDEO Output (For Debug Only)
 
 ## GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
-## Don't use a minijack on Raspberry Pi as a sound output on this project, because an analogue circuit affects a digital circuit, and vice versa. The minijack does not assume usage on this project. This affection causes possible break of your Raspberry Pi.
+**About PWM0/1 Output** 
+
+* From PWM1, the sound that is phase-shifted from PWM0 outputs. This aims for balanced monoral.
+
+* By disabling video signal, the output from the 3.5mm jack may be possible for stable use.
+
+* The line level of 3.5mm jack is not tested. It seems to be so high. Absolutely, don't use your earphones for safety of your ears.
 
 **Compatibility**
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
 
-* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm`
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm` or `make type=2b sound=jack`
 
-* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b sound=i2s` or `make type=3b sound=pwm`
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b sound=i2s` or `make type=3b sound=pwm` or `make type=3b sound=jack`
 
 * Overall, I don't recommend to use high-spec Raspberry Pis. PWM is analogue output that may affect electrical status on Raspberry Pis. Just Pi Zero (5 dollars Online) may match for this project. There is no need of any radio wave unit.
 
-## Make sure to build your own RC Low-pass Filter.
+## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
 ## Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
 

@@ -674,6 +674,9 @@ snd32_soundinterrupt:
  * function snd32_soundinit_pwm
  * Sound Initializer for PWM Mode
  *
+ * Parameters
+ * r0: 0 as GPIO 12/13 PWM, 1 as GPIO 40/45 PWM, 2 as Both
+ *
  * Return: r0 (0 as Success)
  */
 .globl snd32_soundinit_pwm
@@ -681,8 +684,11 @@ snd32_soundinit_pwm:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base    .req r0
 	value             .req r1
+	gpio_set          .req r2
 
 	push {lr}
+
+	mov gpio_set, memorymap_base
 
 	/**
 	 * GPIO for PWM
@@ -690,12 +696,25 @@ snd32_soundinit_pwm:
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_gpio_base
 
+	cmp gpio_set, #0
+	cmpne gpio_set, #2
+
 	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
 	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 12
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2   @ Set GPIO 12 PWM0
 	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 13
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3   @ Set GPIO 13 PWM1
 	str value, [memorymap_base, #equ32_gpio_gpfsel10]
+
+	cmp gpio_set, #1
+	cmpne gpio_set, #2
+
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel40]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0          @ Clear GPIO 40
+	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5          @ Clear GPIO 45
+	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5         @ Set GPIO 45 PWM1 (to Minijack)
+	str value, [memorymap_base, #equ32_gpio_gpfsel40]
 
 	macro32_dsb ip
 
@@ -744,6 +763,7 @@ snd32_soundinit_pwm:
 
 .unreq memorymap_base
 .unreq value
+.unreq gpio_set
 
 
 /**

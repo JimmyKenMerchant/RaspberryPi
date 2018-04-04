@@ -997,70 +997,70 @@ sound_index sound[] =
 #define B6_TRIL  0x7E
 #define C7_TRIL  0x7F
 
-#define A1_SQRL  0x80
-#define AS1_SQRL 0x81
-#define B1_SQRL  0x82
-#define C2_SQRL  0x83
-#define CS2_SQRL 0x84
-#define D2_SQRL  0x85
-#define DS2_SQRL 0x86
-#define E2_SQRL  0x87
-#define F2_SQRL  0x88
-#define FS2_SQRL 0x89
-#define G2_SQRL  0x8A
-#define GS2_SQRL 0x8B
-#define A2_SQRL  0x8C
-#define AS2_SQRL 0x8D
-#define B2_SQRL  0x8E
-#define C3_SQRL  0x8F
-#define CS3_SQRL 0x90
-#define D3_SQRL  0x91
-#define DS3_SQRL 0x92
-#define E3_SQRL  0x93
-#define F3_SQRL  0x94
-#define FS3_SQRL 0x95
-#define G3_SQRL  0x96
-#define GS3_SQRL 0x97
-#define A3_SQRL  0x98
-#define AS3_SQRL 0x99
-#define B3_SQRL  0x9A
-#define C4_SQRL  0x9B
-#define CS4_SQRL 0x9C
-#define D4_SQRL  0x9D
-#define DS4_SQRL 0x9E
-#define E4_SQRL  0x9F
-#define F4_SQRL  0xA0
-#define FS4_SQRL 0xA1
-#define G4_SQRL  0xA2
-#define GS4_SQRL 0xA3
-#define A4_SQRL  0xA4
-#define AS4_SQRL 0xA5
-#define B4_SQRL  0xA6
-#define C5_SQRL  0xA7
-#define CS5_SQRL 0xA8
-#define D5_SQRL  0xA9
-#define DS5_SQRL 0xAA
-#define E5_SQRL  0xAB
-#define F5_SQRL  0xAC
-#define FS5_SQRL 0xAD
-#define G5_SQRL  0xAE
-#define GS5_SQRL 0xAF
-#define A5_SQRL  0xB0
-#define AS5_SQRL 0xB1
-#define B5_SQRL  0xB2
-#define C6_SQRL  0xB3
-#define CS6_SQRL 0xB4
-#define D6_SQRL  0xB5
-#define DS6_SQRL 0xB6
-#define E6_SQRL  0xB7
-#define F6_SQRL  0xB8
-#define FS6_SQRL 0xB9
-#define G6_SQRL  0xBA
-#define GS6_SQRL 0xBB
-#define A6_SQRL  0xBC
-#define AS6_SQRL 0xBD
-#define B6_SQRL  0xBE
-#define C7_SQRL  0xBF
+#define A1_SQUL  0x80
+#define AS1_SQUL 0x81
+#define B1_SQUL  0x82
+#define C2_SQUL  0x83
+#define CS2_SQUL 0x84
+#define D2_SQUL  0x85
+#define DS2_SQUL 0x86
+#define E2_SQUL  0x87
+#define F2_SQUL  0x88
+#define FS2_SQUL 0x89
+#define G2_SQUL  0x8A
+#define GS2_SQUL 0x8B
+#define A2_SQUL  0x8C
+#define AS2_SQUL 0x8D
+#define B2_SQUL  0x8E
+#define C3_SQUL  0x8F
+#define CS3_SQUL 0x90
+#define D3_SQUL  0x91
+#define DS3_SQUL 0x92
+#define E3_SQUL  0x93
+#define F3_SQUL  0x94
+#define FS3_SQUL 0x95
+#define G3_SQUL  0x96
+#define GS3_SQUL 0x97
+#define A3_SQUL  0x98
+#define AS3_SQUL 0x99
+#define B3_SQUL  0x9A
+#define C4_SQUL  0x9B
+#define CS4_SQUL 0x9C
+#define D4_SQUL  0x9D
+#define DS4_SQUL 0x9E
+#define E4_SQUL  0x9F
+#define F4_SQUL  0xA0
+#define FS4_SQUL 0xA1
+#define G4_SQUL  0xA2
+#define GS4_SQUL 0xA3
+#define A4_SQUL  0xA4
+#define AS4_SQUL 0xA5
+#define B4_SQUL  0xA6
+#define C5_SQUL  0xA7
+#define CS5_SQUL 0xA8
+#define D5_SQUL  0xA9
+#define DS5_SQUL 0xAA
+#define E5_SQUL  0xAB
+#define F5_SQUL  0xAC
+#define FS5_SQUL 0xAD
+#define G5_SQUL  0xAE
+#define GS5_SQUL 0xAF
+#define A5_SQUL  0xB0
+#define AS5_SQUL 0xB1
+#define B5_SQUL  0xB2
+#define C6_SQUL  0xB3
+#define CS6_SQUL 0xB4
+#define D6_SQUL  0xB5
+#define DS6_SQUL 0xB6
+#define E6_SQUL  0xB7
+#define F6_SQUL  0xB8
+#define FS6_SQUL 0xB9
+#define G6_SQUL  0xBA
+#define GS6_SQUL 0xBB
+#define A6_SQUL  0xBC
+#define AS6_SQUL 0xBD
+#define B6_SQUL  0xBE
+#define C7_SQUL  0xBF
 
 #define A1_NOIL  0xC0
 #define AS1_NOIL 0xC1
@@ -1257,70 +1257,70 @@ sound_index sound[] =
 #define B6_TRIM  0x17E
 #define C7_TRIM  0x17F
 
-#define A1_SQRM  0x180
-#define AS1_SQRM 0x181
-#define B1_SQRM  0x182
-#define C2_SQRM  0x183
-#define CS2_SQRM 0x184
-#define D2_SQRM  0x185
-#define DS2_SQRM 0x186
-#define E2_SQRM  0x187
-#define F2_SQRM  0x188
-#define FS2_SQRM 0x189
-#define G2_SQRM  0x18A
-#define GS2_SQRM 0x18B
-#define A2_SQRM  0x18C
-#define AS2_SQRM 0x18D
-#define B2_SQRM  0x18E
-#define C3_SQRM  0x18F
-#define CS3_SQRM 0x190
-#define D3_SQRM  0x191
-#define DS3_SQRM 0x192
-#define E3_SQRM  0x193
-#define F3_SQRM  0x194
-#define FS3_SQRM 0x195
-#define G3_SQRM  0x196
-#define GS3_SQRM 0x197
-#define A3_SQRM  0x198
-#define AS3_SQRM 0x199
-#define B3_SQRM  0x19A
-#define C4_SQRM  0x19B
-#define CS4_SQRM 0x19C
-#define D4_SQRM  0x19D
-#define DS4_SQRM 0x19E
-#define E4_SQRM  0x19F
-#define F4_SQRM  0x1A0
-#define FS4_SQRM 0x1A1
-#define G4_SQRM  0x1A2
-#define GS4_SQRM 0x1A3
-#define A4_SQRM  0x1A4
-#define AS4_SQRM 0x1A5
-#define B4_SQRM  0x1A6
-#define C5_SQRM  0x1A7
-#define CS5_SQRM 0x1A8
-#define D5_SQRM  0x1A9
-#define DS5_SQRM 0x1AA
-#define E5_SQRM  0x1AB
-#define F5_SQRM  0x1AC
-#define FS5_SQRM 0x1AD
-#define G5_SQRM  0x1AE
-#define GS5_SQRM 0x1AF
-#define A5_SQRM  0x1B0
-#define AS5_SQRM 0x1B1
-#define B5_SQRM  0x1B2
-#define C6_SQRM  0x1B3
-#define CS6_SQRM 0x1B4
-#define D6_SQRM  0x1B5
-#define DS6_SQRM 0x1B6
-#define E6_SQRM  0x1B7
-#define F6_SQRM  0x1B8
-#define FS6_SQRM 0x1B9
-#define G6_SQRM  0x1BA
-#define GS6_SQRM 0x1BB
-#define A6_SQRM  0x1BC
-#define AS6_SQRM 0x1BD
-#define B6_SQRM  0x1BE
-#define C7_SQRM  0x1BF
+#define A1_SQUM  0x180
+#define AS1_SQUM 0x181
+#define B1_SQUM  0x182
+#define C2_SQUM  0x183
+#define CS2_SQUM 0x184
+#define D2_SQUM  0x185
+#define DS2_SQUM 0x186
+#define E2_SQUM  0x187
+#define F2_SQUM  0x188
+#define FS2_SQUM 0x189
+#define G2_SQUM  0x18A
+#define GS2_SQUM 0x18B
+#define A2_SQUM  0x18C
+#define AS2_SQUM 0x18D
+#define B2_SQUM  0x18E
+#define C3_SQUM  0x18F
+#define CS3_SQUM 0x190
+#define D3_SQUM  0x191
+#define DS3_SQUM 0x192
+#define E3_SQUM  0x193
+#define F3_SQUM  0x194
+#define FS3_SQUM 0x195
+#define G3_SQUM  0x196
+#define GS3_SQUM 0x197
+#define A3_SQUM  0x198
+#define AS3_SQUM 0x199
+#define B3_SQUM  0x19A
+#define C4_SQUM  0x19B
+#define CS4_SQUM 0x19C
+#define D4_SQUM  0x19D
+#define DS4_SQUM 0x19E
+#define E4_SQUM  0x19F
+#define F4_SQUM  0x1A0
+#define FS4_SQUM 0x1A1
+#define G4_SQUM  0x1A2
+#define GS4_SQUM 0x1A3
+#define A4_SQUM  0x1A4
+#define AS4_SQUM 0x1A5
+#define B4_SQUM  0x1A6
+#define C5_SQUM  0x1A7
+#define CS5_SQUM 0x1A8
+#define D5_SQUM  0x1A9
+#define DS5_SQUM 0x1AA
+#define E5_SQUM  0x1AB
+#define F5_SQUM  0x1AC
+#define FS5_SQUM 0x1AD
+#define G5_SQUM  0x1AE
+#define GS5_SQUM 0x1AF
+#define A5_SQUM  0x1B0
+#define AS5_SQUM 0x1B1
+#define B5_SQUM  0x1B2
+#define C6_SQUM  0x1B3
+#define CS6_SQUM 0x1B4
+#define D6_SQUM  0x1B5
+#define DS6_SQUM 0x1B6
+#define E6_SQUM  0x1B7
+#define F6_SQUM  0x1B8
+#define FS6_SQUM 0x1B9
+#define G6_SQUM  0x1BA
+#define GS6_SQUM 0x1BB
+#define A6_SQUM  0x1BC
+#define AS6_SQUM 0x1BD
+#define B6_SQUM  0x1BE
+#define C7_SQUM  0x1BF
 
 #define A1_NOIM  0x1C0
 #define AS1_NOIM 0x1C1
@@ -1517,70 +1517,70 @@ sound_index sound[] =
 #define B6_TRIS  0x27E
 #define C7_TRIS  0x27F
 
-#define A1_SQRS  0x280
-#define AS1_SQRS 0x281
-#define B1_SQRS  0x282
-#define C2_SQRS  0x283
-#define CS2_SQRS 0x284
-#define D2_SQRS  0x285
-#define DS2_SQRS 0x286
-#define E2_SQRS  0x287
-#define F2_SQRS  0x288
-#define FS2_SQRS 0x289
-#define G2_SQRS  0x28A
-#define GS2_SQRS 0x28B
-#define A2_SQRS  0x28C
-#define AS2_SQRS 0x28D
-#define B2_SQRS  0x28E
-#define C3_SQRS  0x28F
-#define CS3_SQRS 0x290
-#define D3_SQRS  0x291
-#define DS3_SQRS 0x292
-#define E3_SQRS  0x293
-#define F3_SQRS  0x294
-#define FS3_SQRS 0x295
-#define G3_SQRS  0x296
-#define GS3_SQRS 0x297
-#define A3_SQRS  0x298
-#define AS3_SQRS 0x299
-#define B3_SQRS  0x29A
-#define C4_SQRS  0x29B
-#define CS4_SQRS 0x29C
-#define D4_SQRS  0x29D
-#define DS4_SQRS 0x29E
-#define E4_SQRS  0x29F
-#define F4_SQRS  0x2A0
-#define FS4_SQRS 0x2A1
-#define G4_SQRS  0x2A2
-#define GS4_SQRS 0x2A3
-#define A4_SQRS  0x2A4
-#define AS4_SQRS 0x2A5
-#define B4_SQRS  0x2A6
-#define C5_SQRS  0x2A7
-#define CS5_SQRS 0x2A8
-#define D5_SQRS  0x2A9
-#define DS5_SQRS 0x2AA
-#define E5_SQRS  0x2AB
-#define F5_SQRS  0x2AC
-#define FS5_SQRS 0x2AD
-#define G5_SQRS  0x2AE
-#define GS5_SQRS 0x2AF
-#define A5_SQRS  0x2B0
-#define AS5_SQRS 0x2B1
-#define B5_SQRS  0x2B2
-#define C6_SQRS  0x2B3
-#define CS6_SQRS 0x2B4
-#define D6_SQRS  0x2B5
-#define DS6_SQRS 0x2B6
-#define E6_SQRS  0x2B7
-#define F6_SQRS  0x2B8
-#define FS6_SQRS 0x2B9
-#define G6_SQRS  0x2BA
-#define GS6_SQRS 0x2BB
-#define A6_SQRS  0x2BC
-#define AS6_SQRS 0x2BD
-#define B6_SQRS  0x2BE
-#define C7_SQRS  0x2BF
+#define A1_SQUS  0x280
+#define AS1_SQUS 0x281
+#define B1_SQUS  0x282
+#define C2_SQUS  0x283
+#define CS2_SQUS 0x284
+#define D2_SQUS  0x285
+#define DS2_SQUS 0x286
+#define E2_SQUS  0x287
+#define F2_SQUS  0x288
+#define FS2_SQUS 0x289
+#define G2_SQUS  0x28A
+#define GS2_SQUS 0x28B
+#define A2_SQUS  0x28C
+#define AS2_SQUS 0x28D
+#define B2_SQUS  0x28E
+#define C3_SQUS  0x28F
+#define CS3_SQUS 0x290
+#define D3_SQUS  0x291
+#define DS3_SQUS 0x292
+#define E3_SQUS  0x293
+#define F3_SQUS  0x294
+#define FS3_SQUS 0x295
+#define G3_SQUS  0x296
+#define GS3_SQUS 0x297
+#define A3_SQUS  0x298
+#define AS3_SQUS 0x299
+#define B3_SQUS  0x29A
+#define C4_SQUS  0x29B
+#define CS4_SQUS 0x29C
+#define D4_SQUS  0x29D
+#define DS4_SQUS 0x29E
+#define E4_SQUS  0x29F
+#define F4_SQUS  0x2A0
+#define FS4_SQUS 0x2A1
+#define G4_SQUS  0x2A2
+#define GS4_SQUS 0x2A3
+#define A4_SQUS  0x2A4
+#define AS4_SQUS 0x2A5
+#define B4_SQUS  0x2A6
+#define C5_SQUS  0x2A7
+#define CS5_SQUS 0x2A8
+#define D5_SQUS  0x2A9
+#define DS5_SQUS 0x2AA
+#define E5_SQUS  0x2AB
+#define F5_SQUS  0x2AC
+#define FS5_SQUS 0x2AD
+#define G5_SQUS  0x2AE
+#define GS5_SQUS 0x2AF
+#define A5_SQUS  0x2B0
+#define AS5_SQUS 0x2B1
+#define B5_SQUS  0x2B2
+#define C6_SQUS  0x2B3
+#define CS6_SQUS 0x2B4
+#define D6_SQUS  0x2B5
+#define DS6_SQUS 0x2B6
+#define E6_SQUS  0x2B7
+#define F6_SQUS  0x2B8
+#define FS6_SQUS 0x2B9
+#define G6_SQUS  0x2BA
+#define GS6_SQUS 0x2BB
+#define A6_SQUS  0x2BC
+#define AS6_SQUS 0x2BD
+#define B6_SQUS  0x2BE
+#define C7_SQUS  0x2BF
 
 #define A1_NOIS  0x2C0
 #define AS1_NOIS 0x2C1
@@ -1647,59 +1647,108 @@ sound_index sound[] =
 #define B6_NOIS  0x2FE
 #define C7_NOIS  0x2FF
 
-#define CS7_SQRL 0x300
-#define DS7_SQRL 0x301
-#define E7_SQRL  0x302
-#define F7_SQRL  0x303
-#define G7_SQRL  0x304
-#define A7_SQRL  0x305
-#define B7_SQRL  0x306
-#define CS8_SQRL 0x307
-#define E8_SQRL  0x308
-#define G8_SQRL  0x309
-#define B8_SQRL  0x30A
-#define HI_SQRL  0x30B
+#define CS7_SQUL 0x300
+#define DS7_SQUL 0x301
+#define E7_SQUL  0x302
+#define F7_SQUL  0x303
+#define G7_SQUL  0x304
+#define A7_SQUL  0x305
+#define B7_SQUL  0x306
+#define CS8_SQUL 0x307
+#define E8_SQUL  0x308
+#define G8_SQUL  0x309
+#define B8_SQUL  0x30A
+#define HI_SQUL  0x30B
 
-#define CS7_SQRM 0x30C
-#define DS7_SQRM 0x30D
-#define E7_SQRM  0x30E
-#define F7_SQRM  0x30F
-#define G7_SQRM  0x310
-#define A7_SQRM  0x311
-#define B7_SQRM  0x312
-#define CS8_SQRM 0x313
-#define E8_SQRM  0x314
-#define G8_SQRM  0x315
-#define B8_SQRM  0x316
-#define HI_SQRM  0x317
+#define CS7_SQUM 0x30C
+#define DS7_SQUM 0x30D
+#define E7_SQUM  0x30E
+#define F7_SQUM  0x30F
+#define G7_SQUM  0x310
+#define A7_SQUM  0x311
+#define B7_SQUM  0x312
+#define CS8_SQUM 0x313
+#define E8_SQUM  0x314
+#define G8_SQUM  0x315
+#define B8_SQUM  0x316
+#define HI_SQUM  0x317
 
-#define CS7_SQRS 0x318
-#define DS7_SQRS 0x319
-#define E7_SQRS  0x31A
-#define F7_SQRS  0x31B
-#define G7_SQRS  0x31C
-#define A7_SQRS  0x31D
-#define B7_SQRS  0x31E
-#define CS8_SQRS 0x31F
-#define E8_SQRS  0x320
-#define G8_SQRS  0x321
-#define B8_SQRS  0x322
-#define HI_SQRS  0x323
+#define CS7_SQUS 0x318
+#define DS7_SQUS 0x319
+#define E7_SQUS  0x31A
+#define F7_SQUS  0x31B
+#define G7_SQUS  0x31C
+#define A7_SQUS  0x31D
+#define B7_SQUS  0x31E
+#define CS8_SQUS 0x31F
+#define E8_SQUS  0x320
+#define G8_SQUS  0x321
+#define B8_SQUS  0x322
+#define HI_SQUS  0x323
 
 #define SND_SILENCE  0x324
 #define SND_NOISE    0x325 // Long Noise
 
 #define SND_END      0xFFFF
 
-#define BEAT1(x) x,
-#define BEAT2(x) x,x,
-#define BEAT3(x) x,x,x,
-#define BEAT4(x) x,x,x,x,
-#define BEAT5(x) x,x,x,x,x,
-#define BEAT6(x) x,x,x,x,x,x,
-#define BEAT7(x) x,x,x,x,x,x,x,
-#define BEAT8(x) x,x,x,x,x,x,x,x,
-#define BEAT9(x) x,x,x,x,x,x,x,x,x,
-#define BEAT10(x) x,x,x,x,x,x,x,x,x,x,
-#define BEAT11(x) x,x,x,x,x,x,x,x,x,x,x,
-#define BEAT12(x) x,x,x,x,x,x,x,x,x,x,x,x,
+#define _1(x) x,
+#define _2(x) x,x,
+#define _3(x) x,x,x,
+#define _4(x) x,x,x,x,
+#define _5(x) x,x,x,x,x,
+#define _6(x) x,x,x,x,x,x,
+#define _7(x) x,x,x,x,x,x,x,
+#define _8(x) x,x,x,x,x,x,x,x,
+#define _9(x) x,x,x,x,x,x,x,x,x,
+#define _10(x) x,x,x,x,x,x,x,x,x,x,
+#define _11(x) _10(x) _1(x)
+#define _12(x) _10(x) _2(x)
+#define _13(x) _10(x) _3(x)
+#define _14(x) _10(x) _4(x)
+#define _15(x) _10(x) _5(x)
+#define _16(x) _10(x) _6(x)
+#define _17(x) _10(x) _7(x)
+#define _18(x) _10(x) _8(x)
+#define _19(x) _10(x) _9(x)
+#define _20(x) _10(x) _10(x)
+#define _21(x) _20(x) _1(x)
+#define _22(x) _20(x) _2(x)
+#define _23(x) _20(x) _3(x)
+#define _24(x) _20(x) _4(x)
+#define _25(x) _20(x) _5(x)
+#define _26(x) _20(x) _6(x)
+#define _27(x) _20(x) _7(x)
+#define _28(x) _20(x) _8(x)
+#define _29(x) _20(x) _9(x)
+#define _30(x) _20(x) _10(x)
+#define _31(x) _30(x) _1(x)
+#define _32(x) _30(x) _2(x)
+#define _33(x) _30(x) _3(x)
+#define _34(x) _30(x) _4(x)
+#define _35(x) _30(x) _5(x)
+#define _36(x) _30(x) _6(x)
+#define _37(x) _30(x) _7(x)
+#define _38(x) _30(x) _8(x)
+#define _39(x) _30(x) _9(x)
+#define _40(x) _30(x) _10(x)
+#define _41(x) _40(x) _1(x)
+#define _42(x) _40(x) _2(x)
+#define _43(x) _40(x) _3(x)
+#define _44(x) _40(x) _4(x)
+#define _45(x) _40(x) _5(x)
+#define _46(x) _40(x) _6(x)
+#define _47(x) _40(x) _7(x)
+#define _48(x) _40(x) _8(x)
+#define _49(x) _40(x) _9(x)
+#define _50(x) _40(x) _10(x)
+#define _51(x) _50(x) _1(x)
+#define _52(x) _50(x) _2(x)
+#define _53(x) _50(x) _3(x)
+#define _54(x) _50(x) _4(x)
+#define _55(x) _50(x) _5(x)
+#define _56(x) _50(x) _6(x)
+#define _57(x) _50(x) _7(x)
+#define _58(x) _50(x) _8(x)
+#define _59(x) _50(x) _9(x)
+#define _60(x) _50(x) _10(x)
+

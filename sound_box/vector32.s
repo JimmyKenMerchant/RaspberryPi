@@ -47,11 +47,11 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a 24hz Timer Interrupt (120000/5000).
+	 * Get a 48hz Timer Interrupt (120000/2500).
 	 */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x1300                           @ 0x1300 High 1 Byte of decimal 4999 (5000 - 1), 16 bits counter on default
-	add r1, r1, #0x87                         @ 0x87 Low 1 Byte of decimal 4999, 16 bits counter on default
+	mov r1, #0x0900                           @ High 1 Byte of decimal 2499 (2500 - 1), 16 bits counter on default
+	add r1, r1, #0xC3                         @ Low 1 Byte of decimal 2499, 16 bits counter on default
 	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
@@ -59,31 +59,15 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	ldr r1, [r0, #equ32_gpio_gpfsel40]
-
-	/**
-	 * Don't use a minijack on Raspberry Pi as a sound output on this project,
-	 * The minijack does not assume usage on this project.
-	 */
-/*
-.ifndef __ZERO
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0    @ Clear GPIO 40
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0     @ Set GPIO 40 PWM0 (to Minijack)
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5    @ Clear GPIO 45
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 45 PWM1 (to Minijack)
-.endif
-*/
-
 	/**
 	 * Use ACT LED only in debugging to reduce noise.  
 	 */
-
 .ifndef __RASPI3B
+	ldr r1, [r0, #equ32_gpio_gpfsel40]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 47
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
-.endif
-
 	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 17
@@ -134,7 +118,13 @@ os_reset:
 	push {r0-r3}
 .ifdef __SOUND_I2S
 	bl snd32_soundinit_i2s
-.else
+.endif
+.ifdef __SOUND_JACK
+	mov r0, #1
+	bl snd32_soundinit_pwm
+.endif
+.ifdef __SOUND_PWM
+	mov r0, #0
 	bl snd32_soundinit_pwm
 .endif
 	pop {r0-r3}

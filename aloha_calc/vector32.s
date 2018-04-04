@@ -152,7 +152,13 @@ os_reset:
 	push {r0-r3}
 .ifdef __SOUND_I2S
 	bl snd32_soundinit_i2s
-.else
+.endif
+.ifdef __SOUND_JACK
+	mov r0, #1
+	bl snd32_soundinit_pwm
+.endif
+.ifdef __SOUND_PWM
+	mov r0, #0
 	bl snd32_soundinit_pwm
 .endif
 	pop {r0-r3}

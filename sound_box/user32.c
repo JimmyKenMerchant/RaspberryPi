@@ -21,7 +21,7 @@
 #include "system32.c"
 #include "sound32.h"
 
-#define timer_count_default 5000
+#define timer_count_default 2500
 #define clock_divisor_int_defualt 2
 
 /**
@@ -44,7 +44,12 @@
 
 music_code music1[] =
 {
-	BEAT12(C4_SINL)
+	_12(C4_SINL)
+	_4(E4_SINL) _4(G4_SINL) _4(C5_SINL)
+	_12(E4_SINL)
+	_4(G4_SINL) _4(C5_SINL) _4(E5_SINL)
+	_12(G4_SINL)
+	_4(E5_SINL) _4(G5_SINL) _4(C6_SINL)
 	SND_END
 };
 
@@ -83,10 +88,10 @@ music_code interrupt1[] =
 
 int32 _user_start()
 {
-	String str_ready = "Get Ready?\0";
-	String str_music1 = "Music No.1\0";
-	String str_music2 = "Music No.2\0";
-	String str_music3 = "Music No.3\0";
+	//String str_ready = "Get Ready?\0";
+	//String str_music1 = "Music No.1\0";
+	//String str_music2 = "Music No.2\0";
+	//String str_music3 = "Music No.3\0";
 	int32 timer_count_divisor = 1;
 	uint32 detect_parallel = 0;
 	//uint32 clock_divisor_fraction = 0;
@@ -99,7 +104,9 @@ int32 _user_start()
 	_sounddecode( sound, false );
 #endif
 
-	print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
+	//print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
+
+	_display_off( true );
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
@@ -111,19 +118,16 @@ int32 _user_start()
 
 			if ( detect_parallel == 1<<22 ) {
 				_soundclear();
-				print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
+				//print32_string( str_ready, 300, 300, str32_strlen( str_ready ) );
 			} else if ( detect_parallel == 1<<23 ) {
-				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
-				print32_string( str_music1, 300, 300, str32_strlen( str_music1 ) );
+				//print32_string( str_music1, 300, 300, str32_strlen( str_music1 ) );
 			} else if ( detect_parallel == 1<<24 ) {
-				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
-				print32_string( str_music2, 300, 300, str32_strlen( str_music2 ) );
+				//print32_string( str_music2, 300, 300, str32_strlen( str_music2 ) );
 			} else if ( detect_parallel == 1<<25 ) {
-				_armtimer_load( arm32_udiv( timer_count_default, timer_count_divisor ) - 1 );
 				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
-				print32_string( str_music3, 300, 300, str32_strlen( str_music3 ) );
+				//print32_string( str_music3, 300, 300, str32_strlen( str_music3 ) );
 			} else if ( detect_parallel == 1<<26 ) {
 				_soundinterrupt( interrupt1, snd32_musiclen( interrupt1 ) , 0, 1 );
 			}
