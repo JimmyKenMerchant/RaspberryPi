@@ -14,7 +14,7 @@
 
 * GPIO40 as Output of PWM0 on sound=jack
 
-* GPIO45 as Output of PWM1 on sound=jack, 180 Degrees Phase-shifted from PWM0
+* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 on sound=jack, 180 Degrees Phase-shifted from PWM0
 
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 

@@ -675,7 +675,7 @@ snd32_soundinterrupt:
  * Sound Initializer for PWM Mode
  *
  * Parameters
- * r0: 0 as GPIO 12/13 PWM, 1 as GPIO 40/45 PWM, 2 as Both
+ * r0: 0 as GPIO 12/13 PWM, 1 as GPIO 40/45(41) PWM, 2 as Both
  *
  * Return: r0 (0 as Success)
  */
@@ -712,8 +712,13 @@ snd32_soundinit_pwm:
 	ldr value, [memorymap_base, #equ32_gpio_gpfsel40]
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0          @ Clear GPIO 40
 	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
+.ifdef __RASPI3B
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1          @ Clear GPIO 41
+	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1         @ Set GPIO 41 PWM1 (to Minijack)
+.else
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5          @ Clear GPIO 45
 	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5         @ Set GPIO 45 PWM1 (to Minijack)
+.endif
 	str value, [memorymap_base, #equ32_gpio_gpfsel40]
 
 	macro32_dsb ip
