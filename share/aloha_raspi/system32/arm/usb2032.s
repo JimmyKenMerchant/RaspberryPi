@@ -13,8 +13,9 @@
  *
  * 1. Raspberry Pi B, B+, 2 and 3 are having inner USB Hub, LAN9514/9512 (LAN).
  *    LAN has 5 ports, and port #1 is already used by an ethernet adaptor.
- *    GPIO-38 is a USB (and GPIO) current-up handler, and GPIO-44 (ALT0: GPCLK1) is 25Mhz clock source of LAN.
- * 
+ *    GPIO-44 (ALT0: GPCLK1) is 25Mhz clock source of LAN.
+ *    GPIO-38 is a USB (and GPIO) current-up handler (RasPi 3 has already current-upped as default without GPIO-38).
+ *
  * 2. Tested on RasPi Zero W and 2B (V1.1).
  *    It seems that the resetting sequence of USB HCD is placed on some inappropriate place.
  *
