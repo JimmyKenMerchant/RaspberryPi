@@ -2056,7 +2056,7 @@ arm32_armtimer_load:
  * Parameters
  * r0: Base of Clock Type
  * r1: Clock Control
- * r2: Clock Divisors, Fixed Floating Point Bit[23:12] as Integer, Bit[11:0] as Fractional
+ * r2: Clock Divisors, Fixed Point, Bit[23:12] as Integer, Bit[11:0] as Fractional
  *
  * Return: r0 (0 as Success)
  */
