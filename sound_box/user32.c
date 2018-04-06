@@ -17,7 +17,7 @@
 
 music_code music1[] =
 {
-	_12(C4_SINL)
+	_12(A4_SINL)
 	SND_END
 };
 

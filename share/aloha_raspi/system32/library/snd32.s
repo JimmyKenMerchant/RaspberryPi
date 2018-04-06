@@ -808,14 +808,17 @@ snd32_soundinit_i2s:
 
 	/**
 	 * Clock Manager for PCM Clock.
-	 * Makes 19.2Mhz (From Oscillator). Div by 18.75 Equals 1.024Mhz.
+	 * Makes 19.2Mhz (From Oscillator). Div by 18.75 Equals 1.024Mhz (Same as PWM Output).
+	 * Makes 19.2Mhz (From Oscillator). Div by 18.939453125 Equals 1.013756832Mhz (Adjusted).
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pcm
 	mov r1, #equ32_cm_ctl_mash_1
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
 	mov r2, #18<<equ32_cm_div_integer
-	orr r2, r2, #3072<<equ32_cm_div_fraction                       @ Ideal 0.75 * 4096
+	/*orr r2, r2, #3072<<equ32_cm_div_fraction*/                       @ 0.75 * 4096
+	orr r2, r2, #0xF00<<equ32_cm_div_fraction                      @ 0.939453125 * 4096 Equals 3848 (0xF08)
+	orr r2, r2, #0x008<<equ32_cm_div_fraction                      @ 0.939453125 * 4096 Equals 3848 (0xF08)
 	bl arm32_clockmanager
 	pop {r0-r3}
 
