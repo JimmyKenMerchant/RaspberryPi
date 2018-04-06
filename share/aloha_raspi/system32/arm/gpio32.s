@@ -27,9 +27,12 @@ GPIO32_MASK:                .word equ32_gpio32_gpiomask
  * Bit[1]: GPIO 1 Output Low(0)/High(1)
  * ...
  * Bit[29]: GPIO 29 Output Low(0)/High(1)
- * Bit[30]: Stay Prior Status of GPIO Which Are Assigned as Zero in the Current Block
- * Bit[31]: Always Need of Set(1)
- * Note that if a beat is all zero, this beat means the end of sequence.  
+ * Bit[31:30]:
+ *  0b10: Change All Status of GPIO in Accordance with Block
+ *  0b11: Stay Prior Status of GPIO Which Are Assigned as Zero in the Current Block
+ *  0b01: Invert High/Low, Stay Prior Status of GPIO Which Are Assigned as Zero in the Current Block
+ *  0b00: Ignore Block
+ * Note that if a beat is all zero, this beat means the end of sequence.
  */
 
 
@@ -86,27 +89,44 @@ gpio32_gpioplay:
 
 		ldr sequence, [addr_seq, temp]
 
+		tst sequence, #0xC0000000
+		beq gpio32_gpioplay_main_common            @ 0b00 on Bit[31:30]
+
 		tst sequence, #0x40000000                  @ Check Stay Status Bit[30]
-		ldrne temp, [gpio_base, #equ32_gpio_gplev0]
-		orrne sequence, sequence, temp
+		beq gpio32_gpioplay_main_jump              @ 0b10 on Bit[31:30]
 
-		and sequence, sequence, mask               @ Mask For Available GPIO Bit[29-0]
-
-		mvn sequence_flip, sequence
-
-		str sequence_flip, [gpio_base, #equ32_gpio_gpclr0]
+		/* Get Current Status of GPIO */
+		ldr temp, [gpio_base, #equ32_gpio_gplev0]
 
 		macro32_dsb ip
 
-		str sequence, [gpio_base, #equ32_gpio_gpset0]
+		tst sequence, #0x80000000
+		orrne sequence, temp, sequence             @ ob11 on Bit[31:30]
+		biceq sequence, temp, sequence             @ 0b01 on Bit[31:30], Invert
 
-		macro32_dsb ip
+		gpio32_gpioplay_main_jump:
 
-		add count, count, #1
-		str count, GPIO32_COUNT
-		str repeat, GPIO32_REPEAT
+			mvn sequence_flip, sequence
 
-		b gpio32_gpioplay_success
+			/* Mask For Available GPIO Bit[29-0] */
+			and sequence, sequence, mask 
+			and sequence_flip, sequence_flip, mask
+
+			str sequence_flip, [gpio_base, #equ32_gpio_gpclr0]
+
+			macro32_dsb ip
+
+			str sequence, [gpio_base, #equ32_gpio_gpset0]
+
+			macro32_dsb ip
+
+		gpio32_gpioplay_main_common:
+
+			add count, count, #1
+			str count, GPIO32_COUNT
+			str repeat, GPIO32_REPEAT
+
+			b gpio32_gpioplay_success
 
 	gpio32_gpioplay_free:
 
