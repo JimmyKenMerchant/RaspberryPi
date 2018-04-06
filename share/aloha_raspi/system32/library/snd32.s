@@ -815,7 +815,7 @@ snd32_soundinit_i2s:
 	mov r1, #equ32_cm_ctl_mash_1
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
 	mov r2, #18<<equ32_cm_div_integer
-	orr r2, r2, #768<<equ32_cm_div_fraction                        @ 0.75 * 1024
+	orr r2, r2, #3072<<equ32_cm_div_fraction                       @ Ideal 0.75 * 4096
 	bl arm32_clockmanager
 	pop {r0-r3}
 

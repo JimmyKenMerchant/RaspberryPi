@@ -1753,6 +1753,8 @@ sound_index sound[] =
 #define _60(x) _50(x) _10(x)
 
 /* Chords */
+
+/* Major */
 #define _3_MAJ(x)       x,x+4,x+7,
 #define _6_MAJ(x)       _3_MAJ(x) _3_MAJ(x)
 #define _9_MAJ(x)       _6_MAJ(x) _3_MAJ(x)
@@ -1769,6 +1771,8 @@ sound_index sound[] =
 #define _42_MAJ(x)      _39_MAJ(x) _3_MAJ(x)
 #define _45_MAJ(x)      _42_MAJ(x) _3_MAJ(x)
 #define _48_MAJ(x)      _45_MAJ(x) _3_MAJ(x)
+
+/* Minor */
 #define _3_M(x)         x,x+3,x+7,
 #define _6_M(x)         _3_M(x) _3_M(x)
 #define _9_M(x)         _6_M(x) _3_M(x)
@@ -1785,6 +1789,8 @@ sound_index sound[] =
 #define _42_M(x)        _39_M(x) _3_M(x)
 #define _45_M(x)        _42_M(x) _3_M(x)
 #define _48_M(x)        _45_M(x) _3_M(x)
+
+/* Major 7th */
 #define _4_MAJ7TH(x)    x,x+4,x+7,x+11,
 #define _8_MAJ7TH(x)    _4_MAJ7TH(x) _4_MAJ7TH(x)
 #define _12_MAJ7TH(x)   _8_MAJ7TH(x) _4_MAJ7TH(x)
@@ -1797,6 +1803,8 @@ sound_index sound[] =
 #define _40_MAJ7TH(x)   _36_MAJ7TH(x) _4_MAJ7TH(x)
 #define _44_MAJ7TH(x)   _40_MAJ7TH(x) _4_MAJ7TH(x)
 #define _48_MAJ7TH(x)   _44_MAJ7TH(x) _4_MAJ7TH(x)
+
+/* 7th */
 #define _4_7TH(x)       x,x+4,x+7,x+10,
 #define _8_7TH(x)       _4_7TH(x) _4_7TH(x)
 #define _12_7TH(x)      _8_7TH(x) _4_7TH(x)
@@ -1809,6 +1817,22 @@ sound_index sound[] =
 #define _40_7TH(x)      _36_7TH(x) _4_7TH(x)
 #define _44_7TH(x)      _40_7TH(x) _4_7TH(x)
 #define _48_7TH(x)      _44_7TH(x) _4_7TH(x)
+
+/* Minor 7th */
+#define _4_M7TH(x)      x,x+3,x+7,x+10,
+#define _8_M7TH(x)      _4_M7TH(x) _4_M7TH(x)
+#define _12_M7TH(x)     _8_M7TH(x) _4_M7TH(x)
+#define _16_M7TH(x)     _12_M7TH(x) _4_M7TH(x)
+#define _20_M7TH(x)     _16_M7TH(x) _4_M7TH(x)
+#define _24_M7TH(x)     _20_M7TH(x) _4_M7TH(x)
+#define _28_M7TH(x)     _24_M7TH(x) _4_M7TH(x)
+#define _32_M7TH(x)     _28_M7TH(x) _4_M7TH(x)
+#define _36_M7TH(x)     _32_M7TH(x) _4_M7TH(x)
+#define _40_M7TH(x)     _36_M7TH(x) _4_M7TH(x)
+#define _44_M7TH(x)     _40_M7TH(x) _4_M7TH(x)
+#define _48_M7TH(x)     _44_M7TH(x) _4_M7TH(x)
+
+/* Add 9th */
 #define _4_ADD9TH(x)    x,x+4,x+7,x+14,
 #define _8_ADD9TH(x)    _4_ADD9TH(x) _4_ADD9TH(x)
 #define _12_ADD9TH(x)   _8_ADD9TH(x) _4_ADD9TH(x)
@@ -1821,4 +1845,12 @@ sound_index sound[] =
 #define _40_ADD9TH(x)   _36_ADD9TH(x) _4_ADD9TH(x)
 #define _44_ADD9TH(x)   _40_ADD9TH(x) _4_ADD9TH(x)
 #define _48_ADD9TH(x)   _44_ADD9TH(x) _4_ADD9TH(x)
+
+/* 9th */
+#define _8_9TH(x)       x,x+4,x+7,x+10,x+14,x+10,x+7,x+4,
+#define _16_9TH(x)      _8_9TH(x) _8_9TH(x)
+#define _24_9TH(x)      _16_9TH(x) _8_9TH(x)
+#define _32_9TH(x)      _24_9TH(x) _8_9TH(x)
+#define _40_9TH(x)      _32_9TH(x) _8_9TH(x)
+#define _48_9TH(x)      _40_9TH(x) _8_9TH(x)
 

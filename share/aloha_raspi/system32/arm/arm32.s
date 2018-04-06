@@ -2049,11 +2049,14 @@ arm32_armtimer_load:
 /**
  * function arm32_clockmanager
  * Set for Clock Manager
+ * To set clock divisors, multiply the fractional part by 4096.
+ * E.g., if 2.5 is intended divisors, logical shift left 12 bit for integer 2,
+ * and add 2048 (0.5 * 4096). This results 0x0002800.
  *
  * Parameters
  * r0: Base of Clock Type
  * r1: Clock Control
- * r2: Clock Divisors
+ * r2: Clock Divisors, Fixed Floating Point Bit[23:12] as Integer, Bit[11:0] as Fractional
  *
  * Return: r0 (0 as Success)
  */
