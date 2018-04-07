@@ -83,8 +83,14 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0      @ Clear GPIO 20
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0     @ Set GPIO 20 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 22
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2     @ Set GPIO 22 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 23
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3     @ Set GPIO 23 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 24
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 24 OUTPUT
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 25
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 25 OUTPUT
 	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_6      @ Clear GPIO 26
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
@@ -218,6 +224,7 @@ os_fiq:
 .endif
 
 	push {r0-r3}
+	mov r0, #0x07C00000                        @ GPIO22-26
 	bl gpio32_gpioplay
 	pop {r0-r3}
 

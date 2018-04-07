@@ -25,6 +25,10 @@
  * 0xFFFF(65535) means End of Music Code.
  */
 
+/**
+ * These comments about frequencies assume 3.2Khz as the sampling rate, using on PWM direct output (including from 3.5mm minijack).
+ * On PCM, the sampling rate is appx. 3.168Khz to be adjusted to fit A4 on 440hz, e.g., G4 becomes 391.1Hz.
+ */
 sound_index sound[] =
 {
 	/* Volume Big */

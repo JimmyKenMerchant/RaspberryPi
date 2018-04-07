@@ -189,6 +189,8 @@ os_fiq:
 .endif
 
 	push {r0-r3,lr}
+	mov r0, #equ32_gpio32_gpiomask            @ Default
+	bic r0, r0, #0x08000000                   @ GPIO27
 	bl gpio32_gpioplay
 	pop {r0-r3,lr}
 

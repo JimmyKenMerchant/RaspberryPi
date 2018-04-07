@@ -211,7 +211,7 @@ __attribute__((noinline)) uint32 _soundclear()
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpioplay()
+__attribute__((noinline)) uint32 _gpioplay( uint32 gpio_mask )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1F");
@@ -225,7 +225,7 @@ __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, u
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpioclear( bool stay )
+__attribute__((noinline)) uint32 _gpioclear( uint32 gpio_mask, bool stay )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x21");

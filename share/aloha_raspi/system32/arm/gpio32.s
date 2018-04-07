@@ -11,7 +11,6 @@ GPIO32_SEQUENCE:            .word 0x00 @ Pointer of Sequence, If End, Automatica
 GPIO32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared
 GPIO32_COUNT:               .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
 GPIO32_REPEAT:              .word 0x00 @ -1 is Infinite Loop
-GPIO32_MASK:                .word equ32_gpio32_gpiomask
 
 /**
  * Usage
@@ -40,17 +39,20 @@ GPIO32_MASK:                .word equ32_gpio32_gpiomask
  * function gpio32_gpioplay
  * Play GPIO Sequence
  *
+ * Parameters
+ * r0: GPIO Mask
+ *
  * Return: r0 (0 as success, 1 as error)
  * Error: GPIO Sequence is not assigned
  */
 .globl gpio32_gpioplay
 gpio32_gpioplay:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_seq      .req r0 @ Register for Result, Scratch Register
+	mask          .req r0 @ Register for Result, Scratch Register
 	length        .req r1 @ Scratch Register
 	count         .req r2 @ Scratch Register
 	repeat        .req r3 @ Scratch Register
-	mask          .req r4
+	addr_seq      .req r4
 	sequence      .req r5
 	sequence_flip .req r6
 	gpio_base     .req r7
@@ -65,7 +67,6 @@ gpio32_gpioplay:
 	ldr length, GPIO32_LENGTH
 	ldr count, GPIO32_COUNT
 	ldr repeat, GPIO32_REPEAT
-	ldr mask, GPIO32_MASK
 
 	cmp count, length
 	blo gpio32_gpioplay_main
@@ -107,6 +108,10 @@ gpio32_gpioplay:
 		gpio32_gpioplay_main_jump:
 
 			mvn sequence_flip, sequence
+
+			/* Clear Bit[31:30] */
+			bic sequence, sequence, #0xC0000000
+			bic sequence_flip, sequence_flip, #0xC0000000
 
 			/* Mask For Available GPIO Bit[29-0] */
 			and sequence, sequence, mask 
@@ -151,11 +156,11 @@ gpio32_gpioplay:
 		pop {r4-r8}
 		mov pc, lr
 
-.unreq addr_seq
+.unreq mask
 .unreq length
 .unreq count
 .unreq repeat
-.unreq mask
+.unreq addr_seq
 .unreq sequence
 .unreq sequence_flip
 .unreq gpio_base
@@ -218,16 +223,17 @@ gpio32_gpioset:
  * Clear GPIO Sequence
  *
  * Parameters
- * r0: Clear All (0) / Stay GPIO Current Status (1)
+ * r0: GPIO Mask
+ * r1: Clear All (0) / Stay GPIO Current Status (1)
  *
  * Return: r0 (0 as success)
  */
 .globl gpio32_gpioclear
 gpio32_gpioclear:
 	/* Auto (Local) Variables, but just Aliases */
-	stay        .req r0
-	temp        .req r1
-	temp2       .req r2
+	mask        .req r0
+	stay        .req r1
+	temp        .req r2
 
 	mov temp, #0
 
@@ -242,10 +248,12 @@ gpio32_gpioclear:
 	cmp stay, #0
 	bhi gpio32_gpioclear_success
 
-	ldr temp2, GPIO32_MASK
+	/* Clear Bit[31:30] */
+	bic mask, mask, #0xC0000000
+
 	mov temp, #equ32_peripherals_base
 	add temp, temp, #equ32_gpio_base
-	str temp2, [temp, #equ32_gpio_gpclr0]      @ Clear All
+	str mask, [temp, #equ32_gpio_gpclr0]      @ Clear All
 
 	gpio32_gpioclear_success:
 		mov r0, #0                                 @ Return with Success
@@ -253,9 +261,9 @@ gpio32_gpioclear:
 	gpio32_gpioclear_common:
 		mov pc, lr
 
+.unreq mask
 .unreq stay
 .unreq temp
-.unreq temp2
 
 
 /**

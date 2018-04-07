@@ -108,7 +108,7 @@ int32 _user_start()
 		_gpioset( gpio, gpio32_gpiolen( gpio ) , 0, -1 );
 		while( ! _gpio_detect( 27 ) ) {
 		}
-		_gpioclear( 1 );
+		_gpioclear( 0x07FFFFFC, 1 );
 		_sleep( 1000000 );
 	}
 

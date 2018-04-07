@@ -22,7 +22,7 @@
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
-* GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s
+* GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S (as known as 3-wire I2S) on sound=i2s
 
 * HDMI as VIDEO Output (For Debug Only)
 
@@ -35,6 +35,16 @@
 * By disabling video signal, the output from the 3.5mm jack may be possible for stable use.
 
 * The line level of 3.5mm jack is not tested. It seems to be so high. Absolutely, don't use your earphones for safety of your ears.
+
+* The sample rate is 3.2Khz, so A4 Becomes 444.4Hz with no jitter.
+
+**About PCM Output**
+
+* The sampling rate is adjusted to 3.1680Khz for fitting A4 to 440Hz as opposed to the PWM0/1 output.
+
+* This sampling rate has jitter. Your DAC is needed its jitter remover.
+
+* SCLK (System Clock) / MCLK (Master Clock) is not supported because modern ICs on your DAC generates the clock by itself.
 
 **Compatibility**
 
