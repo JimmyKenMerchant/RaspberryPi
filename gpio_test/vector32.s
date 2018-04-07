@@ -124,6 +124,22 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 
+	/* Clear All GPIO Status Detect */
+	mov r1, #0
+	str r1, [r0, #equ32_gpio_gpren0]
+	str r1, [r0, #equ32_gpio_gpren1]
+	str r1, [r0, #equ32_gpio_gpfen0]
+	str r1, [r0, #equ32_gpio_gpfen1]
+	str r1, [r0, #equ32_gpio_gphen0]
+	str r1, [r0, #equ32_gpio_gphen1]
+	str r1, [r0, #equ32_gpio_gplen0]
+	str r1, [r0, #equ32_gpio_gplen1]
+	str r1, [r0, #equ32_gpio_gparen0]
+	str r1, [r0, #equ32_gpio_gparen1]
+	str r1, [r0, #equ32_gpio_gpafen0]
+	str r1, [r0, #equ32_gpio_gpafen1]
+
+	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gpren0]
 	orr r1, r1, #equ32_gpio27                                        @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]

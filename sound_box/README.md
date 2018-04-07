@@ -44,7 +44,7 @@
 
 * This sampling rate has jitter. Your DAC is needed its jitter remover.
 
-* SCLK (System Clock) / MCLK (Master Clock) is not supported because modern ICs on your DAC generates the clock by itself.
+* SCLK (System Clock) / MCLK (Master Clock) is not supported because the modern IC on your DAC generates the clock by itself.
 
 **Compatibility**
 

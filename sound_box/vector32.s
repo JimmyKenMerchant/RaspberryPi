@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-/*.equ __DEBUG, 1 */
+/*.equ __DEBUG, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -116,6 +116,22 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
+	/* Clear All GPIO Status Detect */
+	mov r1, #0
+	str r1, [r0, #equ32_gpio_gpren0]
+	str r1, [r0, #equ32_gpio_gpren1]
+	str r1, [r0, #equ32_gpio_gpfen0]
+	str r1, [r0, #equ32_gpio_gpfen1]
+	str r1, [r0, #equ32_gpio_gphen0]
+	str r1, [r0, #equ32_gpio_gphen1]
+	str r1, [r0, #equ32_gpio_gplen0]
+	str r1, [r0, #equ32_gpio_gplen1]
+	str r1, [r0, #equ32_gpio_gparen0]
+	str r1, [r0, #equ32_gpio_gparen1]
+	str r1, [r0, #equ32_gpio_gpafen0]
+	str r1, [r0, #equ32_gpio_gpafen1]
+
+	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gphen0]
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 High Level Detect
 	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 High Level Detect
@@ -123,12 +139,9 @@ os_reset:
 	orr r1, r1, #equ32_gpio25                                      @ Set GPIO25 High Level Detect
 	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 High Level Detect
 	str r1, [r0, #equ32_gpio_gphen0]
-
 	ldr r1, [r0, #equ32_gpio_gpren0]
 	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
-
-
 
 	macro32_dsb ip
 
