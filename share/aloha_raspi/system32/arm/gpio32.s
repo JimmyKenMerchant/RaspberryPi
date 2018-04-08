@@ -600,3 +600,177 @@ gpio32_gpiopull:
 .unreq control
 .unreq memorymap_base
 .unreq temp
+
+
+
+/**
+ * function gpio32_gpioreset
+ * Reset All GPIO Status and Pull Down, Except Internal Use
+ *
+ * Return: r0 (0 as success)
+ */
+.globl gpio32_gpioreset
+gpio32_gpioreset:
+	/* Auto (Local) Variables, but just Aliases */
+	number         .req r0
+	control        .req r1
+	memorymap_base .req r2
+	temp           .req r3
+
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	/**
+	 * Clear GPIO0-45 OUTPUT
+	 */
+	mvn temp, #0
+	str temp, [memorymap_base, #equ32_gpio_gpclr0]                     @ GPIO 0-31 Clear Output
+	mov temp, #0xFF
+	orr temp, temp, #0x3F00
+	str temp, [memorymap_base, #equ32_gpio_gpclr1]                     @ GPIO 32-45 Clear Output
+	macro32_dsb ip
+
+	/**
+	 * Clear GPIO0-45 Functions (Except Internal Use), I.E., All IN
+	 */
+	mov temp, #0
+	str temp, [memorymap_base, #equ32_gpio_gpfsel00]                   @ Clear GPIO 0-9
+	str temp, [memorymap_base, #equ32_gpio_gpfsel10]                   @ Clear GPIO 10-19
+	str temp, [memorymap_base, #equ32_gpio_gpfsel20]                   @ Clear GPIO 20-29
+	str temp, [memorymap_base, #equ32_gpio_gpfsel30]                   @ Clear GPIO 30-39
+	ldr temp, [memorymap_base, #equ32_gpio_gpfsel40]
+	macro32_dsb ip
+	bic temp, temp, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0    @ Clear GPIO 40
+	bic temp, temp, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 41
+	bic temp, temp, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 42
+	bic temp, temp, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 43
+	bic temp, temp, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4    @ Clear GPIO 44
+	bic temp, temp, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5    @ Clear GPIO 45
+	str temp, [memorymap_base, #equ32_gpio_gpfsel40]
+	macro32_dsb ip
+
+	/**
+	 * Clear GPIO0-45 Status Detect
+	 */
+
+	/* GPIO0-31 */
+	mov temp, #0
+	str temp, [memorymap_base, #equ32_gpio_gpren0]
+	str temp, [memorymap_base, #equ32_gpio_gpfen0]
+	str temp, [memorymap_base, #equ32_gpio_gphen0]
+	str temp, [memorymap_base, #equ32_gpio_gplen0]
+	str temp, [memorymap_base, #equ32_gpio_gparen0]
+	str temp, [memorymap_base, #equ32_gpio_gpafen0]
+	macro32_dsb ip
+
+	/* GPIO32-45 */
+
+	mov number, #0xFF
+	orr number, number, #0x3F00
+
+	ldr temp, [memorymap_base, #equ32_gpio_gpren1]
+	macro32_dsb ip
+	bic temp, temp, number
+	str temp, [memorymap_base, #equ32_gpio_gpren1]
+
+	ldr temp, [memorymap_base, #equ32_gpio_gpfen1]
+	macro32_dsb ip
+	bic temp, temp, number
+	str temp, [memorymap_base, #equ32_gpio_gpfen1]
+
+	ldr temp, [memorymap_base, #equ32_gpio_gphen1]
+	macro32_dsb ip
+	bic temp, temp, number
+	str temp, [memorymap_base, #equ32_gpio_gphen1]
+
+	ldr temp, [memorymap_base, #equ32_gpio_gplen1]
+	macro32_dsb ip
+	bic temp, temp, number
+	str temp, [memorymap_base, #equ32_gpio_gplen1]
+
+	ldr temp, [memorymap_base, #equ32_gpio_gparen1]
+	macro32_dsb ip
+	bic temp, temp, number
+	str temp, [memorymap_base, #equ32_gpio_gparen1]
+
+	ldr temp, [memorymap_base, #equ32_gpio_gpafen1]
+	macro32_dsb ip
+	bic temp, temp, number
+	str temp, [memorymap_base, #equ32_gpio_gpafen1]
+	macro32_dsb ip
+
+
+	/**
+	 * Set GPIO0-45 Pull Down, Several Pins (E.G., GPIO2 and GPIO3) have physically Pulled Up Though
+	 */
+
+	mov control, #0b01                                 @ Pull Down
+
+	/* GPIO 0-31 */
+
+	mvn number, #0x0                                   @ Set All Bit for GPIO0-31
+
+	str control, [memorymap_base, #equ32_gpio_gppud]   @ Set Control Signal
+
+	macro32_dsb ip
+
+	mov temp, #150                                     @ Wait for 150 Clocks to Set Control Signal
+	gpio32_gpioreset_wait1:
+		subs temp, #1
+		bge gpio32_gpioreset_wait1
+
+	/* Signal for GPIO 0-31 */
+	str number, [memorymap_base, #equ32_gpio_gppudclk0]
+
+	macro32_dsb ip
+	
+	mov temp, #150                                      @ Wait for 150 Clocks to Set GPIO Pull Up/Down Status
+	gpio32_gpioreset_close1:
+		subs temp, #1
+		bge gpio32_gpioreset_close1
+
+	mov temp, #0
+	str temp, [memorymap_base, #equ32_gpio_gppud]       @ Clear Control Signal
+	str temp, [memorymap_base, #equ32_gpio_gppudclk0]   @ Clear Signal for GPIO 0-31
+
+	macro32_dsb ip
+
+	/* GPIO 32-45 */
+
+	mov number, #0xFF
+	orr number, number, #0x3F00
+
+	str control, [memorymap_base, #equ32_gpio_gppud]   @ Set Control Signal
+
+	macro32_dsb ip
+
+	mov temp, #150                                     @ Wait for 150 Clocks to Set Control Signal
+	gpio32_gpioreset_wait2:
+		subs temp, #1
+		bge gpio32_gpioreset_wait2
+
+	/* Signal for GPIO 32-45 */
+	str number, [memorymap_base, #equ32_gpio_gppudclk1]
+
+	macro32_dsb ip
+	
+	mov temp, #150                                      @ Wait for 150 Clocks to Set GPIO Pull Up/Down Status
+	gpio32_gpioreset_close2:
+		subs temp, #1
+		bge gpio32_gpioreset_close2
+
+	mov temp, #0
+	str temp, [memorymap_base, #equ32_gpio_gppud]       @ Clear Control Signal
+	str temp, [memorymap_base, #equ32_gpio_gppudclk1]   @ Clear Signal for GPIO 32-45
+
+	macro32_dsb ip
+
+	gpio32_gpioreset_common:
+		mov r0, #0                                          @ Return with Success
+		mov pc, lr
+
+.unreq number
+.unreq control
+.unreq memorymap_base
+.unreq temp
+

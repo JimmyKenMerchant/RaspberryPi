@@ -122,8 +122,6 @@ int32 _user_start()
 
 	uint32 detect_parallel;
 
-	_display_off( true );
-
 #ifdef __SOUND_I2S
 	_sounddecode( sound, true );
 #else

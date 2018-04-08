@@ -28,6 +28,18 @@ os_reset:
 	push {lr}
 
 	/**
+	 * Video
+	 */
+
+.ifdef __DEBUG
+	/* Obtain Framebuffer from VideoCore IV */
+	bl bcm32_get_framebuffer
+.else
+	mov r0, #1
+	bl bcm32_display_off
+.endif
+
+	/**
 	 * Interrupt
 	 */
 
@@ -57,41 +69,19 @@ os_reset:
 	 * GPIO
 	 */
 
+	/* GPIO0-45 Reset and Pull Down */
+	bl gpio32_gpioreset
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
-
-	/* Clear GPIO0-45 OUTPUT High */
-	mvn r1, #0
-	str r1, [r0, #equ32_gpio_gpclr0]                               @ GPIO 0-31 OUT Clear
-	mov r1, #0xFF
-	orr r1, r1, #0x3F00
-	str r1, [r0, #equ32_gpio_gpclr1]                               @ GPIO 32-45 OUT Clear
-
-	/* Clear GPIO0-45 Functions (Except Internal Use) */
-	mov r1, #0
-	str r1, [r0, #equ32_gpio_gpfsel00]                             @ Clear GPIO 0-9
-	str r1, [r0, #equ32_gpio_gpfsel10]                             @ Clear GPIO 10-19
-	str r1, [r0, #equ32_gpio_gpfsel20]                             @ Clear GPIO 20-29
-	str r1, [r0, #equ32_gpio_gpfsel30]                             @ Clear GPIO 30-39
-	ldr r1, [r0, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0    @ Clear GPIO 40
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 41
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 42
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 43
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4    @ Clear GPIO 44
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5    @ Clear GPIO 45
-	str r1, [r0, #equ32_gpio_gpfsel40]
-
-	macro32_dsb ip
 
 .ifndef __RASPI3B
 	/* USB Current Up and ACT Blinker */
 	ldr r1, [r0, #equ32_gpio_gpfsel30]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8    @ Clear GPIO 38
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8   @ Set GPIO 38 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel30]
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 47
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 47 (Internal Use)
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
@@ -116,21 +106,6 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-	/* Clear All GPIO Status Detect */
-	mov r1, #0
-	str r1, [r0, #equ32_gpio_gpren0]
-	str r1, [r0, #equ32_gpio_gpren1]
-	str r1, [r0, #equ32_gpio_gpfen0]
-	str r1, [r0, #equ32_gpio_gpfen1]
-	str r1, [r0, #equ32_gpio_gphen0]
-	str r1, [r0, #equ32_gpio_gphen1]
-	str r1, [r0, #equ32_gpio_gplen0]
-	str r1, [r0, #equ32_gpio_gplen1]
-	str r1, [r0, #equ32_gpio_gparen0]
-	str r1, [r0, #equ32_gpio_gparen1]
-	str r1, [r0, #equ32_gpio_gpafen0]
-	str r1, [r0, #equ32_gpio_gpafen1]
-
 	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gphen0]
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 High Level Detect
@@ -144,13 +119,6 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
-
-	/**
-	 * Video
-	 */
-
-	/* Obtain Framebuffer from VideoCore IV */
-	/*bl bcm32_get_framebuffer*/
 
 	/**
 	 * Sound

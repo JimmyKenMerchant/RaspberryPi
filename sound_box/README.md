@@ -32,7 +32,7 @@
 
 * From PWM1, the sound that is phase-shifted from PWM0 outputs. This aims for balanced monoral.
 
-* By disabling video signal, the output from the 3.5mm jack may be possible for stable use.
+* By disabling the video signal, the sound signal from the 3.5mm jack may be possible for stable use. Otherwise, the analogue video signal outputs from the 3.5mm jack (on Zero, TV pin) when any HDMI cable is not plugged in. This seems to make possible noise.
 
 * The line level of 3.5mm jack is not tested. It seems to be so high. Absolutely, don't use your earphones for safety of your ears.
 
