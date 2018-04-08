@@ -76,14 +76,10 @@ os_reset:
 	add r0, r0, #equ32_gpio_base
 
 .ifndef __RASPI3B
-	/* USB Current Up and ACT Blinker */
+	/* USB Current Up */
 	ldr r1, [r0, #equ32_gpio_gpfsel30]
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8   @ Set GPIO 38 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel30]
-	ldr r1, [r0, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7    @ Clear GPIO 47 (Internal Use)
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 47 OUTPUT
-	str r1, [r0, #equ32_gpio_gpfsel40]
 
 	macro32_dsb ip
 
@@ -162,6 +158,7 @@ os_fiq:
 	macro32_dsb ip
 
 .ifndef __RASPI3B
+	/* ACT Blinker */
 	mov r0, #47
 	mov r1, #2
 	bl gpio32_gpiotoggle
