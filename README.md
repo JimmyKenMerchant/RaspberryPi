@@ -137,6 +137,18 @@ The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kerne
 
 6. start.elf starts kernel.img.
 
+**GPIO Maximum Current Source and USB Current Source**
+
+* GPIO pins have four types. 3.3V power source, 5.0V power source, Input/Output, and Ground.
+
+* About Input/Output pins, the total current should be up to 50mA and the current of each pin should be up to 16mA. System-on-a-chip like BCM283x is not designed as a current source, because its electrical wire is so thin.
+
+* 3.3V power source is derived from the DC/DC converter (PAM2306AYPKE, etc.). Check electrical characteristics of the chip to check the maximum current.
+
+* 5.0V power source seems to be derived from the power-in, but has a fuse (MS-MSMF200, etc.).
+
+* About USB current source, there are experiences online. 600mA/1200mA switchable (RasPi3B is 1200mA in default) seems to be an answer. But, [there is no official document about the USB maximum ratings](https://www.raspberrypi.org/documentation/hardware/raspberrypi/usb/README.md), and [the official document restricts the total usage of the current on a RasPi for peripherals including USB devices up to 1A](https://www.raspberrypi.org/documentation/hardware/raspberrypi/power/README.md). 
+
 **LICENSE**
 
 Copyright 2017 Kenta Ishii

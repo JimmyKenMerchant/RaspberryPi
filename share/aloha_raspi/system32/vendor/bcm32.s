@@ -100,7 +100,7 @@ bcm32_mail_setpowerstate:   @ Set Power State of Peripheral Devices
 	.word 0x00028001        @ Tag Identifier, Set PowerState: 0x00028001; Get PowerState: 0x00020001; Get Timing: 0x00020002
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000        @ DeviceID, 0x0:SDCard,0x1:UART0,0x2:UART1,0x3:USBHCD,0x4:I2C0,0x5:I2C1,0x6:I2C2,0x7:SPI,0x8:CCP2TX
+	.word 0x00000000        @ DeviceID, 0x0:SDCard,0x1:UART0,0x2:UART1,0x3:USBHCD,0x4:I2C0,0x5:I2C1,0x6:I2C2,0x7:SPI,0x8:CCP2TX (= Compact Camera Port 2)
 	.word 0x00000000        @ State, Bit[0]: 0 off, 1 on; Bit[1]: (Req 0 No Wait, 1 Wait), (Res 0 Device Exists, 1 Device No Exists)
 .balign 4
 	.word 0x00000000        @ End Tag
