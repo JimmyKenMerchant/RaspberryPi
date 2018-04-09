@@ -43,26 +43,28 @@ music_code music4[] =
 	_48_MAJ7TH(C4_SINL)
 	_48_MAJ7TH(E4_SINL)
 	_48_MAJ7TH(G4_SINL)
-	_48_MAJ7TH(B5_SINL)
+	_48_MAJ7TH(B4_SINL)
 	SND_END
 };
 
 music_code music5[] =
 {
-	_48_MAJ7TH(C4_SINL)
-	_48_ADD9TH(C4_SINL)
+	_12_MAJ(C4_SINL) _12_MAJ(E4_SINL) _12_MAJ(G4_SINL) _12_MAJ(B4_SINL)
+	_12_MAJ(E4_SINL) _12_MAJ(G4_SINL) _12_MAJ(B4_SINL) _12_MAJ(D5_SINL)
+	_12_MAJ(G4_SINL) _12_MAJ(B4_SINL) _12_MAJ(D5_SINL) _12_MAJ(F5_SINL)
 	SND_END
 };
 
 music_code music6[] =
 {
-	_48_MAJ7TH(C4_SINL)
-	_48_ADD9TH(C4_SINL)
+	_24_M(C3_SINL) _24_M(B2_SINL)
+	_24_M(A2_SINL) _24_M(B2_SINL)
 	SND_END
 };
 
 music_code music7[] =
 {
+	_48_9TH(F4_TRIL)
 	SND_END
 };
 
@@ -139,7 +141,8 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
+				_soundclear();
+				//_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
@@ -152,6 +155,18 @@ int32 _user_start()
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
 				_soundset( music4, snd32_musiclen( music4 ) , 0, -1 );
+
+			// 0b00101 (5)
+			} else if ( detect_parallel == 0b00101<<22 ) {
+				_soundset( music5, snd32_musiclen( music5 ) , 0, -1 );
+
+			// 0b00110 (6)
+			} else if ( detect_parallel == 0b00110<<22 ) {
+				_soundset( music6, snd32_musiclen( music6 ) , 0, -1 );
+
+			// 0b00111 (7)
+			} else if ( detect_parallel == 0b00111<<22 ) {
+				_soundset( music7, snd32_musiclen( music7 ) , 0, -1 );
 
 			// 0b01000 (8)
 			} else if ( detect_parallel == 0b01000<<22 ) {
