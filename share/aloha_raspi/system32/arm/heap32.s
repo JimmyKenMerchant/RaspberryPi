@@ -1408,7 +1408,9 @@ heap32_wave_sawtooth:
 			vmov vfp_omega, vfp_zero                   @ Reset Omega         
 
 			tst flag_odd, #1
-			vstrne vfp_medium, [block_start]           @ If Odd
+			vmovne vfp_value, vfp_medium
+			vcvtrne.s32.f32 vfp_value, vfp_value       @ Signed for Expecting Minus Value
+			vstrne vfp_value, [block_start]            @ If Odd
 			addne block_start, block_start, #4         @ If Odd
 			addne block_point, block_point, #4         @ If Odd
 			movne flag_odd, #0                         @ Clear Flag to Prevent Overflow
