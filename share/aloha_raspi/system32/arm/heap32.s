@@ -1285,6 +1285,178 @@ heap32_wave_random:
 
 
 /**
+ * function heap32_wave_sawtooth
+ * Make Sawtooth Wave on Memory Space
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space to be Made Wave
+ * r1: Length of Wave (32-bit Words, Must Be 4 and More)
+ * r2: Height of Wave (Signed 32-bit Integer)
+ * r3: Medium of Wave (Signed 32-bit Integer)
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong | Length is Less Than 2
+ */
+.globl heap32_wave_sawtooth
+heap32_wave_sawtooth:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	length           .req r1 @ Parameter, Register for Argument and Result, Scratch Register
+	height           .req r2 @ Parameter, Register for Argument and Result, Scratch Register
+	medium           .req r3
+	block_point      .req r4
+	block_size       .req r5
+	half             .req r6
+	direction        .req r7
+	flag_odd         .req r8
+	temp             .req r9	
+
+	/* VFP Registers */
+	vfp_omega        .req s0 @ d0
+	vfp_delta        .req s1
+	vfp_half         .req s2 @ d1
+	vfp_medium       .req s3
+	vfp_height       .req s4
+	vfp_base         .req s5
+	vfp_value        .req s6
+	vfp_one          .req s7
+	vfp_zero         .req s8
+
+	push {r4-r9,lr}
+	vpush {s0-s8}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp length, #4                              @ If Less than 4
+	blo heap32_wave_sawtooth_error2
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_sawtooth_error1
+
+	lsl temp, length, #2                        @ Substitution of Multiplication by 4
+	cmp temp, block_size
+	bhi heap32_wave_sawtooth_error2                  @ If Overflow is Expected
+
+	/* Examine Length to know Odd/Even on Half */
+
+	tst length, #1                              @ If Half is Odd
+	movne flag_odd, #1
+	subne length, length, #1
+	moveq flag_odd, #0
+
+	lsr half, length, #1                        @ Substitution of Division by 2
+
+	lsl length, half, #2                        @ Substitution of Multiplication by 4, Words to Bytes
+
+	/* direction: Plus at First Half(0), Last half (-1) */
+
+	mov direction, #0                           @ Define Direction to Plus at First Half
+
+	/* Preparation for Usage of VFP Registers */
+
+	mov temp, #0
+	vmov vfp_zero, temp
+	vcvt.f32.u32 vfp_zero, vfp_zero
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vmov vfp_half, half
+	vmov vfp_medium, medium
+	vmov vfp_height, height
+
+	vcvt.f32.u32 vfp_half, vfp_half
+	vcvt.f32.s32 vfp_medium, vfp_medium
+	vcvt.f32.s32 vfp_height, vfp_height
+
+	vdiv.f32 vfp_delta, vfp_height, vfp_half
+
+	vmov vfp_base, vfp_medium                   @ Base of First Quarter
+	vmov vfp_omega, vfp_zero                    @ Reset Omega
+
+	add block_point, block_start, length        @ Make First Half
+
+	heap32_wave_sawtooth_loop:
+		cmp direction, #-1
+		blt heap32_wave_sawtooth_success
+		cmp direction, #-1
+		vsubeq.f32 vfp_base, vfp_medium, vfp_height
+		
+		heap32_wave_sawtooth_loop_half:
+			cmp block_start, block_point
+			bhs heap32_wave_sawtooth_loop_common
+
+			vmul.f32 vfp_value, vfp_delta, vfp_omega
+			vadd.f32 vfp_value, vfp_base, vfp_value
+
+			vcvtr.s32.f32 vfp_value, vfp_value         @ Signed for Expecting Minus Value
+			vstr vfp_value, [block_start]
+			add block_start, block_start, #4
+			vadd.f32 vfp_omega, vfp_omega, vfp_one
+
+			macro32_dsb ip
+
+			b heap32_wave_sawtooth_loop_half
+
+		heap32_wave_sawtooth_loop_common:
+			vmov vfp_omega, vfp_zero                   @ Reset Omega         
+
+			tst flag_odd, #1
+			vstrne vfp_medium, [block_start]           @ If Odd
+			addne block_start, block_start, #4         @ If Odd
+			addne block_point, block_point, #4         @ If Odd
+			movne flag_odd, #0                         @ Clear Flag to Prevent Overflow
+
+			add block_point, block_point, length       @ Make Next Half
+
+			sub direction, direction, #1               @ Make New Direction for Next Half
+
+			b heap32_wave_sawtooth_loop
+
+	heap32_wave_sawtooth_error1:
+		mov r0, #1
+		b heap32_wave_sawtooth_common
+
+	heap32_wave_sawtooth_error2:
+		mov r0, #2
+		b heap32_wave_sawtooth_common
+
+	heap32_wave_sawtooth_success:
+		mov r0, #0
+
+	heap32_wave_sawtooth_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		vpop {s0-s8}
+		pop {r4-r9,pc}
+
+.unreq block_start
+.unreq length
+.unreq height
+.unreq medium
+.unreq block_point
+.unreq block_size
+.unreq half
+.unreq direction
+.unreq flag_odd
+.unreq temp
+.unreq vfp_omega
+.unreq vfp_delta
+.unreq vfp_half
+.unreq vfp_medium
+.unreq vfp_height
+.unreq vfp_base
+.unreq vfp_value
+.unreq vfp_one
+.unreq vfp_zero
+
+
+/**
  * function heap32_wave_triangle
  * Make Triangle Wave on Memory Space
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable

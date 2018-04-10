@@ -147,7 +147,7 @@ snd32_sounddecode:
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
-			bleq heap32_wave_triangle
+			bleq heap32_wave_sawtooth
 			cmp wave_type, #0
 			bleq heap32_wave_sin
 			pop {r0-r3}

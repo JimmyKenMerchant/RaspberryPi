@@ -23,7 +23,7 @@ music_code music1[] =
 
 music_code music2[] =
 {
-	_12(E4_SINL)
+	_12(E4_TRIL)
 	SND_END
 };
 
@@ -40,10 +40,10 @@ music_code music3[] =
 
 music_code music4[] =
 {
-	_48_MAJ7TH(C4_SINL)
-	_48_MAJ7TH(E4_SINL)
-	_48_MAJ7TH(G4_SINL)
-	_48_MAJ7TH(B4_SINL)
+	_48_MAJ7TH(C4_TRIL)
+	_48_MAJ7TH(E4_TRIL)
+	_48_MAJ7TH(G4_TRIL)
+	_48_MAJ7TH(B4_TRIL)
 	SND_END
 };
 
