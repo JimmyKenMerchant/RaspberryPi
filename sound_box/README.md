@@ -8,13 +8,13 @@
 
 **Output/Input**
 
-* GPIO12 as Output of PWM0 on sound=pwm
+* GPIO12 as Output of PWM0 on sound=pwm or sound=pwmb
 
-* GPIO13 as Output of PWM1 on sound=pwm, 180 Degrees Phase-shifted from PWM0
+* GPIO13 as Output of PWM1 on sound=pwm or sound=pwmb, 180 Degrees Phase-shifted from PWM0 if sound=pwmb
 
-* GPIO40 as Output of PWM0 on sound=jack
+* GPIO40 as Output of PWM0 on sound=jack or sound=jackb
 
-* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 on sound=jack, 180 Degrees Phase-shifted from PWM0
+* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 on sound=jack or sound=jackb, 180 Degrees Phase-shifted from PWM0 if sound=jackb
 
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 

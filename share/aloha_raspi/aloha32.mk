@@ -62,16 +62,24 @@ endif
 #Default Value for Sound
 sound ?= pwm
 
-ifeq ($(sound), pwm)
-	SND := __SOUND_PWM=1
-endif
-
 ifeq ($(sound), i2s) 
 	SND := __SOUND_I2S=1
 endif
 
+ifeq ($(sound), pwm)
+	SND := __SOUND_PWM=1
+endif
+
+ifeq ($(sound), pwmb)
+	SND := __SOUND_PWM_BALANCED=1
+endif
+
 ifeq ($(sound), jack) 
 	SND := __SOUND_JACK=1
+endif
+
+ifeq ($(sound), jackb) 
+	SND := __SOUND_JACK_BALANCED=1
 endif
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)

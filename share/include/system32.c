@@ -176,7 +176,7 @@ __attribute__((noinline)) uint32 _set_time( uint64 timestamp )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _sounddecode( sound_index* sound, bool pcm_mode )
+__attribute__((noinline)) uint32 _sounddecode( sound_index* sound, uchar8 mode )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1A");

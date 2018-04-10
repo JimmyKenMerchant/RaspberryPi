@@ -125,9 +125,19 @@ int32 _user_start()
 	uint32 detect_parallel;
 
 #ifdef __SOUND_I2S
-	_sounddecode( sound, true );
-#else
-	_sounddecode( sound, false );
+	_sounddecode( sound, SND32_I2S );
+#endif
+#ifdef __SOUND_PWM
+	_sounddecode( sound, SND32_PWM );
+#endif
+#ifdef __SOUND_PWM_BALANCED
+	_sounddecode( sound, SND32_PWM_BALANCED );
+#endif
+#ifdef __SOUND_JACK
+	_sounddecode( sound, SND32_PWM );
+#endif
+#ifdef __SOUND_JACK_BALANCED
+	_sounddecode( sound, SND32_PWM_BALANCED );
 #endif
 
 	while ( true ) {
