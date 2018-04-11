@@ -43,7 +43,7 @@ SND32_STATUS:              .word 0x00
  *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
  *             If Bit[11:0] is 1, Super Long (0x3E80, Decimal 16000).
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
- * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
+ * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Saw Tooth, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
  * Maximum number of blocks is 4096.
  * 0 means End of Sound Index

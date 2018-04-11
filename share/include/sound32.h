@@ -13,7 +13,7 @@
  *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
  *             If Bit[11:0] is 1, Super Long (0x3E80, Decimal 16000).
  * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
- * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Triangle, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
+ * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Saw Tooth, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
  *
  * Maximum number of blocks is 4096.
  * 0 means End of Sound Index
@@ -98,70 +98,70 @@ sound_index sound[] =
 	0<<14|0<<12|16,  // 0x3E 2000.0hz Appx. B6  Sin
 	0<<14|0<<12|15,  // 0x3F 2133.3hz Appx. C7  Sin
 
-	1<<14|0<<12|581, // 0x40  55.08hz Appx. A1  Triangle
-	1<<14|0<<12|548, // 0x41  58.39hz Appx. A#1 Triangle
-	1<<14|0<<12|518, // 0x42  61.78hz Appx. B1  Triangle
-	1<<14|0<<12|489, // 0x43  65.44hz Appx. C2  Triangle
-	1<<14|0<<12|461, // 0x44  69.41hz Appx. C#2 Triangle
-	1<<14|0<<12|435, // 0x45  73.56hz Appx. D2  Triangle
-	1<<14|0<<12|411, // 0x46  77.86hz Appx. D#2 Triangle
-	1<<14|0<<12|388, // 0x47  82.47hz Appx. E2  Triangle
-	1<<14|0<<12|366, // 0x48  87.43hz Appx. F2  Triangle
-	1<<14|0<<12|345, // 0x49  92.75hz Appx. F#2 Triangle
-	1<<14|0<<12|326, // 0x4A  98.16hz Appx. G2  Triangle
-	1<<14|0<<12|308, // 0x4B  103.9hz Appx. G#2 Triangle
-	1<<14|0<<12|288, // 0x4C  111.1hz Appx. A2  Triangle
-	1<<14|0<<12|272, // 0x4D  117.6hz Appx. A#2 Triangle
-	1<<14|0<<12|257, // 0x4E  124.5hz Appx. B2  Triangle
-	1<<14|0<<12|242, // 0x4F  132.2hz Appx. C3  Triangle
-	1<<14|0<<12|229, // 0x50  139.7hz Appx. C#3 Triangle
-	1<<14|0<<12|216, // 0x51  148.1hz Appx. D3  Triangle
-	1<<14|0<<12|204, // 0x52  156.9hz Appx. D#3 Triangle
-	1<<14|0<<12|192, // 0x53  166.7hz Appx. E3  Triangle
-	1<<14|0<<12|181, // 0x54  176.8hz Appx. F3  Triangle
-	1<<14|0<<12|171, // 0x55  187.1hz Appx. F#3 Triangle
-	1<<14|0<<12|162, // 0x56  197.5hz Appx. G3  Triangle
-	1<<14|0<<12|153, // 0x57  209.2hz Appx. G#3 Triangle
-	1<<14|0<<12|144, // 0x58  222.2hz Appx. A3  Triangle
-	1<<14|0<<12|136, // 0x59  235.3hz Appx. A#3 Triangle
-	1<<14|0<<12|129, // 0x5A  248.1hz Appx. B3  Triangle
-	1<<14|0<<12|121, // 0x5B  264.5hz Appx. C4  Triangle
-	1<<14|0<<12|114, // 0x5C  280.7hz Appx. C#4 Triangle
-	1<<14|0<<12|108, // 0x5D  296.3hz Appx. D4  Triangle
-	1<<14|0<<12|102, // 0x5E  313.7hz Appx. D#4 Triangle
-	1<<14|0<<12|96,  // 0x5F  333.3hz Appx. E4  Triangle
-	1<<14|0<<12|91,  // 0x60  351.6hz Appx. F4  Triangle
-	1<<14|0<<12|86,  // 0x61  372.1hz Appx. F#4 Triangle
-	1<<14|0<<12|81,  // 0x62  395.1hz Appx. G4  Triangle
-	1<<14|0<<12|76,  // 0x63  421.1hz Appx. G#4 Triangle
-	1<<14|0<<12|72,  // 0x64  444.4hz Appx. A4  Triangle
-	1<<14|0<<12|68,  // 0x65  470.6hz Appx. A#4 Triangle
-	1<<14|0<<12|64,  // 0x66  500.0hz Appx. B4  Triangle
-	1<<14|0<<12|61,  // 0x67  524.6hz Appx. C5  Triangle
-	1<<14|0<<12|57,  // 0x68  561.4hz Appx. C#5 Triangle
-	1<<14|0<<12|54,  // 0x69  592.6hz Appx. D5  Triangle
-	1<<14|0<<12|51,  // 0x6A  627.5hz Appx. D#5 Triangle
-	1<<14|0<<12|48,  // 0x6B  666.7hz Appx. E5  Triangle
-	1<<14|0<<12|46,  // 0x6C  695.7hz Appx. F5  Triangle
-	1<<14|0<<12|43,  // 0x6D  744.2hz Appx. F#5 Triangle
-	1<<14|0<<12|41,  // 0x6E  780.5hz Appx. G5  Triangle
-	1<<14|0<<12|38,  // 0x6F  842.1hz Appx. G#5 Triangle
-	1<<14|0<<12|36,  // 0x70  888.9hz Appx. A5  Triangle
-	1<<14|0<<12|34,  // 0x71  941.2hz Appx. A#5 Triangle
-	1<<14|0<<12|32,  // 0x72 1000.0hz Appx. B5  Triangle
-	1<<14|0<<12|30,  // 0x73 1066.7hz Appx. C6  Triangle
-	1<<14|0<<12|29,  // 0x74 1103.4hz Appx. C#6 Triangle
-	1<<14|0<<12|27,  // 0x75 1185.2hz Appx. D6  Triangle
-	1<<14|0<<12|26,  // 0x76 1230.8hz Appx. D#6 Triangle
-	1<<14|0<<12|24,  // 0x77 1333.3hz Appx. E6  Triangle
-	1<<14|0<<12|23,  // 0x78 1391.3hz Appx. F6  Triangle
-	1<<14|0<<12|22,  // 0x79 1454.5hz Appx. F#6 Triangle
-	1<<14|0<<12|20,  // 0x7A 1600.0hz Appx. G6  Triangle
-	1<<14|0<<12|19,  // 0x7B 1684.2hz Appx. G#6 Triangle
-	1<<14|0<<12|18,  // 0x7C 1777.8hz Appx. A6  Triangle
-	1<<14|0<<12|17,  // 0x7D 1882.4hz Appx. A#6 Triangle
-	1<<14|0<<12|16,  // 0x7E 2000.0hz Appx. B6  Triangle
-	1<<14|0<<12|15,  // 0x7F 2133.3hz Appx. C7  Triangle
+	1<<14|0<<12|581, // 0x40  55.08hz Appx. A1  Saw Tooth
+	1<<14|0<<12|548, // 0x41  58.39hz Appx. A#1 Saw Tooth
+	1<<14|0<<12|518, // 0x42  61.78hz Appx. B1  Saw Tooth
+	1<<14|0<<12|489, // 0x43  65.44hz Appx. C2  Saw Tooth
+	1<<14|0<<12|461, // 0x44  69.41hz Appx. C#2 Saw Tooth
+	1<<14|0<<12|435, // 0x45  73.56hz Appx. D2  Saw Tooth
+	1<<14|0<<12|411, // 0x46  77.86hz Appx. D#2 Saw Tooth
+	1<<14|0<<12|388, // 0x47  82.47hz Appx. E2  Saw Tooth
+	1<<14|0<<12|366, // 0x48  87.43hz Appx. F2  Saw Tooth
+	1<<14|0<<12|345, // 0x49  92.75hz Appx. F#2 Saw Tooth
+	1<<14|0<<12|326, // 0x4A  98.16hz Appx. G2  Saw Tooth
+	1<<14|0<<12|308, // 0x4B  103.9hz Appx. G#2 Saw Tooth
+	1<<14|0<<12|288, // 0x4C  111.1hz Appx. A2  Saw Tooth
+	1<<14|0<<12|272, // 0x4D  117.6hz Appx. A#2 Saw Tooth
+	1<<14|0<<12|257, // 0x4E  124.5hz Appx. B2  Saw Tooth
+	1<<14|0<<12|242, // 0x4F  132.2hz Appx. C3  Saw Tooth
+	1<<14|0<<12|229, // 0x50  139.7hz Appx. C#3 Saw Tooth
+	1<<14|0<<12|216, // 0x51  148.1hz Appx. D3  Saw Tooth
+	1<<14|0<<12|204, // 0x52  156.9hz Appx. D#3 Saw Tooth
+	1<<14|0<<12|192, // 0x53  166.7hz Appx. E3  Saw Tooth
+	1<<14|0<<12|181, // 0x54  176.8hz Appx. F3  Saw Tooth
+	1<<14|0<<12|171, // 0x55  187.1hz Appx. F#3 Saw Tooth
+	1<<14|0<<12|162, // 0x56  197.5hz Appx. G3  Saw Tooth
+	1<<14|0<<12|153, // 0x57  209.2hz Appx. G#3 Saw Tooth
+	1<<14|0<<12|144, // 0x58  222.2hz Appx. A3  Saw Tooth
+	1<<14|0<<12|136, // 0x59  235.3hz Appx. A#3 Saw Tooth
+	1<<14|0<<12|129, // 0x5A  248.1hz Appx. B3  Saw Tooth
+	1<<14|0<<12|121, // 0x5B  264.5hz Appx. C4  Saw Tooth
+	1<<14|0<<12|114, // 0x5C  280.7hz Appx. C#4 Saw Tooth
+	1<<14|0<<12|108, // 0x5D  296.3hz Appx. D4  Saw Tooth
+	1<<14|0<<12|102, // 0x5E  313.7hz Appx. D#4 Saw Tooth
+	1<<14|0<<12|96,  // 0x5F  333.3hz Appx. E4  Saw Tooth
+	1<<14|0<<12|91,  // 0x60  351.6hz Appx. F4  Saw Tooth
+	1<<14|0<<12|86,  // 0x61  372.1hz Appx. F#4 Saw Tooth
+	1<<14|0<<12|81,  // 0x62  395.1hz Appx. G4  Saw Tooth
+	1<<14|0<<12|76,  // 0x63  421.1hz Appx. G#4 Saw Tooth
+	1<<14|0<<12|72,  // 0x64  444.4hz Appx. A4  Saw Tooth
+	1<<14|0<<12|68,  // 0x65  470.6hz Appx. A#4 Saw Tooth
+	1<<14|0<<12|64,  // 0x66  500.0hz Appx. B4  Saw Tooth
+	1<<14|0<<12|61,  // 0x67  524.6hz Appx. C5  Saw Tooth
+	1<<14|0<<12|57,  // 0x68  561.4hz Appx. C#5 Saw Tooth
+	1<<14|0<<12|54,  // 0x69  592.6hz Appx. D5  Saw Tooth
+	1<<14|0<<12|51,  // 0x6A  627.5hz Appx. D#5 Saw Tooth
+	1<<14|0<<12|48,  // 0x6B  666.7hz Appx. E5  Saw Tooth
+	1<<14|0<<12|46,  // 0x6C  695.7hz Appx. F5  Saw Tooth
+	1<<14|0<<12|43,  // 0x6D  744.2hz Appx. F#5 Saw Tooth
+	1<<14|0<<12|41,  // 0x6E  780.5hz Appx. G5  Saw Tooth
+	1<<14|0<<12|38,  // 0x6F  842.1hz Appx. G#5 Saw Tooth
+	1<<14|0<<12|36,  // 0x70  888.9hz Appx. A5  Saw Tooth
+	1<<14|0<<12|34,  // 0x71  941.2hz Appx. A#5 Saw Tooth
+	1<<14|0<<12|32,  // 0x72 1000.0hz Appx. B5  Saw Tooth
+	1<<14|0<<12|30,  // 0x73 1066.7hz Appx. C6  Saw Tooth
+	1<<14|0<<12|29,  // 0x74 1103.4hz Appx. C#6 Saw Tooth
+	1<<14|0<<12|27,  // 0x75 1185.2hz Appx. D6  Saw Tooth
+	1<<14|0<<12|26,  // 0x76 1230.8hz Appx. D#6 Saw Tooth
+	1<<14|0<<12|24,  // 0x77 1333.3hz Appx. E6  Saw Tooth
+	1<<14|0<<12|23,  // 0x78 1391.3hz Appx. F6  Saw Tooth
+	1<<14|0<<12|22,  // 0x79 1454.5hz Appx. F#6 Saw Tooth
+	1<<14|0<<12|20,  // 0x7A 1600.0hz Appx. G6  Saw Tooth
+	1<<14|0<<12|19,  // 0x7B 1684.2hz Appx. G#6 Saw Tooth
+	1<<14|0<<12|18,  // 0x7C 1777.8hz Appx. A6  Saw Tooth
+	1<<14|0<<12|17,  // 0x7D 1882.4hz Appx. A#6 Saw Tooth
+	1<<14|0<<12|16,  // 0x7E 2000.0hz Appx. B6  Saw Tooth
+	1<<14|0<<12|15,  // 0x7F 2133.3hz Appx. C7  Saw Tooth
 
 	2<<14|0<<12|581, // 0x80  55.08hz Appx. A1  Square
 	2<<14|0<<12|548, // 0x81  58.39hz Appx. A#1 Square
@@ -360,70 +360,70 @@ sound_index sound[] =
 	0<<14|1<<12|16,  // 0x13E 2000.0hz Appx. B6  Sin
 	0<<14|1<<12|15,  // 0x13F 2133.3hz Appx. C7  Sin
 
-	1<<14|1<<12|581, // 0x140  55.08hz Appx. A1  Triangle
-	1<<14|1<<12|548, // 0x141  58.39hz Appx. A#1 Triangle
-	1<<14|1<<12|518, // 0x142  61.78hz Appx. B1  Triangle
-	1<<14|1<<12|489, // 0x143  65.44hz Appx. C2  Triangle
-	1<<14|1<<12|461, // 0x144  69.41hz Appx. C#2 Triangle
-	1<<14|1<<12|435, // 0x145  73.56hz Appx. D2  Triangle
-	1<<14|1<<12|411, // 0x146  77.86hz Appx. D#2 Triangle
-	1<<14|1<<12|388, // 0x147  82.47hz Appx. E2  Triangle
-	1<<14|1<<12|366, // 0x148  87.43hz Appx. F2  Triangle
-	1<<14|1<<12|345, // 0x149  92.75hz Appx. F#2 Triangle
-	1<<14|1<<12|326, // 0x14A  98.16hz Appx. G2  Triangle
-	1<<14|1<<12|308, // 0x14B  103.9hz Appx. G#2 Triangle
-	1<<14|1<<12|288, // 0x14C  111.1hz Appx. A2  Triangle
-	1<<14|1<<12|272, // 0x14D  117.6hz Appx. A#2 Triangle
-	1<<14|1<<12|257, // 0x14E  124.5hz Appx. B2  Triangle
-	1<<14|1<<12|242, // 0x14F  132.2hz Appx. C3  Triangle
-	1<<14|1<<12|229, // 0x150  139.7hz Appx. C#3 Triangle
-	1<<14|1<<12|216, // 0x151  148.1hz Appx. D3  Triangle
-	1<<14|1<<12|204, // 0x152  156.9hz Appx. D#3 Triangle
-	1<<14|1<<12|192, // 0x153  166.7hz Appx. E3  Triangle
-	1<<14|1<<12|181, // 0x154  176.8hz Appx. F3  Triangle
-	1<<14|1<<12|171, // 0x155  187.1hz Appx. F#3 Triangle
-	1<<14|1<<12|162, // 0x156  197.5hz Appx. G3  Triangle
-	1<<14|1<<12|153, // 0x157  209.2hz Appx. G#3 Triangle
-	1<<14|1<<12|144, // 0x158  222.2hz Appx. A3  Triangle
-	1<<14|1<<12|136, // 0x159  235.3hz Appx. A#3 Triangle
-	1<<14|1<<12|129, // 0x15A  248.1hz Appx. B3  Triangle
-	1<<14|1<<12|121, // 0x15B  264.5hz Appx. C4  Triangle
-	1<<14|1<<12|114, // 0x15C  280.7hz Appx. C#4 Triangle
-	1<<14|1<<12|108, // 0x15D  296.3hz Appx. D4  Triangle
-	1<<14|1<<12|102, // 0x15E  313.7hz Appx. D#4 Triangle
-	1<<14|1<<12|96,  // 0x15F  333.3hz Appx. E4  Triangle
-	1<<14|1<<12|91,  // 0x160  351.6hz Appx. F4  Triangle
-	1<<14|1<<12|86,  // 0x161  372.1hz Appx. F#4 Triangle
-	1<<14|1<<12|81,  // 0x162  395.1hz Appx. G4  Triangle
-	1<<14|1<<12|76,  // 0x163  421.1hz Appx. G#4 Triangle
-	1<<14|1<<12|72,  // 0x164  444.4hz Appx. A4  Triangle
-	1<<14|1<<12|68,  // 0x165  470.6hz Appx. A#4 Triangle
-	1<<14|1<<12|64,  // 0x166  500.0hz Appx. B4  Triangle
-	1<<14|1<<12|61,  // 0x167  524.6hz Appx. C5  Triangle
-	1<<14|1<<12|57,  // 0x168  561.4hz Appx. C#5 Triangle
-	1<<14|1<<12|54,  // 0x169  592.6hz Appx. D5  Triangle
-	1<<14|1<<12|51,  // 0x16A  627.5hz Appx. D#5 Triangle
-	1<<14|1<<12|48,  // 0x16B  666.7hz Appx. E5  Triangle
-	1<<14|1<<12|46,  // 0x16C  695.7hz Appx. F5  Triangle
-	1<<14|1<<12|43,  // 0x16D  744.2hz Appx. F#5 Triangle
-	1<<14|1<<12|41,  // 0x16E  780.5hz Appx. G5  Triangle
-	1<<14|1<<12|38,  // 0x16F  842.1hz Appx. G#5 Triangle
-	1<<14|1<<12|36,  // 0x170  888.9hz Appx. A5  Triangle
-	1<<14|1<<12|34,  // 0x171  941.2hz Appx. A#5 Triangle
-	1<<14|1<<12|32,  // 0x172 1000.0hz Appx. B5  Triangle
-	1<<14|1<<12|30,  // 0x173 1066.7hz Appx. C6  Triangle
-	1<<14|1<<12|29,  // 0x174 1103.4hz Appx. C#6 Triangle
-	1<<14|1<<12|27,  // 0x175 1185.2hz Appx. D6  Triangle
-	1<<14|1<<12|26,  // 0x176 1230.8hz Appx. D#6 Triangle
-	1<<14|1<<12|24,  // 0x177 1333.3hz Appx. E6  Triangle
-	1<<14|1<<12|23,  // 0x178 1391.3hz Appx. F6  Triangle
-	1<<14|1<<12|22,  // 0x179 1454.5hz Appx. F#6 Triangle
-	1<<14|1<<12|20,  // 0x17A 1600.0hz Appx. G6  Triangle
-	1<<14|1<<12|19,  // 0x17B 1684.2hz Appx. G#6 Triangle
-	1<<14|1<<12|18,  // 0x17C 1777.8hz Appx. A6  Triangle
-	1<<14|1<<12|17,  // 0x17D 1882.4hz Appx. A#6 Triangle
-	1<<14|1<<12|16,  // 0x17E 2000.0hz Appx. B6  Triangle
-	1<<14|1<<12|15,  // 0x17F 2133.3hz Appx. C7  Triangle
+	1<<14|1<<12|581, // 0x140  55.08hz Appx. A1  Saw Tooth
+	1<<14|1<<12|548, // 0x141  58.39hz Appx. A#1 Saw Tooth
+	1<<14|1<<12|518, // 0x142  61.78hz Appx. B1  Saw Tooth
+	1<<14|1<<12|489, // 0x143  65.44hz Appx. C2  Saw Tooth
+	1<<14|1<<12|461, // 0x144  69.41hz Appx. C#2 Saw Tooth
+	1<<14|1<<12|435, // 0x145  73.56hz Appx. D2  Saw Tooth
+	1<<14|1<<12|411, // 0x146  77.86hz Appx. D#2 Saw Tooth
+	1<<14|1<<12|388, // 0x147  82.47hz Appx. E2  Saw Tooth
+	1<<14|1<<12|366, // 0x148  87.43hz Appx. F2  Saw Tooth
+	1<<14|1<<12|345, // 0x149  92.75hz Appx. F#2 Saw Tooth
+	1<<14|1<<12|326, // 0x14A  98.16hz Appx. G2  Saw Tooth
+	1<<14|1<<12|308, // 0x14B  103.9hz Appx. G#2 Saw Tooth
+	1<<14|1<<12|288, // 0x14C  111.1hz Appx. A2  Saw Tooth
+	1<<14|1<<12|272, // 0x14D  117.6hz Appx. A#2 Saw Tooth
+	1<<14|1<<12|257, // 0x14E  124.5hz Appx. B2  Saw Tooth
+	1<<14|1<<12|242, // 0x14F  132.2hz Appx. C3  Saw Tooth
+	1<<14|1<<12|229, // 0x150  139.7hz Appx. C#3 Saw Tooth
+	1<<14|1<<12|216, // 0x151  148.1hz Appx. D3  Saw Tooth
+	1<<14|1<<12|204, // 0x152  156.9hz Appx. D#3 Saw Tooth
+	1<<14|1<<12|192, // 0x153  166.7hz Appx. E3  Saw Tooth
+	1<<14|1<<12|181, // 0x154  176.8hz Appx. F3  Saw Tooth
+	1<<14|1<<12|171, // 0x155  187.1hz Appx. F#3 Saw Tooth
+	1<<14|1<<12|162, // 0x156  197.5hz Appx. G3  Saw Tooth
+	1<<14|1<<12|153, // 0x157  209.2hz Appx. G#3 Saw Tooth
+	1<<14|1<<12|144, // 0x158  222.2hz Appx. A3  Saw Tooth
+	1<<14|1<<12|136, // 0x159  235.3hz Appx. A#3 Saw Tooth
+	1<<14|1<<12|129, // 0x15A  248.1hz Appx. B3  Saw Tooth
+	1<<14|1<<12|121, // 0x15B  264.5hz Appx. C4  Saw Tooth
+	1<<14|1<<12|114, // 0x15C  280.7hz Appx. C#4 Saw Tooth
+	1<<14|1<<12|108, // 0x15D  296.3hz Appx. D4  Saw Tooth
+	1<<14|1<<12|102, // 0x15E  313.7hz Appx. D#4 Saw Tooth
+	1<<14|1<<12|96,  // 0x15F  333.3hz Appx. E4  Saw Tooth
+	1<<14|1<<12|91,  // 0x160  351.6hz Appx. F4  Saw Tooth
+	1<<14|1<<12|86,  // 0x161  372.1hz Appx. F#4 Saw Tooth
+	1<<14|1<<12|81,  // 0x162  395.1hz Appx. G4  Saw Tooth
+	1<<14|1<<12|76,  // 0x163  421.1hz Appx. G#4 Saw Tooth
+	1<<14|1<<12|72,  // 0x164  444.4hz Appx. A4  Saw Tooth
+	1<<14|1<<12|68,  // 0x165  470.6hz Appx. A#4 Saw Tooth
+	1<<14|1<<12|64,  // 0x166  500.0hz Appx. B4  Saw Tooth
+	1<<14|1<<12|61,  // 0x167  524.6hz Appx. C5  Saw Tooth
+	1<<14|1<<12|57,  // 0x168  561.4hz Appx. C#5 Saw Tooth
+	1<<14|1<<12|54,  // 0x169  592.6hz Appx. D5  Saw Tooth
+	1<<14|1<<12|51,  // 0x16A  627.5hz Appx. D#5 Saw Tooth
+	1<<14|1<<12|48,  // 0x16B  666.7hz Appx. E5  Saw Tooth
+	1<<14|1<<12|46,  // 0x16C  695.7hz Appx. F5  Saw Tooth
+	1<<14|1<<12|43,  // 0x16D  744.2hz Appx. F#5 Saw Tooth
+	1<<14|1<<12|41,  // 0x16E  780.5hz Appx. G5  Saw Tooth
+	1<<14|1<<12|38,  // 0x16F  842.1hz Appx. G#5 Saw Tooth
+	1<<14|1<<12|36,  // 0x170  888.9hz Appx. A5  Saw Tooth
+	1<<14|1<<12|34,  // 0x171  941.2hz Appx. A#5 Saw Tooth
+	1<<14|1<<12|32,  // 0x172 1000.0hz Appx. B5  Saw Tooth
+	1<<14|1<<12|30,  // 0x173 1066.7hz Appx. C6  Saw Tooth
+	1<<14|1<<12|29,  // 0x174 1103.4hz Appx. C#6 Saw Tooth
+	1<<14|1<<12|27,  // 0x175 1185.2hz Appx. D6  Saw Tooth
+	1<<14|1<<12|26,  // 0x176 1230.8hz Appx. D#6 Saw Tooth
+	1<<14|1<<12|24,  // 0x177 1333.3hz Appx. E6  Saw Tooth
+	1<<14|1<<12|23,  // 0x178 1391.3hz Appx. F6  Saw Tooth
+	1<<14|1<<12|22,  // 0x179 1454.5hz Appx. F#6 Saw Tooth
+	1<<14|1<<12|20,  // 0x17A 1600.0hz Appx. G6  Saw Tooth
+	1<<14|1<<12|19,  // 0x17B 1684.2hz Appx. G#6 Saw Tooth
+	1<<14|1<<12|18,  // 0x17C 1777.8hz Appx. A6  Saw Tooth
+	1<<14|1<<12|17,  // 0x17D 1882.4hz Appx. A#6 Saw Tooth
+	1<<14|1<<12|16,  // 0x17E 2000.0hz Appx. B6  Saw Tooth
+	1<<14|1<<12|15,  // 0x17F 2133.3hz Appx. C7  Saw Tooth
 
 	2<<14|1<<12|581, // 0x180  55.08hz Appx. A1  Square
 	2<<14|1<<12|548, // 0x181  58.39hz Appx. A#1 Square
@@ -622,70 +622,70 @@ sound_index sound[] =
 	0<<14|2<<12|16,  // 0x23E 2000.0hz Appx. B6  Sin
 	0<<14|2<<12|15,  // 0x23F 2133.3hz Appx. C7  Sin
 
-	1<<14|2<<12|581, // 0x240  55.08hz Appx. A1  Triangle
-	1<<14|2<<12|548, // 0x241  58.39hz Appx. A#1 Triangle
-	1<<14|2<<12|518, // 0x242  61.78hz Appx. B1  Triangle
-	1<<14|2<<12|489, // 0x243  65.44hz Appx. C2  Triangle
-	1<<14|2<<12|461, // 0x244  69.41hz Appx. C#2 Triangle
-	1<<14|2<<12|435, // 0x245  73.56hz Appx. D2  Triangle
-	1<<14|2<<12|411, // 0x246  77.86hz Appx. D#2 Triangle
-	1<<14|2<<12|388, // 0x247  82.47hz Appx. E2  Triangle
-	1<<14|2<<12|366, // 0x248  87.43hz Appx. F2  Triangle
-	1<<14|2<<12|345, // 0x249  92.75hz Appx. F#2 Triangle
-	1<<14|2<<12|326, // 0x24A  98.16hz Appx. G2  Triangle
-	1<<14|2<<12|308, // 0x24B  103.9hz Appx. G#2 Triangle
-	1<<14|2<<12|288, // 0x24C  111.1hz Appx. A2  Triangle
-	1<<14|2<<12|272, // 0x24D  117.6hz Appx. A#2 Triangle
-	1<<14|2<<12|257, // 0x24E  124.5hz Appx. B2  Triangle
-	1<<14|2<<12|242, // 0x24F  132.2hz Appx. C3  Triangle
-	1<<14|2<<12|229, // 0x250  139.7hz Appx. C#3 Triangle
-	1<<14|2<<12|216, // 0x251  148.1hz Appx. D3  Triangle
-	1<<14|2<<12|204, // 0x252  156.9hz Appx. D#3 Triangle
-	1<<14|2<<12|192, // 0x253  166.7hz Appx. E3  Triangle
-	1<<14|2<<12|181, // 0x254  176.8hz Appx. F3  Triangle
-	1<<14|2<<12|171, // 0x255  187.1hz Appx. F#3 Triangle
-	1<<14|2<<12|162, // 0x256  197.5hz Appx. G3  Triangle
-	1<<14|2<<12|153, // 0x257  209.2hz Appx. G#3 Triangle
-	1<<14|2<<12|144, // 0x258  222.2hz Appx. A3  Triangle
-	1<<14|2<<12|136, // 0x259  235.3hz Appx. A#3 Triangle
-	1<<14|2<<12|129, // 0x25A  248.1hz Appx. B3  Triangle
-	1<<14|2<<12|121, // 0x25B  264.5hz Appx. C4  Triangle
-	1<<14|2<<12|114, // 0x25C  280.7hz Appx. C#4 Triangle
-	1<<14|2<<12|108, // 0x25D  296.3hz Appx. D4  Triangle
-	1<<14|2<<12|102, // 0x25E  313.7hz Appx. D#4 Triangle
-	1<<14|2<<12|96,  // 0x25F  333.3hz Appx. E4  Triangle
-	1<<14|2<<12|91,  // 0x260  351.6hz Appx. F4  Triangle
-	1<<14|2<<12|86,  // 0x261  372.1hz Appx. F#4 Triangle
-	1<<14|2<<12|81,  // 0x262  395.1hz Appx. G4  Triangle
-	1<<14|2<<12|76,  // 0x263  421.1hz Appx. G#4 Triangle
-	1<<14|2<<12|72,  // 0x264  444.4hz Appx. A4  Triangle
-	1<<14|2<<12|68,  // 0x265  470.6hz Appx. A#4 Triangle
-	1<<14|2<<12|64,  // 0x266  500.0hz Appx. B4  Triangle
-	1<<14|2<<12|61,  // 0x267  524.6hz Appx. C5  Triangle
-	1<<14|2<<12|57,  // 0x268  561.4hz Appx. C#5 Triangle
-	1<<14|2<<12|54,  // 0x269  592.6hz Appx. D5  Triangle
-	1<<14|2<<12|51,  // 0x26A  627.5hz Appx. D#5 Triangle
-	1<<14|2<<12|48,  // 0x26B  666.7hz Appx. E5  Triangle
-	1<<14|2<<12|46,  // 0x26C  695.7hz Appx. F5  Triangle
-	1<<14|2<<12|43,  // 0x26D  744.2hz Appx. F#5 Triangle
-	1<<14|2<<12|41,  // 0x26E  780.5hz Appx. G5  Triangle
-	1<<14|2<<12|38,  // 0x26F  842.1hz Appx. G#5 Triangle
-	1<<14|2<<12|36,  // 0x270  888.9hz Appx. A5  Triangle
-	1<<14|2<<12|34,  // 0x271  941.2hz Appx. A#5 Triangle
-	1<<14|2<<12|32,  // 0x272 1000.0hz Appx. B5  Triangle
-	1<<14|2<<12|30,  // 0x273 1066.7hz Appx. C6  Triangle
-	1<<14|2<<12|29,  // 0x274 1103.4hz Appx. C#6 Triangle
-	1<<14|2<<12|27,  // 0x275 1185.2hz Appx. D6  Triangle
-	1<<14|2<<12|26,  // 0x276 1230.8hz Appx. D#6 Triangle
-	1<<14|2<<12|24,  // 0x277 1333.3hz Appx. E6  Triangle
-	1<<14|2<<12|23,  // 0x278 1391.3hz Appx. F6  Triangle
-	1<<14|2<<12|22,  // 0x279 1454.5hz Appx. F#6 Triangle
-	1<<14|2<<12|20,  // 0x27A 1600.0hz Appx. G6  Triangle
-	1<<14|2<<12|19,  // 0x27B 1684.2hz Appx. G#6 Triangle
-	1<<14|2<<12|18,  // 0x27C 1777.8hz Appx. A6  Triangle
-	1<<14|2<<12|17,  // 0x27D 1882.4hz Appx. A#6 Triangle
-	1<<14|2<<12|16,  // 0x27E 2000.0hz Appx. B6  Triangle
-	1<<14|2<<12|15,  // 0x27F 2133.3hz Appx. C7  Triangle
+	1<<14|2<<12|581, // 0x240  55.08hz Appx. A1  Saw Tooth
+	1<<14|2<<12|548, // 0x241  58.39hz Appx. A#1 Saw Tooth
+	1<<14|2<<12|518, // 0x242  61.78hz Appx. B1  Saw Tooth
+	1<<14|2<<12|489, // 0x243  65.44hz Appx. C2  Saw Tooth
+	1<<14|2<<12|461, // 0x244  69.41hz Appx. C#2 Saw Tooth
+	1<<14|2<<12|435, // 0x245  73.56hz Appx. D2  Saw Tooth
+	1<<14|2<<12|411, // 0x246  77.86hz Appx. D#2 Saw Tooth
+	1<<14|2<<12|388, // 0x247  82.47hz Appx. E2  Saw Tooth
+	1<<14|2<<12|366, // 0x248  87.43hz Appx. F2  Saw Tooth
+	1<<14|2<<12|345, // 0x249  92.75hz Appx. F#2 Saw Tooth
+	1<<14|2<<12|326, // 0x24A  98.16hz Appx. G2  Saw Tooth
+	1<<14|2<<12|308, // 0x24B  103.9hz Appx. G#2 Saw Tooth
+	1<<14|2<<12|288, // 0x24C  111.1hz Appx. A2  Saw Tooth
+	1<<14|2<<12|272, // 0x24D  117.6hz Appx. A#2 Saw Tooth
+	1<<14|2<<12|257, // 0x24E  124.5hz Appx. B2  Saw Tooth
+	1<<14|2<<12|242, // 0x24F  132.2hz Appx. C3  Saw Tooth
+	1<<14|2<<12|229, // 0x250  139.7hz Appx. C#3 Saw Tooth
+	1<<14|2<<12|216, // 0x251  148.1hz Appx. D3  Saw Tooth
+	1<<14|2<<12|204, // 0x252  156.9hz Appx. D#3 Saw Tooth
+	1<<14|2<<12|192, // 0x253  166.7hz Appx. E3  Saw Tooth
+	1<<14|2<<12|181, // 0x254  176.8hz Appx. F3  Saw Tooth
+	1<<14|2<<12|171, // 0x255  187.1hz Appx. F#3 Saw Tooth
+	1<<14|2<<12|162, // 0x256  197.5hz Appx. G3  Saw Tooth
+	1<<14|2<<12|153, // 0x257  209.2hz Appx. G#3 Saw Tooth
+	1<<14|2<<12|144, // 0x258  222.2hz Appx. A3  Saw Tooth
+	1<<14|2<<12|136, // 0x259  235.3hz Appx. A#3 Saw Tooth
+	1<<14|2<<12|129, // 0x25A  248.1hz Appx. B3  Saw Tooth
+	1<<14|2<<12|121, // 0x25B  264.5hz Appx. C4  Saw Tooth
+	1<<14|2<<12|114, // 0x25C  280.7hz Appx. C#4 Saw Tooth
+	1<<14|2<<12|108, // 0x25D  296.3hz Appx. D4  Saw Tooth
+	1<<14|2<<12|102, // 0x25E  313.7hz Appx. D#4 Saw Tooth
+	1<<14|2<<12|96,  // 0x25F  333.3hz Appx. E4  Saw Tooth
+	1<<14|2<<12|91,  // 0x260  351.6hz Appx. F4  Saw Tooth
+	1<<14|2<<12|86,  // 0x261  372.1hz Appx. F#4 Saw Tooth
+	1<<14|2<<12|81,  // 0x262  395.1hz Appx. G4  Saw Tooth
+	1<<14|2<<12|76,  // 0x263  421.1hz Appx. G#4 Saw Tooth
+	1<<14|2<<12|72,  // 0x264  444.4hz Appx. A4  Saw Tooth
+	1<<14|2<<12|68,  // 0x265  470.6hz Appx. A#4 Saw Tooth
+	1<<14|2<<12|64,  // 0x266  500.0hz Appx. B4  Saw Tooth
+	1<<14|2<<12|61,  // 0x267  524.6hz Appx. C5  Saw Tooth
+	1<<14|2<<12|57,  // 0x268  561.4hz Appx. C#5 Saw Tooth
+	1<<14|2<<12|54,  // 0x269  592.6hz Appx. D5  Saw Tooth
+	1<<14|2<<12|51,  // 0x26A  627.5hz Appx. D#5 Saw Tooth
+	1<<14|2<<12|48,  // 0x26B  666.7hz Appx. E5  Saw Tooth
+	1<<14|2<<12|46,  // 0x26C  695.7hz Appx. F5  Saw Tooth
+	1<<14|2<<12|43,  // 0x26D  744.2hz Appx. F#5 Saw Tooth
+	1<<14|2<<12|41,  // 0x26E  780.5hz Appx. G5  Saw Tooth
+	1<<14|2<<12|38,  // 0x26F  842.1hz Appx. G#5 Saw Tooth
+	1<<14|2<<12|36,  // 0x270  888.9hz Appx. A5  Saw Tooth
+	1<<14|2<<12|34,  // 0x271  941.2hz Appx. A#5 Saw Tooth
+	1<<14|2<<12|32,  // 0x272 1000.0hz Appx. B5  Saw Tooth
+	1<<14|2<<12|30,  // 0x273 1066.7hz Appx. C6  Saw Tooth
+	1<<14|2<<12|29,  // 0x274 1103.4hz Appx. C#6 Saw Tooth
+	1<<14|2<<12|27,  // 0x275 1185.2hz Appx. D6  Saw Tooth
+	1<<14|2<<12|26,  // 0x276 1230.8hz Appx. D#6 Saw Tooth
+	1<<14|2<<12|24,  // 0x277 1333.3hz Appx. E6  Saw Tooth
+	1<<14|2<<12|23,  // 0x278 1391.3hz Appx. F6  Saw Tooth
+	1<<14|2<<12|22,  // 0x279 1454.5hz Appx. F#6 Saw Tooth
+	1<<14|2<<12|20,  // 0x27A 1600.0hz Appx. G6  Saw Tooth
+	1<<14|2<<12|19,  // 0x27B 1684.2hz Appx. G#6 Saw Tooth
+	1<<14|2<<12|18,  // 0x27C 1777.8hz Appx. A6  Saw Tooth
+	1<<14|2<<12|17,  // 0x27D 1882.4hz Appx. A#6 Saw Tooth
+	1<<14|2<<12|16,  // 0x27E 2000.0hz Appx. B6  Saw Tooth
+	1<<14|2<<12|15,  // 0x27F 2133.3hz Appx. C7  Saw Tooth
 
 	2<<14|2<<12|581, // 0x280  55.08hz Appx. A1  Square
 	2<<14|2<<12|548, // 0x281  58.39hz Appx. A#1 Square
@@ -1690,10 +1690,10 @@ sound_index sound[] =
 #define B8_SQUS  0x322
 #define HI_SQUS  0x323
 
-#define SND_SILENCE  0x324
-#define SND_NOISE    0x325 // Long Noise
+#define SND32_SILENCE  0x324
+#define SND32_NOISE    0x325 // Long Noise
 
-#define SND_END      0xFFFF
+#define SND32_END      0xFFFF
 
 #define _1(x) x,
 #define _2(x) x,x,
@@ -1808,6 +1808,20 @@ sound_index sound[] =
 #define _44_MAJ7TH(x)   _40_MAJ7TH(x) _4_MAJ7TH(x)
 #define _48_MAJ7TH(x)   _44_MAJ7TH(x) _4_MAJ7TH(x)
 
+/* Minor Major 7th */
+#define _4_MMAJ7TH(x)   x,x+3,x+7,x+11,
+#define _8_MMAJ7TH(x)   _4_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _12_MMAJ7TH(x)  _8_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _16_MMAJ7TH(x)  _12_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _20_MMAJ7TH(x)  _16_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _24_MMAJ7TH(x)  _20_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _28_MMAJ7TH(x)  _24_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _32_MMAJ7TH(x)  _28_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _36_MMAJ7TH(x)  _32_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _40_MMAJ7TH(x)  _36_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _44_MMAJ7TH(x)  _40_MMAJ7TH(x) _4_MMAJ7TH(x)
+#define _48_MMAJ7TH(x)  _44_MMAJ7TH(x) _4_MMAJ7TH(x)
+
 /* 7th */
 #define _4_7TH(x)       x,x+4,x+7,x+10,
 #define _8_7TH(x)       _4_7TH(x) _4_7TH(x)
@@ -1857,4 +1871,24 @@ sound_index sound[] =
 #define _32_9TH(x)      _24_9TH(x) _8_9TH(x)
 #define _40_9TH(x)      _32_9TH(x) _8_9TH(x)
 #define _48_9TH(x)      _40_9TH(x) _8_9TH(x)
+
+/* Arpeggios */
+
+#define _24_MAJ_ARPEGGIO(x)     _6(x) _6(x+4) _6(x+7) _6(x+4)
+#define _24_M_ARPEGGIO(x)       _6(x) _6(x+3) _6(x+7) _6(x+3)
+#define _24_MAJ7TH_ARPEGGIO(x)  _4(x) _4(x+4) _4(x+7) _4(x+11) _4(x+7) _4(x+4)
+#define _24_MMAJ7TH_ARPEGGIO(x) _4(x) _4(x+3) _4(x+7) _4(x+11) _4(x+7) _4(x+3)
+#define _24_7TH_ARPEGGIO(x)     _4(x) _4(x+4) _4(x+7) _4(x+10) _4(x+7) _4(x+4)
+#define _24_M7TH_ARPEGGIO(x)    _4(x) _4(x+3) _4(x+7) _4(x+10) _4(x+7) _4(x+3)
+#define _24_ADD9TH_ARPEGGIO(x)  _4(x) _4(x+4) _4(x+7) _4(x+14) _4(x+7) _4(x+4)
+#define _24_9TH_ARPEGGIO(x)     _3(x) _3(x+4) _3(x+7) _3(x+10) _3(x+14) _3(x+10) _3(x+7) _3(x+4)
+
+#define _48_MAJ_ARPEGGIO(x)     _12(x) _12(x+4) _12(x+7) _12(x+4)
+#define _48_M_ARPEGGIO(x)       _12(x) _12(x+3) _12(x+7) _12(x+3)
+#define _48_MAJ7TH_ARPEGGIO(x)  _8(x) _8(x+4) _8(x+7) _8(x+11) _8(x+7) _8(x+4)
+#define _48_MMAJ7TH_ARPEGGIO(x) _8(x) _8(x+3) _8(x+7) _8(x+11) _8(x+7) _8(x+3)
+#define _48_7TH_ARPEGGIO(x)     _8(x) _8(x+4) _8(x+7) _8(x+10) _8(x+7) _8(x+4)
+#define _48_M7TH_ARPEGGIO(x)    _8(x) _8(x+3) _8(x+7) _8(x+10) _8(x+7) _8(x+3)
+#define _48_ADD9TH_ARPEGGIO(x)  _8(x) _8(x+4) _8(x+7) _8(x+14) _8(x+7) _8(x+4)
+#define _48_9TH_ARPEGGIO(x)     _6(x) _6(x+4) _6(x+7) _6(x+10) _6(x+14) _6(x+10) _6(x+7) _6(x+4)
 

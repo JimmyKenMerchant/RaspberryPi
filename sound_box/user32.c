@@ -18,13 +18,13 @@
 music_code music1[] =
 {
 	_12(A4_SINL)
-	SND_END
+	SND32_END
 };
 
 music_code music2[] =
 {
 	_12(E4_TRIL)
-	SND_END
+	SND32_END
 };
 
 music_code music3[] =
@@ -35,16 +35,17 @@ music_code music3[] =
 	_4(G4_SINL) _4(C5_SINL) _4(E5_SINL)
 	_12(G4_SINL)
 	_4(E5_SINL) _4(G5_SINL) _4(C6_SINL)
-	SND_END
+	SND32_END
 };
 
 music_code music4[] =
 {
-	_48_MAJ7TH(C4_TRIL)
-	_48_MAJ7TH(E4_TRIL)
-	_48_MAJ7TH(G4_TRIL)
-	_48_MAJ7TH(B4_TRIL)
-	SND_END
+	_48_ADD9TH_ARPEGGIO(C4_TRIL)
+	_48_ADD9TH_ARPEGGIO(F4_TRIL)
+	_48_ADD9TH_ARPEGGIO(G4_TRIL)
+	_48_ADD9TH_ARPEGGIO(C4_TRIL)
+	_48(SND32_SILENCE)
+	SND32_END
 };
 
 music_code music5[] =
@@ -52,71 +53,71 @@ music_code music5[] =
 	_12_MAJ(C4_SINL) _12_MAJ(E4_SINL) _12_MAJ(G4_SINL) _12_MAJ(B4_SINL)
 	_12_MAJ(E4_SINL) _12_MAJ(G4_SINL) _12_MAJ(B4_SINL) _12_MAJ(D5_SINL)
 	_12_MAJ(G4_SINL) _12_MAJ(B4_SINL) _12_MAJ(D5_SINL) _12_MAJ(F5_SINL)
-	SND_END
+	SND32_END
 };
 
 music_code music6[] =
 {
 	_24_M(C3_SINL) _24_M(B2_SINL)
 	_24_M(A2_SINL) _24_M(B2_SINL)
-	SND_END
+	SND32_END
 };
 
 music_code music7[] =
 {
 	_48_9TH(F4_TRIL)
-	SND_END
+	SND32_END
 };
 
 music_code music8[] =
 {
 	_48_9TH(F4_SINL)
-	SND_END
+	SND32_END
 };
 
 music_code music9[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code music10[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code music11[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code music12[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code music13[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code music14[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code music15[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code interrupt16[] =
 {
-	SND_END
+	SND32_END
 };
 
 music_code interrupt17[] =
 {
-	SND_END
+	SND32_END
 };
 
 int32 _user_start()
