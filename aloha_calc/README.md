@@ -84,4 +84,4 @@ sudo minicom -D /dev/serial0
 
 **Draft of Description about "UART"**
 
-* UART seems to need to connect with HDMI device on Booting Process. If not, UART will send unavailable characters. This may be relevant to HDMI ground pin with GND. Check the discussion, [UART problem and HDMI](https://www.raspberrypi.org/forums/viewtopic.php?t=61971&p=460906).
+* UART seems to be 2-wire. But, in several case, we need to connect ground to each devices. E.g., we assume that we connect two RasPis by UART. If you don't connect HDMI cables to one RasPi, there is a need to connect ground to each devices. Otherwise, unavailable characters are received, i.e., communication fails. The reason is different voltage on ground (by means of chassis) of each device. Ideally, the voltage on ground of each device should be the same as the one of earth. But as long as you don't apply any earth wire, the voltage on ground of each device differs from others. This makes an odd on detection of GPIO status.
