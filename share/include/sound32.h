@@ -1872,6 +1872,20 @@ sound_index sound[] =
 #define _40_9TH(x)      _32_9TH(x) _8_9TH(x)
 #define _48_9TH(x)      _40_9TH(x) _8_9TH(x)
 
+/* 5th */
+#define _4_5TH(x)       x,x+7,x+14,x+21,
+#define _8_5TH(x)       _4_5TH(x) _4_5TH(x)
+#define _12_5TH(x)      _8_5TH(x) _4_5TH(x)
+#define _16_5TH(x)      _12_5TH(x) _4_5TH(x)
+#define _20_5TH(x)      _16_5TH(x) _4_5TH(x)
+#define _24_5TH(x)      _20_5TH(x) _4_5TH(x)
+#define _28_5TH(x)      _24_5TH(x) _4_5TH(x)
+#define _32_5TH(x)      _28_5TH(x) _4_5TH(x)
+#define _36_5TH(x)      _32_5TH(x) _4_5TH(x)
+#define _40_5TH(x)      _36_5TH(x) _4_5TH(x)
+#define _44_5TH(x)      _40_5TH(x) _4_5TH(x)
+#define _48_5TH(x)      _44_5TH(x) _4_5TH(x)
+
 /* Arpeggios */
 
 #define _24_MAJ_ARPEGGIO(x)     _6(x) _6(x+4) _6(x+7) _6(x+4)
@@ -1882,6 +1896,7 @@ sound_index sound[] =
 #define _24_M7TH_ARPEGGIO(x)    _4(x) _4(x+3) _4(x+7) _4(x+10) _4(x+7) _4(x+3)
 #define _24_ADD9TH_ARPEGGIO(x)  _4(x) _4(x+4) _4(x+7) _4(x+14) _4(x+7) _4(x+4)
 #define _24_9TH_ARPEGGIO(x)     _3(x) _3(x+4) _3(x+7) _3(x+10) _3(x+14) _3(x+10) _3(x+7) _3(x+4)
+#define _24_5TH_ARPEGGIO(x)     _4(x) _4(x+7) _4(x+14) _4(x+21) _4(x+14) _4(x+7)
 
 #define _48_MAJ_ARPEGGIO(x)     _12(x) _12(x+4) _12(x+7) _12(x+4)
 #define _48_M_ARPEGGIO(x)       _12(x) _12(x+3) _12(x+7) _12(x+3)
@@ -1891,4 +1906,5 @@ sound_index sound[] =
 #define _48_M7TH_ARPEGGIO(x)    _8(x) _8(x+3) _8(x+7) _8(x+10) _8(x+7) _8(x+3)
 #define _48_ADD9TH_ARPEGGIO(x)  _8(x) _8(x+4) _8(x+7) _8(x+14) _8(x+7) _8(x+4)
 #define _48_9TH_ARPEGGIO(x)     _6(x) _6(x+4) _6(x+7) _6(x+10) _6(x+14) _6(x+10) _6(x+7) _6(x+4)
+#define _48_5TH_ARPEGGIO(x)     _8(x) _8(x+7) _8(x+14) _8(x+21) _8(x+14) _8(x+7)
 
