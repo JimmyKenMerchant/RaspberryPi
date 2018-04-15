@@ -1900,6 +1900,14 @@ sound_index sound[] =
 #define _44_TRI(x)      _40_TRI(x) _4_TRI(x)
 #define _48_TRI(x)      _44_TRI(x) _4_TRI(x)
 
+/* Rock */
+#define _8_ROC(x)       x,x+3,x+5,x+7,x+10,x+7,x+5,x+3,
+#define _16_ROC(x)      _8_ROC(x) _8_ROC(x)
+#define _24_ROC(x)      _8_ROC(x) _16_ROC(x)
+#define _32_ROC(x)      _8_ROC(x) _24_ROC(x)
+#define _40_ROC(x)      _8_ROC(x) _32_ROC(x)
+#define _48_ROC(x)      _8_ROC(x) _40_ROC(x)
+
 /* Arpeggios */
 #define _24_MAJ_ARP(x)     _6(x) _6(x+4) _6(x+7) _6(x+4)
 #define _24_M_ARP(x)       _6(x) _6(x+3) _6(x+7) _6(x+3)
@@ -1911,7 +1919,11 @@ sound_index sound[] =
 #define _24_9TH_ARP(x)     _3(x) _3(x+4) _3(x+7) _3(x+10) _3(x+14) _3(x+10) _3(x+7) _3(x+4)
 #define _24_5TH_ARP(x)     _4(x) _4(x+7) _4(x+14) _4(x+21) _4(x+14) _4(x+7)
 #define _24_TRI_ARP(x)     _4(x) _4(x+6) _4(x+12) _4(x+18) _4(x+12) _4(x+6)
-#define _24_MIX_ARP(x)     _2(x) _2(x+2) _2(x+4) _2(x+5) _2(x+7) _2(x+9) _2(x+10) _2(x+9) _2(x+7) _2(x+5) _2(x+4) _2(x+2) // Mixolydian
+#define _24_MIX_ARP(x)     _2(x) _2(x+2) _2(x+4) _2(x+5) _2(x+7) _2(x+9) _2(x+10) _2(x+9) _2(x+7) _2(x+5) _2(x+4) _2(x+2) // Mixolydian, Diatonic on G
+#define _24_DOR_ARP(x)     _2(x) _2(x+1) _2(x+3) _2(x+5) _2(x+7) _2(x+8) _2(x+10) _2(x+8) _2(x+7) _2(x+5) _2(x+3) _2(x+1) // Dorian, Diatonic on E
+#define _24_PHR_ARP(x)     _2(x) _2(x+2) _2(x+3) _2(x+5) _2(x+7) _2(x+9) _2(x+10) _2(x+9) _2(x+7) _2(x+5) _2(x+3) _2(x+2) // Phrygian, Diatonic on D
+#define _24_BLU_ARP(x)     _2(x) _2(x+2) _2(x+3) _2(x+5) _2(x+6) _2(x+7) _2(x+10) _2(x+7) _2(x+6) _2(x+5) _2(x+3) _2(x+2) // Blue-note
+#define _24_ROC_ARP(x)     _4(x) _4(x+3) _4(x+5) _4(x+7) _4(x+10) _4(x+7) _4(x+5) _4(x+3) // Rock
 
 #define _48_MAJ_ARP(x)     _12(x) _12(x+4) _12(x+7) _12(x+4)
 #define _48_M_ARP(x)       _12(x) _12(x+3) _12(x+7) _12(x+3)
@@ -1923,7 +1935,11 @@ sound_index sound[] =
 #define _48_9TH_ARP(x)     _6(x) _6(x+4) _6(x+7) _6(x+10) _6(x+14) _6(x+10) _6(x+7) _6(x+4)
 #define _48_5TH_ARP(x)     _8(x) _8(x+7) _8(x+14) _8(x+21) _8(x+14) _8(x+7)
 #define _48_TRI_ARP(x)     _8(x) _8(x+6) _8(x+12) _8(x+18) _8(x+12) _8(x+6)
-#define _48_MIX_ARP(x)     _4(x) _4(x+2) _4(x+4) _4(x+5) _4(x+7) _4(x+9) _4(x+10) _4(x+9) _4(x+7) _4(x+5) _4(x+4) _4(x+2) // Mixolydian
+#define _48_MIX_ARP(x)     _4(x) _4(x+2) _4(x+4) _4(x+5) _4(x+7) _4(x+9) _4(x+10) _4(x+9) _4(x+7) _4(x+5) _4(x+4) _4(x+2) // Mixolydian, Diatonic on G
+#define _48_DOR_ARP(x)     _4(x) _4(x+1) _4(x+3) _4(x+5) _4(x+7) _4(x+8) _4(x+10) _4(x+8) _4(x+7) _4(x+5) _4(x+3) _4(x+1) // Dorian, Diatonic on E
+#define _48_PHR_ARP(x)     _4(x) _4(x+2) _4(x+3) _4(x+5) _4(x+7) _4(x+9) _4(x+10) _4(x+9) _4(x+7) _4(x+5) _4(x+3) _4(x+2) // Phrygian, Diatonic on D
+#define _48_BLU_ARP(x)     _4(x) _4(x+2) _4(x+3) _4(x+5) _4(x+6) _4(x+7) _4(x+10) _4(x+7) _4(x+6) _4(x+5) _4(x+3) _4(x+2) // Blue-note
+#define _48_ROC_ARP(x)     _8(x) _8(x+3) _8(x+5) _8(x+7) _8(x+10) _8(x+7) _8(x+5) _8(x+3) // Rock
 
 /* Decay, Need of Big Volume */
 #define _8_DEC(x)       _4(x) _4(x+0x100)

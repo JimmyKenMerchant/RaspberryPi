@@ -424,6 +424,7 @@ __attribute__((noinline)) int32 _hub_search_device
 /* Constants */
 
 #define gpio_sequence       uint32
+#define GPIO32_END          0
 #define _GPIOTOGGLE_LOW     0
 #define _GPIOTOGGLE_HIGH    1
 #define _GPIOTOGGLE_SWAP    2
