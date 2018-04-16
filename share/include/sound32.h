@@ -8,6 +8,10 @@
  */
 
 /**
+ * This header is used with functions in ../*/system32/library/snd32.s
+ */
+
+/**
  * Sound Index is made of an array of 16-bit Blocks.
  * Bit[11:0]: Length of Wave, 0 to 4095.
  *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
@@ -1692,69 +1696,7 @@ sound_index sound[] =
 
 #define SND32_SILENCE  0x324
 #define SND32_NOISE    0x325 // Long Noise
-
 #define SND32_END      0xFFFF
-
-#define _1(x) x,
-#define _2(x) x,x,
-#define _3(x) x,x,x,
-#define _4(x) x,x,x,x,
-#define _5(x) x,x,x,x,x,
-#define _6(x) x,x,x,x,x,x,
-#define _7(x) x,x,x,x,x,x,x,
-#define _8(x) x,x,x,x,x,x,x,x,
-#define _9(x) x,x,x,x,x,x,x,x,x,
-#define _10(x) x,x,x,x,x,x,x,x,x,x,
-#define _11(x) _10(x) _1(x)
-#define _12(x) _10(x) _2(x)
-#define _13(x) _10(x) _3(x)
-#define _14(x) _10(x) _4(x)
-#define _15(x) _10(x) _5(x)
-#define _16(x) _10(x) _6(x)
-#define _17(x) _10(x) _7(x)
-#define _18(x) _10(x) _8(x)
-#define _19(x) _10(x) _9(x)
-#define _20(x) _10(x) _10(x)
-#define _21(x) _20(x) _1(x)
-#define _22(x) _20(x) _2(x)
-#define _23(x) _20(x) _3(x)
-#define _24(x) _20(x) _4(x)
-#define _25(x) _20(x) _5(x)
-#define _26(x) _20(x) _6(x)
-#define _27(x) _20(x) _7(x)
-#define _28(x) _20(x) _8(x)
-#define _29(x) _20(x) _9(x)
-#define _30(x) _20(x) _10(x)
-#define _31(x) _30(x) _1(x)
-#define _32(x) _30(x) _2(x)
-#define _33(x) _30(x) _3(x)
-#define _34(x) _30(x) _4(x)
-#define _35(x) _30(x) _5(x)
-#define _36(x) _30(x) _6(x)
-#define _37(x) _30(x) _7(x)
-#define _38(x) _30(x) _8(x)
-#define _39(x) _30(x) _9(x)
-#define _40(x) _30(x) _10(x)
-#define _41(x) _40(x) _1(x)
-#define _42(x) _40(x) _2(x)
-#define _43(x) _40(x) _3(x)
-#define _44(x) _40(x) _4(x)
-#define _45(x) _40(x) _5(x)
-#define _46(x) _40(x) _6(x)
-#define _47(x) _40(x) _7(x)
-#define _48(x) _40(x) _8(x)
-#define _49(x) _40(x) _9(x)
-#define _50(x) _40(x) _10(x)
-#define _51(x) _50(x) _1(x)
-#define _52(x) _50(x) _2(x)
-#define _53(x) _50(x) _3(x)
-#define _54(x) _50(x) _4(x)
-#define _55(x) _50(x) _5(x)
-#define _56(x) _50(x) _6(x)
-#define _57(x) _50(x) _7(x)
-#define _58(x) _50(x) _8(x)
-#define _59(x) _50(x) _9(x)
-#define _60(x) _50(x) _10(x)
 
 /* Chords */
 

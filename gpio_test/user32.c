@@ -28,16 +28,15 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "sound32.h"
 
 #define timer_count_multiply        125
-#define timer_count_factor_default  10
-#define timer_count_factor_minlimit 5
+#define timer_count_factor_default  2
+#define timer_count_factor_minlimit 1
 #define timer_count_factor_maxlimit 40
 
 /**
- * In Default, 48Hz Synchronization Clock
- * Max Beat is 96Hz, Min Beat is 12Hz
+ * In Default, 480Hz Synchronization Clock
+ * Max Beat is 960Hz, Min Beat is 12Hz
  */
 
 gpio_sequence gpio1[] =
@@ -184,8 +183,13 @@ gpio_sequence gpio15[] =
 
 gpio_sequence gpio16[] =
 {
-	_48(1<<31|1<<3|1<<2)
-	_48(1<<31|1<<5|5<<4)
+	1<<31|1<<13|1<<12|1<<11|1<<10|1<<9|1<<8|1<<3|1<<2,
+	1<<31|1<<13|1<<12|1<<11|1<<10|1<<9|1<<7|1<<4|1<<3,
+	1<<31|1<<13|1<<12|1<<11|1<<10|1<<8|1<<7|1<<6, // !?
+	1<<31|1<<13|1<<12|1<<11|1<<9|1<<8|1<<7|1<<6|1<<5,
+	1<<31|1<<13|1<<12|1<<10|1<<9|1<<8|1<<7|1<<6, // !?
+	1<<31|1<<13|1<<11|1<<10|1<<9|1<<8|1<<7|1<<4|1<<3,
+	1<<31|1<<12|1<<11|1<<10|1<<9|1<<8|1<<7|1<<3|1<<2,
 	GPIO32_END
 };
 
@@ -199,6 +203,8 @@ int32 _user_start()
 
 	uchar8 timer_count_factor = timer_count_factor_default;
 	uint32 detect_parallel;
+
+	_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
