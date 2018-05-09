@@ -1,5 +1,5 @@
 /**
- * matx32.s
+ * mtx32.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -309,8 +309,8 @@ mtx32_multiply_vec:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Vector
- * r0: Number of Vector Size
+ * r0: Vector
+ * r1: Number of Vector Size
  *
  * Return: r0 (Vector to Have Been Normalized, If Zero Not Allocated Memory)
  */
@@ -461,7 +461,7 @@ mtx32_dotproduct:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Vector1, Must Be Three of Vector Size
+ * r0: Vector1, Must Be Three of Vector Size
  * r1: Vector2, Must Be Three of Vector Size
  *
  * Return: r0 (Vector to Be Calculated, If Zero Not Allocated Memory)
@@ -572,7 +572,7 @@ mtx32_crossproduct:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Vector, Must Be Three of Vector Size, X, Y, and Z
+ * r0: Vector, Must Be Three of Vector Size, X, Y, and Z
  *
  * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
  */
@@ -617,7 +617,7 @@ mtx32_translate3d:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Vector, Must Be Three of Vector Size, X, Y, and Z
+ * r0: Vector, Must Be Three of Vector Size, X, Y, and Z
  *
  * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
  */
@@ -662,7 +662,7 @@ mtx32_scale3d:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Value of Degrees, Must Be Single Precision Float
+ * r0: Value of Degrees, Must Be Single Precision Float
  *
  * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
  */
@@ -729,7 +729,7 @@ mtx32_rotatex3d:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Value of Degrees, Must Be Single Precision Float
+ * r0: Value of Degrees, Must Be Single Precision Float
  *
  * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
  */
@@ -796,7 +796,7 @@ mtx32_rotatey3d:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r1: Value of Degrees, Must Be Single Precision Float
+ * r0: Value of Degrees, Must Be Single Precision Float
  *
  * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
  */
@@ -854,4 +854,134 @@ mtx32_rotatez3d:
 .unreq matrix_result
 .unreq value
 .unreq vfp_value
+
+
+/**
+ * function mtx32_perspective3d
+ * Make 4 by 4 Square Matrix (Column Order) with Perspective
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: FovY (Field of View Y: Vertical) by Degrees, Must Be Single Precison Float
+ * r1: Aspect, Must Be Single Precision Float
+ * r2: Near, Must Be Single Precision Float
+ * r3: Far, Must Be Single Precision Float
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl mtx32_perspective3d
+mtx32_perspective3d:
+	/* Auto (Local) Variables, but just Aliases */
+	fovy_deg      .req r0
+	aspect        .req r1
+	near          .req r2
+	far           .req r3
+	matrix_result .req r4
+	temp          .req r5
+
+	/* VFP Registers */
+	vfp_fovy_rad .req s0
+	vfp_aspect   .req s1
+	vfp_near     .req s2
+	vfp_far      .req s3
+	vfp_two      .req s4
+	vfp_temp     .req s5
+	vfp_temp2    .req s6
+
+	push {r4-r5,lr}
+	vpush {s0-s6}
+
+	/* Make All Zero 4-4 Martrix */
+	push {r0-r3}
+	mov r0, #16 
+	bl heap32_malloc
+	mov matrix_result, r0
+	pop {r0-r3}
+
+	cmp matrix_result, #0
+	beq mtx32_perspective3d_common
+
+	/* FovY by Degrees to Radian */
+
+	push {r1-r3}
+	bl math32_degree_to_radian
+	pop {r1-r3}
+	.unreq fovy_deg
+	fovy_rad .req r0
+
+	vmov vfp_fovy_rad, fovy_rad
+	vmov vfp_aspect, aspect
+	vmov vfp_near, near
+	vmov vfp_far, far
+	mov temp, #2
+	vmov vfp_two, temp
+	vcvt.f32.u32 vfp_two, vfp_two
+
+	/* Make Range, tan( fovy_rad / 2.0 ) * near */
+
+	vdiv.f32 vfp_fovy_rad, vfp_fovy_rad, vfp_two
+	vmov fovy_rad, vfp_fovy_rad
+
+	push {r1-r3}
+	bl math32_tan
+	pop {r1-r3}
+
+	.unreq fovy_rad
+	.unreq vfp_fovy_rad
+	range .req r0
+	vfp_range .req s0
+
+	vmov vfp_range, range
+	vmul.f32 vfp_range, vfp_range, vfp_near
+
+	/* Make Sx, near / range * aspect */
+	vmul.f32 vfp_temp2, vfp_range, vfp_aspect
+	vdiv.f32 vfp_temp, vfp_near, vfp_temp2
+	vstr vfp_temp, [matrix_result]             @ Matrix_result[0]
+
+	/* Make Sy, near / range */
+	vdiv.f32 vfp_temp, vfp_near, vfp_range
+	vstr vfp_temp, [matrix_result, #20]        @ Matrix_result[5]
+
+	/* Make Sz, -(far + near) / (far - near) */
+	vadd.f32 vfp_temp, vfp_far, vfp_near
+	vneg.f32 vfp_temp, vfp_temp
+	vsub.f32 vfp_temp2, vfp_far, vfp_near
+	vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #40]        @ Matrix_result[10]
+
+	/* -1 */
+	mov temp, #-1
+	vmov vfp_temp, temp
+	vcvt.f32.s32 vfp_temp, vfp_temp
+	vstr vfp_temp, [matrix_result, #44]        @ Matrix_result[11]
+
+	/* Make Pz, -(2.0 * far * near) / (far - near) */
+	vmul.f32 vfp_temp, vfp_two, vfp_far
+	vmul.f32 vfp_temp, vfp_temp, vfp_near
+	vneg.f32 vfp_temp, vfp_temp
+	vsub.f32 vfp_temp2, vfp_far, vfp_near
+	vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #56]        @ Matrix_result[14]
+
+	mtx32_perspective3d_common:
+		mov r0, matrix_result
+		vpop {s0-s6}
+		pop {r4-r5,pc}
+
+.unreq range
+.unreq aspect
+.unreq near
+.unreq far
+.unreq matrix_result
+.unreq temp
+.unreq vfp_range
+.unreq vfp_aspect
+.unreq vfp_near
+.unreq vfp_far
+.unreq vfp_two
+.unreq vfp_temp
+.unreq vfp_temp2
+
 
