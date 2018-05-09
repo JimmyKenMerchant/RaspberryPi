@@ -1396,6 +1396,10 @@ extern float32 math32_log
 );
 
 
+/********************************
+ * system32/library/mtx32.s
+ ********************************/
+
 /**
  * Multiplies Two Matrix with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
@@ -1403,7 +1407,7 @@ extern float32 math32_log
  *
  * Return: Matrix to Be Calculated, If Zero Not Allocated Memory
  */
-extern obj math32_mat_multiply
+extern obj mtx32_multiply
 (
 	obj matrix1,
 	obj matrix2,
@@ -1418,7 +1422,7 @@ extern obj math32_mat_multiply
  *
  * Return: Matrix to Have Identity, If Zero Not Allocated Memory
  */
-extern obj math32_mat_identity
+extern obj mtx32_identity
 (
 	uint32 number
 );
@@ -1431,7 +1435,7 @@ extern obj math32_mat_identity
  *
  * Return: Vector to Be Calculated, If Zero Not Allocated Memory
  */
-extern obj math32_mat_multiply_vec
+extern obj mtx32_multiply_vec
 (
 	obj matrix,
 	obj vector,
@@ -1446,7 +1450,7 @@ extern obj math32_mat_multiply_vec
  *
  * Return: Vector to Have Been Normalized, If Zero Not Allocated Memory
  */
-extern obj math32_vec_normalize
+extern obj mtx32_normalize_vec
 (
 	obj vector,
 	uint32 number
@@ -1459,7 +1463,7 @@ extern obj math32_vec_normalize
  *
  * Return: Value of Dot Product by Single Precision Float
  */
-extern float32 math32_vec_dotproduct
+extern float32 mtx32_dotproduct
 (
 	obj vector1,
 	obj vector2,
@@ -1474,7 +1478,7 @@ extern float32 math32_vec_dotproduct
  *
  * Return: Vector to Be Calculated, If Zero Not Allocated Memory
  */
-extern obj math32_vec_crossproduct
+extern obj mtx32_crossproduct
 (
 	obj vector1, // Must Be Three of Vector Size
 	obj vector2 // Must Be Three of Vector Size
