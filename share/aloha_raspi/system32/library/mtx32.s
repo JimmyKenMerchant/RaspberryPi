@@ -985,3 +985,363 @@ mtx32_perspective3d:
 .unreq vfp_temp2
 
 
+/**
+ * function mtx32_view3d
+ * Make 4 by 4 Square Matrix (Column Order) with View
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: Vector of Camera Position, Must Be Three of Vector Size, X, Y, and Z
+ * r1: Vector of Target Position, Must Be Three of Vector Size, X, Y, and Z
+ * r2: Vector of Up (Above Your Head), Must Be Three of Vector Size, X, Y, and Z
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl mtx32_view3d
+mtx32_view3d:
+	/* Auto (Local) Variables, but just Aliases */
+	vec_cam       .req r0
+	vec_trg       .req r1
+	vec_up        .req r2
+	matrix_orient .req r3
+	vec_distance  .req r4
+	temp          .req r5
+
+	/* VFP Registers */
+	vfp_vec_x     .req s0
+	vfp_vec_y     .req s1
+	vfp_vec_z     .req s2
+	vfp_vec2_x    .req s3
+	vfp_vec2_y    .req s4
+	vfp_vec2_z    .req s5
+	vfp_temp      .req s6
+
+	push {r4-r5,lr}
+	vpush {s0-s6}
+
+	vldr vfp_vec_x, [vec_cam]
+	vldr vfp_vec_y, [vec_cam, #4]
+	vldr vfp_vec_z, [vec_cam, #8]
+	vneg.f32 vfp_vec_x, vfp_vec_x @ Invert
+	vneg.f32 vfp_vec_y, vfp_vec_y @ Invert
+	vneg.f32 vfp_vec_z, vfp_vec_z @ Invert
+	vldr vfp_vec2_x, [vec_trg]
+	vldr vfp_vec2_y, [vec_trg, #4]
+	vldr vfp_vec2_z, [vec_trg, #8]
+
+	/* Make Matrix of Camera Position*/
+
+	vstr vfp_vec_x, [vec_cam]
+	vstr vfp_vec_y, [vec_cam, #4]
+	vstr vfp_vec_z, [vec_cam, #8]
+
+	.unreq vec_cam
+	matrix_cam .req r0
+
+	push {r1-r3}
+	bl mtx32_translate3d
+	pop {r1-r3}
+
+	cmp matrix_cam, #0
+	beq mtx32_view3d_common
+
+	/* Make Vector of Distance Between Target and Camera Posision */
+
+	push {r0-r3}
+	mov r0, #3 
+	bl heap32_malloc
+	mov vec_distance, r0
+	pop {r0-r3}
+
+	cmp vec_distance, #0
+	bne mtx32_view3d_distance
+
+	push {r0-r3}
+	mov r0, matrix_cam
+	bl heap32_mfree
+	pop {r0-r3}
+
+	mov matrix_cam, #0
+	b mtx32_view3d_common
+
+	mtx32_view3d_distance:
+
+		vadd.f32 vfp_temp, vfp_vec2_x, vfp_vec_x
+		vstr vfp_temp, [vec_distance]
+		vadd.f32 vfp_temp, vfp_vec2_y, vfp_vec_y
+		vstr vfp_temp, [vec_distance, #4]
+		vadd.f32 vfp_temp, vfp_vec2_z, vfp_vec_z
+		vstr vfp_temp, [vec_distance, #8]
+
+		/* Make Forward Vector from Distance, e.g., Index Finger */
+
+		push {r0-r3}
+		mov r0, vec_distance
+		bl mtx32_normalize
+		mov temp, r0
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_distance
+		bl heap32_mfree
+		pop {r0-r3}
+
+		.unreq vec_distance
+		vec_forward .req r4
+
+		mov vec_forward, temp
+		cmp vec_forward, #0
+		bne mtx32_view3d_right
+
+		push {r0-r3}
+		mov r0, matrix_cam
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov matrix_cam, #0
+		b mtx32_view3d_common
+
+	mtx32_view3d_right:
+
+		/* Make Right Vector, e.g., Middle Finger */
+
+		push {r0-r1,r3}
+		mov r0, vec_forward
+		mov r1, vec_up
+		bl mtx32_crossproduct
+		mov vec_up, r0
+		pop {r0-r1,r3}
+
+		cmp vec_up, #0
+		bne mtx32_view3d_right_normalize
+
+		push {r0-r3}
+		mov r0, matrix_cam
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_forward
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov matrix_cam, #0
+		b mtx32_view3d_common
+
+		mtx32_view3d_right_normalize:
+
+			push {r0-r3}
+			mov r0, vec_up
+			bl mtx32_normalize
+			mov temp, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_up
+			bl heap32_mfree
+			pop {r0-r3}
+
+			.unreq vec_up
+			vec_right .req r2
+
+			mov vec_right, temp
+			cmp vec_right, #0
+			bne mtx32_view3d_realup
+
+			push {r0-r3}
+			mov r0, matrix_cam
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_forward
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov matrix_cam, #0
+			b mtx32_view3d_common
+
+	mtx32_view3d_realup:
+		/* Make Real Up Vector, e.g., Thumb */
+
+		push {r0,r2-r3}
+		mov r0, vec_right
+		mov r1, vec_forward
+		bl mtx32_crossproduct
+		mov vec_trg, r0
+		pop {r0,r2-r3}
+
+		cmp vec_trg, #0
+		bne mtx32_view3d_realup_normalize
+
+		push {r0-r3}
+		mov r0, matrix_cam
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_forward
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_right
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov matrix_cam, #0
+		b mtx32_view3d_common
+
+		mtx32_view3d_realup_normalize:
+
+			push {r0-r3}
+			mov r0, vec_trg
+			bl mtx32_normalize
+			mov temp, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_trg
+			bl heap32_mfree
+			pop {r0-r3}
+
+			.unreq vec_trg
+			vec_realup .req r1
+
+			mov vec_realup, temp
+			cmp vec_realup, #0
+			bne mtx32_view3d_identify
+
+			push {r0-r3}
+			mov r0, matrix_cam
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_forward
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_right
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov matrix_cam, #0
+			b mtx32_view3d_common
+
+	mtx32_view3d_identify:
+		/* Make Identified 4-4 Martrix */
+
+		push {r0-r2}
+		mov r0, #4
+		bl mtx32_identity
+		mov matrix_orient, r0
+		pop {r0-r2}
+
+		cmp matrix_orient, #0
+		bne mtx32_view3d_identify_main
+
+		push {r0-r3}
+		mov r0, matrix_cam
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_forward
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_right
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_realup
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov matrix_cam, #0
+		b mtx32_view3d_common
+
+		mtx32_view3d_identify_main:
+
+			vldr vfp_vec_x, [vec_forward]
+			vldr vfp_vec_y, [vec_forward, #4]
+			vldr vfp_vec_z, [vec_forward, #8]
+			vneg.f32 vfp_vec_x, vfp_vec_x @ Invert
+			vneg.f32 vfp_vec_y, vfp_vec_y @ Invert
+			vneg.f32 vfp_vec_z, vfp_vec_z @ Invert
+
+			ldr temp, [vec_right]
+			str temp, [matrix_orient]
+			ldr temp, [vec_realup]
+			str temp, [matrix_orient, #4]
+			vstr vfp_vec_x, [matrix_orient, #8]
+
+			ldr temp, [vec_right, #4]
+			str temp, [matrix_orient, #16]
+			ldr temp, [vec_realup, #4]
+			str temp, [matrix_orient, #20]
+			vstr vfp_vec_y, [matrix_orient, #24]
+
+			ldr temp, [vec_right, #8]
+			str temp, [matrix_orient, #32]
+			ldr temp, [vec_realup, #8]
+			str temp, [matrix_orient, #36]
+			vstr vfp_vec_z, [matrix_orient, #40]
+
+			push {r0-r3}
+			mov r1, matrix_orient
+			mov r2, #4
+			bl mtx32_multiply
+			mov temp, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, matrix_cam
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_forward
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_right
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, vec_realup
+			bl heap32_mfree
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, matrix_orient
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov matrix_cam, temp
+
+	mtx32_view3d_common:
+		vpop {s0-s6}
+		pop {r4-r5,pc}
+
+.unreq matrix_cam
+.unreq vec_realup
+.unreq vec_right
+.unreq matrix_orient
+.unreq vec_forward
+.unreq temp
+.unreq vfp_vec_x
+.unreq vfp_vec_y
+.unreq vfp_vec_z
+.unreq vfp_vec2_x
+.unreq vfp_vec2_y
+.unreq vfp_vec2_z
+.unreq vfp_temp
+
