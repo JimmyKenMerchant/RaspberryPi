@@ -24,9 +24,9 @@
 .globl mtx32_multiply
 mtx32_multiply:
 	/* Auto (Local) Variables, but just Aliases */
-	matrix1     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	matrix2     .req r1 @ Parameter, Register for Argument, Scratch Register
-	number_mat  .req r2 @ Parameter, Register for Argument, Scratch Register
+	matrix1     .req r0
+	matrix2     .req r1
+	number_mat  .req r2
 	temp        .req r3
 	temp2       .req r4
 	matrix_ret  .req r5
@@ -144,7 +144,7 @@ mtx32_multiply:
 .globl mtx32_identity
 mtx32_identity:
 	/* Auto (Local) Variables, but just Aliases */
-	number_mat  .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	number_mat  .req r0
 	one         .req r1
 	offset      .req r2
 	i           .req r3
@@ -215,9 +215,9 @@ mtx32_identity:
 .globl mtx32_multiply_vec
 mtx32_multiply_vec:
 	/* Auto (Local) Variables, but just Aliases */
-	matrix         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	vector         .req r1 @ Parameter, Register for Argument, Scratch Register
-	number_vec     .req r2 @ Parameter, Register for Argument, Scratch Register
+	matrix         .req r0
+	vector         .req r1
+	number_vec     .req r2
 	value1         .req r3
 	value2         .req r4
 	temp1          .req r5
@@ -317,8 +317,8 @@ mtx32_multiply_vec:
 .globl mtx32_normalize
 mtx32_normalize:
 	/* Auto (Local) Variables, but just Aliases */
-	vector        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	number_vec    .req r1 @ Parameter, Register for Argument, Scratch Register
+	vector        .req r0
+	number_vec    .req r1
 	temp          .req r2
 	length        .req r3
 	vector_result .req r4
@@ -409,9 +409,9 @@ mtx32_normalize:
 .globl mtx32_dotproduct
 mtx32_dotproduct:
 	/* Auto (Local) Variables, but just Aliases */
-	vector1    .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	vector2    .req r1 @ Parameter, Register for Argument, Scratch Register
-	number_vec .req r2 @ Parameter, Register for Argument, Scratch Register
+	vector1    .req r0
+	vector2    .req r1
+	number_vec .req r2
 	value      .req r3
 
 	/* VFP Registers */
@@ -469,9 +469,9 @@ mtx32_dotproduct:
 .globl mtx32_crossproduct
 mtx32_crossproduct:
 	/* Auto (Local) Variables, but just Aliases */
-	vector1       .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	vector2       .req r1 @ Parameter, Register for Argument, Scratch Register
-	number_vec    .req r2 @ Parameter, Register for Argument, Scratch Register
+	vector1       .req r0
+	vector2       .req r1
+	number_vec    .req r2
 	value1        .req r3
 	value2        .req r4
 	vector_result .req r5
@@ -579,7 +579,7 @@ mtx32_crossproduct:
 .globl mtx32_translate3d
 mtx32_translate3d:
 	/* Auto (Local) Variables, but just Aliases */
-	vector        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	vector        .req r0
 	matrix_result .req r1
 	value         .req r2
 
@@ -624,7 +624,7 @@ mtx32_translate3d:
 .globl mtx32_scale3d
 mtx32_scale3d:
 	/* Auto (Local) Variables, but just Aliases */
-	vector        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	vector        .req r0
 	matrix_result .req r1
 	value         .req r2
 
@@ -669,7 +669,7 @@ mtx32_scale3d:
 .globl mtx32_rotatex3d
 mtx32_rotatex3d:
 	/* Auto (Local) Variables, but just Aliases */
-	degree        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	degree        .req r0
 	matrix_result .req r1
 	value         .req r2
 
@@ -736,7 +736,7 @@ mtx32_rotatex3d:
 .globl mtx32_rotatey3d
 mtx32_rotatey3d:
 	/* Auto (Local) Variables, but just Aliases */
-	degree        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	degree        .req r0
 	matrix_result .req r1
 	value         .req r2
 
@@ -803,7 +803,7 @@ mtx32_rotatey3d:
 .globl mtx32_rotatez3d
 mtx32_rotatez3d:
 	/* Auto (Local) Variables, but just Aliases */
-	degree        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	degree        .req r0
 	matrix_result .req r1
 	value         .req r2
 
@@ -916,7 +916,7 @@ mtx32_perspective3d:
 	vmov vfp_far, far
 	mov temp, #2
 	vmov vfp_two, temp
-	vcvt.f32.u32 vfp_two, vfp_two
+	vcvt.f32.s32 vfp_two, vfp_two
 
 	/* Make Range, tan( fovy_rad / 2.0 ) * near */
 
@@ -1049,7 +1049,7 @@ mtx32_view3d:
 	/* Make Vector of Distance Between Target and Camera Posision */
 
 	push {r0-r3}
-	mov r0, #3 
+	mov r0, #3
 	bl heap32_malloc
 	mov vec_distance, r0
 	pop {r0-r3}
@@ -1067,17 +1067,18 @@ mtx32_view3d:
 
 	mtx32_view3d_distance:
 
-		vadd.f32 vfp_temp, vfp_vec2_x, vfp_vec_x
+		vadd.f32 vfp_temp, vfp_vec2_x, vfp_vec_x @ Camera Position is Inverted
 		vstr vfp_temp, [vec_distance]
-		vadd.f32 vfp_temp, vfp_vec2_y, vfp_vec_y
+		vadd.f32 vfp_temp, vfp_vec2_y, vfp_vec_y @ Camera Position is Inverted
 		vstr vfp_temp, [vec_distance, #4]
-		vadd.f32 vfp_temp, vfp_vec2_z, vfp_vec_z
+		vadd.f32 vfp_temp, vfp_vec2_z, vfp_vec_z @ Camera Position is Inverted
 		vstr vfp_temp, [vec_distance, #8]
 
 		/* Make Forward Vector from Distance, e.g., Index Finger */
 
 		push {r0-r3}
 		mov r0, vec_distance
+		mov r1, #3
 		bl mtx32_normalize
 		mov temp, r0
 		pop {r0-r3}
@@ -1133,6 +1134,7 @@ mtx32_view3d:
 
 			push {r0-r3}
 			mov r0, vec_up
+			mov r1, #3
 			bl mtx32_normalize
 			mov temp, r0
 			pop {r0-r3}
@@ -1197,6 +1199,7 @@ mtx32_view3d:
 
 			push {r0-r3}
 			mov r0, vec_trg
+			mov r1, #3
 			bl mtx32_normalize
 			mov temp, r0
 			pop {r0-r3}
@@ -1344,4 +1347,274 @@ mtx32_view3d:
 .unreq vfp_vec2_y
 .unreq vfp_vec2_z
 .unreq vfp_temp
+
+
+/**
+ * function mtx32_versor
+ * Make Versor
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: Value of Angle, Must Be Single Precision Float
+ * r1: Vector, Must Be Three of Vector Size, X, Y, and Z
+ *
+ * Return: r0 (Versor, If Zero Not Allocated Memory)
+ */
+.globl mtx32_versor
+mtx32_versor:
+	/* Auto (Local) Variables, but just Aliases */
+	angle         .req r0
+	vector        .req r1
+	versor        .req r2
+	temp          .req r3
+
+	/* VFP Registers */
+	vfp_sin_angle .req s0
+	vfp_temp      .req s1
+	vfp_temp2     .req s2
+
+	push {lr}
+	vpush {s0-s2}
+
+	/* Allocate Memory Space for Versor  */
+
+	push {r0-r1}
+	mov r0, #4
+	bl heap32_malloc
+	mov versor, r0
+	pop {r0-r1}
+
+	cmp versor, #0
+	beq mtx32_versor_common
+
+	/* Convert Degree to Radian and Divide by 2 */
+
+	push {r1-r2}
+	bl math32_degree_to_radian
+	pop {r1-r2}
+
+	vmov vfp_temp, angle
+	mov temp, #2
+	vmov vfp_temp2, temp
+	vcvt.f32.s32 vfp_temp2, vfp_temp2
+	vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
+	vmov angle, vfp_temp
+
+	/* Normalize Vector */
+
+	push {r0,r2}
+	mov r0, vector
+	mov r1, #3
+	bl mtx32_normalize
+	mov vector, r0
+	pop {r0,r2}
+
+	/* Set W of Versor */
+
+	push {r0-r2}
+	mov r0, angle
+	bl math32_cos
+	str r0, [versor]
+	pop {r0-r2}
+
+	/* Calculate Sin */
+
+	push {r0-r2}
+	mov r0, angle
+	bl math32_sin
+	vmov vfp_sin_angle, r0
+	pop {r0-r2}
+
+	/* Set X of Versor */
+
+	vldr vfp_temp, [vector]
+	vmul.f32 vfp_temp, vfp_sin_angle, vfp_temp
+	vstr vfp_temp, [versor, #4]
+
+	/* Set Y of Versor */
+
+	vldr vfp_temp, [vector, #4]
+	vmul.f32 vfp_temp, vfp_sin_angle, vfp_temp
+	vstr vfp_temp, [versor, #8]
+
+	/* Set Z of Versor */
+
+	vldr vfp_temp, [vector, #8]
+	vmul.f32 vfp_temp, vfp_sin_angle, vfp_temp
+	vstr vfp_temp, [versor, #12]
+
+	mtx32_versor_common:
+		mov r0, versor
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq angle
+.unreq vector
+.unreq versor
+.unreq temp
+.unreq vfp_sin_angle
+.unreq vfp_temp
+.unreq vfp_temp2
+
+
+/**
+ * function mtx32_versortomatrix
+ * Make Matrix from Versor
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: Versor, Must Be Four of Versor Size, W, X, Y, and Z
+ *
+ * Return: r0 (4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory)
+ */
+.globl mtx32_versortomatrix
+mtx32_versortomatrix:
+	/* Auto (Local) Variables, but just Aliases */
+	versor        .req r0
+	matrix_result .req r1
+	temp          .req r2
+
+	/* VFP Registers */
+	vfp_versor_w .req s0
+	vfp_versor_x .req s1
+	vfp_versor_y .req s2
+	vfp_versor_z .req s3
+	vfp_one      .req s4 
+	vfp_two      .req s5 
+	vfp_temp     .req s6
+	vfp_temp2    .req s7
+
+	push {lr}
+	vpush {s0-s7}
+
+	/* Allocate Memory Space for Versor  */
+
+	push {r0}
+	mov r0, #16
+	bl heap32_malloc
+	mov matrix_result, r0
+	pop {r0}
+
+	cmp matrix_result, #0
+	beq mtx32_versortomatrix_common
+
+	vldr vfp_versor_w, [versor]
+	vldr vfp_versor_x, [versor, #4]
+	vldr vfp_versor_y, [versor, #8]
+	vldr vfp_versor_z, [versor, #12]
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.s32 vfp_one, vfp_one
+	mov temp, #2
+	vmov vfp_two, temp
+	vcvt.f32.s32 vfp_two, vfp_two
+
+	/* Matrix[14,13,12,11,7,3] is Zero */
+	mov temp, #0
+	vmov vfp_temp, temp
+	vcvt.f32.s32 vfp_temp, vfp_temp
+	vstr vfp_temp, [matrix_result]
+	vstr vfp_temp, [matrix_result, #12]
+	vstr vfp_temp, [matrix_result, #28]
+	vstr vfp_temp, [matrix_result, #44]
+	vstr vfp_temp, [matrix_result, #48]
+	vstr vfp_temp, [matrix_result, #52]
+	vstr vfp_temp, [matrix_result, #56]
+
+	/* Matrix[0] 1.0 - 2.0 * y * y - 2.0 * z * z */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_y
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_y
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_z
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
+	vsub.f32 vfp_temp, vfp_one, vfp_temp
+	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result]
+
+	/* Matrix[1] 2.0 * x * y + 2.0 * w * z */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_y
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
+	vadd.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #4]
+
+	/* Matrix[2] 2.0 * x * z - 2.0 * w * y */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_y
+	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #8]
+
+	/* Matrix[4] 2.0 * x * y - 2.0 * w * z */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_y
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
+	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #12]
+
+	/* Matrix[5] 1.0 - 2.0 * x * x - 2.0 * z * z */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_x
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_z
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
+	vsub.f32 vfp_temp, vfp_one, vfp_temp
+	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #20]
+
+	/* Matrix[6] 2.0 * y * z + 2.0 * w * x */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_y
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_x
+	vadd.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #24]
+
+	/* Matrix[8] 2.0 * x * z + 2.0 * w * y */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_y
+	vadd.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #32]
+
+	/* Matrix[9] 2.0 * y * z - 2.0 * w * x */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_y
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_x
+	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #36]
+
+	/* Matrix[10] 1.0 - 2.0 * x * x - 2.0 * y * y */
+	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
+	vmul.f32 vfp_temp, vfp_temp, vfp_versor_x
+	vmul.f32 vfp_temp2, vfp_two, vfp_versor_y
+	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_y
+	vsub.f32 vfp_temp, vfp_one, vfp_temp
+	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
+	vstr vfp_temp, [matrix_result, #40]
+
+	/* Matrix[15] 1.0 */
+	vstr vfp_one, [matrix_result, #60]
+
+	mtx32_versortomatrix_common:
+		mov r0, matrix_result
+		vpop {s0-s7}
+		pop {pc}
+
+.unreq versor
+.unreq matrix_result
+.unreq temp
+.unreq vfp_versor_w
+.unreq vfp_versor_x
+.unreq vfp_versor_y
+.unreq vfp_versor_z
+.unreq vfp_one
+.unreq vfp_two
+.unreq vfp_temp
+.unreq vfp_temp2
 
