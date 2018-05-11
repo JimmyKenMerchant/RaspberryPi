@@ -1450,7 +1450,7 @@ extern obj mtx32_multiply_vec
  *
  * Return: Vector to Have Been Normalized, If Zero Not Allocated Memory
  */
-extern obj mtx32_normalize_vec
+extern obj mtx32_normalize
 (
 	obj vector,
 	uint32 number

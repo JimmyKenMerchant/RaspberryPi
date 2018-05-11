@@ -1,0 +1,73 @@
+/**
+ * user32.c
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+#include "system32.h"
+#include "system32.c"
+
+int32 _user_start()
+{
+
+	uint32 clear_color = COLOR32_NAVYBLUE;
+	String string_arr1 = "3.0,2.0,1.0,0.0\0";
+	String string_arr2 = "0.0,4.0,2.2,1.4\0";
+
+	String string_arr3 = "1.1,2.2,3.3,4.4,"\
+			     "5.5,6.6,7.8,8.8,"\
+			     "9.9,1.1,2.2,3.3,"\
+			     "4.4,5.5,6.6,7.7\0";
+
+	String string_arr4 = "2.2,3.3,4.4,5.5,"\
+			     "6.6,7.7,8.8,9.9,"\
+			     "1.1,2.2,3.3,4.4,"\
+			     "5.5,6.6,7.7,8.8\0";
+
+	fb32_clear_color( clear_color );
+
+	obj arr1 = cvt32_string_to_farray( string_arr1, str32_strlen( string_arr1 ) );
+	obj arr2 = cvt32_string_to_farray( string_arr2, str32_strlen( string_arr2 ) );
+	obj arr3 = cvt32_string_to_farray( string_arr3, str32_strlen( string_arr3 ) );
+	obj arr4 = cvt32_string_to_farray( string_arr4, str32_strlen( string_arr4 ) );
+
+	obj multiply = mtx32_multiply( arr3, arr4, 4 );
+	String string_multiply = cvt32_farray_to_string( multiply, 1, 8, 0 );
+	print32_set_caret( print32_string( string_multiply, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_multiply ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj identity = mtx32_identity( 4 );
+	String string_identity = cvt32_farray_to_string( identity, 1, 8, 0 );
+	print32_set_caret( print32_string( string_identity, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_identity ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj multiply_vec = mtx32_multiply_vec( arr3, arr1, 4 );
+	String string_multiply_vec = cvt32_farray_to_string( multiply_vec, 1, 8, 0 );
+	print32_set_caret( print32_string( string_multiply_vec, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_multiply_vec ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj normalize = mtx32_normalize( arr1, 4 );
+	String string_normalize = cvt32_farray_to_string( normalize, 1, 8, 0 );
+	print32_set_caret( print32_string( string_normalize, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_normalize ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	float32 dotproduct = mtx32_dotproduct( arr1, arr2, 4 );
+	String string_dotproduct = cvt32_float32_to_string( dotproduct, 0, 20, 0 );
+	print32_set_caret( print32_string( string_dotproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_dotproduct ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj crossproduct = mtx32_crossproduct( arr1, arr2 );
+	String string_crossproduct = cvt32_farray_to_string( crossproduct, 1, 8, 0 );
+	print32_set_caret( print32_string( string_crossproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_crossproduct ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+	
+	while(1) {
+
+		_sleep( 100000 );
+	}
+
+	return EXIT_SUCCESS;
+}

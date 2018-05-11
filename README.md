@@ -161,29 +161,37 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **Links of References**
 
-* [Official Documentation of RasPi](https://www.raspberrypi.org/documentation/hardware/raspberrypi/)
-
-* [Official RasPi Usage](https://www.raspberrypi.org/documentation/usage/)
+**About Raspberry Pi**
 
 * [Baking Pi](https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/)
 
 * [Chadderz's Simple USB Driver for Raspberry Pi](https://github.com/Chadderz121/csud)
 
-* [Raspberry Pi ARM based bare metal examples](https://github.com/dwelch67/raspberrypi)
+* [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes)
+
+* [Official Documentation of RasPi](https://www.raspberrypi.org/documentation/hardware/raspberrypi/)
+
+* [Official RasPi Usage](https://www.raspberrypi.org/documentation/usage/)
 
 * [PiFox](https://github.com/ICTeam28/PiFox)
 
-* [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
+* [Raspberry Pi ARM based bare metal examples](https://github.com/dwelch67/raspberrypi)
 
-* [Mailboxes](https://github.com/raspberrypi/firmware/wiki/Mailboxes)
+* [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
 
 * [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
 
-* [Statics](http://philschatz.com/statistics-book/)
+**About Primaries**
+
+* [Anton's OpenGL4 Tutorials](http://antongerdelan.net/opengl/)
 
 * [ARM Information Center](http://infocenter.arm.com/): Application Note (AN) 228 "Implementing DMA on ARM SMP Systems", ARM Limited, 2009.
 
 * [Cisco Visual Networking Index: Forecast and Methodology, 2016-2021](https://www.cisco.com/c/en/us/solutions/collateral/service-provider/visual-networking-index-vni/complete-white-paper-c11-481360.html): Cisco Systems, Inc., 2017.
+
+* [Statics](http://philschatz.com/statistics-book/)
+
+**About Others**
 
 * Newcomb, Theodore M. 1950 Social Psychology.
 
