@@ -1485,6 +1485,129 @@ extern obj mtx32_crossproduct
 );
 
 
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Translation
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_translate3d
+(
+	obj vector // Must Be Three of Vector Size, X, Y, and Z
+);
+
+
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Scale
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_scale3d
+(
+	obj vector // Must Be Three of Vector Size, X, Y, and Z
+);
+
+
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_rotatex3d
+(
+	float32 degrees
+);
+
+
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate Y
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_rotatey3d
+(
+	float32 degrees
+);
+
+
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate Z
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_rotatez3d
+(
+	float32 degrees
+);
+
+
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with Perspective
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_perspective3d
+(
+	float32 fovy, // Field of View Y: Vertical
+	float32 aspect,
+	float32 near,
+	float32 far
+);
+
+
+/**
+ * Make 4 by 4 Square Matrix (Column Order) with View
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_view3d
+(
+	obj vector_camera, // Must Be Three of Vector Size, X, Y, and Z
+	obj vector_target, // Must Be Three of Vector Size, X, Y, and Z
+	obj vector_up  // Must Be Three of Vector Size, X, Y, and Z
+);
+
+
+/**
+ * Make Versor
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Versor, If Zero Not Allocated Memory
+ */
+extern obj mtx32_versor
+(
+	float32 angle,
+	obj vector // Must Be Three of Vector Size, X, Y, and Z
+);
+
+
+/**
+ * Make Matrix from Versor
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: 4 by 4 Square Matrix to Be Calculated, If Zero Not Allocated Memory
+ */
+extern obj mtx32_versortomatrix
+(
+	obj versor // Must Be Four of Versor Size, W, X, Y, and Z
+);
+
+
 /********************************
  * system32/library/math64.s
  ********************************/

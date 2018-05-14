@@ -724,7 +724,7 @@ mtx32_rotatex3d:
 
 /**
  * function mtx32_rotatey3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate Y
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -791,7 +791,7 @@ mtx32_rotatey3d:
 
 /**
  * function mtx32_rotatez3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate Z
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -1007,6 +1007,7 @@ mtx32_view3d:
 	matrix_orient .req r3
 	vec_distance  .req r4
 	temp          .req r5
+	vec_cam_inv   .req r6
 
 	/* VFP Registers */
 	vfp_vec_x     .req s0
@@ -1017,7 +1018,7 @@ mtx32_view3d:
 	vfp_vec2_z    .req s5
 	vfp_temp      .req s6
 
-	push {r4-r5,lr}
+	push {r4-r6,lr}
 	vpush {s0-s6}
 
 	vldr vfp_vec_x, [vec_cam]
@@ -1031,17 +1032,31 @@ mtx32_view3d:
 	vldr vfp_vec2_z, [vec_trg, #8]
 
 	/* Make Matrix of Camera Position*/
+	push {r0-r3}
+	mov r0, #3
+	bl heap32_malloc
+	mov vec_cam_inv, r0
+	pop {r0-r3}
 
-	vstr vfp_vec_x, [vec_cam]
-	vstr vfp_vec_y, [vec_cam, #4]
-	vstr vfp_vec_z, [vec_cam, #8]
+	cmp vec_cam_inv, #0
+	beq mtx32_view3d_common
+
+	vstr vfp_vec_x, [vec_cam_inv]
+	vstr vfp_vec_y, [vec_cam_inv, #4]
+	vstr vfp_vec_z, [vec_cam_inv, #8]
 
 	.unreq vec_cam
 	matrix_cam .req r0
 
 	push {r1-r3}
+	mov r0, vec_cam_inv
 	bl mtx32_translate3d
 	pop {r1-r3}
+
+	push {r0-r3}
+	mov r0, vec_cam_inv
+	bl heap32_mfree
+	pop {r0-r3}
 
 	cmp matrix_cam, #0
 	beq mtx32_view3d_common
@@ -1332,7 +1347,7 @@ mtx32_view3d:
 
 	mtx32_view3d_common:
 		vpop {s0-s6}
-		pop {r4-r5,pc}
+		pop {r4-r6,pc}
 
 .unreq matrix_cam
 .unreq vec_realup
@@ -1340,6 +1355,7 @@ mtx32_view3d:
 .unreq matrix_orient
 .unreq vec_forward
 .unreq temp
+.unreq vec_cam_inv
 .unreq vfp_vec_x
 .unreq vfp_vec_y
 .unreq vfp_vec_z
@@ -1410,6 +1426,9 @@ mtx32_versor:
 	mov vector, r0
 	pop {r0,r2}
 
+	cmp vector, #0
+	beq mtx32_versor_common
+
 	/* Set W of Versor */
 
 	push {r0-r2}
@@ -1443,6 +1462,11 @@ mtx32_versor:
 	vldr vfp_temp, [vector, #8]
 	vmul.f32 vfp_temp, vfp_sin_angle, vfp_temp
 	vstr vfp_temp, [versor, #12]
+
+	push {r0-r3}
+	mov r0, vector
+	bl heap32_mfree
+	pop {r0-r3}
 
 	mtx32_versor_common:
 		mov r0, versor
@@ -1511,17 +1535,7 @@ mtx32_versortomatrix:
 	vmov vfp_two, temp
 	vcvt.f32.s32 vfp_two, vfp_two
 
-	/* Matrix[14,13,12,11,7,3] is Zero */
-	mov temp, #0
-	vmov vfp_temp, temp
-	vcvt.f32.s32 vfp_temp, vfp_temp
-	vstr vfp_temp, [matrix_result]
-	vstr vfp_temp, [matrix_result, #12]
-	vstr vfp_temp, [matrix_result, #28]
-	vstr vfp_temp, [matrix_result, #44]
-	vstr vfp_temp, [matrix_result, #48]
-	vstr vfp_temp, [matrix_result, #52]
-	vstr vfp_temp, [matrix_result, #56]
+	/* Matrix[14,13,12,11,7,3] is Zero, No Need of Store It Because Zero(Binary All 0 means float 0.0) has Already Set */
 
 	/* Matrix[0] 1.0 - 2.0 * y * y - 2.0 * z * z */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_y
@@ -1554,7 +1568,7 @@ mtx32_versortomatrix:
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
 	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #12]
+	vstr vfp_temp, [matrix_result, #16]
 
 	/* Matrix[5] 1.0 - 2.0 * x * x - 2.0 * z * z */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x

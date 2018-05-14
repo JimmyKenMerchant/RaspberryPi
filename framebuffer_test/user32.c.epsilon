@@ -27,12 +27,22 @@ int32 _user_start()
 			     "1.1,2.2,3.3,4.4,"\
 			     "5.5,6.6,7.7,8.8\0";
 
+	String string_arr5 = "0.8,0.7,0.9\0";
+
+	String string_arr6 = "3.0,4.0,2.0\0";
+	String string_arr7 = "5.0,1.0,3.0\0";
+	String string_arr8 = "1.0,0.0,0.0\0";
+
 	fb32_clear_color( clear_color );
 
 	obj arr1 = cvt32_string_to_farray( string_arr1, str32_strlen( string_arr1 ) );
 	obj arr2 = cvt32_string_to_farray( string_arr2, str32_strlen( string_arr2 ) );
 	obj arr3 = cvt32_string_to_farray( string_arr3, str32_strlen( string_arr3 ) );
 	obj arr4 = cvt32_string_to_farray( string_arr4, str32_strlen( string_arr4 ) );
+	obj arr5 = cvt32_string_to_farray( string_arr5, str32_strlen( string_arr5 ) );
+	obj arr6 = cvt32_string_to_farray( string_arr6, str32_strlen( string_arr6 ) );
+	obj arr7 = cvt32_string_to_farray( string_arr7, str32_strlen( string_arr7 ) );
+	obj arr8 = cvt32_string_to_farray( string_arr8, str32_strlen( string_arr8 ) );
 
 	obj multiply = mtx32_multiply( arr3, arr4, 4 );
 	String string_multiply = cvt32_farray_to_string( multiply, 1, 8, 0 );
@@ -62,6 +72,51 @@ int32 _user_start()
 	obj crossproduct = mtx32_crossproduct( arr1, arr2 );
 	String string_crossproduct = cvt32_farray_to_string( crossproduct, 1, 8, 0 );
 	print32_set_caret( print32_string( string_crossproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_crossproduct ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj translate3d = mtx32_translate3d( arr5 );
+	String string_translate3d = cvt32_farray_to_string( translate3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_translate3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_translate3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj scale3d = mtx32_scale3d( arr5 );
+	String string_scale3d = cvt32_farray_to_string( scale3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_scale3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_scale3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj rotatex3d = mtx32_rotatex3d( 32.0 );
+	String string_rotatex3d = cvt32_farray_to_string( rotatex3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_rotatex3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatex3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj rotatey3d = mtx32_rotatey3d( 32.0 );
+	String string_rotatey3d = cvt32_farray_to_string( rotatey3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_rotatey3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatey3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj rotatez3d = mtx32_rotatez3d( 32.0 );
+	String string_rotatez3d = cvt32_farray_to_string( rotatez3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_rotatez3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatez3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj perspective3d = mtx32_perspective3d( 90.0, 1.0, 0.2, 4.0 );
+	String string_perspective3d = cvt32_farray_to_string( perspective3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_perspective3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_perspective3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj view3d = mtx32_view3d( arr6, arr7, arr8 );
+	String string_view3d = cvt32_farray_to_string( view3d, 1, 8, 0 );
+	print32_set_caret( print32_string( string_view3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_view3d ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj versor = mtx32_versor( 39.0, arr6 );
+	String string_versor = cvt32_farray_to_string( versor, 1, 8, 0 );
+	print32_set_caret( print32_string( string_versor, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_versor ) ) );
+	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+
+	obj versortomatrix = mtx32_versortomatrix( versor );
+	String string_versortomatrix = cvt32_farray_to_string( versortomatrix, 1, 8, 0 );
+	print32_set_caret( print32_string( string_versortomatrix, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_versortomatrix ) ) );
 	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
 	
 	while(1) {

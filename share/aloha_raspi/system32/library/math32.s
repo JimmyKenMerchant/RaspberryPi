@@ -208,6 +208,8 @@ math32_sin:
 	vldr vfp_pi, MATH32_PI
 	vldr vfp_pi_half, MATH32_PI_HALF
 
+	/* Make Sure of Being Symmetrical on Each Half of Pi/-Pi */
+
 	vabs.f32 vfp_temp, vfp_radian
 	vcmp.f32 vfp_temp, vfp_pi_half
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
