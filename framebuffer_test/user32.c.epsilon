@@ -44,84 +44,135 @@ int32 _user_start()
 	obj arr7 = cvt32_string_to_farray( string_arr7, str32_strlen( string_arr7 ) );
 	obj arr8 = cvt32_string_to_farray( string_arr8, str32_strlen( string_arr8 ) );
 
-	obj multiply = mtx32_multiply( arr3, arr4, 4 );
-	String string_multiply = cvt32_farray_to_string( multiply, 1, 8, 0 );
-	print32_set_caret( print32_string( string_multiply, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_multiply ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj identity = mtx32_identity( 4 );
-	String string_identity = cvt32_farray_to_string( identity, 1, 8, 0 );
-	print32_set_caret( print32_string( string_identity, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_identity ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj multiply_vec = mtx32_multiply_vec( arr3, arr1, 4 );
-	String string_multiply_vec = cvt32_farray_to_string( multiply_vec, 1, 8, 0 );
-	print32_set_caret( print32_string( string_multiply_vec, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_multiply_vec ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj normalize = mtx32_normalize( arr1, 4 );
-	String string_normalize = cvt32_farray_to_string( normalize, 1, 8, 0 );
-	print32_set_caret( print32_string( string_normalize, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_normalize ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	float32 dotproduct = mtx32_dotproduct( arr1, arr2, 4 );
-	String string_dotproduct = cvt32_float32_to_string( dotproduct, 0, 20, 0 );
-	print32_set_caret( print32_string( string_dotproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_dotproduct ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj crossproduct = mtx32_crossproduct( arr1, arr2 );
-	String string_crossproduct = cvt32_farray_to_string( crossproduct, 1, 8, 0 );
-	print32_set_caret( print32_string( string_crossproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_crossproduct ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj translate3d = mtx32_translate3d( arr5 );
-	String string_translate3d = cvt32_farray_to_string( translate3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_translate3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_translate3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj scale3d = mtx32_scale3d( arr5 );
-	String string_scale3d = cvt32_farray_to_string( scale3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_scale3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_scale3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj rotatex3d = mtx32_rotatex3d( 32.0 );
-	String string_rotatex3d = cvt32_farray_to_string( rotatex3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_rotatex3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatex3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj rotatey3d = mtx32_rotatey3d( 32.0 );
-	String string_rotatey3d = cvt32_farray_to_string( rotatey3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_rotatey3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatey3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj rotatez3d = mtx32_rotatez3d( 32.0 );
-	String string_rotatez3d = cvt32_farray_to_string( rotatez3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_rotatez3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatez3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj perspective3d = mtx32_perspective3d( 90.0, 1.0, 0.2, 4.0 );
-	String string_perspective3d = cvt32_farray_to_string( perspective3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_perspective3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_perspective3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj view3d = mtx32_view3d( arr6, arr7, arr8 );
-	String string_view3d = cvt32_farray_to_string( view3d, 1, 8, 0 );
-	print32_set_caret( print32_string( string_view3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_view3d ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj versor = mtx32_versor( 39.0, arr6 );
-	String string_versor = cvt32_farray_to_string( versor, 1, 8, 0 );
-	print32_set_caret( print32_string( string_versor, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_versor ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-
-	obj versortomatrix = mtx32_versortomatrix( versor );
-	String string_versortomatrix = cvt32_farray_to_string( versortomatrix, 1, 8, 0 );
-	print32_set_caret( print32_string( string_versortomatrix, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_versortomatrix ) ) );
-	print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
-	
 	while(1) {
+		FB32_X_CARET = 0;
+		FB32_Y_CARET = 0;
 
-		_sleep( 100000 );
+		obj multiply = mtx32_multiply( arr3, arr4, 4 );
+		String string_multiply = cvt32_farray_to_string( multiply, 1, 8, 0 );
+		print32_set_caret( print32_string( string_multiply, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_multiply ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( multiply );
+		heap32_mfree( (obj)string_multiply );
+
+		obj identity = mtx32_identity( 4 );
+		String string_identity = cvt32_farray_to_string( identity, 1, 8, 0 );
+		print32_set_caret( print32_string( string_identity, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_identity ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( identity );
+		heap32_mfree( (obj)string_identity );
+
+		obj multiply_vec = mtx32_multiply_vec( arr3, arr1, 4 );
+		String string_multiply_vec = cvt32_farray_to_string( multiply_vec, 1, 8, 0 );
+		print32_set_caret( print32_string( string_multiply_vec, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_multiply_vec ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( multiply_vec );
+		heap32_mfree( (obj)string_multiply_vec );
+
+		obj normalize = mtx32_normalize( arr1, 4 );
+		String string_normalize = cvt32_farray_to_string( normalize, 1, 8, 0 );
+		print32_set_caret( print32_string( string_normalize, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_normalize ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( normalize );
+		heap32_mfree( (obj)string_normalize );
+
+		float32 dotproduct = mtx32_dotproduct( arr1, arr2, 4 );
+		String string_dotproduct = cvt32_float32_to_string( dotproduct, 0, 20, 0 );
+		print32_set_caret( print32_string( string_dotproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_dotproduct ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( (obj)string_dotproduct );
+
+		obj crossproduct = mtx32_crossproduct( arr1, arr2 );
+		String string_crossproduct = cvt32_farray_to_string( crossproduct, 1, 8, 0 );
+		print32_set_caret( print32_number( crossproduct, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_crossproduct, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_crossproduct ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( crossproduct );
+		heap32_mfree( (obj)string_crossproduct );
+
+		obj translate3d = mtx32_translate3d( arr5 );
+		String string_translate3d = cvt32_farray_to_string( translate3d, 1, 8, 0 );
+		print32_set_caret( print32_number( translate3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_translate3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_translate3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( translate3d );
+		heap32_mfree( (obj)string_translate3d );
+
+		obj scale3d = mtx32_scale3d( arr5 );
+		String string_scale3d = cvt32_farray_to_string( scale3d, 1, 8, 0 );
+		print32_set_caret( print32_number( scale3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_scale3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_scale3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( scale3d );
+		heap32_mfree( (obj)string_scale3d );
+
+		obj rotatex3d = mtx32_rotatex3d( 32.0 );
+		String string_rotatex3d = cvt32_farray_to_string( rotatex3d, 1, 8, 0 );
+		print32_set_caret( print32_number( rotatex3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_rotatex3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatex3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( rotatex3d );
+		heap32_mfree( (obj)string_rotatex3d );
+
+		obj rotatey3d = mtx32_rotatey3d( 32.0 );
+		String string_rotatey3d = cvt32_farray_to_string( rotatey3d, 1, 8, 0 );
+		print32_set_caret( print32_number( rotatey3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_rotatey3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatey3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( rotatey3d );
+		heap32_mfree( (obj)string_rotatey3d );
+
+		obj rotatez3d = mtx32_rotatez3d( 32.0 );
+		String string_rotatez3d = cvt32_farray_to_string( rotatez3d, 1, 8, 0 );
+		print32_set_caret( print32_number( rotatez3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_rotatez3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_rotatez3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( rotatez3d );
+		heap32_mfree( (obj)string_rotatez3d );
+
+		obj perspective3d = mtx32_perspective3d( 90.0, 1.0, 0.2, 4.0 );
+		String string_perspective3d = cvt32_farray_to_string( perspective3d, 1, 8, 0 );
+		print32_set_caret( print32_number( perspective3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_perspective3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_perspective3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( perspective3d );
+		heap32_mfree( (obj)string_perspective3d );
+
+		obj view3d = mtx32_view3d( arr6, arr7, arr8 );
+		String string_view3d = cvt32_farray_to_string( view3d, 1, 8, 0 );
+		print32_set_caret( print32_number( view3d, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_view3d, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_view3d ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( view3d );
+		heap32_mfree( (obj)string_view3d );
+
+		obj versor = mtx32_versor( 39.0, arr6 );
+		String string_versor = cvt32_farray_to_string( versor, 1, 8, 0 );
+		print32_set_caret( print32_number( versor, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_versor, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_versor ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( versor );
+		heap32_mfree( (obj)string_versor );
+
+		obj versortomatrix = mtx32_versortomatrix( versor );
+		String string_versortomatrix = cvt32_farray_to_string( versortomatrix, 1, 8, 0 );
+		print32_set_caret( print32_number( versortomatrix, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		print32_set_caret( print32_string( string_versortomatrix, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_versortomatrix ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( versortomatrix );
+		heap32_mfree( (obj)string_versortomatrix );
+
+		_sleep( 10000 );
 	}
 
 	return EXIT_SUCCESS;
