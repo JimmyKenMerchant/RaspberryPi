@@ -1336,7 +1336,7 @@ extern float32 math32_degree_to_radian
 
 
 /**
- * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float
@@ -1373,7 +1373,43 @@ extern float32 math32_tan
 
 
 /**
- * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 5
+ * Return Arcsine by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Radian by Single Precision Float
+ */
+extern float32 math32_arcsin
+(
+	float32 value
+);
+
+
+/**
+ * Return Arccosine by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Radian by Single Precision Float
+ */
+extern float32 math32_arccos
+(
+	float32 value
+);
+
+
+/**
+ * Return Arctangent by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Radian by Single Precision Float
+ */
+extern float32 math32_arctan
+(
+	float32 value
+);
+
+
+/**
+ * Return Natural Logarithm, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float and Signed Plus

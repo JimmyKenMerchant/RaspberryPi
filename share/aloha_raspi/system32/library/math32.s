@@ -21,7 +21,7 @@
 .globl math32_round_pi
 math32_round_pi:
 	/* Auto (Local) Variables, but just Aliases */
-	radian         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	radian         .req r0
 
 	/* VFP Registers */
 	vfp_radian     .req s0
@@ -84,7 +84,7 @@ math32_round_pi:
 .globl math32_round_degree
 math32_round_degree:
 	/* Auto (Local) Variables, but just Aliases */
-	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	degree         .req r0
 	full           .req r1
 
 	/* VFP Registers */
@@ -147,7 +147,7 @@ math32_round_degree:
 .globl math32_degree_to_radian
 math32_degree_to_radian:
 	/* Auto (Local) Variables, but just Aliases */
-	degree         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	degree         .req r0
 
 	/* VFP Registers */
 	vfp_degree     .req s0
@@ -176,7 +176,7 @@ math32_degree_to_radian:
 
 /**
  * function math32_sin
- * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series, Untill n = 3
+ * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
@@ -188,7 +188,7 @@ math32_degree_to_radian:
 .globl math32_sin
 math32_sin:
 	/* Auto (Local) Variables, but just Aliases */
-	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	radian        .req r0
 
 	/* VFP Registers */
 	vfp_radian    .req s0
@@ -304,7 +304,7 @@ math32_sin:
 .globl math32_cos
 math32_cos:
 	/* Auto (Local) Variables, but just Aliases */
-	radian        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	radian        .req r0
 
 	/* VFP Registers */
 	vfp_radian    .req s0
@@ -353,7 +353,7 @@ math32_cos:
 .globl math32_tan
 math32_tan:
 	/* Auto (Local) Variables, but just Aliases */
-	radian     .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	radian     .req r0
 
 	/* VFP Registers */
 	vfp_sin    .req s0
@@ -384,6 +384,7 @@ math32_tan:
 	 * tanx = Sigma[n = 1 to Infinity] (B2n X (-4)^n X (1 - 4^n)) X x^(2n - 1) / (2n)!
 	 * for |x| < pi / 2, because Tangent is 180 degrees cycle unlike Sine and Cosine
 	 * B is Bernoulli Number
+	 * Units of the series are only positive, having less accuracy on low numbers than units being alternative between positive/negative of other series.
 	 */
 
 	math32_tan_common:
@@ -393,6 +394,235 @@ math32_tan:
 .unreq radian
 .unreq vfp_sin
 .unreq vfp_cos
+
+
+/**
+ * function math32_arcsin
+ * Return Arcsine by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Radian by Single Precision Float)
+ */
+.globl math32_arcsin
+math32_arcsin:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0
+	temp2        .req r1
+
+	/* VFP Registers */
+	vfp_value    .req s0
+	vfp_one      .req s1
+	vfp_divisor  .req s2
+	vfp_multiply .req s3
+
+	push {lr}
+	vpush {s0-s3}
+
+	/**
+	 * Ensure |x| <= 1
+	 * arcsinx = 2arctan(x / 1 + (1 - x^2)^1/2)
+	 * for |x| <= 1, real number
+	 */
+
+	mov temp2, #1
+	vmov vfp_one, temp2
+	vcvt.f32.s32 vfp_one, vfp_one
+	vmov vfp_multiply, vfp_one
+	vadd.f32 vfp_multiply, vfp_multiply, vfp_one
+
+	vmov vfp_value, value
+	vmul.f32 vfp_divisor, vfp_value, vfp_value
+	vsub.f32 vfp_divisor, vfp_one, vfp_divisor
+	vsqrt.f32 vfp_divisor, vfp_divisor
+	vadd.f32 vfp_divisor, vfp_one, vfp_divisor
+	vdiv.f32 vfp_value, vfp_value, vfp_divisor
+
+	vmov value, vfp_value
+
+	bl math32_arctan
+
+	vmov vfp_value, value
+
+	/* Multiplies by 2 */
+	vmul.f32 vfp_value, vfp_value, vfp_multiply
+
+	math32_arcsin_common:
+		vmov r0, vfp_value
+		vpop {s0-s3}
+		pop {pc}
+
+.unreq value
+.unreq temp2
+.unreq vfp_value
+.unreq vfp_one
+.unreq vfp_divisor
+.unreq vfp_multiply
+
+
+/**
+ * function math32_arccos
+ * Return Arccosine by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Radian by Single Precision Float)
+ */
+.globl math32_arccos
+math32_arccos:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0
+
+	/* VFP Registers */
+	vfp_value    .req s0
+	vfp_pi_half  .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+
+	/**
+	 * arccosx = pi / 2 - arcsinx
+	 */
+
+	bl math32_arcsin
+
+	vmov vfp_value, value
+	vldr vfp_pi_half, MATH32_PI_HALF
+
+	vsub.f32 vfp_value, vfp_pi_half, vfp_value
+
+	math32_arccos_common:
+		vmov r0, vfp_value
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq value
+.unreq vfp_value
+.unreq vfp_pi_half
+
+
+/**
+ * function math32_arctan
+ * Return Arctangent by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Radian by Single Precision Float)
+ */
+.globl math32_arctan
+math32_arctan:
+	/* Auto (Local) Variables, but just Aliases */
+	value        .req r0
+	temp2        .req r1
+	flag_neg     .req r2
+
+	/* VFP Registers */
+	vfp_value    .req s0
+	vfp_one      .req s1
+	vfp_divisor  .req s2
+	vfp_temp     .req s3
+	vfp_sum      .req s4
+	vfp_multiply .req s5
+	vfp_two      .req s6
+
+	push {lr}
+	vpush {s0-s6}
+
+	vmov vfp_value, value
+
+	/**
+	 * Ensure |x| <= 1
+	 * arctanx = 2arctan(x / 1 + (1 + x^2)^1/2)
+	 * for |x| <= 1, real number
+	 */
+
+	mov temp2, #1
+	vmov vfp_one, temp2
+	vcvt.f32.s32 vfp_one, vfp_one
+	vmov vfp_multiply, vfp_one
+	vmov vfp_two, vfp_one
+	vadd.f32 vfp_two, vfp_two, vfp_one
+
+	math32_arctan_loop:
+		vabs.f32 vfp_sum, vfp_value
+		vcmp.f32 vfp_sum, vfp_one
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		ble math32_arctan_jump
+
+		vmul.f32 vfp_divisor, vfp_value, vfp_value
+		vadd.f32 vfp_divisor, vfp_one, vfp_divisor
+		vsqrt.f32 vfp_divisor, vfp_divisor
+		vadd.f32 vfp_divisor, vfp_one, vfp_divisor
+		vdiv.f32 vfp_value, vfp_value, vfp_divisor
+
+		/* Multiplies by 2 */
+		vmul.f32 vfp_multiply, vfp_multiply, vfp_two
+
+		b math32_arctan_loop
+
+	math32_arctan_jump:
+		.unreq vfp_one
+		vfp_dividend .req s1
+
+		/**
+		 * arctanx = Sigma[n = 0 to Infinity] (-1)^n X x^(2n+1) / 2n+1
+		 * for |x| <= 1, real number
+		 */
+
+		.unreq value
+		temp .req r0
+		vcmp.f32 vfp_value, #0
+		vmrs apsr_nzcv, fpscr                          @ Transfer FPSCR Flags to CPSR's NZCV
+		vmov vfp_sum, vfp_value                        @ n = 0
+		beq math32_arctan_common
+
+		mov temp, #3
+		vmov vfp_divisor, temp
+		vcvt.f32.s32 vfp_divisor, vfp_divisor
+
+		vmov vfp_dividend, vfp_value
+		mov temp, #15                                  @ Untill n = 20
+		mov flag_neg, #1
+
+	/* From n = 1 */
+	math32_arctan_jump_loop:
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_value
+		vmul.f32 vfp_dividend, vfp_dividend, vfp_value
+		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
+		cmp flag_neg, #1
+		vsubeq.f32 vfp_sum, vfp_sum, vfp_temp
+		moveq flag_neg, #0
+		vaddne.f32 vfp_sum, vfp_sum, vfp_temp
+		movne flag_neg, #1
+
+		subs temp, temp, #1
+		vaddgt.f32 vfp_divisor, vfp_divisor, vfp_two
+		bgt math32_arctan_jump_loop
+
+		vmul.f32 vfp_sum, vfp_sum, vfp_multiply
+
+	math32_arctan_common:
+		vmov r0, vfp_sum
+		vpop {s0-s6}
+		pop {pc}
+
+.unreq temp
+.unreq temp2
+.unreq flag_neg
+.unreq vfp_value
+.unreq vfp_dividend
+.unreq vfp_divisor
+.unreq vfp_temp
+.unreq vfp_sum
+.unreq vfp_multiply
+.unreq vfp_two
 
 
 .globl MATH32_PI
@@ -422,7 +652,7 @@ MATH32_LN10:             .word 0x40135d8e @ (.float 2.30258509299)
 
 /**
  * function math32_ln
- * Return Natural Logarithm, Using Maclaurin (Taylor) Series, Untill n = 7
+ * Return Natural Logarithm, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
@@ -433,7 +663,7 @@ MATH32_LN10:             .word 0x40135d8e @ (.float 2.30258509299)
 .globl math32_ln
 math32_ln:
 	/* Auto (Local) Variables, but just Aliases */
-	value        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value        .req r0
 	temp         .req r1
 	exponent     .req r2
 
@@ -566,7 +796,7 @@ math32_ln:
 .globl math32_log
 math32_log:
 	/* Auto (Local) Variables, but just Aliases */
-	value        .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	value        .req r0
 
 	/* VFP Registers */
 	vfp_value    .req s0

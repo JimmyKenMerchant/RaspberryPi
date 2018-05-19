@@ -172,6 +172,24 @@ int32 _user_start()
 		heap32_mfree( versortomatrix );
 		heap32_mfree( (obj)string_versortomatrix );
 
+		float32 arcsin = math32_arcsin( 0.7 );
+		String string_arcsin = cvt32_float32_to_string( arcsin, 0, 20, 0 );
+		print32_set_caret( print32_string( string_arcsin, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arcsin ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( (obj)string_arcsin );
+
+		float32 arccos = math32_arccos( 0.1 );
+		String string_arccos = cvt32_float32_to_string( arccos, 0, 20, 0 );
+		print32_set_caret( print32_string( string_arccos, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arccos ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( (obj)string_arccos );
+
+		float32 arctan = math32_arctan( 2.6 );
+		String string_arctan = cvt32_float32_to_string( arctan, 0, 20, 0 );
+		print32_set_caret( print32_string( string_arctan, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arctan ) ) );
+		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		heap32_mfree( (obj)string_arctan );
+
 		_sleep( 10000 );
 	}
 
