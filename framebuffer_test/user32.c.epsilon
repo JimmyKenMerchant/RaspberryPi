@@ -175,20 +175,62 @@ int32 _user_start()
 		float32 arcsin = math32_arcsin( 0.7 );
 		String string_arcsin = cvt32_float32_to_string( arcsin, 0, 20, 0 );
 		print32_set_caret( print32_string( string_arcsin, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arcsin ) ) );
-		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 		heap32_mfree( (obj)string_arcsin );
 
 		float32 arccos = math32_arccos( 0.1 );
 		String string_arccos = cvt32_float32_to_string( arccos, 0, 20, 0 );
 		print32_set_caret( print32_string( string_arccos, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arccos ) ) );
-		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 		heap32_mfree( (obj)string_arccos );
 
-		float32 arctan = math32_arctan( 2.6 );
+		float32 arctan = math32_arctan( 1.0 );
 		String string_arctan = cvt32_float32_to_string( arctan, 0, 20, 0 );
 		print32_set_caret( print32_string( string_arctan, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arctan ) ) );
-		print32_set_caret( print32_string( "\n\n\0", FB32_X_CARET, FB32_Y_CARET, 2 ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 		heap32_mfree( (obj)string_arctan );
+
+		float32 radian = math32_radian_to_degree( math32_degree_to_radian( 120.0 ) );
+		String string_radian = cvt32_float32_to_string( radian, 0, 20, 0 );
+		print32_set_caret( print32_string( string_radian, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_radian ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_radian );
+
+		float32 sec = math32_sec( math32_degree_to_radian( -120.0 ) );
+		String string_sec = cvt32_float32_to_string( sec, 0, 20, 0 );
+		print32_set_caret( print32_string( string_sec, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_sec ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_sec );
+
+		float32 csc = math32_csc( math32_degree_to_radian( -120.0 ) );
+		String string_csc = cvt32_float32_to_string( csc, 0, 20, 0 );
+		print32_set_caret( print32_string( string_csc, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_csc ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_csc );
+
+		float32 cot = math32_cot( math32_degree_to_radian( -120.0 ) );
+		String string_cot = cvt32_float32_to_string( cot, 0, 20, 0 );
+		print32_set_caret( print32_string( string_cot, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_cot ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_cot );
+
+		float32 arcsec = math32_arcsec( sec );
+		String string_arcsec = cvt32_float32_to_string( arcsec, 0, 20, 0 );
+		print32_set_caret( print32_string( string_arcsec, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arcsec ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_arcsec );
+
+		float32 arccsc = math32_arccsc( csc );
+		String string_arccsc = cvt32_float32_to_string( arccsc, 0, 20, 0 );
+		print32_set_caret( print32_string( string_arccsc, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arccsc ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_arccsc );
+
+		float32 arccot = math32_arccot( cot );
+		String string_arccot = cvt32_float32_to_string( arccot, 0, 20, 0 );
+		print32_set_caret( print32_string( string_arccot, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arccot ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_arccot );
 
 		_sleep( 10000 );
 	}

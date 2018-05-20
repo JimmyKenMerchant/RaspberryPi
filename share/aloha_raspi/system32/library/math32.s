@@ -141,7 +141,6 @@ math32_round_degree:
  * Parameters
  * r0: Degrees, Must Be Type of Single Precision Float
  *
- * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_degree_to_radian
@@ -175,6 +174,79 @@ math32_degree_to_radian:
 
 
 /**
+ * function math32_radian_to_degree
+ * Return Degrees from Radian
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Degrees, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_radian_to_degree
+math32_radian_to_degree:
+	/* Auto (Local) Variables, but just Aliases */
+	radian         .req r0
+
+	/* VFP Registers */
+	vfp_degree     .req s0
+	vfp_radian     .req s1
+	vfp_pi_per_deg .req s2
+
+	vpush {s0-s2}
+
+	/**
+	 * Degree = radian / (pi / 180)
+	 */
+	vmov vfp_radian, radian
+	vldr vfp_pi_per_deg, MATH32_PI_PER_DEGREE
+	vdiv.f32 vfp_degree, vfp_radian, vfp_pi_per_deg
+
+	math32_radian_to_degree_common:
+		vmov r0, vfp_degree
+		vpop {s0-s2}
+		mov pc, lr
+
+.unreq radian
+.unreq vfp_degree
+.unreq vfp_radian
+.unreq vfp_pi_per_deg
+
+
+.globl MATH32_NAN
+MATH32_NAN:                     .word 0xFFFFFFFF @ (IEEE754 Single Precision, Not a Number)
+.balign 8
+
+.globl MATH32_INFINITY_POSITIVE
+MATH32_INFINITY_POSITIVE:       .word 0xFF800000 @ (IEEE754 Single Precision, Positive)
+.balign 8
+
+.globl MATH32_INFINITY_NEGATIVE
+MATH32_INFINITY_NEGATIVE:       .word 0x7F800000 @ (IEEE754 Single Precision, Negative)
+.balign 8
+
+.globl MATH32_PI
+MATH32_PI:                      .word 0x40490fdb @ (.float 3.14159265359)
+.balign 8
+
+.globl MATH32_PI_DOUBLE
+MATH32_PI_DOUBLE:               .word 0x40c90fdb @ (.float 6.28318530718)
+.balign 8
+
+.globl MATH32_PI_HALF
+MATH32_PI_HALF:                 .word 0x3fc90fdb @ (.float 1.57079632679)
+.balign 8
+
+.globl MATH32_PI_PER_DEGREE
+MATH32_PI_PER_DEGREE:           .word 0x3c8efa35 @ (.float 0.01745329252)
+.balign 8
+
+
+/**
+ * Trigonometric Function
+ */
+
+/**
  * function math32_sin
  * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
@@ -182,7 +254,6 @@ math32_degree_to_radian:
  * Parameters
  * r0: Radian, Must Be Type of Single Precision Float
  *
- * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_sin
@@ -292,13 +363,12 @@ math32_sin:
 
 /**
  * function math32_cos
- * Return Cosine by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
+ * Return Cosine by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Radian, Must Be Type of Single Precision Float
  *
- * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_cos
@@ -341,13 +411,12 @@ math32_cos:
 
 /**
  * function math32_tan
- * Return Tangent by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
+ * Return Tangent by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters
  * r0: Radian, Must Be Type of Single Precision Float
  *
- * Usage: r0
  * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_tan
@@ -359,21 +428,22 @@ math32_tan:
 	vfp_sin    .req s0
 	vfp_cos    .req s1
 
+	push {lr}
 	vpush {s0-s1}
 
-	push {r0,lr}
+	push {r0}
 	bl math32_sin
 	vmov vfp_sin, r0
-	pop {r0,lr}
+	pop {r0}
 
-	push {r0,lr}
+	push {r0}
 	bl math32_cos
 	vmov vfp_cos, r0
-	pop {r0,lr}
+	pop {r0}
 
 	vcmp.f32 vfp_cos, #0
 	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	moveq r0, #0
+	ldreq r0, MATH32_INFINITY_POSITIVE
 	beq math32_tan_common
 	
 	vdiv.f32 vfp_sin, vfp_sin, vfp_cos
@@ -389,12 +459,175 @@ math32_tan:
 
 	math32_tan_common:
 		vpop {s0-s1}
-		mov pc, lr
+		pop {pc}
 
 .unreq radian
 .unreq vfp_sin
 .unreq vfp_cos
 
+
+/**
+ * function math32_sec
+ * Return Secant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Radian, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_sec
+math32_sec:
+	/* Auto (Local) Variables, but just Aliases */
+	value      .req r0
+	temp       .req r1
+
+	/* VFP Registers */
+	vfp_value  .req s0
+	vfp_one    .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	/**
+	 * Secant(x) = 1 / Cosine(x)
+	 */
+
+	bl math32_cos
+
+	cmp value, #0
+	ldreq r0, MATH32_INFINITY_POSITIVE
+	beq math32_sec_common
+
+	vmov vfp_value, value
+
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vdiv.f32 vfp_value, vfp_one, vfp_value
+
+	vmov r0, vfp_value
+
+	math32_sec_common:
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq value
+.unreq temp
+.unreq vfp_value
+.unreq vfp_one
+
+
+/**
+ * function math32_csc
+ * Return Cosecant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Radian, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_csc
+math32_csc:
+	/* Auto (Local) Variables, but just Aliases */
+	value      .req r0
+	temp       .req r1
+
+	/* VFP Registers */
+	vfp_value  .req s0
+	vfp_one    .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	/**
+	 * Cosecant(x) = 1 / sine(x)
+	 */
+
+	bl math32_sin
+
+	cmp value, #0
+	ldreq r0, MATH32_INFINITY_POSITIVE
+	beq math32_csc_common
+
+	vmov vfp_value, value
+
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vdiv.f32 vfp_value, vfp_one, vfp_value
+
+	vmov r0, vfp_value
+
+	math32_csc_common:
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq value
+.unreq temp
+.unreq vfp_value
+.unreq vfp_one
+
+
+/**
+ * function math32_cot
+ * Return Cotangent by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Radian, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_cot
+math32_cot:
+	/* Auto (Local) Variables, but just Aliases */
+	value      .req r0
+	temp       .req r1
+
+	/* VFP Registers */
+	vfp_value  .req s0
+	vfp_one    .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	/**
+	 * Cotangent(x) = 1 / tangent(x)
+	 */
+
+	bl math32_tan
+
+	cmp value, #0
+	ldreq r0, MATH32_INFINITY_POSITIVE
+	beq math32_cot_common
+
+	vmov vfp_value, value
+
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vdiv.f32 vfp_value, vfp_one, vfp_value
+
+	vmov r0, vfp_value
+
+	math32_cot_common:
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq value
+.unreq temp
+.unreq vfp_value
+.unreq vfp_one
+
+
+/**
+ * Inverse Trigonometric Function
+ */
 
 /**
  * function math32_arcsin
@@ -538,7 +771,7 @@ math32_arctan:
 	vmov vfp_value, value
 
 	/**
-	 * Ensure |x| <= 1
+	 * Ensure |x| < 0.5 (not <= 1 for accuracy)
 	 * arctanx = 2arctan(x / 1 + (1 + x^2)^1/2)
 	 * for |x| <= 1, real number
 	 */
@@ -549,12 +782,13 @@ math32_arctan:
 	vmov vfp_multiply, vfp_one
 	vmov vfp_two, vfp_one
 	vadd.f32 vfp_two, vfp_two, vfp_one
+	vdiv.f32 vfp_temp, vfp_one, vfp_two
 
 	math32_arctan_loop:
 		vabs.f32 vfp_sum, vfp_value
-		vcmp.f32 vfp_sum, vfp_one
+		vcmp.f32 vfp_sum, vfp_temp                      @ |x| < 0.5
 		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		ble math32_arctan_jump
+		blt math32_arctan_jump
 
 		vmul.f32 vfp_divisor, vfp_value, vfp_value
 		vadd.f32 vfp_divisor, vfp_one, vfp_divisor
@@ -588,7 +822,7 @@ math32_arctan:
 		vcvt.f32.s32 vfp_divisor, vfp_divisor
 
 		vmov vfp_dividend, vfp_value
-		mov temp, #15                                  @ Untill n = 20
+		mov temp, #7                                   @ Untill n = 7
 		mov flag_neg, #1
 
 	/* From n = 1 */
@@ -625,28 +859,176 @@ math32_arctan:
 .unreq vfp_two
 
 
-.globl MATH32_PI
-MATH32_PI:             .word 0x40490fdb @ (.float 3.14159265359)
-.balign 8
+/**
+ * function math32_arcsec
+ * Return Arcsecant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_arcsec
+math32_arcsec:
+	/* Auto (Local) Variables, but just Aliases */
+	value      .req r0
+	temp       .req r1
 
-.globl MATH32_PI_DOUBLE
-MATH32_PI_DOUBLE:      .word 0x40c90fdb @ (.float 6.28318530718)
-.balign 8
+	/* VFP Registers */
+	vfp_value  .req s0
+	vfp_one    .req s1
+	vfp_temp   .req s2
 
-.globl MATH32_PI_HALF
-MATH32_PI_HALF:        .word 0x3fc90fdb @ (.float 1.57079632679)
-.balign 8
+	push {lr}
+	vpush {s0-s2}
 
-.globl MATH32_PI_PER_DEGREE
-MATH32_PI_PER_DEGREE:  .word 0x3c8efa35 @ (.float 0.01745329252)
-.balign 8
+	/**
+	 * Arcsecant(x) = arccosine(1 / x)
+	 * |x| >= 1
+	 */
+
+	vmov vfp_value, value
+
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vabs.f32 vfp_temp, vfp_value
+	vcmp.f32 vfp_temp, vfp_one
+	vmrs apsr_nzcv, fpscr                          @ Transfer FPSCR Flags to CPSR's NZCV
+	ldrlt r0, MATH32_NAN
+	blt math32_arcsec_common
+
+	vdiv.f32 vfp_value, vfp_one, vfp_value
+
+	vmov value, vfp_value
+
+	bl math32_arccos
+
+	math32_arcsec_common:
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq value
+.unreq temp
+.unreq vfp_value
+.unreq vfp_one
+.unreq vfp_temp
+
+
+/**
+ * function math32_arccsc
+ * Return Arccosecant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_arccsc
+math32_arccsc:
+	/* Auto (Local) Variables, but just Aliases */
+	value      .req r0
+	temp       .req r1
+
+	/* VFP Registers */
+	vfp_value  .req s0
+	vfp_one    .req s1
+	vfp_temp   .req s2
+
+	push {lr}
+	vpush {s0-s2}
+
+	/**
+	 * Arccosecant(x) = arcsine(1 / x)
+	 * |x| >= 1
+	 */
+
+	vmov vfp_value, value
+
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
+
+	vabs.f32 vfp_temp, vfp_value
+	vcmp.f32 vfp_temp, vfp_one
+	vmrs apsr_nzcv, fpscr                          @ Transfer FPSCR Flags to CPSR's NZCV
+	ldrlt r0, MATH32_NAN
+	blt math32_arccsc_common
+
+	vdiv.f32 vfp_value, vfp_one, vfp_value
+
+	vmov value, vfp_value
+
+	bl math32_arcsin
+
+	math32_arccsc_common:
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq value
+.unreq temp
+.unreq vfp_value
+.unreq vfp_one
+.unreq vfp_temp
+
+
+/**
+ * function math32_arccot
+ * Return Arccotangent by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Value, Must Be Type of Single Precision Float
+ *
+ * Return: r0 (Value by Single Precision Float)
+ */
+.globl math32_arccot
+math32_arccot:
+	/* Auto (Local) Variables, but just Aliases */
+	value       .req r0
+
+	/* VFP Registers */
+	vfp_value   .req s0
+	vfp_pi_half .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	/**
+	 * Arccotangent(x) = pi / 2 - arctangent(x)
+	 */
+
+	bl math32_arctan
+
+	vmov vfp_value, value
+	vldr vfp_pi_half, MATH32_PI_HALF
+
+	vsub.f32 vfp_value, vfp_pi_half, vfp_value
+
+	vmov value, vfp_value
+
+	math32_arccot_common:
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq value
+.unreq vfp_value
+.unreq vfp_pi_half
+
+
+/**
+ * Logarithm
+ */
 
 .globl MATH32_EULERS
-MATH32_EULERS:           .word 0x402df854 @ (.float 2.71828182846)
+MATH32_EULERS:                 .word 0x402df854 @ (.float 2.71828182846)
 .balign 8
 
 .globl MATH32_LN10
-MATH32_LN10:             .word 0x40135d8e @ (.float 2.30258509299)
+MATH32_LN10:                   .word 0x40135d8e @ (.float 2.30258509299)
 .balign 8
 
 
@@ -785,7 +1167,7 @@ math32_ln:
 
 /**
  * function math32_log
- * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
+ * Return Common Logarithm, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Parameters

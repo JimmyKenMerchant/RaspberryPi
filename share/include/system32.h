@@ -1303,6 +1303,9 @@ __attribute__((noinline)) int32 _romwrite_i2c(
 
 /* Constants */
 
+extern float32 MATH32_NAN;
+extern float32 MATH32_INFINITY_POSITIVE;
+extern float32 MATH32_INFINITY_NEGATIVE;
 extern float32 MATH32_PI;
 extern float32 MATH32_PI_DOUBLE;
 extern float32 MATH32_PI_HALF;
@@ -1336,7 +1339,19 @@ extern float32 math32_degree_to_radian
 
 
 /**
- * Return sin(Radian) by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Return Degrees from Radian
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_radian_to_degree
+(
+	float32 radian
+);
+
+
+/**
+ * Return Sine by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float
@@ -1348,7 +1363,7 @@ extern float32 math32_sin
 
 
 /**
- * Return cos(Radian) by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
+ * Return Cosine by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float
@@ -1360,13 +1375,48 @@ extern float32 math32_cos
 
 
 /**
- * Return tan(Radian) by Single Precision Float, Using Sine's Maclaurin (Taylor) Series
+ * Return Tangent by Single Precision Float, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- * Radian Must be |Radian| < pi, -pi through pi
  *
  * Return: Value by Single Precision Float
  */
 extern float32 math32_tan
+(
+	float32 radian
+);
+
+
+/**
+ * Return Secant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_sec
+(
+	float32 radian
+);
+
+
+/**
+ * Return Cosecant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_csc
+(
+	float32 radian
+);
+
+
+/**
+ * Return Cotangent by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 math32_cot
 (
 	float32 radian
 );
@@ -1409,6 +1459,42 @@ extern float32 math32_arctan
 
 
 /**
+ * Return Arcsecant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Radian by Single Precision Float
+ */
+extern float32 math32_arcsec
+(
+	float32 value
+);
+
+
+/**
+ * Return Arccosecant by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Radian by Single Precision Float
+ */
+extern float32 math32_arccsc
+(
+	float32 value
+);
+
+
+/**
+ * Return Arccotangent by Single Precision Float, Using Maclaurin (Taylor) Series
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: Radian by Single Precision Float
+ */
+extern float32 math32_arccot
+(
+	float32 value
+);
+
+
+/**
  * Return Natural Logarithm, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -1421,7 +1507,7 @@ extern float32 math32_ln
 
 
 /**
- * Return Common Logarithm, Using Natural Logarithm's Maclaurin (Taylor) Series
+ * Return Common Logarithm, Using Maclaurin (Taylor) Series
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
  * Return: Value by Single Precision Float and Signed Plus
