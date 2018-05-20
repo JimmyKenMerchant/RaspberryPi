@@ -214,7 +214,7 @@ math32_radian_to_degree:
 
 
 .globl MATH32_NAN
-MATH32_NAN:                     .word 0xFFFFFFFF @ (IEEE754 Single Precision, Not a Number)
+MATH32_NAN:                     .word 0x7FFFFFFF @ (IEEE754 Single Precision, Not a Number)
 .balign 8
 
 .globl MATH32_INFINITY_POSITIVE
@@ -440,11 +440,6 @@ math32_tan:
 	bl math32_cos
 	vmov vfp_cos, r0
 	pop {r0}
-
-	vcmp.f32 vfp_cos, #0
-	vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-	ldreq r0, MATH32_INFINITY_POSITIVE
-	beq math32_tan_common
 	
 	vdiv.f32 vfp_sin, vfp_sin, vfp_cos
 	vmov r0, vfp_sin
@@ -495,10 +490,6 @@ math32_sec:
 
 	bl math32_cos
 
-	cmp value, #0
-	ldreq r0, MATH32_INFINITY_POSITIVE
-	beq math32_sec_common
-
 	vmov vfp_value, value
 
 	mov temp, #1
@@ -548,10 +539,6 @@ math32_csc:
 
 	bl math32_sin
 
-	cmp value, #0
-	ldreq r0, MATH32_INFINITY_POSITIVE
-	beq math32_csc_common
-
 	vmov vfp_value, value
 
 	mov temp, #1
@@ -600,10 +587,6 @@ math32_cot:
 	 */
 
 	bl math32_tan
-
-	cmp value, #0
-	ldreq r0, MATH32_INFINITY_POSITIVE
-	beq math32_cot_common
 
 	vmov vfp_value, value
 

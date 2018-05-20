@@ -8,7 +8,7 @@
  */
 
 /**
- * This header is used with functions in ../*/system32/library/snd32.s
+ * This header is used with functions in ../(asterisk)/system32/library/snd32.s
  */
 
 /**

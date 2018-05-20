@@ -48,6 +48,15 @@ cvt32_float32_to_string:
 	push {r4-r11,lr}
 	vpush {s0-s4}
 
+	/* Check Infinity/NaN */
+	lsr temp, float, #23                          @ Suppress Fractional Part
+	mov decimal, #0xFF                            @ For Positive Infinity or NaN 0x7F8xxxxx
+	cmp temp, decimal                             @ Check Whether Exponential Part is All One
+	addne decimal, #0x100                         @ For Negative Infinity 0xFF800000
+	cmpne temp, decimal
+
+	beq cvt32_float32_to_string_nan
+
 	/* Sanitize Pointers */
 	mov string_integer, #0
 	mov string_decimal, #0
@@ -140,8 +149,10 @@ cvt32_float32_to_string:
 
 		mov temp, #0x2D
 		strb temp, [string_decimal]                   @ Store Minus Sign
+		/*
 		mov temp, #0x00
 		strb temp, [string_decimal, #1]               @ Store Null Character
+		*/
 
 		push {r0-r3}
 		mov r0, string_decimal
@@ -178,8 +189,10 @@ cvt32_float32_to_string:
 
 			mov temp, #0x2E
 			strb temp, [string_decimal]                   @ Store Period Sign
+			/*
 			mov temp, #0x00
 			strb temp, [string_decimal, #1]               @ Store Null Character
+			*/
 
 			push {r0-r3}
 			mov r0, string_integer
@@ -290,8 +303,10 @@ cvt32_float32_to_string:
 		movgt temp, #0x2B
 		movlt temp, #0x2D
 		strb temp, [string_decimal, #1]                  @ Store `+` or `-`
+		/*
 		mov temp, #0x00
 		strb temp, [string_decimal, #2]                  @ Store Null Character
+		*/
 
 		push {r0-r3}
 		mov r0, string_integer
@@ -348,6 +363,48 @@ cvt32_float32_to_string:
 		pop {r0-r3}
 
 		mov string_integer, string_cmp
+		b cvt32_float32_to_string_success
+
+	cvt32_float32_to_string_nan:
+		push {r0-r3}
+		mov r0, #1
+		bl heap32_malloc
+		mov string_integer, r0
+		pop {r0-r3}
+
+		cmp string_integer, #0
+		beq cvt32_float32_to_string_error
+
+		tst float, #0xFF
+		tsteq float, #0xFF00
+		tsteq float, #0x7F0000
+		beq cvt32_float32_to_string_infinity
+
+		mov temp, #0x4E
+		strb temp, [string_integer]                      @ Store `N`
+		mov temp, #0x61
+		strb temp, [string_integer, #1]                  @ Store `a`
+		mov temp, #0x4E
+		strb temp, [string_integer, #2]                  @ Store `N`
+		/*
+		mov temp, #0x00
+		strb temp, [string_integer, #3]                  @ Store Null Character
+		*/
+
+		b cvt32_float32_to_string_success
+
+	cvt32_float32_to_string_infinity:
+		tst float, #0x80000000
+		moveq temp, #0x2B                                @ '+'
+		movne temp, #0x2D                                @ '-'
+		strb temp, [string_integer]                      @ Store '+' or '-'
+		mov temp, #0x49
+		strb temp, [string_integer, #1]                  @ Store 'I'
+		/*
+		mov temp, #0x00
+		strb temp, [string_integer, #2]                  @ Store Null Character
+		*/
+
 		b cvt32_float32_to_string_success
 
 	cvt32_float32_to_string_error:
@@ -1566,6 +1623,41 @@ cvt32_string_to_float32:
 	push {r4-r8,lr}
 	vpush {s0-s3}
 
+	/* Check NaN or Positive/Negative Infinity */
+
+	push {r0-r1}
+	ldr r2, cvt32_string_to_float32_string_nan
+	mov r3, #3
+	bl str32_strsearch
+	mov temp, r0
+	pop {r0-r1}
+
+	cmp temp, #-1
+	ldrne r0, cvt32_string_to_float32_nan
+	bne cvt32_string_to_float32_common
+
+	push {r0-r1}
+	ldr r2, cvt32_string_to_float32_string_pinf
+	mov r3, #2
+	bl str32_strsearch
+	mov temp, r0
+	pop {r0-r1}
+
+	cmp temp, #-1
+	ldrne r0, cvt32_string_to_float32_pinf
+	bne cvt32_string_to_float32_common
+
+	push {r0-r1}
+	ldr r2, cvt32_string_to_float32_string_ninf
+	mov r3, #2
+	bl str32_strsearch
+	mov temp, r0
+	pop {r0-r1}
+
+	cmp temp, #-1
+	ldrne r0, cvt32_string_to_float32_ninf
+	bne cvt32_string_to_float32_common
+	
 	/* Check Existing of Exponential Part */
 
 	push {r0-r3}
@@ -1749,6 +1841,19 @@ cvt32_string_to_float32:
 .unreq vfp_float_frac
 .unreq vfp_float_cal
 .unreq vfp_ten
+
+cvt32_string_to_float32_string_nan:   .word _cvt32_string_to_float32_string_nan
+_cvt32_string_to_float32_string_nan:  .ascii "NaN\0"
+.balign 4
+cvt32_string_to_float32_string_pinf:  .word _cvt32_string_to_float32_string_pinf
+_cvt32_string_to_float32_string_pinf: .ascii "+I\0"
+.balign 4
+cvt32_string_to_float32_string_ninf:  .word _cvt32_string_to_float32_string_ninf
+_cvt32_string_to_float32_string_ninf: .ascii "-I\0"
+.balign 4
+cvt32_string_to_float32_nan:          .word 0x7FFFFFFF @ NaN
+cvt32_string_to_float32_pinf:         .word 0x7F800000 @ Positive Infinity
+cvt32_string_to_float32_ninf:         .word 0xFF800000 @ Negative Infinity
 
 
 /**

@@ -211,12 +211,15 @@ _os_reset:
 
 	/**
 	 * Denormalized (Subnormalized) number on float-point makes Undefined Exception (Recognized on ARMv6).
-	 * To hide this in VFP, turn on flush-to-zero mode for output operand (FPSCR FZ Bit[24]),
+	 * To hide this in VFP (Non-NEON for ARMv6), turn on flush-to-zero mode for output operand (FPSCR FZ Bit[24]),
+	 * plus turn on default NaN enable (FPSCR DN Bit[25]).
 	 * and turn on IDC Flag for input operand (FPSCR IDC Bit[7]). ID means Input Denormal.
-	 * If IDE Bit[15] is set, the exception occurs. 
+	 * If IDE Bit[15] is set, the exception occurs.
+	 * Note that if you use flush-to-zero mode, underflow exception (UF) will not occur and minus zero will not be set,
+	 * and no IEEE-754 compatible. NEON (from ARMv7) turns on flush-to-zero and default NaN enable forcefully.
 	 */
 	vmrs r0, fpscr                            @ Floating-point Status and Control Register
-	orr r0, r0, #0x01000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible)
+	orr r0, r0, #0x03000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible) and DN
 	vmsr fpscr, r0
 
 	/**
