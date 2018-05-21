@@ -337,7 +337,6 @@ math32_sin:
 		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
 		vsub.f32 vfp_sum, vfp_sum, vfp_temp
 
-.ifdef __MATH32_PRECISION_HIGH
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ n = 4
 		vmul.f32 vfp_dividend, vfp_dividend, vfp_radian @ The Nineth Power
 		mov temp, #72
@@ -346,7 +345,6 @@ math32_sin:
 		vmul.f32 vfp_divisor, vfp_divisor, vfp_temp     @ 362880.0
 		vdiv.f32 vfp_temp, vfp_dividend, vfp_divisor
 		vadd.f32 vfp_sum, vfp_sum, vfp_temp
-.endif
 
 	math32_sin_common:
 		vmov r0, vfp_sum

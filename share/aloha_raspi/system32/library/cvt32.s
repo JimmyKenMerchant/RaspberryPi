@@ -49,6 +49,7 @@ cvt32_float32_to_string:
 	vpush {s0-s4}
 
 	/* Check Infinity/NaN */
+
 	lsr temp, float, #23                          @ Suppress Fractional Part
 	mov decimal, #0xFF                            @ For Positive Infinity or NaN 0x7F8xxxxx
 	cmp temp, decimal                             @ Check Whether Exponential Part is All One
@@ -58,6 +59,7 @@ cvt32_float32_to_string:
 	beq cvt32_float32_to_string_nan
 
 	/* Sanitize Pointers */
+
 	mov string_integer, #0
 	mov string_decimal, #0
 	mov string_cmp, #0
@@ -68,15 +70,15 @@ cvt32_float32_to_string:
 	vmov vfp_ten, temp
 	vcvt.f32.s32 vfp_ten, vfp_ten
 
+	/* Check Positive/Negative */
+
+	tst float, #0x80000000
+	movne minus, #1
+	moveq minus, #0
+
 	/* Know Need of Exponent */
 
 	vmov vfp_float, float
-	vcmp.f32 vfp_float, #0
-	vmrs apsr_nzcv, fpscr                         @ Transfer FPSCR Flags to CPSR's NZCV
-	movlt minus, #1
-	movge minus, #0
-	beq cvt32_float32_to_string_integer
-
 	vabs.f32 vfp_float, vfp_float                 @ Convert to Absolute Value
 
 	cvt32_float32_to_string_expominus:
@@ -117,7 +119,7 @@ cvt32_float32_to_string:
 	cvt32_float32_to_string_integer:
 
 		vmov vfp_integer, vfp_float
-		vcvt.s32.f32 vfp_integer, vfp_integer         @ Round Down
+		vcvt.u32.f32 vfp_integer, vfp_integer         @ Round Down
 		vmov integer, vfp_integer
 
 		push {r0-r3}
@@ -217,8 +219,7 @@ cvt32_float32_to_string:
 			mov string_integer, string_cmp
 
 			vcvt.f32.s32 vfp_integer, vfp_integer
-			vmov vfp_decimal, vfp_float
-			vsub.f32 vfp_decimal, vfp_decimal, vfp_integer  @ Cut Integer Part
+			vsub.f32 vfp_decimal, vfp_float, vfp_integer  @ Cut Integer Part
 
 	/* Decimal Part */
 
