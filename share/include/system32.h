@@ -1731,6 +1731,36 @@ extern obj mtx32_versortomatrix
 
 
 /********************************
+ * system32/library/geo32.s
+ ********************************/
+
+/**
+ * Return Sigma in Shoelace Formula
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 geo32_shoelace_pre
+(
+	obj series_vector, // Series of X and Y by Single Precision Float
+	uint32 number_polygon
+);
+
+
+/**
+ * Return Area by Shoelace Formula
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: Value by Single Precision Float
+ */
+extern float32 geo32_shoelace
+(
+	obj series_vector, // Series of X and Y by Single Precision Float
+	uint32 number_polygon
+);
+
+
+/********************************
  * system32/library/math64.s
  ********************************/
 

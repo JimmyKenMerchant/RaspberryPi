@@ -33,6 +33,11 @@ int32 _user_start()
 	String string_arr7 = "5.0,1.0,3.0\0";
 	String string_arr8 = "1.0,0.0,0.0\0";
 
+	String string_arr9 = "0.0,0.0,"\
+			     "0.0,1.0,"\
+			     "1.0,0.0,"\
+			     "0.0,-1.0\0";
+
 	fb32_clear_color( clear_color );
 
 	obj arr1 = cvt32_string_to_farray( string_arr1, str32_strlen( string_arr1 ) );
@@ -43,6 +48,7 @@ int32 _user_start()
 	obj arr6 = cvt32_string_to_farray( string_arr6, str32_strlen( string_arr6 ) );
 	obj arr7 = cvt32_string_to_farray( string_arr7, str32_strlen( string_arr7 ) );
 	obj arr8 = cvt32_string_to_farray( string_arr8, str32_strlen( string_arr8 ) );
+	obj arr9 = cvt32_string_to_farray( string_arr9, str32_strlen( string_arr9 ) );
 
 	while(1) {
 		FB32_X_CARET = 0;
@@ -231,6 +237,18 @@ int32 _user_start()
 		print32_set_caret( print32_string( string_arccot, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_arccot ) ) );
 		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 		heap32_mfree( (obj)string_arccot );
+
+		float32 shoelace_pre = geo32_shoelace_pre( arr9, 4 );
+		String string_shoelace_pre = cvt32_float32_to_string( shoelace_pre, 0, 20, 0 );
+		print32_set_caret( print32_string( string_shoelace_pre, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_shoelace_pre ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_shoelace_pre );
+
+		float32 shoelace = geo32_shoelace( arr9, 4 );
+		String string_shoelace = cvt32_float32_to_string( shoelace, 0, 20, 0 );
+		print32_set_caret( print32_string( string_shoelace, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_shoelace ) ) );
+		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+		heap32_mfree( (obj)string_shoelace );
 
 		_sleep( 10000 );
 	}

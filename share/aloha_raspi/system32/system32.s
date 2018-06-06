@@ -98,6 +98,8 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 4
 .include "system32/library/mtx32.s"
 .balign 4
+.include "system32/library/geo32.s"
+.balign 4
 .include "system32/library/math64.s"
 .balign 4
 .include "system32/library/stat32.s"
