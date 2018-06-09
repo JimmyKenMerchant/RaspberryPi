@@ -1,0 +1,33 @@
+/**
+ * user32.c
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+#include "system32.h"
+#include "system32.c"
+
+int32 _user_start()
+{
+	String string_arr1 = "100,100,"\
+			     "200,200,"\
+			     "100,200,"\
+			     "0,150\0";
+
+	obj arr1 = cvt32_string_to_intarray( string_arr1, str32_strlen( string_arr1 ), 2 );
+
+	fb32_clear_color( COLOR32_NAVYBLUE );
+
+	print32_debug_hexa( arr1, 0, 400, 32 );
+
+	draw32_polygon( COLOR32_YELLOW, arr1, 4, 1, 1 );
+
+	while(True) {
+
+	}
+
+	return EXIT_SUCCESS;
+}
