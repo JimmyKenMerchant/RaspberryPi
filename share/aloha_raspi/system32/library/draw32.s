@@ -1591,13 +1591,13 @@ draw32_line:
 		.unreq x_coord_1
 		i      .req r1
 
-		mov i, #0
-		vmov vfp_i, i
-		vcvt.f32.s32 vfp_i, vfp_i
-
 		mov i, #1
 		vmov vfp_one, i
 		vcvt.f32.s32 vfp_one, vfp_one
+
+		mov i, #0
+		vmov vfp_i, i
+		vcvt.f32.s32 vfp_i, vfp_i
 
 	draw32_line_loop:
 
