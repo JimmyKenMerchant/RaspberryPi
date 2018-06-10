@@ -15,7 +15,7 @@ int32 _user_start()
 	String string_arr1 = "100,100,"\
 			     "200,200,"\
 			     "100,200,"\
-			     "0,150\0";
+			     "20,150\0";
 
 	obj arr1 = cvt32_string_to_intarray( string_arr1, str32_strlen( string_arr1 ), 2 );
 

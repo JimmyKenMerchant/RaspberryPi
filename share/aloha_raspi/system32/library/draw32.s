@@ -1685,8 +1685,8 @@ draw32_line:
  * r3: Point Width in Pixels, Origin is Upper Left Corner
  * r4: Point Height in Pixels, Origin is Upper Left Corner
  *
- * Return: r0 (0 as success, 1 as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error(1): Buffer is Not Defined
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Buffer is Not Defined
  */
 .globl draw32_polygon
 draw32_polygon:

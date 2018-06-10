@@ -1219,10 +1219,10 @@ extern uint64 draw32_line
  * Draw Polygon
  * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
  *
- * Return: Lower 32 bits (0 as sucess, 1 as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
+ * Return: 0 as sucess, 1 as error
  * Error: Buffer is Not Defined
  */
-extern uint64 draw32_polygon
+extern uint32 draw32_polygon
 (
 	uint32 color,
 	obj vertices, // Series of X and Y Must Be Long Integer
