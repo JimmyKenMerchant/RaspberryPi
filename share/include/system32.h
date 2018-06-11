@@ -1759,7 +1759,7 @@ extern obj mtx32_versortomatrix
 extern float32 geo32_shoelace_pre
 (
 	obj series_vector, // Series of X and Y by Single Precision Float
-	uint32 number_polygon
+	uint32 number_vertices
 );
 
 
@@ -1772,7 +1772,7 @@ extern float32 geo32_shoelace_pre
 extern float32 geo32_shoelace
 (
 	obj series_vector, // Series of X and Y by Single Precision Float
-	uint32 number_polygon
+	uint32 number_vertices
 );
 
 
