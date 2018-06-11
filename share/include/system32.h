@@ -1776,6 +1776,30 @@ extern float32 geo32_shoelace
 );
 
 
+/**
+ * Draw 3D Wire
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: 0 as Success, -1 as Warning, 1 and 2 as Error
+ * Warning(-1): Last Polygon is Flip Side Not to Be Drawn
+ * Error(1): Memory Allocation Fails
+ * Error(2): Buffer Is Not Defined
+ */
+extern int32 geo32_wire3d
+(
+	uint32 color, // Series of X and Y by Single Precision Float
+	obj vertices,
+	uint32 number_vertices,
+	uint32 number_units, // XYZ Units
+	obj matrix,
+	uint32 rotataion
+);
+
+#define GEO32_WIRE3D_CCW  0 // Polygon with Counter Clockwise Is Front to Be Drawn
+#define GEO32_WIRE3D_CW   1 // Polygon with Clockwise Is Front to Be Drawn
+#define GEO32_WIRE3D_BOTH 2 // Both Are Going to Be Drawn
+
+
 /********************************
  * system32/library/math64.s
  ********************************/

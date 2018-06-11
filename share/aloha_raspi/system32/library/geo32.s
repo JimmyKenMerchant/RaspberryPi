@@ -155,9 +155,9 @@ geo32_shoelace:
  * r2: Number of Vertices on Each Polygon
  * r3: Number of XYZ Units in Pointer of Series of Vertices
  * r4: Pointer of Matrix to Be Used for Transferring
- * r5: Counter Clockwise(0), Clockwise(1), or Both(2) to Be Drawn
+ * r5: Front Rotation, Counter Clockwise(0), Clockwise(1), or Both(2) to Be Drawn
  *
- * Return: r0 (0 as Success, -1 as Warning, 1 as Error)
+ * Return: r0 (0 as Success, -1 as Warning, 1 and 2 as Error)
  * Warning(-1): Last Polygon is Flip Side Not to Be Drawn
  * Error(1): Memory Allocation Fails
  * Error(2): Buffer Is Not Defined
@@ -170,7 +170,7 @@ geo32_wire3d:
 	number_vertices .req r2
 	number_units    .req r3
 	matrix          .req r4
-	flag_flip       .req r5
+	rotation        .req r5
 	heap_xy         .req r6
 	vector_xyzw     .req r7
 	result          .req r8
@@ -187,13 +187,14 @@ geo32_wire3d:
 	vfp_two    .req s5
 	
 	push {r4-r11,lr}
-	vpush {s0-s5}
 
 	add sp, sp, #36
-	pop {matrix,flag_flip}
+	pop {matrix,rotation}
 	sub sp, sp, #44
 
-	/* Get Width and Height of Framebuffer and Transfer to Float */
+	vpush {s0-s5}
+
+	/* Get Width and Height of Framebuffer and Transfer from Integer to Float */
 	ldr temp, geo32_wire3d_FB32_FRAMEBUFFER_WIDTH
 	vldr vfp_width, [temp]
 	vcvt.f32.u32 vfp_width, vfp_width
@@ -204,6 +205,7 @@ geo32_wire3d:
 	mov temp, #1
 	vmov vfp_one, temp
 	vcvt.f32.u32 vfp_one, vfp_one
+	vadd.f32 vfp_two, vfp_one, vfp_one
 
 	/* Sanitize for Error, heap32_mfree Will Pass Through 0 with Error */
 	mov heap_xy, #0
@@ -314,8 +316,8 @@ geo32_wire3d:
 			movge result, #0               @ Counter Clockwise
 			movlt result, #1               @ Clockwise
 
-			cmp result, flag_flip
-			cmpne result, #2
+			cmp result, rotation
+			cmpne rotation, #2
 
 			/* If Flip */
 
@@ -329,9 +331,9 @@ geo32_wire3d:
 			geo32_wire3d_write_loop_axis:
 				cmp result, number_vertices
 				bhs geo32_wire3d_write_loop_draw
-				lsl temp, result, #3
+				lsl temp, result, #3             @ Substitute of Multiplication by 8
 				add temp, temp, offset_heap
-				add heap_xy, heap_xy, temp
+				add heap_xy, heap_xy, temp       @ Add Offset
 				vldmia heap_xy, {vfp_x,vfp_y}
 
 				/* -1.0 to 1.0 coordinate to 0,0 to 1.0, and Flip Y Coordinate  */
@@ -342,14 +344,14 @@ geo32_wire3d:
 				vsub.f32 vfp_y, vfp_y, vfp_one
 				vneg.f32 vfp_y, vfp_y
 
-				/* Multiply 0.0 to 1.0 Coordinates to Actual Width and Height of Framebuffer */
+				/* Multiply 0.0 to 1.0 Coordinates by Actual Width and Height of Framebuffer, Convert Float to Integer */
 				vmul.f32 vfp_x, vfp_x, vfp_width
 				vmul.f32 vfp_y, vfp_y, vfp_height
 				vcvtr.s32.f32 vfp_x, vfp_x
 				vcvtr.s32.f32 vfp_y, vfp_y
 
 				vstmia heap_xy, {vfp_x,vfp_y}
-				sub heap_xy, heap_xy, temp
+				sub heap_xy, heap_xy, temp      @ Subtract Offset
 
 				add result, result, #1
 				b geo32_wire3d_write_loop_axis
@@ -363,7 +365,8 @@ geo32_wire3d:
 				mov temp, #1
 				push {temp}
 				bl draw32_polygon
-				mov result, #0
+				add sp, sp, #4
+				mov result, r0
 				pop {r0-r3}
 
 				cmp result, #1
@@ -388,11 +391,15 @@ geo32_wire3d:
 		mov r0, result
 
 	geo32_wire3d_common:
+		push {r0}
 		mov r0, heap_xy
 		bl heap32_mfree
+		pop {r0}
 
+		push {r0}
 		mov r0, vector_xyzw
 		bl heap32_mfree
+		pop {r0}
 
 		vpop {s0-s5}
 		pop {r4-r11,pc}
@@ -402,7 +409,7 @@ geo32_wire3d:
 .unreq number_vertices
 .unreq number_units
 .unreq matrix
-.unreq flag_flip
+.unreq rotation
 .unreq heap_xy
 .unreq vector_xyzw
 .unreq result
