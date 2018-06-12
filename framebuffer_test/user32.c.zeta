@@ -33,37 +33,42 @@ int32 _user_start()
 			     "0.5,-0.5,-0.5,"\
 			     "0.5,0.5,-0.5,"\
 
-			     "-0.5,0.5,0.5,"\
 			     "-0.5,0.5,-0.5,"\
 			     "-0.5,-0.5,-0.5,"\
 			     "-0.5,-0.5,0.5,"\
+			     "-0.5,0.5,0.5,"\
 
-			     "-0.5,0.5,-0.5,"\
 			     "0.5,0.5,-0.5,"\
 			     "0.5,-0.5,-0.5,"\
 			     "-0.5,-0.5,-0.5,"\
+			     "-0.5,0.5,-0.5,"\
 
+			     "-0.5,-0.5,0.5,"\
 			     "-0.5,-0.5,-0.5,"\
 			     "0.5,-0.5,-0.5,"\
-			     "0.5,-0.5,0.5,"\
-			     "-0.5,-0.5,0.5\0";
+			     "0.5,-0.5,0.5\0";
 
-	String string_arr3 = "1.0,1.0,1.0\0";
+
+	String string_arr3 = "1.0,1.0,0.0\0";
+
+	String string_arr4 = "0.0,2.0,4.0\0";
+	String string_arr5 = "0.0,0.0,0.0\0";
+	String string_arr6 = "0.0,1.0,0.0\0";
 
 	uint32 result;
 
 	obj arr1 = cvt32_string_to_intarray( string_arr1, str32_strlen( string_arr1 ), 2 );
 	obj arr2 = cvt32_string_to_farray( string_arr2, str32_strlen( string_arr2 ) );
 	obj arr3 = cvt32_string_to_farray( string_arr3, str32_strlen( string_arr3 ) );
+	obj arr4 = cvt32_string_to_farray( string_arr4, str32_strlen( string_arr4 ) );
+	obj arr5 = cvt32_string_to_farray( string_arr5, str32_strlen( string_arr5 ) );
+	obj arr6 = cvt32_string_to_farray( string_arr6, str32_strlen( string_arr6 ) );
 	obj mat1 = mtx32_identity( 4 );
 	obj mat2 = mtx32_rotatex3d( 60.0 );
 	obj mat3 = mtx32_rotatey3d( 60.0 );
 	obj mat4 = mtx32_rotatez3d( 60.0 );
-	obj versor;
-	obj mat_versor;
 
 	//print32_debug_hexa( mat1, 100, 100, 64 );
-
 	//geo32_polygon( COLOR32_YELLOW, arr1, 4, 1, 1 );
 	//result = geo32_wire3d( COLOR32_CYAN, arr2, 4, 12, mat1, GEO32_WIRE3D_BOTH );
 	//result = geo32_wire3d( COLOR32_RED, arr2, 4, 12, mat2, GEO32_WIRE3D_BOTH );
@@ -71,18 +76,31 @@ int32 _user_start()
 	//result = geo32_wire3d( COLOR32_GREEN, arr2, 4, 12, mat4, GEO32_WIRE3D_BOTH );
 	//print32_debug( result, 0, 0 );
 
-	float32 angle = 39.0;
+	obj perspective3d = mtx32_perspective3d( 90.0, 1.2, 0.2, 4.0 );
+	obj view3d = mtx32_view3d( arr4, arr5, arr6 );
+	obj mat_p_v = mtx32_multiply( perspective3d, view3d, 4 );
+	obj mat_p_v_v;
+	obj versor;
+	obj mat_versor;
+
+	float32 angle = 0.0;
 
 	while(True) {
 		fb32_clear_color( COLOR32_NAVYBLUE );
 		versor = mtx32_versor( angle, arr3 );
 		mat_versor = mtx32_versortomatrix( versor );
-		geo32_wire3d( COLOR32_GREEN, arr2, 4, 24, mat_versor, GEO32_WIRE3D_CCW );
+		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
+		geo32_wire3d( COLOR32_GREEN, arr2, 4, 24, mat_p_v_v, GEO32_WIRE3D_CCW );
 		print32_debug( versor, 0, 0 );
 		print32_debug( mat_versor, 0, 50 );
 		heap32_mfree( versor );
 		heap32_mfree( mat_versor );
-		angle = vfp32_fadd( angle, 2.0 );
+		heap32_mfree( mat_p_v_v );
+		angle = vfp32_fadd( angle, 1.0 );
+		String string_angle = cvt32_float32_to_string( angle, 0, 20, 0 );
+		print32_string( string_angle, 0, 100, str32_strlen( string_angle ) );
+		heap32_mfree( (obj)string_angle );
+		if( vfp32_fge( angle, 360.0 ) ) angle = 0.0;
 		_sleep( 200000 );
 	}
 
@@ -92,6 +110,8 @@ int32 _user_start()
 	heap32_mfree( mat2 );
 	heap32_mfree( mat3 );
 	heap32_mfree( mat4 );
+	heap32_mfree( perspective3d );
+	heap32_mfree( view3d );
 
 	return EXIT_SUCCESS;
 }

@@ -25,7 +25,7 @@ geo32_shoelace_pre:
 	heap            .req r0
 	number_vertices .req r1
 	i               .req r2
-	temp            .req r3
+	dup_heap        .req r3
 
 	/* VFP Registers */
 	vfp_x1   .req s0
@@ -43,14 +43,19 @@ geo32_shoelace_pre:
 	 * A = 1/2 * |Sigma[k = 1 to n] (Xk * Yk+1 - Xk+1 * Yk)|
 	 */
 
-	mov temp, #0
-	vmov vfp_sum, temp         @ Zero of Floating Point is All Zero in Hexadecimal Value
+	mov dup_heap, #0
+	vmov vfp_sum, dup_heap        @ Zero of Floating Point is All Zero in Hexadecimal Value
 
-	mov i, #0
+	mov dup_heap, heap
+
+	cmp number_vertices, #1
+	bls geo32_shoelace_pre_common
+
+	mov i, #1
 
 	geo32_shoelace_pre_sigma:
 		cmp i, number_vertices
-		bhs geo32_shoelace_pre_common
+		bhs geo32_shoelace_pre_last
 
 		vldr vfp_x1, [heap]
 		add heap, heap, #4
@@ -70,6 +75,21 @@ geo32_shoelace_pre:
 		add i, i, #1
 		b geo32_shoelace_pre_sigma
 
+	geo32_shoelace_pre_last:
+		vldr vfp_x1, [heap]
+		add heap, heap, #4
+		vldr vfp_y1, [heap]
+		vldr vfp_x2, [dup_heap]
+		add dup_heap, dup_heap, #4
+		vldr vfp_y2, [dup_heap]
+		
+		vmul.f32 vfp_x1y2, vfp_x1, vfp_y2
+		vmul.f32 vfp_x2y1, vfp_x2, vfp_y1
+
+		vsub.f32 vfp_x1y2, vfp_x1y2, vfp_x2y1
+
+		vadd.f32 vfp_sum, vfp_sum, vfp_x1y2
+
 	geo32_shoelace_pre_common:
 		vmov r0, vfp_sum
 		vpop {s0-s6}
@@ -78,7 +98,7 @@ geo32_shoelace_pre:
 .unreq heap
 .unreq number_vertices
 .unreq i
-.unreq temp
+.unreq dup_heap
 .unreq vfp_x1
 .unreq vfp_y1
 .unreq vfp_x2
@@ -394,10 +414,10 @@ geo32_wire3d:
 			add r0, heap_xy, offset_heap
 			mov r1, number_vertices
 			bl geo32_shoelace_pre
-			mov result, r0
+			mov temp, r0
 			pop {r0-r3}
 
-			tst result, #0x80000000
+			tst temp, #0x80000000
 			moveq result, #0               @ Counter Clockwise
 			movne result, #1               @ Clockwise
 
@@ -408,6 +428,10 @@ geo32_wire3d:
 
 			mvnne result, #0
 			bne geo32_wire3d_write_loop_common
+
+			/* If Area is Zero */
+			cmp temp, #0
+			beq geo32_wire3d_write_loop_common
 
 			/* If Front */
 
