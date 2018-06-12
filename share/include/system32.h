@@ -1215,23 +1215,6 @@ extern uint64 draw32_line
 );
 
 
-/**
- * Draw Polygon
- * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
- *
- * Return: 0 as sucess, 1 as error
- * Error: Buffer is Not Defined
- */
-extern uint32 draw32_polygon
-(
-	uint32 color,
-	obj vertices, // Series of X and Y Must Be Long Integer
-	int32 number_vertices,
-	uint32 width,
-	uint32 height
-);
-
-
 /********************************
  * system32/library/snd32.s
  ********************************/
@@ -1777,6 +1760,25 @@ extern float32 geo32_shoelace
 
 
 /**
+ * Draw Polygon
+ * Caution! This Function Needs to Make VFP/NEON Registers and Instructions Enable
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error: Buffer is Not Defined
+ */
+extern uint32 geo32_polygon
+(
+	uint32 color,
+	obj vertices, // Series of X and Y Must Be Long Integer
+	int32 number_vertices,
+	uint32 width,
+	uint32 height
+);
+
+
+
+
+/**
  * Draw 3D Wire
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -1862,7 +1864,7 @@ extern float64 math64_gamma_halfinteger_negative
 /**
  * Return Gaussian (2F1) Hypergeometric Function (First, Second, and Third Arguments are Half Integers) Using Power Series
  *
- * Return: Value by Single Precision Float, -1 by Integer as Error
+ * Return: Value by Double Precision Float, -1 by Integer as Error
  */
 extern float64 math64_hypergeometric_halfinteger
 (

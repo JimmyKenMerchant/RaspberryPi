@@ -145,6 +145,93 @@ geo32_shoelace:
 
 
 /**
+ * function geo32_polygon
+ * Draw Polygon
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Color (16-bit or 32-bit)
+ * r1: Pointer of Vertices, Series of X and Y Must Be Long Integer
+ * r2: Number of Vertices
+ * r3: Point Width in Pixels, Origin is Upper Left Corner
+ * r4: Point Height in Pixels, Origin is Upper Left Corner
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Buffer is Not Defined
+ */
+.globl geo32_polygon
+geo32_polygon:
+	/* Auto (Local) Variables, but just Aliases */
+	color           .req r0
+	heap            .req r1
+	number_vertices .req r2
+	char_width      .req r3
+	char_height     .req r4
+	dup_heap        .req r5
+	i               .req r6
+	result          .req r7
+
+	push {r4-r7,lr}
+
+	add sp, sp, #20                               @ r4-r7 and lr offset 8 bytes
+	pop {char_height}
+	sub sp, sp, #24                               @ Retrieve SP
+
+	mov dup_heap, heap
+
+	mov i, number_vertices
+
+	geo32_polygon_loop:
+
+		subs i, i, #1
+		ble geo32_polygon_loop_common
+
+		push {r0-r3}
+		ldr r2, [heap,#12]
+		push {r2-r4}
+		ldr r3, [heap,#8]
+		ldr r2, [heap,#4]
+		ldr r1, [heap]
+		bl draw32_line
+		add sp, sp, #12
+		mov result, r0
+		pop {r0-r3}
+
+		cmp result, #1
+		beq geo32_polygon_common
+
+		add heap, heap, #8
+
+		b geo32_polygon_loop
+
+		geo32_polygon_loop_common:
+
+			push {r0-r3}
+			ldr r2, [dup_heap,#4]
+			push {r2-r4}
+			ldr r3, [dup_heap]
+			ldr r2, [heap,#4]
+			ldr r1, [heap]
+			bl draw32_line
+			add sp, sp, #12
+			mov result, r0
+			pop {r0-r3}
+
+	geo32_polygon_common:
+		mov r0, result
+		pop {r4-r7,pc}
+
+.unreq color
+.unreq heap
+.unreq number_vertices
+.unreq char_width
+.unreq char_height
+.unreq dup_heap
+.unreq i
+.unreq result
+
+
+/**
  * function geo32_wire3d
  * Draw 3D Wire
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
@@ -310,11 +397,9 @@ geo32_wire3d:
 			mov result, r0
 			pop {r0-r3}
 
-			vmov vfp_x, result
-			vcmp.f32 vfp_x, #0
-			vmrs apsr_nzcv, fpscr
-			movge result, #0               @ Counter Clockwise
-			movlt result, #1               @ Clockwise
+			tst result, #0x80000000
+			moveq result, #0               @ Counter Clockwise
+			movne result, #1               @ Clockwise
 
 			cmp result, rotation
 			cmpne rotation, #2
@@ -364,7 +449,7 @@ geo32_wire3d:
 				mov r3, #1
 				mov temp, #1
 				push {temp}
-				bl draw32_polygon
+				bl geo32_polygon
 				add sp, sp, #4
 				mov result, r0
 				pop {r0-r3}
