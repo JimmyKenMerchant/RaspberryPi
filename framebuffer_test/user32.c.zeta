@@ -17,18 +17,36 @@ int32 _user_start()
 			     "100,200,"\
 			     "20,150\0";
 
+	// Front, Up, Right, Left, Back, Down
 	String string_arr2 = "-0.5,0.5,0.5,"\
 			     "-0.5,-0.5,0.5,"\
 			     "0.5,-0.5,0.5,"\
 			     "0.5,0.5,0.5,"\
+
 			     "-0.5,0.5,-0.5,"\
 			     "-0.5,0.5,0.5,"\
 			     "0.5,0.5,0.5,"\
 			     "0.5,0.5,-0.5,"\
+
 			     "0.5,0.5,0.5,"\
 			     "0.5,-0.5,0.5,"\
 			     "0.5,-0.5,-0.5,"\
-			     "0.5,0.5,-0.5\0";
+			     "0.5,0.5,-0.5,"\
+
+			     "-0.5,0.5,0.5,"\
+			     "-0.5,0.5,-0.5,"\
+			     "-0.5,-0.5,-0.5,"\
+			     "-0.5,-0.5,0.5,"\
+
+			     "-0.5,0.5,-0.5,"\
+			     "0.5,0.5,-0.5,"\
+			     "0.5,-0.5,-0.5,"\
+			     "-0.5,-0.5,-0.5,"\
+
+			     "-0.5,-0.5,-0.5,"\
+			     "0.5,-0.5,-0.5,"\
+			     "0.5,-0.5,0.5,"\
+			     "-0.5,-0.5,0.5\0";
 
 	String string_arr3 = "1.0,1.0,1.0\0";
 
@@ -59,7 +77,7 @@ int32 _user_start()
 		fb32_clear_color( COLOR32_NAVYBLUE );
 		versor = mtx32_versor( angle, arr3 );
 		mat_versor = mtx32_versortomatrix( versor );
-		geo32_wire3d( COLOR32_GREEN, arr2, 4, 12, mat_versor, GEO32_WIRE3D_CCW );
+		geo32_wire3d( COLOR32_GREEN, arr2, 4, 24, mat_versor, GEO32_WIRE3D_CCW );
 		print32_debug( versor, 0, 0 );
 		print32_debug( mat_versor, 0, 50 );
 		heap32_mfree( versor );
