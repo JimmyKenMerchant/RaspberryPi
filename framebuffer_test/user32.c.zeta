@@ -47,6 +47,8 @@ int32 _user_start()
 			"0.5,-0.5,-0.5,"\
 			"0.5,-0.5,0.5\0";
 
+	uint32 cube_colors[] = {COLOR32_GREEN,COLOR32_RED,COLOR32_BLUE,COLOR32_WHITE,COLOR32_YELLOW,COLOR32_PINK};
+
 	String string_arr3 = "1.0,1.0,0.0\0";
 	String string_arr4 = "0.0,2.0,4.0\0";
 	String string_arr5 = "0.0,0.0,0.0\0";
@@ -82,7 +84,7 @@ int32 _user_start()
 	//heap32_mfree( mat3 );
 	//heap32_mfree( mat4 );
 
-	obj perspective3d = mtx32_perspective3d( 90.0, 1.2, 0.2, 4.0 );
+	obj perspective3d = mtx32_perspective3d( 90.0, 1.234, 0.2, 4.0 );
 	obj view3d = mtx32_view3d( arr4, arr5, arr6 );
 	obj mat_p_v = mtx32_multiply( perspective3d, view3d, 4 );
 	obj mat_p_v_v;
@@ -91,12 +93,14 @@ int32 _user_start()
 
 	float32 angle = 0.0;
 
-	ObjArray renderbuffer = (ObjArray)heap32_malloc( 2 );
+	ObjArray renderbuffer = (ObjArray)heap32_malloc( 3 );
 
 	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 	renderbuffer[1] = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	renderbuffer[2] = (obj)heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer[2], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 
 	_attach_buffer( renderbuffer[0] );
 	fb32_clear_color( COLOR32_NAVYBLUE );
@@ -107,6 +111,7 @@ int32 _user_start()
 	_set_doublebuffer( renderbuffer[0], renderbuffer[1] );
 
 	while(True) {
+		_flush_doublebuffer();
 		_stopwatch_start();
 		fb32_clear_color( COLOR32_NAVYBLUE );
 
@@ -121,10 +126,27 @@ int32 _user_start()
 		mat_versor = mtx32_versortomatrix( versor );
 		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
 
-		geo32_wire3d( COLOR32_GREEN, cube_vertices, 4, 24, mat_p_v_v, GEO32_WIRE3D_CCW );
+		//_attach_buffer( renderbuffer[2] );
+		//fb32_clear_color( 0x00000000 );
+		//geo32_wire3d( COLOR32_BLUE, cube_vertices, 4, 24, mat_p_v_v, GEO32_CCW );
+		geo32_fill3d( (obj)cube_colors, cube_vertices, 4, 24, mat_p_v_v, GEO32_CCW, COLOR32_NAVYBLUE );
+		//_attach_buffer( FB32_DOUBLEBUFFER_BACK );
+		/*
+		fb32_image(
+			_load_32( renderbuffer[2] + draw32_renderbuffer_addr ),
+			0,
+			0,
+			_load_32( renderbuffer[2] + draw32_renderbuffer_width ),
+			_load_32( renderbuffer[2] + draw32_renderbuffer_height ),
+			0,
+			0,
+			0,
+			0
+		);
+		*/
 
 		//print32_debug( versor, 0, 0 );
-		//print32_debug( mat_versor, 0, 50 );
+		print32_debug( mat_versor, 0, 50 );
 
 		heap32_mfree( versor );
 		heap32_mfree( mat_versor );
@@ -137,7 +159,6 @@ int32 _user_start()
 		time = _stopwatch_end();
 		heap32_mfree( (obj)num_string );
 
-		_flush_doublebuffer();
 		_sleep( 200000 );
 	}
 

@@ -129,7 +129,7 @@ int32 _user_start()
 	draw32_line( 0x9900FFFF, 20, 20, 100, 200, 1, 1 );
 	draw32_line( 0x9900FFFF, 20, 20, 20, 100, 1, 1 );
 	draw32_line( 0x9900FFFF, 20, 100, 100, 200, 1, 1 );
-	draw32_fill_color( renderbuffer[2] );
+	draw32_fill_color( renderbuffer[2], 0x00000000 );
 
 	_attach_buffer( FB32_DOUBLEBUFFER_BACK );
 

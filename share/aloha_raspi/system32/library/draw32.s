@@ -163,7 +163,7 @@ draw32_antialias:
 .unreq bitmask_after
 .unreq color_result
 .unreq shift
-
+ 
 
 /**
  * function draw32_fill_color
@@ -171,8 +171,8 @@ draw32_antialias:
  *
  * Parameters
  * r0: Pointer of Buffer to Be Filled by Color
+ * r1: Background Color
  *
- * Usage: r0-r10
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): When Buffer Overflow Occured to Prevent Memory Corruption/ Manipulation
  * Error(2): When Buffer is not Defined
@@ -181,26 +181,27 @@ draw32_antialias:
 draw32_fill_color:
 	/* Auto (Local) Variables, but just Aliases */
 	buffer_base .req r0 @ Parameter, Register for Argument, Scratch Register
-	base_addr   .req r1 @ Parameter, Register for Result, Scratch Register
-	color       .req r2 @ Scratch Register
-	width       .req r3 @ Scratch Register
-	height      .req r4
-	depth       .req r5
-	size        .req r6
-	flag        .req r7
-	j           .req r8 @ Use for Horizontal Counter
-	color_pick  .req r9
+	color_back  .req r1 @ Parameter, Register for Argument, Scratch Register
+	base_addr   .req r2 @ Parameter, Register for Result, Scratch Register
+	color       .req r3 @ Scratch Register
+	color_left  .req r4 @ Scratch Register
+	height      .req r5
+	depth       .req r6
+	size        .req r7
+	flag        .req r8
+	j           .req r9 @ Use for Horizontal Counter
 	addr_pick   .req r10
+	color_last  .req r11
 
-	push {r4-r10}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+	push {r4-r11} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                  @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
 
 	ldr base_addr, [buffer_base]
 	cmp base_addr, #0
 	beq draw32_fill_color_error2
 
-	ldr width, [buffer_base, #4]
-	cmp width, #0
+	ldr j, [buffer_base, #4]
+	cmp j, #0
 	beq draw32_fill_color_error2
 
 	ldr height, [buffer_base, #8]
@@ -217,28 +218,30 @@ draw32_fill_color:
 	cmpne depth, #16
 	bne draw32_fill_color_error2
 
+	mov color_last, color_back
 	mov flag, #0
 
 	draw32_fill_color_loop:
-
-		cmp height, #0                               @ Vertical Counter `(; mask_height > 0; mask_height--)`
-		ble draw32_fill_color_success
+		sub height, height, #1
+		cmp height, #0                               @ Vertical Counter `(; mask_height >= 0; --mask_height)`
+		blt draw32_fill_color_success
 
 		cmp base_addr, size                          @ Check Overflow of Buffer Memory
 		bhs draw32_fill_color_error1
 
-		mov j, width                                 @ Horizontal Counter `(int j = mask_width; j >= 0; --j)`
+		ldr j, [buffer_base, #4]
+		mov flag, #0
 
 		draw32_fill_color_loop_horizontal:
 			sub j, j, #1                             @ For Bit Allocation (Horizontal Character Bit)
 			cmp j, #0                                @ Horizontal Counter, Check
-			blt draw32_fill_color_loop_common
+			blt draw32_fill_color_loop
 
 			/* Pick Process */
 			cmp depth, #16
-			ldreqh color_pick, [base_addr]
+			ldreqh color, [base_addr]
 			cmp depth, #32
-			ldreq color_pick, [base_addr]
+			ldreq color, [base_addr]
 
 			cmp flag, #0
 			beq draw32_fill_color_loop_horizontal_flag0
@@ -249,22 +252,27 @@ draw32_fill_color:
 			cmp flag, #3
 			beq draw32_fill_color_loop_horizontal_flag3
 
-			draw32_fill_color_loop_horizontal_flag0:             @ When No Color, phi
-				cmp color_pick, #0
+			draw32_fill_color_loop_horizontal_flag0:             @ Background Color, Next Flag If Colored
+				cmp color, color_back
 				beq draw32_fill_color_loop_horizontal_common
-				mov color, color_pick
+				mov color_left, color
 				mov flag, #1
 				b draw32_fill_color_loop_horizontal_common
 
-			draw32_fill_color_loop_horizontal_flag1:             @ When Left Side to Fill by Color
-				cmp color, color_pick
-				beq draw32_fill_color_loop_horizontal_common
+			draw32_fill_color_loop_horizontal_flag1:             @ Left Side of Filled Geometry by Any Color, But Not Background Color
+				cmp color, color_back
+				movne color_left, color
+				bne draw32_fill_color_loop_horizontal_common
 				mov addr_pick, base_addr
 				mov flag, #2
 				b draw32_fill_color_loop_horizontal_common
 
-			draw32_fill_color_loop_horizontal_flag2:             @ When Space to Fill by Color
-				cmp color, color_pick
+			draw32_fill_color_loop_horizontal_flag2:             @ Background Color, Fill by Color If Colored
+				cmp color, color_back
+				beq draw32_fill_color_loop_horizontal_common
+				cmp color, color_left                            @ Back to Flag No.1 Because of Different Color with Left Side
+				movne color_left, color
+				movne flag, #1
 				bne draw32_fill_color_loop_horizontal_common
 
 				draw32_fill_color_loop_horizontal_flag2_loop:
@@ -278,16 +286,15 @@ draw32_fill_color:
 					cmp addr_pick, base_addr
 					blo draw32_fill_color_loop_horizontal_flag2_loop
 
+					mov color_last, color
 					mov flag, #3
 					b draw32_fill_color_loop_horizontal_common
 
-			draw32_fill_color_loop_horizontal_flag3:             @ When Right Side to Fill by COlor
-				cmp color, color_pick
-				beq draw32_fill_color_loop_horizontal_common @ If Same Color to Fill
-				cmp color_pick, #0
-				moveq flag, #0                             @ If No Color
-				movne color, color_pick
-				movne flag, #1                             @ If Other Color
+			draw32_fill_color_loop_horizontal_flag3:             @ Right Side of Filled Geometry by Any Color, But Not Background Color or Another Color
+				cmp color, color_last
+				beq draw32_fill_color_loop_horizontal_common
+				mov flag, #0
+				b draw32_fill_color_loop_horizontal_flag0
 
 			draw32_fill_color_loop_horizontal_common:
 				cmp depth, #16
@@ -296,13 +303,6 @@ draw32_fill_color:
 				addeq base_addr, base_addr, #4          @ Buffer Address Shift
 
 				b draw32_fill_color_loop_horizontal
-
-		draw32_fill_color_loop_common:
-			sub height, height, #1
-
-			mov flag, #0
-
-			b draw32_fill_color_loop
 
 	draw32_fill_color_error1:
 		mov r0, #1                                 @ Return with Error 1
@@ -316,21 +316,22 @@ draw32_fill_color:
 		mov r0, #0                                 @ Return with Success
 
 	draw32_fill_color_common:
-		pop {r4-r10}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
+		pop {r4-r11} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+			         @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr
 
 .unreq buffer_base
+.unreq color_back
 .unreq base_addr
 .unreq color
-.unreq width
+.unreq color_left
 .unreq height
 .unreq depth
 .unreq size
 .unreq flag
 .unreq j
-.unreq color_pick
 .unreq addr_pick
+.unreq color_last
 
 
 /**

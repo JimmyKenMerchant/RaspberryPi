@@ -302,10 +302,10 @@ geo32_wire3d:
 	vpush {s0-s5}
 
 	/* Get Width and Height of Framebuffer and Transfer from Integer to Float */
-	ldr temp, geo32_wire3d_FB32_FRAMEBUFFER_WIDTH
+	ldr temp, geo32_FB32_WIDTH
 	vldr vfp_width, [temp]
 	vcvt.f32.u32 vfp_width, vfp_width
-	ldr temp, geo32_wire3d_FB32_FRAMEBUFFER_HEIGHT
+	ldr temp, geo32_FB32_HEIGHT
 	vldr vfp_height, [temp]
 	vcvt.f32.u32 vfp_height, vfp_height
 
@@ -532,6 +532,118 @@ geo32_wire3d:
 .unreq vfp_one
 .unreq vfp_two
 
-geo32_wire3d_FB32_FRAMEBUFFER_WIDTH:  .word FB32_FRAMEBUFFER_WIDTH
-geo32_wire3d_FB32_FRAMEBUFFER_HEIGHT: .word FB32_FRAMEBUFFER_HEIGHT
+
+/**
+ * function geo32_fill3d
+ * Draw Filled 3D
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Parameters
+ * r0: Pointer of Series of Color
+ * r1: Pointer of Series of Vertices; X, Y, and Z by Single Precision Float
+ * r2: Number of Vertices on Each Polygon
+ * r3: Number of XYZ Units in Pointer of Series of Vertices
+ * r4: Pointer of Matrix to Be Used for Transferring
+ * r5: Front Rotation, Counter Clockwise(0), Clockwise(1), or Both(2) to Be Drawn
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Memory Allocation Fails
+ * Error(2): Buffer Is Not Defined
+ */
+.globl geo32_fill3d
+geo32_fill3d:
+	/* Auto (Local) Variables, but just Aliases */
+	color                .req r0
+	heap_vertices        .req r1
+	number_vertices      .req r2
+	number_units         .req r3
+	matrix               .req r4
+	rotation             .req r5
+	back_color           .req r6
+	dup_number_units     .req r7
+	heap_color           .req r8
+	depth                .req r9
+	i                    .req r10
+	temp                 .req r11
+
+	push {r4-r11,lr}
+
+	add sp, sp, #36
+	pop {matrix,rotation,back_color}
+	sub sp, sp, #48
+
+	mov heap_color, color
+	mov dup_number_units, number_units
+	mov number_units, number_vertices
+	ldr depth, geo32_FB32_DEPTH
+	ldr depth, [depth]
+	cmp depth, #32
+	moveq depth, #4                                 @ 32-bit Color
+	movne depth, #2                                 @ 16-bit Color
+
+	mov i, #0
+
+	geo32_fill3d_loop:
+			cmp i, dup_number_units
+			bhs geo32_fill3d_success
+
+			ldr color, [heap_color]
+
+			/*  Actual Drawing */
+			push {r0-r3}
+			push {matrix,rotation}
+			bl geo32_wire3d
+			add sp, sp, #8
+			mov temp, r0
+			pop {r0-r3}
+
+			cmp temp, #0xFFFFFFFF
+			beq geo32_fill3d_loop_common
+			cmp temp, #0
+			bne geo32_fill3d_error
+
+			push {r0-r3}
+			ldr r0, geo32_FB32
+			mov r1, back_color
+			bl draw32_fill_color
+			mov temp, r0
+			pop {r0-r3}
+
+			cmp temp, #0
+			bne geo32_fill3d_error
+
+			geo32_fill3d_loop_common:
+				add i, i, number_vertices
+				mov temp, #12                       @ XYZ, 3 Single Precision Floats
+				mla heap_vertices, number_vertices, temp, heap_vertices
+				add heap_color, heap_color, depth
+				b geo32_fill3d_loop
+
+	geo32_fill3d_error:
+		mov r0, temp
+		b geo32_fill3d_common
+
+	geo32_fill3d_success:
+		mov r0, #0
+
+	geo32_fill3d_common:
+		pop {r4-r11,pc}
+
+.unreq color
+.unreq heap_vertices
+.unreq number_vertices
+.unreq number_units
+.unreq matrix
+.unreq rotation
+.unreq back_color
+.unreq dup_number_units
+.unreq heap_color
+.unreq depth
+.unreq i
+.unreq temp
+
+geo32_FB32:        .word FB32_ADDR
+geo32_FB32_WIDTH:  .word FB32_WIDTH
+geo32_FB32_HEIGHT: .word FB32_HEIGHT
+geo32_FB32_DEPTH:  .word FB32_DEPTH
 

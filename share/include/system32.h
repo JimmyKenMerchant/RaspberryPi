@@ -1034,7 +1034,8 @@ extern uint32 draw32_antialias
  */
 extern uint32 draw32_fill_color
 (
-	uint32 address_buffer
+	uint32 address_buffer,
+	uint32 background_color 
 );
 
 
@@ -1789,17 +1790,38 @@ extern uint32 geo32_polygon
  */
 extern int32 geo32_wire3d
 (
-	uint32 color, // Series of X and Y by Single Precision Float
-	obj vertices,
+	uint32 color,
+	obj vertices, // Series of X and Y by Single Precision Float
 	uint32 number_vertices,
 	uint32 number_units, // XYZ Units
 	obj matrix,
 	uint32 rotataion
 );
 
-#define GEO32_WIRE3D_CCW  0 // Polygon with Counter Clockwise Is Front to Be Drawn
-#define GEO32_WIRE3D_CW   1 // Polygon with Clockwise Is Front to Be Drawn
-#define GEO32_WIRE3D_BOTH 2 // Both Are Going to Be Drawn
+
+/**
+ * Draw Filled 3D
+ * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
+ *
+ * Return: 0 as Success, 1 and 2 as Error
+ * Error(1): Memory Allocation Fails
+ * Error(2): Buffer Is Not Defined
+ */
+extern int32 geo32_fill3d
+(
+	obj colors,
+	obj vertices, // Series of X, Y, and Z by Single Precision Float
+	uint32 number_vertices,
+	uint32 number_units, // XYZ Units
+	obj matrix,
+	uint32 rotataion,
+	uint32 backgroud_color
+);
+
+
+#define GEO32_CCW  0 // Polygon with Counter Clockwise Is Front to Be Drawn
+#define GEO32_CW   1 // Polygon with Clockwise Is Front to Be Drawn
+#define GEO32_BOTH 2 // Both Are Going to Be Drawn
 
 
 /********************************
