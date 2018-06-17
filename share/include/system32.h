@@ -1035,7 +1035,7 @@ extern uint32 draw32_antialias
 extern uint32 draw32_fill_color
 (
 	uint32 address_buffer,
-	uint32 background_color 
+	uint32 background_color
 );
 
 

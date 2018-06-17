@@ -163,7 +163,7 @@ draw32_antialias:
 .unreq bitmask_after
 .unreq color_result
 .unreq shift
- 
+
 
 /**
  * function draw32_fill_color
