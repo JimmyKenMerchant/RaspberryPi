@@ -396,6 +396,9 @@ fb32_image:
 			cmp depth, #16
 			bne fb32_image_loop_horizontal_depth32
 			ldrh color, [image_point]                    @ Load half word
+			/* Full Transparent If Picked Color Code is Matched on 16 Bits */
+			cmp color, #equ32_fb32_image_16bit_tp_color
+			beq fb32_image_loop_horizontal_common
 			strh color, [f_buffer]                       @ Store half word
 			b fb32_image_loop_horizontal_common
 

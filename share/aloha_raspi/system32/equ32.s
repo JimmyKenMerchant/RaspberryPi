@@ -18,6 +18,7 @@
 .equ equ32_bcm32_alpha,                        16
 .equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
 .equ equ32_i2c32_timeout,                      0x00FF0000
+.equ equ32_fb32_image_16bit_tp_color,          0x0000     @ Assigned 16-bit Color Code as Full Transparent
 .equ equ32_print32_font_color,                 0xFFFFFFFF @ Default Font Color
 .equ equ32_print32_font_backcolor,             0xFF000000 @ Default Background Color
 .equ equ32_print32_hexa_length_max,            0x00000FF0

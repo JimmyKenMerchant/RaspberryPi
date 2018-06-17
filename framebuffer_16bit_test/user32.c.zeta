@@ -1,0 +1,171 @@
+/**
+ * user32.c
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+#include "system32.h"
+#include "system32.c"
+
+int32 _user_start()
+{
+	String num_string;
+	uint32 time = 0;
+
+	String string_cube_vertices =
+			// Front
+			"-0.5,0.5,0.5,"\
+			"-0.5,-0.5,0.5,"\
+			"0.5,-0.5,0.5,"\
+			"0.5,0.5,0.5,"\
+			// Up
+			"-0.5,0.5,-0.5,"\
+			"-0.5,0.5,0.5,"\
+			"0.5,0.5,0.5,"\
+			"0.5,0.5,-0.5,"\
+			// Right
+			"0.5,0.5,0.5,"\
+			"0.5,-0.5,0.5,"\
+			"0.5,-0.5,-0.5,"\
+			"0.5,0.5,-0.5,"\
+			// Left
+			"-0.5,0.5,-0.5,"\
+			"-0.5,-0.5,-0.5,"\
+			"-0.5,-0.5,0.5,"\
+			"-0.5,0.5,0.5,"\
+			// Back
+			"0.5,0.5,-0.5,"\
+			"0.5,-0.5,-0.5,"\
+			"-0.5,-0.5,-0.5,"\
+			"-0.5,0.5,-0.5,"\
+			// Down
+			"-0.5,-0.5,0.5,"\
+			"-0.5,-0.5,-0.5,"\
+			"0.5,-0.5,-0.5,"\
+			"0.5,-0.5,0.5\0";
+
+	uint16 cube_colors[] = {COLOR16_GREEN,COLOR16_RED,COLOR16_BLUE,COLOR16_WHITE,COLOR16_YELLOW,COLOR16_PINK};
+
+	String string_arr3 = "1.0,1.0,0.0\0";
+	String string_arr4 = "0.0,2.0,4.0\0";
+	String string_arr5 = "0.0,0.0,0.0\0";
+	String string_arr6 = "0.0,1.0,0.0\0";
+
+	obj cube_vertices = cvt32_string_to_farray( string_cube_vertices, str32_strlen( string_cube_vertices ) );
+	obj arr3 = cvt32_string_to_farray( string_arr3, str32_strlen( string_arr3 ) );
+	obj arr4 = cvt32_string_to_farray( string_arr4, str32_strlen( string_arr4 ) );
+	obj arr5 = cvt32_string_to_farray( string_arr5, str32_strlen( string_arr5 ) );
+	obj arr6 = cvt32_string_to_farray( string_arr6, str32_strlen( string_arr6 ) );
+
+	/*
+	String string_arr1 = "100,100,"\
+			     "200,200,"\
+			     "100,200,"\
+			     "20,150\0";
+	*/
+	//obj arr1 = cvt32_string_to_intarray( string_arr1, str32_strlen( string_arr1 ), 2 );
+	//obj mat1 = mtx32_identity( 4 );
+	//obj mat2 = mtx32_rotatex3d( 60.0 );
+	//obj mat3 = mtx32_rotatey3d( 60.0 );
+	//obj mat4 = mtx32_rotatez3d( 60.0 );
+	//print32_debug_hexa( mat1, 100, 100, 64 );
+	//geo32_polygon( COLOR16_YELLOW, arr1, 4, 1, 1 );
+	//result = geo32_wire3d( COLOR16_CYAN, arr2, 4, 12, mat1, GEO32_WIRE3D_BOTH );
+	//result = geo32_wire3d( COLOR16_RED, arr2, 4, 12, mat2, GEO32_WIRE3D_BOTH );
+	//result = geo32_wire3d( COLOR16_BLUE, arr2, 4, 12, mat3, GEO32_WIRE3D_BOTH );
+	//result = geo32_wire3d( COLOR16_GREEN, arr2, 4, 12, mat4, GEO32_WIRE3D_BOTH );
+	//print32_debug( result, 0, 0 );
+	//heap32_mfree( arr1 );
+	//heap32_mfree( mat1 );
+	//heap32_mfree( mat2 );
+	//heap32_mfree( mat3 );
+	//heap32_mfree( mat4 );
+
+	obj perspective3d = mtx32_perspective3d( 90.0, 1.234, 0.2, 4.0 );
+	obj view3d = mtx32_view3d( arr4, arr5, arr6 );
+	obj mat_p_v = mtx32_multiply( perspective3d, view3d, 4 );
+	obj mat_p_v_v;
+	obj versor;
+	obj mat_versor;
+
+	float32 angle = 0.0;
+
+	ObjArray renderbuffer = (ObjArray)heap32_malloc( 3 );
+
+	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	renderbuffer[1] = (obj)heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+	renderbuffer[2] = (obj)heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer[2], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+
+	_attach_buffer( renderbuffer[0] );
+	fb32_clear_color( COLOR16_NAVYBLUE );
+
+	_attach_buffer( renderbuffer[1] );
+	fb32_clear_color( COLOR16_NAVYBLUE );
+
+	_set_doublebuffer( renderbuffer[0], renderbuffer[1] );
+
+	while(True) {
+		_flush_doublebuffer();
+		_stopwatch_start();
+		fb32_clear_color( COLOR16_NAVYBLUE );
+
+		num_string = cvt32_int32_to_string_deci( time, 0, 0 );
+		print32_string( num_string, 0, 0, str32_strlen( num_string ) );
+
+		//String string_angle = cvt32_float32_to_string( angle, 0, 20, 0 );
+		//print32_string( string_angle, 0, 100, str32_strlen( string_angle ) );
+		//heap32_mfree( (obj)string_angle );
+
+		versor = mtx32_versor( angle, arr3 );
+		mat_versor = mtx32_versortomatrix( versor );
+		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
+
+		//_attach_buffer( renderbuffer[2] );
+		//fb32_clear_color( 0x00000000 );
+		//geo32_wire3d( COLOR16_BLUE, cube_vertices, 4, 24, mat_p_v_v, GEO32_CCW );
+		geo32_fill3d( (obj)cube_colors, cube_vertices, 4, 24, mat_p_v_v, GEO32_CCW, COLOR16_NAVYBLUE );
+		//_attach_buffer( FB32_DOUBLEBUFFER_BACK );
+		/*
+		fb32_image(
+			_load_32( renderbuffer[2] + draw32_renderbuffer_addr ),
+			0,
+			0,
+			_load_32( renderbuffer[2] + draw32_renderbuffer_width ),
+			_load_32( renderbuffer[2] + draw32_renderbuffer_height ),
+			0,
+			0,
+			0,
+			0
+		);
+		*/
+
+		//print32_debug( versor, 0, 0 );
+		print32_debug( mat_versor, 0, 50 );
+
+		heap32_mfree( versor );
+		heap32_mfree( mat_versor );
+		heap32_mfree( mat_p_v_v );
+
+		// Angle Change
+		angle = vfp32_fadd( angle, 1.0 );
+		if( vfp32_fge( angle, 360.0 ) ) angle = 0.0;
+
+		time = _stopwatch_end();
+		heap32_mfree( (obj)num_string );
+
+		_sleep( 200000 );
+	}
+
+	heap32_mfree( cube_vertices );
+	heap32_mfree( perspective3d );
+	heap32_mfree( view3d );
+	heap32_mfree( mat_p_v );
+
+	return EXIT_SUCCESS;
+}
