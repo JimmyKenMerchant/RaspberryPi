@@ -8,8 +8,8 @@
  */
 
 /**
- * Abount Codes in This File:
- * These functions are aiming building a frequency modulation synthesizer by a software programmed for a general purpose CPU and a auxiliary media processor.
+ * About Codes in This File:
+ * These functions are aiming building a frequency modulation synthesizer by a software programmed for a general purpose CPU and a pulse code modulator (PCM). The CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as voltage. Differences of voltage of the form make sound wave through any speaker.
  */
 
 STS32_CODE:            .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
@@ -26,11 +26,15 @@ STS32_REPEAT:          .word 0x00 @ -1 is Infinite Loop
  */
 STS32_STATUS:          .word 0x00
 
-STS32_SYNTHWAVE_TIME:  .word 0x0  @ One Equals 1/sampling-rate Seconds
-STS32_SYNTHWAVE_FREQA: .word 0x0
-STS32_SYNTHWAVE_FREQB: .word 0x0
-STS32_SYNTHWAVE_MAGA:  .word 0x0
-STS32_SYNTHWAVE_MAGB:  .word 0x0
+STS32_SYNTHWAVE_TIME:    .word 0x00 @ One Equals 1/sampling-rate Seconds
+STS32_SYNTHWAVE_FREQA_L: .word 0x00
+STS32_SYNTHWAVE_FREQB_L: .word 0x00
+STS32_SYNTHWAVE_MAGA_L:  .word 0x00
+STS32_SYNTHWAVE_MAGB_L:  .word 0x00
+STS32_SYNTHWAVE_FREQA_R: .word 0x00
+STS32_SYNTHWAVE_FREQB_R: .word 0x00
+STS32_SYNTHWAVE_MAGA_R:  .word 0x00
+STS32_SYNTHWAVE_MAGB_R:  .word 0x00
 
 /**
  * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
@@ -43,18 +47,21 @@ STS32_SYNTHWAVE_MAGB:  .word 0x0
  * Where T is time (seconds); one is 1/sampling-rate seconds.
  * This type of synthesizers is named as "Frequency Modulation Synthesis" developed by John Chowning, and decorated the music world in the late 20th century.
  * 0x0 means End of Synthesizer Code.
+ *
+ * Synthesizer Code will be fetched by L/R alternatively.
+ * If you line up four blocks, the first and the third block will be fetched by L, and the second and the fourth block will be fetched by R.
  */
 
 /**
- * function sts32_synthwave
+ * function sts32_synthewave_i2s
  * Make Synthesized Wave
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Not Started
  * Error(2): PCM FIFO is Full
  */
-.globl sts32_synthwave
-sts32_synthwave:
+.globl sts32_synthewave_i2s
+sts32_synthewave_i2s:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base .req r0
 	time           .req r1
@@ -69,13 +76,14 @@ sts32_synthwave:
 	vfp_mag_b      .req s4
 	vfp_pi_double  .req s5
 	vfp_samplerate .req s6
+	vfp_time       .req s7
 
 	push {lr}
-	vpush {s0-s6}
+	vpush {s0-s7}
 
 	ldr temp, STS32_STATUS
 	tst temp, #1
-	beq sts32_synthwave_error1
+	beq sts32_synthewave_i2s_error1
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
@@ -83,41 +91,45 @@ sts32_synthwave:
 
 	ldr temp, [memorymap_base, #equ32_pcm_cs]
 	tst temp, #equ32_pcm_cs_txw
-	beq sts32_synthwave_error2
+	beq sts32_synthewave_i2s_error2
 
 	ldr time, STS32_SYNTHWAVE_TIME
-	vmov vfp_temp, time
-	vcvt.f32.u32 vfp_temp, vfp_temp
-	vldr vfp_freq_a, STS32_SYNTHWAVE_FREQA
-	vcvt.f32.u32 vfp_freq_a, vfp_freq_a
-	vldr vfp_freq_b, STS32_SYNTHWAVE_FREQB
-	vcvt.f32.u32 vfp_freq_b, vfp_freq_b
-	vldr vfp_mag_a, STS32_SYNTHWAVE_MAGA
-	vcvt.f32.u32 vfp_mag_a, vfp_mag_a
-	vldr vfp_mag_b, STS32_SYNTHWAVE_MAGB
-	vcvt.f32.u32 vfp_mag_b, vfp_mag_b
+	vmov vfp_time, time
+	vcvt.f32.u32 vfp_time, vfp_time
+
 	mov temp, #32000
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
-	ldr temp, sts32_synthwave_MATH32_PI_DOUBLE
+	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
+
 
 	/**
 	 * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
 	 * Where T is time (seconds); one is 1/sampling-rate seconds.
 	 */
-
-	sts32_synthwave_loop:
+	sts32_synthewave_i2s_loop:
 		ldr temp, [memorymap_base, #equ32_pcm_cs]
 		tst temp, #equ32_pcm_cs_txw
-		beq sts32_synthwave_success
+		beq sts32_synthewave_i2s_success
+
+		/* L Wave */
+
+		vldr vfp_freq_a, STS32_SYNTHWAVE_FREQA_L
+		vcvt.f32.u32 vfp_freq_a, vfp_freq_a
+		vldr vfp_freq_b, STS32_SYNTHWAVE_FREQB_L
+		vcvt.f32.u32 vfp_freq_b, vfp_freq_b
+		vldr vfp_mag_a, STS32_SYNTHWAVE_MAGA_L
+		vcvt.f32.u32 vfp_mag_a, vfp_mag_a
+		vldr vfp_mag_b, STS32_SYNTHWAVE_MAGB_L
+		vcvt.f32.u32 vfp_mag_b, vfp_mag_b
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
-		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
 		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_samplerate
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
-		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 		vdiv.f32 vfp_freq_b, vfp_freq_b, vfp_samplerate
 
 		/* Round Radian within 2Pi */
@@ -127,11 +139,11 @@ sts32_synthwave:
 		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
 		vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
 
-		push {r0-r1}
+		push {r0-r3}
 		vmov r0, vfp_freq_b
 		bl math32_sin
 		vmov vfp_freq_b, r0
-		pop {r0-r1}
+		pop {r0-r3}
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
 		vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
@@ -143,38 +155,96 @@ sts32_synthwave:
 		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
 		vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
 
-		push {r0-r1}
+		push {r0-r3}
 		vmov r0, vfp_freq_a
 		bl math32_sin
 		vmov vfp_freq_a, r0
-		pop {r0-r1}
+		pop {r0-r3}
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
 		vcvt.s32.f32 vfp_freq_a, vfp_freq_a
 		vmov temp, vfp_freq_a
+
+		/* R Wave */
+
+		vldr vfp_freq_a, STS32_SYNTHWAVE_FREQA_R
+		vcvt.f32.u32 vfp_freq_a, vfp_freq_a
+		vldr vfp_freq_b, STS32_SYNTHWAVE_FREQB_R
+		vcvt.f32.u32 vfp_freq_b, vfp_freq_b
+		vldr vfp_mag_a, STS32_SYNTHWAVE_MAGA_R
+		vcvt.f32.u32 vfp_mag_a, vfp_mag_a
+		vldr vfp_mag_b, STS32_SYNTHWAVE_MAGB_R
+		vcvt.f32.u32 vfp_mag_b, vfp_mag_b
+
+		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
+		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
+		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_samplerate
+
+		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
+		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
+		vdiv.f32 vfp_freq_b, vfp_freq_b, vfp_samplerate
+
+		/* Round Radian within 2Pi */
+		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
+		vcvt.u32.f32 vfp_temp, vfp_temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+		vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+
+		push {r0-r3}
+		vmov r0, vfp_freq_b
+		bl math32_sin
+		vmov vfp_freq_b, r0
+		pop {r0-r3}
+
+		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
+		vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
+
+		/* Round Radian within 2Pi */
+		vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
+		vcvt.u32.f32 vfp_temp, vfp_temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+		vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+
+		push {r0-r3}
+		vmov r0, vfp_freq_a
+		bl math32_sin
+		vmov vfp_freq_a, r0
+		pop {r0-r3}
+
+		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
+		vcvt.s32.f32 vfp_freq_a, vfp_freq_a
+		vmov temp2, vfp_freq_a
+
+		bic temp, temp, #0xFF000000
+		bic temp, temp, #0x00FF0000
+		lsl temp2, temp2, #16
+		orr temp, temp, temp2
+
 		str temp, [memorymap_base, #equ32_pcm_fifo]
 
 		macro32_dsb ip
 
 		add time, time, #1
-		vmov vfp_temp, time
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		b sts32_synthwave_loop
+		vmov vfp_time, time
+		vcvt.f32.u32 vfp_time, vfp_time
+		b sts32_synthewave_i2s_loop
 
-	sts32_synthwave_error1:
+	sts32_synthewave_i2s_error1:
 		mov r0, #1
-		b sts32_synthwave_common
+		b sts32_synthewave_i2s_common
 
-	sts32_synthwave_error2:
+	sts32_synthewave_i2s_error2:
 		mov r0, #2
-		b sts32_synthwave_common
+		b sts32_synthewave_i2s_common
 
-	sts32_synthwave_success:
+	sts32_synthewave_i2s_success:
 		str time, STS32_SYNTHWAVE_TIME
 		mov r0, #0
 
-	sts32_synthwave_common:
-		vpop {s0-s6}
+	sts32_synthewave_i2s_common:
+		vpop {s0-s7}
 		pop {pc}
 
 .unreq memorymap_base
@@ -188,12 +258,13 @@ sts32_synthwave:
 .unreq vfp_mag_b
 .unreq vfp_pi_double
 .unreq vfp_samplerate
+.unreq vfp_time
 
-sts32_synthwave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
+sts32_synthewave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 
 
 /**
- * function sts32_synthset
+ * function sts32_syntheset
  * Set Synthesizer
  *
  * Parameters
@@ -204,8 +275,8 @@ sts32_synthwave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
  *
  * Return: r0 (0 as success)
  */
-.globl sts32_synthset
-sts32_synthset:
+.globl sts32_syntheset
+sts32_syntheset:
 	/* Auto (Local) Variables, but just Aliases */
 	addr_code   .req r0 @ Register for Result, Scratch Register
 	length      .req r1 @ Scratch Register
@@ -231,13 +302,13 @@ sts32_synthset:
 
 	macro32_dsb ip
 
-	str addr_code, STS32_CODE  @ Should Set Music Code at End for Polling Functions, `sts32_synthplay`
+	str addr_code, STS32_CODE  @ Should Set Music Code at End for Polling Functions, `sts32_syntheplay`
 
-	sts32_synthset_success:
+	sts32_syntheset_success:
 		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
-	sts32_synthset_common:
+	sts32_syntheset_common:
 		pop {r4}
 		mov pc, lr
 
@@ -249,15 +320,15 @@ sts32_synthset:
 
 
 /**
- * function sts32_synthplay
+ * function sts32_syntheplay
  * Play Synthesizer
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Music Code is Not Assgined
  * Error(2): Not Initialized
  */
-.globl sts32_synthplay
-sts32_synthplay:
+.globl sts32_syntheplay
+sts32_syntheplay:
 	/* Auto (Local) Variables, but just Aliases */
 	addr_code   .req r0
 	length      .req r1
@@ -272,7 +343,7 @@ sts32_synthplay:
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
-	beq sts32_synthplay_error1
+	beq sts32_syntheplay_error1
 
 	ldr length, STS32_LENGTH
 	ldr count, STS32_COUNT
@@ -282,38 +353,56 @@ sts32_synthplay:
 	macro32_dsb ip
 
 	tst status, #0x80000000                   @ If Not Initialized
-	beq sts32_synthplay_error2
+	beq sts32_syntheplay_error2
 
 	cmp count, length
-	blo sts32_synthplay_jump
+	blo sts32_syntheplay_jump
 
 	mov count, #0
 
 	cmp repeat, #-1
-	beq sts32_synthplay_jump
+	beq sts32_syntheplay_jump
 
 	sub repeat, repeat, #1
 
 	cmp repeat, #0
-	beq sts32_synthplay_free
+	beq sts32_syntheplay_free
 
-	sts32_synthplay_jump:
-		lsl temp, count, #3                        @ Substitute of Multiplication by 8
+	sts32_syntheplay_jump:
+		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		str temp, STS32_SYNTHWAVE_FREQA
+		str temp, STS32_SYNTHWAVE_FREQA_L
 		lsr temp, code, #16
-		str temp, STS32_SYNTHWAVE_MAGA
+		str temp, STS32_SYNTHWAVE_MAGA_L
 
-		lsl temp, count, #3                        @ Substitute of Multiplication by 8
+		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		add temp, temp, #4
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		str temp, STS32_SYNTHWAVE_FREQB
+		str temp, STS32_SYNTHWAVE_FREQB_L
 		lsr temp, code, #16
-		str temp, STS32_SYNTHWAVE_MAGB
+		str temp, STS32_SYNTHWAVE_MAGB_L
+
+		lsl temp, count, #4                        @ Substitute of Multiplication by 16
+		add temp, temp, #8
+		ldr code, [addr_code, temp]
+		lsl temp, code, #16
+		lsr temp, temp, #16
+		str temp, STS32_SYNTHWAVE_FREQA_R
+		lsr temp, code, #16
+		str temp, STS32_SYNTHWAVE_MAGA_R
+
+		lsl temp, count, #4                        @ Substitute of Multiplication by 8
+		add temp, temp, #12
+		ldr code, [addr_code, temp]
+		lsl temp, code, #16
+		lsr temp, temp, #16
+		str temp, STS32_SYNTHWAVE_FREQB_R
+		lsr temp, code, #16
+		str temp, STS32_SYNTHWAVE_MAGB_R
 
 		tst status, #0x1
 		orreq status, status, #0x1
@@ -323,9 +412,9 @@ sts32_synthplay:
 		str repeat, STS32_REPEAT
 		str status, STS32_STATUS
 
-		b sts32_synthplay_success
+		b sts32_syntheplay_success
 
-	sts32_synthplay_free:
+	sts32_syntheplay_free:
 		mov addr_code, #0
 		mov length, #0
 		bic status, status, #0x1                   @ Clear Bit[0]
@@ -337,21 +426,21 @@ sts32_synthplay:
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
 		str status, STS32_STATUS
 
-		b sts32_synthplay_success
+		b sts32_syntheplay_success
 
-	sts32_synthplay_error1:
+	sts32_syntheplay_error1:
 		mov r0, #1                            @ Return with Error 1
-		b sts32_synthplay_common
+		b sts32_syntheplay_common
 
-	sts32_synthplay_error2:
+	sts32_syntheplay_error2:
 		mov r0, #2                            @ Return with Error 1
-		b sts32_synthplay_common
+		b sts32_syntheplay_common
 
-	sts32_synthplay_success:
+	sts32_syntheplay_success:
 		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
-	sts32_synthplay_common:
+	sts32_syntheplay_common:
 		pop {r4-r7,pc}
 
 .unreq addr_code
@@ -365,13 +454,13 @@ sts32_synthplay:
 
 
 /**
- * function sts32_synthclear
+ * function sts32_syntheclear
  * Clear Synthesizer Code
  *
  * Return: r0 (0 as success)
  */
-.globl sts32_synthclear
-sts32_synthclear:
+.globl sts32_syntheclear
+sts32_syntheclear:
 	/* Auto (Local) Variables, but just Aliases */
 	temp   .req r0
 
@@ -393,18 +482,18 @@ sts32_synthclear:
 
 	macro32_dsb ip
 
-	sts32_synthclear_success:
+	sts32_syntheclear_success:
 		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
-	sts32_synthclear_common:
+	sts32_syntheclear_common:
 		mov pc, lr
 
 .unreq temp
 
 
 /**
- * function sts32_synthlen
+ * function sts32_synthelen
  * Count 4-Bytes Beats of Synthesizer Code
  *
  * Parameters
@@ -412,8 +501,8 @@ sts32_synthclear:
  *
  * Return: r0 (Number of Beats in Synthesizer Code)
  */
-.globl sts32_synthlen
-sts32_synthlen:
+.globl sts32_synthelen
+sts32_synthelen:
 	/* Auto (Local) Variables, but just Aliases */
 	synt_point .req r0
 	synt_word  .req r1
@@ -421,18 +510,18 @@ sts32_synthlen:
 
 	mov length, #0
 
-	sts32_synthlen_loop:
+	sts32_synthelen_loop:
 		ldr synt_word, [synt_point]       @ Load Lower Half Word (32-bit)
 		cmp synt_word, #0
 		ldreq synt_word, [synt_point, #4] @ Load Upper Half Word (32-bit)
 		cmpeq synt_word, #0
-		beq sts32_synthlen_common         @ Break Loop if Null Character
+		beq sts32_synthelen_common        @ Break Loop if Null Character
 
 		add synt_point, synt_point, #8
 		add length, length, #1
-		b sts32_synthlen_loop
+		b sts32_synthelen_loop
 
-	sts32_synthlen_common:
+	sts32_synthelen_common:
 		mov r0, length
 		mov pc, lr
 
@@ -442,13 +531,13 @@ sts32_synthlen:
 
 
 /**
- * function sts32_synthinit_i2s
+ * function sts32_syntheinit_i2s
  * Synthesizer Initializer for I2S Mode (Outputs Both L and R Side by 32Khz)
  *
  * Return: r0 (0 as Success)
  */
-.globl sts32_synthinit_i2s
-sts32_synthinit_i2s:
+.globl sts32_syntheinit_i2s
+sts32_syntheinit_i2s:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base    .req r0
 	value             .req r1
@@ -521,10 +610,10 @@ sts32_synthinit_i2s:
 
 	macro32_dsb ip
 
-	snd32_synthinit_i2s_clrtxf:
+	snd32_syntheinit_i2s_clrtxf:
 		ldr value, [memorymap_base, #equ32_pcm_cs]
 		tst value, #equ32_pcm_cs_sync
-		beq snd32_synthinit_i2s_clrtxf
+		beq snd32_syntheinit_i2s_clrtxf
 
 	/* Clear RxFIFO, No need of Clear RxFIFO, but RAM Preperation Needs Four PCM Clocks */
 	ldr value, [memorymap_base, #equ32_pcm_cs]
@@ -534,10 +623,10 @@ sts32_synthinit_i2s:
 
 	macro32_dsb ip
 
-	snd32_synthinit_i2s_clrrxf:
+	snd32_syntheinit_i2s_clrrxf:
 		ldr value, [memorymap_base, #equ32_pcm_cs]
 		tst value, #equ32_pcm_cs_sync
-		beq snd32_synthinit_i2s_clrrxf
+		beq snd32_syntheinit_i2s_clrrxf
 
 	/* PCM Transmit Enable */
 	bic value, value, #equ32_pcm_cs_sync
@@ -553,9 +642,10 @@ sts32_synthinit_i2s:
 
 	macro32_dsb ip
 
-	sts32_synthinit_i2s_common:
+	sts32_syntheinit_i2s_common:
 		mov r0, #0
 		pop {pc}
 
 .unreq memorymap_base
 .unreq value
+

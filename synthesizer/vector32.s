@@ -120,7 +120,7 @@ os_reset:
 	 * Synthsizer Initialization
 	 */
 
-	bl sts32_synthinit_i2s
+	bl sts32_syntheinit_i2s
 
 	pop {pc}
 

@@ -416,19 +416,19 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x1F:
-		bl sts32_synthwave
+		bl sts32_synthewave_i2s
 		b _os_svc_common
 
 	_os_svc_0x20:
-		bl sts32_synthset
+		bl sts32_syntheset
 		b _os_svc_common
 
 	_os_svc_0x21:
-		bl sts32_synthplay
+		bl sts32_syntheplay
 		b _os_svc_common
 
 	_os_svc_0x22:
-		bl sts32_synthclear
+		bl sts32_syntheclear
 		b _os_svc_common
 
 	_os_svc_0x23:

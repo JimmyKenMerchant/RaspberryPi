@@ -211,28 +211,28 @@ __attribute__((noinline)) uint32 _soundclear()
 	return result;
 }
 
-__attribute__((noinline)) uint32 _synthwave()
+__attribute__((noinline)) uint32 _synthewave_i2s()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1F");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _synthset( synth_code* synth, uint32 length, uint32 count, int32 repeat )
+__attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length, uint32 count, int32 repeat )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x20");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _synthplay()
+__attribute__((noinline)) uint32 _syntheplay()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x21");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _synthclear()
+__attribute__((noinline)) uint32 _syntheclear()
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x22");
