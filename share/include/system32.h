@@ -1256,6 +1256,37 @@ extern uint32 snd32_musiclen
 
 
 /********************************
+ * system32/library/sts32.s
+ ********************************/
+
+/* Constants */
+
+#define synth_code uint64
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _synthwave();
+
+__attribute__((noinline)) uint32 _synthset( synth_code* synth, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _synthplay();
+
+__attribute__((noinline)) uint32 _soundclear();
+
+
+/* Regular Functions */
+
+/**
+ * Count 2-Bytes Beats of Music Code
+ *
+ * Return: Number of Beats in Music Code, Maximum of 4,294,967,295 Beats
+ */
+extern uint64 sts32_synthlen
+(
+	synth_code* synth
+);
+
+/********************************
  * system32/library/hid32.s
  ********************************/
 

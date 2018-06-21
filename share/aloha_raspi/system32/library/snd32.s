@@ -1025,3 +1025,4 @@ snd32_soundtest:
 		mov pc, lr
 
 .unreq temp
+

@@ -423,8 +423,8 @@
 .equ equ32_pcm_cs_rxsync,     0x00004000 @ RxFIFO Sync
 .equ equ32_pcm_cs_txsync,     0x00002000 @ TxFIFO Sync
 .equ equ32_pcm_cs_dmaen,      0x00000200 @ DMA Enable
-.equ equ32_pcm_cs_rxthr,      7          @ Bit[8:7] RxFIFO Threshold (00b as One to 11b as Full)
-.equ equ32_pcm_cs_txthr,      5          @ Bit[6:5] TxFIFO Threshold (00b as Empty to 11b as Full)
+.equ equ32_pcm_cs_rxthr,      7          @ Bit[8:7] RxFIFO Threshold (00b as One, 01b/10b as Less than Full, 11b as Full)
+.equ equ32_pcm_cs_txthr,      5          @ Bit[6:5] TxFIFO Threshold (00b as Empty, 01b/10b as Less than Full, 11b as Full)
 .equ equ32_pcm_cs_rxclr,      0x00000010 @ Clear RxFIFO, Two PCM Clock are Needed
 .equ equ32_pcm_cs_txclr,      0x00000008 @ Clear TxFIFO, Two PCM Clock are Needed
 .equ equ32_pcm_cs_txon,       0x00000004 @ Transmit On
