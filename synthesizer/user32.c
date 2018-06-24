@@ -105,17 +105,19 @@ int32 _user_start()
 
 	uchar8 timer_count_factor = timer_count_factor_default;
 	uint32 detect_parallel;
+	uint32 result;
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s();
+		result = _synthewave_i2s();
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm();
+		result = _synthewave_pwm();
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm();
+		result = _synthewave_pwm();
 #endif
+print32_debug( result, 100, 100 );
 		if ( _gpio_detect( 27 ) ) {
 			_syntheplay();
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );

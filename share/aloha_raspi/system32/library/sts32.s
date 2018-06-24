@@ -94,8 +94,8 @@ sts32_synthewave_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	ldr temp, [memorymap_base, #equ32_pwm_sta]
-	tst temp, #equ32_pwm_sta_empt1
-	beq sts32_synthewave_pwm_error2
+	tst temp, #equ32_pwm_sta_full1
+	bne sts32_synthewave_pwm_error2
 
 	ldr time, STS32_SYNTHEWAVE_TIME
 	vmov vfp_time, time
@@ -119,8 +119,8 @@ sts32_synthewave_pwm:
 	 */
 	sts32_synthewave_pwm_loop:
 		ldr temp, [memorymap_base, #equ32_pwm_sta]
-		tst temp, #equ32_pwm_sta_empt1
-		beq sts32_synthewave_pwm_success
+		tst temp, #equ32_pwm_sta_full1
+		bne sts32_synthewave_pwm_success
 
 		/* R Wave */
 
@@ -185,8 +185,8 @@ sts32_synthewave_pwm:
 
 		sts32_synthewave_pwm_loop_l:
 			ldr temp, [memorymap_base, #equ32_pwm_sta]
-			tst temp, #equ32_pwm_sta_empt1
-			beq sts32_synthewave_pwm_success
+			tst temp, #equ32_pwm_sta_full1
+			bne sts32_synthewave_pwm_success
 
 			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
 			vcvt.f32.u32 vfp_freq_a, vfp_freq_a
@@ -964,7 +964,7 @@ sts32_syntheinit_i2s:
 
 	/* PCM Transmit Enable */
 	bic value, value, #equ32_pcm_cs_sync
-	orr value, value, #0b00 << equ32_pcm_cs_txthr
+	orr value, value, #0b11 << equ32_pcm_cs_txthr
 	orr value, value, #equ32_pcm_cs_txon
 	str value, [memorymap_base, #equ32_pcm_cs]
 
