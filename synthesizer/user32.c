@@ -61,7 +61,7 @@ synthe_code synthe8[] =
 	_20LR(3ull<<48|60ull<<32|300ull<<16|1000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|500ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|250ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
-	_40LR(1ull<<48|1000ull<<32|300ull<<16|440ull,1ull<<48|2000ull<<32|300ull<<16|880ull)
+	_40LR(0ull<<48|1000ull<<32|300ull<<16|440ull,0ull<<48|2000ull<<32|300ull<<16|880ull)
 	0x00
 };
 

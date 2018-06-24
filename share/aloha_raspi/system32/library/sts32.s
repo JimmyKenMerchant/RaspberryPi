@@ -125,13 +125,9 @@ sts32_synthewave_pwm:
 		/* R Wave */
 
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
-		vcvt.f32.u32 vfp_freq_a, vfp_freq_a
 		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_R
-		vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
-		vcvt.f32.s32 vfp_mag_a, vfp_mag_a
 		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
-		vcvt.f32.s32 vfp_mag_b, vfp_mag_b
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -189,13 +185,9 @@ sts32_synthewave_pwm:
 			bne sts32_synthewave_pwm_success
 
 			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
-			vcvt.f32.u32 vfp_freq_a, vfp_freq_a
 			vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_L
-			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
-			vcvt.f32.s32 vfp_mag_a, vfp_mag_a
 			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
-			vcvt.f32.s32 vfp_mag_b, vfp_mag_b
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -348,13 +340,9 @@ sts32_synthewave_i2s:
 		/* L Wave */
 
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
-		vcvt.f32.u32 vfp_freq_a, vfp_freq_a
 		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_L
-		vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
-		vcvt.f32.s32 vfp_mag_a, vfp_mag_a
 		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
-		vcvt.f32.s32 vfp_mag_b, vfp_mag_b
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -400,13 +388,9 @@ sts32_synthewave_i2s:
 		/* R Wave */
 
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
-		vcvt.f32.u32 vfp_freq_a, vfp_freq_a
 		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_R
-		vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
-		vcvt.f32.s32 vfp_mag_a, vfp_mag_a
 		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
-		vcvt.f32.s32 vfp_mag_b, vfp_mag_b
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -571,7 +555,11 @@ sts32_syntheplay:
 	temp        .req r6
 	temp2       .req r7
 
+	/* VFP Registers */
+	vfp_temp    .req s0
+
 	push {r4-r7,lr}
+	vpush {s0}
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
@@ -605,8 +593,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_L
 		lsr temp, code, #16
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGA_L
 
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
@@ -614,8 +608,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_L
 		lsr temp, code, #16
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGB_L
 
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
@@ -623,8 +623,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_R
 		lsr temp, code, #16
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGA_R
 
 		lsl temp, count, #4                        @ Substitute of Multiplication by 8
@@ -632,8 +638,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_R
 		lsr temp, code, #16
+		vmov vfp_temp, temp
+		vcvt.f32.s32 vfp_temp, vfp_temp
+		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGB_R
 
 		tst status, #0x1
@@ -673,6 +685,7 @@ sts32_syntheplay:
 		mov r0, #0                            @ Return with Success
 
 	sts32_syntheplay_common:
+		vpop {s0}
 		pop {r4-r7,pc}
 
 .unreq addr_code
@@ -683,6 +696,7 @@ sts32_syntheplay:
 .unreq code
 .unreq temp
 .unreq temp2
+.unreq vfp_temp
 
 
 /**
@@ -964,7 +978,7 @@ sts32_syntheinit_i2s:
 
 	/* PCM Transmit Enable */
 	bic value, value, #equ32_pcm_cs_sync
-	orr value, value, #0b11 << equ32_pcm_cs_txthr
+	orr value, value, #0b11 << equ32_pcm_cs_txthr @ Flag Down If Full
 	orr value, value, #equ32_pcm_cs_txon
 	str value, [memorymap_base, #equ32_pcm_cs]
 
