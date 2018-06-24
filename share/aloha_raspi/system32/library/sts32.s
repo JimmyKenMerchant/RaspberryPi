@@ -37,7 +37,7 @@ STS32_SYNTHEWAVE_FREQA_R: .word 0x00
 STS32_SYNTHEWAVE_FREQB_R: .word 0x00
 STS32_SYNTHEWAVE_MAGA_R:  .word 0x00
 STS32_SYNTHEWAVE_MAGB_R:  .word 0x00
-STS32_SYNTHEWAVE_LR:      .word 0x00 @ 0 as L, 1 as R
+STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 
 /**
  * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
@@ -69,7 +69,7 @@ sts32_synthewave_pwm:
 	memorymap_base .req r0
 	time           .req r1
 	temp           .req r2
-	flag_lr        .req r3
+	flag_rl        .req r3
 
 	/* VFP Registers */
 	vfp_temp       .req s0
@@ -109,9 +109,9 @@ sts32_synthewave_pwm:
 
 	vldr vfp_divisor, sts32_synthewave_pwm_divisor
 
-	ldr flag_lr, STS32_SYNTHEWAVE_LR
-	tst flag_lr, #1
-	bne sts32_synthewave_pwm_loop_r
+	ldr flag_rl, STS32_SYNTHEWAVE_RL
+	tst flag_rl, #1
+	bne sts32_synthewave_pwm_loop_l
 
 	/**
 	 * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
@@ -122,15 +122,15 @@ sts32_synthewave_pwm:
 		tst temp, #equ32_pwm_sta_empt1
 		beq sts32_synthewave_pwm_success
 
-		/* L Wave */
+		/* R Wave */
 
-		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
+		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
 		vcvt.f32.u32 vfp_freq_a, vfp_freq_a
-		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_L
+		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_R
 		vcvt.f32.u32 vfp_freq_b, vfp_freq_b
-		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
+		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
 		vcvt.f32.s32 vfp_mag_a, vfp_mag_a
-		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
+		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
 		vcvt.f32.s32 vfp_mag_b, vfp_mag_b
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
@@ -179,22 +179,22 @@ sts32_synthewave_pwm:
 
 		macro32_dsb ip
 
-		mov flag_lr, #1
+		mov flag_rl, #1
 
-		/* R Wave */
+		/* L Wave */
 
-		sts32_synthewave_pwm_loop_r:
+		sts32_synthewave_pwm_loop_l:
 			ldr temp, [memorymap_base, #equ32_pwm_sta]
 			tst temp, #equ32_pwm_sta_empt1
 			beq sts32_synthewave_pwm_success
 
-			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
+			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
 			vcvt.f32.u32 vfp_freq_a, vfp_freq_a
-			vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_R
+			vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_L
 			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
-			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
+			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
 			vcvt.f32.s32 vfp_mag_a, vfp_mag_a
-			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
+			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
 			vcvt.f32.s32 vfp_mag_b, vfp_mag_b
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
@@ -243,7 +243,7 @@ sts32_synthewave_pwm:
 
 			macro32_dsb ip
 
-			mov flag_lr, #0
+			mov flag_rl, #0
 
 			add time, time, #1
 			vmov vfp_time, time
@@ -260,7 +260,7 @@ sts32_synthewave_pwm:
 
 	sts32_synthewave_pwm_success:
 		str time, STS32_SYNTHEWAVE_TIME
-		str flag_lr, STS32_SYNTHEWAVE_LR
+		str flag_rl, STS32_SYNTHEWAVE_RL
 		mov r0, #0
 
 	sts32_synthewave_pwm_common:
@@ -270,7 +270,7 @@ sts32_synthewave_pwm:
 .unreq memorymap_base
 .unreq time
 .unreq temp
-.unreq flag_lr
+.unreq flag_rl
 .unreq vfp_temp
 .unreq vfp_freq_a
 .unreq vfp_freq_b
