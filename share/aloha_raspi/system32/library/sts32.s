@@ -238,6 +238,8 @@ sts32_synthewave_pwm:
 			mov flag_rl, #0
 
 			add time, time, #1
+			cmp time, #32000
+			movge time, #0
 			vmov vfp_time, time
 			vcvt.f32.u32 vfp_time, vfp_time
 			b sts32_synthewave_pwm_loop
@@ -443,6 +445,8 @@ sts32_synthewave_i2s:
 		macro32_dsb ip
 
 		add time, time, #1
+		cmp time, #32000
+		movge time, #0
 		vmov vfp_time, time
 		vcvt.f32.u32 vfp_time, vfp_time
 		b sts32_synthewave_i2s_loop
