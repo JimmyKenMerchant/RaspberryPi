@@ -61,6 +61,7 @@ synthe_code synthe8[] =
 	_20LR(3ull<<48|60ull<<32|300ull<<16|1000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|500ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|250ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
+	_40LR(1ull<<48|1000ull<<32|300ull<<16|440ull,1ull<<48|2000ull<<32|300ull<<16|880ull)
 	0x00
 };
 
@@ -106,7 +107,15 @@ int32 _user_start()
 	uint32 detect_parallel;
 
 	while ( true ) {
+#ifdef __SOUND_I2S
 		_synthewave_i2s();
+#endif
+#ifdef __SOUND_PWM
+		_synthewave_pwm();
+#endif
+#ifdef __SOUND_JACK
+		_synthewave_pwm();
+#endif
 		if ( _gpio_detect( 27 ) ) {
 			_syntheplay();
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );

@@ -120,7 +120,17 @@ os_reset:
 	 * Synthsizer Initialization
 	 */
 
+.ifdef __SOUND_I2S
 	bl sts32_syntheinit_i2s
+.endif
+.ifdef __SOUND_PWM
+	mov r0, #0
+	bl sts32_syntheinit_pwm
+.endif
+.ifdef __SOUND_JACK
+	mov r0, #1
+	bl sts32_syntheinit_pwm
+.endif
 
 	pop {pc}
 
