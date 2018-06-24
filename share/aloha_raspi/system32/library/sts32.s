@@ -44,7 +44,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * Bit[15-0] Frequency-A (Main): 0 to 65535 Hz
  * Bit[31-16] Magnitude-A: -32768 to 32767
  * Bit[47-32] Frequency-B (Sub): 0 to 65535 Hz
- * Bit[63-48] Magnitude-B: -32768 to 32767
+ * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
@@ -546,20 +546,22 @@ sts32_syntheset:
 .globl sts32_syntheplay
 sts32_syntheplay:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_code   .req r0
-	length      .req r1
-	count       .req r2
-	repeat      .req r3
-	status      .req r4
-	code        .req r5
-	temp        .req r6
-	temp2       .req r7
+	addr_code     .req r0
+	length        .req r1
+	count         .req r2
+	repeat        .req r3
+	status        .req r4
+	code          .req r5
+	temp          .req r6
+	temp2         .req r7
 
 	/* VFP Registers */
-	vfp_temp    .req s0
+	vfp_temp      .req s0
+	vfp_pi_double .req s1
+	vfp_max       .req s2
 
 	push {r4-r7,lr}
-	vpush {s0}
+	vpush {s0-s2}
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
@@ -589,6 +591,13 @@ sts32_syntheplay:
 	beq sts32_syntheplay_free
 
 	sts32_syntheplay_jump:
+		ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
+		vldr vfp_pi_double, [temp]
+		mov temp, #0xFF
+		orr temp, temp, #0xFF00
+		vmov vfp_max, temp
+		vcvt.f32.u32 vfp_max, vfp_max
+
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
@@ -614,7 +623,9 @@ sts32_syntheplay:
 		str temp, STS32_SYNTHEWAVE_FREQB_L
 		lsr temp, code, #16
 		vmov vfp_temp, temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vdiv.f32 vfp_temp, vfp_temp, vfp_max
+		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGB_L
 
@@ -633,7 +644,7 @@ sts32_syntheplay:
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGA_R
 
-		lsl temp, count, #4                        @ Substitute of Multiplication by 8
+		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		add temp, temp, #12
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
@@ -644,7 +655,9 @@ sts32_syntheplay:
 		str temp, STS32_SYNTHEWAVE_FREQB_R
 		lsr temp, code, #16
 		vmov vfp_temp, temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vdiv.f32 vfp_temp, vfp_temp, vfp_max
+		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGB_R
 
@@ -685,7 +698,7 @@ sts32_syntheplay:
 		mov r0, #0                            @ Return with Success
 
 	sts32_syntheplay_common:
-		vpop {s0}
+		vpop {s0-s2}
 		pop {r4-r7,pc}
 
 .unreq addr_code
@@ -697,6 +710,10 @@ sts32_syntheplay:
 .unreq temp
 .unreq temp2
 .unreq vfp_temp
+.unreq vfp_pi_double
+.unreq vfp_max
+
+sts32_syntheplay_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 
 
 /**
