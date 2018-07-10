@@ -435,9 +435,9 @@ sts32_synthewave_i2s:
 		vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
 		vmov temp2, vfp_freq_a
 
-		bic temp, temp, #0xFF000000
-		bic temp, temp, #0x00FF0000
-		lsl temp2, temp2, #16
+		bic temp2, temp2, #0xFF000000
+		bic temp2, temp2, #0x00FF0000               @ Bit[15:0] for R
+		lsl temp, temp, #16                         @ Bit[31:16] for L
 		orr temp, temp, temp2
 
 		str temp, [memorymap_base, #equ32_pcm_fifo]

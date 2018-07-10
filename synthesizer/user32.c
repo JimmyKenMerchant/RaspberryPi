@@ -9,6 +9,7 @@
 
 #include "system32.h"
 #include "system32.c"
+#include "sts32.h"
 
 #define timer_count_multiply        125
 #define timer_count_factor_default  10
@@ -22,37 +23,37 @@
 
 synthe_code synthe1[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe2[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe3[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe4[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe5[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe6[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe7[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe8[] =
@@ -62,42 +63,42 @@ synthe_code synthe8[] =
 	_20LR(3ull<<48|60ull<<32|300ull<<16|500ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|250ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_40LR(10000ull<<48|1000ull<<32|300ull<<16|440ull,10000ull<<48|1000ull<<32|300ull<<16|880ull)
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe9[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe10[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe11[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe12[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe13[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe14[] =
 {
-	0x00
+	0x00,0x00
 };
 
 synthe_code synthe15[] =
 {
-	0x00
+	0x00,0x00
 };
 
 int32 _user_start()
