@@ -798,6 +798,85 @@ sts32_synthelen:
 
 
 /**
+ * function sts32_synthedecode
+ * MEMO: UNDER CONSTRUCTION!
+ * Make Synthesizer Code from Pre-code
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Synthesizer Pre-code is a series of blocks. Each block has a structure of 24 bytes.
+ * uint64 synthe_code; without sound volume
+ * uint32 beat_length;
+ * uint32 sound_volume;
+ * float32 rising_pitch; 0.0-1.0
+ * float32 falling_pitch; 0.0-1.0
+ *
+ * Beat Length as 1.0 = Rising Pitch + Flat (Same as Volume) + Falling Pitch
+ *
+ * Parameters
+ * r0: Pointer of Array of Synthesizer Pre-code
+ *
+ * Return: r0 (Pointer of Array of Synthesizer Code, If Zero Not Allocated Memory)
+ */
+.globl sts32_synthedecode
+sts32_synthedecode:
+	/* Auto (Local) Variables, but just Aliases */
+	synt_pre_point  .req r0
+	synt_point      .req r1
+	synt_pre_length .req r2
+	synt_length     .req r3
+	i               .req r4
+	temp            .req r5
+	dup_point       .req r6
+
+	push {r4-r6,lr}
+
+	push {r0-r1}
+	bl sts32_synthelen
+	mov synt_pre_length, r0
+	pop {r0-r1}
+
+	mov synt_length, #0
+	mov i, #0
+	mov dup_point, synt_pre_point
+	add dup_point, dup_point, #8           @ Offset to Beat Length
+
+	sts_synthedecode_length:
+		cmp i, synt_pre_length
+		bge sts_synthedecode_malloc
+		ldr temp, [dup_point]
+		add synt_length, synt_length, temp
+		add dup_point, dup_point, #24      @ Slide 24 Bytes
+		add i, i, #1
+		b sts_synthedecode_length
+
+	sts_synthedecode_malloc:
+		push {r0-r3}
+		lsl r0, synt_length, #1
+		bl heap32_malloc
+		mov synt_point, r0
+		pop {r0-r3}
+
+		cmp synt_point, #0
+		beq sts32_synthedecode_common
+
+	sts32_synthedecode_loop:
+		mov i, #0
+		b sts32_synthedecode_loop
+
+	sts32_synthedecode_common:
+		mov r0, synt_point
+		pop {r4-r6,pc}
+
+.unreq synt_pre_point
+.unreq synt_point
+.unreq synt_pre_length
+.unreq synt_length
+.unreq i
+.unreq temp
+.unreq dup_point
+
+
+/**
  * function sts32_syntheinit_pwm
  * Sound Initializer for PWM Mode
  *
