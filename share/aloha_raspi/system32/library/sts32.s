@@ -799,7 +799,7 @@ sts32_synthelen:
 
 /**
  * function sts32_syntheprelen
- * Count 20-Bytes Blocks of Synthesizer Pre-code
+ * Count 24-byte Blocks of Synthesizer Pre-code
  *
  * Parameters
  * r0: Pointer of Array of Synthesizer Pre-code
@@ -826,9 +826,11 @@ sts32_syntheprelen:
 		cmpeq synt_word, #0
 		ldreq synt_word, [synt_pre_point, #16]
 		cmpeq synt_word, #0
+		ldreq synt_word, [synt_pre_point, #20]
+		cmpeq synt_word, #0
 		beq sts32_syntheprelen_common           @ Break Loop if Null Character on Every Byte
 
-		add synt_pre_point, synt_pre_point, #20
+		add synt_pre_point, synt_pre_point, #24
 		add length, length, #1
 		b sts32_syntheprelen_loop
 
@@ -847,7 +849,6 @@ sts32_syntheprelen:
  *
  * Parameters
  * r0: Pointer of Array of Synthesizer Pre-code
- * r1: Number of Blocks in Synthesizer Pre-code
  *
  * Return: r0 (Number of Beats in Synthesizer Pre-code)
  */
@@ -862,15 +863,20 @@ sts32_synthebeatlen:
 
 	push {r4,lr}
 
+	push {r0}
+	bl sts32_syntheprelen
+	mov length, r0
+	pop {r0}
+
 	mov beat, #0
 	mov i, #0
 
 	sts32_synthebeatlen_loop:
 		cmp i, length
 		bge sts32_synthebeatlen_common
-		ldr temp, [synt_pre_point, #4]
+		ldr temp, [synt_pre_point, #8]
 		add beat, beat, temp
-		add synt_pre_point, synt_pre_point, #20
+		add synt_pre_point, synt_pre_point, #24
 		add i, i, #1
 		b sts32_synthebeatlen_loop
 
@@ -886,10 +892,97 @@ sts32_synthebeatlen:
 
 
 /**
+ * function sts32_synthedecodelr
+ * MEMO: UNDER CONSTRUCTION!
+ * Make LR Synthesizer Code from Pre-code
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: Pointer of Array of Synthesizer Pre-code for L
+ * r0: Pointer of Array of Synthesizer Pre-code for R
+ *
+ * Return: r0 (Pointer of Array of Synthesizer Code, If 0, 1, and 2 Error)
+ * Error(0): Memory Space for Synthesizer Code is Not Allocated (On heap32_malloc)
+ * Error(1): Memory Space for Synthesizer Code is Not Allocated (On sts32_synthedecode)
+ * Error(2): Overflow of Memory Space (On sts32_synthedecode)
+ */
+.globl sts32_synthedecodelr
+sts32_synthedecodelr:
+	/* Auto (Local) Variables, but just Aliases */
+	synt_pre_point_l .req r0
+	synt_pre_point_r .req r1
+	beat_l           .req r2
+	beat_r           .req r3
+	heap             .req r4
+	result           .req r5
+
+	push {r4-r5,lr}
+
+	push {r0-r1}
+	bl sts32_synthebeatlen
+	mov beat_l, r0
+	pop {r0-r1}
+
+	push {r0-r2}
+	mov r0, synt_pre_point_r
+	bl sts32_synthebeatlen
+	mov beat_r, r0
+	pop {r0-r2}
+
+	cmp beat_l, beat_r
+	movlt beat_l, beat_r
+
+	lsr beat_l, beat_l, #2               @ Substitute of Multiplication by 4, Make 128-bit Block (LR Synthe Code)
+	add beat_l, beat_l, #2               @ End of Synthe Code (64-bit)
+
+	push {r0-r3}
+	mov r0, beat_l
+	bl heap32_malloc
+	mov heap, r0
+	pop {r0-r3}
+
+	cmp heap, #0
+	beq sts32_synthedecodelr_common
+
+	push {r0-r3}
+	mov r0, heap
+	mov r1, synt_pre_point_l
+	mov r2, #0
+	bl sts32_synthedecode
+	mov result, r0
+	pop {r0-r3}
+
+	cmp result, #0
+	movne heap, result
+	bne sts32_synthedecodelr_common
+
+	push {r0-r3}
+	mov r0, heap
+	mov r1, synt_pre_point_r
+	mov r2, #1
+	bl sts32_synthedecode
+	mov result, r0
+	pop {r0-r3}
+
+	cmp result, #0
+	movne heap, result
+
+	sts32_synthedecodelr_common:
+		mov r0, heap
+		pop {r4-r5,pc}
+
+.unreq synt_pre_point_l
+.unreq synt_pre_point_r
+.unreq beat_l
+.unreq beat_r
+.unreq heap
+.unreq result
+
+
+/**
  * function sts32_synthedecode
  * MEMO: UNDER CONSTRUCTION!
  * Make Synthesizer Code from Pre-code
- * This Function Makes Allocated Memory Space from Heap.
  *
  * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
  * uint64 synthe_code; without Sound Volume
@@ -901,8 +994,7 @@ sts32_synthebeatlen:
  * Parameters
  * r0: Pointer of Array of Synthesizer Code
  * r1: Pointer of Array of Synthesizer Pre-code
- * r2: Number of Blocks in Synthesizer Pre-code
- * r3: L (0) or R (1 and More)
+ * r2: L (0) or R (1 and More)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Memory Space for Synthesizer Code is Not Allocated
@@ -913,9 +1005,9 @@ sts32_synthedecode:
 	/* Auto (Local) Variables, but just Aliases */
 	synt_point        .req r0
 	synt_pre_point    .req r1
-	synt_pre_length   .req r2
-	flag_lr           .req r3
-	synt_max_length   .req r4
+	flag_lr           .req r2
+	synt_max_length   .req r3
+	synt_pre_length   .req r4
 	code_lower        .req r5
 	code_upper        .req r6
 	temp              .req r7
@@ -936,18 +1028,24 @@ sts32_synthedecode:
 	push {r4-r10,lr}
 	vpush {s0-s7}
 
-	push {r0-r3}
+	push {r0-r2}
 	bl heap32_mcount
 	mov synt_max_length, r0
-	pop {r0-r3}
+	pop {r0-r2}
 
 	cmp synt_max_length, #-1
 	beq sts32_synthedecode_error1
 
-	sub synt_max_length, synt_max_length, #16  @ Subtract for End of Synthe Code
+	sub synt_max_length, synt_max_length, #8   @ Subtract for End of Synthe code
 	lsr synt_max_length, synt_max_length, #2   @ Substitute of Division by 4, Counts as 128-bit Blocks for LR Synthe Code
 	cmp flag_lr, #0
 	addeq synt_point, synt_point, #8           @ Set Offset for L
+
+	push {r0-r3}
+	mov r0, synt_pre_point
+	bl sts32_syntheprelen
+	mov synt_pre_length, r0
+	pop {r0-r3}
 
 	mov temp, #1
 	vmov vfp_one, temp
@@ -1083,9 +1181,9 @@ sts32_synthedecode:
 
 .unreq synt_point
 .unreq synt_pre_point
-.unreq synt_pre_length
 .unreq flag_lr
 .unreq synt_max_length
+.unreq synt_pre_length
 .unreq code_lower
 .unreq code_upper
 .unreq temp
