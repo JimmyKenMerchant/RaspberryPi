@@ -798,82 +798,308 @@ sts32_synthelen:
 
 
 /**
+ * function sts32_syntheprelen
+ * Count 20-Bytes Blocks of Synthesizer Pre-code
+ *
+ * Parameters
+ * r0: Pointer of Array of Synthesizer Pre-code
+ *
+ * Return: r0 (Number of Blocks in Synthesizer Pre-code)
+ */
+.globl sts32_syntheprelen
+sts32_syntheprelen:
+	/* Auto (Local) Variables, but just Aliases */
+	synt_pre_point .req r0
+	synt_word      .req r1
+	length         .req r2
+
+	mov length, #0
+
+	sts32_syntheprelen_loop:
+		ldr synt_word, [synt_pre_point]
+		cmp synt_word, #0
+		ldreq synt_word, [synt_pre_point, #4]
+		cmpeq synt_word, #0
+		ldreq synt_word, [synt_pre_point, #8]
+		cmpeq synt_word, #0
+		ldreq synt_word, [synt_pre_point, #12]
+		cmpeq synt_word, #0
+		ldreq synt_word, [synt_pre_point, #16]
+		cmpeq synt_word, #0
+		beq sts32_syntheprelen_common           @ Break Loop if Null Character on Every Byte
+
+		add synt_pre_point, synt_pre_point, #20
+		add length, length, #1
+		b sts32_syntheprelen_loop
+
+	sts32_syntheprelen_common:
+		mov r0, length
+		mov pc, lr
+
+.unreq synt_pre_point
+.unreq synt_word
+.unreq length
+
+
+/**
+ * function sts32_synthebeatlen
+ * Count Beats in Synthesizer Pre-code
+ *
+ * Parameters
+ * r0: Pointer of Array of Synthesizer Pre-code
+ * r1: Number of Blocks in Synthesizer Pre-code
+ *
+ * Return: r0 (Number of Beats in Synthesizer Pre-code)
+ */
+.globl sts32_synthebeatlen
+sts32_synthebeatlen:
+	/* Auto (Local) Variables, but just Aliases */
+	synt_pre_point .req r0
+	length         .req r1
+	temp           .req r2
+	beat           .req r3
+	i              .req r4
+
+	push {r4,lr}
+
+	mov beat, #0
+	mov i, #0
+
+	sts32_synthebeatlen_loop:
+		cmp i, length
+		bge sts32_synthebeatlen_common
+		ldr temp, [synt_pre_point, #4]
+		add beat, beat, temp
+		add synt_pre_point, synt_pre_point, #20
+		add i, i, #1
+		b sts32_synthebeatlen_loop
+
+	sts32_synthebeatlen_common:
+		mov r0, beat
+		pop {r4,pc}
+
+.unreq synt_pre_point
+.unreq length
+.unreq temp
+.unreq beat
+.unreq i
+
+
+/**
  * function sts32_synthedecode
  * MEMO: UNDER CONSTRUCTION!
  * Make Synthesizer Code from Pre-code
  * This Function Makes Allocated Memory Space from Heap.
  *
- * Synthesizer Pre-code is a series of blocks. Each block has a structure of 24 bytes.
- * uint64 synthe_code; without sound volume
- * uint32 beat_length;
- * uint32 sound_volume;
- * float32 rising_pitch; 0.0-1.0
- * float32 falling_pitch; 0.0-1.0
+ * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
+ * uint64 synthe_code; without Sound Volume
+ * uint64 beat_length (Bit[31:0]) and sound_volume (Bit[63:32]);
+ * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
  *
- * Beat Length as 1.0 = Rising Pitch + Flat (Same as Volume) + Falling Pitch
+ * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
  *
  * Parameters
- * r0: Pointer of Array of Synthesizer Pre-code
+ * r0: Pointer of Array of Synthesizer Code
+ * r1: Pointer of Array of Synthesizer Pre-code
+ * r2: Number of Blocks in Synthesizer Pre-code
+ * r3: L (0) or R (1 and More)
  *
- * Return: r0 (Pointer of Array of Synthesizer Code, If Zero Not Allocated Memory)
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Memory Space for Synthesizer Code is Not Allocated
+ * Error(2): Overflow of Memory Space
  */
 .globl sts32_synthedecode
 sts32_synthedecode:
 	/* Auto (Local) Variables, but just Aliases */
-	synt_pre_point  .req r0
-	synt_point      .req r1
-	synt_pre_length .req r2
-	synt_length     .req r3
-	i               .req r4
-	temp            .req r5
-	dup_point       .req r6
+	synt_point        .req r0
+	synt_pre_point    .req r1
+	synt_pre_length   .req r2
+	flag_lr           .req r3
+	synt_max_length   .req r4
+	code_lower        .req r5
+	code_upper        .req r6
+	temp              .req r7
+	rising_length     .req r8
+	flat_length       .req r9
+	beat_length       .req r10
 
-	push {r4-r6,lr}
+	/* VFP Registers */
+	vfp_volume        .req s0
+	vfp_rising        .req s1
+	vfp_falling       .req s2
+	vfp_beat_length   .req s3
+	vfp_temp          .req s4
+	vfp_rising_delta  .req s5
+	vfp_falling_delta .req s6
+	vfp_one           .req s7
 
-	push {r0-r1}
-	bl sts32_synthelen
-	mov synt_pre_length, r0
-	pop {r0-r1}
+	push {r4-r10,lr}
+	vpush {s0-s7}
 
-	mov synt_length, #0
-	mov i, #0
-	mov dup_point, synt_pre_point
-	add dup_point, dup_point, #8           @ Offset to Beat Length
+	push {r0-r3}
+	bl heap32_mcount
+	mov synt_max_length, r0
+	pop {r0-r3}
 
-	sts_synthedecode_length:
-		cmp i, synt_pre_length
-		bge sts_synthedecode_malloc
-		ldr temp, [dup_point]
-		add synt_length, synt_length, temp
-		add dup_point, dup_point, #24      @ Slide 24 Bytes
-		add i, i, #1
-		b sts_synthedecode_length
+	cmp synt_max_length, #-1
+	beq sts32_synthedecode_error1
 
-	sts_synthedecode_malloc:
-		push {r0-r3}
-		lsl r0, synt_length, #1
-		bl heap32_malloc
-		mov synt_point, r0
-		pop {r0-r3}
+	sub synt_max_length, synt_max_length, #16  @ Subtract for End of Synthe Code
+	lsr synt_max_length, synt_max_length, #2   @ Substitute of Division by 4, Counts as 128-bit Blocks for LR Synthe Code
+	cmp flag_lr, #0
+	addeq synt_point, synt_point, #8           @ Set Offset for L
 
-		cmp synt_point, #0
-		beq sts32_synthedecode_common
+	mov temp, #1
+	vmov vfp_one, temp
+	vcvt.f32.u32 vfp_one, vfp_one
 
-	sts32_synthedecode_loop:
-		mov i, #0
-		b sts32_synthedecode_loop
+	sts32_synthedecode_main:
+		subs synt_pre_length, synt_pre_length, #1
+		blt sts32_synthedecode_success
+		ldr code_lower, [synt_pre_point]
+		ldr code_upper, [synt_pre_point, #4]
+		ldr beat_length, [synt_pre_point, #8]
+		vmov vfp_beat_length, beat_length
+		vcvt.f32.u32 vfp_beat_length, vfp_beat_length
+		vldr vfp_volume, [synt_pre_point, #12]
+		vcvt.f32.u32 vfp_volume, vfp_volume
+		vldr vfp_rising, [synt_pre_point, #16]
+		vcvt.f32.u32 vfp_rising, vfp_rising
+		vldr vfp_falling, [synt_pre_point, #20]
+		vcvt.f32.u32 vfp_falling, vfp_falling
+		add synt_pre_point, synt_pre_point, #24        @ Offset for Next Pre-block
+
+		/* Convert Percents to Decimal */
+
+		mov temp, #100
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vdiv.f32 vfp_rising, vfp_rising, vfp_temp
+		vdiv.f32 vfp_falling, vfp_falling, vfp_temp
+
+		/* Rising Length and Rising Delta */
+
+		vmul.f32 vfp_temp, vfp_beat_length, vfp_rising
+		vdiv.f32 vfp_rising_delta, vfp_volume, vfp_temp
+		vcvt.u32.f32 vfp_temp, vfp_temp
+		vmov rising_length, vfp_temp
+
+		/* Falling Delta  */
+
+		vmul.f32 vfp_temp, vfp_beat_length, vfp_falling
+		vdiv.f32 vfp_falling_delta, vfp_volume, vfp_temp
+
+		/* Flat Length */
+
+		/* Check Sum of Rising and Falling is Under 100 Percents */
+		vadd.f32 vfp_temp, vfp_rising, vfp_falling
+		vcmp.f32 vfp_temp, vfp_one
+		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+		vsublt.f32 vfp_temp, vfp_one, vfp_temp
+		vmullt.f32 vfp_temp, vfp_beat_length, vfp_temp
+		vcvtlt.u32.f32 vfp_temp, vfp_temp
+		vmovlt flat_length, vfp_temp
+		movge flat_length, #0                           @ If Overing 100 Percents
+
+		/* Volume 0.0 for Further Prcocesses */
+
+		.unreq vfp_one
+		vfp_zero .req s7
+
+		mov temp, #0
+		vmov vfp_volume, temp
+		vmov vfp_zero, temp
+
+		sts32_synthedecode_main_rising:
+			subs synt_max_length, synt_max_length, #1
+			blt sts32_synthedecode_error2
+			subs beat_length, beat_length, #1
+			blt sts32_synthedecode_main
+			subs rising_length, rising_length, #1
+			blt sts32_synthedecode_main_flat
+
+			vadd.f32 vfp_volume, vfp_volume, vfp_rising_delta
+			vcvtr.u32.f32 vfp_temp, vfp_volume
+			vmov temp, vfp_temp
+			lsl temp, temp, #16
+			bic code_lower, code_lower, #0xFF000000
+			bic code_lower, code_lower, #0x00FF0000
+			orr code_lower, code_lower, temp
+
+			str code_lower, [synt_point]
+			str code_upper, [synt_point, #4]
+			add synt_point, synt_point, #16
+			b sts32_synthedecode_main_rising
+
+		sts32_synthedecode_main_flat:
+			subs synt_max_length, synt_max_length, #1
+			blt sts32_synthedecode_error2
+			subs beat_length, beat_length, #1
+			blt sts32_synthedecode_main
+			subs flat_length, flat_length, #1
+			blt sts32_synthedecode_main_falling
+
+			str code_lower, [synt_point]
+			str code_upper, [synt_point, #4]
+			add synt_point, synt_point, #16
+			b sts32_synthedecode_main_flat
+
+		sts32_synthedecode_main_falling:
+			subs synt_max_length, synt_max_length, #1
+			blt sts32_synthedecode_error2
+			subs beat_length, beat_length, #1
+			blt sts32_synthedecode_main
+
+			vsub.f32 vfp_volume, vfp_volume, vfp_falling_delta
+			vcmp.f32 vfp_volume, vfp_zero
+			vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
+			vcvtrgt.u32.f32 vfp_temp, vfp_volume
+			vmovgt temp, vfp_temp
+			movle temp, #0
+			lsl temp, temp, #16
+			bic code_lower, code_lower, #0xFF000000
+			bic code_lower, code_lower, #0x00FF0000
+			orr code_lower, code_lower, temp
+
+			str code_lower, [synt_point]
+			str code_upper, [synt_point, #4]
+			add synt_point, synt_point, #16
+			b sts32_synthedecode_main_falling
+
+	sts32_synthedecode_error1:
+		mov r0, #1
+		b sts32_synthedecode_common
+
+	sts32_synthedecode_error2:
+		mov r0, #2
+		b sts32_synthedecode_common
+
+	sts32_synthedecode_success:
+		mov r0, #0
 
 	sts32_synthedecode_common:
-		mov r0, synt_point
-		pop {r4-r6,pc}
+		vpop {s0-s7}
+		pop {r4-r10,pc}
 
-.unreq synt_pre_point
 .unreq synt_point
+.unreq synt_pre_point
 .unreq synt_pre_length
-.unreq synt_length
-.unreq i
+.unreq flag_lr
+.unreq synt_max_length
+.unreq code_lower
+.unreq code_upper
 .unreq temp
-.unreq dup_point
+.unreq rising_length
+.unreq flat_length
+.unreq beat_length
+.unreq vfp_volume
+.unreq vfp_rising
+.unreq vfp_falling
+.unreq vfp_beat_length
+.unreq vfp_temp
+.unreq vfp_rising_delta
+.unreq vfp_falling_delta
+.unreq vfp_zero
 
 
 /**
