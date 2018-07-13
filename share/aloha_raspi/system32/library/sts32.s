@@ -42,7 +42,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 /**
  * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
  * Bit[15-0] Frequency-A (Main): 0 to 65535 Hz
- * Bit[31-16] Magnitude-A: -32768 to 32767
+ * Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
  * Bit[47-32] Frequency-B (Sub): 0 to 65535 Hz
  * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
@@ -53,6 +53,16 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  *
  * Synthesizer Code will be fetched by L/R alternatively.
  * If you line up four blocks, the first and the third block will be fetched by L, and the second and the fourth block will be fetched by R.
+ */
+
+/**
+ * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
+ * uint64 synthe_code;
+ * uint64 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
+ * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
+ * 3 streak of 0x0 means End of Synthesizer Pre-code.
+ *
+ * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
  */
 
 /**
@@ -275,7 +285,7 @@ sts32_synthewave_pwm:
 .unreq vfp_time
 .unreq vfp_divisor
 
-sts32_synthewave_pwm_divisor: .float 256.0
+sts32_synthewave_pwm_divisor: .float 128.0
 
 
 /**
@@ -610,7 +620,7 @@ sts32_syntheplay:
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_L
-		lsr temp, code, #16
+		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
@@ -642,7 +652,7 @@ sts32_syntheplay:
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_R
-		lsr temp, code, #16
+		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
@@ -893,7 +903,6 @@ sts32_synthebeatlen:
 
 /**
  * function sts32_synthedecodelr
- * MEMO: UNDER CONSTRUCTION!
  * Make LR Synthesizer Code from Pre-code
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -932,7 +941,7 @@ sts32_synthedecodelr:
 	cmp beat_l, beat_r
 	movlt beat_l, beat_r
 
-	lsr beat_l, beat_l, #2               @ Substitute of Multiplication by 4, Make 128-bit Block (LR Synthe Code)
+	lsl beat_l, beat_l, #2               @ Substitute of Multiplication by 4, Make 128-bit Block (LR Synthe Code)
 	add beat_l, beat_l, #2               @ End of Synthe Code (64-bit)
 
 	push {r0-r3}
@@ -945,8 +954,8 @@ sts32_synthedecodelr:
 	beq sts32_synthedecodelr_common
 
 	push {r0-r3}
-	mov r0, heap
 	mov r1, synt_pre_point_l
+	mov r0, heap
 	mov r2, #0
 	bl sts32_synthedecode
 	mov result, r0
@@ -958,7 +967,6 @@ sts32_synthedecodelr:
 
 	push {r0-r3}
 	mov r0, heap
-	mov r1, synt_pre_point_r
 	mov r2, #1
 	bl sts32_synthedecode
 	mov result, r0
@@ -981,15 +989,7 @@ sts32_synthedecodelr:
 
 /**
  * function sts32_synthedecode
- * MEMO: UNDER CONSTRUCTION!
  * Make Synthesizer Code from Pre-code
- *
- * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
- * uint64 synthe_code; without Sound Volume
- * uint64 beat_length (Bit[31:0]) and sound_volume (Bit[63:32]);
- * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
- *
- * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
  *
  * Parameters
  * r0: Pointer of Array of Synthesizer Code
@@ -1037,9 +1037,9 @@ sts32_synthedecode:
 	beq sts32_synthedecode_error1
 
 	sub synt_max_length, synt_max_length, #8   @ Subtract for End of Synthe code
-	lsr synt_max_length, synt_max_length, #2   @ Substitute of Division by 4, Counts as 128-bit Blocks for LR Synthe Code
+	lsr synt_max_length, synt_max_length, #4   @ Substitute of Division by 16, Counts as 128-bit (4 Words) Blocks for LR Synthe Code
 	cmp flag_lr, #0
-	addeq synt_point, synt_point, #8           @ Set Offset for L
+	addne synt_point, synt_point, #8           @ Set Offset for R
 
 	push {r0-r3}
 	mov r0, synt_pre_point
@@ -1059,13 +1059,14 @@ sts32_synthedecode:
 		ldr beat_length, [synt_pre_point, #8]
 		vmov vfp_beat_length, beat_length
 		vcvt.f32.u32 vfp_beat_length, vfp_beat_length
-		vldr vfp_volume, [synt_pre_point, #12]
-		vcvt.f32.u32 vfp_volume, vfp_volume
+		asr temp, code_lower, #16                      @ Arighmetic Logical Shift Right to Hold Signess
+		vmov vfp_volume, temp
+		vcvt.f32.s32 vfp_volume, vfp_volume
 		vldr vfp_rising, [synt_pre_point, #16]
 		vcvt.f32.u32 vfp_rising, vfp_rising
 		vldr vfp_falling, [synt_pre_point, #20]
 		vcvt.f32.u32 vfp_falling, vfp_falling
-		add synt_pre_point, synt_pre_point, #24        @ Offset for Next Pre-block
+		add synt_pre_point, synt_pre_point, #24         @ Offset for Next Pre-block
 
 		/* Convert Percents to Decimal */
 
@@ -1081,6 +1082,8 @@ sts32_synthedecode:
 		vdiv.f32 vfp_rising_delta, vfp_volume, vfp_temp
 		vcvt.u32.f32 vfp_temp, vfp_temp
 		vmov rising_length, vfp_temp
+		cmp rising_length, beat_length
+		movgt rising_length, beat_length                @ If Rising Is Overing 100 Percents
 
 		/* Falling Delta  */
 
@@ -1108,16 +1111,29 @@ sts32_synthedecode:
 		vmov vfp_volume, temp
 		vmov vfp_zero, temp
 
+		sub beat_length, beat_length, rising_length
+		sub beat_length, beat_length, flat_length
+
+/*
+macro32_debug synt_max_length, 200, 0
+macro32_debug beat_length, 200, 12
+macro32_debug rising_length, 200, 24
+macro32_debug flat_length, 200, 36
+macro32_debug synt_point, 200, 48
+*/
+
 		sts32_synthedecode_main_rising:
+			subs rising_length, rising_length, #1
+			ldrlt code_lower, [synt_pre_point, #-24]            @ Retrieve Original Volume for Flat Part
+			asrlt temp, code_lower, #16                         @ Arighmetic Logical Shift Right to Hold Signess
+			vmovlt vfp_volume, temp
+			vcvtlt.f32.s32 vfp_volume, vfp_volume
+			blt sts32_synthedecode_main_flat
 			subs synt_max_length, synt_max_length, #1
 			blt sts32_synthedecode_error2
-			subs beat_length, beat_length, #1
-			blt sts32_synthedecode_main
-			subs rising_length, rising_length, #1
-			blt sts32_synthedecode_main_flat
 
 			vadd.f32 vfp_volume, vfp_volume, vfp_rising_delta
-			vcvtr.u32.f32 vfp_temp, vfp_volume
+			vcvtr.s32.f32 vfp_temp, vfp_volume
 			vmov temp, vfp_temp
 			lsl temp, temp, #16
 			bic code_lower, code_lower, #0xFF000000
@@ -1127,41 +1143,39 @@ sts32_synthedecode:
 			str code_lower, [synt_point]
 			str code_upper, [synt_point, #4]
 			add synt_point, synt_point, #16
+
 			b sts32_synthedecode_main_rising
 
 		sts32_synthedecode_main_flat:
-			subs synt_max_length, synt_max_length, #1
-			blt sts32_synthedecode_error2
-			subs beat_length, beat_length, #1
-			blt sts32_synthedecode_main
 			subs flat_length, flat_length, #1
 			blt sts32_synthedecode_main_falling
+			subs synt_max_length, synt_max_length, #1
+			blt sts32_synthedecode_error2
 
 			str code_lower, [synt_point]
 			str code_upper, [synt_point, #4]
 			add synt_point, synt_point, #16
+
 			b sts32_synthedecode_main_flat
 
 		sts32_synthedecode_main_falling:
-			subs synt_max_length, synt_max_length, #1
-			blt sts32_synthedecode_error2
 			subs beat_length, beat_length, #1
 			blt sts32_synthedecode_main
+			subs synt_max_length, synt_max_length, #1
+			blt sts32_synthedecode_error2
+
+			str code_lower, [synt_point]
+			str code_upper, [synt_point, #4]
+			add synt_point, synt_point, #16
 
 			vsub.f32 vfp_volume, vfp_volume, vfp_falling_delta
-			vcmp.f32 vfp_volume, vfp_zero
-			vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-			vcvtrgt.u32.f32 vfp_temp, vfp_volume
-			vmovgt temp, vfp_temp
-			movle temp, #0
+			vcvtr.s32.f32 vfp_temp, vfp_volume
+			vmov temp, vfp_temp
 			lsl temp, temp, #16
 			bic code_lower, code_lower, #0xFF000000
 			bic code_lower, code_lower, #0x00FF0000
 			orr code_lower, code_lower, temp
 
-			str code_lower, [synt_point]
-			str code_upper, [synt_point, #4]
-			add synt_point, synt_point, #16
 			b sts32_synthedecode_main_falling
 
 	sts32_synthedecode_error1:
@@ -1173,6 +1187,9 @@ sts32_synthedecode:
 		b sts32_synthedecode_common
 
 	sts32_synthedecode_success:
+/*
+macro32_debug synt_point, 200, 60
+*/
 		mov r0, #0
 
 	sts32_synthedecode_common:

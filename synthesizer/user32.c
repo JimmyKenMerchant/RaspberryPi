@@ -21,84 +21,122 @@
  * Max Beat is 96Hz, Min Beat is 12Hz
  */
 
+/**
+ * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
+ * Bit[15-0] Frequency-A (Main): 0 to 65535 Hz
+ * Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
+ * Bit[47-32] Frequency-B (Sub): 0 to 65535 Hz
+ * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
+ * The wave is synthesized the formula:
+ * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
+ * Where T is time (seconds); one is 1/sampling-rate seconds.
+ * This type of synthesizers is named as "Frequency Modulation Synthesis" developed by John Chowning, and decorated the music world in the late 20th century.
+ * 0x0 means End of Synthesizer Code.
+ *
+ * Synthesizer Code will be fetched by L/R alternatively.
+ * If you line up four blocks, the first and the third block will be fetched by L, and the second and the fourth block will be fetched by R.
+ */
+
+/**
+ * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
+ * uint64 synthe_code;
+ * uint64 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
+ * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
+ * 3 streak of 0x0 means End of Synthesizer Pre-code.
+ *
+ * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
+ */
+
+synthe_precode pre_synthe1_l[] = {
+	0ull<<48|60ull<<32|1000ull<<16|2000ull,300,50ull<<32|50ull,
+	0x00,0x00,0x00
+};
+
+synthe_precode pre_synthe1_r[] = {
+	0ull<<48|60ull<<32|1000ull<<16|2000ull,300,50ull<<32|50ull,
+	0x00,0x00,0x00
+};
+
 synthe_code synthe1[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe2[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe3[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe4[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe5[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe6[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe7[] =
 {
-	0x00,0x00
+	0x00
 };
 
+/*
 synthe_code synthe8[] =
 {
-	_20LR(3ull<<48|60ull<<32|300ull<<16|2000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
+	_20LR(3ull<<48|60ull<<32|-3u<<16|1000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|1000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|500ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_20LR(3ull<<48|60ull<<32|300ull<<16|250ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
 	_40LR(10000ull<<48|1000ull<<32|300ull<<16|440ull,10000ull<<48|1000ull<<32|300ull<<16|880ull)
-	0x00,0x00
+	0x00
 };
+*/
 
 synthe_code synthe9[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe10[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe11[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe12[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe13[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe14[] =
 {
-	0x00,0x00
+	0x00
 };
 
 synthe_code synthe15[] =
 {
-	0x00,0x00
+	0x00
 };
 
 int32 _user_start()
@@ -107,6 +145,11 @@ int32 _user_start()
 	uchar8 timer_count_factor = timer_count_factor_default;
 	uint32 detect_parallel;
 	uint32 result;
+
+	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
+
+//print32_debug( (uint32)synthe8, 100, 200 );
+//print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
 
 	while ( true ) {
 #ifdef __SOUND_I2S

@@ -1261,6 +1261,7 @@ extern uint32 snd32_musiclen
 
 /* Constants */
 
+#define synthe_precode uint64
 #define synthe_code uint64
 
 /* Relative System Calls  */
@@ -1286,6 +1287,22 @@ __attribute__((noinline)) uint32 _syntheclear();
 extern uint64 sts32_synthelen
 (
 	synthe_code* synthe
+);
+
+
+/**
+ * Make LR Synthesizer Code from Pre-code
+ * This Function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Pointer of Array of Synthesizer Code, If 0, 1, and 2 Error
+ * Error(0): Memory Space for Synthesizer Code is Not Allocated (On heap32_malloc)
+ * Error(1): Memory Space for Synthesizer Code is Not Allocated (On sts32_synthedecode)
+ * Error(2): Overflow of Memory Space (On sts32_synthedecode)
+ */
+extern synthe_code* sts32_synthedecodelr
+(
+	synthe_precode* synthe_precode_l,
+	synthe_precode* synthe_precode_r
 );
 
 
