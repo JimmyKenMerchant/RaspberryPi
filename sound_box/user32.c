@@ -134,7 +134,7 @@ music_code interrupt17[] =
 int32 _user_start()
 {
 
-	uchar8 timer_count_multiplier = timer_count_multiplier_default;
+	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
 
 #ifdef __SOUND_I2S

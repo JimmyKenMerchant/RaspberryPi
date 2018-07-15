@@ -148,9 +148,8 @@ synthe_code synthe15[] =
 int32 _user_start()
 {
 
-	uchar8 timer_count_multiplier = timer_count_multiplier_default;
+	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
-	uint32 result;
 
 	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
 
@@ -159,15 +158,14 @@ int32 _user_start()
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		result = _synthewave_i2s();
+		_synthewave_i2s();
 #endif
 #ifdef __SOUND_PWM
-		result = _synthewave_pwm();
+		_synthewave_pwm();
 #endif
 #ifdef __SOUND_JACK
-		result = _synthewave_pwm();
+		_synthewave_pwm();
 #endif
-print32_debug( result, 100, 100 );
 		if ( _gpio_detect( 27 ) ) {
 			_syntheplay();
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
