@@ -11,14 +11,17 @@
 #include "system32.c"
 #include "sound32.h"
 
-#define timer_count_multiply        125
-#define timer_count_factor_default  10
-#define timer_count_factor_minlimit 5
-#define timer_count_factor_maxlimit 40
+#define timer_count_multiplicand        125
+#define timer_count_multiplier_default  10
+#define timer_count_multiplier_minlimit 5
+#define timer_count_multiplier_maxlimit 40
 
 /**
- * In Default, 48Hz Synchronization Clock
- * Max Beat is 96Hz, Min Beat is 12Hz
+ * In default, there is a 48Hz synchronization clock (it's a half of 96Hz on Arm Timer beacause of toggling).
+ * Arm Timer sets 120000Hz as clock.
+ * 1250 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 1250 / 2 equals 48.
+ * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 96Hz.
+ * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 12Hz.
  */
 
 music_code music1[] =
@@ -131,7 +134,7 @@ music_code interrupt17[] =
 int32 _user_start()
 {
 
-	uchar8 timer_count_factor = timer_count_factor_default;
+	uchar8 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
 
 #ifdef __SOUND_I2S
@@ -168,9 +171,9 @@ int32 _user_start()
 			} else if ( detect_parallel == 0b00010<<22 ) {
 				//_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
 				/* Beat Up */
-				timer_count_factor--;
-				if ( timer_count_factor < timer_count_factor_minlimit ) timer_count_factor = timer_count_factor_minlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier--;
+				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 
 			// 0b00011 (3)
@@ -181,9 +184,9 @@ int32 _user_start()
 			} else if ( detect_parallel == 0b00100<<22 ) {
 				//_soundset( music4, snd32_musiclen( music4 ) , 0, -1 );
 				/* Beat Down */
-				timer_count_factor++;
-				if ( timer_count_factor > timer_count_factor_maxlimit ) timer_count_factor = timer_count_factor_maxlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier++;
+				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
@@ -208,16 +211,16 @@ int32 _user_start()
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
 				/* Beat Up */
-				timer_count_factor--;
-				if ( timer_count_factor < timer_count_factor_minlimit ) timer_count_factor = timer_count_factor_minlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier--;
+				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11110 (30)
 			} else if ( detect_parallel == 0b11110<<22 ) {
 				/* Beat Down */
-				timer_count_factor++;
-				if ( timer_count_factor > timer_count_factor_maxlimit ) timer_count_factor = timer_count_factor_maxlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier++;
+				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {

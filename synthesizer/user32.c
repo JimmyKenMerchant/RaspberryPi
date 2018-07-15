@@ -51,14 +51,15 @@
  */
 
 synthe_precode pre_synthe1_l[] = {
-	30000ull<<48|1000ull<<32|1000ull<<16|2000ull,100,50ull<<32|50ull,
-	30000ull<<48|1000ull<<32|500ull<<16|1000ull,100,50ull<<32|50ull,
-	30000ull<<48|1000ull<<32|250ull<<16|500ull,100,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|1000ull<<16|2000ull,100,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|1000ull<<16|1000ull,100,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|1000ull<<16|500ull,50,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|1000ull<<16|250ull,50,50ull<<32|50ull,
 	0x00,0x00,0x00
 };
 
 synthe_precode pre_synthe1_r[] = {
-	0ull<<48|60ull<<32|1000ull<<16|2000ull,300,50ull<<32|50ull,
+	0ull<<48|60ull<<32|500ull<<16|1000ull,300,10ull<<32|10ull,
 	0x00,0x00,0x00
 };
 

@@ -34,7 +34,7 @@
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm` or `make type=2b sound=jack`
 
-* I recommend you to use `sound=i2s` beacause of its good sound.
+* I recommend you to use `sound=i2s` because of its good sound.
 
 ## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
