@@ -11,17 +11,17 @@
 #include "system32.c"
 #include "sts32.h"
 
-#define timer_count_multiply        5
-#define timer_count_factor_default  125
-#define timer_count_factor_minlimit 25
-#define timer_count_factor_maxlimit 250
+#define timer_count_multiplicand        5
+#define timer_count_multiplier_default  125
+#define timer_count_multiplier_minlimit 25
+#define timer_count_multiplier_maxlimit 250
 
 /**
  * In default, there is a 96Hz synchronization clock (it's a half of 192Hz on Arm Timer beacause of toggling).
  * Arm Timer sets 120000Hz as clock.
- * 625 is divisor (timer_count_multiply * timer_count_factor_defualt), i.e., 120000 / 1250 equals 96.
- * The Maximum beat (120000 / (timer_count_multiply * timer_count_factor_minlimit) / 2) is 480Hz.
- * The minimum beat (120000 / (timer_count_multiply * timer_count_factor_maxlimit) / 2) is 48Hz.
+ * 625 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 625 / 2 equals 96.
+ * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 480Hz.
+ * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 48Hz.
  */
 
 /**
@@ -51,9 +51,9 @@
  */
 
 synthe_precode pre_synthe1_l[] = {
-	30000ull<<48|60ull<<32|1000ull<<16|2000ull,100,50ull<<32|50ull,
-	30000ull<<48|60ull<<32|500ull<<16|1000ull,100,50ull<<32|50ull,
-	30000ull<<48|60ull<<32|250ull<<16|500ull,100,50ull<<32|50ull,
+	30000ull<<48|1000ull<<32|1000ull<<16|2000ull,100,50ull<<32|50ull,
+	30000ull<<48|1000ull<<32|500ull<<16|1000ull,100,50ull<<32|50ull,
+	30000ull<<48|1000ull<<32|250ull<<16|500ull,100,50ull<<32|50ull,
 	0x00,0x00,0x00
 };
 
@@ -147,7 +147,7 @@ synthe_code synthe15[] =
 int32 _user_start()
 {
 
-	uchar8 timer_count_factor = timer_count_factor_default;
+	uchar8 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
 	uint32 result;
 
@@ -184,9 +184,9 @@ print32_debug( result, 100, 100 );
 			} else if ( detect_parallel == 0b00010<<22 ) {
 				//_syntheset( synthe2, sts32_synthelen( synthe2 )/2, 0, -1 );
 				/* Beat Up */
-				timer_count_factor--;
-				if ( timer_count_factor < timer_count_factor_minlimit ) timer_count_factor = timer_count_factor_minlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier--;
+				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 
 			// 0b00011 (3)
@@ -197,9 +197,9 @@ print32_debug( result, 100, 100 );
 			} else if ( detect_parallel == 0b00100<<22 ) {
 				//_syntheset( synthe4, sts32_synthelen( synthe4 )/2, 0, -1 );
 				/* Beat Down */
-				timer_count_factor++;
-				if ( timer_count_factor > timer_count_factor_maxlimit ) timer_count_factor = timer_count_factor_maxlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier++;
+				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
@@ -223,16 +223,16 @@ print32_debug( result, 100, 100 );
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
 				/* Beat Up */
-				timer_count_factor--;
-				if ( timer_count_factor < timer_count_factor_minlimit ) timer_count_factor = timer_count_factor_minlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier--;
+				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11110 (30)
 			} else if ( detect_parallel == 0b11110<<22 ) {
 				/* Beat Down */
-				timer_count_factor++;
-				if ( timer_count_factor > timer_count_factor_maxlimit ) timer_count_factor = timer_count_factor_maxlimit;
-				_armtimer_reload( (timer_count_multiply * timer_count_factor) - 1 );
+				timer_count_multiplier++;
+				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
+				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {

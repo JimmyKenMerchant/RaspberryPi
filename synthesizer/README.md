@@ -8,9 +8,17 @@
 
 **Output/Input**
 
-* GPIO17 as Output of Synchronization Clock OUT of Sound Box
+* GPIO12 as Output of PWM0 on sound=pwm
 
-* GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.
+* GPIO13 as Output of PWM1 on sound=pwm
+
+* GPIO40 as Output of PWM0 on sound=jack
+
+* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 on sound=jack
+
+* GPIO17 as Output of Synchronization Clock OUT
+
+* GPIO27 as Input of Synchronization Clock IN, Connect with Any Synchronization Clock OUT.
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
@@ -22,7 +30,11 @@
 
 **Compatibility**
 
-Under Testing and Debugging
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm` or `make type=2b sound=jack`
+
+* I recommend you to use `sound=i2s` beacause of its good sound.
 
 ## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
