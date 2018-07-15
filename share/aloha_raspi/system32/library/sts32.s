@@ -1111,14 +1111,24 @@ sts32_synthedecode:
 		vmov vfp_volume, temp
 		vmov vfp_zero, temp
 
+		/* Clear Volume */
+
+		bic code_lower, code_lower, #0xFF000000
+		bic code_lower, code_lower, #0x00FF0000
+
+		/* Make Falling Length */
+
 		sub beat_length, beat_length, rising_length
 		sub beat_length, beat_length, flat_length
 
+		.unreq beat_length
+		falling_length .req r10
+
 /*
 macro32_debug synt_max_length, 200, 0
-macro32_debug beat_length, 200, 12
-macro32_debug rising_length, 200, 24
-macro32_debug flat_length, 200, 36
+macro32_debug rising_length, 200, 12 
+macro32_debug flat_length, 200, 24
+macro32_debug falling_length, 200, 36
 macro32_debug synt_point, 200, 48
 */
 
@@ -1132,6 +1142,10 @@ macro32_debug synt_point, 200, 48
 			subs synt_max_length, synt_max_length, #1
 			blt sts32_synthedecode_error2
 
+			str code_lower, [synt_point]
+			str code_upper, [synt_point, #4]
+			add synt_point, synt_point, #16
+
 			vadd.f32 vfp_volume, vfp_volume, vfp_rising_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
 			vmov temp, vfp_temp
@@ -1139,10 +1153,6 @@ macro32_debug synt_point, 200, 48
 			bic code_lower, code_lower, #0xFF000000
 			bic code_lower, code_lower, #0x00FF0000
 			orr code_lower, code_lower, temp
-
-			str code_lower, [synt_point]
-			str code_upper, [synt_point, #4]
-			add synt_point, synt_point, #16
 
 			b sts32_synthedecode_main_rising
 
@@ -1159,7 +1169,7 @@ macro32_debug synt_point, 200, 48
 			b sts32_synthedecode_main_flat
 
 		sts32_synthedecode_main_falling:
-			subs beat_length, beat_length, #1
+			subs falling_length, falling_length, #1
 			blt sts32_synthedecode_main
 			subs synt_max_length, synt_max_length, #1
 			blt sts32_synthedecode_error2
@@ -1206,7 +1216,7 @@ macro32_debug synt_point, 200, 60
 .unreq temp
 .unreq rising_length
 .unreq flat_length
-.unreq beat_length
+.unreq falling_length
 .unreq vfp_volume
 .unreq vfp_rising
 .unreq vfp_falling

@@ -11,14 +11,17 @@
 #include "system32.c"
 #include "sts32.h"
 
-#define timer_count_multiply        125
-#define timer_count_factor_default  10
-#define timer_count_factor_minlimit 5
-#define timer_count_factor_maxlimit 40
+#define timer_count_multiply        5
+#define timer_count_factor_default  125
+#define timer_count_factor_minlimit 25
+#define timer_count_factor_maxlimit 250
 
 /**
- * In Default, 48Hz Synchronization Clock
- * Max Beat is 96Hz, Min Beat is 12Hz
+ * In default, there is a 96Hz synchronization clock (it's a half of 192Hz on Arm Timer beacause of toggling).
+ * Arm Timer sets 120000Hz as clock.
+ * 625 is divisor (timer_count_multiply * timer_count_factor_defualt), i.e., 120000 / 1250 equals 96.
+ * The Maximum beat (120000 / (timer_count_multiply * timer_count_factor_minlimit) / 2) is 480Hz.
+ * The minimum beat (120000 / (timer_count_multiply * timer_count_factor_maxlimit) / 2) is 48Hz.
  */
 
 /**
@@ -48,7 +51,9 @@
  */
 
 synthe_precode pre_synthe1_l[] = {
-	0ull<<48|60ull<<32|1000ull<<16|2000ull,300,50ull<<32|50ull,
+	30000ull<<48|60ull<<32|1000ull<<16|2000ull,100,50ull<<32|50ull,
+	30000ull<<48|60ull<<32|500ull<<16|1000ull,100,50ull<<32|50ull,
+	30000ull<<48|60ull<<32|250ull<<16|500ull,100,50ull<<32|50ull,
 	0x00,0x00,0x00
 };
 
