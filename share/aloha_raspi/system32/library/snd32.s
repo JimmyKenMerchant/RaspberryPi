@@ -62,7 +62,7 @@ SND32_STATUS:              .word 0x00
  *
  * Parameters
  * r0: Sound Index
- * r1: 0 as PWM Mode Monoral, 1 as PWM Mode Balanced Monoral, 2 as PCM Mode
+ * r1: 0 as PWM Mode Monoral, 1 as PWM Mode Balanced Monoral, 2 as PCM Mode, 3 as PCM Mode Balanced Monoral
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Already Initialized
@@ -136,11 +136,11 @@ snd32_sounddecode:
 			moveq r2, #63
 			movlo r2, #127                             @ Height in Bytes
 			cmp mode, #2
-			movne r3, #128                             @ Medium in Bytes (Unsigned) for PWM
-			moveq r3, #0                               @ Medium in Bytes (Signed) for PCM
-			addeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-			lsleq r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
-			subeq r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+			movlo r3, #128                             @ Medium in Bytes (Unsigned) for PWM
+			movhs r3, #0                               @ Medium in Bytes (Signed) for PCM
+			addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+			lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
+			subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause mode Requires r1
 			cmp wave_type, #3
 			bleq heap32_wave_random
@@ -153,7 +153,7 @@ snd32_sounddecode:
 			pop {r0-r3}
 
 			cmp mode, #2
-			beq snd32_sounddecode_main_wave_pcm
+			bhs snd32_sounddecode_main_wave_pcm
 			cmp mode, #1
 			bne snd32_sounddecode_main_wave_pwm
 
@@ -232,6 +232,9 @@ snd32_sounddecode:
 
 				push {r0-r3}
 				mov r0, mem_alloc                         @ Words
+				cmp mode, #2
+				moveq r1, #0
+				movne r1, #1
 				bl heap32_mpack
 				cmp r0, #0
 				pop {r0-r3}
@@ -250,14 +253,14 @@ snd32_sounddecode:
 				mov r0, cb
 				mov r3, #equ32_bus_peripherals_base
 				cmp mode, #2
-				movne r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
-				addne r3, r3, #equ32_pwm_base_lower
-				addne r3, r3, #equ32_pwm_base_upper
-				addne r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
-				moveq r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
-				addeq r3, r3, #equ32_pcm_base_lower
-				addeq r3, r3, #equ32_pcm_base_upper
-				addeq r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
+				movlo r1, #5<<equ32_dma_ti_permap                       @ DREQ Map for PWM
+				addlo r3, r3, #equ32_pwm_base_lower
+				addlo r3, r3, #equ32_pwm_base_upper
+				addlo r3, r3, #equ32_pwm_fif1                           @ Destination Address for PWM
+				movhs r1, #2<<equ32_dma_ti_permap                       @ DREQ Map for PCM Transmit
+				addhs r3, r3, #equ32_pcm_base_lower
+				addhs r3, r3, #equ32_pcm_base_upper
+				addhs r3, r3, #equ32_pcm_fifo                           @ Destination Address for PCM Transmit
 				bic r1, r1, #equ32_dma_ti_no_wide_bursts
 				orr r1, r1, #0<<equ32_dma_ti_waits
 				orr r1, r1, #0<<equ32_dma_ti_burst_length

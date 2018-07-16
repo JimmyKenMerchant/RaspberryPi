@@ -62,8 +62,12 @@ endif
 #Default Value for Sound
 sound ?= pwm
 
-ifeq ($(sound), i2s) 
+ifeq ($(sound), i2s)
 	SND := __SOUND_I2S=1
+endif
+
+ifeq ($(sound), i2sb)
+	SND := __SOUND_I2S_BALANCED=1
 endif
 
 ifeq ($(sound), pwm)
@@ -74,11 +78,11 @@ ifeq ($(sound), pwmb)
 	SND := __SOUND_PWM_BALANCED=1
 endif
 
-ifeq ($(sound), jack) 
+ifeq ($(sound), jack)
 	SND := __SOUND_JACK=1
 endif
 
-ifeq ($(sound), jackb) 
+ifeq ($(sound), jackb)
 	SND := __SOUND_JACK_BALANCED=1
 endif
 

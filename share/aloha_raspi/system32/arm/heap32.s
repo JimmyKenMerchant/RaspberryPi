@@ -901,6 +901,7 @@ heap32_mweave:
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space
+ * r1: Non-inverted (0) or Inverted (1)
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
@@ -909,19 +910,20 @@ heap32_mweave:
 heap32_mpack:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start .req r0
-	block_size  .req r1
-	temp        .req r2	
-	shift       .req r3
+	flag_invert .req r1
+	block_size  .req r2
+	temp        .req r3
+	shift       .req r4
 
-	push {lr}
+	push {r4,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
-	push {r0}
+	push {r0-r1}
 	bl heap32_mcount
 	mov block_size, r0
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
 	beq heap32_mpack_error1
 
@@ -931,7 +933,11 @@ heap32_mpack:
 		cmp block_start, block_size
 		bge heap32_mpack_success
 		ldrh temp, [block_start]
-		lsl shift, temp, #16
+		cmp flag_invert, #0
+		mvnne shift, temp
+		addne shift, shift, #1
+		moveq shift, temp
+		lsl shift, shift, #16
 		orr temp, temp, shift
 		str temp, [block_start]
 		add block_start, block_start, #4
@@ -946,9 +952,10 @@ heap32_mpack:
 
 	heap32_mpack_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {pc}
+		pop {r4,pc}
 
 .unreq block_start
+.unreq flag_invert
 .unreq block_size
 .unreq temp
 .unreq shift

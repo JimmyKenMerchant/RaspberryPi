@@ -1227,6 +1227,7 @@ extern uint64 draw32_line
 #define SND32_PWM          0
 #define SND32_PWM_BALANCED 1
 #define SND32_I2S          2
+#define SND32_I2S_BALANCED 3
 
 
 /* Relative System Calls  */

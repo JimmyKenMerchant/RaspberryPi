@@ -140,6 +140,9 @@ int32 _user_start()
 #ifdef __SOUND_I2S
 	_sounddecode( sound, SND32_I2S );
 #endif
+#ifdef __SOUND_I2S_BALANCED
+	_sounddecode( sound, SND32_I2S_BALANCED );
+#endif
 #ifdef __SOUND_PWM
 	_sounddecode( sound, SND32_PWM );
 #endif

@@ -994,7 +994,7 @@ sts32_synthedecodelr:
  * Parameters
  * r0: Pointer of Array of Synthesizer Code
  * r1: Pointer of Array of Synthesizer Pre-code
- * r2: L (0) or R (1 and More)
+ * r2: L (0) or R (1)
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Memory Space for Synthesizer Code is Not Allocated

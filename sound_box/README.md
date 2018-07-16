@@ -12,9 +12,9 @@
 
 * GPIO13 as Output of PWM1 on sound=pwm or sound=pwmb, 180 Degrees Phase-shifted from PWM0 if sound=pwmb
 
-* GPIO40 as Output of PWM0 on sound=jack or sound=jackb
+* GPIO40 as Output of PWM0 (R of Phone Connector) on sound=jack or sound=jackb
 
-* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 on sound=jack or sound=jackb, 180 Degrees Phase-shifted from PWM0 if sound=jackb
+* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 (L of Phone Connector) on sound=jack or sound=jackb, 180 Degrees Phase-shifted from PWM0 if sound=jackb
 
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
@@ -46,6 +46,8 @@
 
 * SCLK (System Clock) / MCLK (Master Clock) is not supported because the modern IC on your DAC generates the clock by itself.
 
+* I'm using UDA1334A, one of I2S Stereo DAC. As of July 2018, you can purchase online a module which UDA1334A is boarded on.
+
 **Compatibility**
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
@@ -53,6 +55,8 @@
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm` or `make type=2b sound=jack`
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b sound=i2s` or `make type=3b sound=pwm` or `make type=3b sound=jack`
+
+* If you add `b` on the tail of sound parameter such as `sound=i2sb` or `sound=pwmb` or `sound=jackb`, it becomes balanced output. If you select balanced output, R (or PWM0) is HOT, L (or PWM1) is COLD.
 
 * Overall, I don't recommend to use high-spec Raspberry Pis. PWM is analogue output that may affect electrical status on Raspberry Pis. Just Pi Zero (5 dollars Online) may match for this project. There is no need of any radio wave unit.
 
