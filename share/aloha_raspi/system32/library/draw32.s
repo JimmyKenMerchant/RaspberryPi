@@ -337,7 +337,6 @@ draw32_fill_color:
 /**
  * function draw32_mask_image
  * Make Masked Image to Mask
- * Caution! This Function is Used in 32-bit Depth Color
  *
  * Parameters
  * r0: Pointer of Buffer of Mask
@@ -378,18 +377,13 @@ draw32_mask_image:
 	beq draw32_mask_image_error2
 
 	ldr depth, [buffer_base, #16]
-	cmp depth, #32
-	bne draw32_mask_image_error2
-	ldr depth, [buffer_mask, #16]
-	cmp depth, #32
-	bne draw32_mask_image_error2
+	cmp depth, #0
+	beq draw32_mask_image_error2
 
 	ldr size, [buffer_base, #12]
 	cmp size, #0
 	beq draw32_mask_image_error2
 	add size, base_addr, size
-
-	lsl width, width, #2                             @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	ldr mask_addr, [buffer_mask]
 	cmp mask_addr, #0
@@ -402,6 +396,16 @@ draw32_mask_image:
 	ldr mask_height, [buffer_mask, #8]
 	cmp mask_width, #0
 	beq draw32_mask_image_error2
+
+	ldr depth, [buffer_mask, #16]
+	cmp depth, #32
+	cmpne depth, #16
+	bne draw32_mask_image_error2
+
+	cmp depth, #16
+	lsleq width, width, #1                             @ Vertical Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq width, width, #2                             @ Vertical Offset Bytes, substitution of Multiplication by 4
 
 	/* Set Location of Mask */
 
@@ -420,7 +424,10 @@ draw32_mask_image:
 	addlt mask_width, mask_width, x_coord            @ Subtract x_coord Value from char_width
 	blt draw32_mask_image_loop
 
-	lsl x_coord, x_coord, #2                         @ Horizontal Offset Bytes, substitution of Multiplication by 4
+	cmp depth, #16
+	lsleq x_coord, x_coord, #1                       @ Vertical Offset Bytes, substitution of Multiplication by 2
+	cmp depth, #32
+	lsleq x_coord, x_coord, #2                       @ Vertical Offset Bytes, substitution of Multiplication by 4
 	add base_addr, base_addr, x_coord                @ Horizontal Offset Bytes
 
 	.unreq x_coord
@@ -442,31 +449,54 @@ draw32_mask_image:
 			blt draw32_mask_image_loop_common
 
 			/* Mask Process */
-			ldr color, [mask_addr]
-			cmp color, #0xFF000000
+			cmp depth, #32
+			beq draw32_mask_image_loop_horizontal_32
 
-			moveq color, #0                             @ If Black
-			streq color, [mask_addr]
-			beq draw32_mask_image_loop_horizontal_common
+			draw32_mask_image_loop_horizontal_16:
+				ldrh color, [mask_addr]
+				cmp color, #equ32_fb32_image_16bit_tp_color
 
-			ldr color, [base_addr]                      @ Get Color of Base
-			str color, [mask_addr]                      @ Store Color of Base to Mask
+				beq draw32_mask_image_loop_horizontal_common
+
+				ldrh color, [base_addr]                     @ Get Color of Base
+				strh color, [mask_addr]                     @ Store Color of Base to Mask
+
+				b draw32_mask_image_loop_horizontal_common
+
+			draw32_mask_image_loop_horizontal_32:
+				ldr color, [mask_addr]
+				cmp color, #0x00000000
+
+				beq draw32_mask_image_loop_horizontal_common
+
+				ldr color, [base_addr]                      @ Get Color of Base
+				str color, [mask_addr]                      @ Store Color of Base to Mask
 
 			draw32_mask_image_loop_horizontal_common:
-				add base_addr, base_addr, #4            @ Buffer Address Shift
-				add mask_addr, mask_addr, #4            @ Buffer Address Shift
+				cmp depth, #16
+				addeq base_addr, base_addr, #2              @ Buffer Address Shift
+				addeq mask_addr, mask_addr, #2              @ Buffer Address Shift
+				cmp depth, #32
+				addeq base_addr, base_addr, #4              @ Buffer Address Shift
+				addeq mask_addr, mask_addr, #4              @ Buffer Address Shift
 
-				cmp base_addr, width_check              @ Check Overflow of Width
+				cmp base_addr, width_check                  @ Check Overflow of Width
 				blo draw32_mask_image_loop_horizontal
 
-				lsl j, j, #2                            @ substitution of Multiplication by 4
-				add base_addr, base_addr, j             @ Buffer Offset
-				add mask_addr, mask_addr, j             @ Buffer Offset
+				cmp depth, #16
+				lsleq j, j, #1                              @ substitution of Multiplication by 2
+				cmp depth, #32
+				lsleq j, j, #2                              @ substitution of Multiplication by 4
+				add base_addr, base_addr, j                 @ Buffer Offset
+				add mask_addr, mask_addr, j                 @ Buffer Offset
 
 		draw32_mask_image_loop_common:
 			sub mask_height, mask_height, #1
 
-			lsl j, mask_width, #2                      @ substitution of Multiplication by 4
+			cmp depth, #16
+			lsleq j, mask_width, #1                    @ substitution of Multiplication by 2
+			cmp depth, #32
+			lsleq j, mask_width, #2                    @ substitution of Multiplication by 4
 			sub base_addr, base_addr, j                @ Offset Clear of Buffer of Base
 
 			add base_addr, base_addr, width            @ Horizontal Sync (Buffer of Base)

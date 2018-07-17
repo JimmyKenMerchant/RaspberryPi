@@ -115,14 +115,14 @@ int32 _user_start()
 	//draw32_circle( COLOR16_CYAN, -100, 500, 200, 175 );
 
 	_attach_buffer( renderbuffer[2] );
-	fb32_clear_color( 0x66FFFFFF );
+	fb32_clear_color( COLOR16_PINK );
 
 	_attach_buffer( renderbuffer[3] );
-	fb32_clear_color( COLOR16_BLACK );
+	fb32_clear_color( 0x0000 );
 	draw32_circle( COLOR16_WHITE, 150, 150, 100, 100 );
-	draw32_circle( COLOR16_BLACK, 150, 150, 50, 50 );
+	draw32_circle( 0x0000, 150, 150, 50, 50 );
 
-	//draw32_mask_image( renderbuffer[3], renderbuffer[2], 0, 0 );
+	draw32_mask_image( renderbuffer[3], renderbuffer[2], 0, 0 );
 
 	_attach_buffer( renderbuffer[2] );
 	fb32_clear_color( 0x00000000 );
@@ -145,8 +145,19 @@ int32 _user_start()
 			0
 	);
 
-	//draw32_antialias( renderbuffer[5], renderbuffer[3] );
+	fb32_image(
+			_load_32( renderbuffer[3] + draw32_renderbuffer_addr ),
+			100,
+			100,
+			_load_32( renderbuffer[3] + draw32_renderbuffer_width ),
+			_load_32( renderbuffer[3] + draw32_renderbuffer_height ),
+			0,
+			0,
+			0,
+			0
+	);
 
+	//draw32_antialias( renderbuffer[5], renderbuffer[3] );
 	/*
 	fb32_image(
 			_load_32( renderbuffer[5] + draw32_renderbuffer_addr ),

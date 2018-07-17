@@ -118,9 +118,9 @@ int32 _user_start()
 	fb32_clear_color( 0x66FFFFFF );
 
 	_attach_buffer( renderbuffer[3] );
-	fb32_clear_color( COLOR32_BLACK );
+	fb32_clear_color( 0x00000000 );
 	draw32_circle( COLOR32_WHITE, 150, 150, 100, 100 );
-	draw32_circle( COLOR32_BLACK, 150, 150, 50, 50 );
+	draw32_circle( 0x00000000, 150, 150, 50, 50 );
 
 	draw32_mask_image( renderbuffer[3], renderbuffer[2], 0, 0 );
 
