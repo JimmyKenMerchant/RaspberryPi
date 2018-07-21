@@ -176,16 +176,16 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				//_syntheset( synthe1, sts32_synthelen( synthe1 )/2, 0, -1 );
-				_syntheclear();
+				_syntheset( synthe1, sts32_synthelen( synthe1 )/2, 0, -1 );
+				//_syntheclear();
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				//_syntheset( synthe2, sts32_synthelen( synthe2 )/2, 0, -1 );
+				_syntheset( synthe2, sts32_synthelen( synthe2 )/2, 0, -1 );
 				/* Beat Up */
-				timer_count_multiplier--;
-				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				//timer_count_multiplier--;
+				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
+				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 
 			// 0b00011 (3)
@@ -194,11 +194,11 @@ int32 _user_start()
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
-				//_syntheset( synthe4, sts32_synthelen( synthe4 )/2, 0, -1 );
+				_syntheset( synthe4, sts32_synthelen( synthe4 )/2, 0, -1 );
 				/* Beat Down */
-				timer_count_multiplier++;
-				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				//timer_count_multiplier++;
+				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
+				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {

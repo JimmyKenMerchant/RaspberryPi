@@ -167,16 +167,16 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				//_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
-				_soundclear();
+				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
+				//_soundclear();
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				//_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
+				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
 				/* Beat Up */
-				timer_count_multiplier--;
-				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				//timer_count_multiplier--;
+				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
+				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 
 			// 0b00011 (3)
@@ -185,11 +185,11 @@ int32 _user_start()
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
-				//_soundset( music4, snd32_musiclen( music4 ) , 0, -1 );
+				_soundset( music4, snd32_musiclen( music4 ) , 0, -1 );
 				/* Beat Down */
-				timer_count_multiplier++;
-				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				//timer_count_multiplier++;
+				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
+				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
