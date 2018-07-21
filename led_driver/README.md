@@ -1,8 +1,16 @@
-# GPIO Test
+# LED Driver
 
 * Author: Kenta Ishii
 * License: MIT
 * License URL: https://opensource.org/licenses/MIT
+
+**Purpose**
+
+* Programmable LED Sequencer by C Language
+
+* Selectable Sequences Up to 31
+
+* Changeable Beats from 1Hz (for Decorative Illumination) to 2000Hz (for LED Matrix) in Default
 
 **Output/Input**
 
@@ -13,6 +21,8 @@
 * GPIO27 as Input of Synchronization Clock IN, Connect with Any Synchronization Clock OUT.
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
+
+* Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source.
 
 **Compatibility**
 

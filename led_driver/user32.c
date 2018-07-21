@@ -32,14 +32,14 @@
 #define timer_count_multiplicand        10
 #define timer_count_multiplier_default  6
 #define timer_count_multiplier_minlimit 3
-#define timer_count_multiplier_maxlimit 1000
+#define timer_count_multiplier_maxlimit 6000
 
 /**
  * In default, there is a 1000Hz synchronization clock (it's a half of 2000Hz on Arm Timer beacause of toggling).
  * Arm Timer sets 120000Hz as clock.
  * 60 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 60 / 2 equals 1000.
  * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 2000Hz.
- * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 6Hz.
+ * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1Hz.
  */
 
 gpio_sequence gpio1[] =
