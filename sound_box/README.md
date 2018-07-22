@@ -26,7 +26,7 @@
 
 * HDMI as VIDEO Output (For Debug Only)
 
-* To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes)
+* To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
 
 ## GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 

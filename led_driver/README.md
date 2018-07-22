@@ -24,7 +24,7 @@
 
 * Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source.
 
-* To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes)
+* To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
 
 **Compatibility**
 
