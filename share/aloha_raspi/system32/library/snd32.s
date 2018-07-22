@@ -387,6 +387,9 @@ snd32_soundplay:
 	beq snd32_soundplay_error1
 
 	ldr length, SND32_LENGTH
+	cmp length, #0
+	beq snd32_soundplay_error1
+
 	ldr count, SND32_COUNT
 	ldr repeat, SND32_REPEAT
 	ldr status, SND32_STATUS
@@ -547,12 +550,13 @@ snd32_soundplay:
  * Set Sound
  *
  * Parameters
- * r0: Music Code
+ * r0: Pointer of Music Code
  * r1: Length
  * r2: Count (Offset)
  * r3: Number of Repeat, If -1, Infinite Loop
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Failure of Setting (Pointer of Music Code is Addressed to Zero or Length is Zero)
  */
 .globl snd32_soundset
 snd32_soundset:
@@ -564,6 +568,11 @@ snd32_soundset:
 	temp        .req r4
 
 	push {r4}
+
+	cmp addr_code, #0
+	beq snd32_soundset_error
+	cmp length, #0
+	beq snd32_soundset_error
 
 	mov temp, #0
 
@@ -582,6 +591,10 @@ snd32_soundset:
 	macro32_dsb ip
 
 	str addr_code, SND32_CODE @ Should Set Music Code at End for Polling Functions, `snd32_soundplay`
+
+	snd32_soundset_error:
+		mov r0, #1
+		b snd32_soundset_common
 
 	snd32_soundset_success:
 		macro32_dsb ip
@@ -603,13 +616,14 @@ snd32_soundset:
  * Interrupt Sound to Main Sound
  *
  * Parameters
- * r0: Music Code
+ * r0: Pointer of Music Code
  * r1: Length
  * r2: Count (Offset)
  * r3: Number of Repeat, If -1, Infinite Loop
  *
- * Return: r0 (0 as success, 1 as error)
- * Error: Main Sound Has Not Been Set
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Failure of Setting (Pointer of Music Code is Addressed to Zero or Length is Zero)
+ * Error(2): Main Sound Has Not Been Set
  */
 .globl snd32_soundinterrupt
 snd32_soundinterrupt:
@@ -623,6 +637,11 @@ snd32_soundinterrupt:
 
 	push {r4-r5}
 
+	cmp addr_code, #0
+	beq snd32_soundinterrupt_error1
+	cmp length, #0
+	beq snd32_soundinterrupt_error1
+
 	ldr temp, SND32_STATUS
 	tst temp, #0x2
 	bne snd32_soundinterrupt_already
@@ -631,7 +650,7 @@ snd32_soundinterrupt:
 
 	ldr temp2, SND32_CODE
 	cmp temp2, #0
-	beq snd32_soundinterrupt_error
+	beq snd32_soundinterrupt_error2
 	str temp2, SND32_SUSPEND_CODE
 	str temp, SND32_CODE                 @ Reset to Prevent Odd Playing Sound
 
@@ -664,9 +683,13 @@ snd32_soundinterrupt:
 
 		b snd32_soundinterrupt_success
 
-	snd32_soundinterrupt_error:
+	snd32_soundinterrupt_error1:
 		mov r1, #1
-		b snd32_soundinterrupt_common        @ Return with Error
+		b snd32_soundinterrupt_common        @ Return with Error 1
+
+	snd32_soundinterrupt_error2:
+		mov r1, #2
+		b snd32_soundinterrupt_common        @ Return with Error 2
 
 	snd32_soundinterrupt_success:
 		macro32_dsb ip

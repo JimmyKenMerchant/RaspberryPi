@@ -498,12 +498,13 @@ sts32_synthewave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
  * Set Synthesizer
  *
  * Parameters
- * r0: Synthesizer Code
+ * r0: Pointer of Synthesizer Code
  * r1: Length
  * r2: Count (Offset)
  * r3: Number of Repeat, If -1, Infinite Loop
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Failure of Setting (Pointer of Synthesizer Code is Addressed to Zero or Length is Zero)
  */
 .globl sts32_syntheset
 sts32_syntheset:
@@ -516,6 +517,11 @@ sts32_syntheset:
 
 	push {r4}
 
+	cmp addr_code, #0
+	beq sts32_syntheset_error
+	cmp length, #0
+	beq sts32_syntheset_error
+
 	mov temp, #0
 
 	str temp, STS32_CODE       @ Reset to Prevent Odd Playing Sound
@@ -523,7 +529,7 @@ sts32_syntheset:
 	macro32_dsb ip
 
 	ldr temp, STS32_STATUS
-	bic temp, temp, #0x1       @ Clear Bit[0]
+	bic temp, temp, #1         @ Clear Bit[0]
 	str temp, STS32_STATUS
 
 	str length, STS32_LENGTH
@@ -533,6 +539,10 @@ sts32_syntheset:
 	macro32_dsb ip
 
 	str addr_code, STS32_CODE  @ Should Set Music Code at End for Polling Functions, `sts32_syntheplay`
+
+	sts32_syntheset_error:
+		mov r0, #1
+		b sts32_syntheset_common
 
 	sts32_syntheset_success:
 		macro32_dsb ip
@@ -582,6 +592,9 @@ sts32_syntheplay:
 	beq sts32_syntheplay_error1
 
 	ldr length, STS32_LENGTH
+	cmp length, #0
+	beq sts32_syntheplay_error1
+
 	ldr count, STS32_COUNT
 	ldr repeat, STS32_REPEAT
 	ldr status, STS32_STATUS
@@ -675,8 +688,8 @@ sts32_syntheplay:
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGB_R
 
-		tst status, #0x1
-		orreq status, status, #0x1
+		tst status, #1
+		orreq status, status, #1
 
 		add count, count, #1
 		str count, STS32_COUNT
@@ -688,10 +701,10 @@ sts32_syntheplay:
 	sts32_syntheplay_free:
 		mov addr_code, #0
 		mov length, #0
-		bic status, status, #0x1                   @ Clear Bit[0]
+		bic status, status, #1                     @ Clear Bit[0]
 
 		str addr_code, STS32_CODE
-		str addr_code, STS32_SYNTHEWAVE_TIME        @ Reset Time
+		str addr_code, STS32_SYNTHEWAVE_TIME       @ Reset Time
 		str length, STS32_LENGTH
 		str count, STS32_COUNT                     @ count is Already Zero
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
@@ -754,7 +767,7 @@ sts32_syntheclear:
 	str temp, STS32_REPEAT
 
 	ldr temp, STS32_STATUS
-	bic temp, temp, #0x1                      @ Clear Bit[1]
+	bic temp, temp, #1                         @ Clear Bit[1]
 	str temp, STS32_STATUS
 
 	macro32_dsb ip
@@ -771,7 +784,7 @@ sts32_syntheclear:
 
 /**
  * function sts32_synthelen
- * Count 4-Bytes Beats of Synthesizer Code
+ * Count Beats (64-bit) of Synthesizer Code
  *
  * Parameters
  * r0: Pointer of Array of Synthesizer Code

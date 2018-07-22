@@ -12,14 +12,14 @@
 #include "sts32.h"
 
 #define timer_count_multiplicand        5
-#define timer_count_multiplier_default  125
+#define timer_count_multiplier_default  75
 #define timer_count_multiplier_minlimit 25
 #define timer_count_multiplier_maxlimit 250
 
 /**
- * In default, there is a 96Hz synchronization clock (it's a half of 192Hz on Arm Timer beacause of toggling).
+ * In default, there is a 160Hz synchronization clock (it's a half of 320Hz on Arm Timer beacause of toggling).
  * Arm Timer sets 120000Hz as clock.
- * 625 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 625 / 2 equals 96.
+ * 375 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 375 / 2 equals 160.
  * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 480Hz.
  * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 48Hz.
  */
@@ -51,6 +51,20 @@
  */
 
 synthe_precode pre_synthe1_l[] = {
+	10000ull<<48|1262ull<<32|1000ull<<16|262ull,40,50ull<<32|50ull,
+	10000ull<<48|1311ull<<32|500ull<<16|311ull,40,50ull<<32|50ull,
+	10000ull<<48|1349ull<<32|500ull<<16|349ull,40,50ull<<32|50ull,
+	10000ull<<48|1392ull<<32|500ull<<16|392ull,40,50ull<<32|50ull,
+	0x00,0x00,0x00
+};
+
+synthe_precode pre_synthe1_r[] = {
+	60000ull<<48|131ull<<32|1000ull<<16|131ull,80,80ull<<32|10ull,
+	60000ull<<48|131ull<<32|1000ull<<16|123ull,80,80ull<<32|10ull,
+	0x00,0x00,0x00
+};
+
+synthe_precode pre_synthe8_l[] = {
 	30000ull<<48|400ull<<32|1000ull<<16|2000ull,100,50ull<<32|50ull,
 	30000ull<<48|400ull<<32|1000ull<<16|1000ull,100,50ull<<32|50ull,
 	30000ull<<48|400ull<<32|1000ull<<16|500ull,50,50ull<<32|50ull,
@@ -58,100 +72,26 @@ synthe_precode pre_synthe1_l[] = {
 	0x00,0x00,0x00
 };
 
-synthe_precode pre_synthe1_r[] = {
+synthe_precode pre_synthe8_r[] = {
 	0ull<<48|60ull<<32|500ull<<16|1000ull,300,10ull<<32|10ull,
 	0x00,0x00,0x00
-};
-
-synthe_code synthe1[] =
-{
-	0x00
-};
-
-synthe_code synthe2[] =
-{
-	0x00
-};
-
-synthe_code synthe3[] =
-{
-	0x00
-};
-
-synthe_code synthe4[] =
-{
-	0x00
-};
-
-synthe_code synthe5[] =
-{
-	0x00
-};
-
-synthe_code synthe6[] =
-{
-	0x00
-};
-
-synthe_code synthe7[] =
-{
-	0x00
-};
-
-/*
-synthe_code synthe8[] =
-{
-	_20LR(3ull<<48|60ull<<32|-3u<<16|1000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
-	_20LR(3ull<<48|60ull<<32|300ull<<16|1000ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
-	_20LR(3ull<<48|60ull<<32|300ull<<16|500ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
-	_20LR(3ull<<48|60ull<<32|300ull<<16|250ull,3ull<<48|60ull<<32|300ull<<16|2000ull)
-	_40LR(10000ull<<48|1000ull<<32|300ull<<16|440ull,10000ull<<48|1000ull<<32|300ull<<16|880ull)
-	0x00
-};
-*/
-
-synthe_code synthe9[] =
-{
-	0x00
-};
-
-synthe_code synthe10[] =
-{
-	0x00
-};
-
-synthe_code synthe11[] =
-{
-	0x00
-};
-
-synthe_code synthe12[] =
-{
-	0x00
-};
-
-synthe_code synthe13[] =
-{
-	0x00
-};
-
-synthe_code synthe14[] =
-{
-	0x00
-};
-
-synthe_code synthe15[] =
-{
-	0x00
 };
 
 int32 _user_start()
 {
 
+	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
+	synthe_code* synthe2 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe3 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe4 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe5 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe6 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe7 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8_l, pre_synthe8_r );
+	synthe_code* synthe16 = (synthe_code*)heap32_malloc( 2 );
+
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
-
-	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
@@ -218,6 +158,7 @@ int32 _user_start()
 
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
+				_syntheset( synthe16, sts32_synthelen( synthe16 )/2, 0, -1 );
 
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {

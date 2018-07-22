@@ -9,7 +9,7 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "sound32.h"
+#include "snd32.h"
 
 #define timer_count_multiplicand        125
 #define timer_count_multiplier_default  10
@@ -86,48 +86,12 @@ music_code music8[] =
 	SND32_END
 };
 
-music_code music9[] =
-{
-	SND32_END
-};
-
-music_code music10[] =
-{
-	SND32_END
-};
-
-music_code music11[] =
-{
-	SND32_END
-};
-
-music_code music12[] =
-{
-	SND32_END
-};
-
-music_code music13[] =
-{
-	SND32_END
-};
-
-music_code music14[] =
-{
-	SND32_END
-};
-
-music_code music15[] =
-{
-	SND32_END
-};
-
 music_code interrupt16[] =
 {
-	SND32_END
-};
-
-music_code interrupt17[] =
-{
+	_48_RYU_ARP(D4_TRIL)
+	_24_MEN_ARP(G4_TRIL) _24_MEN_ARP(G4_TRIL)
+	_48_ENK_ARP(D5_TRIL)
+	_48_ENK_ARP(D4_TRIL)
 	SND32_END
 };
 
