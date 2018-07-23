@@ -60,7 +60,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * uint64 synthe_code;
  * uint64 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
  * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
- * 3 streak of 0x0 means End of Synthesizer Pre-code.
+ * 0x0 of synthe_code means End of Synthesizer Pre-code.
  *
  * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
  */
@@ -842,14 +842,6 @@ sts32_syntheprelen:
 		ldr synt_word, [synt_pre_point]
 		cmp synt_word, #0
 		ldreq synt_word, [synt_pre_point, #4]
-		cmpeq synt_word, #0
-		ldreq synt_word, [synt_pre_point, #8]
-		cmpeq synt_word, #0
-		ldreq synt_word, [synt_pre_point, #12]
-		cmpeq synt_word, #0
-		ldreq synt_word, [synt_pre_point, #16]
-		cmpeq synt_word, #0
-		ldreq synt_word, [synt_pre_point, #20]
 		cmpeq synt_word, #0
 		beq sts32_syntheprelen_common           @ Break Loop if Null Character on Every Byte
 

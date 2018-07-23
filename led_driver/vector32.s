@@ -125,14 +125,12 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	/* Set Status Detect */
-	ldr r1, [r0, #equ32_gpio_gphen0]
-	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 High Level Detect
-	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 High Level Detect
-	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 High Level Detect
-	orr r1, r1, #equ32_gpio25                                      @ Set GPIO25 High Level Detect
-	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 High Level Detect
-	str r1, [r0, #equ32_gpio_gphen0]
 	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
+	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
+	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
+	orr r1, r1, #equ32_gpio25                                      @ Set GPIO25 Rising Edge Detect
+	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 Rising Edge Detect
 	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
