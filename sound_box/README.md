@@ -30,6 +30,8 @@
 
 ## GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
+![Connection of I2S](../images/i2s_1.jpg "RasPi 2B and UDA1334 on Module: GPIO17 and GPIO27 Are Connected by A Sanguine Jumper")
+
 **About PWM0/1 Output** 
 
 * From PWM1, the sound that is phase-shifted from PWM0 outputs. This aims for balanced monaural.
