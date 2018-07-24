@@ -11,17 +11,17 @@
 #include "system32.c"
 #include "sts32.h"
 
-#define timer_count_multiplicand        5
-#define timer_count_multiplier_default  25
+#define timer_count_multiplicand        1
+#define timer_count_multiplier_default  30
 #define timer_count_multiplier_minlimit 10
-#define timer_count_multiplier_maxlimit 40
+#define timer_count_multiplier_maxlimit 50
 
 /**
- * In default, there is a 480hz synchronization clock (it's a half of 960Hz on Arm Timer beacause of toggling).
+ * In default, there is a 2000hz synchronization clock (it's a half of 2400Hz on Arm Timer beacause of toggling).
  * Arm Timer sets 120000Hz as clock.
- * 125 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 125 / 2 equals 480.
- * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 1200Hz.
- * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 300Hz.
+ * 30 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 30 / 2 equals 2000.
+ * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 6000Hz.
+ * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1200Hz.
  */
 
 /**
@@ -51,29 +51,53 @@
  */
 
 synthe_precode pre_synthe1_l[] = {
-	10000ull<<48|1262ull<<32|2000ull<<16|262ull,120,50ull<<32|50ull,
-	10000ull<<48|1311ull<<32|2000ull<<16|311ull,120,50ull<<32|50ull,
-	10000ull<<48|1349ull<<32|2000ull<<16|349ull,120,50ull<<32|50ull,
-	10000ull<<48|1392ull<<32|2000ull<<16|392ull,120,50ull<<32|50ull,
+	10000ull<<48|1262ull<<32|4000ull<<16|262ull,500,50ull<<32|50ull,
+	10000ull<<48|1311ull<<32|4000ull<<16|311ull,500,50ull<<32|50ull,
+	10000ull<<48|1349ull<<32|4000ull<<16|349ull,500,50ull<<32|50ull,
+	10000ull<<48|1392ull<<32|4000ull<<16|392ull,500,50ull<<32|50ull,
 	0x00
 };
 
 synthe_precode pre_synthe1_r[] = {
-	60000ull<<48|131ull<<32|2000ull<<16|131ull,240,80ull<<32|20ull,
-	60000ull<<48|131ull<<32|2000ull<<16|123ull,240,80ull<<32|20ull,
+	60000ull<<48|131ull<<32|2000ull<<16|131ull,1000,80ull<<32|20ull,
+	60000ull<<48|131ull<<32|2000ull<<16|123ull,1000,80ull<<32|20ull,
+	0x00
+};
+
+synthe_precode pre_synthe2_l[] = {
+	30000ull<<48|5047ull<<32|2000ull<<16|1047ull,250,50ull<<32|50ull,
+	30000ull<<48|5175ull<<32|2000ull<<16|1175ull,250,50ull<<32|50ull,
+	30000ull<<48|5319ull<<32|2000ull<<16|1319ull,250,50ull<<32|50ull,
+	30000ull<<48|5397ull<<32|2000ull<<16|1397ull,250,50ull<<32|50ull,
+	30000ull<<48|5568ull<<32|2000ull<<16|1568ull,250,50ull<<32|50ull,
+	30000ull<<48|5760ull<<32|2000ull<<16|1760ull,250,50ull<<32|50ull,
+	30000ull<<48|5976ull<<32|2000ull<<16|1976ull,250,50ull<<32|50ull,
+	30000ull<<48|6093ull<<32|2000ull<<16|2093ull,250,50ull<<32|50ull,
+	0x00
+};
+
+synthe_precode pre_synthe2_r[] = {
+	30000ull<<48|6093ull<<32|2000ull<<16|2093ull,250,50ull<<32|50ull,
+	30000ull<<48|5976ull<<32|2000ull<<16|1976ull,250,50ull<<32|50ull,
+	30000ull<<48|5760ull<<32|2000ull<<16|1760ull,250,50ull<<32|50ull,
+	30000ull<<48|5568ull<<32|2000ull<<16|1568ull,250,50ull<<32|50ull,
+	30000ull<<48|5397ull<<32|2000ull<<16|1397ull,250,50ull<<32|50ull,
+	30000ull<<48|5319ull<<32|2000ull<<16|1319ull,250,50ull<<32|50ull,
+	30000ull<<48|5175ull<<32|2000ull<<16|1175ull,250,50ull<<32|50ull,
+	30000ull<<48|5047ull<<32|2000ull<<16|1047ull,250,50ull<<32|50ull,
 	0x00
 };
 
 synthe_precode pre_synthe8_l[] = {
-	30000ull<<48|400ull<<32|2000ull<<16|2000ull,100,50ull<<32|50ull,
-	30000ull<<48|400ull<<32|2000ull<<16|1000ull,100,50ull<<32|50ull,
-	30000ull<<48|400ull<<32|2000ull<<16|500ull,50,50ull<<32|50ull,
-	30000ull<<48|400ull<<32|2000ull<<16|250ull,50,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|2000ull<<16|2000ull,375,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|2000ull<<16|1000ull,375,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|2000ull<<16|500ull,125,50ull<<32|50ull,
+	30000ull<<48|400ull<<32|2000ull<<16|250ull,125,50ull<<32|50ull,
 	0x00
 };
 
 synthe_precode pre_synthe8_r[] = {
-	0ull<<48|60ull<<32|500ull<<16|2000ull,300,10ull<<32|10ull,
+	0ull<<48|60ull<<32|500ull<<16|2000ull,1000,10ull<<32|10ull,
 	0x00
 };
 
@@ -81,7 +105,7 @@ int32 _user_start()
 {
 
 	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
-	synthe_code* synthe2 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe2 = sts32_synthedecodelr( pre_synthe2_l, pre_synthe2_r );
 	synthe_code* synthe3 = (synthe_code*)heap32_malloc( 2 );
 	synthe_code* synthe4 = (synthe_code*)heap32_malloc( 2 );
 	synthe_code* synthe5 = (synthe_code*)heap32_malloc( 2 );
@@ -106,7 +130,7 @@ int32 _user_start()
 #ifdef __SOUND_JACK
 		_synthewave_pwm();
 #endif
-		if ( _gpio_detect( 27 ) ) {
+		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
 			_syntheplay();
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
