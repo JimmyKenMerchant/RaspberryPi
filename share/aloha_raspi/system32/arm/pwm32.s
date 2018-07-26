@@ -98,9 +98,11 @@ pwm32_pwmplay:
 
 		ldr sequence, [addr_seq, temp]
 
+		bic sequence, sequence, #0x80000000
+
 		cmp number_pwm, #0
-		streq temp, [pwm_base, #equ32_pwm_dat1]
-		strne temp, [pwm_base, #equ32_pwm_dat2]
+		streq sequence, [pwm_base, #equ32_pwm_dat1]
+		strne sequence, [pwm_base, #equ32_pwm_dat2]
 
 		macro32_dsb ip
 
