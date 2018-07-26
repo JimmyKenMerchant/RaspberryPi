@@ -9,7 +9,7 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "sound32.h"
+#include "snd32.h"
 
 /**
  * Length of Initial Loading on Start Up

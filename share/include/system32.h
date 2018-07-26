@@ -570,6 +570,39 @@ bool _gpio_in( uchar8 gpio_number ); // Actual Pin Level Status
 
 
 /********************************
+ * system32/arm/pwm32.s
+ ********************************/
+
+/* Constants */
+
+#define pwm_sequence       uint32
+#define PWM32_END          0
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _pwmplay();
+
+__attribute__((noinline)) uint32 _pwmset( pwm_sequence* pwm, uint32 length, uint32 count, int32 repeat );
+
+__attribute__((noinline)) uint32 _pwmclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
+
+__attribute__((noinline)) uint32 _pwmselect( uint32 channel );
+
+
+/* Regular Functions */
+
+/**
+ * Count 4-Bytes Beats of PWM Sequence
+ *
+ * Return: Number of Beats in PWM Sequence, Maximum of 4,294,967,295 Beats
+ */
+extern uint32 pwm32_pwmlen
+(
+	pwm_sequence* pwm
+);
+
+
+/********************************
  * system32/library/vfp32.s
  ********************************/
 

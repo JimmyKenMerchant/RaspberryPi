@@ -16,6 +16,12 @@
 
 **Version Information**
 
+* 0.9.3 Beta on July 26, 2018:
+Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
+Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
+
+Added Several Files and Modified Functions.
+
 * 0.9.2 Beta on March 7, 2018:
 Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919

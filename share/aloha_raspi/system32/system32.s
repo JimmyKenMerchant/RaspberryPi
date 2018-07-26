@@ -49,6 +49,8 @@
 .balign 4
 .include "system32/arm/gpio32.s"
 .balign 4
+.include "system32/arm/pwm32.s"
+.balign 4
 .include "system32/arm/vfp32.s"
 .balign 4
 .include "system32/arm/vfp64.s"

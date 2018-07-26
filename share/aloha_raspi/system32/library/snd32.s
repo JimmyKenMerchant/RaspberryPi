@@ -592,6 +592,8 @@ snd32_soundset:
 
 	str addr_code, SND32_CODE @ Should Set Music Code at End for Polling Functions, `snd32_soundplay`
 
+	b snd32_soundset_success
+
 	snd32_soundset_error:
 		mov r0, #1
 		b snd32_soundset_common

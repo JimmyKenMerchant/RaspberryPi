@@ -540,6 +540,8 @@ sts32_syntheset:
 
 	str addr_code, STS32_CODE  @ Should Set Music Code at End for Polling Functions, `sts32_syntheplay`
 
+	b sts32_syntheset_success
+
 	sts32_syntheset_error:
 		mov r0, #1
 		b sts32_syntheset_common

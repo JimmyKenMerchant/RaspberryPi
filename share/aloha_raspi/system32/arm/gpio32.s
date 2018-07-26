@@ -7,9 +7,9 @@
  *
  */
 
-GPIO32_SEQUENCE:            .word 0x00 @ Pointer of Sequence, If End, Automatically Cleared
-GPIO32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared
-GPIO32_COUNT:               .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
+GPIO32_SEQUENCE:            .word 0x00 @ Pointer of GPIO Sequence, If End, Automatically Cleared
+GPIO32_LENGTH:              .word 0x00 @ Length of GPIO Sequence, If End, Automatically Cleared
+GPIO32_COUNT:               .word 0x00 @ Incremental Count, Once GPIO Sequence Reaches Last, This Value will Be Reset
 GPIO32_REPEAT:              .word 0x00 @ -1 is Infinite Loop
 
 /**
@@ -65,6 +65,9 @@ gpio32_gpioplay:
 	beq gpio32_gpioplay_error
 
 	ldr length, GPIO32_LENGTH
+	cmp length, #0
+	beq gpio32_gpioplay_error
+
 	ldr count, GPIO32_COUNT
 	ldr repeat, GPIO32_REPEAT
 
@@ -177,7 +180,8 @@ gpio32_gpioplay:
  * r2: Count (Offset)
  * r3: Number of Repeat, If -1, Infinite Loop
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Failure of Setting (Pointer of GPIO Sequence is Addressed to Zero or Length is Zero)
  */
 .globl gpio32_gpioset
 gpio32_gpioset:
@@ -189,6 +193,11 @@ gpio32_gpioset:
 	temp        .req r4
 
 	push {r4}
+
+	cmp addr_seq, #0
+	beq gpio32_gpioset_error
+	cmp length, #0
+	beq gpio32_gpioset_error
 
 	mov temp, #0
 
@@ -204,7 +213,14 @@ gpio32_gpioset:
 
 	str addr_seq, GPIO32_SEQUENCE @ Should Set at End for Polling Function, `gpio32_gpioplay`
 
+	b gpio32_gpioset_success
+
+	gpio32_gpioset_error:
+		mov r0, #1
+		b gpio32_gpioset_common
+
 	gpio32_gpioset_success:
+		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
 	gpio32_gpioset_common:
