@@ -132,7 +132,7 @@ os_reset:
 	bl pwm32_pwminit
 
 	macro32_dsb ip
-	
+
 	pop {pc}
 
 os_debug:

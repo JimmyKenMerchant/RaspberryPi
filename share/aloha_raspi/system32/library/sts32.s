@@ -41,9 +41,11 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 
 /**
  * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
- * Bit[15-0] Frequency-A (Main): 0 to 65535 Hz
+ * Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
+ * Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
  * Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
- * Bit[47-32] Frequency-B (Sub): 0 to 65535 Hz
+ * Bit[46-32] Frequency-B (Sub): 0 to 32767 Hz
+ * Bit[47] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
  * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
@@ -585,9 +587,10 @@ sts32_syntheplay:
 	vfp_temp      .req s0
 	vfp_pi_double .req s1
 	vfp_max       .req s2
+	vfp_half      .req s3
 
 	push {r4-r7,lr}
-	vpush {s0-s2}
+	vpush {s0-s3}
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
@@ -620,6 +623,10 @@ sts32_syntheplay:
 	beq sts32_syntheplay_free
 
 	sts32_syntheplay_jump:
+		/* Hard Code of Single Precision Float 0.5 */
+		mov temp, #0x3F000000
+		vmov vfp_half, temp
+
 		ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
 		vldr vfp_pi_double, [temp]
 		mov temp, #0xFF
@@ -631,8 +638,11 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
+		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
+		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_L
 		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
@@ -646,8 +656,11 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
+		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
+		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[47] Existed
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_L
 		lsr temp, code, #16
@@ -663,8 +676,11 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
+		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
+		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_R
 		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
@@ -678,8 +694,11 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
+		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
+		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
+		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[47] Existed
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_R
 		lsr temp, code, #16
@@ -727,7 +746,7 @@ sts32_syntheplay:
 		mov r0, #0                            @ Return with Success
 
 	sts32_syntheplay_common:
-		vpop {s0-s2}
+		vpop {s0-s3}
 		pop {r4-r7,pc}
 
 .unreq addr_code
@@ -741,6 +760,7 @@ sts32_syntheplay:
 .unreq vfp_temp
 .unreq vfp_pi_double
 .unreq vfp_max
+.unreq vfp_half
 
 sts32_syntheplay_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 

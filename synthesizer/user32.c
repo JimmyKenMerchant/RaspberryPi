@@ -26,9 +26,11 @@
 
 /**
  * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
- * Bit[15-0] Frequency-A (Main): 0 to 65535 Hz
+ * Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
+ * Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
  * Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
- * Bit[47-32] Frequency-B (Sub): 0 to 65535 Hz
+ * Bit[46-32] Frequency-B (Sub): 0 to 32767 Hz
+ * Bit[47] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
  * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
@@ -65,26 +67,26 @@ synthe_precode pre_synthe1_r[] = {
 };
 
 synthe_precode pre_synthe2_l[] = {
-	30000ull<<48|3047ull<<32|3000ull<<16|1047ull,250,50ull<<32|50ull,
-	30000ull<<48|3175ull<<32|3000ull<<16|1175ull,250,50ull<<32|50ull,
-	30000ull<<48|3319ull<<32|3000ull<<16|1319ull,250,50ull<<32|50ull,
-	30000ull<<48|3397ull<<32|3000ull<<16|1397ull,250,50ull<<32|50ull,
-	30000ull<<48|3568ull<<32|3000ull<<16|1568ull,250,50ull<<32|50ull,
-	30000ull<<48|3760ull<<32|3000ull<<16|1760ull,250,50ull<<32|50ull,
-	30000ull<<48|3976ull<<32|3000ull<<16|1976ull,250,50ull<<32|50ull,
-	30000ull<<48|4093ull<<32|3000ull<<16|2093ull,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_C5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_D5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_E5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_F5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_G5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_A5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_B5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_C6,250,50ull<<32|50ull,
 	0x00
 };
 
 synthe_precode pre_synthe2_r[] = {
-	30000ull<<48|4093ull<<32|3000ull<<16|2093ull,250,50ull<<32|50ull,
-	30000ull<<48|3976ull<<32|3000ull<<16|1976ull,250,50ull<<32|50ull,
-	30000ull<<48|3760ull<<32|3000ull<<16|1760ull,250,50ull<<32|50ull,
-	30000ull<<48|3568ull<<32|3000ull<<16|1568ull,250,50ull<<32|50ull,
-	30000ull<<48|3397ull<<32|3000ull<<16|1397ull,250,50ull<<32|50ull,
-	30000ull<<48|3319ull<<32|3000ull<<16|1319ull,250,50ull<<32|50ull,
-	30000ull<<48|3175ull<<32|3000ull<<16|1175ull,250,50ull<<32|50ull,
-	30000ull<<48|3047ull<<32|3000ull<<16|1047ull,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_C6,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_B5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_A5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_G5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_F5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_E5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_D5,250,50ull<<32|50ull,
+	30000ull<<48|2000ull<<32|3000ull<<16|_C5,250,50ull<<32|50ull,
 	0x00
 };
 
@@ -101,6 +103,33 @@ synthe_precode pre_synthe8_r[] = {
 	0x00
 };
 
+// "Himawari"
+synthe_precode pre_synthe16_l[] = {
+	10000ull<<48|((uint64)(_D5)+2000ull)<<32|3000ull<<16|_D5,750,80ull<<32|20ull,
+	10000ull<<48|((uint64)(_G5)+2000ull)<<32|3000ull<<16|_G5,1250,80ull<<32|20ull,
+	10000ull<<48|((uint64)(_D5)+2000ull)<<32|3000ull<<16|_D5,750,80ull<<32|20ull,
+	10000ull<<48|((uint64)(_G5)+2000ull)<<32|3000ull<<16|_G5,1250,80ull<<32|20ull,
+	10000ull<<48|((uint64)(_F5)+2000ull)<<32|3000ull<<16|_F5,750,80ull<<32|20ull,
+	10000ull<<48|((uint64)(_C6)+2000ull)<<32|3000ull<<16|_C6,1250,80ull<<32|20ull,
+	0x00
+};
+
+synthe_precode pre_synthe16_r[] = {
+	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_F2)<<32|3000ull<<16|_F2,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_C3)<<32|3000ull<<16|_C3,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_F2)<<32|3000ull<<16|_F2,500,50ull<<32|50ull,
+	60000ull<<48|(uint64)(_C3)<<32|3000ull<<16|_C3,500,50ull<<32|50ull,
+	0x00
+};
+
 int32 _user_start()
 {
 
@@ -112,7 +141,7 @@ int32 _user_start()
 	synthe_code* synthe6 = (synthe_code*)heap32_malloc( 2 );
 	synthe_code* synthe7 = (synthe_code*)heap32_malloc( 2 );
 	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8_l, pre_synthe8_r );
-	synthe_code* synthe16 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe16 = sts32_synthedecodelr( pre_synthe16_l, pre_synthe16_r );
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;

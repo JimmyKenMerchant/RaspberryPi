@@ -1,4 +1,6 @@
-# Raspberry Pi System Project Based on Minimalism 
+# Raspberry Pi System Project Based on Minimalism
+
+![Demonstration of Sound Projects](images/i2s_2.jpg "Demonstration of Sound Projects, Sound Box and Synthesizer")
 
 **PURPOSE**
 
