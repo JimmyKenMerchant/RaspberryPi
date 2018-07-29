@@ -7,9 +7,18 @@
  *
  */
 
-#define STS32_END 0x00,0x00
-#define STS32_MAG 16
-#define STS32_FAL 16
+/**
+ * This header file is for the convenience of using functions in ../(asterisk)/system32/library/sts32.s
+ * Because of the purpose, names of constants are abbreviated and less considered of naming conventions.
+ * Be careful of naming conventions with constants in other header files.
+ */
+
+#define _END  0x00,0x00
+#define _FREQ 0
+#define _MAG  16
+#define _BEAT 0
+#define _RIS  0
+#define _FAL  16
 
 #define _1LR(x,y) x,y,
 #define _2LR(x,y) x,y,x,y,
@@ -168,3 +177,100 @@
 #define _B7  3951ul
 
 #define _C8  4186ul
+
+#define _KEY1  _A0
+#define _KEY2  _AS0
+#define _KEY3  _B0
+
+#define _KEY4  _C1
+#define _KEY5  _CS1
+#define _KEY6  _D1
+#define _KEY7  _DS1
+#define _KEY8  _E1
+#define _KEY9  _F1
+#define _KEY10 _FS1
+#define _KEY11 _G1
+#define _KEY12 _GS1
+#define _KEY13 _A1
+#define _KEY14 _AS1
+#define _KEY15 _B1
+
+#define _KEY16 _C2
+#define _KEY17 _CS2
+#define _KEY18 _D2
+#define _KEY19 _DS2
+#define _KEY20 _E2
+#define _KEY21 _F2
+#define _KEY22 _FS2
+#define _KEY23 _G2
+#define _KEY24 _GS2
+#define _KEY25 _A2
+#define _KEY26 _AS2
+#define _KEY27 _B2
+
+#define _KEY28 _C3
+#define _KEY29 _CS3
+#define _KEY30 _D3
+#define _KEY31 _DS3
+#define _KEY32 _E3
+#define _KEY33 _F3
+#define _KEY34 _FS3
+#define _KEY35 _G3
+#define _KEY36 _GS3
+#define _KEY37 _A3
+#define _KEY38 _AS3
+#define _KEY39 _B3
+
+#define _KEY40 _C4
+#define _KEY41 _CS4
+#define _KEY42 _D4
+#define _KEY43 _DS4
+#define _KEY44 _E4
+#define _KEY45 _F4
+#define _KEY46 _FS4
+#define _KEY47 _G4
+#define _KEY48 _GS4
+#define _KEY49 _A4
+#define _KEY50 _AS4
+#define _KEY51 _B4
+
+#define _KEY52 _C5
+#define _KEY53 _CS5
+#define _KEY54 _D5
+#define _KEY55 _DS5
+#define _KEY56 _E5
+#define _KEY57 _F5
+#define _KEY58 _FS5
+#define _KEY59 _G5
+#define _KEY60 _GS5
+#define _KEY61 _A5
+#define _KEY62 _AS5
+#define _KEY63 _B5
+
+#define _KEY64 _C6
+#define _KEY65 _CS6
+#define _KEY66 _D6
+#define _KEY67 _DS6
+#define _KEY68 _E6
+#define _KEY69 _F6
+#define _KEY70 _FS6
+#define _KEY71 _G6
+#define _KEY72 _GS6
+#define _KEY73 _A6
+#define _KEY74 _AS6
+#define _KEY75 _B6
+
+#define _KEY76 _C7
+#define _KEY77 _CS7
+#define _KEY78 _D7
+#define _KEY79 _DS7
+#define _KEY80 _E7
+#define _KEY81 _F7
+#define _KEY82 _FS7
+#define _KEY83 _G7
+#define _KEY84 _GS7
+#define _KEY85 _A7
+#define _KEY86 _AS7
+#define _KEY87 _B7
+
+#define _KEY88 _C8
