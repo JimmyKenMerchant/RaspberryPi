@@ -1295,8 +1295,8 @@ extern uint32 snd32_musiclen
 
 /* Constants */
 
-#define synthe_precode uint64
-#define synthe_code uint64
+#define synthe_precode uint32
+#define synthe_code    uint32
 
 /* Relative System Calls  */
 

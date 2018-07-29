@@ -40,29 +40,30 @@ STS32_SYNTHEWAVE_MAGB_R:  .word 0x00
 STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 
 /**
- * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
- * Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
- * Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
- * Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
- * Bit[46-32] Frequency-B (Sub): 0 to 32767 Hz
- * Bit[47] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
- * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
+ * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
+ * Lower Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
+ * Lower Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
+ * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
+ * Higher Bit[14-0] Frequency-B (Sub): 0 to 32767 Hz
+ * Higher Bit[15] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
+ * Higher Bit[31-16] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
  * This type of synthesizers is named as "Frequency Modulation Synthesis" developed by John Chowning, and decorated the music world in the late 20th century.
- * 0x0 means End of Synthesizer Code.
+ * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Synthesizer Code will be fetched by L/R alternatively.
  * If you line up four blocks, the first and the third block will be fetched by L, and the second and the fourth block will be fetched by R.
  */
 
 /**
- * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
- * uint64 synthe_code;
- * uint64 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
- * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
- * 0x0 of synthe_code means End of Synthesizer Pre-code.
+ * Synthesizer Pre-code is a series of blocks. Each block has a structure of 4 long integers (32-bit).
+ * uint32 synthe_code_lower;
+ * uint32 synthe_code_upper;
+ * uint32 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
+ * uint32 rising_pitch (Bit[15:0]) and falling_pitch (Bit[31:16]); 0 - 100 Percents
+ * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
  */
@@ -660,7 +661,7 @@ sts32_syntheplay:
 		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[47] Existed
+		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_L
 		lsr temp, code, #16
@@ -698,7 +699,7 @@ sts32_syntheplay:
 		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[47] Existed
+		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_R
 		lsr temp, code, #16
@@ -843,44 +844,6 @@ sts32_synthelen:
 
 
 /**
- * function sts32_syntheprelen
- * Count 24-byte Blocks of Synthesizer Pre-code
- *
- * Parameters
- * r0: Pointer of Array of Synthesizer Pre-code
- *
- * Return: r0 (Number of Blocks in Synthesizer Pre-code)
- */
-.globl sts32_syntheprelen
-sts32_syntheprelen:
-	/* Auto (Local) Variables, but just Aliases */
-	synt_pre_point .req r0
-	synt_word      .req r1
-	length         .req r2
-
-	mov length, #0
-
-	sts32_syntheprelen_loop:
-		ldr synt_word, [synt_pre_point]
-		cmp synt_word, #0
-		ldreq synt_word, [synt_pre_point, #4]
-		cmpeq synt_word, #0
-		beq sts32_syntheprelen_common           @ Break Loop if Null Character on Every Byte
-
-		add synt_pre_point, synt_pre_point, #24
-		add length, length, #1
-		b sts32_syntheprelen_loop
-
-	sts32_syntheprelen_common:
-		mov r0, length
-		mov pc, lr
-
-.unreq synt_pre_point
-.unreq synt_word
-.unreq length
-
-
-/**
  * function sts32_synthebeatlen
  * Count Beats in Synthesizer Pre-code
  *
@@ -901,9 +864,11 @@ sts32_synthebeatlen:
 	push {r4,lr}
 
 	push {r0}
-	bl sts32_syntheprelen
+	bl sts32_synthelen
 	mov length, r0
 	pop {r0}
+
+	lsr length, length, #1
 
 	mov beat, #0
 	mov i, #0
@@ -913,7 +878,7 @@ sts32_synthebeatlen:
 		bge sts32_synthebeatlen_common
 		ldr temp, [synt_pre_point, #8]
 		add beat, beat, temp
-		add synt_pre_point, synt_pre_point, #24
+		add synt_pre_point, synt_pre_point, #16
 		add i, i, #1
 		b sts32_synthebeatlen_loop
 
@@ -1070,9 +1035,11 @@ sts32_synthedecode:
 
 	push {r0-r3}
 	mov r0, synt_pre_point
-	bl sts32_syntheprelen
+	bl sts32_synthelen
 	mov synt_pre_length, r0
 	pop {r0-r3}
+
+	lsr synt_pre_length, synt_pre_length, #1
 
 	mov temp, #1
 	vmov vfp_one, temp
@@ -1089,11 +1056,13 @@ sts32_synthedecode:
 		asr temp, code_lower, #16                      @ Arighmetic Logical Shift Right to Hold Signess
 		vmov vfp_volume, temp
 		vcvt.f32.s32 vfp_volume, vfp_volume
-		vldr vfp_rising, [synt_pre_point, #16]
+		ldrh flat_length, [synt_pre_point, #12]
+		vmov vfp_rising, flat_length
 		vcvt.f32.u32 vfp_rising, vfp_rising
-		vldr vfp_falling, [synt_pre_point, #20]
+		ldrh flat_length, [synt_pre_point, #14]
+		vmov vfp_falling, flat_length
 		vcvt.f32.u32 vfp_falling, vfp_falling
-		add synt_pre_point, synt_pre_point, #24         @ Offset for Next Pre-block
+		add synt_pre_point, synt_pre_point, #16         @ Offset for Next Pre-block
 
 		/* Convert Percents to Decimal */
 
@@ -1161,7 +1130,7 @@ macro32_debug synt_point, 200, 48
 
 		sts32_synthedecode_main_rising:
 			subs rising_length, rising_length, #1
-			ldrlt code_lower, [synt_pre_point, #-24]            @ Retrieve Original Volume for Flat Part
+			ldrlt code_lower, [synt_pre_point, #-16]            @ Retrieve Original Volume for Flat Part
 			asrlt temp, code_lower, #16                         @ Arighmetic Logical Shift Right to Hold Signess
 			vmovlt vfp_volume, temp
 			vcvtlt.f32.s32 vfp_volume, vfp_volume

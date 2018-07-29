@@ -25,109 +25,170 @@
  */
 
 /**
- * Synthesizer Code is 64-bit Block consists two frequencies and magnitudes to Synthesize.
- * Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
- * Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
- * Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
- * Bit[46-32] Frequency-B (Sub): 0 to 32767 Hz
- * Bit[47] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
- * Bit[63-48] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
+ * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
+ * Lower Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
+ * Lower Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
+ * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
+ * Higher Bit[14-0] Frequency-B (Sub): 0 to 32767 Hz
+ * Higher Bit[15] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
+ * Higher Bit[31-16] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
  * This type of synthesizers is named as "Frequency Modulation Synthesis" developed by John Chowning, and decorated the music world in the late 20th century.
- * 0x0 means End of Synthesizer Code.
+ * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Synthesizer Code will be fetched by L/R alternatively.
  * If you line up four blocks, the first and the third block will be fetched by L, and the second and the fourth block will be fetched by R.
  */
 
 /**
- * Synthesizer Pre-code is a series of blocks. Each block has a structure of 3 long long integers (64-bit).
- * uint64 synthe_code;
- * uint64 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
- * uint64 rising_pitch (Bit[31:0]) and falling_pitch (Bit[63:32]); 0 - 100 Percents
- * 3 streak of 0x0 means End of Synthesizer Pre-code.
+ * Synthesizer Pre-code is a series of blocks. Each block has a structure of 4 long integers (32-bit).
+ * uint32 synthe_code_lower;
+ * uint32 synthe_code_upper;
+ * uint32 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
+ * uint32 rising_pitch (Bit[15:0]) and falling_pitch (Bit[31:16]); 0 - 100 Percents
+ * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
  */
 
 synthe_precode pre_synthe1_l[] = {
-	10000ull<<48|1262ull<<32|4000ull<<16|262ull,500,50ull<<32|50ull,
-	10000ull<<48|1311ull<<32|4000ull<<16|311ull,500,50ull<<32|50ull,
-	10000ull<<48|1349ull<<32|4000ull<<16|349ull,500,50ull<<32|50ull,
-	10000ull<<48|1392ull<<32|4000ull<<16|392ull,500,50ull<<32|50ull,
-	0x00
+	4000<<STS32_MAG|262,10000<<STS32_MAG|1262,500,50|50<<STS32_FAL,
+	4000<<STS32_MAG|311,10000<<STS32_MAG|1311,500,50|50<<STS32_FAL,
+	4000<<STS32_MAG|349,10000<<STS32_MAG|1349,500,50|50<<STS32_FAL,
+	4000<<STS32_MAG|392,10000<<STS32_MAG|1392,500,50|50<<STS32_FAL,
+	STS32_END
 };
 
 synthe_precode pre_synthe1_r[] = {
-	60000ull<<48|131ull<<32|2000ull<<16|131ull,1000,80ull<<32|20ull,
-	60000ull<<48|131ull<<32|2000ull<<16|123ull,1000,80ull<<32|20ull,
-	0x00
+	2000<<STS32_MAG|131,60000<<STS32_MAG|131,1000,20|80<<STS32_FAL,
+	2000<<STS32_MAG|123,60000<<STS32_MAG|131,1000,20|80<<STS32_FAL,
+	STS32_END
 };
 
 synthe_precode pre_synthe2_l[] = {
-	30000ull<<48|2000ull<<32|3000ull<<16|_C5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_D5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_E5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_F5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_G5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_A5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_B5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_C6,250,50ull<<32|50ull,
-	0x00
+	3000<<STS32_MAG|_C5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_D5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_E5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_A5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_B5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_C6,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	STS32_END
 };
 
 synthe_precode pre_synthe2_r[] = {
-	30000ull<<48|2000ull<<32|3000ull<<16|_C6,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_B5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_A5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_G5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_F5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_E5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_D5,250,50ull<<32|50ull,
-	30000ull<<48|2000ull<<32|3000ull<<16|_C5,250,50ull<<32|50ull,
-	0x00
+	3000<<STS32_MAG|_C6,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_B5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_A5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_E5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_D5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	3000<<STS32_MAG|_C5,30000<<STS32_MAG|2000,250,50|50<<STS32_FAL,
+	STS32_END
 };
 
 synthe_precode pre_synthe8_l[] = {
-	30000ull<<48|400ull<<32|2000ull<<16|2000ull,375,50ull<<32|50ull,
-	30000ull<<48|400ull<<32|2000ull<<16|1000ull,375,50ull<<32|50ull,
-	30000ull<<48|400ull<<32|2000ull<<16|500ull,125,50ull<<32|50ull,
-	30000ull<<48|400ull<<32|2000ull<<16|250ull,125,50ull<<32|50ull,
-	0x00
+	3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+
+	3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	STS32_END
 };
 
 synthe_precode pre_synthe8_r[] = {
-	0ull<<48|60ull<<32|500ull<<16|2000ull,1000,10ull<<32|10ull,
-	0x00
+	-3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_D4,30000<<STS32_MAG|_D4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_G5,30000<<STS32_MAG|_G5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	-0000<<STS32_MAG|_C4,30000<<STS32_MAG|_C4,250,2|98<<STS32_FAL,
+	-3000<<STS32_MAG|_F5,30000<<STS32_MAG|_F5,250,2|98<<STS32_FAL,
+	STS32_END
 };
 
 // "Himawari"
 synthe_precode pre_synthe16_l[] = {
-	10000ull<<48|((uint64)(_D5)+2000ull)<<32|3000ull<<16|_D5,750,80ull<<32|20ull,
-	10000ull<<48|((uint64)(_G5)+2000ull)<<32|3000ull<<16|_G5,1250,80ull<<32|20ull,
-	10000ull<<48|((uint64)(_D5)+2000ull)<<32|3000ull<<16|_D5,750,80ull<<32|20ull,
-	10000ull<<48|((uint64)(_G5)+2000ull)<<32|3000ull<<16|_G5,1250,80ull<<32|20ull,
-	10000ull<<48|((uint64)(_F5)+2000ull)<<32|3000ull<<16|_F5,750,80ull<<32|20ull,
-	10000ull<<48|((uint64)(_C6)+2000ull)<<32|3000ull<<16|_C6,1250,80ull<<32|20ull,
-	0x00
+	3000<<STS32_MAG|_D5,30000<<STS32_MAG|(_D5+2000),750,20|80<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|(_G5+2000),1250,20|80<<STS32_FAL,
+	3000<<STS32_MAG|_D5,30000<<STS32_MAG|(_D5+2000),750,20|80<<STS32_FAL,
+	3000<<STS32_MAG|_G5,30000<<STS32_MAG|(_G5+2000),1250,20|80<<STS32_FAL,
+	3000<<STS32_MAG|_F5,30000<<STS32_MAG|(_F5+2000),750,20|80<<STS32_FAL,
+	3000<<STS32_MAG|_C6,30000<<STS32_MAG|(_C6+2000),1250,20|80<<STS32_FAL,
+	STS32_END
 };
 
 synthe_precode pre_synthe16_r[] = {
-	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_G2)<<32|3000ull<<16|_G2,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_D3)<<32|3000ull<<16|_D3,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_F2)<<32|3000ull<<16|_F2,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_C3)<<32|3000ull<<16|_C3,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_F2)<<32|3000ull<<16|_F2,500,50ull<<32|50ull,
-	60000ull<<48|(uint64)(_C3)<<32|3000ull<<16|_C3,500,50ull<<32|50ull,
-	0x00
+	3000<<STS32_MAG|_G1,60000<<STS32_MAG|_G1,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_D2,60000<<STS32_MAG|_D2,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_G1,60000<<STS32_MAG|_G1,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_D2,60000<<STS32_MAG|_D2,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_G1,60000<<STS32_MAG|_G1,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_D2,60000<<STS32_MAG|_D2,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_G1,60000<<STS32_MAG|_G1,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_D2,60000<<STS32_MAG|_D2,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_F1,60000<<STS32_MAG|_F1,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_C2,60000<<STS32_MAG|_C2,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_F1,60000<<STS32_MAG|_F1,500,10|90<<STS32_FAL,
+	3000<<STS32_MAG|_C2,60000<<STS32_MAG|_C2,500,10|90<<STS32_FAL,
+	STS32_END
 };
 
 int32 _user_start()
