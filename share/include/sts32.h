@@ -177,6 +177,17 @@
 #define _B7  3951ul
 
 #define _C8  4186ul
+#define _CS8 4435ul
+#define _D8  4699ul
+#define _DS8 4978ul
+#define _E8  5274ul
+#define _F8  5588ul
+#define _FS8 5920ul
+#define _G8  6272ul
+#define _GS8 6645ul
+#define _A8  7040ul
+#define _AS8 7459ul
+#define _B8  7902ul
 
 #define _KEY1  _A0
 #define _KEY2  _AS0
@@ -274,3 +285,14 @@
 #define _KEY87 _B7
 
 #define _KEY88 _C8
+#define _KEY89 _CS8
+#define _KEY90 _D8
+#define _KEY91 _DS8
+#define _KEY92 _E8
+#define _KEY93 _F8
+#define _KEY94 _FS8
+#define _KEY95 _G8
+#define _KEY96 _GS8
+#define _KEY97 _A8
+#define _KEY98 _AS8
+#define _KEY99 _B8
