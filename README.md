@@ -154,7 +154,7 @@ The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kerne
 
 * About USB current source, there are experiences online. 600mA/1200mA switchable (RasPi3B is 1200mA in default) seems to be an answer. But, [there is no official document about the USB maximum ratings](https://www.raspberrypi.org/documentation/hardware/raspberrypi/usb/README.md), and [the official document restricts the total usage of the current on a RasPi for peripherals including USB devices up to 1A](https://www.raspberrypi.org/documentation/hardware/raspberrypi/power/README.md). 
 
-**LICENSE**
+**LICENSE ABOUT CODES**
 
 Copyright 2017 Kenta Ishii
 
@@ -163,6 +163,12 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+**LICENSE ABOUT OTHER PROPERTIES**
+
+Copyright © 2017-2018 Kenta Ishii. All Rights Reserved.
+
+Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symobol", etc.), melodies of musics, and other properties except codes are retained these intellectual property rights by Kenta Ishii. For example, texts in READMEs are restricted your commercial usage except fair use which is described in copyright cases of United States Courts.
 
 **Links of References**
 
