@@ -168,7 +168,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Copyright © 2017-2018 Kenta Ishii. All Rights Reserved.
 
-Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symobol", etc.), melodies of musics, and other properties except codes are retained these intellectual property rights by Kenta Ishii. For example, texts in READMEs are restricted your commercial usage except fair use which is described in copyright cases of United States Courts.
+Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), melodies of musics, and other properties except codes are retained these intellectual property rights by Kenta Ishii. For example, texts in READMEs are restricted your commercial usage except fair use which is described in copyright cases of United States Courts.
 
 **Links of References**
 
