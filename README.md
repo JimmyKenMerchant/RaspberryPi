@@ -1,6 +1,8 @@
 # Raspberry Pi System Project Based on Minimalism
 
-![Demonstration of Sound Projects](images/i2s_2.jpg "Demonstration of Sound Projects, Sound Box and Synthesizer")
+**Demonstration on Video**
+
+[![Demonstration of Sound Projects on Video](https://img.youtube.com/vi/hjSrRYd4Wx0/0.jpg "Demonstration of Synthesizer on Video")](https://www.youtube.com/watch?v=hjSrRYd4Wx0)
 
 **PURPOSE**
 
