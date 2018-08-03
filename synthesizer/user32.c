@@ -534,9 +534,85 @@ int32 _user_start()
 			} else if ( detect_parallel == 0b01000<<22 ) {
 				_syntheset( synthe8, sts32_synthelen( synthe8 )/2, 0, -1 );
 
+			// 0b01001 (9)
+			} else if ( detect_parallel == 0b01001<<22 ) {
+				_syntheclear();
+
+			// 0b01010 (10)
+			} else if ( detect_parallel == 0b01010<<22 ) {
+				_syntheclear();
+
+			// 0b01011 (11)
+			} else if ( detect_parallel == 0b01011<<22 ) {
+				_syntheclear();
+
+			// 0b01100 (12)
+			} else if ( detect_parallel == 0b01100<<22 ) {
+				_syntheclear();
+
+			// 0b01101 (13)
+			} else if ( detect_parallel == 0b01101<<22 ) {
+				_syntheclear();
+
+			// 0b01110 (14)
+			} else if ( detect_parallel == 0b01110<<22 ) {
+				_syntheclear();
+
+			// 0b01111 (15)
+			} else if ( detect_parallel == 0b01111<<22 ) {
+				_syntheclear();
+
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
 				_syntheset( synthe16, sts32_synthelen( synthe16 )/2, 0, -1 );
+
+			// 0b10001 (17)
+			} else if ( detect_parallel == 0b10001<<22 ) {
+				_syntheclear();
+
+			// 0b10010 (18)
+			} else if ( detect_parallel == 0b10010<<22 ) {
+				_syntheclear();
+
+			// 0b10011 (19)
+			} else if ( detect_parallel == 0b10011<<22 ) {
+				_syntheclear();
+
+			// 0b10100 (20)
+			} else if ( detect_parallel == 0b10100<<22 ) {
+				_syntheclear();
+
+			// 0b10101 (21)
+			} else if ( detect_parallel == 0b10101<<22 ) {
+				_syntheclear();
+
+			// 0b10110 (22)
+			} else if ( detect_parallel == 0b10110<<22 ) {
+				_syntheclear();
+
+			// 0b10111 (23)
+			} else if ( detect_parallel == 0b10111<<22 ) {
+				_syntheclear();
+
+			// 0b11000 (24)
+			} else if ( detect_parallel == 0b11000<<22 ) {
+				_syntheclear();
+
+			// 0b11001 (25)
+			} else if ( detect_parallel == 0b11001<<22 ) {
+				_syntheclear();
+
+			// 0b11010 (26)
+			} else if ( detect_parallel == 0b11010<<22 ) {
+				_syntheclear();
+
+			// 0b11011 (27)
+			} else if ( detect_parallel == 0b11011<<22 ) {
+				_syntheclear();
+
+			// 0b11100 (28)
+			} else if ( detect_parallel == 0b11100<<22 ) {
+				_syntheclear();
 
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {

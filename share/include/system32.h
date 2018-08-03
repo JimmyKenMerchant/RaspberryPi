@@ -1261,6 +1261,7 @@ extern uint64 draw32_line
 #define SND32_PWM_BALANCED 1
 #define SND32_I2S          2
 #define SND32_I2S_BALANCED 3
+#define SND32_END          0xFFFF
 
 
 /* Relative System Calls  */
@@ -1297,6 +1298,12 @@ extern uint32 snd32_musiclen
 
 #define synthe_precode uint32
 #define synthe_code    uint32
+#define STS32_END      0x00,0x00
+#define STS32_FREQ     0
+#define STS32_MAG      16
+#define STS32_BEAT     0
+#define STS32_RIS      0
+#define STS32_FAL      16
 
 /* Relative System Calls  */
 

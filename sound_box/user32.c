@@ -26,73 +26,73 @@
 
 music_code music1[] =
 {
-	_12(B5_SINL)
-	SND32_END
+	_12(_B5_SINL)
+	_END
 };
 
 music_code music2[] =
 {
-	_12(E4_TRIL)
-	SND32_END
+	_12(_E4_TRIL)
+	_END
 };
 
 music_code music3[] =
 {
-	_12(C4_SINL)
-	_4(E4_SINL) _4(G4_SINL) _4(C5_SINL)
-	_12(E4_SINL)
-	_4(G4_SINL) _4(C5_SINL) _4(E5_SINL)
-	_12(G4_SINL)
-	_4(E5_SINL) _4(G5_SINL) _4(C6_SINL)
-	SND32_END
+	_12(_C4_SINL)
+	_4(_E4_SINL) _4(_G4_SINL) _4(_C5_SINL)
+	_12(_E4_SINL)
+	_4(_G4_SINL) _4(_C5_SINL) _4(_E5_SINL)
+	_12(_G4_SINL)
+	_4(_E5_SINL) _4(_G5_SINL) _4(_C6_SINL)
+	_END
 };
 
 music_code music4[] =
 {
-	_12_MAJ(C4_SINL) _12_MAJ(E4_SINL) _12_MAJ(G4_SINL) _12_MAJ(B4_SINL)
-	_12_MAJ(E4_SINL) _12_MAJ(G4_SINL) _12_MAJ(B4_SINL) _12_MAJ(D5_SINL)
-	_12_MAJ(G4_SINL) _12_MAJ(B4_SINL) _12_MAJ(D5_SINL) _12_MAJ(F5_SINL)
-	SND32_END
+	_12_MAJ(_C4_SINL) _12_MAJ(_E4_SINL) _12_MAJ(_G4_SINL) _12_MAJ(_B4_SINL)
+	_12_MAJ(_E4_SINL) _12_MAJ(_G4_SINL) _12_MAJ(_B4_SINL) _12_MAJ(_D5_SINL)
+	_12_MAJ(_G4_SINL) _12_MAJ(_B4_SINL) _12_MAJ(_D5_SINL) _12_MAJ(_F5_SINL)
+	_END
 };
 
 music_code music5[] =
 {
-	_24_DEC(A4_TRIL) _24_DEC(B4_TRIL)
-	_24_DEC(C5_TRIL) _24_DEC(B4_TRIL)
-	_24_DEC(A4_TRIL) _24(A4_TRIS)
-	_48(SND32_SILENCE)
-	SND32_END
+	_24_DEC(_A4_TRIL) _24_DEC(_B4_TRIL)
+	_24_DEC(_C5_TRIL) _24_DEC(_B4_TRIL)
+	_24_DEC(_A4_TRIL) _24(_A4_TRIS)
+	_48(_SILENCE)
+	_END
 };
 
 music_code music6[] =
 {
-	_24_M(C3_SINL) _24_M(B2_SINL)
-	_24_M(A2_SINL) _24_M(B2_SINL)
-	SND32_END
+	_24_M(_C3_SINL) _24_M(_B2_SINL)
+	_24_M(_A2_SINL) _24_M(_B2_SINL)
+	_END
 };
 
 music_code music7[] =
 {
-	_48_9TH(F4_TRIL)
-	SND32_END
+	_48_9TH(_F4_TRIL)
+	_END
 };
 
 music_code music8[] =
 {
-	_48_ROC_ARP(D4_TRIL)
-	_24_ROC_ARP(G4_TRIL) _24_ROC_ARP(G4_TRIL)
-	_48_ROC_ARP(D5_TRIL)
-	_48_ROC_ARP(D4_TRIL)
-	SND32_END
+	_48_ROC_ARP(_D4_TRIL)
+	_24_ROC_ARP(_G4_TRIL) _24_ROC_ARP(_G4_TRIL)
+	_48_ROC_ARP(_D5_TRIL)
+	_48_ROC_ARP(_D4_TRIL)
+	_END
 };
 
 music_code interrupt16[] =
 {
-	_48_RYU_ARP(D4_TRIL)
-	_24_MEN_ARP(G4_TRIL) _24_MEN_ARP(G4_TRIL)
-	_48_ENK_ARP(D5_TRIL)
-	_48_ENK_ARP(D4_TRIL)
-	SND32_END
+	_48_RYU_ARP(_D4_TRIL)
+	_24_MEN_ARP(_G4_TRIL) _24_MEN_ARP(_G4_TRIL)
+	_48_ENK_ARP(_D5_TRIL)
+	_48_ENK_ARP(_D4_TRIL)
+	_END
 };
 
 int32 _user_start()
@@ -171,9 +171,85 @@ int32 _user_start()
 			} else if ( detect_parallel == 0b01000<<22 ) {
 				_soundset( music8, snd32_musiclen( music8 ) , 0, -1 );
 
+			// 0b01001 (9)
+			} else if ( detect_parallel == 0b01001<<22 ) {
+				_soundclear();
+
+			// 0b01010 (10)
+			} else if ( detect_parallel == 0b01010<<22 ) {
+				_soundclear();
+
+			// 0b01011 (11)
+			} else if ( detect_parallel == 0b01011<<22 ) {
+				_soundclear();
+
+			// 0b01100 (12)
+			} else if ( detect_parallel == 0b01100<<22 ) {
+				_soundclear();
+
+			// 0b01101 (13)
+			} else if ( detect_parallel == 0b01101<<22 ) {
+				_soundclear();
+
+			// 0b01110 (14)
+			} else if ( detect_parallel == 0b01110<<22 ) {
+				_soundclear();
+
+			// 0b01111 (15)
+			} else if ( detect_parallel == 0b01111<<22 ) {
+				_soundclear();
+
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
 				_soundinterrupt( interrupt16, snd32_musiclen( interrupt16 ) , 0, 1 );
+
+			// 0b10001 (17)
+			} else if ( detect_parallel == 0b10001<<22 ) {
+				_soundclear();
+
+			// 0b10010 (18)
+			} else if ( detect_parallel == 0b10010<<22 ) {
+				_soundclear();
+
+			// 0b10011 (19)
+			} else if ( detect_parallel == 0b10011<<22 ) {
+				_soundclear();
+
+			// 0b10100 (20)
+			} else if ( detect_parallel == 0b10100<<22 ) {
+				_soundclear();
+
+			// 0b10101 (21)
+			} else if ( detect_parallel == 0b10101<<22 ) {
+				_soundclear();
+
+			// 0b10110 (22)
+			} else if ( detect_parallel == 0b10110<<22 ) {
+				_soundclear();
+
+			// 0b10111 (23)
+			} else if ( detect_parallel == 0b10111<<22 ) {
+				_soundclear();
+
+			// 0b11000 (24)
+			} else if ( detect_parallel == 0b11000<<22 ) {
+				_soundclear();
+
+			// 0b11001 (25)
+			} else if ( detect_parallel == 0b11001<<22 ) {
+				_soundclear();
+
+			// 0b11010 (26)
+			} else if ( detect_parallel == 0b11010<<22 ) {
+				_soundclear();
+
+			// 0b11011 (27)
+			} else if ( detect_parallel == 0b11011<<22 ) {
+				_soundclear();
+
+			// 0b11100 (28)
+			} else if ( detect_parallel == 0b11100<<22 ) {
+				_soundclear();
 
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
