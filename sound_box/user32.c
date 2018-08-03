@@ -89,9 +89,9 @@ music_code music8[] =
 music_code interrupt16[] =
 {
 	_48_RYU_ARP(_D4_TRIL)
-	_24_MEN_ARP(_G4_TRIL) _24_MEN_ARP(_G4_TRIL)
-	_48_ENK_ARP(_D5_TRIL)
-	_48_ENK_ARP(_D4_TRIL)
+	_24_RYU_ARP(_G4_TRIL) _24_RYU_ARP(_G4_TRIL)
+	_48_RYU_ARP(_D5_TRIL)
+	_48_RYU_ARP(_D4_TRIL)
 	_END
 };
 
@@ -102,22 +102,22 @@ int32 _user_start()
 	uint32 detect_parallel;
 
 #ifdef __SOUND_I2S
-	_sounddecode( sound, SND32_I2S );
+	_sounddecode( _SOUND_INDEX, SND32_I2S );
 #endif
 #ifdef __SOUND_I2S_BALANCED
-	_sounddecode( sound, SND32_I2S_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
 #endif
 #ifdef __SOUND_PWM
-	_sounddecode( sound, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM );
 #endif
 #ifdef __SOUND_PWM_BALANCED
-	_sounddecode( sound, SND32_PWM_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 #endif
 #ifdef __SOUND_JACK
-	_sounddecode( sound, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM );
 #endif
 #ifdef __SOUND_JACK_BALANCED
-	_sounddecode( sound, SND32_PWM_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 #endif
 
 	while ( true ) {
