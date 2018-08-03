@@ -86,6 +86,21 @@ ifeq ($(sound), jackb)
 	SND := __SOUND_JACK_BALANCED=1
 endif
 
+#Default Value for Secure/Non-secure State
+state ?= nonsecure
+
+ifeq ($(state), secure)
+	STATE := __SECURE=1
+endif
+
+ifeq ($(state), nonsecure)
+	ifeq ($(ARCH), __ARMV6=1)
+		STATE := __SECURE=1
+	else
+		STATE := __NONSEC=1
+	endif
+endif
+
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
 COMP := arm-none-eabi
 BIT := __AARCH32=1
@@ -93,11 +108,11 @@ BIT := __AARCH32=1
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
-CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT)
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT) -D $(STATE)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
-ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT)
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT) --defsym $(STATE)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy

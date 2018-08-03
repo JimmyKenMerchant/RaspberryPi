@@ -72,18 +72,27 @@ _os_reset:
 
 	/**
 	 * Set Cache Status for Memory Using as Framebuffer (By Section)
-	 * VideoCore seemes to connect with ARM closely, `shareable` attribute is not needed, so far.
+	 * VideoCore seems to connect with ARM closely, `shareable` attribute is not needed, so far.
+	 * In RasPi 2 and Later, descriptors on the range of Framebuffer should not be changed after calling a framebuffer
+	 * if you set fixup.dat to make a partition on SDRAM between CPU and GPU.
+	 * Otherwise, malfunctions on accessing memory occurs, even though this system changes the descriptors.
 	 */
 	push {r0-r3}
 .ifndef __ARMV6
+.ifndef __SECURE
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 .else
 	mov r0, #0
 .endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
 .ifndef __ARMV6
+.ifndef __SECURE
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 .endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
@@ -96,14 +105,20 @@ _os_reset:
 	/* Set Cache Status for Whole Area of Data Memory */
 	push {r0-r3}
 .ifndef __ARMV6
+.ifndef __SECURE
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 .else
 	mov r0, #0
 .endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
 .ifndef __ARMV6
+.ifndef __SECURE
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 .endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
@@ -120,14 +135,20 @@ _os_reset:
 	 */
 	push {r0-r3}
 .ifndef __ARMV6
+.ifndef __SECURE
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 .else
 	mov r0, #0
 .endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
 .ifndef __ARMV6
+.ifndef __SECURE
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 .endif
 	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
@@ -145,14 +166,20 @@ _os_reset:
 	 */
 	push {r0-r3}
 .ifndef __ARMV6
+.ifndef __SECURE
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 .else
 	mov r0, #0
 .endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
 .ifndef __ARMV6
+.ifndef __SECURE
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 .endif
 	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
@@ -166,14 +193,20 @@ _os_reset:
 	/* Set Cache Status for Virtual Address Descriptor */
 	push {r0-r3}
 .ifndef __ARMV6
+.ifndef __SECURE
 	mov r0, #1
+.else
+	mov r0, #0
+.endif
 .else
 	mov r0, #0
 .endif
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
 .ifndef __ARMV6
+.ifndef __SECURE
 	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
 .endif
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
@@ -185,6 +218,7 @@ _os_reset:
 
 	macro32_dsb ip
 	macro32_invalidate_tlb_all ip
+	macro32_dsb ip
 	macro32_isb ip
 	macro32_dsb ip
 	macro32_invalidate_instruction_all ip

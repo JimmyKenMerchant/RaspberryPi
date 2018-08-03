@@ -1037,6 +1037,9 @@ arm32_lineup_basic_va:
 
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_none
+.ifndef __ARMV6
+	orr descriptor, descriptor, #equ32_mmu_section_shareable
+.endif
 	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 
@@ -1075,6 +1078,9 @@ arm32_lineup_basic_va:
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_none
 	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
+.ifndef __ARMV6
+	orr descriptor, descriptor, #equ32_mmu_section_shareable
+.endif
 	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 

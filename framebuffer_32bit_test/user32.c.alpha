@@ -122,7 +122,7 @@ int32 _user_start()
 	//obj answer_obj = math32_mat_multiply( string5_obj, string6_obj, 2 );
 	//obj answer_obj = math32_mat_identity( 3 );
 	//obj answer_obj = math32_vec_normalize( string5_obj, 4 );
-	obj answer_obj = math32_vec_crossproduct( string5_obj, string6_obj );
+	obj answer_obj = mtx32_crossproduct( string5_obj, string6_obj );
 	String answer_string = cvt32_farray_to_string( answer_obj, 0, 20, 0 );
 
 	//float32 answer_float = math32_vec_dotproduct( string5_obj, string6_obj, 4 );

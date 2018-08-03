@@ -44,6 +44,8 @@ _el01_reset:
 	sub fp, fp, ip
 	mov sp, fp
 
+.ifndef __SECURE
+
 	push {r0-r3}
 	mov r0, #1
 	mov r1, #equ32_ttbr_inner_wb_wa|equ32_ttbr_outer_wb_wa
@@ -84,6 +86,8 @@ _el01_reset:
 .endif
 
 	macro32_multicore_id r0
+
+.endif
 
 	cmp r0, #0                                @ If Core is Zero
 	moveq r1, #0x8000

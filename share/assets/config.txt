@@ -34,9 +34,9 @@ sdram_freq=250
 
 #GPU Memory Mbytes, fixup*.dat makes partition.
 #If you want less than 32Mbytes for GPU, start_cd.elf (Cut Down) and fixup_cd.elf are needed.
-gpu_mem_256=32
-gpu_mem_512=32
-gpu_mem_1024=64
+#gpu_mem_256=32
+#gpu_mem_512=32
+#gpu_mem_1024=64
 
 #Black Border (0) or Not (1)
 disable_overscan=1

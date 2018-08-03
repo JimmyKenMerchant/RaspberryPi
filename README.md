@@ -109,7 +109,7 @@ cd RaspberryPi/frequency_counter
 make type=zerow
 ```
 You need to paste kernel.img, config.txt, and LICENSE.aloha to the root directory of your boot media (e.g. FAT32 formatted SD Card). config.txt and LICENSE.aloha are in share/assets/ of this project.
-You also need to get latest start.elf, bootcode.bin, and LICENSE.broadcom from RasPi Official Repository, and paste these to the root directory of your boot media. fixup.dat makes a partition of SDRAM between GPU and ARM even tough this project doesn't need fixup.dat.
+You also need to get latest start.elf, bootcode.bin, and LICENSE.broadcom from RasPi Official Repository, and paste these to the root directory of your boot media. fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM. This project does not need fixup.dat because of not making a partition to write data to a framebuffer from ARM efficiently. According to BCM2835 ARM Peripherals (manual), a partition between GPU and ARM is optional. This may cause an identical, fixup.dat, file.
 
 The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on ARMv7 Raspberry Pi.
 

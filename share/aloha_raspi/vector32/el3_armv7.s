@@ -46,8 +46,8 @@ _el3_monitor:
 	pop {r0-r3,lr}
 
 	push {r0-r3,lr}
-	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_none
-	orr r0, r0, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_r
+	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
+	orr r0, r0, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
 	orr r0, r0, #equ32_mmu_domain00
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
@@ -95,6 +95,8 @@ _el3_monitor:
 	macro32_dsb ip
 .endif
 
+.ifndef __SECURE
+
 	mov r0, #0x0C00                           @ Enable VFP/NEON Access in Non-secure mode, Bit[10] is CP10, Bit[11] is CP11
 .ifndef __ARMV8
 	orr r0, r0, #0x40000                      @ Enable NS_SMP (Non-secure SMP Enable in ACTLR), Bit[18],
@@ -118,6 +120,8 @@ _el3_monitor:
 	mov r0, #0x1000
 	mcr p15, 4, r0, c12, c0, 0                @ Change HVBAR (Hypervisor Mode, EL2), IVT Base Vector Address
 	macro32_dsb ip
+
+.endif
 
 	movs pc, lr                               @ Return to SVC Mode
 
