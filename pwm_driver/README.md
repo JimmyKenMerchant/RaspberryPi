@@ -16,6 +16,14 @@
 
 * GPIO13 as Output of PWM1
 
+* GPIO16 as Output of Playing Signal of PWM0
+
+* GPIO21 as Output of Playing Signal of PWM1
+
+* GPIO17 as Output of Synchronization Clock OUT
+
+* GPIO27 as Input of Synchronization Clock IN, Connect with Any Synchronization Clock OUT.
+
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
 * Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source. If you use Duty Ratio mode, it's OK because of switching (digital) behavior. If you use Voltage Control mode to get behavior like analogue, you need a linear amplifier whose input impedance is high. To make a linear amplifier, you may need a bipolar transistor, and higher electrical techniques.
@@ -25,6 +33,10 @@
 **Compatibility**
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
 
 ## GPIO22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 

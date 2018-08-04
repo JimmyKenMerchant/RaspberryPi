@@ -14,7 +14,9 @@
 
 **Output/Input**
 
-* GPIO2-16 and GPIO18-21 as Output of GPIO
+* GPIO2-15 and GPIO18-21 as Output of GPIO
+
+* GPIO16 as Output of Playing Signal
 
 * GPIO17 as Output of Synchronization Clock OUT
 
