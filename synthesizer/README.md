@@ -16,6 +16,8 @@
 
 * GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 on sound=jack
 
+* GPIO16 as Output of Playing Signal
+
 * GPIO17 as Output of Synchronization Clock OUT
 
 * GPIO27 as Input of Synchronization Clock IN, Connect with Any Synchronization Clock OUT.

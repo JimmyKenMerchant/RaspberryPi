@@ -470,6 +470,8 @@ int32 _user_start()
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
+	uchar8 result;
+	uchar8 playing_signal;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
@@ -485,7 +487,13 @@ int32 _user_start()
 		_synthewave_pwm();
 #endif
 		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
-			_syntheplay();
+			result = _syntheplay();
+			if ( result == 0 ) { // Playing
+				playing_signal = _GPIOTOGGLE_HIGH;
+			} else { // Not Playing
+				playing_signal = _GPIOTOGGLE_LOW;
+			}
+			_gpiotoggle( 16, playing_signal );
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
 

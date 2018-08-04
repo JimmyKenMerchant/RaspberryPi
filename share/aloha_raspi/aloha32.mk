@@ -87,18 +87,29 @@ ifeq ($(sound), jackb)
 endif
 
 #Default Value for Secure/Non-secure State
-state ?= nonsecure
+secure ?= no
 
-ifeq ($(state), secure)
+ifeq ($(secure), yes)
 	STATE := __SECURE=1
 endif
 
-ifeq ($(state), nonsecure)
+ifeq ($(secure), no)
 	ifeq ($(ARCH), __ARMV6=1)
 		STATE := __SECURE=1
 	else
 		STATE := __NONSEC=1
 	endif
+endif
+
+#Default Value for Debug Mode
+debug ?= no
+
+ifeq ($(debug), yes)
+	MODE := __DEBUG=1
+endif
+
+ifeq ($(debug), no)
+	MODE := __NONDEB=1
 endif
 
 # aarch64-linux-gnu @64bit ARM compiler but for amd64 and i386 only (as of July 2017)
@@ -108,11 +119,11 @@ BIT := __AARCH32=1
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
-CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT) -D $(STATE)
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT) -D $(STATE) -D $(MODE)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
-ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT) --defsym $(STATE)
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT) --defsym $(STATE) --defsym $(MODE)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy
