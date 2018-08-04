@@ -16,6 +16,8 @@
 
 * GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 (L of Phone Connector) on sound=jack or sound=jackb, 180 Degrees Phase-shifted from PWM0 if sound=jackb
 
+* GPIO16 as Output of Playing Signal
+
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
 * GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.

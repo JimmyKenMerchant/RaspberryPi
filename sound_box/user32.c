@@ -100,6 +100,8 @@ int32 _user_start()
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;
+	uchar8 result;
+	uchar8 playing_signal;
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S );
@@ -122,7 +124,7 @@ int32 _user_start()
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
-			_soundplay();
+
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
 
@@ -270,6 +272,14 @@ int32 _user_start()
 				_soundclear();
 
 			}
+
+			result = _soundplay();
+			if ( result == 0 ) { // Playing
+				playing_signal = _GPIOTOGGLE_HIGH;
+			} else { // Not Playing
+				playing_signal = _GPIOTOGGLE_LOW;
+			}
+			_gpiotoggle( 16, playing_signal );
 		}
 	}
 

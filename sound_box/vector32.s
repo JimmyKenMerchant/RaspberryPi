@@ -90,6 +90,7 @@ os_reset:
 
 	/* I/O Settings */
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 17 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
@@ -166,12 +167,14 @@ os_fiq:
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 	macro32_dsb ip
 
+.ifdef __DEBUG
 .ifndef __RASPI3B
 	/* ACT Blinker */
 	mov r0, #47
 	mov r1, #2
 	bl gpio32_gpiotoggle
 	macro32_dsb ip
+.endif
 .endif
 
 	mov r0, #17

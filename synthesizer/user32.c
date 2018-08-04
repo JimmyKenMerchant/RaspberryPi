@@ -487,13 +487,7 @@ int32 _user_start()
 		_synthewave_pwm();
 #endif
 		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
-			result = _syntheplay();
-			if ( result == 0 ) { // Playing
-				playing_signal = _GPIOTOGGLE_HIGH;
-			} else { // Not Playing
-				playing_signal = _GPIOTOGGLE_LOW;
-			}
-			_gpiotoggle( 16, playing_signal );
+
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
 
@@ -641,6 +635,14 @@ int32 _user_start()
 				_syntheclear();
 
 			}
+
+			result = _syntheplay();
+			if ( result == 0 ) { // Playing
+				playing_signal = _GPIOTOGGLE_HIGH;
+			} else { // Not Playing
+				playing_signal = _GPIOTOGGLE_LOW;
+			}
+			_gpiotoggle( 16, playing_signal );
 		}
 	}
 
