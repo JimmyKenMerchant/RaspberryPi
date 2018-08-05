@@ -26,8 +26,12 @@
 
 **Compatibility**
 
-Under Construction
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
 
 **Hardware**
 
-* MCP3002-I/P: Check out the Data sheet.
+* MCP3002-I/P: Check out the Data sheet. If you use this with RaspberryPi, 3.3V is preferred to power VDD because of no need to make a level shifter. MCP3002-I/P works well with 3.3V power source in my experience. Check data sheet of MCP3002-I/P which describes characteristics on 2.7V and 5V.

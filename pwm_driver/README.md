@@ -26,7 +26,7 @@
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
-* Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source. If you use Duty Ratio mode, it's OK because of switching (digital) behavior. If you use Voltage Control mode to get behavior like analogue, you need a linear amplifier whose input impedance is high. To make a linear amplifier, you may need a bipolar transistor, and higher electrical techniques.
+* Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source. If you use Duty Ratio mode, it's OK because of switching (digital) behavior. If you use Voltage Control mode to get behavior like analogue, you need an idea of a buck converter, one of switched-mode power supplys.
 
 * To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
 
