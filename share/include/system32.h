@@ -20,6 +20,29 @@
 
 /* Constants */
 
+#define _RAP(...) __VA_ARGS__
+
+#define _1_BIG(x) x
+#define _2_BIG(x) x x
+#define _3_BIG(x) x x x
+#define _4_BIG(x) x x x x
+#define _5_BIG(x) x x x x x
+#define _6_BIG(x) x x x x x x
+#define _7_BIG(x) x x x x x x x
+#define _8_BIG(x) x x x x x x x x
+#define _9_BIG(x) x x x x x x x x x
+#define _10_BIG(x) x x x x x x x x x x
+#define _11_BIG(x) _10_BIG(x) _1_BIG(x)
+#define _12_BIG(x) _10_BIG(x) _2_BIG(x)
+#define _13_BIG(x) _10_BIG(x) _3_BIG(x)
+#define _14_BIG(x) _10_BIG(x) _4_BIG(x)
+#define _15_BIG(x) _10_BIG(x) _5_BIG(x)
+#define _16_BIG(x) _10_BIG(x) _6_BIG(x)
+#define _17_BIG(x) _10_BIG(x) _7_BIG(x)
+#define _18_BIG(x) _10_BIG(x) _8_BIG(x)
+#define _19_BIG(x) _10_BIG(x) _9_BIG(x)
+#define _20_BIG(x) _10_BIG(x) _10_BIG(x)
+
 #define _1(x) x,
 #define _2(x) x,x,
 #define _3(x) x,x,x,
@@ -79,7 +102,21 @@
 #define _57(x) _50(x) _7(x)
 #define _58(x) _50(x) _8(x)
 #define _59(x) _50(x) _9(x)
+
 #define _60(x) _50(x) _10(x)
+#define _70(x) _60(x) _10(x)
+#define _80(x) _70(x) _10(x)
+#define _90(x) _80(x) _10(x)
+#define _100(x) _90(x) _10(x)
+#define _200(x) _100(x) _100(x)
+#define _300(x) _200(x) _100(x)
+#define _400(x) _300(x) _100(x)
+#define _500(x) _400(x) _100(x)
+#define _600(x) _500(x) _100(x)
+#define _700(x) _600(x) _100(x)
+#define _800(x) _700(x) _100(x)
+#define _900(x) _800(x) _100(x)
+#define _1000(x) _900(x) _100(x)
 
 #define uchar8 unsigned char
 #define uint16 unsigned short int
