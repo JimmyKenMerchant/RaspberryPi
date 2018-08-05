@@ -128,7 +128,7 @@ os_reset:
 	/**
 	 * PWM Initializer
 	 */
-	mov r0, #0                                                     @ Voltage Control Mode
+	mov r0, #1                                                     @ Fixed Frequency
 	mov r1, #200
 	mov r2, #200                                                   @ For 50Hz
 	bl pwm32_pwminit

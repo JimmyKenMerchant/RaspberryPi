@@ -26,7 +26,9 @@
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
-* Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source. If you use duty ratio mode, it's OK because of switching (digital) behavior. If you use voltage control mode to get behavior like analogue, you need an idea of a buck converter, one of switched-mode power supplys.
+* Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source. If you use duty ratio, it's OK because of switching (digital) behavior. If you use variable voltage to get behavior like analogue, you need an idea of a buck converter, one of switched-mode power supply.
+
+* There are two modes on PWM; variable frequencies to balance pulses (multiple highs and lows), and fixed frequency (one high and low) in a duty cycle. Default is on variable frequencies. However, fixed frequency has been studied well. In fact, on fixed frequency, elements such as inductors and capacitors are determined easier than variable frequencies. Besides, PWM on variable frequencies might be able to remove several elements to make a switched-mode power supply in my opinion.
 
 * To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
 

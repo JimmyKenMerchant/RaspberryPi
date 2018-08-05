@@ -350,7 +350,7 @@ pwm32_pwmlen:
  * PWM Initializer
  *
  * Parameters
- * r0: 0 as Voltage Control, 1 as Duty Ratio
+ * r0: 0 as Variable Frequencies to Balance Pulses (Multiple Highs and Lows), 1 as Fixed Frequency (One High and Low) in A Duty Cycle
  * r1: Range of PWM0
  * r2: Range of PWM0
  *
