@@ -41,11 +41,11 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 
 /**
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
- * Lower Bit[14-0] Frequency-A (Main): 0 to 32767 Hz
- * Lower Bit[15] Decimal Part of Frequency-A (Main): 0 as 0.0, 1 as 0.5
+ * Lower Bit[13-0] Frequency-A (Main): 0 to 16383 Hz
+ * Lower Bit[15-14] Decimal Part of Frequency-A (Main): 0b as 0.0, 1b as 0.25, 10b as 0.5, 11b as 0.75
  * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
- * Higher Bit[14-0] Frequency-B (Sub): 0 to 32767 Hz
- * Higher Bit[15] Decimal Part of Frequency-B (Sub): 0 as 0.0, 1 as 0.5
+ * Higher Bit[13-0] Frequency-B (Sub): 0 to 16383 Hz
+ * Higher Bit[15-14] Decimal Part of Frequency-B (Sub): 0b as 0.0, 1b as 0.25, 10b as 0.5, 11b as 0.75
  * Higher Bit[31-16] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
@@ -114,13 +114,16 @@ sts32_synthewave_pwm:
 	vmov vfp_time, time
 	vcvt.f32.u32 vfp_time, vfp_time
 
-	mov temp, #32000
+	mov temp, #equ32_sts32_samplerate
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
 	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
 
 	vldr vfp_divisor, sts32_synthewave_pwm_divisor
+
+	/* Get Time (Seconds) */
+	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
 
 	ldr flag_rl, STS32_SYNTHEWAVE_RL
 	tst flag_rl, #1
@@ -144,11 +147,9 @@ sts32_synthewave_pwm:
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
-		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_samplerate
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
-		vdiv.f32 vfp_freq_b, vfp_freq_b, vfp_samplerate
 
 		/* Round Radian within 2Pi */
 		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -204,11 +205,9 @@ sts32_synthewave_pwm:
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
-			vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_samplerate
 
 			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
-			vdiv.f32 vfp_freq_b, vfp_freq_b, vfp_samplerate
 
 			/* Round Radian within 2Pi */
 			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -251,10 +250,14 @@ sts32_synthewave_pwm:
 			mov flag_rl, #0
 
 			add time, time, #1
-			cmp time, #32000
+			cmp time, #equ32_sts32_samplerate<<2          @ To apply Up To 0.25Hz
 			movge time, #0
 			vmov vfp_time, time
 			vcvt.f32.u32 vfp_time, vfp_time
+
+			/* Get Time (Seconds) */
+			vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
 			b sts32_synthewave_pwm_loop
 
 	sts32_synthewave_pwm_error1:
@@ -336,12 +339,14 @@ sts32_synthewave_i2s:
 	vmov vfp_time, time
 	vcvt.f32.u32 vfp_time, vfp_time
 
-	mov temp, #32000
+	mov temp, #equ32_sts32_samplerate
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
 	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
 
+	/* Get Time (Seconds) */
+	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
 
 	/**
 	 * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
@@ -361,11 +366,9 @@ sts32_synthewave_i2s:
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
-		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_samplerate
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
-		vdiv.f32 vfp_freq_b, vfp_freq_b, vfp_samplerate
 
 		/* Round Radian within 2Pi */
 		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -409,11 +412,9 @@ sts32_synthewave_i2s:
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
-		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_samplerate
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
-		vdiv.f32 vfp_freq_b, vfp_freq_b, vfp_samplerate
 
 		/* Round Radian within 2Pi */
 		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -458,10 +459,14 @@ sts32_synthewave_i2s:
 		macro32_dsb ip
 
 		add time, time, #1
-		cmp time, #32000
+		cmp time, #equ32_sts32_samplerate<<2          @ To apply Up To 0.25Hz
 		movge time, #0
 		vmov vfp_time, time
 		vcvt.f32.u32 vfp_time, vfp_time
+
+		/* Get Time (Seconds) */
+		vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
 		b sts32_synthewave_i2s_loop
 
 	sts32_synthewave_i2s_error1:
@@ -582,16 +587,17 @@ sts32_syntheplay:
 	status        .req r4
 	code          .req r5
 	temp          .req r6
-	temp2         .req r7
+	fraction      .req r7
 
 	/* VFP Registers */
 	vfp_temp      .req s0
 	vfp_pi_double .req s1
 	vfp_max       .req s2
-	vfp_half      .req s3
+	vfp_quarter   .req s3
+	vfp_fraction  .req s4
 
 	push {r4-r7,lr}
-	vpush {s0-s3}
+	vpush {s0-s4}
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
@@ -624,9 +630,10 @@ sts32_syntheplay:
 	beq sts32_syntheplay_free
 
 	sts32_syntheplay_jump:
-		/* Hard Code of Single Precision Float 0.5 */
+		/* Hard Code of Single Precision Float 0.25 */
 		mov temp, #0x3F000000
-		vmov vfp_half, temp
+		orr temp, temp, #0x00800000
+		vmov vfp_quarter, temp
 
 		ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
 		vldr vfp_pi_double, [temp]
@@ -639,11 +646,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
-		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
+		lsr fraction, temp, #14
+		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
+		vmov vfp_fraction, fraction
+		vcvt.f32.u32 vfp_fraction, vfp_fraction
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_L
 		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
@@ -657,11 +667,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
-		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
+		lsr fraction, temp, #14
+		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
+		vmov vfp_fraction, fraction
+		vcvt.f32.u32 vfp_fraction, vfp_fraction
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_L
 		lsr temp, code, #16
@@ -677,11 +690,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
-		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
+		lsr fraction, temp, #14
+		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
+		vmov vfp_fraction, fraction
+		vcvt.f32.u32 vfp_fraction, vfp_fraction
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_R
 		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
@@ -695,11 +711,14 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		tst temp, #0x8000                          @ Check Bit[15] for Decimal Places
-		bicne temp, temp, #0x8000                  @ Cler Bit[15] If Exists
+		lsr fraction, temp, #14
+		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vaddne.f32 vfp_temp, vfp_temp, vfp_half    @ Add 0.5 If Bit[15] Existed
+		vmov vfp_fraction, fraction
+		vcvt.f32.u32 vfp_fraction, vfp_fraction
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_R
 		lsr temp, code, #16
@@ -747,7 +766,7 @@ sts32_syntheplay:
 		mov r0, #0                            @ Return with Success
 
 	sts32_syntheplay_common:
-		vpop {s0-s3}
+		vpop {s0-s4}
 		pop {r4-r7,pc}
 
 .unreq addr_code
@@ -757,11 +776,12 @@ sts32_syntheplay:
 .unreq status
 .unreq code
 .unreq temp
-.unreq temp2
+.unreq fraction
 .unreq vfp_temp
 .unreq vfp_pi_double
 .unreq vfp_max
-.unreq vfp_half
+.unreq vfp_quarter
+.unreq vfp_fraction
 
 sts32_syntheplay_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 
