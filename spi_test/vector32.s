@@ -244,7 +244,7 @@ spi_test_fiqhandler:
 	mov r0, #0xFF
 	add r0, r0, #1                @ draw32_line draws the end of the point inclusively
 	push {r0}
-	ldr r0, ADDR32_COLOR32_BLUE
+	ldr r0, ADDR32_COLOR32_MAGENTA
 	ldr r0, [r0]
 	mov r1, horizon
 	mov r2, #spi_test_fiqhandler_ystart

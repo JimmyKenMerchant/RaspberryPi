@@ -148,8 +148,8 @@ spi32_spidone:
  * SPI Transfer
  *
  * Parameters
- * r0: Data to Be Send
- * r1: Length of Send Data (Bytes, Up to 4)
+ * r0: Data to Be Transferred
+ * r1: Length of Transferred Data (Bytes, Up to 4)
  *
  * Return: r0 (0 as Success)
  */
@@ -250,6 +250,118 @@ spi32_spirx:
 
 .unreq i
 .unreq data_receive
+.unreq addr_spi
+.unreq byte
+.unreq temp
+
+
+/**
+ * function spi32_spitx_memory
+ * SPI Transfer with Memory
+ *
+ * Parameters
+ * r0: Pointer of Data to Be Transferred
+ * r1: Length of Transferred Data (Bytes)
+ *
+ * Return: r0 (0 as Success, 1 and More as Error)
+ * Error: Number of Bytes Not to Be Transferred
+ */
+.globl spi32_spitx_memory
+spi32_spitx_memory:
+	/* Auto (Local) Variables, but just Aliases */
+	data_send  .req r0
+	length     .req r1
+	i          .req r2
+	addr_spi   .req r3
+	byte       .req r4
+	temp       .req r5
+
+	push {r4-r5}
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	mov i, #0
+
+	spi32_spitx_memory_txfifo:
+		ldr temp, [addr_spi, #equ32_spi0_cs]
+		tst temp, #equ32_spi0_cs_txd
+		beq spi32_spitx_memory_common
+
+		ldrb byte, [data_send, i]
+		macro32_dsb ip
+		strb byte, [addr_spi, #equ32_spi0_fifo]
+		macro32_dsb ip
+
+		add i, i, #1
+		subs length, length, #1
+		bgt spi32_spitx_memory_txfifo
+
+	spi32_spitx_memory_common:
+		mov r0, length
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq data_send
+.unreq length
+.unreq i
+.unreq addr_spi
+.unreq byte
+.unreq temp
+
+
+/**
+ * function  spi32_spirx_memory
+ * SPI Receive with Memory
+ *
+ * Parameters
+ * r0: Pointer of Data to Be Received
+ * r1: Length of Received Data (Bytes)
+ *
+ * Return: r0 (0 as Success, 1 and More as Error)
+ * Error: Number of Bytes Not to Be Received
+ */
+.globl  spi32_spirx_memory
+ spi32_spirx_memory:
+	/* Auto (Local) Variables, but just Aliases */
+	data_receive .req r0
+	length       .req r1
+	i            .req r2
+	addr_spi     .req r3
+	byte         .req r4
+	temp         .req r5
+
+	push {r4-r5}
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	mov i, #0
+
+	 spi32_spirx_memory_rxfifo:
+		ldr temp, [addr_spi, #equ32_spi0_cs]
+		tst temp, #equ32_spi0_cs_rxd
+		beq spi32_spirx_memory_common
+
+		ldrb byte, [addr_spi, #equ32_spi0_fifo]
+		macro32_dsb ip
+		strb byte, [data_receive, i]
+		macro32_dsb ip
+
+		add i, i, #1
+		subs length, length, #1
+		bgt  spi32_spirx_memory_rxfifo
+
+	 spi32_spirx_memory_common:
+		mov r0, length
+		pop {r4-r5}
+		mov pc, lr
+
+.unreq data_receive
+.unreq length
+.unreq i
 .unreq addr_spi
 .unreq byte
 .unreq temp
