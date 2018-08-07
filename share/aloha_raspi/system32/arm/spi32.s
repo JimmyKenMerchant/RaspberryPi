@@ -208,7 +208,7 @@ spi32_spitx:
 .globl spi32_spirx
 spi32_spirx:
 	/* Auto (Local) Variables, but just Aliases */
-	i            .req r0 @ Parameter, Register for Argument and Result, Scratch Register
+	i            .req r0
 	data_receive .req r1
 	addr_spi     .req r2
 	byte         .req r3
@@ -264,7 +264,7 @@ spi32_spirx:
  * r1: Length of Transferred Data (Bytes)
  *
  * Return: r0 (0 as Success, 1 and More as Error)
- * Error: Number of Bytes Not to Be Transferred
+ * Error: Number of Bytes to Be Transferred
  */
 .globl spi32_spitx_memory
 spi32_spitx_memory:
@@ -299,7 +299,7 @@ spi32_spitx_memory:
 		bgt spi32_spitx_memory_txfifo
 
 	spi32_spitx_memory_common:
-		mov r0, length
+		mov r0, i
 		pop {r4-r5}
 		mov pc, lr
 
@@ -320,7 +320,7 @@ spi32_spitx_memory:
  * r1: Length of Received Data (Bytes)
  *
  * Return: r0 (0 as Success, 1 and More as Error)
- * Error: Number of Bytes Not to Be Received
+ * Error: Number of Bytes to Be Received
  */
 .globl  spi32_spirx_memory
  spi32_spirx_memory:
@@ -355,7 +355,7 @@ spi32_spitx_memory:
 		bgt  spi32_spirx_memory_rxfifo
 
 	 spi32_spirx_memory_common:
-		mov r0, length
+		mov r0, i
 		pop {r4-r5}
 		mov pc, lr
 

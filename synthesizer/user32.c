@@ -35,7 +35,7 @@
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
- * This type of synthesizers is named as "Frequency Modulation Synthesis" developed by John Chowning, and decorated the music world in the late 20th century.
+ * This type of synthesis is named as "Frequency Modulation Synthesis" developed by John Chowning in 1973.
  * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Synthesizer Code will be fetched by L/R alternatively.

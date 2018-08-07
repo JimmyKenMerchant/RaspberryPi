@@ -1,0 +1,37 @@
+/**
+ * user32.c
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+#include "system32.h"
+#include "system32.c"
+
+char8 array1[] = {
+	0x40,0x00,0x00,0x00,0x00,0x00
+};
+
+char8 array2[] = {
+	0x01,0x02,0x00,0x00,0x00
+};
+
+int32 _user_start()
+{
+
+	uint32 number1_hexa = math32_crc7( (uint32)array1, 6, 0x9, 47 ); // Add 7!
+	uint32 number2_hexa = math32_crc16( (uint32)array2, 5, 0x1021, 40 ); // Add 16!
+
+	print32_set_caret( print32_number( number1_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_number( number2_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	while(1) {
+
+	}
+
+	return EXIT_SUCCESS;
+}

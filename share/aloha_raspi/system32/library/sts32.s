@@ -9,7 +9,7 @@
 
 /**
  * About Codes in This File:
- * These functions are aiming building a frequency modulation synthesizer by a software programmed for a central processing unit (CPU) and an output unit. As an output unit, this project uses a pulse width modulator (PWM) or a pulse code modulator (PCM).
+ * These functions are aiming building a sound generator with frequency modulation synthesis by a software programmed for a central processing unit (CPU) and an output unit. As an output unit, this project uses a pulse width modulator (PWM) or a pulse code modulator (PCM).
  * On using PWM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PWM. PWM treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker.
  * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker.
  */
@@ -50,7 +50,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
- * This type of synthesizers is named as "Frequency Modulation Synthesis" developed by John Chowning, and decorated the music world in the late 20th century.
+ * This type of synthesis is named as "Frequency Modulation Synthesis" developed by John Chowning in 1973.
  * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Synthesizer Code will be fetched by L/R alternatively.
