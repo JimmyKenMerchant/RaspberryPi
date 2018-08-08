@@ -1660,9 +1660,24 @@ extern float32 math32_log
 extern uchar8 chk32_crc7
 (
 	uint32 address_data,
-	uint32 length_data,
+	uint32 length_data, // From 2
 	uchar8 divisor,
-	uint32 number_bit // To Check, From 8
+	uint32 number_bit // To Check, From 15
+);
+
+
+/**
+ * Cyclic Redundancy Check CRC8 (9-bit) by One Byte Big Endian (MSB Order)
+ *
+ * Return: Calculated Value, -1 as Error
+ * Error: Length of Bits as Divisor Exceeds Length of Data
+ */
+extern uchar8 chk32_crc8
+(
+	uint32 address_data,
+	uint32 length_data, // From 2
+	uchar8 divisor, // Omit Bit[8] (Always High) to Hide Overflow
+	uint32 number_bit // To Check, From 16
 );
 
 
@@ -1675,9 +1690,9 @@ extern uchar8 chk32_crc7
 extern uint16 chk32_crc16
 (
 	uint32 address_data,
-	uint32 length_data,
+	uint32 length_data, // From 3
 	uint16 divisor, // Omit Bit[16] (Always High) to Hide Overflow
-	uint32 number_bit // To Check, From 17
+	uint32 number_bit // To Check, From 24
 );
 
 
