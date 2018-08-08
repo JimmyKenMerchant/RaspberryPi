@@ -1647,13 +1647,17 @@ extern float32 math32_log
 );
 
 
+/********************************
+ * system32/library/chk32.s
+ ********************************/
+
 /**
  * Cyclic Redundancy Check CRC7 (8-bit) by One Byte Big Endian (MSB Order)
  *
  * Return: Calculated Value, -1 as Error
  * Error: Length of Bits as Divisor Exceeds Length of Data
  */
-extern uchar8 math32_crc7
+extern uchar8 chk32_crc7
 (
 	uint32 address_data,
 	uint32 length_data,
@@ -1663,13 +1667,12 @@ extern uchar8 math32_crc7
 
 
 /**
- * function math32_crc16
  * Cyclic Redundancy Check CRC16 (17-bit) by One Byte Big Endian (MSB Order)
  *
  * Return: Calculated Value, -1 as Error
  * Error: Length of Bits as Divisor Exceeds Length of Data
  */
-extern uint16 math32_crc16
+extern uint16 chk32_crc16
 (
 	uint32 address_data,
 	uint32 length_data,
