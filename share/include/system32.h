@@ -1652,7 +1652,7 @@ extern float32 math32_log
  ********************************/
 
 /**
- * Cyclic Redundancy Check CRC7 (8-bit) by One Byte Big Endian (MSB Order)
+ * Cyclic Redundancy Check CRC7 (8-bit) by One Byte Big Endian (MSB Order), No Reflection of Bits on Input and Result
  *
  * Return: Calculated Value, -1 as Error
  * Error: Length of Bits as Divisor Exceeds Length of Data
@@ -1662,12 +1662,14 @@ extern uchar8 chk32_crc7
 	uint32 address_data,
 	uint32 length_data, // From 2
 	uchar8 divisor,
+	uchar8 xor_initial,
+	uchar8 xor_final,
 	uint32 number_bit // To Check, From 15
 );
 
 
 /**
- * Cyclic Redundancy Check CRC8 (9-bit) by One Byte Big Endian (MSB Order)
+ * Cyclic Redundancy Check CRC8 (9-bit) by One Byte Big Endian (MSB Order), No Reflection of Bits on Input and Result
  *
  * Return: Calculated Value, -1 as Error
  * Error: Length of Bits as Divisor Exceeds Length of Data
@@ -1677,12 +1679,14 @@ extern uchar8 chk32_crc8
 	uint32 address_data,
 	uint32 length_data, // From 2
 	uchar8 divisor, // Omit Bit[8] (Always High) to Hide Overflow
+	uchar8 xor_initial,
+	uchar8 xor_final,
 	uint32 number_bit // To Check, From 16
 );
 
 
 /**
- * Cyclic Redundancy Check CRC16 (17-bit) by One Byte Big Endian (MSB Order)
+ * Cyclic Redundancy Check CRC16 (17-bit) by One Byte Big Endian (MSB Order), No Reflection of Bits on Input and Result
  *
  * Return: Calculated Value, -1 as Error
  * Error: Length of Bits as Divisor Exceeds Length of Data
@@ -1692,7 +1696,26 @@ extern uint16 chk32_crc16
 	uint32 address_data,
 	uint32 length_data, // From 3
 	uint16 divisor, // Omit Bit[16] (Always High) to Hide Overflow
+	uint16 xor_initial,
+	uint16 xor_final,
 	uint32 number_bit // To Check, From 24
+);
+
+
+/**
+ * Cyclic Redundancy Check CRC32 (33-bit) by One Byte Big Endian (MSB Order), No Reflection of Bits on Input and Result
+ *
+ * Return: Calculated Value, -1 as Error
+ * Error: Length of Bits as Divisor Exceeds Length of Data
+ */
+extern uint32 chk32_crc32
+(
+	uint32 address_data,
+	uint32 length_data, // From 5
+	uint32 divisor, // Omit Bit[32] (Always High) to Hide Overflow
+	uint32 xor_initial,
+	uint32 xor_final,
+	uint32 number_bit // To Check, From 40
 );
 
 
