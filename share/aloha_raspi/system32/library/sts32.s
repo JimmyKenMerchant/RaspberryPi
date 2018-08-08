@@ -41,11 +41,11 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 
 /**
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
- * Lower Bit[13-0] Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[15-14] Decimal Part of Frequency-A (Main): 0b as 0.0, 1b as 0.25, 10b as 0.5, 11b as 0.75
+ * Lower Bit[1-0] Decimal Part of Frequency-A (Main): 00b as 0.0, 01b as 0.25, 10b as 0.5, 11b as 0.75
+ * Lower Bit[15-2} Frequency-A (Main): 0 to 16383 Hz
  * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
- * Higher Bit[13-0] Frequency-B (Sub): 0 to 16383 Hz
- * Higher Bit[15-14] Decimal Part of Frequency-B (Sub): 0b as 0.0, 1b as 0.25, 10b as 0.5, 11b as 0.75
+ * Higher Bit[1-0] Decimal Part of Frequency-B (Sub): 00b as 0.0, 01b as 0.25, 10b as 0.5, 11b as 0.75
+ * Higher Bit[15-2} Frequency-B (Sub): 0 to 16383 Hz
  * Higher Bit[31-16] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
@@ -646,8 +646,8 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		lsr fraction, temp, #14
-		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
+		and fraction, temp, #0b11                  @ Bit [1:0]
+		lsr temp, temp, #2                         @ Bit [15:2]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
@@ -667,8 +667,8 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		lsr fraction, temp, #14
-		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
+		and fraction, temp, #0b11                  @ Bit [1:0]
+		lsr temp, temp, #2                         @ Bit [15:2]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
@@ -690,8 +690,8 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		lsr fraction, temp, #14
-		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
+		and fraction, temp, #0b11                  @ Bit [1:0]
+		lsr temp, temp, #2                         @ Bit [15:2]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
@@ -711,8 +711,8 @@ sts32_syntheplay:
 		ldr code, [addr_code, temp]
 		lsl temp, code, #16
 		lsr temp, temp, #16
-		lsr fraction, temp, #14
-		bic temp, temp, #0xC000                    @ Cler Bit[15-14] If Exists
+		and fraction, temp, #0b11                  @ Bit [1:0]
+		lsr temp, temp, #2                         @ Bit [15:2]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
