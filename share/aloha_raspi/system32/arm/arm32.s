@@ -1533,6 +1533,7 @@ arm32_count_zero32:
  *
  * Parameters
  * r0: Value to Be Reflected
+ * r1: Number of Bits to Be Reflected from LSB, 1 to 32
  *
  * Return: r0 (Word Bits Are Reflected)
  */
@@ -1540,20 +1541,23 @@ arm32_count_zero32:
 arm32_reflect_bit:
 	/* Auto (Local) Variables, but just Aliases */
 	value       .req r0
-	checkbit    .req r1
-	orrbit      .req r2
-	i           .req r3
-	return      .req r4
+	number_bit  .req r1
+	checkbit    .req r2
+	orrbit      .req r3
+	i           .req r4
+	return      .req r5
 
-	push {r4,lr}
+	push {r4-r5,lr}
 
-	mov checkbit, #0x80000000
+	sub number_bit, number_bit, #1
+	mov checkbit, #0x00000001
+	lsl checkbit, checkbit, number_bit
 	mov orrbit, #0x00000001
 	mov i, #0
 	mov return, #0
 
 	arm32_reflect_bit_loop:
-		cmp i, #31
+		cmp i, number_bit
 		bgt arm32_reflect_bit_common
 
 		tst value, checkbit
@@ -1566,9 +1570,10 @@ arm32_reflect_bit:
 
 	arm32_reflect_bit_common:
 		mov r0, return
-		pop {r4,pc}
+		pop {r4-r5,pc}
 
 .unreq value
+.unreq number_bit
 .unreq checkbit
 .unreq orrbit
 .unreq i

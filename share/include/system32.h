@@ -304,7 +304,8 @@ extern uint32 arm32_count_zero32
  */
 extern uint32 arm32_reflect_bit
 (
-	uint32 reflectee
+	uint32 reflectee,
+	uchar8 number_bit // Number of Bits to Be Reflected from LSB, 1 to 32
 );
 
 
