@@ -1528,6 +1528,54 @@ arm32_count_zero32:
 
 
 /**
+ * function arm32_reflect_bit
+ * Return Word Bits Are Reflected
+ *
+ * Parameters
+ * r0: Value to Be Reflected
+ *
+ * Return: r0 (Word Bits Are Reflected)
+ */
+.globl arm32_reflect_bit
+arm32_reflect_bit:
+	/* Auto (Local) Variables, but just Aliases */
+	value       .req r0
+	checkbit    .req r1
+	orrbit      .req r2
+	i           .req r3
+	return      .req r4
+
+	push {r4,lr}
+
+	mov checkbit, #0x80000000
+	mov orrbit, #0x00000001
+	mov i, #0
+	mov return, #0
+
+	arm32_reflect_bit_loop:
+		cmp i, #31
+		bgt arm32_reflect_bit_common
+
+		tst value, checkbit
+		orrne return, return, orrbit
+
+		lsr checkbit, checkbit, #1
+		lsl orrbit, orrbit, #1
+		add i, i, #1
+		b arm32_reflect_bit_loop
+
+	arm32_reflect_bit_common:
+		mov r0, return
+		pop {r4,pc}
+
+.unreq value
+.unreq checkbit
+.unreq orrbit
+.unreq i
+.unreq return
+
+
+/**
  * function arm32_mul
  * Multiplication of Two Integers
  *

@@ -298,6 +298,17 @@ extern uint32 arm32_count_zero32
 
 
 /**
+ * Return Word Bits Are Reflected
+ *
+ * Return: Word Bits Are Reflected
+ */
+extern uint32 arm32_reflect_bit
+(
+	uint32 reflectee
+);
+
+
+/**
  * Multiplication of Two Integers
  *
  * Return: Answer of Multiplication
