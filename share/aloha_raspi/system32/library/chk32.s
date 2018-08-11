@@ -422,3 +422,230 @@ chk32_crc32:
 .unreq byte
 .unreq temp
 .unreq i
+
+
+/**
+ * function chk32_crctable
+ * Make CRC Table
+ * This function Makes Allocated Memory Space from Heap.
+ *
+ * Parameters
+ * r0: Bits as Divisor (Polynomial), Omit MSB
+ * r1: CRC8 (0)/ CRC16 (1)/ CRC32 (2)
+ *
+ * Return: r0 (Pointer of CRC Table, If Zero Memory Allocation Fails)
+ */
+.globl chk32_crctable
+chk32_crctable:
+	/* Auto (Local) Variables, but just Aliases */
+	divisor       .req r0
+	crc_type      .req r1
+	i             .req r2
+	j             .req r3
+	pointer_table .req r4
+	shift_bit     .req r5
+	dividend      .req r6
+	offset        .req r7
+	incr_offset   .req r8
+
+	push {r4-r8,lr}
+
+	cmp crc_type, #2
+	movhi crc_type, #2
+
+	/* Allocate Memory, 256 bytes for CRC8, 512 bytes for CRC16, 1024 bytes for CRC32 */
+	push {r0-r3}
+	mov r0, #64                   @ Word (4-byte)
+	lsl r0, r0, crc_type
+	bl heap32_malloc
+	mov pointer_table, r0
+	pop {r0-r3}
+
+	/* Make Offset Value on Storing Memory, 1 for CRC8, 2 for CRC16, 4 for CRC32 */
+	mov incr_offset, #1
+	lsl incr_offset, incr_offset, crc_type
+
+	/* Bit Shift, 0 for CRC8, 8 for CRC16, 24 for CRC32 */
+	mov shift_bit, #8
+	lsl shift_bit, shift_bit, crc_type
+	sub shift_bit, shift_bit, #8
+
+	mov i, #0
+
+	chk32_crctable_loop:
+		cmp i, #256
+		bhs chk32_crctable_common
+
+		lsl dividend, i, shift_bit
+		mov j, #0
+
+		chk32_crctable_loop_calculate:
+
+			cmp crc_type, #0
+			beq chk32_crctable_loop_calculate_crc8
+			cmp crc_type, #1
+			beq chk32_crctable_loop_calculate_crc16
+			cmp crc_type, #2
+			bhs chk32_crctable_loop_calculate_crc32
+
+			chk32_crctable_loop_calculate_crc8:
+
+				cmp j, #8
+				addhs i, i, #1
+				strhsb dividend, [pointer_table, offset]
+				addhs offset, offset, incr_offset
+				bhs chk32_crctable_loop
+
+				lsl dividend, dividend, #1         @ Logical Shift Left with Previous Value
+				tst dividend, #0x100
+				/* To Omit Bit[8] of Divisor, Calculate After Shift */
+				eorne dividend, dividend, divisor
+
+				add j, j, #1
+
+				b chk32_crctable_loop_calculate_crc8
+
+			chk32_crctable_loop_calculate_crc16:
+
+				cmp j, #8
+				addhs i, i, #1
+				strhsh dividend, [pointer_table, offset]
+				addhs offset, offset, incr_offset
+				bhs chk32_crctable_loop
+
+				lsl dividend, dividend, #1         @ Logical Shift Left with Previous Value
+				tst dividend, #0x10000
+				/* To Omit Bit[16] of Divisor, Calculate After Shift */
+				eorne dividend, dividend, divisor
+
+				add j, j, #1
+
+				b chk32_crctable_loop_calculate_crc16
+
+			chk32_crctable_loop_calculate_crc32:
+
+				cmp j, #8
+				addhs i, i, #1
+				strhs dividend, [pointer_table, offset]
+				addhs offset, offset, incr_offset
+				bhs chk32_crctable_loop
+
+				lsls dividend, dividend, #1         @ Logical Shift Left with Previous Value
+				/* To Omit Bit[32] of Divisor, Calculate After Shift */
+				eorcs dividend, dividend, divisor
+
+				add j, j, #1
+
+				b chk32_crctable_loop_calculate_crc32
+
+	chk32_crctable_common:
+		mov r0, pointer_table
+		pop {r4-r8,pc}
+
+.unreq divisor
+.unreq crc_type
+.unreq i
+.unreq j
+.unreq pointer_table
+.unreq shift_bit
+.unreq dividend
+.unreq offset
+.unreq incr_offset
+
+
+/**
+ * function chk32_crc
+ * CRC Using Table
+ *
+ * Parameters
+ * r0: Pointer of Data to be Checked
+ * r1: Length of Bytes
+ * r2: Pointer of CRC Table
+ * r3: CRC8 (0)/ CRC16 (1)/ CRC32 (2)
+ *
+ * Return: r0 (Calculated Value, -1 as Error)
+ * Error: Length of Bits as Divisor Exceeds Length of Data
+ */
+.globl chk32_crc
+chk32_crc:
+	/* Auto (Local) Variables, but just Aliases */
+	pointer_data  .req r0
+	length_data   .req r1
+	pointer_table .req r2
+	crc_type      .req r3
+	xor_initial   .req r4
+	xor_final     .req r5
+	shift_bit     .req r6
+	i             .req r7
+	byte          .req r8
+	shift         .req r9
+
+	push {r4-r9,lr}
+
+	add sp, sp, #28                           @ r4-r10 and lr offset 32 bytes
+	pop {xor_initial,xor_final}               @ Get Fifth and Sixth Arguments
+	sub sp, sp, #36                           @ Retrieve SP
+
+	cmp crc_type, #2
+	movhi crc_type, #2
+
+	/* Bit Shift, 0 for CRC8, 8 for CRC16, 24 for CRC32 */
+	mov shift_bit, #8
+	lsl shift_bit, shift_bit, crc_type
+	sub shift_bit, shift_bit, #8
+
+	mov i, #0
+
+	chk32_crc_loop:
+		cmp i, length_data
+		bhs chk32_crc_common
+
+		lsr shift, xor_initial, shift_bit
+		and shift, shift, #0xFF
+		ldrb byte, [pointer_data, i]
+		eor shift, shift, byte
+
+		/* Make Offset to Search Table  */
+		lsl shift, shift, crc_type
+
+		cmp crc_type, #0
+		beq chk32_crc_loop_crc8
+		cmp crc_type, #1
+		beq chk32_crc_loop_crc16
+		cmp crc_type, #2
+		bhs chk32_crc_loop_crc32
+
+		chk32_crc_loop_crc8:
+			ldrb shift, [pointer_table, shift]
+			b chk32_crc_loop_common
+
+		chk32_crc_loop_crc16:
+			ldrh shift, [pointer_table, shift]
+			b chk32_crc_loop_common
+
+		chk32_crc_loop_crc32:
+			ldr shift, [pointer_table, shift]
+
+		chk32_crc_loop_common:
+
+			lsl xor_initial, xor_initial, #8          @ Slide 8 Bits of CRC Value
+			eor xor_initial, xor_initial, shift
+
+			add i, i, #1
+			b chk32_crc_loop
+
+	chk32_crc_common:
+		eor r0, xor_initial, xor_final
+		pop {r4-r9,pc}
+
+.unreq pointer_data
+.unreq length_data
+.unreq pointer_table
+.unreq crc_type
+.unreq xor_initial
+.unreq xor_final
+.unreq shift_bit
+.unreq i
+.unreq byte
+.unreq shift
+

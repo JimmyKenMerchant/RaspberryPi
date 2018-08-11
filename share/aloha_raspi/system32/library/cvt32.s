@@ -8,6 +8,11 @@
  */
 
 /**
+ * In this file, if the return value is Pointer of String,
+ * the function Makes Allocated Memory Space from Heap.
+ */
+
+/**
  * function cvt32_float32_to_string
  * Make String of Single Precision Float Value
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
