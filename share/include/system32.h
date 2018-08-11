@@ -1746,6 +1746,7 @@ extern uint32 chk32_crctable
 
 /**
  * Cyclic Redundancy Check Using Table
+ * Return value is not cut further bits. Use only lower 16 bits in CRC16.
  *
  * Return: Calculated Value
  */

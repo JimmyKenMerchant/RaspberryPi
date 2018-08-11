@@ -557,6 +557,7 @@ chk32_crctable:
 /**
  * function chk32_crc
  * Cyclic Redundancy Check Using Table
+ * Return value is not cut further bits. Use only lower 16 bits in CRC16.
  *
  * Parameters
  * r0: Pointer of Data to be Checked
