@@ -1731,6 +1731,36 @@ extern uint32 chk32_crc32
 );
 
 
+/**
+ * Make Table for Cyclic Redundancy Check
+ * This function Makes Allocated Memory Space from Heap.
+ *
+ * Return: Pointer of CRC Table, If Zero Memory Allocation Fails
+ */
+extern uint32 chk32_crctable
+(
+	uint32 divisor, // Omit MSB
+	uint32 crc_select // CRC8 (0)/ CRC16 (1)/ CRC32 (2)
+);
+
+
+/**
+ * Cyclic Redundancy Check Using Table
+ *
+ * Return: Calculated Value
+ */
+extern uint32 chk32_crc
+(
+	uint32 address_data,
+	uint32 length_data,
+	uint32 xor_initial,
+	uint32 xor_final,
+	uint32 address_table,
+	uint32 crc_select // CRC8 (0)/ CRC16 (1)/ CRC32 (2)
+);
+
+
+
 /********************************
  * system32/library/mtx32.s
  ********************************/

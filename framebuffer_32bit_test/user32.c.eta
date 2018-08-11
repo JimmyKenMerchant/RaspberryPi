@@ -23,11 +23,18 @@ int32 _user_start()
 	FB32_Y_CARET = 300;
 
 	uint32 number1_hexa = chk32_crc7( (uint32)array1, 6, 0x9, 0x00, 0x00, 47 ); // Add 7 Bits and Pad Zeros
-	uint32 number2_hexa = chk32_crc8( (uint32)array2, 5, 0x7, 0xFF, 0xFF, 32 ); // Add 8 Bits and Pad Zeros
+	uint32 number2_hexa = chk32_crc8( (uint32)array2, 4, 0x7, 0x00, 0x00, 32 ); // Add 8 Bits and Pad Zeros
 	uint32 number3_hexa = chk32_crc16( (uint32)array2, 5, 0x1021, 0xFFFF, 0xFFFF, 40 ); // Add 16 Bits and Pad Zeros
 	uint32 number4_hexa = chk32_crc32( (uint32)array2, 7, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, 56 ); // Add 32 Bits and Pad Zeros
 	uint32 number5_hexa = arm32_reflect_bit( 0x8FFFF1FF, 32 );
 	uint32 number6_hexa = arm32_reflect_bit( 0x2, 8 );
+
+	uint32 table_crc8 = chk32_crctable( 0x7, 0 );
+	uchar8 number7_hexa = (uchar8)chk32_crc( (uint32)array2, 3, 0x00, 0x00, table_crc8, 0 ); // No Need of Add 8 Bits and Pad Zeros
+	uint32 table_crc16 = chk32_crctable( 0x1021, 1 );
+	uint16 number8_hexa = (uint16)chk32_crc( (uint32)array2, 3, 0xFFFF, 0xFFFF, table_crc16, 1 ); // No Need of Add 8 Bits and Pad Zeros
+	uint32 table_crc32 = chk32_crctable( 0x04C11DB7, 2 );
+	uint32 number9_hexa = chk32_crc( (uint32)array2, 3, 0xFFFFFFFF, 0xFFFFFFFF, table_crc32, 2 ); // No Need of Add 8 Bits and Pad Zeros
 
 	print32_set_caret( print32_number( number1_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
@@ -40,6 +47,13 @@ int32 _user_start()
 	print32_set_caret( print32_number( number5_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	print32_set_caret( print32_number( number6_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_number( number7_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_number( number8_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_number( number9_hexa, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	while(1) {

@@ -426,7 +426,7 @@ chk32_crc32:
 
 /**
  * function chk32_crctable
- * Make CRC Table
+ * Make Table for Cyclic Redundancy Check
  * This function Makes Allocated Memory Space from Heap.
  *
  * Parameters
@@ -470,6 +470,7 @@ chk32_crctable:
 	lsl shift_bit, shift_bit, crc_type
 	sub shift_bit, shift_bit, #8
 
+	mov offset, #0
 	mov i, #0
 
 	chk32_crctable_loop:
@@ -555,26 +556,27 @@ chk32_crctable:
 
 /**
  * function chk32_crc
- * CRC Using Table
+ * Cyclic Redundancy Check Using Table
  *
  * Parameters
  * r0: Pointer of Data to be Checked
  * r1: Length of Bytes
- * r2: Pointer of CRC Table
- * r3: CRC8 (0)/ CRC16 (1)/ CRC32 (2)
+ * r2: Value to XOR on Initial
+ * r3: Value to XOR on Final
+ * r4: Pointer of CRC Table
+ * r5: CRC8 (0)/ CRC16 (1)/ CRC32 (2)
  *
- * Return: r0 (Calculated Value, -1 as Error)
- * Error: Length of Bits as Divisor Exceeds Length of Data
+ * Return: r0 (Calculated Value)
  */
 .globl chk32_crc
 chk32_crc:
 	/* Auto (Local) Variables, but just Aliases */
 	pointer_data  .req r0
 	length_data   .req r1
-	pointer_table .req r2
-	crc_type      .req r3
-	xor_initial   .req r4
-	xor_final     .req r5
+	xor_initial   .req r2
+	xor_final     .req r3
+	pointer_table .req r4
+	crc_type      .req r5
 	shift_bit     .req r6
 	i             .req r7
 	byte          .req r8
@@ -582,8 +584,8 @@ chk32_crc:
 
 	push {r4-r9,lr}
 
-	add sp, sp, #28                           @ r4-r10 and lr offset 32 bytes
-	pop {xor_initial,xor_final}               @ Get Fifth and Sixth Arguments
+	add sp, sp, #28                           @ r4-r9 and lr offset 28 bytes
+	pop {pointer_table,crc_type}              @ Get Fifth and Sixth Arguments
 	sub sp, sp, #36                           @ Retrieve SP
 
 	cmp crc_type, #2
@@ -616,21 +618,21 @@ chk32_crc:
 		bhs chk32_crc_loop_crc32
 
 		chk32_crc_loop_crc8:
-			ldrb shift, [pointer_table, shift]
+			ldrb xor_initial, [pointer_table, shift]
 			b chk32_crc_loop_common
 
 		chk32_crc_loop_crc16:
 			ldrh shift, [pointer_table, shift]
+			lsl xor_initial, xor_initial, #8          @ Slide 8 Bits of CRC Value
+			eor xor_initial, xor_initial, shift
 			b chk32_crc_loop_common
 
 		chk32_crc_loop_crc32:
 			ldr shift, [pointer_table, shift]
-
-		chk32_crc_loop_common:
-
 			lsl xor_initial, xor_initial, #8          @ Slide 8 Bits of CRC Value
 			eor xor_initial, xor_initial, shift
 
+		chk32_crc_loop_common:
 			add i, i, #1
 			b chk32_crc_loop
 
@@ -640,10 +642,10 @@ chk32_crc:
 
 .unreq pointer_data
 .unreq length_data
-.unreq pointer_table
-.unreq crc_type
 .unreq xor_initial
 .unreq xor_final
+.unreq pointer_table
+.unreq crc_type
 .unreq shift_bit
 .unreq i
 .unreq byte
