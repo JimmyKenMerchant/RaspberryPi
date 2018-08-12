@@ -276,9 +276,9 @@ int32 _user_start() {
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
 #ifdef __SOUND_I2S
-	_sounddecode( sound, true );
+	_sounddecode( _SOUND_INDEX, SND32_I2S );
 #else
-	_sounddecode( sound, false );
+	_sounddecode( _SOUND_INDEX, SND32_PWM );
 #endif
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
