@@ -23,8 +23,8 @@ int32 _user_start()
 
 print32_debug_hexa( memory_space, 200, 000, length );
 
-	//_romwrite_i2c( memory_space, chip_select, address_memory, length + 8 );
-	_romread_i2c( memory_space, chip_select, address_memory, length + 8 );
+	//_romwrite_i2c( memory_space, chip_select, address_memory, length );
+	_romread_i2c( memory_space, chip_select, address_memory, length );
 
 print32_debug_hexa( memory_space, 200, 212, length );
 	
