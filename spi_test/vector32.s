@@ -193,11 +193,16 @@ spi_test_fiqhandler:
 
 	push {r4-r9,lr}
 
-	/* Get Data from MCP3002 AD Converter */
+	/**
+	 * Get Data from MCP3002 AD Converter
+	 * if you don't know completion of transfeering, use spi32_spidone.
+	 * In this case, there is fixed delayed time between spitx and spirx, thus you don't need spi32_spidone.
+	 */
 	mov r0, #4
 	bl spi32_spirx                        @ Return Data to r0
 	mov current, r0
 
+	/* CS Goes High */
 	bl spi32_spistop
 
 	lsr current, current, #16             @ Get Only Higher 16-bit
@@ -244,7 +249,7 @@ spi_test_fiqhandler:
 	mov r0, #0xFF
 	add r0, r0, #1                @ draw32_line draws the end of the point inclusively
 	push {r0}
-	ldr r0, ADDR32_COLOR32_GREEN
+	ldr r0, ADDR32_COLOR32_MAGENTA
 	ldr r0, [r0]
 	mov r1, horizon
 	mov r2, #spi_test_fiqhandler_ystart
@@ -288,12 +293,13 @@ spi_test_fiqhandler:
 	spi_test_fiqhandler_common:
 		str count_xdivision, spi_test_fiqhandler_count_xdivision
 
-		/* Command to MCP3002 AD Converter */
+		/* CS Goes Low */
 		mov r0, #0b11<<equ32_spi0_cs_clear
 		bl spi32_spistart
 
-		mov r0, #0b01100000<<24
-		mov r1, #2                    @ Dummy Clocks Seems to Be Needed (8 Clocks after Sending)
+		/* Command to MCP3002 AD Converter */
+		mov r0, #0b01100000<<24       @ Significant 4 Bits Are for Command, Least 4 Bits are for Dummy To Receive
+		mov r1, #2                    @ Dummy Byte Seems to Be Needed (1 Byte after Comannd, Total 12 Bits are Dummy)
 		bl spi32_spitx
 
 		pop {r4-r9,pc}

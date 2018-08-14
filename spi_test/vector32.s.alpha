@@ -204,14 +204,11 @@ spi_test_fiqhandler:
 
 	ldr buffer, spi_test_fiqhandler_buffer
 
-	ldr current, spi_test_fiqhandler_flag_initial
-	cmp current, #0
-	moveq current, #1
-	streq current, spi_test_fiqhandler_flag_initial
-	beq spi_test_fiqhandler_initial
-
-	/* Get Data from MCP3002 AD Converter */
-
+	/**
+	 * Get Data from MCP3002 AD Converter
+	 * if you don't know completion of transfeering, use spi32_spidone.
+	 * In this case, there is fixed delayed time between spitx and spirx, thus you don't need spi32_spidone.
+	 */
 	mov r0, buffer
 	mov r1, #2 
 	bl spi32_spirx_memory
@@ -219,77 +216,76 @@ spi_test_fiqhandler:
 /*macro32_debug r0, 0, 388*/
 /*macro32_debug_hexa buffer, 0, 400, 12*/
 
+	/* CS Goes High */
 	bl spi32_spistop
 
-	spi_test_fiqhandler_initial:
+	ldrh current, [buffer]
+	rev16 current, current                @ Change Endianness in Half Word, Big Endian to Little Endian
 
-		ldrh current, [buffer]
-		rev16 current, current                @ Change Endianness in Half Word, Big Endian to Little Endian
+	/* Convert 10-bit (0x3FF) to 8-bit (0xFF) in Default */
+	lsr current, current, #2              @ Substitute of Division by 4
 
-		/* Convert 10-bit (0x3FF) to 8-bit (0xFF) in Default */
-		lsr current, current, #2              @ Substitute of Division by 4
+	/* Reverse Value for Drawing Line with This Value as Height */
+	mov temp, #0xFF
+	and current, current, temp
+	sub current, current, temp
+	mvn current, current                  @ Logical Not to Convert Minus to Plus
+	add current, current, #1              @ Add 1 to Convert Minus to Plus
+	and current, current, temp
+	add current, current, #spi_test_fiqhandler_ystart
 
-		/* Reverse Value for Drawing Line with This Value as Height */
-		mov temp, #0xFF
-		and current, current, temp
-		sub current, current, temp
-		mvn current, current                  @ Logical Not to Convert Minus to Plus
-		add current, current, #1              @ Add 1 to Convert Minus to Plus
-		and current, current, temp
-		add current, current, #spi_test_fiqhandler_ystart
-		
-		ldr previous, spi_test_fiqhandler_previous
-		ldr horizon, spi_test_fiqhandler_horizon
-		ldr resolution, spi_test_fiqhandler_resolution
-		ldr count_xdivision, spi_test_fiqhandler_count_xdivision
-		ldr xdivision, spi_test_fiqhandler_xdivision
-		ldr count_xsync, spi_test_fiqhandler_count_xsync
-		ldr interval_xsync, spi_test_fiqhandler_interval_xsync
+	ldr previous, spi_test_fiqhandler_previous
+	ldr horizon, spi_test_fiqhandler_horizon
+	ldr resolution, spi_test_fiqhandler_resolution
+	ldr count_xdivision, spi_test_fiqhandler_count_xdivision
+	ldr xdivision, spi_test_fiqhandler_xdivision
+	ldr count_xsync, spi_test_fiqhandler_count_xsync
+	ldr interval_xsync, spi_test_fiqhandler_interval_xsync
 
-		macro32_dsb ip
+	macro32_dsb ip
 
-		add count_xdivision, count_xdivision, #1
-		cmp count_xdivision, xdivision
-		blo spi_test_fiqhandler_common @ If Not Reaches Value of X Division, Jump to Common
+	add count_xdivision, count_xdivision, #1
+	cmp count_xdivision, xdivision
+	blo spi_test_fiqhandler_common @ If Not Reaches Value of X Division, Jump to Common
 
-		mov count_xdivision, #0
+	mov count_xdivision, #0
 
-	/*macro32_debug current, 200, 200*/
-	/*macro32_debug previous, 200, 212*/
+/*macro32_debug current, 200, 200*/
+/*macro32_debug previous, 200, 212*/
 
-		add horizon_next, horizon, resolution
+	add horizon_next, horizon, resolution
 
-	/*macro32_debug horizon, 200, 224*/
+/*macro32_debug horizon, 200, 224*/
 
-		cmp count_xsync, interval_xsync
-		blo spi_test_fiqhandler_jump  @ If Not Reaches Interval, Jump Over Drawing Line
+	cmp count_xsync, interval_xsync
+	blo spi_test_fiqhandler_jump  @ If Not Reaches Interval, Jump Over Drawing Line
 
-		push {r0-r3}
-		mov r0, #0xFF
-		add r0, r0, #1                @ draw32_line draws the end of the point inclusively
-		push {r0}
-		ldr r0, ADDR32_COLOR32_BLUE
-		ldr r0, [r0]
-		mov r1, horizon
-		mov r2, #spi_test_fiqhandler_ystart
-		mov r3, resolution
-		bl fb32_block_color
-		add sp, sp, #4
-		pop {r0-r3}
+	push {r0-r3}
+	mov r0, #0xFF
+	add r0, r0, #1                @ draw32_line draws the end of the point inclusively
+	push {r0}
+	ldr r0, ADDR32_COLOR32_GRAY
+	ldr r0, [r0]
+	mov r1, horizon
+	mov r2, #spi_test_fiqhandler_ystart
+	mov r3, resolution
+	bl fb32_block_color
+	add sp, sp, #4
+	pop {r0-r3}
 
-		push {r0-r6}
-		ldr r0, ADDR32_COLOR32_YELLOW
-		ldr r0, [r0]                  @ Color (16-bit or 32-bit)
-		mov r1, horizon               @ X Coordinate1
-		mov r2, previous              @ Y Coordinate1
-		sub r3, horizon_next, #1      @ X Coordinate2, draw32_line draws the end of the point inclusively
-		mov r4, current               @ Y Coordinate2, draw32_line draws the end of the point inclusively
-		mov r5, #1                    @ Point Width in Pixels
-		mov r6, #1                    @ Point Height in Pixels
-		push {r4-r6}
-		bl draw32_line
-		add sp, sp, #12
-		pop {r0-r6}
+	push {r0-r6}
+	ldr r0, ADDR32_COLOR32_YELLOW
+	ldr r0, [r0]                  @ Color (16-bit or 32-bit)
+	mov r1, horizon               @ X Coordinate1
+	mov r2, previous              @ Y Coordinate1
+	sub r3, horizon_next, #1      @ X Coordinate2, draw32_line draws the end of the point inclusively
+	mov r4, current               @ Y Coordinate2, draw32_line draws the end of the point inclusively
+	mov r5, #1                    @ Point Width in Pixels
+	mov r6, #1                    @ Point Height in Pixels
+	push {r4-r6}
+	bl draw32_line
+	add sp, sp, #12
+	pop {r0-r6}
 
 	spi_test_fiqhandler_jump:
 
@@ -312,15 +308,16 @@ spi_test_fiqhandler:
 	spi_test_fiqhandler_common:
 		str count_xdivision, spi_test_fiqhandler_count_xdivision
 
-		/* Command to MCP3002 AD Converter */
+		/* CS Goes Low */
 		mov r0, #0b11<<equ32_spi0_cs_clear
 		bl spi32_spistart
 
-		mov r0, #0b01100000
+		/* Command to MCP3002 AD Converter */
+		mov r0, #0b01100000             @ Significant 4 Bits Are for Command, Least 4 Bits are for Dummy To Receive
 		str r0, [buffer]
 
 		mov r0, buffer
-		mov r1, #2                      @ Dummy Clocks Seems to Be Needed (8 Cycles After Sending)
+		mov r1, #2                      @ Dummy Byte Seems to Be Needed (1 Byte after Comannd, Total 12 Bits are Dummy)
 		bl spi32_spitx_memory
 
 		pop {r4-r10,pc}
@@ -369,7 +366,6 @@ spi_test_fiqhandler_interval_xsync: .word 8
 .equ spi_test_fiqhandler_ystart,         100
 
 spi_test_fiqhandler_buffer:         .word 0x00
-spi_test_fiqhandler_flag_initial:   .word 0x00
 
 
 /**

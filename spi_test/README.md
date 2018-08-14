@@ -35,3 +35,12 @@
 **Hardware**
 
 * MCP3002-I/P: Check out the Data sheet. If you use this with RaspberryPi, 3.3V is preferred to power VDD because of no need to make a level shifter. MCP3002-I/P works well with 3.3V power source in my experience. Check data sheet of MCP3002-I/P which describes characteristics on 2.7V and 5V.
+
+**SPI Interface**
+
+* Host's clock sends to a selected device only when the host transfers data. That is, if you want receive data from a device, you need to send dummy bytes, with the length you want to receive, to a device after sending bytes for a command. Similarly, if a device needs activation before receiving any command, you need to send dummy bytes before sending commands. This system supports variant clock speed for different devices with a host.
+
+* Host works asynchronous with CPU, so you need to detect completion of a transaction (transferring and, if it exists, receiving). Polling Done bit (end of transferring) in CS register helps the detection. However, Host's RxFIFO has limitation to stack (16 words, seems 64 bytes). You needs to limit length of a transaction up to 16 words and have several transactions in a procedure.
+
+* CS's low means one procedure which consists one and more transactions. If CS highs from low, this means the end of a procedure.
+ 
