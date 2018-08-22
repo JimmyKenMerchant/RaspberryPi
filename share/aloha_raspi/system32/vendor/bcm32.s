@@ -106,6 +106,40 @@ bcm32_mail_setpowerstate:   @ Set Power State of Peripheral Devices
 	.word 0x00000000        @ End Tag
 bcm32_mail_setpowerstate_end:
 
+.balign 16
+.globl BCM32_ARMMEMORY_BASE
+.globl BCM32_ARMMEMORY_SIZE
+bcm32_mail_getarmmemory:    @ Get ARM Memory
+	.word bcm32_mail_getarmmemory_end - bcm32_mail_getarmmemory @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00010005        @ Tag Identifier, Get ARM Memory
+	.word 0x00000008        @ Value Buffer Size in Bytes, Request 0 Bytes, Response 8 Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+BCM32_ARMMEMORY_BASE:
+	.word 0x00000000        @ Base Address in Response
+BCM32_ARMMEMORY_SIZE:
+	.word 0x00000000        @ Size (Bytes) in Response
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getarmmemory_end:
+
+.balign 16
+.globl BCM32_VCMEMORY_BASE
+.globl BCM32_VCMEMORY_SIZE
+bcm32_mail_getvcmemory:    @ Get VideoCore Memory
+	.word bcm32_mail_getvcmemory_end - bcm32_mail_getvcmemory @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00010006        @ Tag Identifier, Get VideoCore Memory
+	.word 0x00000008        @ Value Buffer Size in Bytes, Request 0 Bytes, Response 8 Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+BCM32_VCMEMORY_BASE:
+	.word 0x00000000        @ Base Address in Response
+BCM32_VCMEMORY_SIZE:
+	.word 0x00000000        @ Size (Bytes) in Response
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getvcmemory_end:
+
 /* Pointers */
 .balign 4
 bcm32_mail_framebuffer_addr:
@@ -116,6 +150,10 @@ bcm32_mail_getedid_addr:
 	.word bcm32_mail_getedid       @ Address of bcm32_mail_getedid
 bcm32_mail_setpowerstate_addr:
 	.word bcm32_mail_setpowerstate @ Address of bcm32_mail_setpowerstate
+bcm32_mail_getarmmemory_addr:
+	.word bcm32_mail_getarmmemory  @ Address of bcm32_mail_getarmmemory
+bcm32_mail_getvcmemory_addr:
+	.word bcm32_mail_getvcmemory   @ Address of bcm32_mail_getvcmemory
 
 .balign 4
 bcm32_FB32_FRAMEBUFFER_addr:
@@ -427,6 +465,156 @@ bcm32_display_off:
 
 	bcm32_display_off_common:
 		macro32_dsb ip                           @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq memorymap_base
+.unreq temp
+
+
+/**
+ * function bcm32_get_armmemory
+ * Get ARM Memory from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Request Failures
+ */
+.globl bcm32_get_armmemory
+bcm32_get_armmemory:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	temp              .req r1
+
+	push {lr}
+
+	ldr memorymap_base, bcm32_mail_getarmmemory_addr
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]
+	str temp, [memorymap_base, #20]
+	str temp, [memorymap_base, #24]
+	ldr temp, bcm32_mail_getarmmemory                     @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_get_armmemory_loop1:
+		macro32_clean_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_armmemory_loop1
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_getarmmemory_addr
+	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+
+	ldr memorymap_base, bcm32_mail_getarmmemory_addr
+	ldr temp, bcm32_mail_getarmmemory                     @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_get_armmemory_loop2:
+		macro32_invalidate_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_armmemory_loop2
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_getarmmemory_addr
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_get_armmemory_error
+
+	mov r0, #0                                            @ Return with Success
+
+	b bcm32_get_armmemory_common
+
+	bcm32_get_armmemory_error:
+		mov r0, #1                                            @ Return with Error
+
+	bcm32_get_armmemory_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq memorymap_base
+.unreq temp
+
+
+/**
+ * function bcm32_get_vcmemory
+ * Get VideoCore Memory from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Request Failures
+ */
+.globl bcm32_get_vcmemory
+bcm32_get_vcmemory:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	temp              .req r1
+
+	push {lr}
+
+	ldr memorymap_base, bcm32_mail_getvcmemory_addr
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]
+	str temp, [memorymap_base, #20]
+	str temp, [memorymap_base, #24]
+	ldr temp, bcm32_mail_getvcmemory                      @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_get_vcmemory_loop1:
+		macro32_clean_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_vcmemory_loop1
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_getvcmemory_addr
+	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+
+	ldr memorymap_base, bcm32_mail_getvcmemory_addr
+	ldr temp, bcm32_mail_getvcmemory                     @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_get_vcmemory_loop2:
+		macro32_invalidate_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_vcmemory_loop2
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_getvcmemory_addr
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_get_vcmemory_error
+
+	mov r0, #0                                            @ Return with Success
+
+	b bcm32_get_vcmemory_common
+
+	bcm32_get_vcmemory_error:
+		mov r0, #1                                            @ Return with Error
+
+	bcm32_get_vcmemory_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
 		pop {pc}
 
 .unreq memorymap_base

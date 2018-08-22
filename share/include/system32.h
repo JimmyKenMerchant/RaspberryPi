@@ -194,6 +194,13 @@ int32 _user_start();
  * system32/vendor/bcm32.s
  ********************************/
 
+/* Constants */
+
+extern uint32 BCM32_ARMMEMORY_BASE;
+extern uint32 BCM32_ARMMEMORY_SIZE;
+extern uint32 BCM32_VCMEMORY_BASE;
+extern uint32 BCM32_VCMEMORY_SIZE;
+
 /* Relative System Calls  */
 
 __attribute__((noinline)) uint32 _display_off( bool bool_off );
