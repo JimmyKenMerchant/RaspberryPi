@@ -66,6 +66,16 @@ _os_reset:
 	mov r0, #0x8000
 	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
 
+	/* Get ARM Memory Informations */
+	push {r0-r3}
+	bl bcm32_get_armmemory
+	pop {r0-r3}
+
+	/* Get VideoCore Memory Informations */
+	push {r0-r3}
+	bl bcm32_get_vcmemory
+	pop {r0-r3}
+
 	push {r0-r3}
 	bl os_reset
 	pop {r0-r3}
@@ -255,16 +265,6 @@ _os_reset:
 	vmrs r0, fpscr                            @ Floating-point Status and Control Register
 	orr r0, r0, #0x03000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible) and DN
 	vmsr fpscr, r0
-
-	/* Get ARM Memory Informations */
-	push {r0-r3}
-	bl bcm32_get_armmemory
-	pop {r0-r3}
-
-	/* Get VideoCore Memory Informations */
-	push {r0-r3}
-	bl bcm32_get_vcmemory
-	pop {r0-r3}
 
 	/**
 	 * Debug by SVC mode

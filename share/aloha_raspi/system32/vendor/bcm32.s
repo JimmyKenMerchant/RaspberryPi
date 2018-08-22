@@ -155,9 +155,13 @@ bcm32_mail_getarmmemory_addr:
 bcm32_mail_getvcmemory_addr:
 	.word bcm32_mail_getvcmemory   @ Address of bcm32_mail_getvcmemory
 
-.balign 4
 bcm32_FB32_FRAMEBUFFER_addr:
 	.word FB32_FRAMEBUFFER
+
+.globl BCM32_EDID_ADDR
+BCM32_EDID_ADDR:
+	.word bcm32_mail_getedid + 20
+
 
 /**
  * function bcm32_get_framebuffer
@@ -619,6 +623,88 @@ bcm32_get_vcmemory:
 
 .unreq memorymap_base
 .unreq temp
+
+
+/**
+ * function bcm32_get_edid
+ * Get EDID Information from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: EDID Block Number
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Request Failures
+ */
+.globl bcm32_get_edid
+bcm32_get_edid:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	temp              .req r1
+	block             .req r2
+
+	push {lr}
+
+	mov block, memorymap_base
+
+	ldr memorymap_base, bcm32_mail_getedid_addr
+	mov temp, #0
+	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [memorymap_base, #16]
+	str block, [memorymap_base, #20]                  @ Block Number
+	str temp, [memorymap_base, #24]                   @ Status
+	ldr temp, bcm32_mail_getedid                      @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_get_edid_loop1:
+		macro32_clean_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_edid_loop1
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_getedid_addr
+	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+
+	ldr memorymap_base, bcm32_mail_getedid_addr
+	ldr temp, bcm32_mail_getedid                     @ Get Size
+	add temp, temp, memorymap_base
+
+	macro32_dsb ip
+
+	bcm32_get_edid_loop2:
+		macro32_invalidate_cache memorymap_base, ip
+		add memorymap_base, memorymap_base, #4
+		cmp memorymap_base, temp
+		blo bcm32_get_edid_loop2
+
+	macro32_dsb ip
+
+	ldr memorymap_base, bcm32_mail_getedid_addr
+	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_get_edid_error
+
+	mov r0, #0                                            @ Return with Success
+
+	b bcm32_get_edid_common
+
+	bcm32_get_edid_error:
+		mov r0, #1                                            @ Return with Error
+
+	bcm32_get_edid_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq memorymap_base
+.unreq temp
+.unreq block
 
 
 /**

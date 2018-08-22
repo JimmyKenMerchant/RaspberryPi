@@ -196,6 +196,7 @@ int32 _user_start();
 
 /* Constants */
 
+extern uint32 BCM32_EDID_ADDR; // First 8 Bytes Are Prefix, Block Number and Status, Following 128 Bytes Are Actual EDID
 extern uint32 BCM32_ARMMEMORY_BASE;
 extern uint32 BCM32_ARMMEMORY_SIZE;
 extern uint32 BCM32_VCMEMORY_BASE;

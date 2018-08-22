@@ -63,6 +63,12 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel40]
 .endif
 
+	/* Get EDID */
+	push {r0-r3,lr}
+	mov r0, #0
+	bl bcm32_get_edid
+	pop {r0-r3,lr}
+
 	/* Obtain Framebuffer from VideoCore IV */
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH
