@@ -184,7 +184,7 @@ sts32_synthewave_pwm:
 		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
 		vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
 		vmov temp, vfp_freq_a
-		add temp, temp, #128
+		add temp, temp, #1024
 		str temp, [memorymap_base, #equ32_pwm_fif1]
 
 		macro32_dsb ip
@@ -242,7 +242,7 @@ sts32_synthewave_pwm:
 			vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
 			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
 			vmov temp, vfp_freq_a
-			add temp, temp, #128
+			add temp, temp, #1024
 			str temp, [memorymap_base, #equ32_pwm_fif1]
 
 			macro32_dsb ip
@@ -291,7 +291,7 @@ sts32_synthewave_pwm:
 .unreq vfp_time
 .unreq vfp_divisor
 
-sts32_synthewave_pwm_divisor: .float 128.0
+sts32_synthewave_pwm_divisor: .float 16.0
 
 
 /**
@@ -1298,13 +1298,13 @@ sts32_syntheinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes 19.2Mhz (From Oscillator). Div by 2 Equals 19.2Mhz.
+	 * Makes 72Mhz (From Oscillator). 216Mhz Div by 3 Equals 72Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #2<<equ32_cm_div_integer
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_hdmi           @ 72Mhz
+	mov r2, #3<<equ32_cm_div_integer
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -1316,16 +1316,16 @@ sts32_syntheinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 9.6Mhz Div By 300 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 8bit (Range is 300, but Is Actually 256).
+	 * 72Mhz Div By 2250 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 11bit (Range is 2250, but Is Actually 2048).
 	 */
-	mov value, #300
+	mov value, #0x8C0
+	orr value, value, #0x00A
 	str value, [memorymap_base, #equ32_pwm_rng1]
-	mov value, #300
 	str value, [memorymap_base, #equ32_pwm_rng2]
 
-	mov value, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
-	orr value, value, #equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
+	mov value, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_usef1|equ32_pwm_ctl_pwen1
+	orr value, value, #equ32_pwm_ctl_msen2|equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
 	str value, [memorymap_base, #equ32_pwm_ctl]
 
 	macro32_dsb ip

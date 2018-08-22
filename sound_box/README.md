@@ -66,13 +66,19 @@
 
 * Overall, I don't recommend to use high-spec Raspberry Pis. PWM is analogue output that may affect electrical status on Raspberry Pis. Just Pi Zero (5 dollars Online) may match for this project. There is no need of any radio wave unit.
 
+* I highly recommend that you use `sound=i2s` because of its good sound.
+
+* `sound=pwm` is for specialists who wants customized filters.
+
+* `sound=jack` makes popping noise with high volume on starting or switching music. Direct current causes the noise. I strongly recommend that you DON'T use this for your ears and devices.
+
 ## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
 ## Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
 
 **Caution on Sound Output**
 
-* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone for this project.
+* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone or headphone for this project.
 
 * Speaker and other sound outputs are so easy to break if you supply Direct Current to these. Sound outputs are made with considering of supplying Alternating Current. If you apply any sound outputs to GPIO pins directly, it causes to break these your materials. 
 

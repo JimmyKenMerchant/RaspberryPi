@@ -50,7 +50,11 @@
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b sound=i2s` or `make type=3b sound=pwm` or `make type=3b sound=jack`
 
-* I recommend you to use `sound=i2s` because of its good sound.
+* I highly recommend that you use `sound=i2s` because of its good sound.
+
+* `sound=pwm` is for specialists who wants customized filters.
+
+* `sound=jack` makes popping noise with high volume on starting or switching music. Direct current causes the noise. I strongly recommend that you DON'T use this for your ears and devices.
 
 ## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
@@ -58,7 +62,7 @@
 
 **Caution on Sound Output**
 
-* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone for this project.
+* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone or headphone for this project.
 
 * Speaker and other sound outputs are so easy to break if you supply Direct Current to these. Sound outputs are made with considering of supplying Alternating Current. If you apply any sound outputs to GPIO pins directly, it causes to break these your materials.
 

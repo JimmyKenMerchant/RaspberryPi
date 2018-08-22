@@ -131,12 +131,13 @@ snd32_sounddecode:
 			cmp wave_volume, #3
 			moveq r2, #0
 			cmp wave_volume, #2
-			moveq r2, #31
+			moveq r2, #127
 			cmp wave_volume, #1
-			moveq r2, #63
-			movlo r2, #127                             @ Height in Bytes
+			moveq r2, #255
+			movlo r2, #0x1F0                           @ Decimal 511
+			orrlo r2, r2, #0x00F                       @ Decimal 511
 			cmp mode, #2
-			movlo r3, #128                             @ Medium in Bytes (Unsigned) for PWM
+			movlo r3, #1024                            @ Medium in Bytes (Unsigned) for PWM
 			movhs r3, #0                               @ Medium in Bytes (Signed) for PCM
 			addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
@@ -764,13 +765,13 @@ snd32_soundinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes 19.2Mhz (From Oscillator). Div by 2 Equals 9.6Mhz.
+	 * Makes 72Mhz (From Oscillator). 216Mhz Div by 3 Equals 72Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #2<<equ32_cm_div_integer
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_hdmi           @ 72Mhz
+	mov r2, #3<<equ32_cm_div_integer
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -782,12 +783,12 @@ snd32_soundinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 9.6Mhz Div By 300 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 8bit (Max. Range is 300, but is Actually 255 on This).
+	 * 72Mhz Div By 2250 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 11bit (Range is 2250, but Is Actually 2048).
 	 */
-	mov value, #300
+	mov value, #0x8C0
+	orr value, value, #0x00A
 	str value, [memorymap_base, #equ32_pwm_rng1]
-	mov value, #300
 	str value, [memorymap_base, #equ32_pwm_rng2]
 
 	mov value, #equ32_pwm_dmac_enable
@@ -795,8 +796,8 @@ snd32_soundinit_pwm:
 	orr value, value, #7<<equ32_pwm_dmac_dreq
 	str value, [memorymap_base, #equ32_pwm_dmac]
 
-	mov value, #equ32_pwm_ctl_usef1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_pwen1
-	orr value, value, #equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
+	mov value, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_usef1|equ32_pwm_ctl_pwen1
+	orr value, value, #equ32_pwm_ctl_msen2|equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
 	str value, [memorymap_base, #equ32_pwm_ctl]
 
 	macro32_dsb ip
