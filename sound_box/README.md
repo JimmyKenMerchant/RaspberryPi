@@ -70,7 +70,7 @@
 
 * `sound=pwm` is for specialists who want customized filters.
 
-* `sound=jack` makes popping noise with high volume on starting or switching music. Direct current causes the noise. I strongly recommend that you DON'T use this for your ears and devices.
+* I recommend that you use `sound=jack` for debugging. DON'T USE ANY EARPHONE OR HEADPHONE. MAKE SURE TO TURN DOWN SOUND VOLUME OF CONNECTED SPEAKER.
 
 ## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
