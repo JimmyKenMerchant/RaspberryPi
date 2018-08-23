@@ -131,16 +131,17 @@ snd32_sounddecode:
 			cmp wave_volume, #3
 			moveq r2, #0
 			cmp wave_volume, #2
-			moveq r2, #127
-			cmp wave_volume, #1
 			moveq r2, #255
-			movlo r2, #0x1F0                           @ Decimal 511
-			orrlo r2, r2, #0x00F                       @ Decimal 511
+			cmp wave_volume, #1
+			moveq r2, #0x1F0                           @ Decimal 511
+			orreq r2, r2, #0x00F                       @ Decimal 511
+			movlo r2, #0x3F0                           @ Decimal 1023
+			orrlo r2, r2, #0x00F                       @ Decimal 1023
 			cmp mode, #2
-			movlo r3, #1024                            @ Medium in Bytes (Unsigned) for PWM
-			movhs r3, #0                               @ Medium in Bytes (Signed) for PCM
+			movlo r3, #3120                            @ DC Offset in Bytes (Unsigned) for PWM
+			movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 			addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-			lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
+			lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
 			subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause mode Requires r1
 			cmp wave_type, #3
@@ -765,13 +766,14 @@ snd32_soundinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes 72Mhz (From Oscillator). 216Mhz Div by 3 Equals 72Mhz.
+	 * Makes 200Mhz (From PLLD). 500Mhz Div by 2.5 Equals 200Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
-	mov r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_hdmi           @ 72Mhz
-	mov r2, #3<<equ32_cm_div_integer
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld           @ 500Mhz
+	mov r2, #2<<equ32_cm_div_integer
+	orr r2, r2, #2048<<equ32_cm_div_fraction                       @ 0.5 * 4096
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -783,11 +785,11 @@ snd32_soundinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 72Mhz Div By 2250 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 11bit (Range is 2250, but Is Actually 2048).
+	 * 200Mhz Div By 6250 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 6250, but Is Actually 4096).
 	 */
-	mov value, #0x8C0
-	orr value, value, #0x00A
+	mov value, #0x1800
+	orr value, value, #0x006A
 	str value, [memorymap_base, #equ32_pwm_rng1]
 	str value, [memorymap_base, #equ32_pwm_rng2]
 

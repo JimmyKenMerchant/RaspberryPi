@@ -1382,7 +1382,7 @@ __attribute__((noinline)) uint32 _syntheclear();
  *
  * Return: Number of Beats in Music Code, Maximum of 4,294,967,295 Beats
  */
-extern uint64 sts32_synthelen
+extern uint32 sts32_synthelen
 (
 	synthe_code* synthe
 );

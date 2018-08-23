@@ -95,6 +95,12 @@ music_code interrupt16[] =
 	_END
 };
 
+music_code silence31[] =
+{
+	_48(_SILENCE)
+	_END
+};
+
 int32 _user_start()
 {
 
@@ -122,6 +128,9 @@ int32 _user_start()
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 #endif
 
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
 
@@ -133,12 +142,12 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_soundset( music1, snd32_musiclen( music1 ) , 0, -1 );
-				//_soundclear();
+				//_soundset( music1, snd32_musiclen( music1 ), 0, -1 );
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				_soundset( music2, snd32_musiclen( music2 ) , 0, -1 );
+				_soundset( music2, snd32_musiclen( music2 ), 0, -1 );
 				/* Beat Up */
 				//timer_count_multiplier--;
 				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
@@ -147,11 +156,11 @@ int32 _user_start()
 
 			// 0b00011 (3)
 			} else if ( detect_parallel == 0b00011<<22 ) {
-				_soundset( music3, snd32_musiclen( music3 ) , 0, -1 );
+				_soundset( music3, snd32_musiclen( music3 ), 0, -1 );
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
-				_soundset( music4, snd32_musiclen( music4 ) , 0, -1 );
+				_soundset( music4, snd32_musiclen( music4 ), 0, -1 );
 				/* Beat Down */
 				//timer_count_multiplier++;
 				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
@@ -159,99 +168,99 @@ int32 _user_start()
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
-				_soundset( music5, snd32_musiclen( music5 ) , 0, -1 );
+				_soundset( music5, snd32_musiclen( music5 ), 0, -1 );
 
 			// 0b00110 (6)
 			} else if ( detect_parallel == 0b00110<<22 ) {
-				_soundset( music6, snd32_musiclen( music6 ) , 0, -1 );
+				_soundset( music6, snd32_musiclen( music6 ), 0, -1 );
 
 			// 0b00111 (7)
 			} else if ( detect_parallel == 0b00111<<22 ) {
-				_soundset( music7, snd32_musiclen( music7 ) , 0, -1 );
+				_soundset( music7, snd32_musiclen( music7 ), 0, -1 );
 
 			// 0b01000 (8)
 			} else if ( detect_parallel == 0b01000<<22 ) {
-				_soundset( music8, snd32_musiclen( music8 ) , 0, -1 );
+				_soundset( music8, snd32_musiclen( music8 ), 0, -1 );
 
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b01010 (10)
 			} else if ( detect_parallel == 0b01010<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b01011 (11)
 			} else if ( detect_parallel == 0b01011<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b01100 (12)
 			} else if ( detect_parallel == 0b01100<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b01101 (13)
 			} else if ( detect_parallel == 0b01101<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b01110 (14)
 			} else if ( detect_parallel == 0b01110<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b01111 (15)
 			} else if ( detect_parallel == 0b01111<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
-				_soundinterrupt( interrupt16, snd32_musiclen( interrupt16 ) , 0, 1 );
+				_soundinterrupt( interrupt16, snd32_musiclen( interrupt16 ), 0, 1 );
 
 			// 0b10001 (17)
 			} else if ( detect_parallel == 0b10001<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10010 (18)
 			} else if ( detect_parallel == 0b10010<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10011 (19)
 			} else if ( detect_parallel == 0b10011<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10100 (20)
 			} else if ( detect_parallel == 0b10100<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10101 (21)
 			} else if ( detect_parallel == 0b10101<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10110 (22)
 			} else if ( detect_parallel == 0b10110<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b10111 (23)
 			} else if ( detect_parallel == 0b10111<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b11000 (24)
 			} else if ( detect_parallel == 0b11000<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b11001 (25)
 			} else if ( detect_parallel == 0b11001<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b11010 (26)
 			} else if ( detect_parallel == 0b11010<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b11011 (27)
 			} else if ( detect_parallel == 0b11011<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b11100 (28)
 			} else if ( detect_parallel == 0b11100<<22 ) {
-				_soundclear();
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
@@ -269,8 +278,9 @@ int32 _user_start()
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {
-				_soundclear();
-
+				// To get DC Bias on PWM Mode, Set Silence for Clear
+				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				//_soundclear();
 			}
 
 			result = _soundplay();

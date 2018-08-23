@@ -68,7 +68,7 @@
 
 * I highly recommend that you use `sound=i2s` because of its good sound.
 
-* `sound=pwm` is for specialists who wants customized filters.
+* `sound=pwm` is for specialists who want customized filters.
 
 * `sound=jack` makes popping noise with high volume on starting or switching music. Direct current causes the noise. I strongly recommend that you DON'T use this for your ears and devices.
 

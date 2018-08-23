@@ -71,9 +71,12 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 /**
  * function sts32_synthewave_pwm
  * Make Synthesized Wave
+ * Unlike `sts32_synthewave_i2s`, Error(1) as Not Started is not signaled. PWM needs direct current (DC) bias on all the time.
+ * If there isn't direct current bias, capacitors will lose its charged voltage.
+ * Charging and losing voltage of capacitors cause popping noise with high volume.
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Not Started
+ * Error(1): Reserved
  * Error(2): PCM FIFO is Full
  */
 .globl sts32_synthewave_pwm
@@ -97,10 +100,6 @@ sts32_synthewave_pwm:
 
 	push {lr}
 	vpush {s0-s8}
-
-	ldr temp, STS32_STATUS
-	tst temp, #1
-	beq sts32_synthewave_pwm_error1
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
@@ -184,7 +183,8 @@ sts32_synthewave_pwm:
 		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
 		vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
 		vmov temp, vfp_freq_a
-		add temp, temp, #1024
+		add temp, temp, #equ32_sts32_synthewave_pwm_bias
+
 		str temp, [memorymap_base, #equ32_pwm_fif1]
 
 		macro32_dsb ip
@@ -242,7 +242,7 @@ sts32_synthewave_pwm:
 			vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
 			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
 			vmov temp, vfp_freq_a
-			add temp, temp, #1024
+			add temp, temp, #equ32_sts32_synthewave_pwm_bias
 			str temp, [memorymap_base, #equ32_pwm_fif1]
 
 			macro32_dsb ip
@@ -259,10 +259,6 @@ sts32_synthewave_pwm:
 			vdiv.f32 vfp_time, vfp_time, vfp_samplerate
 
 			b sts32_synthewave_pwm_loop
-
-	sts32_synthewave_pwm_error1:
-		mov r0, #1
-		b sts32_synthewave_pwm_common
 
 	sts32_synthewave_pwm_error2:
 		mov r0, #2
@@ -291,7 +287,7 @@ sts32_synthewave_pwm:
 .unreq vfp_time
 .unreq vfp_divisor
 
-sts32_synthewave_pwm_divisor: .float 16.0
+sts32_synthewave_pwm_divisor: .float 8.0
 
 
 /**
@@ -745,7 +741,17 @@ sts32_syntheplay:
 		bic status, status, #1                     @ Clear Bit[0]
 
 		str addr_code, STS32_CODE
-		str addr_code, STS32_SYNTHEWAVE_TIME       @ Reset Time
+
+		/* Clear Frequencies and Magnitudes */
+		str addr_code, STS32_SYNTHEWAVE_FREQA_L
+		str addr_code, STS32_SYNTHEWAVE_FREQB_L
+		str addr_code, STS32_SYNTHEWAVE_MAGA_L
+		str addr_code, STS32_SYNTHEWAVE_MAGB_L
+		str addr_code, STS32_SYNTHEWAVE_FREQA_R
+		str addr_code, STS32_SYNTHEWAVE_FREQB_R
+		str addr_code, STS32_SYNTHEWAVE_MAGA_R
+		str addr_code, STS32_SYNTHEWAVE_MAGB_R
+
 		str length, STS32_LENGTH
 		str count, STS32_COUNT                     @ count is Already Zero
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
@@ -801,9 +807,15 @@ sts32_syntheclear:
 
 	str temp, STS32_CODE
 
-	macro32_dsb ip
-
-	str temp, STS32_SYNTHEWAVE_TIME            @ Reset Time
+	/* Clear Frequencies and Magnitudes */
+	str temp, STS32_SYNTHEWAVE_FREQA_L
+	str temp, STS32_SYNTHEWAVE_FREQB_L
+	str temp, STS32_SYNTHEWAVE_MAGA_L
+	str temp, STS32_SYNTHEWAVE_MAGB_L
+	str temp, STS32_SYNTHEWAVE_FREQA_R
+	str temp, STS32_SYNTHEWAVE_FREQB_R
+	str temp, STS32_SYNTHEWAVE_MAGA_R
+	str temp, STS32_SYNTHEWAVE_MAGB_R
 
 	str temp, STS32_LENGTH
 	str temp, STS32_COUNT
@@ -1298,13 +1310,14 @@ sts32_syntheinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes 72Mhz (From Oscillator). 216Mhz Div by 3 Equals 72Mhz.
+	 * Makes 200Mhz (From PLLD). 500Mhz Div by 2.5 Equals 200Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
-	mov r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_hdmi           @ 72Mhz
-	mov r2, #3<<equ32_cm_div_integer
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld           @ 500Mhz
+	mov r2, #2<<equ32_cm_div_integer
+	orr r2, r2, #2048<<equ32_cm_div_fraction                       @ 0.5 * 4096
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -1316,11 +1329,11 @@ sts32_syntheinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 72Mhz Div By 2250 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 11bit (Range is 2250, but Is Actually 2048).
+	 * 200Mhz Div By 6250 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 6250, but Is Actually 4096).
 	 */
-	mov value, #0x8C0
-	orr value, value, #0x00A
+	mov value, #0x1800
+	orr value, value, #0x006A
 	str value, [memorymap_base, #equ32_pwm_rng1]
 	str value, [memorymap_base, #equ32_pwm_rng2]
 
