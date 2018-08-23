@@ -34,7 +34,7 @@
 .equ equ32_cvt32_float32_to_string_min_expo,   1
 .equ equ32_cvt32_separator,                    0x2C       @ Ascii Code of Comma: Separator for *array_to_string*
 .equ equ32_sts32_samplerate,                   32000
-.equ equ32_sts32_synthewave_pwm_bias,          3120
+.equ equ32_sts32_synthewave_pwm_bias,          2496
 
 /**
  * Standard Peripherals

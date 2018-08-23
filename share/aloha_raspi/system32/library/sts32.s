@@ -1310,14 +1310,14 @@ sts32_syntheinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes 200Mhz (From PLLD). 500Mhz Div by 2.5 Equals 200Mhz.
+	 * Makes 160Mhz (From PLLD). 500Mhz Div by 3.125 Equals 200Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_1
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld           @ 500Mhz
-	mov r2, #2<<equ32_cm_div_integer
-	orr r2, r2, #2048<<equ32_cm_div_fraction                       @ 0.5 * 4096
+	mov r2, #3<<equ32_cm_div_integer
+	orr r2, r2, #512<<equ32_cm_div_fraction                        @ 0.125 * 4096
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -1329,11 +1329,11 @@ sts32_syntheinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 200Mhz Div By 6250 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 6250, but Is Actually 4096).
+	 * 160Mhz Div By 5000 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 5000, but Is Actually 4096).
 	 */
-	mov value, #0x1800
-	orr value, value, #0x006A
+	mov value, #0x1300
+	orr value, value, #0x0088
 	str value, [memorymap_base, #equ32_pwm_rng1]
 	str value, [memorymap_base, #equ32_pwm_rng2]
 
