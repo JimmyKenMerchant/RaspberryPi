@@ -142,8 +142,8 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				//_soundset( music1, snd32_musiclen( music1 ), 0, -1 );
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( music1, snd32_musiclen( music1 ), 0, -1 );
+				//_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {

@@ -10,7 +10,7 @@
 /**
  * About Codes in This File:
  * These functions are aiming building a sound generator with frequency modulation synthesis by a software programmed for a central processing unit (CPU) and an output unit. As an output unit, this project uses a pulse width modulator (PWM) or a pulse code modulator (PCM).
- * On using PWM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PWM. PWM treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker.
+ * On using PWM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PWM. PWM treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. This PWM amplifies differences of voltage at 6 dB gain.
  * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker.
  */
 
@@ -43,7 +43,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[1-0] Decimal Part of Frequency-A (Main): 00b as 0.0, 01b as 0.25, 10b as 0.5, 11b as 0.75
  * Lower Bit[15-2} Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave
+ * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave (Should be -16384 to 16383 on PWM mode because of 6 dB gain)
  * Higher Bit[1-0] Decimal Part of Frequency-B (Sub): 00b as 0.0, 01b as 0.25, 10b as 0.5, 11b as 0.75
  * Higher Bit[15-2} Frequency-B (Sub): 0 to 16383 Hz
  * Higher Bit[31-16] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
@@ -71,12 +71,12 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 /**
  * function sts32_synthewave_pwm
  * Make Synthesized Wave
- * Unlike `sts32_synthewave_i2s`, Error(1) as Not Started is not signaled. PWM needs direct current (DC) bias on all the time.
+ * PWM outputs direct current (DC) bias on all the time.
  * If there isn't direct current bias, capacitors will lose its charged voltage.
  * Charging and losing voltage of capacitors cause popping noise with high volume.
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Reserved
+ * Error(1): Not Started
  * Error(2): PCM FIFO is Full
  */
 .globl sts32_synthewave_pwm
@@ -109,6 +109,13 @@ sts32_synthewave_pwm:
 	tst temp, #equ32_pwm_sta_full1
 	bne sts32_synthewave_pwm_error2
 
+	/* Get RL Flag */
+	ldr flag_rl, STS32_SYNTHEWAVE_RL
+
+	ldr temp, STS32_STATUS
+	tst temp, #1
+	beq sts32_synthewave_pwm_error1
+
 	ldr time, STS32_SYNTHEWAVE_TIME
 	vmov vfp_time, time
 	vcvt.f32.u32 vfp_time, vfp_time
@@ -124,7 +131,6 @@ sts32_synthewave_pwm:
 	/* Get Time (Seconds) */
 	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
 
-	ldr flag_rl, STS32_SYNTHEWAVE_RL
 	tst flag_rl, #1
 	bne sts32_synthewave_pwm_loop_l
 
@@ -260,6 +266,24 @@ sts32_synthewave_pwm:
 
 			b sts32_synthewave_pwm_loop
 
+	sts32_synthewave_pwm_error1:
+		ldr temp, [memorymap_base, #equ32_pwm_sta]
+		tst temp, #equ32_pwm_sta_full1
+		bne sts32_synthewave_pwm_error1_common
+
+		mov temp, #equ32_sts32_synthewave_pwm_bias
+		str temp, [memorymap_base, #equ32_pwm_fif1]
+
+		macro32_dsb ip
+
+		eor flag_rl, flag_rl, #1
+		b sts32_synthewave_pwm_error1
+
+		sts32_synthewave_pwm_error1_common:
+			str flag_rl, STS32_SYNTHEWAVE_RL
+			mov r0, #1
+			b sts32_synthewave_pwm_common
+
 	sts32_synthewave_pwm_error2:
 		mov r0, #2
 		b sts32_synthewave_pwm_common
@@ -287,7 +311,7 @@ sts32_synthewave_pwm:
 .unreq vfp_time
 .unreq vfp_divisor
 
-sts32_synthewave_pwm_divisor: .float 8.0
+sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
 
 
 /**
@@ -742,16 +766,6 @@ sts32_syntheplay:
 
 		str addr_code, STS32_CODE
 
-		/* Clear Frequencies and Magnitudes */
-		str addr_code, STS32_SYNTHEWAVE_FREQA_L
-		str addr_code, STS32_SYNTHEWAVE_FREQB_L
-		str addr_code, STS32_SYNTHEWAVE_MAGA_L
-		str addr_code, STS32_SYNTHEWAVE_MAGB_L
-		str addr_code, STS32_SYNTHEWAVE_FREQA_R
-		str addr_code, STS32_SYNTHEWAVE_FREQB_R
-		str addr_code, STS32_SYNTHEWAVE_MAGA_R
-		str addr_code, STS32_SYNTHEWAVE_MAGB_R
-
 		str length, STS32_LENGTH
 		str count, STS32_COUNT                     @ count is Already Zero
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
@@ -806,16 +820,6 @@ sts32_syntheclear:
 	mov temp, #0
 
 	str temp, STS32_CODE
-
-	/* Clear Frequencies and Magnitudes */
-	str temp, STS32_SYNTHEWAVE_FREQA_L
-	str temp, STS32_SYNTHEWAVE_FREQB_L
-	str temp, STS32_SYNTHEWAVE_MAGA_L
-	str temp, STS32_SYNTHEWAVE_MAGB_L
-	str temp, STS32_SYNTHEWAVE_FREQA_R
-	str temp, STS32_SYNTHEWAVE_FREQB_R
-	str temp, STS32_SYNTHEWAVE_MAGA_R
-	str temp, STS32_SYNTHEWAVE_MAGB_R
 
 	str temp, STS32_LENGTH
 	str temp, STS32_COUNT
