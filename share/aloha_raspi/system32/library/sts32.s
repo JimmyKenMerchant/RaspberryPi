@@ -11,7 +11,7 @@
  * About Codes in This File:
  * These functions are aiming building a sound generator with frequency modulation synthesis by a software programmed for a central processing unit (CPU) and an output unit. As an output unit, this project uses a pulse width modulator (PWM) or a pulse code modulator (PCM).
  * On using PWM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PWM. PWM treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. This PWM amplifies differences of voltage at 6 dB gain.
- * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker.
+ * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs voltage up to -6 dB in 16 bit depth.
  */
 
 STS32_CODE:            .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
@@ -41,12 +41,12 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 
 /**
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
- * Lower Bit[1-0] Decimal Part of Frequency-A (Main): 00b as 0.0, 01b as 0.25, 10b as 0.5, 11b as 0.75
- * Lower Bit[15-2} Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[31-16] Magnitude-A = Volume: -32768 to 32767, Minus for Inverted Wave (Should be -16384 to 16383 on PWM mode because of 6 dB gain)
- * Higher Bit[1-0] Decimal Part of Frequency-B (Sub): 00b as 0.0, 01b as 0.25, 10b as 0.5, 11b as 0.75
- * Higher Bit[15-2} Frequency-B (Sub): 0 to 16383 Hz
- * Higher Bit[31-16] Magnitude-B: 0 to 65535, 1 is 2Pi/65535, 65535 is 2Pi
+ * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
+ * Lower Bit[16-3] Frequency-A (Main): 0 to 16383 Hz
+ * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave
+ * Higher Bit[2-0] Decimal Part of Frequency-B (Sub): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
+ * Higher Bit[16-3] Frequency-B (Sub): 0 to 16383 Hz
+ * Higher Bit[31-17] Magnitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
@@ -256,7 +256,7 @@ sts32_synthewave_pwm:
 			mov flag_rl, #0
 
 			add time, time, #1
-			cmp time, #equ32_sts32_samplerate<<2          @ To apply Up To 0.25Hz
+			cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
 			movge time, #0
 			vmov vfp_time, time
 			vcvt.f32.u32 vfp_time, vfp_time
@@ -479,7 +479,7 @@ sts32_synthewave_i2s:
 		macro32_dsb ip
 
 		add time, time, #1
-		cmp time, #equ32_sts32_samplerate<<2          @ To apply Up To 0.25Hz
+		cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
 		movge time, #0
 		vmov vfp_time, time
 		vcvt.f32.u32 vfp_time, vfp_time
@@ -613,7 +613,7 @@ sts32_syntheplay:
 	vfp_temp      .req s0
 	vfp_pi_double .req s1
 	vfp_max       .req s2
-	vfp_quarter   .req s3
+	vfp_eighth    .req s3
 	vfp_fraction  .req s4
 
 	push {r4-r7,lr}
@@ -650,33 +650,32 @@ sts32_syntheplay:
 	beq sts32_syntheplay_free
 
 	sts32_syntheplay_jump:
-		/* Hard Code of Single Precision Float 0.25 */
-		mov temp, #0x3F000000
-		orr temp, temp, #0x00800000
-		vmov vfp_quarter, temp
+		/* Hard Code of Single Precision Float 0.125 */
+		mov temp, #0x3E000000
+		vmov vfp_eighth, temp
 
 		ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
 		vldr vfp_pi_double, [temp]
-		mov temp, #0xFF
-		orr temp, temp, #0xFF00
+		mov temp, #0x7F00                          @ Decimal 32767
+		orr temp, temp, #0x00FF                    @ Decimal 32767
 		vmov vfp_max, temp
 		vcvt.f32.u32 vfp_max, vfp_max
 
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		ldr code, [addr_code, temp]
-		lsl temp, code, #16
-		lsr temp, temp, #16
-		and fraction, temp, #0b11                  @ Bit [1:0]
-		lsr temp, temp, #2                         @ Bit [15:2]
+		lsl temp, code, #15                        @ Extract [16:0]
+		lsr temp, temp, #15                        @ Extract [16:0]
+		and fraction, temp, #0b111                 @ Bit [2:0]
+		lsr temp, temp, #3                         @ Bit [16:3]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
 		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
 		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_L
-		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
+		asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
@@ -685,19 +684,19 @@ sts32_syntheplay:
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		add temp, temp, #4
 		ldr code, [addr_code, temp]
-		lsl temp, code, #16
-		lsr temp, temp, #16
-		and fraction, temp, #0b11                  @ Bit [1:0]
-		lsr temp, temp, #2                         @ Bit [15:2]
+		lsl temp, code, #15                        @ Extract [16:0]
+		lsr temp, temp, #15                        @ Extract [16:0]
+		and fraction, temp, #0b111                 @ Bit [2:0]
+		lsr temp, temp, #3                         @ Bit [16:3]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
 		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
 		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_L
-		lsr temp, code, #16
+		lsr temp, code, #17                        @ Bit[31:17]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vdiv.f32 vfp_temp, vfp_temp, vfp_max
@@ -708,19 +707,19 @@ sts32_syntheplay:
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		add temp, temp, #8
 		ldr code, [addr_code, temp]
-		lsl temp, code, #16
-		lsr temp, temp, #16
-		and fraction, temp, #0b11                  @ Bit [1:0]
-		lsr temp, temp, #2                         @ Bit [15:2]
+		lsl temp, code, #15                        @ Extract [16:0]
+		lsr temp, temp, #15                        @ Extract [16:0]
+		and fraction, temp, #0b111                 @ Bit [2:0]
+		lsr temp, temp, #3                         @ Bit [16:3]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
 		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
 		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_R
-		asr temp, code, #16                        @ Arighmetic Logical Shift Right to Hold Signess
+		asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
@@ -729,19 +728,19 @@ sts32_syntheplay:
 		lsl temp, count, #4                        @ Substitute of Multiplication by 16
 		add temp, temp, #12
 		ldr code, [addr_code, temp]
-		lsl temp, code, #16
-		lsr temp, temp, #16
-		and fraction, temp, #0b11                  @ Bit [1:0]
-		lsr temp, temp, #2                         @ Bit [15:2]
+		lsl temp, code, #15                        @ Extract [16:0]
+		lsr temp, temp, #15                        @ Extract [16:0]
+		and fraction, temp, #0b111                 @ Bit [2:0]
+		lsr temp, temp, #3                         @ Bit [16:3]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vmov vfp_fraction, fraction
 		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_quarter
+		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
 		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQB_R
-		lsr temp, code, #16
+		lsr temp, code, #17                        @ Bit[31:17]
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
 		vdiv.f32 vfp_temp, vfp_temp, vfp_max
@@ -800,7 +799,7 @@ sts32_syntheplay:
 .unreq vfp_temp
 .unreq vfp_pi_double
 .unreq vfp_max
-.unreq vfp_quarter
+.unreq vfp_eighth
 .unreq vfp_fraction
 
 sts32_syntheplay_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
@@ -1089,7 +1088,7 @@ sts32_synthedecode:
 		ldr beat_length, [synt_pre_point, #8]
 		vmov vfp_beat_length, beat_length
 		vcvt.f32.u32 vfp_beat_length, vfp_beat_length
-		asr temp, code_lower, #16                      @ Arighmetic Logical Shift Right to Hold Signess
+		asr temp, code_lower, #17                      @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 		vmov vfp_volume, temp
 		vcvt.f32.s32 vfp_volume, vfp_volume
 		ldrh flat_length, [synt_pre_point, #12]
@@ -1143,10 +1142,10 @@ sts32_synthedecode:
 		vmov vfp_volume, temp
 		vmov vfp_zero, temp
 
-		/* Clear Volume */
+		/* Clear Volume Bit[31:17] */
 
 		bic code_lower, code_lower, #0xFF000000
-		bic code_lower, code_lower, #0x00FF0000
+		bic code_lower, code_lower, #0x00FE0000
 
 		/* Make Falling Length */
 
@@ -1167,7 +1166,7 @@ macro32_debug synt_point, 200, 48
 		sts32_synthedecode_main_rising:
 			subs rising_length, rising_length, #1
 			ldrlt code_lower, [synt_pre_point, #-16]            @ Retrieve Original Volume for Flat Part
-			asrlt temp, code_lower, #16                         @ Arighmetic Logical Shift Right to Hold Signess
+			asrlt temp, code_lower, #17                         @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 			vmovlt vfp_volume, temp
 			vcvtlt.f32.s32 vfp_volume, vfp_volume
 			blt sts32_synthedecode_main_flat
@@ -1181,9 +1180,9 @@ macro32_debug synt_point, 200, 48
 			vadd.f32 vfp_volume, vfp_volume, vfp_rising_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
 			vmov temp, vfp_temp
-			lsl temp, temp, #16
+			lsl temp, temp, #17                                 @ Bit[31:17]
 			bic code_lower, code_lower, #0xFF000000
-			bic code_lower, code_lower, #0x00FF0000
+			bic code_lower, code_lower, #0x00FE0000
 			orr code_lower, code_lower, temp
 
 			b sts32_synthedecode_main_rising
@@ -1213,9 +1212,9 @@ macro32_debug synt_point, 200, 48
 			vsub.f32 vfp_volume, vfp_volume, vfp_falling_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
 			vmov temp, vfp_temp
-			lsl temp, temp, #16
+			lsl temp, temp, #17                                 @ Bit[31:17]
 			bic code_lower, code_lower, #0xFF000000
-			bic code_lower, code_lower, #0x00FF0000
+			bic code_lower, code_lower, #0x00FE0000
 			orr code_lower, code_lower, temp
 
 			b sts32_synthedecode_main_falling

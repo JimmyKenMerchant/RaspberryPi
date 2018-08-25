@@ -40,13 +40,13 @@
 
 * By disabling the video signal, the sound signal from the 3.5mm jack may be possible for stable use. Otherwise, the analogue video signal outputs from the 3.5mm jack (on Zero, TV pin) when any HDMI cable is not plugged in. This seems to make possible noise.
 
-* The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal may be higher than expected as microphone. Besides, as line level, the voltage of the signal may be lower than expected.
+* This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal may be higher than expected as microphone. Besides, as line level, the voltage of the signal may be lower than expected.
 
-* The sample rate is 3.2Khz, so A4 Becomes 444.4Hz with no jitter.
+* The sampling rate is adjusted to 3.1680Khz for fitting A4.
 
 **About PCM Output**
 
-* The sampling rate is adjusted to 3.1680Khz for fitting A4 to 440Hz as opposed to the PWM0/1 output.
+* The sampling rate is adjusted to 3.1680Khz for fitting A4.
 
 * This sampling rate has jitter. Your DAC is needed its jitter remover.
 
