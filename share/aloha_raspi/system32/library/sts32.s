@@ -11,7 +11,7 @@
  * About Codes in This File:
  * These functions are aiming building a sound generator with frequency modulation synthesis by a software programmed for a central processing unit (CPU) and an output unit. As an output unit, this project uses a pulse width modulator (PWM) or a pulse code modulator (PCM).
  * On using PWM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PWM. PWM treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. This PWM amplifies differences of voltage at 6 dB gain.
- * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs voltage up to -6 dB in 16 bit depth.
+ * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs voltage up to -6 dB in 16-bit depth.
  */
 
 STS32_CODE:            .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
@@ -146,74 +146,34 @@ sts32_synthewave_pwm:
 		/* R Wave */
 
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
-		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_R
+		ldr temp, STS32_SYNTHEWAVE_FREQB_R
+		vmov vfp_freq_b, temp
 		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
 		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
 
+		/* Check Noise */
+		cmp temp, #0
+		beq sts32_synthewave_pwm_loop_rnoise
+
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 
-		/* Round Radian within 2Pi */
-		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
-		vcvt.s32.f32 vfp_temp, vfp_temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+		b sts32_synthewave_pwm_loop_rcommon
 
-		push {r0-r3}
-		vmov r0, vfp_freq_b
-		bl math32_sin
-		vmov vfp_freq_b, r0
-		pop {r0-r3}
+		sts32_synthewave_pwm_loop_rnoise:
 
-		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
-		vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
+			push {r0-r3}
+			mov r0, #255
+			bl arm32_random
+			vmov vfp_freq_b, r0
+			pop {r0-r3}
 
-		/* Round Radian within 2Pi */
-		vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
-		vcvt.s32.f32 vfp_temp, vfp_temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 
-		push {r0-r3}
-		vmov r0, vfp_freq_a
-		bl math32_sin
-		vmov vfp_freq_a, r0
-		pop {r0-r3}
-
-		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-		vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
-		vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-		vmov temp, vfp_freq_a
-		add temp, temp, #equ32_sts32_synthewave_pwm_bias
-
-		str temp, [memorymap_base, #equ32_pwm_fif1]
-
-		macro32_dsb ip
-
-		mov flag_rl, #1
-
-		/* L Wave */
-
-		sts32_synthewave_pwm_loop_l:
-			ldr temp, [memorymap_base, #equ32_pwm_sta]
-			tst temp, #equ32_pwm_sta_full1
-			bne sts32_synthewave_pwm_success
-
-			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
-			vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_L
-			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
-			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
-
-			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
-			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
-
-			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
-			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
+		sts32_synthewave_pwm_loop_rcommon:
 
 			/* Round Radian within 2Pi */
 			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -249,22 +209,100 @@ sts32_synthewave_pwm:
 			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
 			vmov temp, vfp_freq_a
 			add temp, temp, #equ32_sts32_synthewave_pwm_bias
+
 			str temp, [memorymap_base, #equ32_pwm_fif1]
 
 			macro32_dsb ip
 
-			mov flag_rl, #0
+			mov flag_rl, #1
 
-			add time, time, #1
-			cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
-			movge time, #0
-			vmov vfp_time, time
-			vcvt.f32.u32 vfp_time, vfp_time
+		/* L Wave */
 
-			/* Get Time (Seconds) */
-			vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+		sts32_synthewave_pwm_loop_l:
+			ldr temp, [memorymap_base, #equ32_pwm_sta]
+			tst temp, #equ32_pwm_sta_full1
+			bne sts32_synthewave_pwm_success
 
-			b sts32_synthewave_pwm_loop
+			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
+			ldr temp, STS32_SYNTHEWAVE_FREQB_L
+			vmov vfp_freq_b, temp
+			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
+			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
+
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
+
+			/* Check Noise */
+			cmp temp, #0
+			beq sts32_synthewave_pwm_loop_l_noise
+
+			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
+			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
+
+			b sts32_synthewave_pwm_loop_l_common
+
+			sts32_synthewave_pwm_loop_l_noise:
+
+				push {r0-r3}
+				mov r0, #255
+				bl arm32_random
+				vmov vfp_freq_b, r0
+				pop {r0-r3}
+
+				vcvt.f32.u32 vfp_freq_b, vfp_freq_b
+
+			sts32_synthewave_pwm_loop_l_common:
+
+				/* Round Radian within 2Pi */
+				vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
+				vcvt.s32.f32 vfp_temp, vfp_temp
+				vcvt.f32.s32 vfp_temp, vfp_temp
+				vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+				vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+
+				push {r0-r3}
+				vmov r0, vfp_freq_b
+				bl math32_sin
+				vmov vfp_freq_b, r0
+				pop {r0-r3}
+
+				vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
+				vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
+
+				/* Round Radian within 2Pi */
+				vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
+				vcvt.s32.f32 vfp_temp, vfp_temp
+				vcvt.f32.s32 vfp_temp, vfp_temp
+				vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+				vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+
+				push {r0-r3}
+				vmov r0, vfp_freq_a
+				bl math32_sin
+				vmov vfp_freq_a, r0
+				pop {r0-r3}
+
+				vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
+				vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
+				vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
+				vmov temp, vfp_freq_a
+				add temp, temp, #equ32_sts32_synthewave_pwm_bias
+				str temp, [memorymap_base, #equ32_pwm_fif1]
+
+				macro32_dsb ip
+
+				mov flag_rl, #0
+
+				add time, time, #1
+				cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
+				movge time, #0
+				vmov vfp_time, time
+				vcvt.f32.u32 vfp_time, vfp_time
+
+				/* Get Time (Seconds) */
+				vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
+				b sts32_synthewave_pwm_loop
 
 	sts32_synthewave_pwm_error1:
 		ldr temp, [memorymap_base, #equ32_pwm_sta]
@@ -380,114 +418,152 @@ sts32_synthewave_i2s:
 		/* L Wave */
 
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
-		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_L
+		ldr temp, STS32_SYNTHEWAVE_FREQB_L
+		vmov vfp_freq_b, temp
 		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
 		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
 
-		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
-		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
-
-		/* Round Radian within 2Pi */
-		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
-		vcvt.s32.f32 vfp_temp, vfp_temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
-
-		push {r0-r3}
-		vmov r0, vfp_freq_b
-		bl math32_sin
-		vmov vfp_freq_b, r0
-		pop {r0-r3}
-
-		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
-		vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
-
-		/* Round Radian within 2Pi */
-		vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
-		vcvt.s32.f32 vfp_temp, vfp_temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
-
-		push {r0-r3}
-		vmov r0, vfp_freq_a
-		bl math32_sin
-		vmov vfp_freq_a, r0
-		pop {r0-r3}
-
-		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-		vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-		vmov temp, vfp_freq_a
-
-		/* R Wave */
-
-		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
-		vldr vfp_freq_b, STS32_SYNTHEWAVE_FREQB_R
-		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
-		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
-
-		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
-		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
+		/* Check Noise */
+		cmp temp, #0
+		beq sts32_synthewave_i2s_loop_lnoise
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 
-		/* Round Radian within 2Pi */
-		vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
-		vcvt.s32.f32 vfp_temp, vfp_temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+		b sts32_synthewave_i2s_loop_lcommon
 
-		push {r0-r3}
-		vmov r0, vfp_freq_b
-		bl math32_sin
-		vmov vfp_freq_b, r0
-		pop {r0-r3}
+		sts32_synthewave_i2s_loop_lnoise:
 
-		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
-		vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
+			push {r0-r3}
+			mov r0, #255
+			bl arm32_random
+			vmov vfp_freq_b, r0
+			pop {r0-r3}
 
-		/* Round Radian within 2Pi */
-		vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
-		vcvt.s32.f32 vfp_temp, vfp_temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 
-		push {r0-r3}
-		vmov r0, vfp_freq_a
-		bl math32_sin
-		vmov vfp_freq_a, r0
-		pop {r0-r3}
+		sts32_synthewave_i2s_loop_lcommon:
 
-		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-		vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-		vmov temp2, vfp_freq_a
+			/* Round Radian within 2Pi */
+			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
+			vcvt.s32.f32 vfp_temp, vfp_temp
+			vcvt.f32.s32 vfp_temp, vfp_temp
+			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+			vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
 
-		bic temp2, temp2, #0xFF000000
-		bic temp2, temp2, #0x00FF0000               @ Bit[15:0] for R
-		lsl temp, temp, #16                         @ Bit[31:16] for L
-		orr temp, temp, temp2
+			push {r0-r3}
+			vmov r0, vfp_freq_b
+			bl math32_sin
+			vmov vfp_freq_b, r0
+			pop {r0-r3}
 
-		str temp, [memorymap_base, #equ32_pcm_fifo]
+			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
+			vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
 
-		macro32_dsb ip
+			/* Round Radian within 2Pi */
+			vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
+			vcvt.s32.f32 vfp_temp, vfp_temp
+			vcvt.f32.s32 vfp_temp, vfp_temp
+			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+			vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
 
-		add time, time, #1
-		cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
-		movge time, #0
-		vmov vfp_time, time
-		vcvt.f32.u32 vfp_time, vfp_time
+			push {r0-r3}
+			vmov r0, vfp_freq_a
+			bl math32_sin
+			vmov vfp_freq_a, r0
+			pop {r0-r3}
 
-		/* Get Time (Seconds) */
-		vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
+			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
+			vmov temp, vfp_freq_a
 
-		b sts32_synthewave_i2s_loop
+			/* R Wave */
+
+			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
+			ldr temp2, STS32_SYNTHEWAVE_FREQB_R
+			vmov vfp_freq_b, temp2
+			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
+			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
+
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
+
+			/* Check Noise */
+			cmp temp2, #0
+			beq sts32_synthewave_i2s_loop_rnoise
+
+			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
+			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
+
+			b sts32_synthewave_i2s_loop_rcommon
+
+		sts32_synthewave_i2s_loop_rnoise:
+
+			push {r0-r3}
+			mov r0, #255
+			bl arm32_random
+			vmov vfp_freq_b, r0
+			pop {r0-r3}
+
+			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
+
+		sts32_synthewave_i2s_loop_rcommon:
+
+			/* Round Radian within 2Pi */
+			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
+			vcvt.s32.f32 vfp_temp, vfp_temp
+			vcvt.f32.s32 vfp_temp, vfp_temp
+			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+			vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+
+			push {r0-r3}
+			vmov r0, vfp_freq_b
+			bl math32_sin
+			vmov vfp_freq_b, r0
+			pop {r0-r3}
+
+			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
+			vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
+
+			/* Round Radian within 2Pi */
+			vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
+			vcvt.s32.f32 vfp_temp, vfp_temp
+			vcvt.f32.s32 vfp_temp, vfp_temp
+			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+			vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+
+			push {r0-r3}
+			vmov r0, vfp_freq_a
+			bl math32_sin
+			vmov vfp_freq_a, r0
+			pop {r0-r3}
+
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
+			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
+			vmov temp2, vfp_freq_a
+
+			bic temp2, temp2, #0xFF000000
+			bic temp2, temp2, #0x00FF0000               @ Bit[15:0] for R
+			lsl temp, temp, #16                         @ Bit[31:16] for L
+			orr temp, temp, temp2
+
+			str temp, [memorymap_base, #equ32_pcm_fifo]
+
+			macro32_dsb ip
+
+			add time, time, #1
+			cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
+			movge time, #0
+			vmov vfp_time, time
+			vcvt.f32.u32 vfp_time, vfp_time
+
+			/* Get Time (Seconds) */
+			vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
+			b sts32_synthewave_i2s_loop
 
 	sts32_synthewave_i2s_error1:
 		mov r0, #1

@@ -22,6 +22,7 @@
 #define _INT  3
 #define _FRAC 0
 
+#define _NOISE 0<<_INT
 #define _A0  27ul<<_INT|4<<_FRAC
 #define _AS0 29ul<<_INT|1<<_FRAC
 #define _B0  30ul<<_INT|7<<_FRAC

@@ -32,16 +32,16 @@
 #define _8_BIG(x) x x x x x x x x
 #define _9_BIG(x) x x x x x x x x x
 #define _10_BIG(x) x x x x x x x x x x
-#define _11_BIG(x) _10_BIG(x) _1_BIG(x)
-#define _12_BIG(x) _10_BIG(x) _2_BIG(x)
-#define _13_BIG(x) _10_BIG(x) _3_BIG(x)
-#define _14_BIG(x) _10_BIG(x) _4_BIG(x)
-#define _15_BIG(x) _10_BIG(x) _5_BIG(x)
-#define _16_BIG(x) _10_BIG(x) _6_BIG(x)
-#define _17_BIG(x) _10_BIG(x) _7_BIG(x)
-#define _18_BIG(x) _10_BIG(x) _8_BIG(x)
-#define _19_BIG(x) _10_BIG(x) _9_BIG(x)
-#define _20_BIG(x) _10_BIG(x) _10_BIG(x)
+#define _11_BIG(x) x x x x x x x x x x x
+#define _12_BIG(x) x x x x x x x x x x x x
+#define _13_BIG(x) x x x x x x x x x x x x x
+#define _14_BIG(x) x x x x x x x x x x x x x x
+#define _15_BIG(x) x x x x x x x x x x x x x x x
+#define _16_BIG(x) x x x x x x x x x x x x x x x x
+#define _17_BIG(x) x x x x x x x x x x x x x x x x x
+#define _18_BIG(x) x x x x x x x x x x x x x x x x x x
+#define _19_BIG(x) x x x x x x x x x x x x x x x x x x x
+#define _20_BIG(x) x x x x x x x x x x x x x x x x x x x x
 
 #define _1(x) x,
 #define _2(x) x,x,
@@ -53,15 +53,15 @@
 #define _8(x) x,x,x,x,x,x,x,x,
 #define _9(x) x,x,x,x,x,x,x,x,x,
 #define _10(x) x,x,x,x,x,x,x,x,x,x,
-#define _11(x) _10(x) _1(x)
-#define _12(x) _10(x) _2(x)
-#define _13(x) _10(x) _3(x)
-#define _14(x) _10(x) _4(x)
-#define _15(x) _10(x) _5(x)
-#define _16(x) _10(x) _6(x)
-#define _17(x) _10(x) _7(x)
-#define _18(x) _10(x) _8(x)
-#define _19(x) _10(x) _9(x)
+#define _11(x) x,x,x,x,x,x,x,x,x,x,x,
+#define _12(x) x,x,x,x,x,x,x,x,x,x,x,x,
+#define _13(x) x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _14(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _15(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _16(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _17(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _18(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _19(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
 #define _20(x) _10(x) _10(x)
 #define _21(x) _20(x) _1(x)
 #define _22(x) _20(x) _2(x)

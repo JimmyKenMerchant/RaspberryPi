@@ -36,7 +36,7 @@
 
 **About PCM Output**
 
-* Maximum volume is adjusted to -6dB (half) in 16 bit depth to considef of line level (appx. -10 dBV, 316mVrms, 894mVp-p). DACs' maximum Vrms are 900m to 2100m in my experience.
+* Maximum volume is adjusted to -6dB (half) in 16-bit depth to considef of line level (appx. -10 dBV, 316mVrms, 894mVp-p). DACs' maximum Vrms are 900m to 2100m in my experience.
 
 * This sampling rate has jitter. Your DAC is needed its jitter remover.
 
