@@ -11,7 +11,7 @@
  * About Codes in This File:
  * These functions are aiming building a sound generator with frequency modulation synthesis by a software programmed for a central processing unit (CPU) and an output unit. As an output unit, this project uses a pulse width modulator (PWM) or a pulse code modulator (PCM).
  * On using PWM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PWM. PWM treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. This PWM amplifies differences of voltage at 6 dB gain.
- * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs voltage up to -6 dB in 16-bit depth.
+ * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs L and R with each 16-bit depth.
  */
 
 STS32_CODE:            .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
@@ -43,7 +43,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Lower Bit[16-3] Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave
+ * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB
  * Higher Bit[2-0] Decimal Part of Frequency-B (Sub): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Higher Bit[16-3] Frequency-B (Sub): 0 to 16383 Hz
  * Higher Bit[31-17] Magnitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
@@ -752,6 +752,7 @@ sts32_syntheplay:
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_L
 		asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
+		lsl temp, temp, #1                         @ Multiply by 2
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
@@ -796,6 +797,7 @@ sts32_syntheplay:
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_FREQA_R
 		asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
+		lsl temp, temp, #1                         @ Multiply by 2
 		vmov vfp_temp, temp
 		vcvt.f32.s32 vfp_temp, vfp_temp
 		vmov temp, vfp_temp
