@@ -43,7 +43,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Lower Bit[16-3] Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB
+ * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB, Should Be -8192 to 8191 in PWM Output
  * Higher Bit[2-0] Decimal Part of Frequency-B (Sub): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Higher Bit[16-3] Frequency-B (Sub): 0 to 16383 Hz
  * Higher Bit[31-17] Magnitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
@@ -55,6 +55,8 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  *
  * Synthesizer Code will be fetched by L/R alternatively.
  * If you line up four blocks, the first and the third block will be fetched by L, and the second and the fourth block will be fetched by R.
+ *
+ * Reference: Chowning,J. 1973 The Synthesis of Complex Audio Spectra by Means of Frequency Modulation. Journal of the Audio Engineering Society, 21, 526-534.
  */
 
 /**

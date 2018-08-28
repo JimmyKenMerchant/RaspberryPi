@@ -205,6 +205,10 @@ Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), me
 
 **About Others**
 
-* Newcomb, Theodore M. 1950 Social Psychology.
+* Newcomb, Theodore M. 1950 Social Psychology. Dryden Press.
+
+* [Mills,D.L. & Venters,S. 2012 Timestamp Capture Principle.](https://www.eecis.udel.edu/~mills/stamp.html)
+
+* Chowning,J. 1973 The Synthesis of Complex Audio Spectra by Means of Frequency Modulation. Journal of the Audio Engineering Society, 21, 526-534.
 
 * [JimmyKenMerchant](http://electronics.jimmykenmerchant.com/): My Own Site as a Hobbyist
