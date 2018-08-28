@@ -53,6 +53,25 @@
 	.equ equ32_usb2032_timeout_nyet,               0x00002F00
 .endif
 
+.ifdef __256M
+	.equ equ32_vcmemory_base,                      0x0D000000
+	.equ equ32_vcmemory_size,                      0x02000000 @ 32M Bytes
+.endif
+
+.ifdef __512M
+	.equ equ32_vcmemory_base,                      0x1D000000
+	.equ equ32_vcmemory_size,                      0x02000000 @ 32M Bytes
+.endif
+
+.ifdef __1G
+	.equ equ32_vcmemory_base,                      0x3C000000
+	/**
+	 * 64M Bytes, But Subtract 16M Bytes Because 0x3F000000 is Overlapped with Peripheral Region
+	 * Getting framebuffer is untill 0x3E000000 though.
+	 */
+	.equ equ32_vcmemory_size,                      0x03000000
+.endif
+
 .equ equ32_bus_peripherals_base,   0x7E000000 @ For DMA and VideoCore Address
 
 .equ equ32_systemtimer_base,   0x00003000

@@ -87,6 +87,7 @@ _os_reset:
 	 * if you set fixup.dat to make a partition on SDRAM between CPU and GPU.
 	 * Otherwise, malfunctions on accessing memory occurs, even though this system changes the descriptors.
 	 */
+	/*
 	push {r0-r3}
 .ifndef __ARMV6
 .ifndef __SECURE
@@ -111,6 +112,7 @@ _os_reset:
 	ldr r3, [r3]
 	bl arm32_set_cache
 	pop {r0-r3}
+	*/
 
 	/* Set Cache Status for Whole Area of Data Memory */
 	push {r0-r3}

@@ -15,48 +15,58 @@
 # `-mcpu=cortex-a53` is unavailable on early GCC versions. You can use `-mcpu=cortex-a7` instead.
 
 ifeq ($(type), 3b)
-	PRODUCT:=__RASPI3B=1
+	PRODUCT := __RASPI3B=1
 	TARGET := -mcpu=cortex-a53 -mfpu=vfp
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 	BASE := __B=1
 	GPU := __GPU400=1
+	MEMORY := __1G=1
 endif
 
 ifeq ($(type), new2b)
-	PRODUCT:=__RASPI2B=1
+	PRODUCT := __RASPI2B=1
 	TARGET := -mcpu=cortex-a7 -mfpu=vfp
 	ARCH := __ARMV8=1
 	CPU := __BCM2837=1
 	BASE := __B=1
 	GPU := __GPU400=1
+	MEMORY := __1G=1
 endif
 
 ifeq ($(type), 2b)
-	PRODUCT:=__RASPI2B=1
+	PRODUCT := __RASPI2B=1
 	TARGET := -mcpu=cortex-a7 -mfpu=vfp
 	ARCH := __ARMV7=1
 	CPU := __BCM2836=1
 	BASE := __B=1
 	GPU := __GPU250=1
+	MEMORY := __1G=1
 endif
 
 ifeq ($(type), zero)
-	PRODUCT:=__RASPIZERO=1
+	PRODUCT := __RASPIZERO=1
 	TARGET := -mcpu=arm1176jzf-s -mfpu=vfp
 	ARCH := __ARMV6=1
 	CPU := __BCM2835=1
 	BASE := __ZERO=1
 	GPU := __GPU400=1
+	MEMORY := __512M=1
 endif
 
 ifeq ($(type), zerow)
-	PRODUCT:=__RASPIZEROW=1
+	PRODUCT := __RASPIZEROW=1
 	TARGET := -mcpu=arm1176jzf-s -mfpu=vfp
 	ARCH := __ARMV6=1
 	CPU := __BCM2835=1
 	BASE := __ZERO=1
 	GPU := __GPU400=1
+	MEMORY := __512M=1
+endif
+
+#If Memory Space Is 256M Bytes Length
+ifeq ($(memory), 256)
+	MEMORY := __256M=1
 endif
 
 #Default Value for Sound
@@ -119,11 +129,11 @@ BIT := __AARCH32=1
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
-CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT) -D $(STATE) -D $(MODE)
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT) -D $(STATE) -D $(MODE) -D $(MEMORY)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
-ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT) --defsym $(STATE) --defsym $(MODE)
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT) --defsym $(STATE) --defsym $(MODE) --defsym $(MEMORY)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy
