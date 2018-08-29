@@ -11,17 +11,19 @@
 #include "system32.c"
 #include "snd32.h"
 
-#define timer_count_multiplicand        125
-#define timer_count_multiplier_default  10
-#define timer_count_multiplier_minlimit 5
-#define timer_count_multiplier_maxlimit 40
+#define timer_count_multiplicand        5
+#define timer_count_multiplier_default  500
+#define timer_count_multiplier_minlimit 125
+#define timer_count_multiplier_maxlimit 1000
 
 /**
  * In default, there is a 48Hz synchronization clock (it's a half of 96Hz on Arm Timer beacause of toggling).
- * Arm Timer sets 120000Hz as clock.
- * 1250 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 1250 / 2 equals 48.
- * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 96Hz.
- * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 12Hz.
+ * Arm Timer sets 240000Hz as clock.
+ * 2500 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 2500 / 2 equals 48Hz (60BPM).
+ * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 192Hz (240BPM).
+ * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 24Hz (30BPM).
+ *
+ * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _soundset.
  */
 
 music_code music1[] =
@@ -128,8 +130,19 @@ int32 _user_start()
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 #endif
 
+	uint32 musiclen1 = snd32_musiclen( music1 );
+	uint32 musiclen2 = snd32_musiclen( music2 );
+	uint32 musiclen3 = snd32_musiclen( music3 );
+	uint32 musiclen4 = snd32_musiclen( music4 );
+	uint32 musiclen5 = snd32_musiclen( music5 );
+	uint32 musiclen6 = snd32_musiclen( music6 );
+	uint32 musiclen7 = snd32_musiclen( music7 );
+	uint32 musiclen8 = snd32_musiclen( music8 );
+	uint32 musiclen16 = snd32_musiclen( interrupt16 );
+	uint32 musiclen31 = snd32_musiclen( silence31 );
+
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+	_soundset( silence31, musiclen31, 0, -1 );
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
@@ -142,144 +155,144 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_soundset( music1, snd32_musiclen( music1 ), 0, -1 );
-				//_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				//_soundset( music1, musiclen1, 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				_soundset( music2, snd32_musiclen( music2 ), 0, -1 );
+				_soundset( music2, musiclen2, 0, -1 );
 				/* Beat Up */
-				//timer_count_multiplier--;
+				//timer_count_multiplier -= 5;
 				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
 				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 
 			// 0b00011 (3)
 			} else if ( detect_parallel == 0b00011<<22 ) {
-				_soundset( music3, snd32_musiclen( music3 ), 0, -1 );
+				_soundset( music3, musiclen3, 0, -1 );
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
-				_soundset( music4, snd32_musiclen( music4 ), 0, -1 );
+				_soundset( music4, musiclen4, 0, -1 );
 				/* Beat Down */
-				//timer_count_multiplier++;
+				//timer_count_multiplier += 5;
 				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
 				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
-				_soundset( music5, snd32_musiclen( music5 ), 0, -1 );
+				_soundset( music5, musiclen5, 0, -1 );
 
 			// 0b00110 (6)
 			} else if ( detect_parallel == 0b00110<<22 ) {
-				_soundset( music6, snd32_musiclen( music6 ), 0, -1 );
+				_soundset( music6, musiclen6, 0, -1 );
 
 			// 0b00111 (7)
 			} else if ( detect_parallel == 0b00111<<22 ) {
-				_soundset( music7, snd32_musiclen( music7 ), 0, -1 );
+				_soundset( music7, musiclen7, 0, -1 );
 
 			// 0b01000 (8)
 			} else if ( detect_parallel == 0b01000<<22 ) {
-				_soundset( music8, snd32_musiclen( music8 ), 0, -1 );
+				_soundset( music8, musiclen8, 0, -1 );
 
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b01010 (10)
 			} else if ( detect_parallel == 0b01010<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b01011 (11)
 			} else if ( detect_parallel == 0b01011<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b01100 (12)
 			} else if ( detect_parallel == 0b01100<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b01101 (13)
 			} else if ( detect_parallel == 0b01101<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b01110 (14)
 			} else if ( detect_parallel == 0b01110<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b01111 (15)
 			} else if ( detect_parallel == 0b01111<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
-				_soundinterrupt( interrupt16, snd32_musiclen( interrupt16 ), 0, 1 );
+				_soundinterrupt( interrupt16, musiclen16, 0, 1 );
 
 			// 0b10001 (17)
 			} else if ( detect_parallel == 0b10001<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10010 (18)
 			} else if ( detect_parallel == 0b10010<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10011 (19)
 			} else if ( detect_parallel == 0b10011<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10100 (20)
 			} else if ( detect_parallel == 0b10100<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10101 (21)
 			} else if ( detect_parallel == 0b10101<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10110 (22)
 			} else if ( detect_parallel == 0b10110<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b10111 (23)
 			} else if ( detect_parallel == 0b10111<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b11000 (24)
 			} else if ( detect_parallel == 0b11000<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b11001 (25)
 			} else if ( detect_parallel == 0b11001<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b11010 (26)
 			} else if ( detect_parallel == 0b11010<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b11011 (27)
 			} else if ( detect_parallel == 0b11011<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b11100 (28)
 			} else if ( detect_parallel == 0b11100<<22 ) {
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
 				/* Beat Up */
-				timer_count_multiplier--;
+				timer_count_multiplier -= 5;
 				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
 				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11110 (30)
 			} else if ( detect_parallel == 0b11110<<22 ) {
 				/* Beat Down */
-				timer_count_multiplier++;
+				timer_count_multiplier += 5;
 				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
 				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {
 				// To get DC Bias on PWM Mode, Set Silence for Clear
-				_soundset( silence31, snd32_musiclen( silence31 ), 0, -1 );
+				_soundset( silence31, musiclen31, 0, -1 );
 				//_soundclear();
 			}
 

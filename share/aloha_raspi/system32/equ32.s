@@ -55,18 +55,18 @@
 
 .ifdef __256M
 	.equ equ32_vcmemory_base,                      0x0D000000
-	.equ equ32_vcmemory_size,                      0x02000000 @ 32M Bytes
+	.equ equ32_vcmemory_size,                      0x02000000 @ 32M Bytes in config.txt
 .endif
 
 .ifdef __512M
 	.equ equ32_vcmemory_base,                      0x1D000000
-	.equ equ32_vcmemory_size,                      0x02000000 @ 32M Bytes
+	.equ equ32_vcmemory_size,                      0x02000000 @ 32M Bytes in config.txt
 .endif
 
-.ifdef __1G
+.ifdef __1024M
 	.equ equ32_vcmemory_base,                      0x3C000000
 	/**
-	 * 64M Bytes, But Subtract 16M Bytes Because 0x3F000000 is Overlapped with Peripheral Region
+	 * 64M Bytes in config.txt, But Subtract 16M Bytes Because 0x3F000000 is Overlapped with Peripheral Region
 	 * Getting framebuffer is untill 0x3E000000 though.
 	 */
 	.equ equ32_vcmemory_size,                      0x03000000

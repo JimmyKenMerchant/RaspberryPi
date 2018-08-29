@@ -12,16 +12,18 @@
 #include "sts32.h"
 
 #define timer_count_multiplicand        1
-#define timer_count_multiplier_default  30
-#define timer_count_multiplier_minlimit 10
-#define timer_count_multiplier_maxlimit 50
+#define timer_count_multiplier_default  60
+#define timer_count_multiplier_minlimit 15
+#define timer_count_multiplier_maxlimit 120
 
 /**
- * In default, there is a 2000hz synchronization clock (it's a half of 2400Hz on Arm Timer beacause of toggling).
- * Arm Timer sets 120000Hz as clock.
- * 30 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 30 / 2 equals 2000.
- * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 6000Hz.
- * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1200Hz.
+ * In default, there is a 2000Hz synchronization clock (it's a half of 4000Hz on Arm Timer beacause of toggling).
+ * Arm Timer sets 240000Hz as clock.
+ * 60 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 60 / 2 equals 2000Hz (60BPM).
+ * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 8000Hz (240BPM).
+ * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1000Hz (30BPM).
+ *
+ * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _syntheset.
  */
 
 /**

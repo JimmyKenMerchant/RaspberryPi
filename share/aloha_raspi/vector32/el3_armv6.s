@@ -48,7 +48,7 @@ _el3_monitor:
 	 * VideoCore seems to connect with ARM closely, `shareable` attribute is not needed, so far.
 	 * In RasPi 2 and Later, descriptors on the range of Framebuffer should not be changed after calling a framebuffer
 	 * if you set fixup.dat to make a partition on SDRAM between CPU and GPU.
-	 * Otherwise, malfunctions on accessing memory occurs, even though this system changes the descriptors.
+	 * Otherwise, malfunctions on accessing memory occur.
 	 */
 	push {r0-r3,lr}
 	mov r0, #0

@@ -21,7 +21,7 @@ ifeq ($(type), 3b)
 	CPU := __BCM2837=1
 	BASE := __B=1
 	GPU := __GPU400=1
-	MEMORY := __1G=1
+	MEMORY := __1024M=1
 endif
 
 ifeq ($(type), new2b)
@@ -31,7 +31,7 @@ ifeq ($(type), new2b)
 	CPU := __BCM2837=1
 	BASE := __B=1
 	GPU := __GPU400=1
-	MEMORY := __1G=1
+	MEMORY := __1024M=1
 endif
 
 ifeq ($(type), 2b)
@@ -41,7 +41,7 @@ ifeq ($(type), 2b)
 	CPU := __BCM2836=1
 	BASE := __B=1
 	GPU := __GPU250=1
-	MEMORY := __1G=1
+	MEMORY := __1024M=1
 endif
 
 ifeq ($(type), zero)
