@@ -30,16 +30,18 @@
 #include "system32.c"
 
 #define timer_count_multiplicand        10
-#define timer_count_multiplier_default  6
-#define timer_count_multiplier_minlimit 3
-#define timer_count_multiplier_maxlimit 6000
+#define timer_count_multiplier_default  12
+#define timer_count_multiplier_minlimit 6
+#define timer_count_multiplier_maxlimit 12000
 
 /**
  * In default, there is a 1000Hz synchronization clock (it's a half of 2000Hz on Arm Timer beacause of toggling).
- * Arm Timer sets 120000Hz as clock.
- * 60 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 60 / 2 equals 1000.
- * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 2000Hz.
- * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1Hz.
+ * Arm Timer sets 240000Hz as clock.
+ * 120 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 120 / 2 equals 1000Hz.
+ * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 2000Hz.
+ * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1Hz.
+ *
+ * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _syntheset.
  */
 
 gpio_sequence gpio1[] =
@@ -56,6 +58,7 @@ gpio_sequence gpio2[] =
 
 gpio_sequence gpio3[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
@@ -67,16 +70,19 @@ gpio_sequence gpio4[] =
 
 gpio_sequence gpio5[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio6[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio7[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
@@ -154,36 +160,43 @@ gpio_sequence gpio8[] =
 
 gpio_sequence gpio9[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio10[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio11[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio12[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio13[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio14[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
 gpio_sequence gpio15[] =
 {
+	0b10000000000000000000000000001000,
 	GPIO32_END
 };
 
@@ -199,11 +212,6 @@ gpio_sequence gpio16[] =
 	GPIO32_END
 };
 
-gpio_sequence gpio17[] =
-{
-	GPIO32_END
-};
-
 int32 _user_start()
 {
 
@@ -211,6 +219,23 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
+
+	uint32 gpiolen1 = gpio32_gpiolen( gpio1 );
+	uint32 gpiolen2 = gpio32_gpiolen( gpio2 );
+	uint32 gpiolen3 = gpio32_gpiolen( gpio3 );
+	uint32 gpiolen4 = gpio32_gpiolen( gpio4 );
+	uint32 gpiolen5 = gpio32_gpiolen( gpio5 );
+	uint32 gpiolen6 = gpio32_gpiolen( gpio6 );
+	uint32 gpiolen7 = gpio32_gpiolen( gpio7 );
+	uint32 gpiolen8 = gpio32_gpiolen( gpio8 );
+	//uint32 gpiolen9 = gpio32_gpiolen( gpio9 );
+	//uint32 gpiolen10 = gpio32_gpiolen( gpio10 );
+	//uint32 gpiolen11 = gpio32_gpiolen( gpio11 );
+	//uint32 gpiolen12 = gpio32_gpiolen( gpio12 );
+	//uint32 gpiolen13 = gpio32_gpiolen( gpio13 );
+	//uint32 gpiolen14 = gpio32_gpiolen( gpio14 );
+	//uint32 gpiolen15 = gpio32_gpiolen( gpio15 );
+	uint32 gpiolen16 = gpio32_gpiolen( gpio16 );
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
@@ -223,12 +248,12 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_gpioset( gpio1, gpio32_gpiolen( gpio1 ) , 0, -1 );
+				_gpioset( gpio1, gpiolen1, 0, -1 );
 				//_gpioclear( 0x003FFFFC, 1 );
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				_gpioset( gpio2, gpio32_gpiolen( gpio2 ) , 0, -1 );
+				_gpioset( gpio2, gpiolen2, 0, -1 );
 				/* Beat Up */
 				//timer_count_multiplier--;
 				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
@@ -237,11 +262,11 @@ int32 _user_start()
 
 			// 0b00011 (3)
 			} else if ( detect_parallel == 0b00011<<22 ) {
-				_gpioset( gpio3, gpio32_gpiolen( gpio3 ) , 0, -1 );
+				_gpioset( gpio3, gpiolen3, 0, -1 );
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
-				_gpioset( gpio4, gpio32_gpiolen( gpio4 ) , 0, -1 );
+				_gpioset( gpio4, gpiolen4, 0, -1 );
 				/* Beat Down */
 				//timer_count_multiplier++;
 				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
@@ -249,19 +274,19 @@ int32 _user_start()
 
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
-				_gpioset( gpio5, gpio32_gpiolen( gpio5 ) , 0, -1 );
+				_gpioset( gpio5, gpiolen5, 0, -1 );
 
 			// 0b00110 (6)
 			} else if ( detect_parallel == 0b00110<<22 ) {
-				_gpioset( gpio6, gpio32_gpiolen( gpio6 ) , 0, -1 );
+				_gpioset( gpio6, gpiolen6, 0, -1 );
 
 			// 0b00111 (7)
 			} else if ( detect_parallel == 0b00111<<22 ) {
-				_gpioset( gpio7, gpio32_gpiolen( gpio7 ) , 0, -1 );
+				_gpioset( gpio7, gpiolen7, 0, -1 );
 
 			// 0b01000 (8)
 			} else if ( detect_parallel == 0b01000<<22 ) {
-				_gpioset( gpio8, gpio32_gpiolen( gpio8 ) , 0, -1 );
+				_gpioset( gpio8, gpiolen8, 0, -1 );
 
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
@@ -293,7 +318,7 @@ int32 _user_start()
 
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
-				_gpioset( gpio16, gpio32_gpiolen( gpio16 ) , 0, -1 );
+				_gpioset( gpio16, gpiolen16, 0, -1 );
 
 			// 0b10001 (17)
 			} else if ( detect_parallel == 0b10001<<22 ) {

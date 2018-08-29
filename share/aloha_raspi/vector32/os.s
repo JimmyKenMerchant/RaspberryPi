@@ -80,40 +80,6 @@ _os_reset:
 	bl os_reset
 	pop {r0-r3}
 
-	/**
-	 * Set Cache Status for Memory Using as Framebuffer (By Section)
-	 * VideoCore seems to connect with ARM closely, `shareable` attribute is not needed, so far.
-	 * In RasPi 2 and Later, descriptors on the range of Framebuffer should not be changed after calling a framebuffer
-	 * if you set fixup.dat to make a partition on SDRAM between CPU and GPU.
-	 * Otherwise, malfunctions on accessing memory occurs, even though this system changes the descriptors.
-	 */
-	/*
-	push {r0-r3}
-.ifndef __ARMV6
-.ifndef __SECURE
-	mov r0, #1
-.else
-	mov r0, #0
-.endif
-.else
-	mov r0, #0
-.endif
-	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
-	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
-.ifndef __ARMV6
-.ifndef __SECURE
-	orr r1, r1, #equ32_mmu_section_nonsecure
-.endif
-.endif
-	orr r1, r1, #equ32_mmu_domain00
-	ldr r2, ADDR32_FB32_FRAMEBUFFER_ADDR
-	ldr r2, [r2]
-	ldr r3, ADDR32_FB32_FRAMEBUFFER_SIZE
-	ldr r3, [r3]
-	bl arm32_set_cache
-	pop {r0-r3}
-	*/
-
 	/* Set Cache Status for Whole Area of Data Memory */
 	push {r0-r3}
 .ifndef __ARMV6

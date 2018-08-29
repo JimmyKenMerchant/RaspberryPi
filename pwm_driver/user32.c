@@ -27,50 +27,59 @@
 #include "system32.c"
 
 #define timer_count_multiplicand        100
-#define timer_count_multiplier_default  24
-#define timer_count_multiplier_minlimit 6
-#define timer_count_multiplier_maxlimit 48
+#define timer_count_multiplier_default  48
+#define timer_count_multiplier_minlimit 12
+#define timer_count_multiplier_maxlimit 96
 
 /**
- * In default, there is a 25Hz synchronization clock (it's a half of 25Hz on Arm Timer beacause of toggling).
- * Arm Timer sets 120000Hz as clock.
- * 2400 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 120000 / 2400 / 2 equals 25.
- * The Maximum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 100Hz.
- * The minimum beat (120000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 12.5Hz.
+ * In default, there is a 25Hz synchronization clock (it's a half of 50Hz on Arm Timer beacause of toggling).
+ * Arm Timer sets 240000Hz as clock.
+ * 4800 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 4800 / 2 equals 25Hz.
+ * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 100Hz.
+ * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 12.5Hz.
+ *
+ * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _soundset.
  */
 
 pwm_sequence pwm1[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm2[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm3[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm4[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm5[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm6[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm7[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
@@ -100,36 +109,43 @@ pwm_sequence pwm8[] =
 
 pwm_sequence pwm9[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm10[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm11[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm12[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm13[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm14[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
 pwm_sequence pwm15[] =
 {
+	1<<31|200,
 	PWM32_END
 };
 
@@ -164,11 +180,6 @@ pwm_sequence pwm16[] =
 	PWM32_END
 };
 
-pwm_sequence pwm17[] =
-{
-	PWM32_END
-};
-
 int32 _user_start()
 {
 
@@ -176,6 +187,23 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
+
+	//uint32 pwmlen1 = pwm32_pwmlen( pwm1 );
+	//uint32 pwmlen2 = pwm32_pwmlen( pwm2 );
+	uint32 pwmlen3 = pwm32_pwmlen( pwm3 );
+	//uint32 pwmlen4 = pwm32_pwmlen( pwm4 );
+	uint32 pwmlen5 = pwm32_pwmlen( pwm5 );
+	uint32 pwmlen6 = pwm32_pwmlen( pwm6 );
+	uint32 pwmlen7 = pwm32_pwmlen( pwm7 );
+	uint32 pwmlen8 = pwm32_pwmlen( pwm8 );
+	//uint32 pwmlen9 = pwm32_pwmlen( pwm9 );
+	//uint32 pwmlen10 = pwm32_pwmlen( pwm10 );
+	//uint32 pwmlen11 = pwm32_pwmlen( pwm11 );
+	//uint32 pwmlen12 = pwm32_pwmlen( pwm12 );
+	//uint32 pwmlen13 = pwm32_pwmlen( pwm13 );
+	//uint32 pwmlen14 = pwm32_pwmlen( pwm14 );
+	//uint32 pwmlen15 = pwm32_pwmlen( pwm15 );
+	uint32 pwmlen16 = pwm32_pwmlen( pwm16 );
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
@@ -187,7 +215,7 @@ int32 _user_start()
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
 				//_pwmselect( 0 );
-				//_pwmset( pwm1, pwm32_pwmlen( pwm1 ) , 0, -1 );
+				//_pwmset( pwm1, pwmlen1, 0, -1 );
 				_pwmselect( 0 );
 				_pwmclear( 0 );
 				_pwmselect( 1 );
@@ -196,7 +224,7 @@ int32 _user_start()
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
 				//_pwmselect( 0 );
-				//_pwmset( pwm2, pwm32_pwmlen( pwm2 ) , 0, -1 );
+				//_pwmset( pwm2, pwmlen2, 0, -1 );
 				/* Beat Up */
 				timer_count_multiplier--;
 				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
@@ -206,12 +234,12 @@ int32 _user_start()
 			// 0b00011 (3)
 			} else if ( detect_parallel == 0b00011<<22 ) {
 				_pwmselect( 0 );
-				_pwmset( pwm3, pwm32_pwmlen( pwm3 ) , 0, -1 );
+				_pwmset( pwm3, pwmlen3, 0, -1 );
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
 				//_pwmselect( 0 );
-				//_pwmset( pwm4, pwm32_pwmlen( pwm4 ) , 0, -1 );
+				//_pwmset( pwm4, pwmlen4, 0, -1 );
 				/* Beat Down */
 				timer_count_multiplier++;
 				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
@@ -220,22 +248,22 @@ int32 _user_start()
 			// 0b00101 (5)
 			} else if ( detect_parallel == 0b00101<<22 ) {
 				_pwmselect( 0 );
-				_pwmset( pwm5, pwm32_pwmlen( pwm5 ) , 0, -1 );
+				_pwmset( pwm5, pwmlen5, 0, -1 );
 
 			// 0b00110 (6)
 			} else if ( detect_parallel == 0b00110<<22 ) {
 				_pwmselect( 0 );
-				_pwmset( pwm6, pwm32_pwmlen( pwm6 ) , 0, -1 );
+				_pwmset( pwm6, pwmlen6, 0, -1 );
 
 			// 0b00111 (7)
 			} else if ( detect_parallel == 0b00111<<22 ) {
 				_pwmselect( 0 );
-				_pwmset( pwm7, pwm32_pwmlen( pwm7 ) , 0, -1 );
+				_pwmset( pwm7, pwmlen7, 0, -1 );
 
 			// 0b01000 (8)
 			} else if ( detect_parallel == 0b01000<<22 ) {
 				_pwmselect( 0 );
-				_pwmset( pwm8, pwm32_pwmlen( pwm8 ) , 0, -1 );
+				_pwmset( pwm8, pwmlen8, 0, -1 );
 
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
@@ -289,7 +317,7 @@ int32 _user_start()
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
 				_pwmselect( 1 );
-				_pwmset( pwm16, pwm32_pwmlen( pwm16 ) , 0, -1 );
+				_pwmset( pwm16, pwmlen16, 0, -1 );
 
 			// 0b10001 (17)
 			} else if ( detect_parallel == 0b10001<<22 ) {
