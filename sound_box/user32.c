@@ -81,19 +81,24 @@ music_code music7[] =
 
 music_code music8[] =
 {
-	_48_ROC_ARP(_D4_TRIL)
-	_24_ROC_ARP(_G4_TRIL) _24_ROC_ARP(_G4_TRIL)
-	_48_ROC_ARP(_D5_TRIL)
-	_48_ROC_ARP(_D4_TRIL)
+	_48_DOM(_D4_TRIL)
+	_24_DOM_ARP(_G4_TRIL) _24_DOM_ARP(_G4_TRIL)
+	_48_DOM(_D5_TRIL)
+	_48_DOM(_D4_TRIL)
 	_END
 };
 
 music_code interrupt16[] =
 {
-	_48_RYU_ARP(_D4_TRIL)
-	_24_RYU_ARP(_G4_TRIL) _24_RYU_ARP(_G4_TRIL)
-	_48_RYU_ARP(_D5_TRIL)
-	_48_RYU_ARP(_D4_TRIL)
+	_4_BIG(_RAP(
+		_48_RYU_ARP(_D4_TRIL)
+		_24_RYU_ARP(_G4_TRIL) _24_RYU_ARP(_G4_TRIL)
+		_48_RYU_ARP(_D5_TRIL)
+		_48_RYU_ARP(_D4_TRIL)
+	))
+	_1_BIG(_RAP(
+		_48(_SILENCE)
+	))
 	_END
 };
 
@@ -130,6 +135,7 @@ int32 _user_start()
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 #endif
 
+	// To Get Proper Latency, Get Lengths in Advance
 	uint32 musiclen1 = snd32_musiclen( music1 );
 	uint32 musiclen2 = snd32_musiclen( music2 );
 	uint32 musiclen3 = snd32_musiclen( music3 );
@@ -155,8 +161,8 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				//_soundset( music1, musiclen1, 0, -1 );
-				_soundset( silence31, musiclen31, 0, -1 );
+				_soundset( music1, musiclen1, 0, -1 );
+				//_soundset( silence31, musiclen31, 0, -1 );
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {

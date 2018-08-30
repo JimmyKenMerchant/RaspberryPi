@@ -188,6 +188,7 @@ int32 _user_start()
 	uchar8 result;
 	uchar8 playing_signal;
 
+	// To Get Proper Latency, Get Lengths in Advance
 	//uint32 pwmlen1 = pwm32_pwmlen( pwm1 );
 	//uint32 pwmlen2 = pwm32_pwmlen( pwm2 );
 	uint32 pwmlen3 = pwm32_pwmlen( pwm3 );

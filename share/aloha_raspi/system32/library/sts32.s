@@ -296,7 +296,7 @@ sts32_synthewave_pwm:
 				mov flag_rl, #0
 
 				add time, time, #1
-				cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
+				cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz, Multiply Sample Rate by 8
 				movge time, #0
 				vmov vfp_time, time
 				vcvt.f32.u32 vfp_time, vfp_time
@@ -557,7 +557,7 @@ sts32_synthewave_i2s:
 			macro32_dsb ip
 
 			add time, time, #1
-			cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz
+			cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz, Multiply Sample Rate by 8
 			movge time, #0
 			vmov vfp_time, time
 			vcvt.f32.u32 vfp_time, vfp_time

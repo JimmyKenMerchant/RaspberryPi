@@ -220,6 +220,7 @@ int32 _user_start()
 	uchar8 result;
 	uchar8 playing_signal;
 
+	// To Get Proper Latency, Get Lengths in Advance
 	uint32 gpiolen1 = gpio32_gpiolen( gpio1 );
 	uint32 gpiolen2 = gpio32_gpiolen( gpio2 );
 	uint32 gpiolen3 = gpio32_gpiolen( gpio3 );

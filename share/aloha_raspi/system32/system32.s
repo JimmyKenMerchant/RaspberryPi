@@ -79,6 +79,11 @@ SYSTEM32_HEAP_NONCACHE_SIZE: .word SYSTEM32_HEAP_NONCACHE_END - SYSTEM32_HEAP_NO
 SYSTEM32_NONCACHE_ADDR: .word SYSTEM32_NONCACHE
 SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 
+.globl SYSTEM32_BUFFER_ADDR
+.globl SYSTEM32_BUFFER_SIZE
+SYSTEM32_BUFFER_ADDR: .word SYSTEM32_BUFFER
+SYSTEM32_BUFFER_SIZE: .word SYSTEM32_BUFFER_END - SYSTEM32_BUFFER
+
 /**
  * "library_system32" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
  * compatibility with other ARM CPUs. 
@@ -130,11 +135,24 @@ SYSTEM32_NONCACHE_SIZE: .word SYSTEM32_NONCACHE_END - SYSTEM32_NONCACHE
 .balign 16
 
 SYSTEM32_HEAP:
-.space 16777216                       @ Filled With Zero in Default, 16M Bytes
+.space 33554432                       @ Filled With Zero in Default, 32M Bytes
 SYSTEM32_HEAP_NONCACHE:
 .space 16777216                       @ 16M Bytes
 SYSTEM32_HEAP_NONCACHE_END:
 SYSTEM32_HEAP_END:
+
+SYSTEM32_BUFFER:
+.ifdef __256M
+.space 50331648                       @ 48M
+.endif
+.ifdef __512M
+.space 100663296                      @ 96M
+.endif
+.ifdef __1024M
+.space 201326592                      @ 192M
+.endif
+
+SYSTEM32_BUFFER_END:
 
 /**
  * Initial SVC Mode: 0x4000 (-0x200 Offset by Core ID)
@@ -163,7 +181,7 @@ SYSTEM32_VADESCRIPTOR_END:
 .section	.noncache_system32
 
 SYSTEM32_NONCACHE:
-.balign 32                        @ 32 Bytes (8 Words) Aligned
+.balign 32                            @ 32 Bytes (8 Words) Aligned
 _DMA32_CB:
 .space 32 * equ32_dma32_cb_max
 

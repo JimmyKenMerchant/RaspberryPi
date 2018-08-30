@@ -65,7 +65,7 @@ ifeq ($(type), zerow)
 endif
 
 #If Memory Space Is 256M Bytes Length
-ifeq ($(memory), 256)
+ifeq ($(memory256), yes)
 	MEMORY := __256M=1
 endif
 

@@ -60,7 +60,8 @@
 synthe_precode pre_synthe1_l[] = {
 	_3_BIG(_RAP(
 		_2(_RAP(
-			_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|2500<<_MAG,1000<<_BEAT,30<<_RIS|70<<_FAL
+			_A3<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,500<<_BEAT,1<<_RIS|99<<_FAL,
+			_SILENCE,_SILENCE,500<<_BEAT,0
 		))
 		_2(_RAP(
 			_G6<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|6000<<_MAG,250<<_BEAT,30<<_RIS|70<<_FAL,
@@ -75,10 +76,10 @@ synthe_precode pre_synthe1_l[] = {
 			_E6<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|7000<<_MAG,250<<_BEAT,30<<_RIS|70<<_FAL
 		))
 		_2(_RAP(
-			_D6<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,250<<_BEAT,30<<_RIS|70<<_FAL,
-			_F6<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,250<<_BEAT,30<<_RIS|70<<_FAL,
-			_A6<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,250<<_BEAT,30<<_RIS|70<<_FAL,
-			_F6<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,250<<_BEAT,30<<_RIS|70<<_FAL
+			_SILENCE,_SILENCE,250<<_BEAT,0,
+			_SILENCE,_SILENCE,250<<_BEAT,0,
+			_SILENCE,_SILENCE,250<<_BEAT,0,
+			_SILENCE,_SILENCE,250<<_BEAT,0
 		))
 	))
 	_END
@@ -528,6 +529,7 @@ synthe_precode pre_synthe16_r[] = {
 int32 _user_start()
 {
 
+	// To Get Proper Latency, Get Lengths in Advance
 	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
 	uint32 synthelen1 = sts32_synthelen( synthe1 ) / 2;
 	synthe_code* synthe2 = sts32_synthedecodelr( pre_synthe2_l, pre_synthe2_r );

@@ -1852,16 +1852,15 @@ sound_index _SOUND_INDEX[] =
 #define _40_ROC(x)      _8_ROC(x) _32_ROC(x)
 #define _48_ROC(x)      _8_ROC(x) _40_ROC(x)
 
-
 /* Ryukyu */
-#define _8_RYU(x)       x,x+4,x+5,lx+7,x+11,x+7,x+5,x+4,
+#define _8_RYU(x)       x,x+4,x+5,x+7,x+11,x+7,x+5,x+4,
 #define _16_RYU(x)      _8_RYU(x) _8_RYU(x)
 #define _24_RYU(x)      _8_RYU(x) _16_RYU(x)
 #define _32_RYU(x)      _8_RYU(x) _24_RYU(x)
 #define _40_RYU(x)      _8_RYU(x) _32_RYU(x)
 #define _48_RYU(x)      _8_RYU(x) _40_RYU(x)
 
-/* Major Enka */
+/* Major Enka/ Kyuchou/ Major Pentatnoic */
 #define _8_ENK(x)       x,x+2,x+4,x+7,x+9,x+7,x+4,x+2,
 #define _16_ENK(x)      _8_ENK(x) _8_ENK(x)
 #define _24_ENK(x)      _8_ENK(x) _16_ENK(x)
@@ -1876,6 +1875,14 @@ sound_index _SOUND_INDEX[] =
 #define _32_MEN(x)      _8_MEN(x) _24_MEN(x)
 #define _40_MEN(x)      _8_MEN(x) _32_MEN(x)
 #define _48_MEN(x)      _8_MEN(x) _40_MEN(x)
+
+/* Dominant */
+#define _8_DOM(x)       x,x-5,x,x-5,x,x-5,x,x-5,
+#define _16_DOM(x)      _8_DOM(x) _8_DOM(x)
+#define _24_DOM(x)      _8_DOM(x) _16_DOM(x)
+#define _32_DOM(x)      _8_DOM(x) _24_DOM(x)
+#define _40_DOM(x)      _8_DOM(x) _32_DOM(x)
+#define _48_DOM(x)      _8_DOM(x) _40_DOM(x)
 
 /* Arpeggios */
 #define _24_MAJ_ARP(x)     _6(x) _6(x+4) _6(x+7) _6(x+4)
@@ -1896,6 +1903,7 @@ sound_index _SOUND_INDEX[] =
 #define _24_RYU_ARP(x)     _4(x) _4(x+4) _4(x+5) _4(x+7) _4(x+11) _4(x+7) _4(x+5) _4(x+4) // Ryukyu
 #define _24_ENK_ARP(x)     _4(x) _4(x+2) _4(x+4) _4(x+7) _4(x+9) _4(x+7) _4(x+4) _4(x+2) // Major Enka
 #define _24_MEN_ARP(x)     _4(x) _4(x+2) _4(x+3) _4(x+7) _4(x+8) _4(x+7) _4(x+3) _4(x+2) // Minor Enka
+#define _24_DOM_ARP(x)     _4(x) _4(x-5) _4(x) _4(x-5) _4(x) _4(x-5) _4(x) _4(x-5) // Dominant
 
 #define _48_MAJ_ARP(x)     _12(x) _12(x+4) _12(x+7) _12(x+4)
 #define _48_M_ARP(x)       _12(x) _12(x+3) _12(x+7) _12(x+3)
@@ -1915,6 +1923,7 @@ sound_index _SOUND_INDEX[] =
 #define _48_RYU_ARP(x)     _8(x) _8(x+4) _8(x+5) _8(x+7) _8(x+11) _8(x+7) _8(x+5) _8(x+4) // Ryukyu
 #define _48_ENK_ARP(x)     _8(x) _8(x+2) _8(x+4) _8(x+7) _8(x+9) _8(x+7) _8(x+4) _8(x+2) // Major Enka
 #define _48_MEN_ARP(x)     _8(x) _8(x+2) _8(x+3) _8(x+7) _8(x+8) _8(x+7) _8(x+3) _8(x+2) // Minor Enka
+#define _48_DOM_ARP(x)     _8(x) _8(x-5) _8(x) _8(x-5) _8(x) _8(x-5) _8(x) _8(x-5) // Dominant
 
 /* Decay, Need of Big Volume */
 #define _8_DEC(x)       _4(x) _4(x+0x100)

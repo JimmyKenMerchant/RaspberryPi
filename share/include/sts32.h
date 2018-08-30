@@ -354,3 +354,5 @@
 #define _A8_INT  7040ul<<_INT
 #define _AS8_INT 7459ul<<_INT
 #define _B8_INT  7902ul<<_INT
+
+#define _SILENCE _A4<<_FREQ|0<<_MAG
