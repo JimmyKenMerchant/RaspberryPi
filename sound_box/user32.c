@@ -16,6 +16,8 @@
 #define timer_count_multiplier_minlimit 125
 #define timer_count_multiplier_maxlimit 1000
 
+void makesilence();
+
 /**
  * In default, there is a 48Hz synchronization clock (it's a half of 96Hz on Arm Timer beacause of toggling).
  * Arm Timer sets 240000Hz as clock.
@@ -108,6 +110,32 @@ music_code silence31[] =
 	_END
 };
 
+// Use in Function, makesilence
+uint32 musiclen31;
+
+void makesilence()
+{
+
+#ifdef __SOUND_I2S
+	_soundclear();
+#elif defined(__SOUND_I2S_BALANCED)
+	_soundclear();
+#elif defined(__SOUND_PWM)
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundset( silence31, musiclen31, 0, -1 );
+#elif defined(__SOUND_PWM_BALANCED)
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundset( silence31, musiclen31, 0, -1 );
+#elif defined(__SOUND_JACK)
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundset( silence31, musiclen31, 0, -1 );
+#elif defined(__SOUND_JACK_BALANCED)
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundset( silence31, musiclen31, 0, -1 );
+#endif
+
+}
+
 int32 _user_start()
 {
 
@@ -118,20 +146,15 @@ int32 _user_start()
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S );
-#endif
-#ifdef __SOUND_I2S_BALANCED
+#elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
-#endif
-#ifdef __SOUND_PWM
+#elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
-#endif
-#ifdef __SOUND_PWM_BALANCED
+#elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
-#endif
-#ifdef __SOUND_JACK
+#elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
-#endif
-#ifdef __SOUND_JACK_BALANCED
+#elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 #endif
 
@@ -145,10 +168,9 @@ int32 _user_start()
 	uint32 musiclen7 = snd32_musiclen( music7 );
 	uint32 musiclen8 = snd32_musiclen( music8 );
 	uint32 musiclen16 = snd32_musiclen( interrupt16 );
-	uint32 musiclen31 = snd32_musiclen( silence31 );
+	musiclen31 = snd32_musiclen( silence31 );
 
-	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( silence31, musiclen31, 0, -1 );
+	makesilence();
 
 	while ( true ) {
 		if ( _gpio_detect( 27 ) ) {
@@ -161,8 +183,8 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_soundset( music1, musiclen1, 0, -1 );
-				//_soundset( silence31, musiclen31, 0, -1 );
+				//_soundset( music1, musiclen1, 0, -1 );
+				makesilence();
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
@@ -203,31 +225,31 @@ int32 _user_start()
 
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b01010 (10)
 			} else if ( detect_parallel == 0b01010<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b01011 (11)
 			} else if ( detect_parallel == 0b01011<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b01100 (12)
 			} else if ( detect_parallel == 0b01100<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b01101 (13)
 			} else if ( detect_parallel == 0b01101<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b01110 (14)
 			} else if ( detect_parallel == 0b01110<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b01111 (15)
 			} else if ( detect_parallel == 0b01111<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
@@ -235,51 +257,51 @@ int32 _user_start()
 
 			// 0b10001 (17)
 			} else if ( detect_parallel == 0b10001<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10010 (18)
 			} else if ( detect_parallel == 0b10010<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10011 (19)
 			} else if ( detect_parallel == 0b10011<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10100 (20)
 			} else if ( detect_parallel == 0b10100<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10101 (21)
 			} else if ( detect_parallel == 0b10101<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10110 (22)
 			} else if ( detect_parallel == 0b10110<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b10111 (23)
 			} else if ( detect_parallel == 0b10111<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b11000 (24)
 			} else if ( detect_parallel == 0b11000<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b11001 (25)
 			} else if ( detect_parallel == 0b11001<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b11010 (26)
 			} else if ( detect_parallel == 0b11010<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b11011 (27)
 			} else if ( detect_parallel == 0b11011<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b11100 (28)
 			} else if ( detect_parallel == 0b11100<<22 ) {
-				_soundset( silence31, musiclen31, 0, -1 );
+				makesilence();
 
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
@@ -297,9 +319,7 @@ int32 _user_start()
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {
-				// To get DC Bias on PWM Mode, Set Silence for Clear
-				_soundset( silence31, musiclen31, 0, -1 );
-				//_soundclear();
+				makesilence();
 			}
 
 			result = _soundplay();

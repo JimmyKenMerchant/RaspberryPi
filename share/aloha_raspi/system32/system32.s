@@ -135,7 +135,7 @@ SYSTEM32_BUFFER_SIZE: .word SYSTEM32_BUFFER_END - SYSTEM32_BUFFER
 .balign 16
 
 SYSTEM32_HEAP:
-.space 50331648                       @ Filled With Zero in Default, 48M Bytes
+.space 67108864                       @ Filled With Zero in Default, 54M Bytes
 SYSTEM32_HEAP_NONCACHE:
 .space 16777216                       @ 16M Bytes
 SYSTEM32_HEAP_NONCACHE_END:

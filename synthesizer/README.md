@@ -12,7 +12,7 @@
 
 * Multipurpose, Drum Machine to Music Box
 
-* Programming Time Up to 26 Minutes for Entire Tracks
+* Programming Time Up to 34 Minutes for Entire Tracks
 
 **Output/Input**
 
