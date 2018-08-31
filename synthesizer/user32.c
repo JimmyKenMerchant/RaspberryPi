@@ -521,22 +521,39 @@ int32 _user_start()
 
 	// To Get Proper Latency, Get Lengths in Advance
 	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
+	if ( (uint32)synthe1 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen1 = sts32_synthelen( synthe1 ) / 2;
+
 	synthe_code* synthe2 = sts32_synthedecodelr( pre_synthe2_l, pre_synthe2_r );
+	if ( (uint32)synthe2 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen2 = sts32_synthelen( synthe2 ) / 2;
+
 	synthe_code* synthe3 = sts32_synthedecodelr( pre_synthe3_l, pre_synthe3_r );
+	if ( (uint32)synthe3 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen3 = sts32_synthelen( synthe3 ) / 2;
+
 	synthe_code* synthe4 = sts32_synthedecodelr( pre_synthe4_l, pre_synthe4_r );
+	if ( (uint32)synthe4 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen4 = sts32_synthelen( synthe4 ) / 2;
+
 	synthe_code* synthe5 = sts32_synthedecodelr( pre_synthe5_l, pre_synthe5_r );
+	if ( (uint32)synthe5 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen5 = sts32_synthelen( synthe5 ) / 2;
+
 	synthe_code* synthe6 = (synthe_code*)heap32_malloc( 2 );
+	if ( (uint32)synthe6 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen6 = sts32_synthelen( synthe6 ) / 2;
+
 	synthe_code* synthe7 = (synthe_code*)heap32_malloc( 2 );
+	if ( (uint32)synthe7 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 2;
+
 	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8_l, pre_synthe8_r );
+	if ( (uint32)synthe8 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 2;
+
 	synthe_code* synthe16 = sts32_synthedecodelr( pre_synthe16_l, pre_synthe16_r );
+	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;

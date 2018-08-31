@@ -39,6 +39,9 @@ gpu_mem_256=32
 gpu_mem_512=32
 gpu_mem_1024=64
 
+#Disable Rainbow Screen on Power On
+disable_splash=1
+
 #Black Border (0) or Not (1)
 disable_overscan=1
 
