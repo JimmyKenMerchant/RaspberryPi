@@ -18,7 +18,11 @@
 #define _MAG  17
 #define _BEAT 0
 #define _RIS  0
-#define _FAL  16
+#define _FAL  24
+#define _ATK  0
+#define _DCY  8
+#define _STN  16
+#define _RLS  24
 #define _INT  3
 #define _FRAC 0
 

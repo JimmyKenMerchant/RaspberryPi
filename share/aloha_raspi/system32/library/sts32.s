@@ -63,11 +63,11 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * Synthesizer Pre-code is a series of blocks. Each block has a structure of 4 long integers (32-bit).
  * uint32 synthe_code_lower;
  * uint32 synthe_code_upper;
- * uint32 beat_length (Bit[31:0]), Reserved (Bit[63:32]) Must Be Zero;
- * uint32 rising_pitch (Bit[15:0]) and falling_pitch (Bit[31:16]); 0 - 100 Percents
+ * uint32 beat_length (Bit[31:0]);
+ * uint32 release_time (Bit[31:24]), sustain_level (Bit[23:16]), decay_time (Bit(15:8)), attack_time (Bit[7:0]); Envelope ADSR Model, 0 - 100 Percents
  * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
- * Beat Length as 100 percents = Rising Pitch + Flat (Same as Volume) + Falling Pitch
+ * Beat Length as 100 percents = attack_time + decay_time + sustain_time (not parameterized) + release_time
  */
 
 /**
@@ -1118,22 +1118,27 @@ sts32_synthedecode:
 	code_lower        .req r5
 	code_upper        .req r6
 	temp              .req r7
-	rising_length     .req r8
-	flat_length       .req r9
-	beat_length       .req r10
+	attack_length     .req r8
+	decay_length      .req r9
+	release_length    .req r10
+	beat_length       .req r11
 
 	/* VFP Registers */
 	vfp_volume        .req s0
-	vfp_rising        .req s1
-	vfp_falling       .req s2
-	vfp_beat_length   .req s3
-	vfp_temp          .req s4
-	vfp_rising_delta  .req s5
-	vfp_falling_delta .req s6
-	vfp_one           .req s7
+	vfp_attack        .req s1
+	vfp_decay         .req s2
+	vfp_sustain       .req s3
+	vfp_release       .req s4
+	vfp_beat_length   .req s5
+	vfp_temp          .req s6
+	vfp_attack_delta  .req s7
+	vfp_decay_delta   .req s8
+	vfp_release_delta .req s9
+	vfp_sustain_level .req s10
+	vfp_one           .req s11
 
-	push {r4-r10,lr}
-	vpush {s0-s7}
+	push {r4-r11,lr}
+	vpush {s0-s11}
 
 	push {r0-r2}
 	bl heap32_mcount
@@ -1163,60 +1168,117 @@ sts32_synthedecode:
 	sts32_synthedecode_main:
 		subs synt_pre_length, synt_pre_length, #1
 		blt sts32_synthedecode_success
+
+		/* Lower Half and Volume */
 		ldr code_lower, [synt_pre_point]
-		ldr code_upper, [synt_pre_point, #4]
-		ldr beat_length, [synt_pre_point, #8]
-		vmov vfp_beat_length, beat_length
-		vcvt.f32.u32 vfp_beat_length, vfp_beat_length
 		asr temp, code_lower, #17                      @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 		vmov vfp_volume, temp
 		vcvt.f32.s32 vfp_volume, vfp_volume
-		ldrh flat_length, [synt_pre_point, #12]
-		vmov vfp_rising, flat_length
-		vcvt.f32.u32 vfp_rising, vfp_rising
-		ldrh flat_length, [synt_pre_point, #14]
-		vmov vfp_falling, flat_length
-		vcvt.f32.u32 vfp_falling, vfp_falling
-		add synt_pre_point, synt_pre_point, #16         @ Offset for Next Pre-block
+
+		/* Upper Half */
+		ldr code_upper, [synt_pre_point, #4]
+
+		/* Beat Length */
+		ldr beat_length, [synt_pre_point, #8]
+		vmov vfp_beat_length, beat_length
+		vcvt.f32.u32 vfp_beat_length, vfp_beat_length
+
+		/* Attack Time */
+		ldrb temp, [synt_pre_point, #12]
+		cmp temp, #100
+		movgt temp, #100                               @ Prevent Overflow
+		vmov vfp_attack, temp
+		vcvt.f32.u32 vfp_attack, vfp_attack
+
+		/* Decay Time */
+		ldrb temp, [synt_pre_point, #13]
+		cmp temp, #100
+		movgt temp, #100                               @ Prevent Overflow
+		vmov vfp_decay, temp
+		vcvt.f32.u32 vfp_decay, vfp_decay
+
+		/* Sustain Level */
+		ldrb temp, [synt_pre_point, #14]
+		cmp temp, #100
+		movgt temp, #100                               @ Prevent Overflow
+		vmov vfp_sustain, temp
+		vcvt.f32.u32 vfp_sustain, vfp_sustain
+
+		/* Release Time */
+		ldrb temp, [synt_pre_point, #15]
+		cmp temp, #100
+		movgt temp, #100                               @ Prevent Overflow
+		vmov vfp_release, temp
+		vcvt.f32.u32 vfp_release, vfp_release
+
+		add synt_pre_point, synt_pre_point, #16        @ Offset for Next Pre-block
 
 		/* Convert Percents to Decimal */
 
 		mov temp, #100
 		vmov vfp_temp, temp
 		vcvt.f32.u32 vfp_temp, vfp_temp
-		vdiv.f32 vfp_rising, vfp_rising, vfp_temp
-		vdiv.f32 vfp_falling, vfp_falling, vfp_temp
+		vdiv.f32 vfp_attack, vfp_attack, vfp_temp
+		vdiv.f32 vfp_decay, vfp_decay, vfp_temp
+		vdiv.f32 vfp_sustain, vfp_sustain, vfp_temp
+		vdiv.f32 vfp_release, vfp_release, vfp_temp
 
-		/* Rising Length and Rising Delta */
+		/* Attack Time and Attack Delta */
 
-		vmul.f32 vfp_temp, vfp_beat_length, vfp_rising
-		vdiv.f32 vfp_rising_delta, vfp_volume, vfp_temp
+		vmul.f32 vfp_temp, vfp_beat_length, vfp_attack
+		vdiv.f32 vfp_attack_delta, vfp_volume, vfp_temp
 		vcvt.u32.f32 vfp_temp, vfp_temp
-		vmov rising_length, vfp_temp
-		cmp rising_length, beat_length
-		movgt rising_length, beat_length                @ If Rising Is Overing 100 Percents
+		vmov attack_length, vfp_temp
 
-		/* Falling Delta  */
+		/* Sustain Level */
 
-		vmul.f32 vfp_temp, vfp_beat_length, vfp_falling
-		vdiv.f32 vfp_falling_delta, vfp_volume, vfp_temp
+		vmul.f32 vfp_sustain_level, vfp_volume, vfp_sustain
 
-		/* Flat Length */
+		/* Decay Time and Decay Delta */
 
-		/* Check Sum of Rising and Falling is Under 100 Percents */
-		vadd.f32 vfp_temp, vfp_rising, vfp_falling
-		vcmp.f32 vfp_temp, vfp_one
-		vmrs apsr_nzcv, fpscr                           @ Transfer FPSCR Flags to CPSR's NZCV
-		vsublt.f32 vfp_temp, vfp_one, vfp_temp
-		vmullt.f32 vfp_temp, vfp_beat_length, vfp_temp
-		vcvtlt.u32.f32 vfp_temp, vfp_temp
-		vmovlt flat_length, vfp_temp
-		movge flat_length, #0                           @ If Overing 100 Percents
+		vmul.f32 vfp_temp, vfp_beat_length, vfp_decay
+		vsub.f32 vfp_decay, vfp_volume, vfp_sustain_level
+		vdiv.f32 vfp_decay_delta, vfp_decay, vfp_temp
+		vcvt.u32.f32 vfp_temp, vfp_temp
+		vmov decay_length, vfp_temp
+
+		/* Release Time and Release Delta */
+
+		vmul.f32 vfp_temp, vfp_beat_length, vfp_release
+		vdiv.f32 vfp_release_delta, vfp_sustain_level, vfp_temp
+		vcvt.u32.f32 vfp_temp, vfp_temp
+		vmov release_length, vfp_temp
+
+		/* Sustain Time */
+
+		sub beat_length, beat_length, attack_length
+		sub beat_length, beat_length, decay_length
+		sub beat_length, beat_length, release_length
+
+		.unreq beat_length
+		sustain_length .req r11
+
+		/* Check Overflow */
+
+		cmp sustain_length, #0
+		sublt release_length, release_length, sustain_length
+		movlt sustain_length, #0
+
+		cmp release_length, #0
+		sublt decay_length, decay_length, release_length
+		movlt release_length, #0
+
+		cmp decay_length, #0
+		sublt attack_length, attack_length, decay_length
+		movlt decay_length, #0
+
+		cmp attack_length, #0
+		movlt attack_length, #0
 
 		/* Volume 0.0 for Further Prcocesses */
 
 		.unreq vfp_one
-		vfp_zero .req s7
+		vfp_zero .req s11
 
 		mov temp, #0
 		vmov vfp_volume, temp
@@ -1227,29 +1289,21 @@ sts32_synthedecode:
 		bic code_lower, code_lower, #0xFF000000
 		bic code_lower, code_lower, #0x00FE0000
 
-		/* Make Falling Length */
-
-		sub beat_length, beat_length, rising_length
-		sub beat_length, beat_length, flat_length
-
-		.unreq beat_length
-		falling_length .req r10
-
 /*
 macro32_debug synt_max_length, 200, 0
-macro32_debug rising_length, 200, 12 
-macro32_debug flat_length, 200, 24
-macro32_debug falling_length, 200, 36
+macro32_debug attack_length, 200, 12
+macro32_debug sustain_length, 200, 24
+macro32_debug release_length, 200, 36
 macro32_debug synt_point, 200, 48
 */
 
-		sts32_synthedecode_main_rising:
-			subs rising_length, rising_length, #1
+		sts32_synthedecode_main_attack:
+			subs attack_length, attack_length, #1
 			ldrlt code_lower, [synt_pre_point, #-16]            @ Retrieve Original Volume for Flat Part
 			asrlt temp, code_lower, #17                         @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 			vmovlt vfp_volume, temp
 			vcvtlt.f32.s32 vfp_volume, vfp_volume
-			blt sts32_synthedecode_main_flat
+			blt sts32_synthedecode_main_decay
 			subs synt_max_length, synt_max_length, #1
 			blt sts32_synthedecode_error2
 
@@ -1257,7 +1311,7 @@ macro32_debug synt_point, 200, 48
 			str code_upper, [synt_point, #4]
 			add synt_point, synt_point, #16
 
-			vadd.f32 vfp_volume, vfp_volume, vfp_rising_delta
+			vadd.f32 vfp_volume, vfp_volume, vfp_attack_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
 			vmov temp, vfp_temp
 			lsl temp, temp, #17                                 @ Bit[31:17]
@@ -1265,11 +1319,12 @@ macro32_debug synt_point, 200, 48
 			bic code_lower, code_lower, #0x00FE0000
 			orr code_lower, code_lower, temp
 
-			b sts32_synthedecode_main_rising
+			b sts32_synthedecode_main_attack
 
-		sts32_synthedecode_main_flat:
-			subs flat_length, flat_length, #1
-			blt sts32_synthedecode_main_falling
+		sts32_synthedecode_main_decay:
+			subs decay_length, decay_length, #1
+			vmovlt vfp_volume, vfp_sustain_level
+			blt sts32_synthedecode_main_sustain
 			subs synt_max_length, synt_max_length, #1
 			blt sts32_synthedecode_error2
 
@@ -1277,10 +1332,30 @@ macro32_debug synt_point, 200, 48
 			str code_upper, [synt_point, #4]
 			add synt_point, synt_point, #16
 
-			b sts32_synthedecode_main_flat
+			vsub.f32 vfp_volume, vfp_volume, vfp_decay_delta
+			vcvtr.s32.f32 vfp_temp, vfp_volume
+			vmov temp, vfp_temp
+			lsl temp, temp, #17                                 @ Bit[31:17]
+			bic code_lower, code_lower, #0xFF000000
+			bic code_lower, code_lower, #0x00FE0000
+			orr code_lower, code_lower, temp
 
-		sts32_synthedecode_main_falling:
-			subs falling_length, falling_length, #1
+			b sts32_synthedecode_main_decay
+
+		sts32_synthedecode_main_sustain:
+			subs sustain_length, sustain_length, #1
+			blt sts32_synthedecode_main_release
+			subs synt_max_length, synt_max_length, #1
+			blt sts32_synthedecode_error2
+
+			str code_lower, [synt_point]
+			str code_upper, [synt_point, #4]
+			add synt_point, synt_point, #16
+
+			b sts32_synthedecode_main_sustain
+
+		sts32_synthedecode_main_release:
+			subs release_length, release_length, #1
 			blt sts32_synthedecode_main
 			subs synt_max_length, synt_max_length, #1
 			blt sts32_synthedecode_error2
@@ -1289,7 +1364,7 @@ macro32_debug synt_point, 200, 48
 			str code_upper, [synt_point, #4]
 			add synt_point, synt_point, #16
 
-			vsub.f32 vfp_volume, vfp_volume, vfp_falling_delta
+			vsub.f32 vfp_volume, vfp_volume, vfp_release_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
 			vmov temp, vfp_temp
 			lsl temp, temp, #17                                 @ Bit[31:17]
@@ -1297,7 +1372,7 @@ macro32_debug synt_point, 200, 48
 			bic code_lower, code_lower, #0x00FE0000
 			orr code_lower, code_lower, temp
 
-			b sts32_synthedecode_main_falling
+			b sts32_synthedecode_main_release
 
 	sts32_synthedecode_error1:
 		mov r0, #1
@@ -1314,8 +1389,8 @@ macro32_debug synt_point, 200, 60
 		mov r0, #0
 
 	sts32_synthedecode_common:
-		vpop {s0-s7}
-		pop {r4-r10,pc}
+		vpop {s0-s11}
+		pop {r4-r11,pc}
 
 .unreq synt_point
 .unreq synt_pre_point
@@ -1325,16 +1400,21 @@ macro32_debug synt_point, 200, 60
 .unreq code_lower
 .unreq code_upper
 .unreq temp
-.unreq rising_length
-.unreq flat_length
-.unreq falling_length
+.unreq attack_length
+.unreq decay_length
+.unreq release_length
+.unreq sustain_length
 .unreq vfp_volume
-.unreq vfp_rising
-.unreq vfp_falling
+.unreq vfp_attack
+.unreq vfp_decay
+.unreq vfp_sustain
+.unreq vfp_release
 .unreq vfp_beat_length
 .unreq vfp_temp
-.unreq vfp_rising_delta
-.unreq vfp_falling_delta
+.unreq vfp_attack_delta
+.unreq vfp_decay_delta
+.unreq vfp_release_delta
+.unreq vfp_sustain_level
 .unreq vfp_zero
 
 
