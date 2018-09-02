@@ -50,7 +50,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * The wave is synthesized the formula:
  * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
- * This type of synthesis is named as "Frequency Modulation Synthesis" developed by John Chowning in 1973.
+ * This type of synthesis is named as "Frequency Modulation Synthesis" developed by John Chowning in 1973, so to speak, a brief formula of Fourier series.
  * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
  *
  * Synthesizer Code will be fetched by L/R alternatively.
@@ -1186,28 +1186,28 @@ sts32_synthedecode:
 		/* Attack Time */
 		ldrb temp, [synt_pre_point, #12]
 		cmp temp, #100
-		movgt temp, #100                               @ Prevent Overflow
+		movhi temp, #100                               @ Prevent Overflow
 		vmov vfp_attack, temp
 		vcvt.f32.u32 vfp_attack, vfp_attack
 
 		/* Decay Time */
 		ldrb temp, [synt_pre_point, #13]
 		cmp temp, #100
-		movgt temp, #100                               @ Prevent Overflow
+		movhi temp, #100                               @ Prevent Overflow
 		vmov vfp_decay, temp
 		vcvt.f32.u32 vfp_decay, vfp_decay
 
 		/* Sustain Level */
 		ldrb temp, [synt_pre_point, #14]
 		cmp temp, #100
-		movgt temp, #100                               @ Prevent Overflow
+		movhi temp, #100                               @ Prevent Overflow
 		vmov vfp_sustain, temp
 		vcvt.f32.u32 vfp_sustain, vfp_sustain
 
 		/* Release Time */
 		ldrb temp, [synt_pre_point, #15]
 		cmp temp, #100
-		movgt temp, #100                               @ Prevent Overflow
+		movhi temp, #100                               @ Prevent Overflow
 		vmov vfp_release, temp
 		vcvt.f32.u32 vfp_release, vfp_release
 

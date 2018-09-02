@@ -81,3 +81,5 @@
 * If you want to check the wave by your oscilloscope, a decoupling capacitor is needed. In my experience, a 1-microfarad-capacitor without any attenuator makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
 
 * Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
+
+* When you input from PCM or PWM output directly, you can hear buggy high tone noise (appx. 2KHz) such as bass and high tones. It's harmonics. I recommend that you use analogue Low-pass filter (Cut Off) to intermediate digital output and any input. Digital output has high frequency noise that hold harmonics bigger than anologue output. This derives from pulses of a digital-anologue converter. It sometimes takes pre-sound state that is not natural to be heared.
