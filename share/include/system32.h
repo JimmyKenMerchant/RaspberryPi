@@ -1364,9 +1364,9 @@ extern uint32 snd32_musiclen
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _synthewave_pwm();
+__attribute__((noinline)) uint32 _synthewave_pwm( float32 bent_rate );
 
-__attribute__((noinline)) uint32 _synthewave_i2s();
+__attribute__((noinline)) uint32 _synthewave_i2s( float32 bent_rate );
 
 __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length, uint32 count, int32 repeat );
 

@@ -77,6 +77,9 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * If there isn't direct current bias, capacitors will lose its charged voltage.
  * Charging and losing voltage of capacitors cause popping noise with high volume.
  *
+ * Parameters
+ * r0: Bent Rate, Must Be Single Precision Float
+ *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Not Started
  * Error(2): PCM FIFO is Full
@@ -99,9 +102,12 @@ sts32_synthewave_pwm:
 	vfp_samplerate .req s6
 	vfp_time       .req s7
 	vfp_divisor    .req s8
+	vfp_bent       .req s9
 
 	push {lr}
-	vpush {s0-s8}
+	vpush {s0-s9}
+
+	vmov vfp_bent, memorymap_base
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
@@ -125,6 +131,7 @@ sts32_synthewave_pwm:
 	mov temp, #equ32_sts32_samplerate
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
+	vmul.f32 vfp_samplerate, vfp_samplerate, vfp_bent          @ Multiply Bent Rate to Sample Rate
 	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
 
@@ -334,7 +341,7 @@ sts32_synthewave_pwm:
 		mov r0, #0
 
 	sts32_synthewave_pwm_common:
-		vpop {s0-s8}
+		vpop {s0-s9}
 		pop {pc}
 
 .unreq memorymap_base
@@ -350,6 +357,7 @@ sts32_synthewave_pwm:
 .unreq vfp_samplerate
 .unreq vfp_time
 .unreq vfp_divisor
+.unreq vfp_bent
 
 sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
 
@@ -357,6 +365,9 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
 /**
  * function sts32_synthewave_i2s
  * Make Synthesized Wave
+ *
+ * Parameters
+ * r0: Bent Rate, Must Be Single Precision Float
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Not Started
@@ -379,13 +390,16 @@ sts32_synthewave_i2s:
 	vfp_pi_double  .req s5
 	vfp_samplerate .req s6
 	vfp_time       .req s7
+	vfp_bent       .req s8
 
 	push {lr}
-	vpush {s0-s7}
+	vpush {s0-s8}
 
 	ldr temp, STS32_STATUS
 	tst temp, #1
 	beq sts32_synthewave_i2s_error1
+
+	vmov vfp_bent, memorymap_base
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
@@ -402,6 +416,7 @@ sts32_synthewave_i2s:
 	mov temp, #equ32_sts32_samplerate
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
+	vmul.f32 vfp_samplerate, vfp_samplerate, vfp_bent          @ Multiply Bent Rate to Sample Rate
 	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
 
@@ -580,7 +595,7 @@ sts32_synthewave_i2s:
 		mov r0, #0
 
 	sts32_synthewave_i2s_common:
-		vpop {s0-s7}
+		vpop {s0-s8}
 		pop {pc}
 
 .unreq memorymap_base
@@ -595,6 +610,7 @@ sts32_synthewave_i2s:
 .unreq vfp_pi_double
 .unreq vfp_samplerate
 .unreq vfp_time
+.unreq vfp_bent
 
 sts32_synthewave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 

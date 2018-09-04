@@ -58,13 +58,19 @@
  * Beat Length as 100 percents = attack_time + decay_time + sustain_time (not parameterized) + release_time
  */
 
+/* Test for Checking Recording Level, Recording Level -18dB to -12dB (-15dB on Some State) */
 synthe_precode pre_synthe1_l[] = {
 	_3_BIG(_RAP(
 		_2(_RAP(
-			_D6<<_FREQ|2500<<_MAG,_D6<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL,
-			_F6<<_FREQ|2500<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL,
-			_A6<<_FREQ|2500<<_MAG,_A6<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL,
-			_F6<<_FREQ|2500<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL
+			_C3<<_FREQ|4000<<_MAG,_D6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C4<<_FREQ|4000<<_MAG,_D6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C5<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C6<<_FREQ|4000<<_MAG,_A6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C6<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C6<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C7<<_FREQ|4000<<_MAG,_A6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_F8<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,125<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_F8<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,125<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL
 		))
 	))
 	_END
@@ -73,10 +79,7 @@ synthe_precode pre_synthe1_l[] = {
 synthe_precode pre_synthe1_r[] = {
 	_3_BIG(_RAP(
 		_2(_RAP(
-			_D7<<_FREQ|2500<<_MAG,_D7<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL,
-			_F7<<_FREQ|2500<<_MAG,_F7<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL,
-			_A7<<_FREQ|2500<<_MAG,_A7<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL,
-			_F7<<_FREQ|2500<<_MAG,_F7<<_FREQ|00000<<_MAG,250<<_BEAT,30<<_RIS|100<<_STN|70<<_FAL
+			_SILENCE,_SILENCE,1000<<_BEAT,0
 		))
 	))
 	_END
@@ -483,24 +486,35 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
+	float32 bent_rate = 1.0;
+	bool flag_bent = true;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s();
+		_synthewave_i2s( bent_rate );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm();
+		_synthewave_pwm( bent_rate );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm();
+		_synthewave_pwm( bent_rate );
 #endif
 		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+
+			// Triangle LFO
+			if ( flag_bent ) {
+				bent_rate = vfp32_fadd( bent_rate, 0.0001 );
+				if ( vfp32_fgt( bent_rate, 2.0 ) ) flag_bent = false;
+			} else {
+				bent_rate = vfp32_fsub( bent_rate, 0.0001 );
+				if ( vfp32_fle( bent_rate, 0.1 ) ) flag_bent = true;
+			}
 
 //print32_debug( detect_parallel, 100, 100 );
 
@@ -527,6 +541,7 @@ int32 _user_start()
 
 			// 0b00100 (4)
 			} else if ( detect_parallel == 0b00100<<22 ) {
+
 				_syntheset( synthe4, synthelen4, 0, -1 );
 				/* Beat Down */
 				//timer_count_multiplier++;

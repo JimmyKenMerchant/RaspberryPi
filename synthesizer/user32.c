@@ -561,19 +561,20 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
+	float32 bent_rate = 1.0;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s();
+		_synthewave_i2s( bent_rate );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm();
+		_synthewave_pwm( bent_rate );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm();
+		_synthewave_pwm( bent_rate );
 #endif
 		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
 
