@@ -30,7 +30,33 @@ void makesilence();
 
 music_code music1[] =
 {
-	_12(_B5_SINL)
+	_48(_3_NOIS) _48(_3_NOIS)
+	_48(_7_NOIS) _48(_7_NOIS)
+	_48(_15_NOIS) _48(_15_NOIS)
+	_48(_31_NOIS) _48(_31_NOIS)
+	_48(_63_NOIS) _48(_63_NOIS)
+	_48(_127_NOIS) _48(_127_NOIS)
+	_48(_255_NOIS) _48(_255_NOIS)
+	_48(_511_NOIS) _48(_511_NOIS)
+
+	_48(_3_NOIM) _48(_3_NOIM)
+	_48(_7_NOIM) _48(_7_NOIM)
+	_48(_15_NOIM) _48(_15_NOIM)
+	_48(_31_NOIM) _48(_31_NOIM)
+	_48(_63_NOIM) _48(_63_NOIM)
+	_48(_127_NOIM) _48(_127_NOIM)
+	_48(_255_NOIM) _48(_255_NOIM)
+	_48(_511_NOIM) _48(_511_NOIM)
+
+	_48(_3_NOIL) _48(_3_NOIL)
+	_48(_7_NOIL) _48(_7_NOIL)
+	_48(_15_NOIL) _48(_15_NOIL)
+	_48(_31_NOIL) _48(_31_NOIL)
+	_48(_63_NOIL) _48(_63_NOIL)
+	_48(_127_NOIL) _48(_127_NOIL)
+	_48(_255_NOIL) _48(_255_NOIL)
+	_48(_511_NOIL) _48(_511_NOIL)
+
 	_END
 };
 
@@ -183,8 +209,8 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				//_soundset( music1, musiclen1, 0, -1 );
-				makesilence();
+				_soundset( music1, musiclen1, 0, -1 );
+				//makesilence();
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {

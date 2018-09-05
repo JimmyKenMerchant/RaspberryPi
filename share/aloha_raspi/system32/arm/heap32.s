@@ -1174,6 +1174,8 @@ heap32_wave_square:
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
  * r2: Height of Wave (Signed 32-bit Integer)
  * r3: Medium of Wave (Signed 32-bit Integer)
+ * r4: Resolution 0 to 65535
+ * r5: Stride Affecting Frequencies
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
@@ -1186,16 +1188,32 @@ heap32_wave_random:
 	length           .req r1
 	height           .req r2
 	medium           .req r3
-	block_size       .req r4
-	temp             .req r5
-	lower            .req r6
-	upper            .req r7
+	resolution       .req r4
+	stride           .req r5
+	block_size       .req r6
+	temp             .req r7
+	lower            .req r8
+	upper            .req r9
 
-	push {r4-r7,lr}
+	/* VFP Registers */
+	vfp_random       .req s0
+	vfp_resolution   .req s1
+	vfp_height       .req s2
+
+	push {r4-r9,lr}
+
+	add sp, sp, #28                             @ r4-r9 and lr offset 28 bytes
+	pop {resolution,stride}                     @ Get Fifth and Sixth Arguments
+	sub sp, sp, #36
+
+	vpush {s0-s2}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
 	cmp length, #2                              @ If Less than 2
+	blo heap32_wave_random_error2
+
+	cmp stride, #1                              @ If Less than 1
 	blo heap32_wave_random_error2
 
 	push {r0-r3}
@@ -1212,22 +1230,30 @@ heap32_wave_random:
 
 	add length, block_start, length
 
+	/**
+	 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
+	 * Decimal 255/127/63/31/15/7/3/1 is prefered.
+	 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
+	 */
+
+	cmp resolution, #0x100
+	bichs upper, resolution, #0xFF          @ If 16-bit, Clear Bit[7:0]
+	subhs lower, resolution, upper          @ If 16-bit, Get Max. Value in Bit[7:0]
+	movlo lower, resolution                 @ If 8-bit
+
+	vmov vfp_height, height
+	vcvt.f32.u32 vfp_height, vfp_height
+	vmov vfp_resolution, resolution
+	vcvt.f32.u32 vfp_resolution, vfp_resolution
+
+	.unreq height
+	dup_stride .req r2
+
 	heap32_wave_random_loop:
 		cmp block_start, length
 		bge heap32_wave_random_success
 
 		heap32_wave_random_loop_random:
-
-			/**
-			 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
-			 * Decimal 255/127/63/31/15/7/3/1 is prefered.
-			 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
-			 */
-
-			cmp height, #0x100
-			bichs upper, height, #0xFF              @ If 16-bit, Clear Bit[7:0]
-			subhs lower, height, upper              @ If 16-bit, Get Max. Value in Bit[7:0]
-			movlo lower, height                     @ If 8-bit
 
 			push {r0-r3}
 			mov r0, lower
@@ -1235,7 +1261,7 @@ heap32_wave_random:
 			mov temp, r0
 			pop {r0-r3}
 
-			cmp height, #0x100
+			cmp resolution, #0x100
 			blo heap32_wave_random_loop_common      @ If 8-bit
 
 			/* If 16-bit */
@@ -1247,10 +1273,25 @@ heap32_wave_random:
 			add temp, temp, r0
 			pop {r0-r3}
 
-			cmp temp, height                       @ Ensure Range in Intended Value
+			cmp temp, resolution                    @ Ensure Range in Intended Value
 			bhi heap32_wave_random_loop_random
 
 		heap32_wave_random_loop_common:
+
+			/* Move ARM Regs to VFP Regs and Convert from Unsigned Integer to Float */
+			vmov vfp_random, temp
+			vcvt.f32.u32 vfp_random, vfp_random
+
+			/* Random Value to Fraction */
+			vdiv.f32 vfp_random, vfp_random, vfp_resolution
+
+			/* Multiply Fractional Random Value to Height  */
+			vmul.f32 vfp_random, vfp_height, vfp_random
+
+			/* Convert From Float to Unsigned Integer and Move VFP Regs to ARM Regs */
+			vcvt.u32.f32 vfp_random, vfp_random
+			vmov temp, vfp_random
+
 			/* 0 or 1, Addition or Subtruction */
 			push {r0-r3}
 			mov r0, #1
@@ -1259,12 +1300,17 @@ heap32_wave_random:
 			pop {r0-r3}
 			addeq temp, medium, temp
 			subne temp, medium, temp
-			str temp, [block_start]
-			add block_start, block_start, #4
 
-			macro32_dsb ip
+			mov dup_stride, stride
+			heap32_wave_random_loop_common_loop:
+				subs dup_stride, #1
+				blt heap32_wave_random_loop
+				cmp block_start, length
+				bge heap32_wave_random_success
 
-			b heap32_wave_random_loop
+				str temp, [block_start]
+				add block_start, block_start, #4
+				b heap32_wave_random_loop_common_loop
 
 	heap32_wave_random_error1:
 		mov r0, #1
@@ -1279,16 +1325,22 @@ heap32_wave_random:
 
 	heap32_wave_random_common:
 		macro32_dsb ip                      @ Ensure Completion of Instructions Before
-		pop {r4-r7,pc}
+		vpop {s0-s2}
+		pop {r4-r9,pc}
 
 .unreq block_start
 .unreq length
-.unreq height
+.unreq dup_stride
 .unreq medium
+.unreq resolution
+.unreq stride
 .unreq block_size
 .unreq temp
 .unreq lower
 .unreq upper
+.unreq vfp_random
+.unreq vfp_resolution
+.unreq vfp_height
 
 
 /**

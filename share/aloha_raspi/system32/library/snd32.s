@@ -110,6 +110,10 @@ snd32_sounddecode:
 			and wave_type, snd, #0xC000
 			lsr wave_type, wave_type, #14
 
+			/* Check Wether Wave Type is Random or Not */
+			cmp wave_type, #3
+			beq snd32_sounddecode_main_wave_random
+
 			cmp wave_length, #0
 			moveq wave_length, #0x1F40
 			cmp wave_length, #1
@@ -124,7 +128,7 @@ snd32_sounddecode:
 			cmp mem_alloc, #0
 			beq snd32_sounddecode_error2
 
-			/* Triangle or Square Wave */
+			/* Square, Sawtooth, and Sin Wave */
 
 			push {r0-r3}
 			mov r0, mem_alloc
@@ -144,8 +148,6 @@ snd32_sounddecode:
 			lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
 			subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause mode Requires r1
-			cmp wave_type, #3
-			bleq heap32_wave_random
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
@@ -154,31 +156,75 @@ snd32_sounddecode:
 			bleq heap32_wave_sin
 			pop {r0-r3}
 
-			cmp mode, #2
-			bhs snd32_sounddecode_main_wave_pcm
-			cmp mode, #1
-			bne snd32_sounddecode_main_wave_pwm
+			b snd32_sounddecode_main_wave_balance
 
-			/* For PWM Balanced Monoral */
+			snd32_sounddecode_main_wave_random:
 
-			push {r0-r3}
-			mov r0, wave_length                        @ Words
-			bl heap32_malloc_noncache
-			cmp r0, #0
-			mov temp, r0
-			pop {r0-r3}
+				/* Length is Decimal 8000 Fixed in Random */
 
-			beq snd32_sounddecode_error2
+				push {r0-r3}
+				mov r0, #0x1F40                            @ Decimal 8000, Fixed
+				bl heap32_malloc_noncache
+				mov mem_alloc, r0
+				pop {r0-r3}
 
-			push {r0-r3}
-			mov r0, temp
-			mov r1, mem_alloc
-			mov r2, #128
-			bl heap32_wave_invert
-			cmp r0, #0
-			pop {r0-r3}
+				cmp mem_alloc, #0
+				beq snd32_sounddecode_error2
 
-			bne snd32_sounddecode_error2
+				/* Random */
+
+				push {r0-r3}
+				mov r0, mem_alloc
+				cmp wave_volume, #3
+				moveq r2, #0
+				cmp wave_volume, #2
+				moveq r2, #127
+				cmp wave_volume, #1
+				moveq r2, #255
+				movlo r2, #0x1F0                           @ Decimal 511
+				orrlo r2, r2, #0x00F                       @ Decimal 511
+				cmp mode, #2
+				movlo r3, #2496                            @ DC Offset in Bytes (Unsigned) for PWM
+				movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
+				addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+				lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
+				subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
+				mov r1, #0x1F40                            @ Assign r1 at Last Bacause mode Requires r1
+				mov temp, #255                             @ Resolution
+				push {temp,wave_length}                    @ In Random Wave, Length Parameter Is Used as Stride (Affecting Frequencies)
+				bl heap32_wave_random
+				add sp, sp, #8
+				pop {r0-r3}
+
+				mov wave_length, #0x1F40                   @ For Further Processes in PWM
+
+			snd32_sounddecode_main_wave_balance:
+
+				cmp mode, #2
+				bhs snd32_sounddecode_main_wave_pcm
+				cmp mode, #1
+				bne snd32_sounddecode_main_wave_pwm
+
+				/* For PWM Balanced Monoral */
+
+				push {r0-r3}
+				mov r0, wave_length                        @ Words
+				bl heap32_malloc_noncache
+				cmp r0, #0
+				mov temp, r0
+				pop {r0-r3}
+
+				beq snd32_sounddecode_error2
+
+				push {r0-r3}
+				mov r0, temp
+				mov r1, mem_alloc
+				mov r2, #2496                              @ DC Offset in Bytes (Unsigned) for PWM
+				bl heap32_wave_invert
+				cmp r0, #0
+				pop {r0-r3}
+
+				bne snd32_sounddecode_error2
 
 			snd32_sounddecode_main_wave_pwm:
 
