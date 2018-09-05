@@ -179,11 +179,12 @@ snd32_sounddecode:
 				cmp wave_volume, #3
 				moveq r2, #0
 				cmp wave_volume, #2
-				moveq r2, #127
-				cmp wave_volume, #1
 				moveq r2, #255
-				movlo r2, #0x1F0                           @ Decimal 511
-				orrlo r2, r2, #0x00F                       @ Decimal 511
+				cmp wave_volume, #1
+				moveq r2, #0x1F0                           @ Decimal 511
+				orreq r2, r2, #0x00F                       @ Decimal 511
+				movlo r2, #0x3F0                           @ Decimal 1023
+				orrlo r2, r2, #0x00F                       @ Decimal 1023
 				cmp mode, #2
 				movlo r3, #2496                            @ DC Offset in Bytes (Unsigned) for PWM
 				movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM

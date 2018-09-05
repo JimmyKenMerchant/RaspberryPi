@@ -38,11 +38,19 @@ music_code music1[] =
 	_48(_11_NOIS) _48(_12_NOIS)
 	_48(_13_NOIS) _48(_14_NOIS)
 	_48(_15_NOIS) _48(_16_NOIS)
+	_48(_17_NOIS) _48(_18_NOIS)
+	_48(_19_NOIS) _48(_20_NOIS)
+	_48(_21_NOIS) _48(_22_NOIS)
+	_48(_23_NOIS) _48(_24_NOIS)
+	_48(_25_NOIS) _48(_26_NOIS)
+	_48(_27_NOIS) _48(_28_NOIS)
+	_48(_29_NOIS) _48(_30_NOIS)
+	_48(_31_NOIS) _48(_32_NOIS)
 
-	_48(_7_NOIS) _48(_7_NOIS)
+	_48(_17_NOIS) _48(_17_NOIS)
 
 	_12_BIG(_RAP(
-		_6(_7_NOIS) _6(_8_NOIS) _6(_7_NOIS) _6(_8_NOIS)
+		_6(_16_NOIS) _6(_17_NOIS) _6(_16_NOIS) _6(_17_NOIS)
 	))
 
 	_48(_1_NOIM) _48(_2_NOIM)
@@ -53,6 +61,14 @@ music_code music1[] =
 	_48(_11_NOIM) _48(_12_NOIM)
 	_48(_13_NOIM) _48(_14_NOIM)
 	_48(_15_NOIM) _48(_16_NOIM)
+	_48(_17_NOIM) _48(_18_NOIM)
+	_48(_19_NOIM) _48(_20_NOIM)
+	_48(_21_NOIM) _48(_22_NOIM)
+	_48(_23_NOIM) _48(_24_NOIM)
+	_48(_25_NOIM) _48(_26_NOIM)
+	_48(_27_NOIM) _48(_28_NOIM)
+	_48(_29_NOIM) _48(_30_NOIM)
+	_48(_31_NOIM) _48(_32_NOIM)
 
 	_48(_1_NOIL) _48(_2_NOIL)
 	_48(_3_NOIL) _48(_4_NOIL)
@@ -62,6 +78,14 @@ music_code music1[] =
 	_48(_11_NOIL) _48(_12_NOIL)
 	_48(_13_NOIL) _48(_14_NOIL)
 	_48(_15_NOIL) _48(_16_NOIL)
+	_48(_17_NOIL) _48(_18_NOIL)
+	_48(_19_NOIL) _48(_20_NOIL)
+	_48(_21_NOIL) _48(_22_NOIL)
+	_48(_23_NOIL) _48(_24_NOIL)
+	_48(_25_NOIL) _48(_26_NOIL)
+	_48(_27_NOIL) _48(_28_NOIL)
+	_48(_29_NOIL) _48(_30_NOIL)
+	_48(_31_NOIL) _48(_32_NOIL)
 
 	_END
 };
