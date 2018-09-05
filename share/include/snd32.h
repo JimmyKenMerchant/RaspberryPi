@@ -33,7 +33,7 @@
 
 /**
  * These comments about frequencies assume 3.2Khz as the sampling rate, using on PWM direct output (including from 3.5mm minijack).
- * On PCM, the sampling rate is appx. 3.168Khz to be adjusted to fit A4 on 440hz, e.g., G4 becomes 391.1Hz.
+ * The actual sampling rate is appx. 3.168Khz to be adjusted to fit A4 on 440hz, e.g., G4 becomes 391.1Hz.
  */
 sound_index _SOUND_INDEX[] =
 {
@@ -234,15 +234,24 @@ sound_index _SOUND_INDEX[] =
 	2<<14|0<<12|16,  // 0xBE 2000.0hz Appx. B6  Square
 	2<<14|0<<12|15,  // 0xBF 2133.3hz Appx. C7  Square
 
-	3<<14|0<<12|511, // Noise Stride 511
-	3<<14|0<<12|255, // Noise Stride 255
-	3<<14|0<<12|127, // Noise Stride 127
-	3<<14|0<<12|63,  // Noise Stride 63
-	3<<14|0<<12|31,  // Noise Stride 31
-	3<<14|0<<12|15,  // Noise Stride 15
-	3<<14|0<<12|7,   // Noise Stride 7
-	3<<14|0<<12|3,   // Noise Stride 3
-	_56(0<<14|0<<12|32)  // For Offset
+	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
+	3<<14|0<<12|396, // Noise Stride 396
+	3<<14|0<<12|330, // Noise Stride 330
+	3<<14|0<<12|220, // Noise Stride 220
+	3<<14|0<<12|165, // Noise Stride 165
+	3<<14|0<<12|132, // Noise Stride 132
+	3<<14|0<<12|120, // Noise Stride 120
+	3<<14|0<<12|90,  // Noise Stride 90
+	3<<14|0<<12|60,  // Noise Stride 60
+	3<<14|0<<12|45,  // Noise Stride 45
+	3<<14|0<<12|40,  // Noise Stride 40
+	3<<14|0<<12|24,  // Noise Stride 24
+	3<<14|0<<12|20,  // Noise Stride 20
+	3<<14|0<<12|10,  // Noise Stride 10
+	3<<14|0<<12|8,   // Noise Stride 8
+	3<<14|0<<12|5,   // Noise Stride 5
+	3<<14|0<<12|4,   // Noise Stride 4
+	_48(0<<14|0<<12|32)  // For Offset
 
 	/* Volume Middle */
 
@@ -441,15 +450,24 @@ sound_index _SOUND_INDEX[] =
 	2<<14|1<<12|16,  // 0x1BE 2000.0hz Appx. B6  Square
 	2<<14|1<<12|15,  // 0x1BF 2133.3hz Appx. C7  Square
 
-	3<<14|1<<12|511, // Noise Stride 511
-	3<<14|1<<12|255, // Noise Stride 255
-	3<<14|1<<12|127, // Noise Stride 127
-	3<<14|1<<12|63,  // Noise Stride 63
-	3<<14|1<<12|31,  // Noise Stride 31
-	3<<14|1<<12|15,  // Noise Stride 15
-	3<<14|1<<12|7,   // Noise Stride 7
-	3<<14|1<<12|3,   // Noise Stride 3
-	_56(0<<14|1<<12|32)  // For Offset
+	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
+	3<<14|1<<12|396, // Noise Stride 396
+	3<<14|1<<12|330, // Noise Stride 330
+	3<<14|1<<12|220, // Noise Stride 220
+	3<<14|1<<12|165, // Noise Stride 165
+	3<<14|1<<12|132, // Noise Stride 132
+	3<<14|1<<12|120, // Noise Stride 120
+	3<<14|1<<12|90,  // Noise Stride 90
+	3<<14|1<<12|60,  // Noise Stride 60
+	3<<14|1<<12|45,  // Noise Stride 45
+	3<<14|1<<12|40,  // Noise Stride 40
+	3<<14|1<<12|24,  // Noise Stride 24
+	3<<14|1<<12|20,  // Noise Stride 20
+	3<<14|1<<12|10,  // Noise Stride 10
+	3<<14|1<<12|8,   // Noise Stride 8
+	3<<14|1<<12|5,   // Noise Stride 5
+	3<<14|1<<12|4,   // Noise Stride 4
+	_48(0<<14|1<<12|32)  // For Offset
 
 	/* Volume Small */
 
@@ -648,15 +666,24 @@ sound_index _SOUND_INDEX[] =
 	2<<14|2<<12|16,  // 0x2BE 2000.0hz Appx. B6  Square
 	2<<14|2<<12|15,  // 0x2BF 2133.3hz Appx. C7  Square
 
-	3<<14|2<<12|511, // Noise Stride 511
-	3<<14|2<<12|255, // Noise Stride 255
-	3<<14|2<<12|127, // Noise Stride 127
-	3<<14|2<<12|63,  // Noise Stride 63
-	3<<14|2<<12|31,  // Noise Stride 31
-	3<<14|2<<12|15,  // Noise Stride 15
-	3<<14|2<<12|7,   // Noise Stride 7
-	3<<14|2<<12|3,   // Noise Stride 3
-	_56(0<<14|2<<12|32)  // For Offset
+	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
+	3<<14|2<<12|396, // Noise Stride 396
+	3<<14|2<<12|330, // Noise Stride 330
+	3<<14|2<<12|220, // Noise Stride 220
+	3<<14|2<<12|165, // Noise Stride 165
+	3<<14|2<<12|132, // Noise Stride 132
+	3<<14|2<<12|120, // Noise Stride 120
+	3<<14|2<<12|90,  // Noise Stride 90
+	3<<14|2<<12|60,  // Noise Stride 60
+	3<<14|2<<12|45,  // Noise Stride 45
+	3<<14|2<<12|40,  // Noise Stride 40
+	3<<14|2<<12|24,  // Noise Stride 24
+	3<<14|2<<12|20,  // Noise Stride 20
+	3<<14|2<<12|10,  // Noise Stride 10
+	3<<14|2<<12|8,   // Noise Stride 8
+	3<<14|2<<12|5,   // Noise Stride 5
+	3<<14|2<<12|4,   // Noise Stride 4
+	_48(0<<14|2<<12|32)  // For Offset
 
 	/* High Tones Big */
 
@@ -907,14 +934,22 @@ sound_index _SOUND_INDEX[] =
 #define _B6_SQUL  0xBE
 #define _C7_SQUL  0xBF
 
-#define _511_NOIL 0xC0
-#define _255_NOIL 0xC1
-#define _127_NOIL 0xC2
-#define _63_NOIL  0xC3
-#define _31_NOIL  0xC4
-#define _15_NOIL  0xC5
+#define _1_NOIL   0xC0
+#define _2_NOIL   0xC1
+#define _3_NOIL   0xC2
+#define _4_NOIL   0xC3
+#define _5_NOIL   0xC4
+#define _6_NOIL   0xC5
 #define _7_NOIL   0xC6
-#define _3_NOIL   0xC7
+#define _8_NOIL   0xC7
+#define _9_NOIL   0xC8
+#define _10_NOIL  0xC9
+#define _11_NOIL  0xCA
+#define _12_NOIL  0xCB
+#define _13_NOIL  0xCC
+#define _14_NOIL  0xCD
+#define _15_NOIL  0xCE
+#define _16_NOIL  0xCF
 
 #define _A1_SINM  0x100
 #define _AS1_SINM 0x101
@@ -1111,14 +1146,22 @@ sound_index _SOUND_INDEX[] =
 #define _B6_SQUM  0x1BE
 #define _C7_SQUM  0x1BF
 
-#define _511_NOIM 0x1C0
-#define _255_NOIM 0x1C1
-#define _127_NOIM 0x1C2
-#define _63_NOIM  0x1C3
-#define _31_NOIM  0x1C4
-#define _15_NOIM  0x1C5
+#define _1_NOIM   0x1C0
+#define _2_NOIM   0x1C1
+#define _3_NOIM   0x1C2
+#define _4_NOIM   0x1C3
+#define _5_NOIM   0x1C4
+#define _6_NOIM   0x1C5
 #define _7_NOIM   0x1C6
-#define _3_NOIM   0x1C7
+#define _8_NOIM   0x1C7
+#define _9_NOIM   0x1C8
+#define _10_NOIM  0x1C9
+#define _11_NOIM  0x1CA
+#define _12_NOIM  0x1CB
+#define _13_NOIM  0x1CC
+#define _14_NOIM  0x1CD
+#define _15_NOIM  0x1CE
+#define _16_NOIM  0x1CF
 
 #define _A1_SINS  0x200
 #define _AS1_SINS 0x201
@@ -1315,14 +1358,22 @@ sound_index _SOUND_INDEX[] =
 #define _B6_SQUS  0x2BE
 #define _C7_SQUS  0x2BF
 
-#define _511_NOIS 0x2C0
-#define _255_NOIS 0x2C1
-#define _127_NOIS 0x2C2
-#define _63_NOIS  0x2C3
-#define _31_NOIS  0x2C4
-#define _15_NOIS  0x2C5
+#define _1_NOIS   0x2C0
+#define _2_NOIS   0x2C1
+#define _3_NOIS   0x2C2
+#define _4_NOIS   0x2C3
+#define _5_NOIS   0x2C4
+#define _6_NOIS   0x2C5
 #define _7_NOIS   0x2C6
-#define _3_NOIS   0x2C7
+#define _8_NOIS   0x2C7
+#define _9_NOIS   0x2C8
+#define _10_NOIS  0x2C9
+#define _11_NOIS  0x2CA
+#define _12_NOIS  0x2CB
+#define _13_NOIS  0x2CC
+#define _14_NOIS  0x2CD
+#define _15_NOIS  0x2CE
+#define _16_NOIS  0x2CF
 
 #define _CS7_SQUL 0x300
 #define _DS7_SQUL 0x301

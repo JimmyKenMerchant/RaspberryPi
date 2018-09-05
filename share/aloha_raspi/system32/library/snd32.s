@@ -160,10 +160,11 @@ snd32_sounddecode:
 
 			snd32_sounddecode_main_wave_random:
 
-				/* Length is Decimal 8000 Fixed in Random */
+				/* Length is Fixed by Constant in Random */
 
 				push {r0-r3}
-				mov r0, #0x1F40                            @ Decimal 8000, Fixed
+				mov r0, #equ32_snd32_sounddecode_noise_upper
+				orr r0, r0, #equ32_snd32_sounddecode_noise_lower
 				bl heap32_malloc_noncache
 				mov mem_alloc, r0
 				pop {r0-r3}
@@ -189,14 +190,16 @@ snd32_sounddecode:
 				addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 				lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
 				subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-				mov r1, #0x1F40                            @ Assign r1 at Last Bacause mode Requires r1
+				mov r1, #equ32_snd32_sounddecode_noise_upper @ Assign r1 at Last Bacause mode Requires r1
+				orr r1, r1, #equ32_snd32_sounddecode_noise_lower
 				mov temp, #255                             @ Resolution
 				push {temp,wave_length}                    @ In Random Wave, Length Parameter Is Used as Stride (Affecting Frequencies)
 				bl heap32_wave_random
 				add sp, sp, #8
 				pop {r0-r3}
 
-				mov wave_length, #0x1F40                   @ For Further Processes in PWM
+				mov wave_length, #equ32_snd32_sounddecode_noise_upper @ For Further Processes in PWM
+				orr wave_length, wave_length, #equ32_snd32_sounddecode_noise_lower
 
 			snd32_sounddecode_main_wave_balance:
 
