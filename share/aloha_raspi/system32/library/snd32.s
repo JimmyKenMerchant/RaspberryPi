@@ -142,7 +142,7 @@ snd32_sounddecode:
 			movlo r2, #0x3F0                           @ Decimal 1023
 			orrlo r2, r2, #0x00F                       @ Decimal 1023
 			cmp mode, #2
-			movlo r3, #2496                            @ DC Offset in Bytes (Unsigned) for PWM
+			movlo r3, #equ32_snd32_sounddecode_pwm_bias @ DC Offset in Bytes (Unsigned) for PWM
 			movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 			addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
@@ -163,8 +163,8 @@ snd32_sounddecode:
 				/* Length is Fixed by Constant in Random */
 
 				push {r0-r3}
-				mov r0, #equ32_snd32_sounddecode_noise_upper
-				orr r0, r0, #equ32_snd32_sounddecode_noise_lower
+				mov r0, #equ32_snd32_sounddecode_noise_len_upper
+				orr r0, r0, #equ32_snd32_sounddecode_noise_len_lower
 				bl heap32_malloc_noncache
 				mov mem_alloc, r0
 				pop {r0-r3}
@@ -186,21 +186,23 @@ snd32_sounddecode:
 				movlo r2, #0x3F0                           @ Decimal 1023
 				orrlo r2, r2, #0x00F                       @ Decimal 1023
 				cmp mode, #2
-				movlo r3, #2496                            @ DC Offset in Bytes (Unsigned) for PWM
+				movlo r3, #equ32_snd32_sounddecode_pwm_bias @ DC Offset in Bytes (Unsigned) for PWM
 				movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 				addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 				lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
 				subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-				mov r1, #equ32_snd32_sounddecode_noise_upper @ Assign r1 at Last Bacause mode Requires r1
-				orr r1, r1, #equ32_snd32_sounddecode_noise_lower
-				mov temp, #255                             @ Resolution
+				/* Assign r1 at Last Bacause mode Requires r1 */
+				mov r1, #equ32_snd32_sounddecode_noise_len_upper
+				orr r1, r1, #equ32_snd32_sounddecode_noise_len_lower
+				mov temp, #equ32_snd32_sounddecode_noise_resolution
 				push {temp,wave_length}                    @ In Random Wave, Length Parameter Is Used as Stride (Affecting Frequencies)
 				bl heap32_wave_random
 				add sp, sp, #8
 				pop {r0-r3}
 
-				mov wave_length, #equ32_snd32_sounddecode_noise_upper @ For Further Processes in PWM
-				orr wave_length, wave_length, #equ32_snd32_sounddecode_noise_lower
+				/* For Further Processes in PWM */
+				mov wave_length, #equ32_snd32_sounddecode_noise_len_upper
+				orr wave_length, wave_length, #equ32_snd32_sounddecode_noise_len_lower
 
 			snd32_sounddecode_main_wave_balance:
 
@@ -223,7 +225,7 @@ snd32_sounddecode:
 				push {r0-r3}
 				mov r0, temp
 				mov r1, mem_alloc
-				mov r2, #2496                              @ DC Offset in Bytes (Unsigned) for PWM
+				mov r2, #equ32_snd32_sounddecode_pwm_bias  @ DC Offset in Bytes (Unsigned) for PWM
 				bl heap32_wave_invert
 				cmp r0, #0
 				pop {r0-r3}

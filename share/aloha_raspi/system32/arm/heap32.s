@@ -1174,8 +1174,8 @@ heap32_wave_square:
  * r1: Length of Wave (32-bit Words, Must Be 2 and More)
  * r2: Height of Wave (Signed 32-bit Integer)
  * r3: Medium of Wave (Signed 32-bit Integer)
- * r4: Resolution 0 to 65535
- * r5: Stride Affecting Frequencies
+ * r4: Resolution 0 to 65535, Affecting Sound Color
+ * r5: Stride, Affecting Frequencies
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
@@ -1232,7 +1232,7 @@ heap32_wave_random:
 
 	/**
 	 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
-	 * Decimal 255/127/63/31/15/7/3/1 is prefered.
+	 * Decimal 255/127/63/31/15/7/3/1 is prefered in 8-bit.
 	 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
 	 */
 

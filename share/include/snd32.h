@@ -234,40 +234,56 @@ sound_index _SOUND_INDEX[] =
 	2<<14|0<<12|16,  // 0xBE 2000.0hz Appx. B6  Square
 	2<<14|0<<12|15,  // 0xBF 2133.3hz Appx. C7  Square
 
+	/* High Tones Big */
+
+	2<<14|0<<12|14,  // 0xC0 2285.7hz Appx. C#7 Square
+	2<<14|0<<12|13,  // 0xC1 2461.5hz Appx. D#7 Square
+	2<<14|0<<12|12,  // 0xC2 2666.6hz Appx. E7  Square
+	2<<14|0<<12|11,  // 0xC3 2909.1hz Appx. F7  Square
+	2<<14|0<<12|10,  // 0xC4 3200,0hz Appx. G7  Square
+	2<<14|0<<12|9,   // 0xC5 3555.6hz Appx. A7  Square
+	2<<14|0<<12|8,   // 0xC6 4000.0hz Appx. B7  Square
+	2<<14|0<<12|7,   // 0xC7 4571.4hz Appx. C#8 Square
+	2<<14|0<<12|6,   // 0xC8 5333.3hz Appx. E8  Square
+	2<<14|0<<12|5,   // 0xC9 6400.0hz Appx. G8  Square
+	2<<14|0<<12|4,   // 0xCA 8000.0hz Appx. B8  Square
+	2<<14|0<<12|3,   // 0xCB 10666.7hz Square
+
+	_20(2<<14|0<<12|20)  // For Offset
+
 	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
-	3<<14|0<<12|440, // Noise Stride 440
-	3<<14|0<<12|396, // Noise Stride 396
-	3<<14|0<<12|330, // Noise Stride 330
-	3<<14|0<<12|220, // Noise Stride 220
-	3<<14|0<<12|165, // Noise Stride 165
-	3<<14|0<<12|132, // Noise Stride 132
-	3<<14|0<<12|120, // Noise Stride 120
-	3<<14|0<<12|110, // Noise Stride 110
-	3<<14|0<<12|99,  // Noise Stride 99
-	3<<14|0<<12|90,  // Noise Stride 90
-	3<<14|0<<12|88,  // Noise Stride 88
-	3<<14|0<<12|72,  // Noise Stride 72
-	3<<14|0<<12|66,  // Noise Stride 66
-	3<<14|0<<12|60,  // Noise Stride 60
-	3<<14|0<<12|55,  // Noise Stride 55
-	3<<14|0<<12|45,  // Noise Stride 45
-	3<<14|0<<12|44,  // Noise Stride 44
-	3<<14|0<<12|40,  // Noise Stride 40
-	3<<14|0<<12|36,  // Noise Stride 36
-	3<<14|0<<12|30,  // Noise Stride 30
-	3<<14|0<<12|24,  // Noise Stride 24
-	3<<14|0<<12|22,  // Noise Stride 22
-	3<<14|0<<12|20,  // Noise Stride 20
-	3<<14|0<<12|18,  // Noise Stride 18
-	3<<14|0<<12|15,  // Noise Stride 15
-	3<<14|0<<12|12,  // Noise Stride 12
-	3<<14|0<<12|10,  // Noise Stride 10
-	3<<14|0<<12|9,   // Noise Stride 9
-	3<<14|0<<12|8,   // Noise Stride 8
-	3<<14|0<<12|6,   // Noise Stride 6
-	3<<14|0<<12|5,   // Noise Stride 5
-	3<<14|0<<12|4,   // Noise Stride 4
-	_32(0<<14|0<<12|32)  // For Offset
+	3<<14|0<<12|440, // 0xE0 Noise Stride 440
+	3<<14|0<<12|396, // 0xE1 Noise Stride 396
+	3<<14|0<<12|330, // 0xE2 Noise Stride 330
+	3<<14|0<<12|220, // 0xE3 Noise Stride 220
+	3<<14|0<<12|165, // 0xE4 Noise Stride 165
+	3<<14|0<<12|132, // 0xE5 Noise Stride 132
+	3<<14|0<<12|120, // 0xE6 Noise Stride 120
+	3<<14|0<<12|110, // 0xE7 Noise Stride 110
+	3<<14|0<<12|99,  // 0xE8 Noise Stride 99
+	3<<14|0<<12|90,  // 0xE9 Noise Stride 90
+	3<<14|0<<12|88,  // 0xEA Noise Stride 88
+	3<<14|0<<12|72,  // 0xEB Noise Stride 72
+	3<<14|0<<12|66,  // 0xEC Noise Stride 66
+	3<<14|0<<12|60,  // 0xED Noise Stride 60
+	3<<14|0<<12|55,  // 0xEE Noise Stride 55
+	3<<14|0<<12|45,  // 0xEF Noise Stride 45
+	3<<14|0<<12|44,  // 0xF0 Noise Stride 44
+	3<<14|0<<12|40,  // 0xF1 Noise Stride 40
+	3<<14|0<<12|36,  // 0xF2 Noise Stride 36
+	3<<14|0<<12|30,  // 0xF3 Noise Stride 30
+	3<<14|0<<12|24,  // 0xF4 Noise Stride 24
+	3<<14|0<<12|22,  // 0xF5 Noise Stride 22
+	3<<14|0<<12|20,  // 0xF6 Noise Stride 20
+	3<<14|0<<12|18,  // 0xF7 Noise Stride 18
+	3<<14|0<<12|15,  // 0xF8 Noise Stride 15
+	3<<14|0<<12|12,  // 0xF9 Noise Stride 12
+	3<<14|0<<12|10,  // 0xFA Noise Stride 10
+	3<<14|0<<12|9,   // 0xFB Noise Stride 9
+	3<<14|0<<12|8,   // 0xFC Noise Stride 8
+	3<<14|0<<12|6,   // 0xFD Noise Stride 6
+	3<<14|0<<12|5,   // 0xFE Noise Stride 5
+	3<<14|0<<12|4,   // 0xFF Noise Stride 4
 
 	/* Volume Middle */
 
@@ -466,40 +482,56 @@ sound_index _SOUND_INDEX[] =
 	2<<14|1<<12|16,  // 0x1BE 2000.0hz Appx. B6  Square
 	2<<14|1<<12|15,  // 0x1BF 2133.3hz Appx. C7  Square
 
+	/* High Tones Middle */
+
+	2<<14|1<<12|14,  // 0x1C0 2285.7hz Appx. C#7 Square
+	2<<14|1<<12|13,  // 0x1C1 2461.5hz Appx. D#7 Square
+	2<<14|1<<12|12,  // 0x1C2 2666.6hz Appx. E7  Square
+	2<<14|1<<12|11,  // 0x1C3 2909.1hz Appx. F7  Square
+	2<<14|1<<12|10,  // 0x1C4 3200,0hz Appx. G7  Square
+	2<<14|1<<12|9,   // 0x1C5 3555.6hz Appx. A7  Square
+	2<<14|1<<12|8,   // 0x1C6 4000.0hz Appx. B7  Square
+	2<<14|1<<12|7,   // 0x1C7 4571.4hz Appx. C#8 Square
+	2<<14|1<<12|6,   // 0x1C8 5333.3hz Appx. E8  Square
+	2<<14|1<<12|5,   // 0x1C9 6400.0hz Appx. G8  Square
+	2<<14|1<<12|4,   // 0x1CA 8000.0hz Appx. B8  Square
+	2<<14|1<<12|3,   // 0x1CB 10666.7hz Square
+
+	_20(2<<14|1<<12|20)  // For Offset
+
 	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
-	3<<14|1<<12|440, // Noise Stride 440
-	3<<14|1<<12|396, // Noise Stride 396
-	3<<14|1<<12|330, // Noise Stride 330
-	3<<14|1<<12|220, // Noise Stride 220
-	3<<14|1<<12|165, // Noise Stride 165
-	3<<14|1<<12|132, // Noise Stride 132
-	3<<14|1<<12|120, // Noise Stride 120
-	3<<14|1<<12|110, // Noise Stride 110
-	3<<14|1<<12|99,  // Noise Stride 99
-	3<<14|1<<12|90,  // Noise Stride 90
-	3<<14|1<<12|88,  // Noise Stride 88
-	3<<14|1<<12|72,  // Noise Stride 72
-	3<<14|1<<12|66,  // Noise Stride 66
-	3<<14|1<<12|60,  // Noise Stride 60
-	3<<14|1<<12|55,  // Noise Stride 55
-	3<<14|1<<12|45,  // Noise Stride 45
-	3<<14|1<<12|44,  // Noise Stride 44
-	3<<14|1<<12|40,  // Noise Stride 40
-	3<<14|1<<12|36,  // Noise Stride 36
-	3<<14|1<<12|30,  // Noise Stride 30
-	3<<14|1<<12|24,  // Noise Stride 24
-	3<<14|1<<12|22,  // Noise Stride 22
-	3<<14|1<<12|20,  // Noise Stride 20
-	3<<14|1<<12|18,  // Noise Stride 18
-	3<<14|1<<12|15,  // Noise Stride 15
-	3<<14|1<<12|12,  // Noise Stride 12
-	3<<14|1<<12|10,  // Noise Stride 10
-	3<<14|1<<12|9,   // Noise Stride 9
-	3<<14|1<<12|8,   // Noise Stride 8
-	3<<14|1<<12|6,   // Noise Stride 6
-	3<<14|1<<12|5,   // Noise Stride 5
-	3<<14|1<<12|4,   // Noise Stride 4
-	_32(0<<14|1<<12|32)  // For Offset
+	3<<14|1<<12|440, // 0x1E0 Noise Stride 440
+	3<<14|1<<12|396, // 0x1E1 Noise Stride 396
+	3<<14|1<<12|330, // 0x1E2 Noise Stride 330
+	3<<14|1<<12|220, // 0x1E3 Noise Stride 220
+	3<<14|1<<12|165, // 0x1E4 Noise Stride 165
+	3<<14|1<<12|132, // 0x1E5 Noise Stride 132
+	3<<14|1<<12|120, // 0x1E6 Noise Stride 120
+	3<<14|1<<12|110, // 0x1E7 Noise Stride 110
+	3<<14|1<<12|99,  // 0x1E8 Noise Stride 99
+	3<<14|1<<12|90,  // 0x1E9 Noise Stride 90
+	3<<14|1<<12|88,  // 0x1EA Noise Stride 88
+	3<<14|1<<12|72,  // 0x1EB Noise Stride 72
+	3<<14|1<<12|66,  // 0x1EC Noise Stride 66
+	3<<14|1<<12|60,  // 0x1ED Noise Stride 60
+	3<<14|1<<12|55,  // 0x1EE Noise Stride 55
+	3<<14|1<<12|45,  // 0x1EF Noise Stride 45
+	3<<14|1<<12|44,  // 0x1F0 Noise Stride 44
+	3<<14|1<<12|40,  // 0x1F1 Noise Stride 40
+	3<<14|1<<12|36,  // 0x1F2 Noise Stride 36
+	3<<14|1<<12|30,  // 0x1F3 Noise Stride 30
+	3<<14|1<<12|24,  // 0x1F4 Noise Stride 24
+	3<<14|1<<12|22,  // 0x1F5 Noise Stride 22
+	3<<14|1<<12|20,  // 0x1F6 Noise Stride 20
+	3<<14|1<<12|18,  // 0x1F7 Noise Stride 18
+	3<<14|1<<12|15,  // 0x1F8 Noise Stride 15
+	3<<14|1<<12|12,  // 0x1F9 Noise Stride 12
+	3<<14|1<<12|10,  // 0x1FA Noise Stride 10
+	3<<14|1<<12|9,   // 0x1FB Noise Stride 9
+	3<<14|1<<12|8,   // 0x1FC Noise Stride 8
+	3<<14|1<<12|6,   // 0x1FD Noise Stride 6
+	3<<14|1<<12|5,   // 0x1FE Noise Stride 5
+	3<<14|1<<12|4,   // 0x1FF Noise Stride 4
 
 	/* Volume Small */
 
@@ -698,90 +730,60 @@ sound_index _SOUND_INDEX[] =
 	2<<14|2<<12|16,  // 0x2BE 2000.0hz Appx. B6  Square
 	2<<14|2<<12|15,  // 0x2BF 2133.3hz Appx. C7  Square
 
-	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
-	3<<14|2<<12|440, // Noise Stride 440
-	3<<14|2<<12|396, // Noise Stride 396
-	3<<14|2<<12|330, // Noise Stride 330
-	3<<14|2<<12|220, // Noise Stride 220
-	3<<14|2<<12|165, // Noise Stride 165
-	3<<14|2<<12|132, // Noise Stride 132
-	3<<14|2<<12|120, // Noise Stride 120
-	3<<14|2<<12|110, // Noise Stride 110
-	3<<14|2<<12|99,  // Noise Stride 99
-	3<<14|2<<12|90,  // Noise Stride 90
-	3<<14|2<<12|88,  // Noise Stride 88
-	3<<14|2<<12|72,  // Noise Stride 72
-	3<<14|2<<12|66,  // Noise Stride 66
-	3<<14|2<<12|60,  // Noise Stride 60
-	3<<14|2<<12|55,  // Noise Stride 55
-	3<<14|2<<12|45,  // Noise Stride 45
-	3<<14|2<<12|44,  // Noise Stride 44
-	3<<14|2<<12|40,  // Noise Stride 40
-	3<<14|2<<12|36,  // Noise Stride 36
-	3<<14|2<<12|30,  // Noise Stride 30
-	3<<14|2<<12|24,  // Noise Stride 24
-	3<<14|2<<12|22,  // Noise Stride 22
-	3<<14|2<<12|20,  // Noise Stride 20
-	3<<14|2<<12|18,  // Noise Stride 18
-	3<<14|2<<12|15,  // Noise Stride 15
-	3<<14|2<<12|12,  // Noise Stride 12
-	3<<14|2<<12|10,  // Noise Stride 10
-	3<<14|2<<12|9,   // Noise Stride 9
-	3<<14|2<<12|8,   // Noise Stride 8
-	3<<14|2<<12|6,   // Noise Stride 6
-	3<<14|2<<12|5,   // Noise Stride 5
-	3<<14|2<<12|4,   // Noise Stride 4
-	_32(0<<14|2<<12|32)  // For Offset
-
-	/* High Tones Big */
-
-	2<<14|0<<12|14,  // 0x300 2285.7hz Appx. C#7 Square
-	2<<14|0<<12|13,  // 0x301 2461.5hz Appx. D#7 Square
-	2<<14|0<<12|12,  // 0x302 2666.6hz Appx. E7  Square
-	2<<14|0<<12|11,  // 0x303 2909.1hz Appx. F7  Square
-	2<<14|0<<12|10,  // 0x304 3200,0hz Appx. G7  Square
-	2<<14|0<<12|9,   // 0x305 3555.6hz Appx. A7  Square
-	2<<14|0<<12|8,   // 0x306 4000.0hz Appx. B7  Square
-	2<<14|0<<12|7,   // 0x307 4571.4hz Appx. C#8 Square
-	2<<14|0<<12|6,   // 0x308 5333.3hz Appx. E8  Square
-	2<<14|0<<12|5,   // 0x309 6400.0hz Appx. G8  Square
-	2<<14|0<<12|4,   // 0x30A 8000.0hz Appx. B8  Square
-	2<<14|0<<12|3,   // 0x30B 10666.7hz Square
-
-	/* High Tones Middle */
-
-	2<<14|1<<12|14,  // 0x30C 2285.7hz Appx. C#7 Square
-	2<<14|1<<12|13,  // 0x30D 2461.5hz Appx. D#7 Square
-	2<<14|1<<12|12,  // 0x30E 2666.6hz Appx. E7  Square
-	2<<14|1<<12|11,  // 0x30F 2909.1hz Appx. F7  Square
-	2<<14|1<<12|10,  // 0x310 3200,0hz Appx. G7  Square
-	2<<14|1<<12|9,   // 0x311 3555.6hz Appx. A7  Square
-	2<<14|1<<12|8,   // 0x312 4000.0hz Appx. B7  Square
-	2<<14|1<<12|7,   // 0x313 4571.4hz Appx. C#8 Square
-	2<<14|1<<12|6,   // 0x314 5333.3hz Appx. E8  Square
-	2<<14|1<<12|5,   // 0x315 6400.0hz Appx. G8  Square
-	2<<14|1<<12|4,   // 0x316 8000.0hz Appx. B8  Square
-	2<<14|1<<12|3,   // 0x317 10666.7hz Square
-
 	/* High Tones Small */
 
-	2<<14|2<<12|14,  // 0x318 2285.7hz Appx. C#7 Square
-	2<<14|2<<12|13,  // 0x319 2461.5hz Appx. D#7 Square
-	2<<14|2<<12|12,  // 0x31A 2666.6hz Appx. E7  Square
-	2<<14|2<<12|11,  // 0x31B 2909.1hz Appx. F7  Square
-	2<<14|2<<12|10,  // 0x31C 3200,0hz Appx. G7  Square
-	2<<14|2<<12|9,   // 0x31D 3555.6hz Appx. A7  Square
-	2<<14|2<<12|8,   // 0x31E 4000.0hz Appx. B7  Square
-	2<<14|2<<12|7,   // 0x31F 4571.4hz Appx. C#8 Square
-	2<<14|2<<12|6,   // 0x320 5333.3hz Appx. E8  Square
-	2<<14|2<<12|5,   // 0x321 6400.0hz Appx. G8  Square
-	2<<14|2<<12|4,   // 0x322 8000.0hz Appx. B8  Square
-	2<<14|2<<12|3,   // 0x323 10666.7hz Square
+	2<<14|2<<12|14,  // 0x2C0 2285.7hz Appx. C#7 Square
+	2<<14|2<<12|13,  // 0x2C1 2461.5hz Appx. D#7 Square
+	2<<14|2<<12|12,  // 0x2C2 2666.6hz Appx. E7  Square
+	2<<14|2<<12|11,  // 0x2C3 2909.1hz Appx. F7  Square
+	2<<14|2<<12|10,  // 0x2C4 3200,0hz Appx. G7  Square
+	2<<14|2<<12|9,   // 0x2C5 3555.6hz Appx. A7  Square
+	2<<14|2<<12|8,   // 0x2C6 4000.0hz Appx. B7  Square
+	2<<14|2<<12|7,   // 0x2C7 4571.4hz Appx. C#8 Square
+	2<<14|2<<12|6,   // 0x2C8 5333.3hz Appx. E8  Square
+	2<<14|2<<12|5,   // 0x2C9 6400.0hz Appx. G8  Square
+	2<<14|2<<12|4,   // 0x2CA 8000.0hz Appx. B8  Square
+	2<<14|2<<12|3,   // 0x2CB 10666.7hz Square
+
+	_20(2<<14|2<<12|20)  // For Offset
+
+	/* Assume Fixed Length as 3960, Sample Rate 31680Hz Divided by 8 */
+	3<<14|2<<12|440, // 0x2E0 Noise Stride 440
+	3<<14|2<<12|396, // 0x2E1 Noise Stride 396
+	3<<14|2<<12|330, // 0x2E2 Noise Stride 330
+	3<<14|2<<12|220, // 0x2E3 Noise Stride 220
+	3<<14|2<<12|165, // 0x2E4 Noise Stride 165
+	3<<14|2<<12|132, // 0x2E5 Noise Stride 132
+	3<<14|2<<12|120, // 0x2E6 Noise Stride 120
+	3<<14|2<<12|110, // 0x2E7 Noise Stride 110
+	3<<14|2<<12|99,  // 0x2E8 Noise Stride 99
+	3<<14|2<<12|90,  // 0x2E9 Noise Stride 90
+	3<<14|2<<12|88,  // 0x2EA Noise Stride 88
+	3<<14|2<<12|72,  // 0x2EB Noise Stride 72
+	3<<14|2<<12|66,  // 0x2EC Noise Stride 66
+	3<<14|2<<12|60,  // 0x2ED Noise Stride 60
+	3<<14|2<<12|55,  // 0x2EE Noise Stride 55
+	3<<14|2<<12|45,  // 0x2EF Noise Stride 45
+	3<<14|2<<12|44,  // 0x2F0 Noise Stride 44
+	3<<14|2<<12|40,  // 0x2F1 Noise Stride 40
+	3<<14|2<<12|36,  // 0x2F2 Noise Stride 36
+	3<<14|2<<12|30,  // 0x2F3 Noise Stride 30
+	3<<14|2<<12|24,  // 0x2F4 Noise Stride 24
+	3<<14|2<<12|22,  // 0x2F5 Noise Stride 22
+	3<<14|2<<12|20,  // 0x2F6 Noise Stride 20
+	3<<14|2<<12|18,  // 0x2F7 Noise Stride 18
+	3<<14|2<<12|15,  // 0x2F8 Noise Stride 15
+	3<<14|2<<12|12,  // 0x2F9 Noise Stride 12
+	3<<14|2<<12|10,  // 0x2FA Noise Stride 10
+	3<<14|2<<12|9,   // 0x2FB Noise Stride 9
+	3<<14|2<<12|8,   // 0x2FC Noise Stride 8
+	3<<14|2<<12|6,   // 0x2FD Noise Stride 6
+	3<<14|2<<12|5,   // 0x2FE Noise Stride 5
+	3<<14|2<<12|4,   // 0x2FF Noise Stride 4
 
 	/* Special Sounds */
 
-	2<<14|3<<12|36,  // 0x324 Silence
-	2<<14|3<<12|36,  // 0x325 Silence
+	2<<14|3<<12|36,  // 0x300 Silence
 
 	0                // End of Index
 };
@@ -982,38 +984,51 @@ sound_index _SOUND_INDEX[] =
 #define _B6_SQUL  0xBE
 #define _C7_SQUL  0xBF
 
-#define _1_NOIL   0xC0
-#define _2_NOIL   0xC1
-#define _3_NOIL   0xC2
-#define _4_NOIL   0xC3
-#define _5_NOIL   0xC4
-#define _6_NOIL   0xC5
-#define _7_NOIL   0xC6
-#define _8_NOIL   0xC7
-#define _9_NOIL   0xC8
-#define _10_NOIL  0xC9
-#define _11_NOIL  0xCA
-#define _12_NOIL  0xCB
-#define _13_NOIL  0xCC
-#define _14_NOIL  0xCD
-#define _15_NOIL  0xCE
-#define _16_NOIL  0xCF
-#define _17_NOIL  0xD0
-#define _18_NOIL  0xD1
-#define _19_NOIL  0xD2
-#define _20_NOIL  0xD3
-#define _21_NOIL  0xD4
-#define _22_NOIL  0xD5
-#define _23_NOIL  0xD6
-#define _24_NOIL  0xD7
-#define _25_NOIL  0xD8
-#define _26_NOIL  0xD9
-#define _27_NOIL  0xDA
-#define _28_NOIL  0xDB
-#define _29_NOIL  0xDC
-#define _30_NOIL  0xDD
-#define _31_NOIL  0xDE
-#define _32_NOIL  0xDF
+#define _CS7_SQUL 0xC0
+#define _DS7_SQUL 0xC1
+#define _E7_SQUL  0xC2
+#define _F7_SQUL  0xC3
+#define _G7_SQUL  0xC4
+#define _A7_SQUL  0xC5
+#define _B7_SQUL  0xC6
+#define _CS8_SQUL 0xC7
+#define _E8_SQUL  0xC8
+#define _G8_SQUL  0xC9
+#define _B8_SQUL  0xCA
+#define _HI_SQUL  0xCB
+
+#define _1_NOIL   0xE0
+#define _2_NOIL   0xE1
+#define _3_NOIL   0xE2
+#define _4_NOIL   0xE3
+#define _5_NOIL   0xE4
+#define _6_NOIL   0xE5
+#define _7_NOIL   0xE6
+#define _8_NOIL   0xE7
+#define _9_NOIL   0xE8
+#define _10_NOIL  0xE9
+#define _11_NOIL  0xEA
+#define _12_NOIL  0xEB
+#define _13_NOIL  0xEC
+#define _14_NOIL  0xED
+#define _15_NOIL  0xEE
+#define _16_NOIL  0xEF
+#define _17_NOIL  0xF0
+#define _18_NOIL  0xF1
+#define _19_NOIL  0xF2
+#define _20_NOIL  0xF3
+#define _21_NOIL  0xF4
+#define _22_NOIL  0xF5
+#define _23_NOIL  0xF6
+#define _24_NOIL  0xF7
+#define _25_NOIL  0xF8
+#define _26_NOIL  0xF9
+#define _27_NOIL  0xFA
+#define _28_NOIL  0xFB
+#define _29_NOIL  0xFC
+#define _30_NOIL  0xFD
+#define _31_NOIL  0xFE
+#define _32_NOIL  0xFF
 
 #define _A1_SINM  0x100
 #define _AS1_SINM 0x101
@@ -1210,38 +1225,51 @@ sound_index _SOUND_INDEX[] =
 #define _B6_SQUM  0x1BE
 #define _C7_SQUM  0x1BF
 
-#define _1_NOIM   0x1C0
-#define _2_NOIM   0x1C1
-#define _3_NOIM   0x1C2
-#define _4_NOIM   0x1C3
-#define _5_NOIM   0x1C4
-#define _6_NOIM   0x1C5
-#define _7_NOIM   0x1C6
-#define _8_NOIM   0x1C7
-#define _9_NOIM   0x1C8
-#define _10_NOIM  0x1C9
-#define _11_NOIM  0x1CA
-#define _12_NOIM  0x1CB
-#define _13_NOIM  0x1CC
-#define _14_NOIM  0x1CD
-#define _15_NOIM  0x1CE
-#define _16_NOIM  0x1CF
-#define _17_NOIM  0x1D0
-#define _18_NOIM  0x1D1
-#define _19_NOIM  0x1D2
-#define _20_NOIM  0x1D3
-#define _21_NOIM  0x1D4
-#define _22_NOIM  0x1D5
-#define _23_NOIM  0x1D6
-#define _24_NOIM  0x1D7
-#define _25_NOIM  0x1D8
-#define _26_NOIM  0x1D9
-#define _27_NOIM  0x1DA
-#define _28_NOIM  0x1DB
-#define _29_NOIM  0x1DC
-#define _30_NOIM  0x1DD
-#define _31_NOIM  0x1DE
-#define _32_NOIM  0x1DF
+#define _CS7_SQUM 0x1C0
+#define _DS7_SQUM 0x1C1
+#define _E7_SQUM  0x1C2
+#define _F7_SQUM  0x1C3
+#define _G7_SQUM  0x1C4
+#define _A7_SQUM  0x1C5
+#define _B7_SQUM  0x1C6
+#define _CS8_SQUM 0x1C7
+#define _E8_SQUM  0x1C8
+#define _G8_SQUM  0x1C9
+#define _B8_SQUM  0x1CA
+#define _HI_SQUM  0x1CB
+
+#define _1_NOIM   0x1E0
+#define _2_NOIM   0x1E1
+#define _3_NOIM   0x1E2
+#define _4_NOIM   0x1E3
+#define _5_NOIM   0x1E4
+#define _6_NOIM   0x1E5
+#define _7_NOIM   0x1E6
+#define _8_NOIM   0x1E7
+#define _9_NOIM   0x1E8
+#define _10_NOIM  0x1E9
+#define _11_NOIM  0x1EA
+#define _12_NOIM  0x1EB
+#define _13_NOIM  0x1EC
+#define _14_NOIM  0x1ED
+#define _15_NOIM  0x1EE
+#define _16_NOIM  0x1EF
+#define _17_NOIM  0x1F0
+#define _18_NOIM  0x1F1
+#define _19_NOIM  0x1F2
+#define _20_NOIM  0x1F3
+#define _21_NOIM  0x1F4
+#define _22_NOIM  0x1F5
+#define _23_NOIM  0x1F6
+#define _24_NOIM  0x1F7
+#define _25_NOIM  0x1F8
+#define _26_NOIM  0x1F9
+#define _27_NOIM  0x1FA
+#define _28_NOIM  0x1FB
+#define _29_NOIM  0x1FC
+#define _30_NOIM  0x1FD
+#define _31_NOIM  0x1FE
+#define _32_NOIM  0x1FF
 
 #define _A1_SINS  0x200
 #define _AS1_SINS 0x201
@@ -1438,79 +1466,53 @@ sound_index _SOUND_INDEX[] =
 #define _B6_SQUS  0x2BE
 #define _C7_SQUS  0x2BF
 
-#define _1_NOIS   0x2C0
-#define _2_NOIS   0x2C1
-#define _3_NOIS   0x2C2
-#define _4_NOIS   0x2C3
-#define _5_NOIS   0x2C4
-#define _6_NOIS   0x2C5
-#define _7_NOIS   0x2C6
-#define _8_NOIS   0x2C7
-#define _9_NOIS   0x2C8
-#define _10_NOIS  0x2C9
-#define _11_NOIS  0x2CA
-#define _12_NOIS  0x2CB
-#define _13_NOIS  0x2CC
-#define _14_NOIS  0x2CD
-#define _15_NOIS  0x2CE
-#define _16_NOIS  0x2CF
-#define _17_NOIS  0x2D0
-#define _18_NOIS  0x2D1
-#define _19_NOIS  0x2D2
-#define _20_NOIS  0x2D3
-#define _21_NOIS  0x2D4
-#define _22_NOIS  0x2D5
-#define _23_NOIS  0x2D6
-#define _24_NOIS  0x2D7
-#define _25_NOIS  0x2D8
-#define _26_NOIS  0x2D9
-#define _27_NOIS  0x2DA
-#define _28_NOIS  0x2DB
-#define _29_NOIS  0x2DC
-#define _30_NOIS  0x2DD
-#define _31_NOIS  0x2DE
-#define _32_NOIS  0x2DF
+#define _CS7_SQUS 0x2C0
+#define _DS7_SQUS 0x2C1
+#define _E7_SQUS  0x2C2
+#define _F7_SQUS  0x2C3
+#define _G7_SQUS  0x2C4
+#define _A7_SQUS  0x2C5
+#define _B7_SQUS  0x2C6
+#define _CS8_SQUS 0x2C7
+#define _E8_SQUS  0x2C8
+#define _G8_SQUS  0x2C9
+#define _B8_SQUS  0x2CA
+#define _HI_SQUS  0x2CB
 
-#define _CS7_SQUL 0x300
-#define _DS7_SQUL 0x301
-#define _E7_SQUL  0x302
-#define _F7_SQUL  0x303
-#define _G7_SQUL  0x304
-#define _A7_SQUL  0x305
-#define _B7_SQUL  0x306
-#define _CS8_SQUL 0x307
-#define _E8_SQUL  0x308
-#define _G8_SQUL  0x309
-#define _B8_SQUL  0x30A
-#define _HI_SQUL  0x30B
+#define _1_NOIS   0x2E0
+#define _2_NOIS   0x2E1
+#define _3_NOIS   0x2E2
+#define _4_NOIS   0x2E3
+#define _5_NOIS   0x2E4
+#define _6_NOIS   0x2E5
+#define _7_NOIS   0x2E6
+#define _8_NOIS   0x2E7
+#define _9_NOIS   0x2E8
+#define _10_NOIS  0x2E9
+#define _11_NOIS  0x2EA
+#define _12_NOIS  0x2EB
+#define _13_NOIS  0x2EC
+#define _14_NOIS  0x2ED
+#define _15_NOIS  0x2EE
+#define _16_NOIS  0x2EF
+#define _17_NOIS  0x2F0
+#define _18_NOIS  0x2F1
+#define _19_NOIS  0x2F2
+#define _20_NOIS  0x2F3
+#define _21_NOIS  0x2F4
+#define _22_NOIS  0x2F5
+#define _23_NOIS  0x2F6
+#define _24_NOIS  0x2F7
+#define _25_NOIS  0x2F8
+#define _26_NOIS  0x2F9
+#define _27_NOIS  0x2FA
+#define _28_NOIS  0x2FB
+#define _29_NOIS  0x2FC
+#define _30_NOIS  0x2FD
+#define _31_NOIS  0x2FE
+#define _32_NOIS  0x2FF
 
-#define _CS7_SQUM 0x30C
-#define _DS7_SQUM 0x30D
-#define _E7_SQUM  0x30E
-#define _F7_SQUM  0x30F
-#define _G7_SQUM  0x310
-#define _A7_SQUM  0x311
-#define _B7_SQUM  0x312
-#define _CS8_SQUM 0x313
-#define _E8_SQUM  0x314
-#define _G8_SQUM  0x315
-#define _B8_SQUM  0x316
-#define _HI_SQUM  0x317
-
-#define _CS7_SQUS 0x318
-#define _DS7_SQUS 0x319
-#define _E7_SQUS  0x31A
-#define _F7_SQUS  0x31B
-#define _G7_SQUS  0x31C
-#define _A7_SQUS  0x31D
-#define _B7_SQUS  0x31E
-#define _CS8_SQUS 0x31F
-#define _E8_SQUS  0x320
-#define _G8_SQUS  0x321
-#define _B8_SQUS  0x322
-#define _HI_SQUS  0x323
-
-#define _SILENCE  0x324
+#define _SILENCE  0x300
 #define _END      0xFFFF
 
 /* Chords */

@@ -35,8 +35,10 @@
 .equ equ32_cvt32_separator,                    0x2C       @ Ascii Code of Comma: Separator for *array_to_string*
 .equ equ32_sts32_samplerate,                   32000
 .equ equ32_sts32_synthewave_pwm_bias,          2496
-.equ equ32_snd32_sounddecode_noise_upper,      0xF70      @ Decimal 3960, Sample Rate 31680Hz / 8
-.equ equ32_snd32_sounddecode_noise_lower,      0x008      @ Decimal 3960, Sample Rate 31680Hz / 8
+.equ equ32_snd32_sounddecode_pwm_bias,         2496
+.equ equ32_snd32_sounddecode_noise_len_upper,  0xF70      @ Decimal 3960, Sample Rate 31680Hz / 8
+.equ equ32_snd32_sounddecode_noise_len_lower,  0x008      @ Decimal 3960, Sample Rate 31680Hz / 8
+.equ equ32_snd32_sounddecode_noise_resolution, 63        @ Affecting Sound Color, 255/127/63/31/15/7
 
 /**
  * Standard Peripherals
