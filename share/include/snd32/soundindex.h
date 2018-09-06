@@ -1025,7 +1025,7 @@ sound_index _SOUND_INDEX[] =
 
 	/* Special Sounds */
 
-	7<<13|0<<11|1980, // 0x400 Silence
+	7<<13|0<<11|72,  // 0x400 Silence
 
 	0                // End of Index
 };
