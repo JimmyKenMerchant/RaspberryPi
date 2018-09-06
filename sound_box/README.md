@@ -8,11 +8,15 @@
 
 **Purpose**
 
-* Programmable Sound Generator
+* Programmable Sound Generator, Wave Forms Have Been Stored to RAM in Advance by Running Codes
 
-* Mono Sound of Sin, Sawtooth, Square, and Noise
+* Mono Sound of Sine, Sawtooth, Square, and Noise
 
 * Flat and Powerful Sound Like Analogue
+
+* 4 Steps Volume, Predefined Macros of Music Codes and Scales, etc.
+
+* Output by DMA Control, Low CPU Usage
 
 **Output/Input**
 

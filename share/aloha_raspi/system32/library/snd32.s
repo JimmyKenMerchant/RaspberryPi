@@ -39,11 +39,11 @@ SND32_STATUS:              .word 0x00
 
 /**
  * Sound Index is made of an array of 16-bit Blocks.
- * Bit[11:0]: Length of Wave, 0 to 4095.
+ * Bit[10:0]: Length of Wave, 0 to 2048.
  *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
  *             If Bit[11:0] is 1, Super Long (0x3E80, Decimal 16000).
- * Bit[13:12]: Volume of Wave, 0 is Max., 1 is Bigger, 2 is Smaller, 3 is Zero (In Noise, Least).
- * Bit[15:14]: Type of Wave, 0 is Sin, 1 is Saw Tooth, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics.
+ * Bit[12:11]: Volume of Wave, 0 is Large, 1 is Medium, 2 is Small, 3 is Tiny
+ * Bit[15:13]: Type of Wave, 0 is Sine, 1 is Saw Tooth, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics. 7 is Silence.
  *
  * Maximum number of blocks is 4096.
  * 0 means End of Sound Index
@@ -104,11 +104,11 @@ snd32_sounddecode:
 
 		snd32_sounddecode_main_wave:
 
-			bic wave_length, snd, #0xF000
-			and wave_volume, snd, #0x3000
-			lsr wave_volume, wave_volume, #12
-			and wave_type, snd, #0xC000
-			lsr wave_type, wave_type, #14
+			bic wave_length, snd, #0xF800         @ Bit[10:0]
+			and wave_volume, snd, #0x1800         @ Bit[12:11]
+			lsr wave_volume, wave_volume, #11
+			and wave_type, snd, #0xE000           @ Bit[15:13]
+			lsr wave_type, wave_type, #13
 
 			/* Check Wether Wave Type is Random or Not */
 			cmp wave_type, #3
@@ -128,12 +128,16 @@ snd32_sounddecode:
 			cmp mem_alloc, #0
 			beq snd32_sounddecode_error2
 
+			/* Check Wether Wave Type is Silence or Not */
+			cmp wave_type, #7
+			beq snd32_sounddecode_main_wave_silence
+
 			/* Square, Sawtooth, and Sin Wave */
 
 			push {r0-r3}
 			mov r0, mem_alloc
 			cmp wave_volume, #3
-			moveq r2, #0
+			moveq r2, #127
 			cmp wave_volume, #2
 			moveq r2, #255
 			cmp wave_volume, #1
@@ -177,7 +181,7 @@ snd32_sounddecode:
 				push {r0-r3}
 				mov r0, mem_alloc
 				cmp wave_volume, #3
-				moveq r2, #0
+				moveq r2, #127
 				cmp wave_volume, #2
 				moveq r2, #255
 				cmp wave_volume, #1
@@ -203,6 +207,19 @@ snd32_sounddecode:
 				/* For Further Processes in PWM */
 				mov wave_length, #equ32_snd32_sounddecode_noise_len_upper
 				orr wave_length, wave_length, #equ32_snd32_sounddecode_noise_len_lower
+
+				b snd32_sounddecode_main_wave_balance
+
+			snd32_sounddecode_main_wave_silence:
+				/* If PCM, No Need of Filling */
+				cmp mode, #2
+				bhs snd32_sounddecode_main_wave_balance
+
+				push {r0-r3}
+				mov r0, mem_alloc
+				mov r1, #equ32_snd32_sounddecode_pwm_bias  @ DC Offset in Bytes (Unsigned) for PWM
+				bl heap32_mfill
+				pop {r0-r3}
 
 			snd32_sounddecode_main_wave_balance:
 

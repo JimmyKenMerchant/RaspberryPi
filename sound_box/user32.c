@@ -9,7 +9,8 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "snd32.h"
+#include "snd32/soundindex.h"
+#include "snd32/musiccode.h"
 
 #define timer_count_multiplicand        5
 #define timer_count_multiplier_default  500
@@ -30,6 +31,23 @@ void makesilence();
 
 music_code music1[] =
 {
+	_48(_1_NOIT) _48(_2_NOIT)
+	_48(_3_NOIT) _48(_4_NOIT)
+	_48(_5_NOIT) _48(_6_NOIT)
+	_48(_7_NOIT) _48(_8_NOIT)
+	_48(_9_NOIT) _48(_10_NOIT)
+	_48(_11_NOIT) _48(_12_NOIT)
+	_48(_13_NOIT) _48(_14_NOIT)
+	_48(_15_NOIT) _48(_16_NOIT)
+	_48(_17_NOIT) _48(_18_NOIT)
+	_48(_19_NOIT) _48(_20_NOIT)
+	_48(_21_NOIT) _48(_22_NOIT)
+	_48(_23_NOIT) _48(_24_NOIT)
+	_48(_25_NOIT) _48(_26_NOIT)
+	_48(_27_NOIT) _48(_28_NOIT)
+	_48(_29_NOIT) _48(_30_NOIT)
+	_48(_31_NOIT) _48(_32_NOIT)
+
 	_48(_1_NOIS) _48(_2_NOIS)
 	_48(_3_NOIS) _48(_4_NOIS)
 	_48(_5_NOIS) _48(_6_NOIS)
@@ -91,8 +109,10 @@ music_code music1[] =
 };
 
 music_code music2[] =
-{
-	_12(_E4_TRIL)
+{	_12_DEC(_A4_TRIL) _12_DEC(_B4_TRIL)
+	_12_DEC(_C5_TRIL) _12_DEC(_B4_TRIL)
+	_12_DEC(_A4_TRIL) _12(_A4_TRIT)
+	_48(_SILENCE)
 	_END
 };
 
@@ -117,10 +137,7 @@ music_code music4[] =
 
 music_code music5[] =
 {
-	_24_DEC(_A4_TRIL) _24_DEC(_B4_TRIL)
-	_24_DEC(_C5_TRIL) _24_DEC(_B4_TRIL)
-	_24_DEC(_A4_TRIL) _24(_A4_TRIS)
-	_48(_SILENCE)
+	_12(_E4_TRIL)
 	_END
 };
 

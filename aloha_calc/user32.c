@@ -9,7 +9,8 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "snd32.h"
+#include "snd32/soundindex.h"
+#include "snd32/musiccode.h"
 
 /**
  * Length of Initial Loading on Start Up
