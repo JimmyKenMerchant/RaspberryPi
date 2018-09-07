@@ -114,8 +114,8 @@ os_reset:
 
 	/* UART 115200 Baud */
 	push {r0-r3}
-	mov r0, #5                                               @ Integer Divisor, 9216000 / 16 Multiplies by 115200 Equals 5
-	mov r1, #0                                               @ Fractional Divisor
+	mov r0, #9                                               @ Integer Divisor Bit[15:0], 18000000 / 16 * 115200 is 9.765625
+	mov r1, #0b110001                                        @ Fractional Divisor Bit[5:0], Fixed Point Float 0.765625
 	mov r2, #0b11<<equ32_uart0_lcrh_sps|equ32_uart0_lcrh_fen @ Line Control
 	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe           @ Coontrol
 	bl uart32_uartinit
