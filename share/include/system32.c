@@ -358,7 +358,7 @@ __attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
 	return result;
 }
 
-__attribute__((noinline)) String _uartint_emulate( uint32 max_size, bool flag_mirror, uchar8 character_rx )
+__attribute__((noinline)) String _uartint_emulate( bool flag_mirror, uchar8 character_rx )
 {
 	register String result asm("r0");
 	asm volatile ("svc #0x34");

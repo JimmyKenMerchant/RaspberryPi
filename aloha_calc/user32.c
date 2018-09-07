@@ -1560,7 +1560,7 @@ bool input_keyboard_translation( String kb_str, bool cursor_left_edge ) {
 
 	for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
 		var_temp.u8 = _load_8( (obj)kb_str + i );
-		String temp_str = _uartint_emulate( UART32_UARTMALLOC_MAXROW, true, var_temp.u8 );
+		String temp_str = _uartint_emulate( true, var_temp.u8 );
 		if ( temp_str ) { // If Not Error(0)
 			if ( str32_charsearch( temp_str, 1, 0x15 ) == -1 ) { // If Not NAK
 				if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();

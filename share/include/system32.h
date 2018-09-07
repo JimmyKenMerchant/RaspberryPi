@@ -484,7 +484,6 @@ __attribute__((noinline)) uint32 _uartsetint
 
 __attribute__((noinline)) String _uartint_emulate
 (
-	uint32 max_size,
 	bool flag_mirror,
 	uchar8 character_rx
 );

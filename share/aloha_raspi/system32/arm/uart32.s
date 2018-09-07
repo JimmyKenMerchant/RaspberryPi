@@ -489,8 +489,7 @@ uart32_uartclrrx:
  * UART Interrupt Handler
  *
  * Parameters
- * r0: Number of Maximum Size of Heap (Bytes)
- * r1: Mirror Data to Teletype (1) or Send ACK (0)
+ * r0: Mirror Data to Teletype (1) or Send ACK (0)
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): No Heap, Overrun, or Busy
@@ -498,9 +497,9 @@ uart32_uartclrrx:
 .globl uart32_uartint
 uart32_uartint:
 	/* Auto (Local) Variables, but just Aliases */
-	max_size      .req r0
-	flag_mirror   .req r1
-	heap          .req r2
+	flag_mirror   .req r0
+	max_size      .req r1
+	heap          .req r2 @ r2 Needed for Calling Functions
 	count         .req r3
 	temp          .req r4
 	flag_escape   .req r5
@@ -518,6 +517,7 @@ uart32_uartint:
 	cmp heap, #0
 	beq uart32_uartint_error         @ If No Heap
 
+	ldr max_size, UART32_UARTMALLOC_MAXROW
 	ldr count, UART32_UARTINT_COUNT
 
 	ldr flag_escape, uart32_flag_escape
@@ -960,8 +960,8 @@ uart32_uartint:
 
 		pop {r4-r6,pc}
 
-.unreq max_size
 .unreq flag_mirror
+.unreq max_size
 .unreq heap
 .unreq count
 .unreq temp
@@ -1026,18 +1026,17 @@ _uart32_uartint_buffer:      .word 0x00
  * Note that this function makes new memory space to be needed to make the memory free.
  *
  * Parameters
- * r0: Number of Maximum Size of Heap (Bytes)
- * r1: Mirror Data to Teletype (1) or Send ACK (0)
- * r2: Character to Be Virtually Received
+ * r0: Mirror Data to Teletype (1) or Send ACK (0)
+ * r1: Character to Be Virtually Received
  *
  * Return: r0 (Pointer of String to Be Virtually Transmitted by UART, If Zero No Heap or Memory Allocation Fails)
  */
 .globl uart32_uartint_emulate
 uart32_uartint_emulate:
 	/* Auto (Local) Variables, but just Aliases */
-	max_size      .req r0
-	flag_mirror   .req r1
-	heap          .req r2
+	flag_mirror   .req r0
+	max_size      .req r1
+	heap          .req r2 @ r2 Needed for Calling Functions
 	count         .req r3
 	temp          .req r4
 	flag_escape   .req r5
@@ -1048,7 +1047,7 @@ uart32_uartint_emulate:
 
 	push {r4-r9,lr}
 
-	mov character_rx, heap
+	mov character_rx, max_size
 	ldr string_tx, uart32_uartint_emulate_dummy_str
 
 	ldr temp, UART32_UARTINT_BUSY
@@ -1059,6 +1058,7 @@ uart32_uartint_emulate:
 	cmp heap, #0
 	beq uart32_uartint_emulate_error         @ If No Heap
 
+	ldr max_size, UART32_UARTMALLOC_MAXROW
 	ldr count, UART32_UARTINT_COUNT
 
 	ldr flag_escape, uart32_flag_escape
@@ -1643,8 +1643,8 @@ uart32_uartint_emulate:
 		macro32_dsb ip
 		pop {r4-r9,pc}
 
-.unreq max_size
 .unreq flag_mirror
+.unreq max_size
 .unreq heap
 .unreq count
 .unreq temp
@@ -1881,7 +1881,6 @@ uart32_uartmalloc_client:
 	push {lr}
 
 	push {r0}
-	add r0, words_buffer, #1           @ Add One Word for Null Character
 	bl heap32_malloc
 	mov buffer, r0
 	pop {r0}
@@ -1889,6 +1888,8 @@ uart32_uartmalloc_client:
 	cmp buffer, #0
 	beq uart32_uartmalloc_client_error
 
+	lsl words_buffer, words_buffer, #2             @ Multiply by 4
+	add words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
 	str words_buffer, UART32_UARTINT_CLIENT_LENGTH
 	str buffer, UART32_UARTINT_CLIENT_BUFFER
 	mov words_buffer, #0
@@ -1943,17 +1944,15 @@ UART32_UARTCLIENT_MODE: .word 0x00
  * Route UART Interrupt to Host Mode or Client Mode
  *
  * Parameters
- * r0: Number of Maximum Size of Heap (Bytes) in Host Mode
- * r1: Mirror Data to Teletype (1) or Send ACK (0) in Host Mode
+ * r0: Mirror Data to Teletype (1) or Send ACK (0) in Host Mode
  *
  * Return: r0 (Return Value of Host Mode or Client Mode)
  */
 .globl uart32_uartintrouter
 uart32_uartintrouter:
 	/* Auto (Local) Variables, but just Aliases */
-	max_size    .req r0
-	flag_mirror .req r1
-	mode        .req r2
+	flag_mirror .req r0
+	mode        .req r1
 
 	push {lr}
 
@@ -1972,7 +1971,6 @@ uart32_uartintrouter:
 	uart32_uartintrouter_common:
 		pop {pc}
 
-.unreq max_size
 .unreq flag_mirror
 .unreq mode
 

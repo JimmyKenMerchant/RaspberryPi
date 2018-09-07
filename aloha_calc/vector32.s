@@ -174,8 +174,7 @@ os_reset:
 os_irq:
 	push {r0-r12,lr}
 
-	mov r0, #63                                              @ Last Byte For Null Character
-	mov r1, #1
+	mov r0, #1
 	bl uart32_uartintrouter
 
 	pop {r0-r12,pc}
