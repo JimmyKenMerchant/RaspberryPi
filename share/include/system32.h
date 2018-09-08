@@ -271,6 +271,8 @@ __attribute__((noinline)) uint32 _armtimer_load( uint32 load );
 
 __attribute__((noinline)) uint32 _clockmanager( uint32 clocktype_base, uint32 clk_ctl, uint32 clk_divisors );
 
+__attribute__((noinline)) uint32 _clockmanager_divisor( uint32 clocktype_base, uint32 clk_divisors );
+
 /* Regular Functions */
 
 /**

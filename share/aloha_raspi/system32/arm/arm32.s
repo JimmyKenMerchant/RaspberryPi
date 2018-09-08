@@ -2176,6 +2176,54 @@ arm32_clockmanager:
 
 
 /**
+ * function arm32_clockmanager_divisor
+ * Change Clock Dvisor
+ * Caution! This method to change divisor as described below is NOT recommended explicitly in the peripheral manual of BCM2835 (Page 108).
+ *
+ * Parameters
+ * r0: Base of Clock Type
+ * r1: Clock Divisors, Fixed Point, Bit[23:12] as Integer, Bit[11:0] as Fractional
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl arm32_clockmanager_divisor
+arm32_clockmanager_divisor:
+	/* Auto (Local) Variables, but just Aliases */
+	clocktype_base .req r0
+	clk_divisors   .req r1
+	memorymap_base .req r2
+
+	mov memorymap_base, #equ32_peripherals_base
+	orr memorymap_base, memorymap_base, #equ32_cm_base_lower
+	orr memorymap_base, memorymap_base, #equ32_cm_base_upper
+	orr memorymap_base, memorymap_base, clocktype_base
+
+	.unreq clocktype_base
+	temp .req r0
+
+	/* Wait for Safe Stopping */
+	/*
+	arm32_clockmanager_divisor_loop:
+		ldr temp, [memorymap_base, #equ32_cm_ctl]
+		tst temp, #equ32_cm_ctl_busy
+		bne arm32_clockmanager_divisor_loop
+	*/
+
+	/* Set Divisors */
+	orr clk_divisors, clk_divisors, #equ32_cm_passwd
+	str clk_divisors, [memorymap_base, #equ32_cm_div]
+
+	arm32_clockmanager_divisor_common:
+		macro32_dsb ip
+		mov r0, #0
+		mov pc, lr
+
+.unreq temp
+.unreq clk_divisors
+.unreq memorymap_base
+
+
+/**
  * Make sure to complete addresses of variables by `str/ldr Rd, [PC, #Immediate]`,
  * othewise, compiler can't recognaize labels of variables or literal pool.
  * This Immediate can't be over #4095 (0xFFF), i.e. within 4K Bytes.
