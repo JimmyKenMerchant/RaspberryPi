@@ -2201,8 +2201,7 @@ arm32_clockmanager_divisor:
 	.unreq clocktype_base
 	temp .req r0
 
-	/* Wait for Safe Stopping */
-	/*
+	/* No Wait
 	arm32_clockmanager_divisor_loop:
 		ldr temp, [memorymap_base, #equ32_cm_ctl]
 		tst temp, #equ32_cm_ctl_busy

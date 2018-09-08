@@ -18,7 +18,8 @@
 
 /**
  * In default, there is a 2000Hz synchronization clock (it's a half of 4000Hz on Arm Timer beacause of toggling).
- * A set of 2000 beats is 60BPM.
+ * A set of 2000 beats (= delta times) is 60BPM on 2000HZ (one delta time is 1/2000 seconds).
+ * If you want waltz, use 1800 beats (Appx. 66.7BPM on 2000HZ, one delta time is 0.9/1800 seconds [0.9 is 1800/2000]).
  * Arm Timer sets 240000Hz as clock.
  * 60 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 60 / 2 equals 2000Hz (60BPM).
  * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 8000Hz (240BPM).

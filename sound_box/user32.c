@@ -21,6 +21,7 @@ void makesilence();
 
 /**
  * In default, there is a 48Hz synchronization clock (it's a half of 96Hz on Arm Timer beacause of toggling).
+ * A set of 48 beats (= delta times) is 60BPM on 48HZ (one delta time is 1/48 seconds).
  * Arm Timer sets 240000Hz as clock.
  * 2500 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 2500 / 2 equals 48Hz (60BPM).
  * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 192Hz (240BPM).

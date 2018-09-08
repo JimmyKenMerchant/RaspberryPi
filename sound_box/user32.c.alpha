@@ -21,6 +21,7 @@ void makesilence();
 
 /**
  * In default, there is a 48Hz synchronization clock (it's a half of 96Hz on Arm Timer beacause of toggling).
+ * A set of 48 beats (= delta times) is 60BPM on 48HZ (one delta time is 1/48 seconds).
  * Arm Timer sets 240000Hz as clock.
  * 2500 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 2500 / 2 equals 48Hz (60BPM).
  * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 192Hz (240BPM).
@@ -235,44 +236,43 @@ int32 _user_start()
  * bent_rate expresses decimal places by fixed point (Bit[11:0]).
  * Caution that the value less than 0x2000 on bent_rate causes malfunctions.
  *
- * So far, in PWM, frequencies can be bent. 
  */
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S );
 	uint32 bent_rate = 0x12F08; // I2S
 	uint32 bent_inc = 0xC0;
-	#define max_bent_rate 0x18000 
+	#define max_bent_rate 0x18000
 	#define min_bent_rate 0xEFFA
 #elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
 	uint32 bent_rate = 0x12F08; // I2S
 	uint32 bent_inc = 0xC0;
-	#define max_bent_rate 0x18000 
+	#define max_bent_rate 0x18000
 	#define min_bent_rate 0xEFFA
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
-	#define max_bent_rate 0x4000 
+	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
-	#define max_bent_rate 0x4000 
+	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
-	#define max_bent_rate 0x4000 
+	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
-	#define max_bent_rate 0x4000 
+	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #endif
 
@@ -298,7 +298,19 @@ int32 _user_start()
 
 //print32_debug( detect_parallel, 100, 100 );
 
+#ifdef __SOUND_I2S
+			_clockmanager_divisor( _cm_pcm, bent_rate );
+#elif defined(__SOUND_I2S_BALANCED)
+			_clockmanager_divisor( _cm_pcm, bent_rate );
+#elif defined(__SOUND_PWM)
 			_clockmanager_divisor( _cm_pwm, bent_rate );
+#elif defined(__SOUND_PWM_BALANCED)
+			_clockmanager_divisor( _cm_pwm, bent_rate );
+#elif defined(__SOUND_JACK)
+			_clockmanager_divisor( _cm_pwm, bent_rate );
+#elif defined(__SOUND_JACK_BALANCED)
+			_clockmanager_divisor( _cm_pwm, bent_rate );
+#endif
 
 			/* Triangle LFO */
 			bent_rate += bent_inc;
