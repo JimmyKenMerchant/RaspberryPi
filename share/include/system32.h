@@ -42,6 +42,10 @@
 #define _18_BIG(x) x x x x x x x x x x x x x x x x x x
 #define _19_BIG(x) x x x x x x x x x x x x x x x x x x x
 #define _20_BIG(x) x x x x x x x x x x x x x x x x x x x x
+#define _21_BIG(x) x x x x x x x x x x x x x x x x x x x x x
+#define _22_BIG(x) x x x x x x x x x x x x x x x x x x x x x x
+#define _23_BIG(x) x x x x x x x x x x x x x x x x x x x x x x x
+#define _24_BIG(x) x x x x x x x x x x x x x x x x x x x x x x x x
 
 #define _1(x) x,
 #define _2(x) x,x,

@@ -31,7 +31,32 @@ void makesilence();
  */
 
 music_code music1[] =
-{
+{	
+	_12_BIG(_RAP(
+		_8_CHR(_20_NOIT)
+	))
+
+	_12_BIG(_RAP(
+		_6(_20_NOIS) _6(_21_NOIS) _6(_20_NOIS) _6(_21_NOIS)
+	))
+
+	_12_BIG(_RAP(
+		_4(_20_NOIT) _4(_20_NOIS)
+		_4(_20_NOIM) _4(_20_NOIL)
+		_4(_20_NOIM) _4(_20_NOIS)
+	))
+
+	_24_BIG(_RAP(
+		_1(_51_NOIT) _1(_SILENCE)
+		_1(_51_NOIS) _1(_SILENCE)
+		_1(_51_NOIM) _1(_SILENCE)
+		_1(_51_NOIL) _1(_SILENCE)
+	))
+
+	_12_BIG(_RAP(
+		_8_DEC(_52_NOIL)
+	))
+
 	_48(_1_NOIT) _48(_2_NOIT)
 	_48(_3_NOIT) _48(_4_NOIT)
 	_48(_5_NOIT) _48(_6_NOIT)
@@ -48,6 +73,17 @@ music_code music1[] =
 	_48(_27_NOIT) _48(_28_NOIT)
 	_48(_29_NOIT) _48(_30_NOIT)
 	_48(_31_NOIT) _48(_32_NOIT)
+	_48(_33_NOIT) _48(_34_NOIT)
+	_48(_35_NOIT) _48(_36_NOIT)
+	_48(_37_NOIT) _48(_38_NOIT)
+	_48(_39_NOIT) _48(_40_NOIT)
+	_48(_41_NOIT) _48(_42_NOIT)
+	_48(_43_NOIT) _48(_44_NOIT)
+	_48(_45_NOIT) _48(_46_NOIT)
+	_48(_47_NOIT) _48(_48_NOIT)
+	_48(_49_NOIT) _48(_50_NOIT)
+	_48(_51_NOIT) _48(_52_NOIT)
+
 
 	_48(_1_NOIS) _48(_2_NOIS)
 	_48(_3_NOIS) _48(_4_NOIS)
@@ -65,12 +101,16 @@ music_code music1[] =
 	_48(_27_NOIS) _48(_28_NOIS)
 	_48(_29_NOIS) _48(_30_NOIS)
 	_48(_31_NOIS) _48(_32_NOIS)
-
-	_48(_17_NOIS) _48(_17_NOIS)
-
-	_12_BIG(_RAP(
-		_6(_16_NOIS) _6(_17_NOIS) _6(_16_NOIS) _6(_17_NOIS)
-	))
+	_48(_33_NOIS) _48(_34_NOIS)
+	_48(_35_NOIS) _48(_36_NOIS)
+	_48(_37_NOIS) _48(_38_NOIS)
+	_48(_39_NOIS) _48(_40_NOIS)
+	_48(_41_NOIS) _48(_42_NOIS)
+	_48(_43_NOIS) _48(_44_NOIS)
+	_48(_45_NOIS) _48(_46_NOIS)
+	_48(_47_NOIS) _48(_48_NOIS)
+	_48(_49_NOIS) _48(_50_NOIS)
+	_48(_51_NOIS) _48(_52_NOIS)
 
 	_48(_1_NOIM) _48(_2_NOIM)
 	_48(_3_NOIM) _48(_4_NOIM)
@@ -88,6 +128,16 @@ music_code music1[] =
 	_48(_27_NOIM) _48(_28_NOIM)
 	_48(_29_NOIM) _48(_30_NOIM)
 	_48(_31_NOIM) _48(_32_NOIM)
+	_48(_33_NOIM) _48(_34_NOIM)
+	_48(_35_NOIM) _48(_36_NOIM)
+	_48(_37_NOIM) _48(_38_NOIM)
+	_48(_39_NOIM) _48(_40_NOIM)
+	_48(_41_NOIM) _48(_42_NOIM)
+	_48(_43_NOIM) _48(_44_NOIM)
+	_48(_45_NOIM) _48(_46_NOIM)
+	_48(_47_NOIM) _48(_48_NOIM)
+	_48(_49_NOIM) _48(_50_NOIM)
+	_48(_51_NOIM) _48(_52_NOIM)
 
 	_48(_1_NOIL) _48(_2_NOIL)
 	_48(_3_NOIL) _48(_4_NOIL)
@@ -105,6 +155,16 @@ music_code music1[] =
 	_48(_27_NOIL) _48(_28_NOIL)
 	_48(_29_NOIL) _48(_30_NOIL)
 	_48(_31_NOIL) _48(_32_NOIL)
+	_48(_33_NOIL) _48(_34_NOIL)
+	_48(_35_NOIL) _48(_36_NOIL)
+	_48(_37_NOIL) _48(_38_NOIL)
+	_48(_39_NOIL) _48(_40_NOIL)
+	_48(_41_NOIL) _48(_42_NOIL)
+	_48(_43_NOIL) _48(_44_NOIL)
+	_48(_45_NOIL) _48(_46_NOIL)
+	_48(_47_NOIL) _48(_48_NOIL)
+	_48(_49_NOIL) _48(_50_NOIL)
+	_48(_51_NOIL) _48(_52_NOIL)
 
 	_END
 };
