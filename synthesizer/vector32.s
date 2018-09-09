@@ -58,12 +58,12 @@ os_reset:
 	 * Timer
 	 */
 
-	/* Get a 4000hz Timer Interrupt (240000/60) */
+	/* Get a 4800hz Timer Interrupt (480000/100) */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
-	mov r1, #0x0000                           @ High 1 Byte of decimal 59 (60 - 1), 16 bits counter on default
-	orr r1, r1, #0x3B                         @ Low 1 Byte of decimal 59, 16 bits counter on default
-	mov r2, #0x3E0                            @ Decimal 999 to divide 240Mz by 1000 to 240Khz (Predivider is 10 Bits Wide)
-	orr r2, r2, #0x007                        @ Decimal 999 to divide 240Mz by 1000 to 240Khz (Predivider is 10 Bits Wide)
+	mov r1, #0x0000                           @ High 1 Byte of decimal 99 (100 - 1), 16 bits counter on default
+	orr r1, r1, #0x63                         @ Low 1 Byte of decimal 99, 16 bits counter on default
+	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
 	/**

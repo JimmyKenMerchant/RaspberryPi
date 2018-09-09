@@ -218,14 +218,14 @@ __attribute__((noinline)) uint32 _soundclear()
 	return result;
 }
 
-__attribute__((noinline)) uint32 _synthewave_pwm( float32 bent_rate )
+__attribute__((noinline)) uint32 _synthewave_pwm( float32 bend_rate )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x20");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _synthewave_i2s( float32 bent_rate )
+__attribute__((noinline)) uint32 _synthewave_i2s( float32 bend_rate )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x21");

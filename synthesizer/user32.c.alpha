@@ -12,18 +12,17 @@
 #include "sts32.h"
 
 #define timer_count_multiplicand        1
-#define timer_count_multiplier_default  60
-#define timer_count_multiplier_minlimit 15
-#define timer_count_multiplier_maxlimit 120
+#define timer_count_multiplier_default  100
+#define timer_count_multiplier_minlimit 25
+#define timer_count_multiplier_maxlimit 200
 
 /**
- * In default, there is a 2000Hz synchronization clock (it's a half of 4000Hz on Arm Timer beacause of toggling).
- * A set of 2000 beats (= delta times) is 60BPM on 2000HZ (one delta time is 1/2000 seconds).
- * If you want waltz, use 1800 beats (Appx. 66.7BPM on 2000HZ, one delta time is 0.9/1800 seconds [0.9 is 1800/2000]).
- * Arm Timer sets 240000Hz as clock.
- * 60 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 60 / 2 equals 2000Hz (60BPM).
- * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 8000Hz (240BPM).
- * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1000Hz (30BPM).
+ * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on Arm Timer beacause of toggling).
+ * A set of 2400 beats (= delta times) is 60BPM on 2400HZ (one delta time is 1/2400 seconds).
+ * Arm Timer sets 480000Hz as clock.
+ * 100 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 480000Hz / 100 / 2 equals 2400Hz (60BPM).
+ * The Maximum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 9600Hz (240BPM).
+ * The minimum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1200Hz (30BPM).
  *
  * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _syntheset.
  */
@@ -63,15 +62,15 @@
 synthe_precode pre_synthe1_l[] = {
 	_3_BIG(_RAP(
 		_2(_RAP(
-			_C3<<_FREQ|4000<<_MAG,_D6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_C4<<_FREQ|4000<<_MAG,_D6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_C5<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_C6<<_FREQ|4000<<_MAG,_A6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_C6<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_C6<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_C7<<_FREQ|4000<<_MAG,_A6<<_FREQ|00000<<_MAG,250<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_F8<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,125<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
-			_F8<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,125<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL
+			_C3<<_FREQ|4000<<_MAG,_D6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C4<<_FREQ|4000<<_MAG,_D6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C5<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C6<<_FREQ|4000<<_MAG,_A6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C6<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C6<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_C7<<_FREQ|4000<<_MAG,_A6<<_FREQ|00000<<_MAG,300<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_F8<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,150<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL,
+			_F8<<_FREQ|4000<<_MAG,_F6<<_FREQ|00000<<_MAG,150<<_BEAT,10<<_RIS|100<<_STN|70<<_FAL
 		))
 	))
 	_END
@@ -80,7 +79,7 @@ synthe_precode pre_synthe1_l[] = {
 synthe_precode pre_synthe1_r[] = {
 	_3_BIG(_RAP(
 		_2(_RAP(
-			_SILENCE,_SILENCE,1000<<_BEAT,0
+			_SILENCE,_SILENCE,2400<<_BEAT,0
 		))
 	))
 	_END
@@ -91,66 +90,66 @@ synthe_precode pre_synthe1_r[] = {
 synthe_precode pre_synthe2_l[] = {
 	// One, Two, Three
 	_3(_RAP(
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
 	))
 
 	// Four
 	_1(_RAP(
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|600<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,500<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,500<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,600<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,600<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D6<<_FREQ|0000<<_MAG,_D7<<_FREQ|15000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
 	))
 
 	_END
@@ -169,276 +168,80 @@ synthe_precode pre_synthe2_l[] = {
 synthe_precode pre_synthe2_r[] = {
 	// One, Two, Three
 	_3(_RAP(
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
 	))
 
 	// Four
 	_1(_RAP(
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|60<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,250<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
-		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,125<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
-		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,125<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,150<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_D1<<_FREQ|0000<<_MAG,_D1<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
 	))
 
 	_END
 };
 
 
-/* Test Sin Wave C1 C2 C3 C4 C5 C6 C7 C8*/
-synthe_precode pre_synthe3_l[] = {
-	_1(_RAP(
-		_C1<<_FREQ|6000<<_MAG,_C1<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C2<<_FREQ|5000<<_MAG,_C2<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C3<<_FREQ|4000<<_MAG,_C3<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C4<<_FREQ|3500<<_MAG,_C4<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C5<<_FREQ|2500<<_MAG,_C5<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C6<<_FREQ|2500<<_MAG,_C6<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C7<<_FREQ|2500<<_MAG,_C7<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C8<<_FREQ|2500<<_MAG,_C8<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_A4<<_FREQ|2500<<_MAG,_A4<<_FREQ|00000<<_MAG,16000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_END
-};
-
-synthe_precode pre_synthe3_r[] = {
-	_1(_RAP(
-		_C1<<_FREQ|0000<<_MAG,_C1<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C2<<_FREQ|0000<<_MAG,_C2<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C3<<_FREQ|0000<<_MAG,_C3<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C4<<_FREQ|0000<<_MAG,_C4<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C5<<_FREQ|0000<<_MAG,_C5<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C6<<_FREQ|0000<<_MAG,_C6<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C7<<_FREQ|0000<<_MAG,_C7<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_C8<<_FREQ|0000<<_MAG,_C8<<_FREQ|00000<<_MAG,8000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_1(_RAP(
-		_A4<<_FREQ|0000<<_MAG,_A4<<_FREQ|00000<<_MAG,16000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_END
-};
-
-
-/* Major 7th Alpeggio, 1 and 8 */
 synthe_precode pre_synthe4_l[] = {
-	_4(_RAP(
-		_C4<<_FREQ|2500<<_MAG,_G4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_E4<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_G4<<_FREQ|2500<<_MAG,_D5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_E4<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_4(_RAP(
-		_F4<<_FREQ|2500<<_MAG,_C5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_E5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_C5<<_FREQ|2500<<_MAG,_G5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_A4<<_FREQ|2500<<_MAG,_E5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_4(_RAP(
-		_G4<<_FREQ|2500<<_MAG,_D5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_B4<<_FREQ|2500<<_MAG,_FS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_D5<<_FREQ|2500<<_MAG,_A5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_B4<<_FREQ|2500<<_MAG,_FS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_4(_RAP(
-		_C4<<_FREQ|2500<<_MAG,_G4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_E4<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_G4<<_FREQ|2500<<_MAG,_D5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_E4<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
+	_E5<<_FREQ|2000<<_MAG,((_E5)+(4<<_FRAC))<<_FREQ|32000<<_MAG,1200<<_BEAT,00<<_ATK|1<<_DCY|5<<_STN|99<<_RLS,
 	_END
 };
 
-/* Major 7th Alpeggio, 12 and 5 */
 synthe_precode pre_synthe4_r[] = {
-	_4(_RAP(
-		_B4<<_FREQ|2500<<_MAG,_E4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_DS5<<_FREQ|2500<<_MAG,_GS4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_FS5<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_DS5<<_FREQ|2500<<_MAG,_GS4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_4(_RAP(
-		_E5<<_FREQ|2500<<_MAG,_A4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_GS5<<_FREQ|2500<<_MAG,_CS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_B5<<_FREQ|2500<<_MAG,_E5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_GS5<<_FREQ|2500<<_MAG,_CS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_4(_RAP(
-		_FS5<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_AS5<<_FREQ|2500<<_MAG,_DS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_CS6<<_FREQ|2500<<_MAG,_FS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_AS5<<_FREQ|2500<<_MAG,_DS5<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_4(_RAP(
-		_B4<<_FREQ|2500<<_MAG,_E4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_DS5<<_FREQ|2500<<_MAG,_GS4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_FS5<<_FREQ|2500<<_MAG,_B4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL,
-		_DS5<<_FREQ|2500<<_MAG,_GS4<<_FREQ|5000<<_MAG,250<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_END
-};
-
-
-/* Low */
-synthe_precode pre_synthe5_l[] = {
-	_1(_RAP(
-		_B2_INT<<_FREQ|3500<<_MAG,(_B2_INT>>2)<<_FREQ|30000<<_MAG,2000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_END
-};
-
-
-synthe_precode pre_synthe5_r[] = {
-	_1(_RAP(
-		_B2_INT<<_FREQ|3500<<_MAG,(_B2_INT>>2)<<_FREQ|30000<<_MAG,2000<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
-	))
-	_END
-};
-
-
-synthe_precode pre_synthe8_l[] = {
-	_4(_RAP(
-		_D4_INT<<_FREQ|2500<<_MAG,(_D4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_G5_INT<<_FREQ|2500<<_MAG,(_G5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D4_INT<<_FREQ|0000<<_MAG,(_D4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_G5_INT<<_FREQ|2500<<_MAG,(_G5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
-	))
-	_4(_RAP(
-		_C4_INT<<_FREQ|2500<<_MAG,(_C4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_F5_INT<<_FREQ|2500<<_MAG,(_F5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_C4_INT<<_FREQ|0000<<_MAG,(_C4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_F5_INT<<_FREQ|2500<<_MAG,(_F5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
-	))
-	_END
-};
-
-synthe_precode pre_synthe8_r[] = {
-	_4(_RAP(
-		_D1_INT<<_FREQ|2500<<_MAG,(_D4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1_INT<<_FREQ|0000<<_MAG,(_G5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1_INT<<_FREQ|0000<<_MAG,(_D4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1_INT<<_FREQ|2500<<_MAG,(_G5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
-	))
-	_4(_RAP(
-		_D1_INT<<_FREQ|2500<<_MAG,(_D4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1_INT<<_FREQ|0000<<_MAG,(_G5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1_INT<<_FREQ|0000<<_MAG,(_D4_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
-		_D1_INT<<_FREQ|2500<<_MAG,(_G5_INT>>2)<<_FREQ|15000<<_MAG,250<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL
-	))
-	_END
-};
-
-
-// "Himawari"
-synthe_precode pre_synthe16_l[] = {
-	_D5<<_FREQ|2500<<_MAG,_D7<<_FREQ|5000<<_MAG,750<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_G5<<_FREQ|2500<<_MAG,_G7<<_FREQ|5000<<_MAG,1250<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_D5<<_FREQ|2500<<_MAG,_D7<<_FREQ|5000<<_MAG,750<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_G5<<_FREQ|2500<<_MAG,_G7<<_FREQ|5000<<_MAG,1250<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_F5<<_FREQ|2500<<_MAG,_F7<<_FREQ|5000<<_MAG,750<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_C6<<_FREQ|2500<<_MAG,_C8<<_FREQ|5000<<_MAG,1250<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_G5<<_FREQ|2500<<_MAG,_G7<<_FREQ|5000<<_MAG,750<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_D6<<_FREQ|2500<<_MAG,_D8<<_FREQ|5000<<_MAG,1250<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
-	_END
-};
-
-synthe_precode pre_synthe16_r[] = {
-	_G1<<_FREQ|2500<<_MAG,_G1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_G1<<_FREQ|2500<<_MAG,_G1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_G1<<_FREQ|2500<<_MAG,_G1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_G1<<_FREQ|2500<<_MAG,_G1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_F1<<_FREQ|2500<<_MAG,_F1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_C2<<_FREQ|2500<<_MAG,_C2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_F1<<_FREQ|2500<<_MAG,_F1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_C2<<_FREQ|2500<<_MAG,_C2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_G1<<_FREQ|2500<<_MAG,_G1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_G1<<_FREQ|2500<<_MAG,_G1<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
-	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,500<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
+	_E5<<_FREQ|2000<<_MAG,((_E5)+(4<<_FRAC))<<_FREQ|32000<<_MAG,1200<<_BEAT,00<<_ATK|1<<_DCY|5<<_STN|99<<_RLS,
 	_END
 };
 
@@ -455,7 +258,7 @@ int32 _user_start()
 	if ( (uint32)synthe2 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen2 = sts32_synthelen( synthe2 ) / 2;
 
-	synthe_code* synthe3 = sts32_synthedecodelr( pre_synthe3_l, pre_synthe3_r );
+	synthe_code* synthe3 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe3 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen3 = sts32_synthelen( synthe3 ) / 2;
 
@@ -463,7 +266,7 @@ int32 _user_start()
 	if ( (uint32)synthe4 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen4 = sts32_synthelen( synthe4 ) / 2;
 
-	synthe_code* synthe5 = sts32_synthedecodelr( pre_synthe5_l, pre_synthe5_r );
+	synthe_code* synthe5 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe5 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen5 = sts32_synthelen( synthe5 ) / 2;
 
@@ -475,11 +278,11 @@ int32 _user_start()
 	if ( (uint32)synthe7 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 2;
 
-	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8_l, pre_synthe8_r );
+	synthe_code* synthe8 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe8 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 2;
 
-	synthe_code* synthe16 = sts32_synthedecodelr( pre_synthe16_l, pre_synthe16_r );
+	synthe_code* synthe16 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
 
@@ -487,21 +290,21 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
-	float32 bent_rate = 1.0;
-	bool flag_bent = true;
+	float32 bend_rate = 1.0;
+	bool flag_bend = true;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s( bent_rate );
+		_synthewave_i2s( bend_rate );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm( bent_rate );
+		_synthewave_pwm( bend_rate );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm( bent_rate );
+		_synthewave_pwm( bend_rate );
 #endif
 		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
 
@@ -509,12 +312,12 @@ int32 _user_start()
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
 
 			// Triangle LFO
-			if ( flag_bent ) {
-				bent_rate = vfp32_fadd( bent_rate, 0.0001 );
-				if ( vfp32_fgt( bent_rate, 2.0 ) ) flag_bent = false;
+			if ( flag_bend ) {
+				bend_rate = vfp32_fadd( bend_rate, 0.0001 );
+				if ( vfp32_fgt( bend_rate, 2.0 ) ) flag_bend = false;
 			} else {
-				bent_rate = vfp32_fsub( bent_rate, 0.0001 );
-				if ( vfp32_fle( bent_rate, 0.1 ) ) flag_bent = true;
+				bend_rate = vfp32_fsub( bend_rate, 0.0001 );
+				if ( vfp32_fle( bend_rate, 0.1 ) ) flag_bend = true;
 			}
 
 //print32_debug( detect_parallel, 100, 100 );
@@ -522,13 +325,13 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_armtimer_reload( 60 - 1 ); // 60BPM
+				_armtimer_reload( 100 - 1 ); // 60BPM
 				_syntheset( synthe1, synthelen1, 0, -1 );
 				//_syntheclear();
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				_armtimer_reload( 48 - 1 ); // 75BPM
+				_armtimer_reload( 80 - 1 ); // 75BPM
 				_syntheset( synthe2, synthelen2, 0, -1 );
 				/* Beat Up */
 				//timer_count_multiplier--;
