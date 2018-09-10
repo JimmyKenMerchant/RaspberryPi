@@ -157,14 +157,6 @@ synthe_precode pre_synthe2_l[] = {
 
 /* Rhythm of Drum 'n' Bass: Bass and Snare Parts */
 /* Made Snare Part More Like Percussion Sound */
-/**
- * When you input from PCM or PWM output directly, you can hear buggy high tone noise (appx. 2KHz) such as bass and high tones.
- * It's harmonics.
- * I recommend that you use analogue Low-pass filter (Cut Off) to intermediate digital output and any input.
- * Digital output has high frequency noise that hold harmonics bigger than anologue output.
- * This derives from pulses of a digital-anologue converter.
- * It sometimes takes pre-sound state that is not natural to be heared.
- */
 synthe_precode pre_synthe2_r[] = {
 	// One, Two, Three
 	_3(_RAP(
@@ -235,13 +227,31 @@ synthe_precode pre_synthe2_r[] = {
 };
 
 
+/* Hand Clap (Two People) */
 synthe_precode pre_synthe4_l[] = {
-	_E5<<_FREQ|2000<<_MAG,((_E5)+(4<<_FRAC))<<_FREQ|32000<<_MAG,1200<<_BEAT,00<<_ATK|1<<_DCY|5<<_STN|99<<_RLS,
+	_SILENCE,_SILENCE,125<<_BEAT,0,
+	_G5<<_FREQ|4000<<_MAG,_NOISE<<_FREQ|32000<<_MAG,75<<_BEAT,0<<_ATK|3<<_DCY|2<<_STN|97<<_RLS,
+	_SILENCE,_SILENCE,100<<_BEAT,0,
+	_SILENCE,_SILENCE,2100<<_BEAT,0,
 	_END
 };
 
 synthe_precode pre_synthe4_r[] = {
-	_E5<<_FREQ|2000<<_MAG,((_E5)+(4<<_FRAC))<<_FREQ|32000<<_MAG,1200<<_BEAT,00<<_ATK|1<<_DCY|5<<_STN|99<<_RLS,
+	_G5<<_FREQ|4000<<_MAG,_NOISE<<_FREQ|32000<<_MAG,75<<_BEAT,0<<_ATK|3<<_DCY|2<<_STN|97<<_RLS,
+	_SILENCE,_SILENCE,225<<_BEAT,0,
+	_SILENCE,_SILENCE,2100<<_BEAT,0,
+	_END
+};
+
+
+/* String */
+synthe_precode pre_synthe8_l[] = {
+	_E5<<_FREQ|2000<<_MAG,((_E5)+(2<<_FRAC))<<_FREQ|32000<<_MAG,7200<<_BEAT,70<<_ATK|0<<_DCY|100<<_STN|30<<_RLS,
+	_END
+};
+
+synthe_precode pre_synthe8_r[] = {
+	_G5<<_FREQ|2000<<_MAG,((_G5)+(2<<_FRAC))<<_FREQ|32000<<_MAG,7200<<_BEAT,70<<_ATK|0<<_DCY|100<<_STN|30<<_RLS,
 	_END
 };
 
@@ -278,7 +288,7 @@ int32 _user_start()
 	if ( (uint32)synthe7 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 2;
 
-	synthe_code* synthe8 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8_l, pre_synthe8_r );
 	if ( (uint32)synthe8 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 2;
 
