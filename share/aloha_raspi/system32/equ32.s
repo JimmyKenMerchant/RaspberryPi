@@ -36,8 +36,8 @@
 .equ equ32_sts32_samplerate,                   32000
 .equ equ32_sts32_synthewave_pwm_bias,          2496
 .equ equ32_snd32_sounddecode_pwm_bias,         2496
-.equ equ32_snd32_sounddecode_noise_len_upper,  0x290      @ Decimal 660, Sample Rate 31680Hz / 48
-.equ equ32_snd32_sounddecode_noise_len_lower,  0x004      @ Decimal 660, Sample Rate 31680Hz / 48
+.equ equ32_snd32_sounddecode_noise_len_upper,  0x280      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
+.equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_resolution, 15         @ Affecting Sound Color, 255/127/63/31/15/7
 
 /**
