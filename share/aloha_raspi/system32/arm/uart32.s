@@ -379,9 +379,10 @@ macro32_debug temp, 0, 100
  *
  * Parameters
  * r0: Heap for Receive Data
- * r1: Transfer Size (Bytes)
+ * r1: Receive Size (Bytes), Up to 16 Is Preferred Because Of RxFIFO Size
  *
  * Return: r0 (0 as success, not 0 as error)
+ * Bit[31:4]: Size (Bytes) Not Received
  * Bit[3]: Overrun Error
  * Bit[2]: Break Error
  * Bit[1]: Parity Error
@@ -410,7 +411,8 @@ macro32_debug temp, 0, 112
 */
 
 		tst temp, #equ32_uart0_fr_rxfe
-		bne uart32_uartrx_fifo                      @ If Empty on RxFIFO
+		movne temp, #0                              @ If Empty on RxFIFO
+		bne uart32_uartrx_error
 
 		ldr byte, [addr_uart, #equ32_uart0_dr]      @ If Having Data on RxFIFO (12-bit Word, 8-bit is Data)
 		strb byte, [heap]
@@ -430,8 +432,8 @@ macro32_debug temp, 0, 112
 		b uart32_uartrx_success
 
 	uart32_uartrx_error:
-		and temp, temp, #0b1111
-		mov r0, temp
+		and r0, temp, #0b1111
+		orr r0, r0, size_rx, lsl #4
 		b uart32_uartrx_common
 
 	uart32_uartrx_success:
@@ -1889,7 +1891,7 @@ uart32_uartmalloc_client:
 	beq uart32_uartmalloc_client_error
 
 	lsl words_buffer, words_buffer, #2             @ Multiply by 4
-	add words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
+	sub words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
 	str words_buffer, UART32_UARTINT_CLIENT_LENGTH
 	str buffer, UART32_UARTINT_CLIENT_BUFFER
 	mov words_buffer, #0

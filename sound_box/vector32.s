@@ -54,6 +54,10 @@ os_reset:
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
+	/* Enable UART IRQ */
+	mov r1, #1<<25                                   @ UART IRQ #57
+	str r1, [r0, #equ32_interrupt_enable_irqs2]
+
 	/**
 	 * Timer
 	 */
@@ -91,6 +95,8 @@ os_reset:
 
 	/* I/O Settings */
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 14 ALT 0 as TXD0
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 17 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
@@ -142,6 +148,33 @@ os_reset:
 	mov r0, #1
 	bl snd32_soundinit_pwm
 .endif
+
+	/**
+	 * UART and MIDI
+	 */
+
+	/* UART 115200 Baud */
+	push {r0-r3}
+	mov r0, #9                                               @ Integer Divisor Bit[15:0], 18000000 / 16 * 115200 is 9.765625
+	mov r1, #0b110001                                        @ Fractional Divisor Bit[5:0], Fixed Point Float 0.765625
+	mov r2, #0b11<<equ32_uart0_lcrh_sps|equ32_uart0_lcrh_fen @ Line Control
+	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe           @ Coontrol
+	bl uart32_uartinit
+	pop {r0-r3}
+
+	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
+	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
+	/* But Now on Only Using Rx Timeout */
+	push {r0-r3}
+	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
+	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
+	bl uart32_uartsetint
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, #64
+	bl snd32_soundmidi_malloc
+	pop {r0-r3}
 	
 	pop {pc}
 
@@ -151,6 +184,38 @@ os_debug:
 
 os_irq:
 	push {r0-r12,lr}
+
+.ifdef __SOUND_I2S
+	mov r0, #0
+	mov r1, #1
+	bl snd32_soundmidi
+.endif
+.ifdef __SOUND_I2S_BALANCED
+	mov r0, #0
+	mov r1, #1
+	bl snd32_soundmidi
+.endif
+.ifdef __SOUND_PWM
+	mov r0, #0
+	mov r1, #0
+	bl snd32_soundmidi
+.endif
+.ifdef __SOUND_PWM_BALANCED
+	mov r0, #0
+	mov r1, #0
+	bl snd32_soundmidi
+.endif
+.ifdef __SOUND_JACK
+	mov r0, #0
+	mov r1, #0
+	bl snd32_soundmidi
+.endif
+.ifdef __SOUND_JACK_BALANCED
+	mov r0, #0
+	mov r1, #0
+	bl snd32_soundmidi
+.endif
+
 	pop {r0-r12,pc}
 
 os_fiq:

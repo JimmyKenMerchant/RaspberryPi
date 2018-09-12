@@ -43,7 +43,7 @@ os_reset:
 	mov r1, #1<<25                                   @ UART IRQ #57
 	str r1, [r0, #equ32_interrupt_enable_irqs2]
 
-	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
+	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**

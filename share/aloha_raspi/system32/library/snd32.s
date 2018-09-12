@@ -21,7 +21,7 @@ SND32_INTERRUPT_COUNT:     .word 0x00
 /**
  * Bit[0] Not Started(0)/ Started (1)
  * Bit[1] Regular State(0)/ Interrupt State(1)
- * Bit[2] Reserved
+ * Bit[2] MIDI Running
  * Bit[3] Reserved
  * Bit[31] Not Initialized(0)/ Initialized(1)
  */
@@ -435,9 +435,10 @@ snd32_soundclear:
  * function snd32_soundplay
  * Play Sound
  *
- * Return: r0 (0 as success, 1 and 2 as error)
+ * Return: r0 (0 as success, 1, 2, and 3 as error)
  * Error(1): Music Code is Not Assgined
- * Error(2): Not Initialized 
+ * Error(2): Not Initialized
+ * Error(3): MIDI Running
  */
 .globl snd32_soundplay
 snd32_soundplay:
@@ -469,6 +470,9 @@ snd32_soundplay:
 
 	tst status, #0x80000000                   @ If Not Initialized
 	beq snd32_soundplay_error2
+
+	tst status, #0x00000004
+	bne snd32_soundplay_error3                @ If MIDI Running
 
 	cmp count, length
 	blo snd32_soundplay_jump
@@ -596,7 +600,11 @@ snd32_soundplay:
 		b snd32_soundplay_common
 
 	snd32_soundplay_error2:
-		mov r0, #2                            @ Return with Error 1
+		mov r0, #2                            @ Return with Error 2
+		b snd32_soundplay_common
+
+	snd32_soundplay_error3:
+		mov r0, #3                            @ Return with Error 3
 		b snd32_soundplay_common
 
 	snd32_soundplay_success:
@@ -1057,8 +1065,8 @@ snd32_musiclen:
  * r0: Channel, 0-15 (MIDI Channel No. 1 to 16)
  * r1: 0 as PWM Mode, 1 as PCM Mode
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): No Heap, Overrun, or Busy
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Not Initialized on snd32_sounddecode, No Buffer to Receive on UART, or UART Overrun
  * Error(2): MIDI Channel is Not Matched, or Only Data Bytes Received
  */
 .globl snd32_soundmidi
@@ -1078,13 +1086,18 @@ snd32_soundmidi:
 
 	push {r4-r10,lr}
 
+	ldr status, SND32_STATUS
+	tst status, #0x80000000            @ If Not Initialized
+	beq snd32_soundmidi_error1
+
 	ldr count, SND32_SOUNDMIDI_COUNT
 	ldr max_size, SND32_SOUNDMIDI_LENGTH
 	ldr buffer, SND32_SOUNDMIDI_BUFFER
-	ldr bytebuffer, SND32_SOUNDMIDI_BYTEBUFFER
 
 	cmp buffer, #0
 	beq snd32_soundmidi_error1        @ If No Buffer
+
+	ldr bytebuffer, SND32_SOUNDMIDI_BYTEBUFFER
 
 	push {r0-r3}
 	mov r0, bytebuffer
@@ -1097,7 +1110,8 @@ snd32_soundmidi:
 
 	/* Check Whether Status or Data Bytes */
 	ldrb byte, [bytebuffer]
-	tst bytebuffer, #0x80
+
+	tst byte, #0x80
 	bne snd32_soundmidi_status
 
 	/* Check Whether Only Data Bytes (Status Is For Other Channels, etc.) */
@@ -1113,27 +1127,27 @@ snd32_soundmidi:
 	subge count, max_size, #1         @ If Exceeds Maximum Size of Heap, Stay Count
 
 	.unreq max_size
-	temp2 .req r4 
+	temp2 .req r4
 
 	/* Check Message Type and Procedures for Each Message */
-	ldrb status, [buffer]
+	ldrb temp, [buffer]
 	ldrb data1, [buffer, #1]
 	ldrb data2, [buffer, #2]
-	cmp status, #0x8
+	cmp temp, #0x8
 	beq snd32_soundmidi_noteoff           @ Velocity is Ignored
-	cmp status, #0x9
+	cmp temp, #0x9
 	beq snd32_soundmidi_noteon
-	cmp status, #0x10
+	cmp temp, #0x10
 	beq snd32_soundmidi_polyaftertouch    @ Polyphonic Key Pressure
-	cmp status, #0x11
+	cmp temp, #0x11
 	beq snd32_soundmidi_control
-	cmp status, #0x12
+	cmp temp, #0x12
 	beq snd32_soundmidi_programchange
-	cmp status, #0x13
+	cmp temp, #0x13
 	beq snd32_soundmidi_monoaftertouch    @ Monophonic Key Pressure
-	cmp status, #0x14
+	cmp temp, #0x14
 	beq snd32_soundmidi_pitchbend
-	cmp status, #0x15
+	cmp temp, #0x15
 	beq snd32_soundmidi_systemcommon
 
 	b snd32_soundmidi_success
@@ -1145,21 +1159,26 @@ snd32_soundmidi:
 		cmp mode, #0
 		bne snd32_soundmidi_noteoff_pcm
 
+		/* PWM Mode */
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
-		mov r1, #0x400                     @ Silence
-		bl dma32_set_channel
+		mov r1, #equ32_snd32_silence      @ Silence
+		bl dma32_change_nextcb
 		pop {r0-r3}
 
 		b snd32_soundmidi_noteoff_common
 
 		snd32_soundmidi_noteoff_pcm:
+			/* PCM Mode */
 			push {r0-r3}
 			mov r0, #equ32_snd32_dma_channel
 			bl dma32_clear_channel
 			pop {r0-r3}
 
+			bic status, status, #0x1
+
 		snd32_soundmidi_noteoff_common:
+			bic status, status, #0x00000004                   @ Clear MIDI Running
 			mov count, #0
 			b snd32_soundmidi_success
 
@@ -1175,7 +1194,7 @@ snd32_soundmidi:
 		ldr temp, SND32_SOUNDMIDI_HIGHNOTE
 		cmp data1, temp
 		bhi snd32_soundmidi_noteoff
-		
+
 		/* To Fit Sound Index, Subtract */
 		ldr temp, SND32_SOUNDMIDI_LOWNOTE
 		sub data1, data1, temp
@@ -1187,24 +1206,56 @@ snd32_soundmidi:
 		/* Velocity to Volume Offset */
 		ldr temp, SND32_SOUNDMIDI_VOLUMETHRES
 		mov temp2, data2
-		mov data2, #0
+		mov data2, #3                           @ Key of Minimum Volume
 
 		snd32_soundmidi_noteon_velocity:
 			sub temp2, temp
 			cmp temp2, #0
-			addge data2, data2, #1
+			subge data2, data2, #1
 			bge snd32_soundmidi_noteon_velocity
+
+		/* If Sined Minus, Stay Key of Maximum Volume */
+		cmp data2, #0
+		movlt data2, #0
 
 		ldr temp, SND32_SOUNDMIDI_VOLUMEOFFSET
 		mul data2, data2, temp
 		add data1, data1, data2                 @ Add Volume Offset to Note
 
-		/* Set Sound */
+macro32_debug data1, 0, 88
+
+		tst status, #0x1
+		bne snd32_soundmidi_noteon_contine      @ If Continue
+
+		/* If First */
+
+		push {r0-r3}
+		mov r0, #equ32_snd32_dma_channel
+		bl dma32_clear_channel
+		pop {r0-r3}
+
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
 		mov r1, data1
 		bl dma32_set_channel
 		pop {r0-r3}
+
+		orr status, status, #0x1
+
+		b snd32_soundmidi_noteon_common
+
+	snd32_soundmidi_noteon_contine:
+
+		push {r0-r3}
+		mov r0, #equ32_snd32_dma_channel
+		mov r1, data1
+		bl dma32_change_nextcb
+		pop {r0-r3}
+
+	snd32_soundmidi_noteon_common:
+		orr status, status, #0x00000004                   @ Set MIDI Running
+
+macro32_debug data1, 0, 112
 
 		mov count, #0
 		b snd32_soundmidi_success
@@ -1275,7 +1326,7 @@ snd32_soundmidi:
 		/* Concatenate Data1 and Data2, 0 to 16384, 8192 (0x2000) is Neutral */
 		lsl data2, data2, #7                          @ MSB Bit[13:7]
 		orr data1, data1, data2
-		lsr data1, data1, #1                          @ Divisor (This Case Divided by 2)
+		lsr data1, data1, #1                          @ Divisor of Resolution (This Case Divided by 2)
 		sub data1, data1, #0x1000                     @ Neutral (8192 / 2) to 0, Make Signed Value
 
 		cmp mode, #0
@@ -1333,8 +1384,12 @@ snd32_soundmidi:
 		mov r0, #0
 
 	snd32_soundmidi_common:
+		str status, SND32_STATUS
 		str count, SND32_SOUNDMIDI_COUNT
 		macro32_dsb ip
+
+macro32_debug_hexa buffer, 100, 100, 8
+
 		pop {r4-r10,pc}
 
 .unreq channel
@@ -1359,7 +1414,7 @@ SND32_SOUNDMIDI_VOLUMETHRES:  .word 32    @ Volume Thereshold, Assume 4 Steps, i
 SND32_SOUNDMIDI_BASEOFFSET:   .word 0x00  @ Current Sound's Base Offset in Sound Index, Sine
 SND32_SOUNDMIDI_LOWNOTE:      .word 0x33  @ Possible Lowest Note Number in MIDI Format, A1
 SND32_SOUNDMIDI_HIGHNOTE:     .word 0x96  @ Possible Highest Note Number in MIDI Format, C7
-SND32_SOUNDMIDI_NOTE:         .word 0x00  @ Current Note in MIDI Format
+SND32_SOUNDMIDI_NOTE:         .word 0x00  @ Current Note in MIDI Format, Not Used
 SND32_SOUNDMIDI_BANKMSB:      .word 0x00  @ Current MSB of Control Message (Bank Select) in MIDI Format, Not Used
 SND32_SOUNDMIDI_BANKLSB:      .word 0x00  @ Current LSB of Control Message (Bank Select) in MIDI Format, Not Used
 
@@ -1391,7 +1446,7 @@ snd32_soundmidi_malloc:
 	beq snd32_soundmidi_malloc_error
 
 	lsl words_buffer, words_buffer, #2             @ Multiply by 4
-	add words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
+	sub words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
 	str words_buffer, SND32_SOUNDMIDI_LENGTH
 	str buffer, SND32_SOUNDMIDI_BUFFER
 	mov words_buffer, #0
