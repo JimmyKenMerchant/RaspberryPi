@@ -221,6 +221,7 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
+	bool mode_soundplay;
 
 /**
  * Trial on bending frequencies through changing the peripheral clock.
@@ -240,36 +241,42 @@ int32 _user_start()
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S );
+	mode_soundplay = True;
 	uint32 bent_rate = 0x12F08; // I2S
 	uint32 bent_inc = 0xC0;
 	#define max_bent_rate 0x18000
 	#define min_bent_rate 0xEFFA
 #elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
+	mode_soundplay = True;
 	uint32 bent_rate = 0x12F08; // I2S
 	uint32 bent_inc = 0xC0;
 	#define max_bent_rate 0x18000
 	#define min_bent_rate 0xEFFA
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
@@ -462,7 +469,7 @@ int32 _user_start()
 				makesilence();
 			}
 
-			result = _soundplay();
+			result = _soundplay( mode_soundplay );
 			if ( result == 0 ) { // Playing
 				playing_signal = _GPIOTOGGLE_HIGH;
 			} else { // Not Playing

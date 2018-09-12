@@ -197,7 +197,7 @@ __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, ui
 	return result;
 }
 
-__attribute__((noinline)) uint32 _soundplay()
+__attribute__((noinline)) uint32 _soundplay( bool mode )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x1D");

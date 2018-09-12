@@ -435,6 +435,9 @@ snd32_soundclear:
  * function snd32_soundplay
  * Play Sound
  *
+ * Parameters
+ * r0: 0 as PWM Mode, 1 as PCM Mode
+ *
  * Return: r0 (0 as success, 1, 2, and 3 as error)
  * Error(1): Music Code is Not Assgined
  * Error(2): Not Initialized
@@ -443,16 +446,17 @@ snd32_soundclear:
 .globl snd32_soundplay
 snd32_soundplay:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_code   .req r0 @ Register for Result, Scratch Register
-	length      .req r1 @ Scratch Register
-	count       .req r2 @ Scratch Register
-	repeat      .req r3 @ Scratch Register
-	status      .req r4
-	code        .req r5
-	temp        .req r6
-	temp2       .req r7
+	mode        .req r0 @ Register for Result, Scratch Register
+	addr_code   .req r1 @ Scratch Register
+	length      .req r2 @ Scratch Register
+	count       .req r3 @ Scratch Register
+	repeat      .req r4
+	status      .req r5
+	code        .req r6
+	temp        .req r7
+	temp2       .req r8
 
-	push {r4-r7,lr}
+	push {r4-r8,lr}
 
 	ldr addr_code, SND32_CODE
 	cmp addr_code, #0
@@ -543,24 +547,39 @@ snd32_soundplay:
 
 		mov addr_code, #0
 		mov length, #0
-		bic status, status, #0x1                   @ Clear Bit[0]
 
 		str addr_code, SND32_CODE
 		str length, SND32_LENGTH
 		str count, SND32_COUNT                     @ count is Already Zero
 		str repeat, SND32_REPEAT                   @ repeat is Already Zero
-		str status, SND32_STATUS
 
+		cmp mode, #0
+		bne snd32_soundplay_free_pcm
+
+		/* PWM Mode */
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
-		bl dma32_clear_channel
+		mov r1, #equ32_snd32_silence               @ Silence for Bias Voltage
+		bl dma32_change_nextcb
 		pop {r0-r3}
 
 		b snd32_soundplay_success
 
+		snd32_soundplay_free_pcm:
+			bic status, status, #0x1                   @ Clear Continue Bit[0]
+			str status, SND32_STATUS
+
+			/* PCM Mode */
+			push {r0-r3}
+			mov r0, #equ32_snd32_dma_channel
+			bl dma32_clear_channel
+			pop {r0-r3}
+
+			b snd32_soundplay_success
+
 		snd32_soundplay_free_interrupt:
 			.unreq code
-			temp3 .req r5
+			temp3 .req r6
 
 			ldr temp, SND32_SUSPEND_LENGTH
 			str temp, SND32_LENGTH
@@ -612,8 +631,9 @@ snd32_soundplay:
 		mov r0, #0                            @ Return with Success
 
 	snd32_soundplay_common:
-		pop {r4-r7,pc}
+		pop {r4-r8,pc}
 
+.unreq mode
 .unreq addr_code
 .unreq length
 .unreq count
@@ -1162,7 +1182,7 @@ snd32_soundmidi:
 		/* PWM Mode */
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
-		mov r1, #equ32_snd32_silence      @ Silence
+		mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
 		bl dma32_change_nextcb
 		pop {r0-r3}
 
@@ -1221,9 +1241,9 @@ snd32_soundmidi:
 		ldr temp, SND32_SOUNDMIDI_VOLUMEOFFSET
 		mul data2, data2, temp
 		add data1, data1, data2                 @ Add Volume Offset to Note
-
+/*
 macro32_debug data1, 0, 88
-
+*/
 		tst status, #0x1
 		bne snd32_soundmidi_noteon_contine      @ If Continue
 
@@ -1254,9 +1274,9 @@ macro32_debug data1, 0, 88
 
 	snd32_soundmidi_noteon_common:
 		orr status, status, #0x00000004                   @ Set MIDI Running
-
+/*
 macro32_debug data1, 0, 112
-
+*/
 		mov count, #0
 		b snd32_soundmidi_success
 
@@ -1387,9 +1407,9 @@ macro32_debug data1, 0, 112
 		str status, SND32_STATUS
 		str count, SND32_SOUNDMIDI_COUNT
 		macro32_dsb ip
-
+/*
 macro32_debug_hexa buffer, 100, 100, 8
-
+*/
 		pop {r4-r10,pc}
 
 .unreq channel

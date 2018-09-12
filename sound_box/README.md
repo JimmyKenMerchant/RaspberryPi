@@ -32,6 +32,8 @@
 
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
+* GPIO 15 as RXD0 (UART) for MIDI In
+
 * GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.

@@ -277,19 +277,26 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
+	bool mode_soundplay;
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S );
+	mode_soundplay = True;
 #elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
+	mode_soundplay = True;
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	mode_soundplay = False;
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	mode_soundplay = False;
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	mode_soundplay = False;
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	mode_soundplay = False;
 #endif
 
 	// To Get Proper Latency, Get Lengths in Advance
@@ -322,7 +329,7 @@ int32 _user_start()
 
 			// 0b00010 (2)
 			} else if ( detect_parallel == 0b00010<<22 ) {
-				_soundset( music2, musiclen2, 0, -1 );
+				_soundset( music2, musiclen2, 0, 1 );
 				/* Beat Up */
 				//timer_count_multiplier -= 5;
 				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
@@ -456,7 +463,7 @@ int32 _user_start()
 				makesilence();
 			}
 
-			result = _soundplay();
+			result = _soundplay( mode_soundplay );
 			if ( result == 0 ) { // Playing
 				playing_signal = _GPIOTOGGLE_HIGH;
 			} else { // Not Playing

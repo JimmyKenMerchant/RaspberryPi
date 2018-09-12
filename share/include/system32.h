@@ -300,16 +300,6 @@ extern void arm32_msb();
 
 extern void arm32_isb();
 
-/**
- * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
- *
- * Return: Number of Count of Leading Zero
- */
-extern uint32 arm32_count_zero32
-(
-	uint32 countee
-);
-
 
 /**
  * Return Word Bits Are Reflected
@@ -1332,7 +1322,7 @@ __attribute__((noinline)) uint32 _sounddecode( sound_index* sound, uchar8 mode )
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
 
-__attribute__((noinline)) uint32 _soundplay();
+__attribute__((noinline)) uint32 _soundplay( bool mode ); // True as PCM, False as PWM
 
 __attribute__((noinline)) uint32 _soundinterrupt( music_code* music, uint32 length, uint32 count, int32 repeat );
 
@@ -1467,6 +1457,17 @@ extern float32 MATH32_PI_PER_DEGREE;
 
 
 /* Regular Functions */
+
+/**
+ * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
+ *
+ * Return: Number of Count of Leading Zero
+ */
+extern uint32 math32_count_zero32
+(
+	uint32 countee
+);
+
 
 /**
  * Return Rounded Degrees Between 0 to 360 with Single Precision Float
