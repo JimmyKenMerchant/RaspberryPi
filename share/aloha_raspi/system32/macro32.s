@@ -9,6 +9,14 @@
 
 
 /**
+ * No Operation in 1 Clock
+ */
+.macro no_op
+	mov r0, r0
+.endm
+
+
+/**
  * Print Hexadecimal Value
  * Use r0 for Array of Bytes, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
  */

@@ -470,6 +470,16 @@ __attribute__((noinline)) int32 _romwrite_i2c( uint32 address_heap, uint32 chip_
 	return result;
 }
 
+
+/**
+ * Unique Definitions
+ */
+
+void _no_op()
+{
+	asm volatile ("mov r0, r0");
+}
+
 bool _gpio_detect( uchar8 gpio_number )
 {
 	int32 value;

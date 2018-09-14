@@ -106,8 +106,8 @@
 #define _57(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
 #define _58(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
 #define _59(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
+#define _60(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,
 
-#define _60(x) _50(x) _10(x)
 #define _70(x) _60(x) _10(x)
 #define _80(x) _70(x) _10(x)
 #define _90(x) _80(x) _10(x)
@@ -189,9 +189,15 @@
  */
 __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int32 d );
 
-/* Regular Functions */
+/**
+ * Regular Functions
+ */
 
+/* Main Function in user32.c */
 int32 _user_start();
+
+/* No Operation in 1 Clock  */
+void _no_op();
 
 
 /********************************
@@ -279,38 +285,11 @@ __attribute__((noinline)) uint32 _clockmanager_divisor( uint32 clocktype_base, u
 
 /* Regular Functions */
 
-/**
- * Convert Endianness
- *
- * Return: 0 as sucess, 1 as error
- * Error: Align Bytes is not 2/4
- */
-extern uint32 arm32_convert_endianness
-(
-	uint32 address_word,
-	uint32 size,
-	uint32 align_bytes
-);
-
-extern void arm32_no_op();
-
 extern void arm32_dsb();
 
 extern void arm32_msb();
 
 extern void arm32_isb();
-
-
-/**
- * Return Word Bits Are Reflected
- *
- * Return: Word Bits Are Reflected
- */
-extern uint32 arm32_reflect_bit
-(
-	uint32 reflectee,
-	uchar8 number_bit // Number of Bits to Be Reflected from LSB, 1 to 32
-);
 
 
 /**
@@ -1459,17 +1438,6 @@ extern float32 MATH32_PI_PER_DEGREE;
 /* Regular Functions */
 
 /**
- * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
- *
- * Return: Number of Count of Leading Zero
- */
-extern uint32 math32_count_zero32
-(
-	uint32 countee
-);
-
-
-/**
  * Return Rounded Degrees Between 0 to 360 with Single Precision Float
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
  *
@@ -1670,6 +1638,47 @@ extern float32 math32_ln
 extern float32 math32_log
 (
 	float32 value
+);
+
+
+/********************************
+ * system32/library/bit32.s
+ ********************************/
+
+/**
+ * Count Leading Zero from Most Siginificant Bit in 32 Bit Register
+ *
+ * Return: Number of Count of Leading Zero
+ */
+extern uint32 bit32_count_zero32
+(
+	uint32 countee
+);
+
+
+/**
+ * Convert Endianness
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error: Align Bytes is not 2/4
+ */
+extern uint32 bit32_convert_endianness
+(
+	uint32 address_word,
+	uint32 size,
+	uint32 align_bytes
+);
+
+
+/**
+ * Return Word Bits Are Reflected
+ *
+ * Return: Word Bits Are Reflected
+ */
+extern uint32 bit32_reflect_bit
+(
+	uint32 reflectee,
+	uchar8 number_bit // Number of Bits to Be Reflected from LSB, 1 to 32
 );
 
 

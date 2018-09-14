@@ -516,100 +516,6 @@ arm32_cache_operation_heap:
 .unreq block_size
 
 
-/**
- * function arm32_convert_endianness
- * Convert Endianness
- *
- * Parameters
- * r0: Pointer of Data to Convert Endianness
- * r1: Size of Data
- * r2: Align Bytes to Be Convert Endianness (2/4) 
- *
- * Usage: r0-r7
- * Return: r0 (0 as success, 1 as error)
- * Error: Align Bytes is not 2/4
- */
-.globl arm32_convert_endianness
-arm32_convert_endianness:
-	/* Auto (Local) Variables, but just Aliases */
-	data_point      .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	size            .req r1 @ Parameter, Register for Argument, Scratch Register
-	align_bytes     .req r2 @ Parameter, Register for Argument, Scratch Register
-	swap_1          .req r3 @ Scratch Register
-	swap_2          .req r4
-	convert_result  .req r5
-	i               .req r6
-	j               .req r7
-
-	push {r4-r7}
-
-	cmp align_bytes, #4
-	cmpne align_bytes, #2
-	bne arm32_convert_endianness_error
-
-	add size, size, data_point
-
-	arm32_convert_endianness_loop:
-		cmp data_point, size
-		bhs arm32_convert_endianness_success
-
-		cmp align_bytes, #4
-		ldreq swap_1, [data_point]
-		cmp align_bytes, #2
-		ldreqh swap_1, [data_point]
-
-		mov convert_result, #0
-
-		mov i, #0
-		cmp align_bytes, #4
-		moveq j, #24
-		cmp align_bytes, #2
-		moveq j, #8
-
-		arm32_convert_endianness_loop_byte:
-			cmp j, #0
-			blt arm32_convert_endianness_loop_byte_common
-
-			lsr swap_2, swap_1, i
-			and swap_2, swap_2, #0xFF
-			lsl swap_2, swap_2, j
-			add convert_result, convert_result, swap_2
-			add i, i, #8
-			sub j, j, #8
-
-			b arm32_convert_endianness_loop_byte
-
-			arm32_convert_endianness_loop_byte_common:
-				cmp align_bytes, #4
-				streq convert_result, [data_point]
-				addeq data_point, data_point, #4
-				cmp align_bytes, #2
-				streqh convert_result, [data_point]
-				addeq data_point, data_point, #2
-
-				b arm32_convert_endianness_loop
-
-	arm32_convert_endianness_error:
-		mov r0, #1
-		b arm32_convert_endianness_common
-
-	arm32_convert_endianness_success:
-		mov r0, #0
-
-	arm32_convert_endianness_common:
-		pop {r4-r7}
-		mov pc, lr
-
-.unreq data_point
-.unreq size
-.unreq align_bytes
-.unreq swap_1
-.unreq swap_2
-.unreq convert_result
-.unreq i
-.unreq j
-
-
 .globl ARM32_STOPWATCH_LOW
 .globl ARM32_STOPWATCH_HIGH
 ARM32_STOPWATCH_LOW:  .word 0x00
@@ -731,16 +637,6 @@ arm32_sleep:
 .unreq count_high
 .unreq time_low
 .unreq time_high
-
-
-/**
- * function arm32_no_op
- * Do Nothing
- */
-.globl arm32_no_op
-arm32_no_op:
-	mov r0, r0
-	mov pc, lr
 
 
 /**
@@ -1484,59 +1380,6 @@ arm32_fill_random:
 .unreq memory_start
 .unreq memory_size
 .unreq random
-
-
-/**
- * function arm32_reflect_bit
- * Return Word Bits Are Reflected
- *
- * Parameters
- * r0: Value to Be Reflected
- * r1: Number of Bits to Be Reflected from LSB, 1 to 32
- *
- * Return: r0 (Word Bits Are Reflected)
- */
-.globl arm32_reflect_bit
-arm32_reflect_bit:
-	/* Auto (Local) Variables, but just Aliases */
-	value       .req r0
-	number_bit  .req r1
-	checkbit    .req r2
-	orrbit      .req r3
-	i           .req r4
-	return      .req r5
-
-	push {r4-r5,lr}
-
-	sub number_bit, number_bit, #1
-	mov checkbit, #0x00000001
-	lsl checkbit, checkbit, number_bit
-	mov orrbit, #0x00000001
-	mov i, #0
-	mov return, #0
-
-	arm32_reflect_bit_loop:
-		cmp i, number_bit
-		bgt arm32_reflect_bit_common
-
-		tst value, checkbit
-		orrne return, return, orrbit
-
-		lsr checkbit, checkbit, #1
-		lsl orrbit, orrbit, #1
-		add i, i, #1
-		b arm32_reflect_bit_loop
-
-	arm32_reflect_bit_common:
-		mov r0, return
-		pop {r4-r5,pc}
-
-.unreq value
-.unreq number_bit
-.unreq checkbit
-.unreq orrbit
-.unreq i
-.unreq return
 
 
 /**

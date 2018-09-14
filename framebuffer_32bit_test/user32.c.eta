@@ -28,7 +28,7 @@ int32 _user_start()
 	uint32 number2_hexa = chk32_crc8( (uint32)array2, 4, 0x7, 0x00, 0x00, 32 ); // Add 8 Bits and Pad Zeros
 	uint32 number3_hexa = chk32_crc16( (uint32)array2, 5, 0x1021, 0xFFFF, 0xFFFF, 40 ); // Add 16 Bits and Pad Zeros
 	uint32 number4_hexa = chk32_crc32( (uint32)array2, 7, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, 56 ); // Add 32 Bits and Pad Zeros
-	uint32 number5_hexa = arm32_reflect_bit( 0x04C11DB7, 32 );
+	uint32 number5_hexa = bit32_reflect_bit( 0x04C11DB7, 32 );
 	uint32 number6_hexa = chk32_crc32( (uint32)character1, 10, 0x04C11DB7, 0xFFFFFFFF, 0xFFFFFFFF, 80 ); // Add 32 Bits and Pad Zeros
 
 	uint32 table_crc8 = chk32_crctable( 0x7, 0 );
