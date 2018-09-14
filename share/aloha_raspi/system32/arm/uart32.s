@@ -1805,8 +1805,9 @@ uart32_uartsetheap:
  * function uart32_uartint_client
  * UART Interrupt Handler (Client Side)
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): No Heap, Overrun, or Busy
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): No Buffer to Receive, Overrun, or Busy
+ * Error(2): Character Is Not Received
  */
 .globl uart32_uartint_client
 uart32_uartint_client:
@@ -1814,6 +1815,7 @@ uart32_uartint_client:
 	buffer        .req r0
 	count         .req r1
 	max_size      .req r2
+	temp          .req r3
 
 	push {lr}
 
@@ -1822,16 +1824,20 @@ uart32_uartint_client:
 	ldr buffer, UART32_UARTINT_CLIENT_BUFFER
 
 	cmp buffer, #0
-	beq uart32_uartint_client_error         @ If No Buffer
+	beq uart32_uartint_client_error1        @ If No Buffer
 
 	push {r0-r2}
 	add r0, buffer, count
 	mov r1, #1                              @ 1 Bytes
 	bl uart32_uartrx
-	tst r0, #0x8                            @ Whether Overrun or Not
+	mov temp, r0                            @ Whether Overrun or Not
 	pop {r0-r2}
 
-	bne uart32_uartint_client_error         @ If Overrun
+	tst temp, #0x8                          @ Whether Overrun or Not
+	bne uart32_uartint_client_error1        @ If Overrun
+
+	tst temp, #0x10                         @ Whether Not Received or So
+	bne uart32_uartint_client_error2        @ If Not Received
 
 	/* Slide Offset Count */
 	add count, count, #1
@@ -1840,9 +1846,12 @@ uart32_uartint_client:
 	str count, UART32_UARTINT_CLIENT_COUNT
 	blt uart32_uartint_client_success
 
-	uart32_uartint_client_error:
+	uart32_uartint_client_error1:
 		mov r0, #1
+		b uart32_uartint_client_common
 
+	uart32_uartint_client_error2:
+		mov r0, #2
 		b uart32_uartint_client_common
 
 	uart32_uartint_client_success:
@@ -1855,6 +1864,7 @@ uart32_uartint_client:
 .unreq buffer
 .unreq count
 .unreq max_size
+.unreq temp
 
 .globl UART32_UARTINT_CLIENT_COUNT
 .globl UART32_UARTINT_CLIENT_LENGTH

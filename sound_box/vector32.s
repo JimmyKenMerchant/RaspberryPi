@@ -185,32 +185,32 @@ os_irq:
 	push {r0-r12,lr}
 
 .ifdef __SOUND_I2S
-	mov r0, #0
+	mov r0, #equ32_snd32_soundmidi_channel
 	mov r1, #1
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_I2S_BALANCED
-	mov r0, #0
+	mov r0, #equ32_snd32_soundmidi_channel
 	mov r1, #1
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_PWM
-	mov r0, #0
+	mov r0, #equ32_snd32_soundmidi_channel
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_PWM_BALANCED
-	mov r0, #0
+	mov r0, #equ32_snd32_soundmidi_channel
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_JACK
-	mov r0, #0
+	mov r0, #equ32_snd32_soundmidi_channel
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_JACK_BALANCED
-	mov r0, #0
+	mov r0, #equ32_snd32_soundmidi_channel
 	mov r1, #0
 	bl snd32_soundmidi
 .endif

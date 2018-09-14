@@ -1085,9 +1085,10 @@ snd32_musiclen:
  * r0: Channel, 0-15 (MIDI Channel No. 1 to 16)
  * r1: 0 as PWM Mode, 1 as PCM Mode
  *
- * Return: r0 (0 as success, 1 and 2 as error)
+ * Return: r0 (0 as success, 1, 2, and 3 as error)
  * Error(1): Not Initialized on snd32_sounddecode, No Buffer to Receive on UART, or UART Overrun
- * Error(2): MIDI Channel is Not Matched, or Only Data Bytes Received
+ * Error(2): Character Is Not Received
+ * Error(3): MIDI Channel is Not Matched, or Only Data Bytes Received
  */
 .globl snd32_soundmidi
 snd32_soundmidi:
@@ -1123,10 +1124,14 @@ snd32_soundmidi:
 	mov r0, bytebuffer
 	mov r1, #1                        @ 1 Bytes
 	bl uart32_uartrx
-	tst r0, #0x8                      @ Whether Overrun or Not
+	mov temp, r0                      @ Whether Overrun or Not
 	pop {r0-r3}
 
+	tst temp, #0x8                    @ Whether Overrun or Not
 	bne snd32_soundmidi_error1        @ If Overrun
+
+	tst temp, #0x10                   @ Whether Not Received or So
+	bne snd32_soundmidi_error2        @ If Not Received
 
 	/* Check Whether Status or Data Bytes */
 	ldrb byte, [bytebuffer]
@@ -1136,7 +1141,7 @@ snd32_soundmidi:
 
 	/* Check Whether Only Data Bytes (Status Is For Other Channels, etc.) */
 	cmp count, #0
-	beq snd32_soundmidi_error2
+	beq snd32_soundmidi_error3
 
 	/* Data Bytes */
 	strb byte, [buffer,count]
@@ -1157,17 +1162,17 @@ snd32_soundmidi:
 	beq snd32_soundmidi_noteoff           @ Velocity is Ignored
 	cmp temp, #0x9
 	beq snd32_soundmidi_noteon
-	cmp temp, #0x10
+	cmp temp, #0xA
 	beq snd32_soundmidi_polyaftertouch    @ Polyphonic Key Pressure
-	cmp temp, #0x11
+	cmp temp, #0xB
 	beq snd32_soundmidi_control
-	cmp temp, #0x12
+	cmp temp, #0xC
 	beq snd32_soundmidi_programchange
-	cmp temp, #0x13
+	cmp temp, #0xD
 	beq snd32_soundmidi_monoaftertouch    @ Monophonic Key Pressure
-	cmp temp, #0x14
+	cmp temp, #0xE
 	beq snd32_soundmidi_pitchbend
-	cmp temp, #0x15
+	cmp temp, #0xF
 	beq snd32_soundmidi_systemcommon
 
 	b snd32_soundmidi_success
@@ -1210,13 +1215,15 @@ snd32_soundmidi:
 		cmp data2, #0
 		beq snd32_soundmidi_noteoff
 
-		/* If Note Number is Higher than Expected, Jump to Note Off Event */
+		/* If Note Number Is Higher than Expected, Saturate with Highest Note */
 		ldr temp, SND32_SOUNDMIDI_HIGHNOTE
 		cmp data1, temp
-		bhi snd32_soundmidi_noteoff
+		movhi data1, temp
 
-		/* To Fit Sound Index, Subtract */
+		/* To Fit Sound Index, Subtract: If Note Number Is Lower than Expected, Complement It with Lowest Note */
 		ldr temp, SND32_SOUNDMIDI_LOWNOTE
+		cmp data1, temp
+		movlo data1, temp
 		sub data1, data1, temp
 
 		/* Sound Type Offset */
@@ -1224,9 +1231,9 @@ snd32_soundmidi:
 		add data1, data1, temp
 
 		/* Velocity to Volume Offset */
-		ldr temp, SND32_SOUNDMIDI_VOLUMETHRES
+		mov temp, #equ32_snd32_soundmidi_volumethres
 		mov temp2, data2
-		mov data2, #3                           @ Key of Minimum Volume
+		mov data2, #equ32_snd32_soundmidi_volumesteps - 1 @ Key of Minimum Volume
 
 		snd32_soundmidi_noteon_velocity:
 			sub temp2, temp
@@ -1238,7 +1245,7 @@ snd32_soundmidi:
 		cmp data2, #0
 		movlt data2, #0
 
-		ldr temp, SND32_SOUNDMIDI_VOLUMEOFFSET
+		mov temp, #equ32_snd32_soundmidi_volumeoffset
 		mul data2, data2, temp
 		add data1, data1, data2                 @ Add Volume Offset to Note
 /*
@@ -1298,32 +1305,25 @@ macro32_debug data1, 0, 112
 		cmp count, #2
 		blo snd32_soundmidi_success
 
-		cmp data1, #4
-		bge snd32_soundmidi_success
-
-		/* Sine */
 		cmp data1, #0
-		moveq data2, #0
-		moveq temp, #33
-		moveq temp2, #96
+		moveq data2, #equ32_snd32_soundmidi_sound0_baseoffset
+		moveq temp, #equ32_snd32_soundmidi_sound0_lownote
+		moveq temp2, #equ32_snd32_soundmidi_sound0_highnote
 
-		/* Saw Tooth */
 		cmp data1, #1
-		moveq data2, #64
-		moveq temp, #33
-		moveq temp2, #96
+		moveq data2, #equ32_snd32_soundmidi_sound1_baseoffset
+		moveq temp, #equ32_snd32_soundmidi_sound1_lownote
+		moveq temp2, #equ32_snd32_soundmidi_sound1_highnote
 
-		/* Square */
 		cmp data1, #2
-		moveq data2, #128
-		moveq temp, #33
-		moveq temp2, #108            @ C8
+		moveq data2, #equ32_snd32_soundmidi_sound2_baseoffset
+		moveq temp, #equ32_snd32_soundmidi_sound2_lownote
+		moveq temp2, #equ32_snd32_soundmidi_sound2_highnote
 
-		/* Noise */
 		cmp data1, #3
-		moveq data2, #204
-		moveq temp, #33
-		moveq temp2, #85
+		movhs data2, #equ32_snd32_soundmidi_sound3_baseoffset
+		movhs temp, #equ32_snd32_soundmidi_sound3_lownote
+		movhs temp2, #equ32_snd32_soundmidi_sound3_highnote
 
 		str data2, SND32_SOUNDMIDI_BASEOFFSET
 		str temp, SND32_SOUNDMIDI_LOWNOTE
@@ -1343,20 +1343,20 @@ macro32_debug data1, 0, 112
 		cmp count, #3
 		blo snd32_soundmidi_success
 
-		/* Concatenate Data1 and Data2, 0 to 16384, 8192 (0x2000) is Neutral */
+		/* Concatenate Data1 and Data2, 0 to 16383, 8192 (0x2000) is Neutral */
 		lsl data2, data2, #7                          @ MSB Bit[13:7]
 		orr data1, data1, data2
 		lsr data1, data1, #1                          @ Divisor of Resolution (This Case Divided by 2)
 		sub data1, data1, #0x1000                     @ Neutral (8192 / 2) to 0, Make Signed Value
 
 		cmp mode, #0
-		addeq data1, data1, #0x3200                   @ PWM Mode Neutral Divisor
-		addeq data1, data1, #0x0081                   @ PWM Mode Neutral Divisor
-		movne data2, #6                               @ Multiplier for PCM Mode
-		mulne data1, data1, data2
-		addne data1, data1, #0x10000                  @ PCM Mode Neutral Divisor
-		addne data1, data1, #0x02F00                  @ PCM Mode Neutral Divisor
-		addne data1, data1, #0x00008                  @ PCM Mode Neutral Divisor
+		moveq data2, #equ32_snd32_soundmidi_mul_pwm
+		ldreq temp, SND32_SOUNDMIDI_NEUTRALDIV_PWM
+		movne data2, #equ32_snd32_soundmidi_mul_pcm
+		ldrne temp, SND32_SOUNDMIDI_NEUTRALDIV_PCM
+
+		mul data1, data1, data2                       @ Multiply with Multiplier
+                sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
 
 		push {r0-r3}
 		cmp mode, #0
@@ -1400,6 +1400,10 @@ macro32_debug data1, 0, 112
 		mov r0, #2
 		b snd32_soundmidi_common
 
+	snd32_soundmidi_error3:
+		mov r0, #3
+		b snd32_soundmidi_common
+
 	snd32_soundmidi_success:
 		mov r0, #0
 
@@ -1424,19 +1428,18 @@ macro32_debug_hexa buffer, 100, 100, 8
 .unreq data2
 .unreq status
 
-SND32_SOUNDMIDI_COUNT:        .word 0x00
-SND32_SOUNDMIDI_LENGTH:       .word 0x00
-SND32_SOUNDMIDI_BUFFER:       .word 0x00  @ Second Buffer to Store Outstanding MIDI Message
-SND32_SOUNDMIDI_BYTEBUFFER:   .word _SND32_SOUNDMIDI_BYTEBUFFER
-_SND32_SOUNDMIDI_BYTEBUFFER:  .word 0x00  @ First Buffer to Receive A Byte from UART
-SND32_SOUNDMIDI_VOLUMEOFFSET: .word 0x100 @ Volume Offset in Sound Index
-SND32_SOUNDMIDI_VOLUMETHRES:  .word 32    @ Volume Thereshold, Assume 4 Steps, i.e., 128 / 4 Equals 32
-SND32_SOUNDMIDI_BASEOFFSET:   .word 0x00  @ Current Sound's Base Offset in Sound Index, Sine
-SND32_SOUNDMIDI_LOWNOTE:      .word 0x33  @ Possible Lowest Note Number in MIDI Format, A1
-SND32_SOUNDMIDI_HIGHNOTE:     .word 0x96  @ Possible Highest Note Number in MIDI Format, C7
-SND32_SOUNDMIDI_NOTE:         .word 0x00  @ Current Note in MIDI Format, Not Used
-SND32_SOUNDMIDI_BANKMSB:      .word 0x00  @ Current MSB of Control Message (Bank Select) in MIDI Format, Not Used
-SND32_SOUNDMIDI_BANKLSB:      .word 0x00  @ Current LSB of Control Message (Bank Select) in MIDI Format, Not Used
+SND32_SOUNDMIDI_COUNT:          .word 0x00
+SND32_SOUNDMIDI_LENGTH:         .word 0x00
+SND32_SOUNDMIDI_BUFFER:         .word 0x00  @ Second Buffer to Store Outstanding MIDI Message
+SND32_SOUNDMIDI_BYTEBUFFER:     .word _SND32_SOUNDMIDI_BYTEBUFFER
+_SND32_SOUNDMIDI_BYTEBUFFER:    .word 0x00  @ First Buffer to Receive A Byte from UART
+SND32_SOUNDMIDI_BASEOFFSET:     .word equ32_snd32_soundmidi_sound0_baseoffset
+SND32_SOUNDMIDI_LOWNOTE:        .word equ32_snd32_soundmidi_sound0_lownote
+SND32_SOUNDMIDI_HIGHNOTE:       .word equ32_snd32_soundmidi_sound0_highnote
+SND32_SOUNDMIDI_NEUTRALDIV_PWM: .word equ32_snd32_soundmidi_neutraldiv_pwm
+SND32_SOUNDMIDI_NEUTRALDIV_PCM: .word equ32_snd32_soundmidi_neutraldiv_pcm
+SND32_SOUNDMIDI_BANKMSB:        .word 0x00  @ Current MSB of Control Message (Bank Select) in MIDI Format, Not Used
+SND32_SOUNDMIDI_BANKLSB:        .word 0x00  @ Current LSB of Control Message (Bank Select) in MIDI Format, Not Used
 
 
 /**

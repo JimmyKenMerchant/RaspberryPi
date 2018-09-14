@@ -52,6 +52,10 @@
 
 * From PWM1, the sound that is phase-shifted from PWM0 outputs. This aims for balanced monaural.
 
+* You would see this project can be a digital voltage-controlled oscillator (digital VCO or DCO) of your modular synthesizer. Yes, it can be. But I recognized that the voltage level of modular synthesizers higher (in my research, +-5V) than the output of this project. To fit the voltage level, I recommend that you use balanced monaural. This allows you to cancel noise and obtain high voltage by connecting two outputs with an Op-amp (positive input to normal output and negative input to inverted output; usage of an Op-amp as a buffer. Use resisters on appropriate points). Plus, amplify the second output by another Op-amp.
+
+* you may consider of possible making of triangle wave and changing duty ratio of square wave. These are possible by external filters. A high-pass filter makes square wave that is changed duty ratio, and a low-pass filter makes triangle wave from square wave.
+
 * By disabling the video signal, the sound signal from the 3.5mm jack may be possible for stable use. Otherwise, the analogue video signal outputs from the 3.5mm jack (on Zero, TV pin) when any HDMI cable is not plugged in. This seems to make possible noise.
 
 * This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal may be higher than expected as microphone. Besides, as line level, the voltage of the signal may be lower than expected.
@@ -101,6 +105,10 @@
 * If you want to check the wave by your oscilloscope, a decoupling capacitor is needed. In my experience, a 1-microfarad-capacitor without any attenuator makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
 
 * Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
+
+**MIDI IN**
+
+This function is under construction.
 
 **Draft of Description about "DMA Transfer to PWM"**
 

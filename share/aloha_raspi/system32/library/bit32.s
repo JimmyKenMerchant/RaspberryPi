@@ -56,7 +56,7 @@ bit32_count_zero32:
  * Parameters
  * r0: Pointer of Data to Convert Endianness
  * r1: Size of Data
- * r2: Align Bytes to Be Convert Endianness (2/4) 
+ * r2: Align Bytes to Be Convert Endianness (2/4)
  *
  * Usage: r0-r7
  * Return: r0 (0 as success, 1 as error)

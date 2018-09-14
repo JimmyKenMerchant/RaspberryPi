@@ -40,6 +40,26 @@
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_resolution, 15         @ Affecting Sound Color, 255/127/63/31/15/7
 .equ equ32_snd32_silence,                      0x400      @ Silence in Sound Index
+.equ equ32_snd32_soundmidi_channel,            0          @ Default MIDI Channel (Actual Channel No. Minus One)
+.equ equ32_snd32_soundmidi_volumeoffset,       0x100      @ Volume Offset in Sound Index, Descending Order
+.equ equ32_snd32_soundmidi_volumethres,        32         @ Volume Thereshold, Assume 4 Steps, i.e., 128 / 4 Equals 32
+.equ equ32_snd32_soundmidi_volumesteps,        4          @ Volume Steps
+.equ equ32_snd32_soundmidi_sound0_baseoffset,  0          @ Default Sound Base Offset in Sound Index, Sine Wave
+.equ equ32_snd32_soundmidi_sound0_lownote,     33         @ Default Sound Lowest Note, A1
+.equ equ32_snd32_soundmidi_sound0_highnote,    96         @ Default Sound Highest Note, C7
+.equ equ32_snd32_soundmidi_sound1_baseoffset,  64         @ Second Sound Base Offset in Sound Index, Saw Tooth Wave
+.equ equ32_snd32_soundmidi_sound1_lownote,     33         @ Second Sound Lowest Note, A1
+.equ equ32_snd32_soundmidi_sound1_highnote,    96         @ Second Sound Highest Note, C7
+.equ equ32_snd32_soundmidi_sound2_baseoffset,  128        @ Third Sound Base Offset in Sound Index, Square Wave
+.equ equ32_snd32_soundmidi_sound2_lownote,     33         @ Third Sound Lowest Note, A1
+.equ equ32_snd32_soundmidi_sound2_highnote,    108        @ Third Sound Highest Note, C8
+.equ equ32_snd32_soundmidi_sound3_baseoffset,  204        @ Fourth Sound Base Offset in Sound Index, Noise
+.equ equ32_snd32_soundmidi_sound3_lownote,     33         @ Fourth Sound Lowest Note
+.equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
+.equ equ32_snd32_soundmidi_mul_pwm,            1          @ Multiplier on Pitch Bend on PWM Mode
+.equ equ32_snd32_soundmidi_mul_pcm,            6          @ Multiplier on Pitch Bend on PCM Mode
+.equ equ32_snd32_soundmidi_neutraldiv_pwm,     0x3281     @ Neutral Divisor on Pitch Bend on PWM Mode
+.equ equ32_snd32_soundmidi_neutraldiv_pcm,     0x12F08    @ Neutral Divisor on Pitch Bend on PCM Mode
 
 /**
  * Standard Peripherals
