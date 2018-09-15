@@ -1181,6 +1181,12 @@ snd32_soundmidi:
 		cmp count, #3
 		blo snd32_soundmidi_success
 
+		/* Load Concurrent Note, If Not Matched Do Nothing */
+		ldr temp, SND32_SOUNDMIDI_CURRENTNOTE
+		cmp data1, temp
+		movne count, #0
+		bne snd32_soundmidi_success
+
 		cmp mode, #0
 		bne snd32_soundmidi_noteoff_pcm
 
@@ -1203,6 +1209,12 @@ snd32_soundmidi:
 			bic status, status, #0x1
 
 		snd32_soundmidi_noteoff_common:
+			push {r0-r3}
+			mov r0, #equ32_snd32_soundmidi_gate
+			mov r1, #0                                        @ Gate Off
+			bl gpio32_gpiotoggle
+			pop {r0-r3}
+
 			bic status, status, #0x00000004                   @ Clear MIDI Running
 			mov count, #0
 			b snd32_soundmidi_success
@@ -1210,6 +1222,9 @@ snd32_soundmidi:
 	snd32_soundmidi_noteon:
 		cmp count, #3
 		blo snd32_soundmidi_success
+
+		/* Store Concurrent Note */
+		str data1, SND32_SOUNDMIDI_CURRENTNOTE
 
 		/* If Velocity is Zero, Jump to Note Off Event */
 		cmp data2, #0
@@ -1272,7 +1287,6 @@ macro32_debug data1, 0, 88
 		b snd32_soundmidi_noteon_common
 
 	snd32_soundmidi_noteon_contine:
-
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
 		mov r1, data1
@@ -1280,6 +1294,12 @@ macro32_debug data1, 0, 88
 		pop {r0-r3}
 
 	snd32_soundmidi_noteon_common:
+		push {r0-r3}
+		mov r0, #equ32_snd32_soundmidi_gate
+		mov r1, #1                                        @ Gate On
+		bl gpio32_gpiotoggle
+		pop {r0-r3}
+
 		orr status, status, #0x00000004                   @ Set MIDI Running
 /*
 macro32_debug data1, 0, 112
@@ -1356,7 +1376,7 @@ macro32_debug data1, 0, 112
 		ldrne temp, SND32_SOUNDMIDI_NEUTRALDIV_PCM
 
 		mul data1, data1, data2                       @ Multiply with Multiplier
-                sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+		sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
 
 		push {r0-r3}
 		cmp mode, #0
@@ -1440,6 +1460,13 @@ SND32_SOUNDMIDI_NEUTRALDIV_PWM: .word equ32_snd32_soundmidi_neutraldiv_pwm
 SND32_SOUNDMIDI_NEUTRALDIV_PCM: .word equ32_snd32_soundmidi_neutraldiv_pcm
 SND32_SOUNDMIDI_BANKMSB:        .word 0x00  @ Current MSB of Control Message (Bank Select) in MIDI Format, Not Used
 SND32_SOUNDMIDI_BANKLSB:        .word 0x00  @ Current LSB of Control Message (Bank Select) in MIDI Format, Not Used
+SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
+SND32_VIRTUAL_PARALLEL_ADDR:    .word 0x00
+
+.section	.data
+.globl SND32_VIRTUAL_PARALLEL
+SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
+.section	.library_system32
 
 
 /**

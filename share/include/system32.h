@@ -1294,6 +1294,9 @@ extern uint64 draw32_line
 #define SND32_I2S_BALANCED 3
 #define SND32_END          0xFFFF
 
+/* Global Variable */
+
+extern uint32 SND32_VIRTUAL_PARALLEL;
 
 /* Relative System Calls  */
 

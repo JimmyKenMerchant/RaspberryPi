@@ -30,9 +30,11 @@
 
 * GPIO16 as Output of Playing Signal
 
+* GPIO20 as GATE Signal Synchronized with MIDI IN (On Note Off Event)
+
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
-* GPIO 15 as RXD0 (UART) for MIDI In
+* GPIO 15 as RXD0 (UART) for MIDI IN
 
 * GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.
 
