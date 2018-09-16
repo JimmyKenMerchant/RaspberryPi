@@ -40,8 +40,6 @@
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_resolution, 15         @ Affecting Sound Color, 255/127/63/31/15/7
 .equ equ32_snd32_silence,                      0x400      @ Silence in Sound Index
-.equ equ32_snd32_soundmidi_channel,            0          @ Default MIDI Channel (Actual Channel No. Minus One)
-.equ equ32_snd32_soundmidi_gate,               20         @ GPIO Pin of Gate Signal
 .equ equ32_snd32_soundmidi_volumeoffset,       0x100      @ Volume Offset in Sound Index, Descending Order
 .equ equ32_snd32_soundmidi_volumethres,        32         @ Volume Thereshold, Assume 4 Steps, i.e., 128 / 4 Equals 32
 .equ equ32_snd32_soundmidi_volumesteps,        4          @ Volume Steps

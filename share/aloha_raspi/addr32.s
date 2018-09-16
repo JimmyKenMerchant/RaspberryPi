@@ -96,6 +96,13 @@ ADDR32_PRINT32_FONT_BACKCOLOR: .word PRINT32_FONT_BACKCOLOR
 
 
 /**
+ * system32/library/snd32.s
+ */
+
+ADDR32_SND32_STATUS:           .word SND32_STATUS
+
+
+/**
  * system32/library/font_mono_12px.s
  */
 

@@ -13,6 +13,8 @@
 /* Define 31250 Baud Rate on UART for Actual MIDI In */
 /*.equ __MIDIIN, 1*/
 
+.equ __MIDI_BASECHANNEL, 0                               @ Default MIDI Channel (Actual Channel No. Minus One)
+
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
@@ -104,7 +106,7 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 20 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0   @ Set GPIO 20 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_3    @ Set GPIO 23 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
@@ -200,35 +202,43 @@ os_irq:
 	push {r0-r12,lr}
 
 .ifdef __SOUND_I2S
-	mov r0, #equ32_snd32_soundmidi_channel
+	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #1
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_I2S_BALANCED
-	mov r0, #equ32_snd32_soundmidi_channel
+	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #1
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_PWM
-	mov r0, #equ32_snd32_soundmidi_channel
+	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_PWM_BALANCED
-	mov r0, #equ32_snd32_soundmidi_channel
+	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_JACK
-	mov r0, #equ32_snd32_soundmidi_channel
+	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_JACK_BALANCED
-	mov r0, #equ32_snd32_soundmidi_channel
+	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
+
+	ldr r0, ADDR32_SND32_STATUS
+	ldr r0, [r0]
+	tst r0, #0x4                                      @ Bit[2] MIDI Note Off(0)/ Note On(1)
+	movne r1, #1                                      @ Gate On
+	moveq r1, #0                                      @ Gate Off
+	mov r0, #20                                       @ GPIO 20
+	bl gpio32_gpiotoggle
 
 	pop {r0-r12,pc}
 

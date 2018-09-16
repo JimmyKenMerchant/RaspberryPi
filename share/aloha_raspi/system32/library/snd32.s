@@ -21,10 +21,11 @@ SND32_INTERRUPT_COUNT:     .word 0x00
 /**
  * Bit[0] Not Started(0)/ Started (1)
  * Bit[1] Regular State(0)/ Interrupt State(1)
- * Bit[2] MIDI Running
+ * Bit[2] MIDI Note Off(0)/ Note On(1)
  * Bit[3] Reserved
  * Bit[31] Not Initialized(0)/ Initialized(1)
  */
+.globl SND32_STATUS
 SND32_STATUS:              .word 0x00
 
 /**
@@ -1209,12 +1210,6 @@ snd32_soundmidi:
 			bic status, status, #0x1
 
 		snd32_soundmidi_noteoff_common:
-			push {r0-r3}
-			mov r0, #equ32_snd32_soundmidi_gate
-			mov r1, #0                                        @ Gate Off
-			bl gpio32_gpiotoggle
-			pop {r0-r3}
-
 			bic status, status, #0x00000004                   @ Clear MIDI Running
 			mov count, #0
 			b snd32_soundmidi_success
@@ -1294,12 +1289,6 @@ macro32_debug data1, 0, 88
 		pop {r0-r3}
 
 	snd32_soundmidi_noteon_common:
-		push {r0-r3}
-		mov r0, #equ32_snd32_soundmidi_gate
-		mov r1, #1                                        @ Gate On
-		bl gpio32_gpiotoggle
-		pop {r0-r3}
-
 		orr status, status, #0x00000004                   @ Set MIDI Running
 /*
 macro32_debug data1, 0, 112
