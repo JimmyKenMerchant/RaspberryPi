@@ -1307,13 +1307,68 @@ macro32_debug data1, 0, 112
 		cmp count, #3
 		blo snd32_soundmidi_success
 
+		cmp data1, #64
+		bhs snd32_soundmidi_control_others
+		cmp data1, #32
+		bhs snd32_soundmidi_control_lsb
+
+		/* Most Significant Bits */
+
+		ldr temp, SND32_SOUNDMIDI_CTL
+		and data1, data1, #0x1F                            @ Only Use 0 to 31
+		lsl data1, data1, #1
+		ldrh temp2, [temp, data1]
+		bic temp2, #0x3F80                                 @ Bit[13:7]
+		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+		orr temp2, temp2, data2, lsl #7
+		strh temp2, [temp, data1]
+
 		mov count, #0
 		b snd32_soundmidi_success
+
+		snd32_soundmidi_control_lsb:
+
+			/* Least Significant Bits */
+
+			ldr temp, SND32_SOUNDMIDI_CTL
+			and data1, data1, #0x1F                            @ Only Use 0 to 31
+			lsl data1, data1, #1
+			ldrh temp2, [temp, data1]
+			bic temp2, #0x7F                                   @ Bit[6:0]
+			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+			orr temp2, temp2, data2
+			strh temp2, [temp, data1]
+
+			mov count, #0
+
+			/* Immediate Changes Here */
+			lsr data1, data1, #1
+			cmp data1, #2
+			beq snd32_soundmidi_control_lsb_modulation
+
+			b snd32_soundmidi_success
+
+			snd32_soundmidi_control_lsb_modulation:
+				ldr temp, SND32_MODULATION_ADDR
+				str temp2, [temp]
+				b snd32_soundmidi_success
+
+		snd32_soundmidi_control_others:
+
+			mov count, #0
+			b snd32_soundmidi_success
 
 	snd32_soundmidi_programchange:
 		cmp count, #2
 		blo snd32_soundmidi_success
 
+		ldr temp, SND32_SOUNDMIDI_CTL
+		ldr temp, [temp]                               @ Bank Select Bit[13:0]
+		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
+		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
+/*
+macro32_debug data1, 100, 100
+*/
 		cmp data1, #0
 		moveq data2, #equ32_snd32_soundmidi_sound0_baseoffset
 		moveq temp, #equ32_snd32_soundmidi_sound0_lownote
@@ -1447,14 +1502,20 @@ SND32_SOUNDMIDI_LOWNOTE:        .word equ32_snd32_soundmidi_sound0_lownote
 SND32_SOUNDMIDI_HIGHNOTE:       .word equ32_snd32_soundmidi_sound0_highnote
 SND32_SOUNDMIDI_NEUTRALDIV_PWM: .word equ32_snd32_soundmidi_neutraldiv_pwm
 SND32_SOUNDMIDI_NEUTRALDIV_PCM: .word equ32_snd32_soundmidi_neutraldiv_pcm
-SND32_SOUNDMIDI_BANKMSB:        .word 0x00  @ Current MSB of Control Message (Bank Select) in MIDI Format, Not Used
-SND32_SOUNDMIDI_BANKLSB:        .word 0x00  @ Current LSB of Control Message (Bank Select) in MIDI Format, Not Used
 SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
-SND32_VIRTUAL_PARALLEL_ADDR:    .word 0x00
+
+.globl SND32_SOUNDMIDI_CTL
+SND32_SOUNDMIDI_CTL:            .word _SND32_SOUNDMIDI_CTL @ Value List of Control Message
+_SND32_SOUNDMIDI_CTL:           .space 64 @ 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
+
+SND32_VIRTUAL_PARALLEL_ADDR:    .word SND32_VIRTUAL_PARALLEL
+SND32_MODULATION_ADDR:          .word SND32_MODULATION
 
 .section	.data
 .globl SND32_VIRTUAL_PARALLEL
 SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
+.globl SND32_MODULATION
+SND32_MODULATION:               .word 0x00
 .section	.library_system32
 
 

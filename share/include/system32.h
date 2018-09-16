@@ -1297,6 +1297,7 @@ extern uint64 draw32_line
 /* Global Variable */
 
 extern uint32 SND32_VIRTUAL_PARALLEL;
+extern uint32 SND32_MODULATION;
 
 /* Relative System Calls  */
 
