@@ -1287,6 +1287,7 @@ extern uint64 draw32_line
 /* Constants */
 
 #define sound_index uint16
+#define sound_adjust uint16
 #define music_code uint16
 #define SND32_PWM          0
 #define SND32_PWM_BALANCED 1
@@ -1301,7 +1302,7 @@ extern uint32 SND32_MODULATION;
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _sounddecode( sound_index* sound, uchar8 mode ); // 0 as PWM Mode Monoral, 1 as PWM Mode Balanced Monoral, 2 as PCM Mode
+__attribute__((noinline)) uint32 _sounddecode( sound_index* index, uchar8 mode, sound_adjust* adjust ); // 0 as PWM Mode Monoral, 1 as PWM Mode Balanced Monoral, 2 as PCM Mode
 
 __attribute__((noinline)) uint32 _soundset( music_code* music, uint32 length, uint32 count, int32 repeat );
 

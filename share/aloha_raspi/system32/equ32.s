@@ -58,7 +58,7 @@
 .equ equ32_snd32_soundmidi_mul_pwm,            1          @ Multiplier on Pitch Bend on PWM Mode
 .equ equ32_snd32_soundmidi_mul_pcm,            6          @ Multiplier on Pitch Bend on PCM Mode
 .equ equ32_snd32_soundmidi_neutraldiv_pwm,     0x3281     @ Neutral Divisor on Pitch Bend on PWM Mode
-.equ equ32_snd32_soundmidi_neutraldiv_pcm,     0x12F08    @ Neutral Divisor on Pitch Bend on PCM Mode
+.equ equ32_snd32_soundmidi_neutraldiv_pcm,     0x12F06    @ Neutral Divisor on Pitch Bend on PCM Mode
 
 /**
  * Standard Peripherals

@@ -28,6 +28,8 @@ SND32_INTERRUPT_COUNT:     .word 0x00
 .globl SND32_STATUS
 SND32_STATUS:              .word 0x00
 
+SND32_SOUND_ADJUST:        .word 0x00 @ Pointer of Sound Adjust Table
+
 /**
  * Usage
  * 1. Place `snd32_soundplay` on FIQ/IRQ Handler which will be triggered with any timer.
@@ -64,6 +66,7 @@ SND32_STATUS:              .word 0x00
  * Parameters
  * r0: Sound Index
  * r1: 0 as PWM Mode Monoral, 1 as PWM Mode Balanced Monoral, 2 as PCM Mode, 3 as PCM Mode Balanced Monoral
+ * r2: Sound Adjust Table
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Already Initialized
@@ -90,6 +93,8 @@ snd32_sounddecode:
 	ldr temp, SND32_STATUS
 	tst temp, #0x80000000
 	bne snd32_sounddecode_error1              @ If Already Initialized
+
+	str snd, SND32_SOUND_ADJUST
 
 	mov i, #0
 	mov cb, #equ32_dma32_cb_snd32_start
@@ -528,6 +533,26 @@ snd32_soundplay:
 		pop {r0-r3}
 
 	snd32_soundplay_countup:
+
+		/* Tune Tone */
+
+		ldr temp, SND32_SOUND_ADJUST
+		lsl temp2, code, #1                        @ Multiply by 2
+		ldrh temp, [temp, temp2]                   @ Half Word
+		cmp mode, #0
+		movne temp2, #6
+		mulne temp, temp, temp2
+
+		push {r0-r3}
+		cmp mode, #0
+		moveq r0, #equ32_cm_pwm
+		movne r0, #equ32_cm_pcm
+		mov r1, temp
+		bl arm32_clockmanager_divisor
+		pop {r0-r3}
+
+		/* Count Up */
+
 		add count, count, #1
 		str count, SND32_COUNT
 		str repeat, SND32_REPEAT
@@ -950,7 +975,7 @@ snd32_soundinit_i2s:
 	/**
 	 * Clock Manager for PCM Clock.
 	 * Makes 19.2Mhz (From Oscillator). Div by 18.75 Equals 1.024Mhz (Same as PWM Output).
-	 * Makes 19.2Mhz (From Oscillator). Div by 18.939453125 Equals 1.013756832Mhz (Adjusted).
+	 * Makes 19.2Mhz (From Oscillator). Div by 18.93896484375 Equals 1.01378296852Mhz (Adjusted).
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pcm
@@ -958,8 +983,8 @@ snd32_soundinit_i2s:
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
 	mov r2, #18<<equ32_cm_div_integer
 	/*orr r2, r2, #3072<<equ32_cm_div_fraction*/                       @ 0.75 * 4096
-	orr r2, r2, #0xF00<<equ32_cm_div_fraction                      @ 0.939453125 * 4096 Equals 3848 (0xF08)
-	orr r2, r2, #0x008<<equ32_cm_div_fraction                      @ 0.939453125 * 4096 Equals 3848 (0xF08)
+	orr r2, r2, #0xF00<<equ32_cm_div_fraction                      @ 0.93896484375 * 4096 Equals 3846 (0xF06)
+	orr r2, r2, #0x006<<equ32_cm_div_fraction                      @ 0.93896484375 * 4096 Equals 3846 (0xF06)
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -1289,6 +1314,24 @@ macro32_debug data1, 0, 88
 		pop {r0-r3}
 
 	snd32_soundmidi_noteon_common:
+
+		/* Tune Tone */
+
+		ldr temp, SND32_SOUND_ADJUST
+		lsl temp2, data1, #1                              @ Multiply by 2
+		ldrh temp, [temp, temp2]                          @ Half Word
+		cmp mode, #0
+		movne temp2, #6
+		mulne temp, temp, temp2
+
+		push {r0-r3}
+		cmp mode, #0
+		moveq r0, #equ32_cm_pwm
+		movne r0, #equ32_cm_pcm
+		mov r1, temp
+		bl arm32_clockmanager_divisor
+		pop {r0-r3}
+
 		orr status, status, #0x00000004                   @ Set MIDI Running
 /*
 macro32_debug data1, 0, 112

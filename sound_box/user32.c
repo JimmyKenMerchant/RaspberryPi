@@ -10,6 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 #include "snd32/soundindex.h"
+#include "snd32/soundadjust.h"
 #include "snd32/musiccode.h"
 
 #define timer_count_multiplicand        5
@@ -280,22 +281,22 @@ int32 _user_start()
 	bool mode_soundplay;
 
 #ifdef __SOUND_I2S
-	_sounddecode( _SOUND_INDEX, SND32_I2S );
+	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 	mode_soundplay = True;
 #elif defined(__SOUND_I2S_BALANCED)
-	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = True;
 #elif defined(__SOUND_PWM)
-	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
 #elif defined(__SOUND_PWM_BALANCED)
-	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
 #elif defined(__SOUND_JACK)
-	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
 #elif defined(__SOUND_JACK_BALANCED)
-	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
 #endif
 

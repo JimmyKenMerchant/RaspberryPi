@@ -10,6 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 #include "snd32/soundindex.h"
+#include "snd32/soundadjust.h"
 #include "snd32/musiccode.h"
 
 #define timer_count_multiplicand        5
@@ -228,7 +229,7 @@ int32 _user_start()
  *
  * Clock for I2S is generated a formula:
  * (19,200,000 / bent_rate / 32 ) equals ( 600,000 / bent_rate ).
- * bent_rate, 0x12F08 (18.939453125), makes 31680Hz of the sample rate.
+ * bent_rate, 0x12F06 (18.93896484375), makes 31680Hz of the sample rate.
  *
  * Clock for PWM is generated a formula:
  * (500,000,000 / bent_rate / 5000 ) equals ( 100,000 / bent_rate ).
@@ -240,42 +241,42 @@ int32 _user_start()
  */
 
 #ifdef __SOUND_I2S
-	_sounddecode( _SOUND_INDEX, SND32_I2S );
+	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 	mode_soundplay = True;
-	uint32 bent_rate = 0x12F08; // I2S
+	uint32 bent_rate = 0x12F06; // I2S
 	uint32 bent_inc = 0xC0;
 	#define max_bent_rate 0x18000
 	#define min_bent_rate 0xEFFA
 #elif defined(__SOUND_I2S_BALANCED)
-	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = True;
-	uint32 bent_rate = 0x12F08; // I2S
+	uint32 bent_rate = 0x12F06; // I2S
 	uint32 bent_inc = 0xC0;
 	#define max_bent_rate 0x18000
 	#define min_bent_rate 0xEFFA
 #elif defined(__SOUND_PWM)
-	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_PWM_BALANCED)
-	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_JACK)
-	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
 	#define max_bent_rate 0x4000
 	#define min_bent_rate 0x27FF
 #elif defined(__SOUND_JACK_BALANCED)
-	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED );
+	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
 	uint32 bent_rate = 0x3281; // PWM
 	uint32 bent_inc = 0x20;
