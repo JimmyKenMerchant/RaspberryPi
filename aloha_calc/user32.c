@@ -10,6 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 #include "snd32/soundindex.h"
+#include "snd32/soundadjust.h"
 #include "snd32/musiccode.h"
 
 /**
@@ -212,6 +213,7 @@ bool command_label( uint32 start_line_number ); // Label Enumeration
 bool console_rollup();
 bool init_usb_keyboard( uint32 usb_channel );
 bool startup_executer();
+void sound_makesilence();
 
 /* Variables on Global Scope */
 bool input_keyboard_continue_flag;
@@ -222,6 +224,13 @@ int32 ticket_hid; // Use in init_usb_keyboard()
 dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
+uint32 sound_silencelen; // Use in Function, makesilence
+
+music_code sound_silence[] =
+{
+	_48(_SILENCE)
+	_END
+};
 
 /* Start Up */
 bool startup;
@@ -276,11 +285,19 @@ int32 _user_start() {
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
+	/* Sound */
+
 #ifdef __SOUND_I2S
-	_sounddecode( _SOUND_INDEX, SND32_I2S );
+	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 #else
-	_sounddecode( _SOUND_INDEX, SND32_PWM );
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 #endif
+
+	sound_silencelen = snd32_musiclen( sound_silence );
+
+	sound_makesilence();
+
+	/* Keyboard */
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
 	
@@ -292,6 +309,8 @@ int32 _user_start() {
 		if ( print32_set_caret( print32_string( str_serialmode, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_serialmode ) ) ) ) console_rollup();
 		_uarttx( str_aloha, str32_strlen( str_aloha ) );
 	}
+
+	/* Startup */
 
 	if ( _gpio_in( 22 ) ) {
 		startup = true;
@@ -985,7 +1004,7 @@ int32 _user_start() {
 
 								break;
 							case clrsnd:
-								_soundclear();
+								sound_makesilence();
 
 								break;
 							case beat:
@@ -1877,5 +1896,18 @@ bool startup_executer() {
 	}
 
 	return true;
+}
+
+
+void sound_makesilence()
+{
+
+#ifdef __SOUND_I2S
+	_soundclear();
+#else
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundset( sound_silence, sound_silencelen, 0, -1 );
+#endif
+
 }
 

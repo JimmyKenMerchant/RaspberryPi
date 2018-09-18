@@ -215,6 +215,11 @@ os_fiq:
 
 .ifdef __SOUND
 	push {r0-r3}
+.ifdef __SOUND_I2S
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
 	bl snd32_soundplay
 	pop {r0-r3}
 
