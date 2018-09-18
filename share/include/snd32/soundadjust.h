@@ -26,6 +26,9 @@
  * (19,200,000 / bent_rate / 32 ) equals ( 600,000 / bent_rate ).
  * bent_rate, 0x12F06 (18.93896484375), makes 31680Hz of the sample rate.
  *
+ * bent_rate expresses decimal places by fixed point (Bit[11:0]).
+ * Caution that the value less than 0x2000 on bent_rate causes malfunctions.
+ *
  * So in I2S Mode, these values are multiplied by 6.
  * To hide jitter noise in PWM mode, use 0x3281 (3.1565657) and higher.
  */

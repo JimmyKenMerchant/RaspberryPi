@@ -171,10 +171,17 @@ music_code music1[] =
 };
 
 music_code music2[] =
-{	_12_DEC(_A4_TRIL) _12_DEC(_B4_TRIL)
+{
+	/*
+	_12_DEC(_A4_TRIL) _12_DEC(_B4_TRIL)
 	_12_DEC(_C5_TRIL) _12_DEC(_B4_TRIL)
 	_12_DEC(_A4_TRIL) _12(_A4_TRIT)
 	_48(_SILENCE)
+	*/
+	_48(_C4_SINL) _48(_C4_SINL)
+	_48(_C4_SINL) _48(_C4_SINL)
+	_48(_C4_SINL) _48(_C4_SINL)
+	_48(_C4_SINL) _48(_C4_SINL)
 	_END
 };
 
@@ -239,34 +246,25 @@ music_code interrupt16[] =
 	_END
 };
 
-music_code silence31[] =
-{
-	_48(_SILENCE)
-	_END
-};
-
-// Use in Function, makesilence
-uint32 musiclen31;
-
 void makesilence()
 {
 
 #ifdef __SOUND_I2S
-	_soundclear();
+	_soundclear(True);
 #elif defined(__SOUND_I2S_BALANCED)
-	_soundclear();
+	_soundclear(True);
 #elif defined(__SOUND_PWM)
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( silence31, musiclen31, 0, -1 );
+	_soundclear(False);
 #elif defined(__SOUND_PWM_BALANCED)
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( silence31, musiclen31, 0, -1 );
+	_soundclear(False);
 #elif defined(__SOUND_JACK)
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( silence31, musiclen31, 0, -1 );
+	_soundclear(False);
 #elif defined(__SOUND_JACK_BALANCED)
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( silence31, musiclen31, 0, -1 );
+	_soundclear(False);
 #endif
 
 }
@@ -283,21 +281,27 @@ int32 _user_start()
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 	mode_soundplay = True;
+	SND32_MODULATION_INC = 0x600;
 #elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = True;
+	SND32_MODULATION_INC = 0x600;
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
+	SND32_MODULATION_INC = 0x100;
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
+	SND32_MODULATION_INC = 0x100;
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
+	SND32_MODULATION_INC = 0x100;
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
+	SND32_MODULATION_INC = 0x100;
 #endif
 
 	// To Get Proper Latency, Get Lengths in Advance
@@ -310,7 +314,6 @@ int32 _user_start()
 	uint32 musiclen7 = snd32_musiclen( music7 );
 	uint32 musiclen8 = snd32_musiclen( music8 );
 	uint32 musiclen16 = snd32_musiclen( interrupt16 );
-	musiclen31 = snd32_musiclen( silence31 );
 
 	makesilence();
 
@@ -321,6 +324,39 @@ int32 _user_start()
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
 
 //print32_debug( detect_parallel, 100, 100 );
+
+#ifdef __SOUND_I2S
+			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
+#elif defined(__SOUND_I2S_BALANCED)
+			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
+#elif defined(__SOUND_PWM)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#elif defined(__SOUND_PWM_BALANCED)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#elif defined(__SOUND_JACK)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#elif defined(__SOUND_JACK_BALANCED)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#endif
+
+/*
+print32_debug( SND32_DIVISOR, 100, 100 );
+print32_debug( SND32_MODULATION_INC, 100, 112 );
+print32_debug( SND32_MODULATION_MAX, 100, 124 );
+print32_debug( SND32_MODULATION_MIN, 100, 136 );
+*/
+
+			/* Triangle LFO */
+			SND32_DIVISOR += SND32_MODULATION_INC;
+			if ( SND32_DIVISOR >= SND32_MODULATION_MAX ) {
+				SND32_DIVISOR = SND32_MODULATION_MAX;
+				SND32_MODULATION_INC = -( SND32_MODULATION_INC );
+			} else if ( SND32_DIVISOR <= SND32_MODULATION_MIN ) {
+				SND32_DIVISOR = SND32_MODULATION_MIN;
+				SND32_MODULATION_INC = -( SND32_MODULATION_INC );
+			}
+
+			arm32_dsb();
 
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)

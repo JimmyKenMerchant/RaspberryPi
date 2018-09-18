@@ -224,13 +224,6 @@ int32 ticket_hid; // Use in init_usb_keyboard()
 dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
-uint32 sound_silencelen; // Use in Function, makesilence
-
-music_code sound_silence[] =
-{
-	_48(_SILENCE)
-	_END
-};
 
 /* Start Up */
 bool startup;
@@ -292,8 +285,6 @@ int32 _user_start() {
 #else
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 #endif
-
-	sound_silencelen = snd32_musiclen( sound_silence );
 
 	sound_makesilence();
 
@@ -1903,10 +1894,10 @@ void sound_makesilence()
 {
 
 #ifdef __SOUND_I2S
-	_soundclear();
+	_soundclear(True);
 #else
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundset( sound_silence, sound_silencelen, 0, -1 );
+	_soundclear(False);
 #endif
 
 }

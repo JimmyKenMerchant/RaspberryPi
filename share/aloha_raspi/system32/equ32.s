@@ -55,10 +55,10 @@
 .equ equ32_snd32_soundmidi_sound3_baseoffset,  204        @ Fourth Sound Base Offset in Sound Index, Noise
 .equ equ32_snd32_soundmidi_sound3_lownote,     33         @ Fourth Sound Lowest Note
 .equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
-.equ equ32_snd32_soundmidi_mul_pwm,            1          @ Multiplier on Pitch Bend on PWM Mode
-.equ equ32_snd32_soundmidi_mul_pcm,            6          @ Multiplier on Pitch Bend on PCM Mode
-.equ equ32_snd32_soundmidi_neutraldiv_pwm,     0x3281     @ Neutral Divisor on Pitch Bend on PWM Mode
-.equ equ32_snd32_soundmidi_neutraldiv_pcm,     0x12F06    @ Neutral Divisor on Pitch Bend on PCM Mode
+.equ equ32_snd32_mul_pcm,                      6          @ Multiplier on Pitch Bend on PCM Mode
+.equ equ32_snd32_neutraldiv_pwm,               0x3281     @ Neutral Divisor on Pitch Bend on PWM Mode
+.equ equ32_snd32_neutraldiv_pcm,               0x12F06    @ Neutral Divisor on Pitch Bend on PCM Mode
+.equ equ32_snd32_interval,                     0x200      @ Default Interval on Modulation, +-This Value
 
 /**
  * Standard Peripherals
