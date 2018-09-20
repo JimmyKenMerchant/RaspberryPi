@@ -34,8 +34,8 @@
 .equ equ32_cvt32_float32_to_string_min_expo,   1
 .equ equ32_cvt32_separator,                    0x2C       @ Ascii Code of Comma: Separator for *array_to_string*
 .equ equ32_sts32_samplerate,                   32000
-.equ equ32_sts32_synthewave_pwm_bias,          2496
-.equ equ32_snd32_sounddecode_pwm_bias,         2496
+.equ equ32_sts32_synthewave_pwm_bias,          2496       @ 12-bit Depth
+.equ equ32_snd32_sounddecode_pwm_bias,         1248       @ 11-bit Depth
 .equ equ32_snd32_sounddecode_noise_len_upper,  0x280      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_resolution, 15         @ Affecting Sound Color, 255/127/63/31/15/7
@@ -55,10 +55,11 @@
 .equ equ32_snd32_soundmidi_sound3_baseoffset,  204        @ Fourth Sound Base Offset in Sound Index, Noise
 .equ equ32_snd32_soundmidi_sound3_lownote,     33         @ Fourth Sound Lowest Note
 .equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
-.equ equ32_snd32_mul_pcm,                      6          @ Multiplier on Pitch Bend on PCM Mode
-.equ equ32_snd32_neutraldiv_pwm,               0x3281     @ Neutral Divisor on Pitch Bend on PWM Mode
-.equ equ32_snd32_neutraldiv_pcm,               0x12F06    @ Neutral Divisor on Pitch Bend on PCM Mode
-.equ equ32_snd32_interval,                     0x200      @ Default Interval on Modulation, +-This Value
+.equ equ32_snd32_mul_pwm,                      2          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
+.equ equ32_snd32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
+.equ equ32_snd32_interval,                     0x400      @ Default Interval on Modulation, +-(This Value * equ32_snd32_mul_*)
+.equ equ32_snd32_neutraldiv_pwm,               0x6502     @ Neutral Clock Divisor on Pitch Bend on PWM Mode, Already Multiplied
+.equ equ32_snd32_neutraldiv_pcm,               0x12F06    @ Neutral Clock Divisor on Pitch Bend on PCM Mode, Already Multiplied
 
 /**
  * Standard Peripherals

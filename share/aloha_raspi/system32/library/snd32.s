@@ -146,19 +146,18 @@ snd32_sounddecode:
 			push {r0-r3}
 			mov r0, mem_alloc
 			cmp wave_volume, #3
-			moveq r2, #127
+			moveq r2, #63
 			cmp wave_volume, #2
-			moveq r2, #255
+			moveq r2, #127
 			cmp wave_volume, #1
-			moveq r2, #0x1F0                           @ Decimal 511
-			orreq r2, r2, #0x00F                       @ Decimal 511
-			movlo r2, #0x3F0                           @ Decimal 1023
-			orrlo r2, r2, #0x00F                       @ Decimal 1023
+			moveq r2, #255
+			movlo r2, #0x1F0                           @ Decimal 511
+			orrlo r2, r2, #0x00F                       @ Decimal 511
 			cmp mode, #2
 			movlo r3, #equ32_snd32_sounddecode_pwm_bias @ DC Offset in Bytes (Unsigned) for PWM
 			movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 			addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-			lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
+			lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
 			subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause mode Requires r1
 			cmp wave_type, #2
@@ -190,19 +189,18 @@ snd32_sounddecode:
 				push {r0-r3}
 				mov r0, mem_alloc
 				cmp wave_volume, #3
-				moveq r2, #127
+				moveq r2, #63
 				cmp wave_volume, #2
-				moveq r2, #255
+				moveq r2, #127
 				cmp wave_volume, #1
-				moveq r2, #0x1F0                           @ Decimal 511
-				orreq r2, r2, #0x00F                       @ Decimal 511
-				movlo r2, #0x3F0                           @ Decimal 1023
-				orrlo r2, r2, #0x00F                       @ Decimal 1023
+				moveq r2, #255
+				movlo r2, #0x1F0                           @ Decimal 511
+				orrlo r2, r2, #0x00F                       @ Decimal 511
 				cmp mode, #2
 				movlo r3, #equ32_snd32_sounddecode_pwm_bias @ DC Offset in Bytes (Unsigned) for PWM
 				movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 				addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-				lslhs r2, r2, #3                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 8
+				lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
 				subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 				/* Assign r1 at Last Bacause mode Requires r1 */
 				mov r1, #equ32_snd32_sounddecode_noise_len_upper
@@ -633,8 +631,9 @@ snd32_soundplay:
 		lsl temp2, code, #1                        @ Multiply by 2
 		ldrh temp, [temp, temp2]                   @ Half Word
 		cmp mode, #0
+		moveq temp2, #equ32_snd32_mul_pwm
 		movne temp2, #equ32_snd32_mul_pcm
-		mulne temp, temp, temp2
+		mul temp, temp, temp2
 
 		push {r0-r3}
 		cmp mode, #0
@@ -658,8 +657,9 @@ snd32_soundplay:
 		/* Make Interval on Modulation */
 		mov temp3, #equ32_snd32_interval
 		cmp mode, #0
+		moveq temp4, #equ32_snd32_mul_pwm
 		movne temp4, #equ32_snd32_mul_pcm
-		mulne temp3, temp3, temp4
+		mul temp3, temp3, temp4
 
 		/* Maximum Value of Interval on Modulation */
 		add temp4, temp, temp3
@@ -1040,15 +1040,15 @@ snd32_soundinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes Appx. 158.4Mhz (From PLLD). 500Mhz Div by 3.1565657 Equals Appx. 158.4Mhz.
+	 * Makes Appx. 158.4Mhz (From PLLD). 500Mhz Div by 6.31298828125 Equals Appx. 79.2Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_1
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld           @ 500Mhz
-	mov r2, #3<<equ32_cm_div_integer
-	orr r2, r2, #0x280<<equ32_cm_div_fraction                       @ 0.1565657 * 4096, Round Down to Decimal 641
-	orr r2, r2, #0x001<<equ32_cm_div_fraction                       @ 0.1565657 * 4096, Round Down to Decimal 641
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld            @ 500Mhz
+	mov r2, #6<<equ32_cm_div_integer
+	orr r2, r2, #0x500<<equ32_cm_div_fraction                       @ 0.1565657 * 4096, Round Down to Decimal 641
+	orr r2, r2, #0x002<<equ32_cm_div_fraction                       @ 0.1565657 * 4096, Round Down to Decimal 641
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -1060,11 +1060,11 @@ snd32_soundinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 158.4Mhz Div By 5000 Equals 31680hz.
-	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 5000, but Is Actually 4096).
+	 * 79.2Mhz Div By 2500 Equals 31680hz.
+	 * Sampling Rate 31680hz, Bit Depth 11bit (Range is 2500, but Is Actually 2048).
 	 */
-	mov value, #0x1300
-	orr value, value, #0x0088
+	mov value, #0x0900
+	orr value, value, #0x00C4
 	str value, [memorymap_base, #equ32_pwm_rng1]
 	str value, [memorymap_base, #equ32_pwm_rng2]
 
@@ -1490,8 +1490,9 @@ macro32_debug data1, 0, 88
 		lsl temp2, data1, #1                              @ Multiply by 2
 		ldrh temp, [temp, temp2]                          @ Half Word
 		cmp mode, #0
+		moveq temp2, #equ32_snd32_mul_pwm
 		movne temp2, #equ32_snd32_mul_pcm
-		mulne temp, temp, temp2
+		mul temp, temp, temp2
 
 		push {r0-r3}
 		cmp mode, #0
@@ -1508,8 +1509,9 @@ macro32_debug data1, 0, 88
 		/* Make Interval on Modulation */
 		mov data1, #equ32_snd32_interval
 		cmp mode, #0
+		moveq data2, #equ32_snd32_mul_pwm
 		movne data2, #equ32_snd32_mul_pcm
-		mulne data1, data1, data2
+		mul data1, data1, data2
 
 		/* Maximum Value of Interval on Modulation */
 		add data2, temp, data1
@@ -1585,8 +1587,9 @@ macro32_debug data1, 0, 112
 			snd32_soundmidi_control_lsb_modulation:
 				lsr temp2, temp2, #5                           @ Divide by 16, 16383 to 1023
 				cmp mode, #0
+				moveq temp, #equ32_snd32_mul_pwm
 				movne temp, #equ32_snd32_mul_pcm
-				mulne temp2, temp2, temp
+				mul temp2, temp2, temp
 				ldr temp, SND32_MODULATION_INC_ADDR
 				str temp2, [temp]
 				b snd32_soundmidi_success
@@ -1653,9 +1656,10 @@ macro32_debug data1, 100, 100
 
 		cmp mode, #0
 		ldreq temp, SND32_NEUTRALDIV_PWM
+		moveq data2, #equ32_snd32_mul_pwm
 		ldrne temp, SND32_NEUTRALDIV_PCM
 		movne data2, #equ32_snd32_mul_pcm
-		mulne data1, data1, data2                     @ Multiply with Multiplier
+		mul data1, data1, data2                       @ Multiply with Multiplier
 
 		sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
 		cmp data1, #0x2000

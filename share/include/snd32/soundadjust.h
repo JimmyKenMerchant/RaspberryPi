@@ -19,18 +19,20 @@
  * Increment of value tunes down, and decrement of value tunes up.
  *
  * Clock for PWM is generated a formula:
- * (500,000,000 / bent_rate / 5000 ) equals ( 100,000 / bent_rate ).
- * bent_rate, 0x3281 (3.1565657), makes 31680Hz of the sample rate
+ * (500,000,000 (PLLD) / clock_divisor / 2500 ) equals ( 200,000 / clock_divisor ).
+ * clock_divisor, 0x6502 (6.31298828125), makes 31680Hz of the sample rate
  *
- * Clock for I2S is generated a formula:
- * (19,200,000 / bent_rate / 32 ) equals ( 600,000 / bent_rate ).
- * bent_rate, 0x12F06 (18.93896484375), makes 31680Hz of the sample rate.
+ * Clock for I2S(PCM) is generated a formula:
+ * (19,200,000 (Crystal) / clock_divisor / 32 ) equals ( 600,000 / clock_divisor ).
+ * clock_divisor, 0x12F06 (18.93896484375), makes 31680Hz of the sample rate.
  *
- * bent_rate expresses decimal places by fixed point (Bit[11:0]).
- * Caution that the value less than 0x2000 on bent_rate causes malfunctions.
+ * clock_divisor expresses decimal places by fixed point (Bit[11:0]).
+ * Caution that the value less than 0x2000 on clock_divisor causes malfunctions.
  *
- * So in I2S Mode, these values are multiplied by 6.
- * To hide jitter noise in PWM mode, use 0x3281 (3.1565657) and higher.
+ * If 0x3281 is a base value to express adjustment.
+ * In PWM Mode, this value is multiplied by 2.
+ * In PCM Mode, this value is multiplied by 6.
+ * To hide audible clock jitter, take high value of clock_divisor. Frequency dividers reduce audible clock jitter.
  */
 sound_adjust _SOUND_ADJUST[] =
 {

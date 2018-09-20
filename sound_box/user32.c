@@ -289,19 +289,19 @@ int32 _user_start()
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
-	SND32_MODULATION_INC = 0x100;
+	SND32_MODULATION_INC = 0x200;
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
-	SND32_MODULATION_INC = 0x100;
+	SND32_MODULATION_INC = 0x200;
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
-	SND32_MODULATION_INC = 0x100;
+	SND32_MODULATION_INC = 0x200;
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
-	SND32_MODULATION_INC = 0x100;
+	SND32_MODULATION_INC = 0x200;
 #endif
 
 	// To Get Proper Latency, Get Lengths in Advance
