@@ -146,18 +146,17 @@ snd32_sounddecode:
 			push {r0-r3}
 			mov r0, mem_alloc
 			cmp wave_volume, #3
-			moveq r2, #63
+			moveq r2, #31
 			cmp wave_volume, #2
-			moveq r2, #127
+			moveq r2, #63
 			cmp wave_volume, #1
-			moveq r2, #255
-			movlo r2, #0x1F0                           @ Decimal 511
-			orrlo r2, r2, #0x00F                       @ Decimal 511
+			moveq r2, #127
+			movlo r2, #255
 			cmp mode, #2
 			movlo r3, #equ32_snd32_sounddecode_pwm_bias @ DC Offset in Bytes (Unsigned) for PWM
 			movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 			addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-			lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
+			lslhs r2, r2, #5                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 32
 			subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause mode Requires r1
 			cmp wave_type, #2
@@ -189,18 +188,17 @@ snd32_sounddecode:
 				push {r0-r3}
 				mov r0, mem_alloc
 				cmp wave_volume, #3
-				moveq r2, #63
+				moveq r2, #31
 				cmp wave_volume, #2
-				moveq r2, #127
+				moveq r2, #63
 				cmp wave_volume, #1
-				moveq r2, #255
-				movlo r2, #0x1F0                           @ Decimal 511
-				orrlo r2, r2, #0x00F                       @ Decimal 511
+				moveq r2, #127
+				movlo r2, #255
 				cmp mode, #2
 				movlo r3, #equ32_snd32_sounddecode_pwm_bias @ DC Offset in Bytes (Unsigned) for PWM
 				movhs r3, #0                               @ DC Offset in Bytes (Signed) for PCM
 				addhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
-				lslhs r2, r2, #4                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 16
+				lslhs r2, r2, #5                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 32
 				subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 				/* Assign r1 at Last Bacause mode Requires r1 */
 				mov r1, #equ32_snd32_sounddecode_noise_len_upper
@@ -1040,15 +1038,15 @@ snd32_soundinit_pwm:
 
 	/**
 	 * Clock Manager for PWM.
-	 * Makes Appx. 158.4Mhz (From PLLD). 500Mhz Div by 6.31298828125 Equals Appx. 79.2Mhz.
+	 * Makes Appx. 39.6Mhz (From PLLD). 500Mhz Div by 12.6259765625 Equals Appx. 39.6Mhz.
 	 */
 	push {r0-r3}
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_1
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld            @ 500Mhz
-	mov r2, #6<<equ32_cm_div_integer
-	orr r2, r2, #0x500<<equ32_cm_div_fraction                       @ 0.1565657 * 4096, Round Down to Decimal 641
-	orr r2, r2, #0x002<<equ32_cm_div_fraction                       @ 0.1565657 * 4096, Round Down to Decimal 641
+	mov r2, #0xC<<equ32_cm_div_integer
+	orr r2, r2, #0xA00<<equ32_cm_div_fraction                       @ 0.6259765625 * 4096, Decimal 2564
+	orr r2, r2, #0x004<<equ32_cm_div_fraction                       @ 0.6259765625 * 4096, Decimal 2564
 	bl arm32_clockmanager
 	pop {r0-r3}
 
@@ -1060,11 +1058,11 @@ snd32_soundinit_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
 	/**
-	 * 79.2Mhz Div By 2500 Equals 31680hz.
-	 * Sampling Rate 31680hz, Bit Depth 11bit (Range is 2500, but Is Actually 2048).
+	 * 39.6Mhz Div By 1250 Equals 31680hz.
+	 * Sampling Rate 31680hz, Bit Depth 10bit (Range is 1250, but Is Actually 1024).
 	 */
-	mov value, #0x0900
-	orr value, value, #0x00C4
+	mov value, #0x0400
+	orr value, value, #0x00E2
 	str value, [memorymap_base, #equ32_pwm_rng1]
 	str value, [memorymap_base, #equ32_pwm_rng2]
 

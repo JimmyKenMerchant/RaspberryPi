@@ -19,8 +19,8 @@
  * Increment of value tunes down, and decrement of value tunes up.
  *
  * Clock for PWM is generated a formula:
- * (500,000,000 (PLLD) / clock_divisor / 2500 ) equals ( 200,000 / clock_divisor ).
- * clock_divisor, 0x6502 (6.31298828125), makes 31680Hz of the sample rate
+ * (500,000,000 (PLLD) / clock_divisor / 1250 ) equals ( 400,000 / clock_divisor ).
+ * clock_divisor, 0xCA04 (12.6259765625), makes 31680Hz of the sample rate
  *
  * Clock for I2S(PCM) is generated a formula:
  * (19,200,000 (Crystal) / clock_divisor / 32 ) equals ( 600,000 / clock_divisor ).
@@ -30,7 +30,7 @@
  * Caution that the value less than 0x2000 on clock_divisor causes malfunctions.
  *
  * If 0x3281 is a base value to express adjustment.
- * In PWM Mode, this value is multiplied by 2.
+ * In PWM Mode, this value is multiplied by 4.
  * In PCM Mode, this value is multiplied by 6.
  * To hide audible clock jitter, take high value of clock_divisor. Frequency dividers reduce audible clock jitter.
  */
