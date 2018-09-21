@@ -57,7 +57,7 @@
 .equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
 .equ equ32_snd32_mul_pwm,                      4          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
 .equ equ32_snd32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
-.equ equ32_snd32_interval,                     0x800      @ Default Interval on Modulation, +-(This Value * equ32_snd32_mul_*)
+.equ equ32_snd32_range,                        0x400      @ Default Freq. Range on Modulation, +-(This Value * equ32_snd32_mul_*)
 .equ equ32_snd32_neutraldiv_pwm,               0xCA04     @ Neutral Clock Divisor on Pitch Bend on PWM Mode, Already Multiplied
 .equ equ32_snd32_neutraldiv_pcm,               0x12F06    @ Neutral Clock Divisor on Pitch Bend on PCM Mode, Already Multiplied
 

@@ -1299,7 +1299,7 @@ extern uint64 draw32_line
 
 extern uint32 SND32_VIRTUAL_PARALLEL;
 extern uint32 SND32_DIVISOR;
-extern uint32 SND32_MODULATION_INC;
+extern uint32 SND32_MODULATION_DELTA;
 extern uint32 SND32_MODULATION_MAX;
 extern uint32 SND32_MODULATION_MIN;
 

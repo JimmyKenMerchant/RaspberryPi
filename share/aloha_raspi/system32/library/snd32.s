@@ -380,11 +380,11 @@ snd32_sounddecode:
 		ldrhs temp, SND32_NEUTRALDIV_PCM
 		str temp, [temp2]
 
-		/* Maximum Value of Interval on Modulation */
+		/* Maximum Frequency on Modulation, Same as Divisor */
 		ldr temp2, SND32_MODULATION_MAX_ADDR
 		str temp, [temp2]
 
-		/* Minimum Value of Interval on Modulation */
+		/* Minimum Frequency on Modulation, Same As Divisor */
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str temp, [temp2]
 
@@ -493,11 +493,11 @@ snd32_soundclear:
 		ldrne temp, SND32_NEUTRALDIV_PCM
 		str temp, [temp2]
 
-		/* Maximum Value of Interval on Modulation */
+		/* Maximum Frequency on Modulation, Same as Divisor */
 		ldr temp2, SND32_MODULATION_MAX_ADDR
 		str temp, [temp2]
 
-		/* Minimum Value of Interval on Modulation */
+		/* Minimum Frequency on Modulation, Same as Divisor */
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str temp, [temp2]
 
@@ -652,19 +652,19 @@ snd32_soundplay:
 
 		beq snd32_soundplay_tune_silence           @ If Silence
 
-		/* Make Interval on Modulation */
-		mov temp3, #equ32_snd32_interval
+		/* Make Frequency Range on Modulation */
+		ldr temp3, SND32_MODULATION_RANGE
 		cmp mode, #0
 		moveq temp4, #equ32_snd32_mul_pwm
 		movne temp4, #equ32_snd32_mul_pcm
 		mul temp3, temp3, temp4
 
-		/* Maximum Value of Interval on Modulation */
+		/* Maximum Frequency on Modulation */
 		add temp4, temp, temp3
 		ldr temp2, SND32_MODULATION_MAX_ADDR
 		str temp4, [temp2]
 
-		/* Minimum Value of Interval on Modulation */
+		/* Minimum Frequency on Modulation */
 		sub temp4, temp, temp3
 		cmp temp4, #0x2000
 		movlt temp4, #0x2000                       @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
@@ -675,11 +675,11 @@ snd32_soundplay:
 
 		snd32_soundplay_tune_silence:
 
-			/* Maximum Value of Interval on Modulation */
+			/* Maximum Frequency on Modulation, Same as Divisor */
 			ldr temp2, SND32_MODULATION_MAX_ADDR
 			str temp, [temp2]
 
-			/* Minimum Value of Interval on Modulation */
+			/* Minimum Frequency on Modulation, Same as Divisor */
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str temp, [temp2]
 
@@ -743,11 +743,11 @@ snd32_soundplay:
 			ldrne temp, SND32_NEUTRALDIV_PCM
 			str temp, [temp2]
 
-			/* Maximum Value of Interval on Modulation */
+			/* Maximum Frequency on Modulation, Same as Divisor */
 			ldr temp2, SND32_MODULATION_MAX_ADDR
 			str temp, [temp2]
 
-			/* Minimum Value of Interval on Modulation */
+			/* Minimum Frequency on Modulation, Same as Divisor */
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str temp, [temp2]
 
@@ -1391,11 +1391,11 @@ snd32_soundmidi:
 			ldrne temp, SND32_NEUTRALDIV_PCM
 			str temp, [temp2]
 
-			/* Maximum Value of Interval on Modulation */
+			/* Maximum Frequency on Modulation, Same as Divisor */
 			ldr temp2, SND32_MODULATION_MAX_ADDR
 			str temp, [temp2]
 
-			/* Minimum Value of Interval on Modulation */
+			/* Minimum Frequency on Modulation, Same as Divisor */
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str temp, [temp2]
 
@@ -1504,19 +1504,19 @@ macro32_debug data1, 0, 88
 		ldr temp2, SND32_DIVISOR_ADDR
 		str temp, [temp2]
 
-		/* Make Interval on Modulation */
-		mov data1, #equ32_snd32_interval
+		/* Make Frequency Range on Modulation */
+		ldr data1, SND32_MODULATION_RANGE
 		cmp mode, #0
 		moveq data2, #equ32_snd32_mul_pwm
 		movne data2, #equ32_snd32_mul_pcm
 		mul data1, data1, data2
 
-		/* Maximum Value of Interval on Modulation */
+		/* Maximum Frequency on Modulation */
 		add data2, temp, data1
 		ldr temp2, SND32_MODULATION_MAX_ADDR
 		str data2, [temp2]
 
-		/* Minimum Value of Interval on Modulation */
+		/* Minimum Frequency on Modulation */
 		sub data2, temp, data1
 		cmp data2, #0x2000
 		movlt data2, #0x2000                              @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
@@ -1550,15 +1550,53 @@ macro32_debug data1, 0, 112
 
 		ldr temp, SND32_SOUNDMIDI_CTL
 		and data1, data1, #0x1F                            @ Only Use 0 to 31
-		lsl data1, data1, #1
+		lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
 		ldrh temp2, [temp, data1]
 		bic temp2, #0x3F80                                 @ Bit[13:7]
 		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
-		orr temp2, temp2, data2, lsl #7
-		strh temp2, [temp, data1]
+		orr data2, temp2, data2, lsl #7
+		strh data2, [temp, data1]
 
 		mov count, #0
+
+		/**
+		 * Immediate Changes Here
+		 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
+		 */
+		lsr data1, data1, #1                               @ Divide by 2
+		cmp data1, #1
+		beq snd32_soundmidi_control_msb_modulation
+		cmp data1, #16
+		beq snd32_soundmidi_control_msb_gp1
+		cmp data1, #17
+		beq snd32_soundmidi_control_msb_gp2
+
 		b snd32_soundmidi_success
+
+		snd32_soundmidi_control_msb_modulation:
+			/* Incremental / Decremental Delta of Modulation */
+			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
+			cmp mode, #0
+			moveq temp, #equ32_snd32_mul_pwm
+			movne temp, #equ32_snd32_mul_pcm
+			mul data2, data2, temp
+			ldr temp, SND32_MODULATION_DELTA_ADDR
+			str data2, [temp]
+			b snd32_soundmidi_success
+
+		snd32_soundmidi_control_msb_gp1:
+			/* Frequency Range (Interval) of Modulation */
+			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
+			str data2, SND32_MODULATION_RANGE
+
+			b snd32_soundmidi_success
+
+		snd32_soundmidi_control_msb_gp2:
+			/* Virtual Parallel of Coconuts */
+			lsr data2, data2, #7                           @ Use Only MSB[13:7]
+			ldr temp, SND32_VIRTUAL_PARALLEL_ADDR
+			str data2, [temp]
+			b snd32_soundmidi_success
 
 		snd32_soundmidi_control_lsb:
 
@@ -1570,27 +1608,12 @@ macro32_debug data1, 0, 112
 			ldrh temp2, [temp, data1]
 			bic temp2, #0x7F                                   @ Bit[6:0]
 			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
-			orr temp2, temp2, data2
-			strh temp2, [temp, data1]
+			orr data2, temp2, data2
+			strh data2, [temp, data1]
 
 			mov count, #0
 
-			/* Immediate Changes Here */
-			lsr data1, data1, #1                               @ Divide by 2
-			cmp data1, #2
-			beq snd32_soundmidi_control_lsb_modulation
-
 			b snd32_soundmidi_success
-
-			snd32_soundmidi_control_lsb_modulation:
-				lsr temp2, temp2, #5                           @ Divide by 16, 16383 to 1023
-				cmp mode, #0
-				moveq temp, #equ32_snd32_mul_pwm
-				movne temp, #equ32_snd32_mul_pcm
-				mul temp2, temp2, temp
-				ldr temp, SND32_MODULATION_INC_ADDR
-				str temp2, [temp]
-				b snd32_soundmidi_success
 
 		snd32_soundmidi_control_others:
 
@@ -1751,21 +1774,22 @@ SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
 
 .globl SND32_SOUNDMIDI_CTL
 SND32_SOUNDMIDI_CTL:            .word _SND32_SOUNDMIDI_CTL @ Value List of Control Message
-_SND32_SOUNDMIDI_CTL:           .space 64 @ 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
+_SND32_SOUNDMIDI_CTL:           .space 64, 0x00 @ 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 
 SND32_VIRTUAL_PARALLEL_ADDR:    .word SND32_VIRTUAL_PARALLEL
 SND32_DIVISOR_ADDR:             .word SND32_DIVISOR
-SND32_MODULATION_INC_ADDR:      .word SND32_MODULATION_INC
+SND32_MODULATION_DELTA_ADDR:    .word SND32_MODULATION_DELTA
 SND32_MODULATION_MAX_ADDR:      .word SND32_MODULATION_MAX
 SND32_MODULATION_MIN_ADDR:      .word SND32_MODULATION_MIN
+SND32_MODULATION_RANGE:         .word equ32_snd32_range
 
 .section	.data
 .globl SND32_VIRTUAL_PARALLEL
 SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
 .globl SND32_DIVISOR
 SND32_DIVISOR:                  .word 0x00
-.globl SND32_MODULATION_INC
-SND32_MODULATION_INC:           .word 0x00
+.globl SND32_MODULATION_DELTA
+SND32_MODULATION_DELTA:         .word 0x00
 .globl SND32_MODULATION_MAX
 SND32_MODULATION_MAX:           .word 0x00
 .globl SND32_MODULATION_MIN

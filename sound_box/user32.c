@@ -281,27 +281,27 @@ int32 _user_start()
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 	mode_soundplay = True;
-	//SND32_MODULATION_INC = 0x600;
+	//SND32_MODULATION_DELTA = 0x600;
 #elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = True;
-	//SND32_MODULATION_INC = 0x600;
+	//SND32_MODULATION_DELTA = 0x600;
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_INC = 0x400;
+	//SND32_MODULATION_DELTA = 0x400;
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_INC = 0x400;
+	//SND32_MODULATION_DELTA = 0x400;
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_INC = 0x400;
+	//SND32_MODULATION_DELTA = 0x400;
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_INC = 0x400;
+	//SND32_MODULATION_DELTA = 0x400;
 #endif
 
 	// To Get Proper Latency, Get Lengths in Advance
@@ -322,6 +322,10 @@ int32 _user_start()
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+			if( SND32_VIRTUAL_PARALLEL ) {
+				detect_parallel |= SND32_VIRTUAL_PARALLEL<<22;
+				SND32_VIRTUAL_PARALLEL = 0;
+			}
 
 //print32_debug( detect_parallel, 100, 100 );
 
@@ -341,19 +345,19 @@ int32 _user_start()
 
 /*
 print32_debug( SND32_DIVISOR, 100, 100 );
-print32_debug( SND32_MODULATION_INC, 100, 112 );
+print32_debug( SND32_MODULATION_DELTA, 100, 112 );
 print32_debug( SND32_MODULATION_MAX, 100, 124 );
 print32_debug( SND32_MODULATION_MIN, 100, 136 );
 */
 
 			/* Triangle LFO */
-			SND32_DIVISOR += SND32_MODULATION_INC;
+			SND32_DIVISOR += SND32_MODULATION_DELTA;
 			if ( SND32_DIVISOR >= SND32_MODULATION_MAX ) {
 				SND32_DIVISOR = SND32_MODULATION_MAX;
-				SND32_MODULATION_INC = -( SND32_MODULATION_INC );
+				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
 			} else if ( SND32_DIVISOR <= SND32_MODULATION_MIN ) {
 				SND32_DIVISOR = SND32_MODULATION_MIN;
-				SND32_MODULATION_INC = -( SND32_MODULATION_INC );
+				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
 			}
 
 			arm32_dsb();
