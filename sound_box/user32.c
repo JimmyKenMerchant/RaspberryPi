@@ -322,7 +322,7 @@ int32 _user_start()
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			if( SND32_VIRTUAL_PARALLEL ) {
+			if ( SND32_VIRTUAL_PARALLEL ) {
 				detect_parallel |= SND32_VIRTUAL_PARALLEL<<22;
 				SND32_VIRTUAL_PARALLEL = 0;
 			}

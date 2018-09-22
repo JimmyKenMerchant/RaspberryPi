@@ -99,7 +99,13 @@ os_reset:
 .endif
 
 	/* I/O Settings */
+
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 9 INPUT, MIDI Channel Select Bit[0]
+	str r1, [r0, #equ32_gpio_gpfsel00]
+
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[1]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 17 OUTPUT
@@ -126,6 +132,15 @@ os_reset:
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
+
+	/* Check MIDI Channel, GPIO9 (Bit[0]) and GPIO10 (Bit[1]) */
+	ldr r1, [r0, #equ32_gpio_gplev0]
+	ldr r2, os_irq_midi_channel
+	tst r1, #equ32_gpio09
+	addne r2, r2, #1
+	tst r1, #equ32_gpio10
+	addne r2, r2, #2
+	str r2, os_irq_midi_channel
 
 	/**
 	 * Sound
@@ -201,37 +216,34 @@ os_debug:
 os_irq:
 	push {r0-r12,lr}
 
+	ldr r0, os_irq_midi_channel
+
 .ifdef __SOUND_I2S
-	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #1
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_I2S_BALANCED
-	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #1
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_PWM
-	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_PWM_BALANCED
-	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_JACK
-	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 .ifdef __SOUND_JACK_BALANCED
-	mov r0, #__MIDI_BASECHANNEL
 	mov r1, #0
 	bl snd32_soundmidi
 .endif
 
+	/* High on GPIO20 If MIDI Note On */
 	ldr r0, ADDR32_SND32_STATUS
 	ldr r0, [r0]
 	tst r0, #0x4                                      @ Bit[2] MIDI Note Off(0)/ Note On(1)
@@ -241,6 +253,8 @@ os_irq:
 	bl gpio32_gpiotoggle
 
 	pop {r0-r12,pc}
+
+os_irq_midi_channel: .word __MIDI_BASECHANNEL
 
 os_fiq:
 	push {r0-r7,lr}

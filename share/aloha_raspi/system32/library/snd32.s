@@ -384,7 +384,7 @@ snd32_sounddecode:
 		ldr temp2, SND32_MODULATION_MAX_ADDR
 		str temp, [temp2]
 
-		/* Minimum Frequency on Modulation, Same As Divisor */
+		/* Minimum Frequency on Modulation, Same as Divisor */
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str temp, [temp2]
 
@@ -527,7 +527,7 @@ snd32_soundclear:
  * Return: r0 (0 as success, 1, 2, and 3 as error)
  * Error(1): Music Code is Not Assgined
  * Error(2): Not Initialized
- * Error(3): MIDI Running
+ * Error(3): MIDI Note On
  */
 .globl snd32_soundplay
 snd32_soundplay:
@@ -562,7 +562,7 @@ snd32_soundplay:
 	beq snd32_soundplay_error2
 
 	tst status, #0x00000004
-	bne snd32_soundplay_error3                @ If MIDI Running
+	bne snd32_soundplay_error3                @ If MIDI Note On
 
 	cmp count, length
 	blo snd32_soundplay_jump
@@ -1399,7 +1399,7 @@ snd32_soundmidi:
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str temp, [temp2]
 
-			bic status, status, #0x00000004                   @ Clear MIDI Running
+			bic status, status, #0x00000004                   @ Clear MIDI Note On
 			mov count, #0
 			b snd32_soundmidi_success
 
@@ -1523,7 +1523,7 @@ macro32_debug data1, 0, 88
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str data2, [temp2]
 
-		orr status, status, #0x00000004                   @ Set MIDI Running
+		orr status, status, #0x00000004                   @ Set MIDI Note On
 /*
 macro32_debug data1, 0, 112
 */
@@ -1588,6 +1588,34 @@ macro32_debug data1, 0, 112
 			/* Frequency Range (Interval) of Modulation */
 			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
 			str data2, SND32_MODULATION_RANGE
+
+			tst status, #0x00000004                        @ Check MIDI Note On
+			beq snd32_soundmidi_success                    @ If MIDI Note Off
+
+			/* If MIDI Note On, Immediately Change Frequency Range */
+
+			/* Get Base Divisor on Modulation */
+			ldr temp2, SND32_DIVISOR_ADDR
+			ldr temp, [temp2]
+
+			/* Make Frequency Range on Modulation */
+			mov data1, data2
+			cmp mode, #0
+			moveq data2, #equ32_snd32_mul_pwm
+			movne data2, #equ32_snd32_mul_pcm
+			mul data1, data1, data2
+
+			/* Maximum Frequency on Modulation */
+			add data2, temp, data1
+			ldr temp2, SND32_MODULATION_MAX_ADDR
+			str data2, [temp2]
+
+			/* Minimum Frequency on Modulation */
+			sub data2, temp, data1
+			cmp data2, #0x2000
+			movlt data2, #0x2000                              @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+			ldr temp2, SND32_MODULATION_MIN_ADDR
+			str data2, [temp2]
 
 			b snd32_soundmidi_success
 

@@ -20,6 +20,10 @@
 
 **Output/Input**
 
+* GPIO9 as Input of MIDI Channel Select Bit[0]
+
+* GPIO10 as Input of MIDI Channel Select Bit[1]
+
 * GPIO12 as Output of PWM0 on sound=pwm or sound=pwmb
 
 * GPIO13 as Output of PWM1 on sound=pwm or sound=pwmb, 180 Degrees Phase-shifted from PWM0 if sound=pwmb
@@ -30,11 +34,11 @@
 
 * GPIO16 as Output of Playing Signal
 
-* GPIO20 as GATE Signal Synchronized with MIDI IN (On Note Off Event)
+* GPIO20 as Output of GATE Signal Synchronized with MIDI IN (On Note Off Event)
 
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
-* GPIO 15 as RXD0 (UART) for MIDI IN
+* GPIO15 as Input of RXD0 (UART) for MIDI IN
 
 * GPIO27 as Input of Synchronization Clock IN of Sound Box, Connect with Any Synchronization Clock OUT.
 
