@@ -7,10 +7,11 @@
  *
  */
 
-SND32_CODE:                .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
-SND32_LENGTH:              .word 0x00 @ Length of Music Code, If End, Automatically Cleared
-SND32_COUNT:               .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
+SND32_CODE:                .word 0x00 @ Pointer of Sequence of Music Code, If End, Automatically Cleared
+SND32_LENGTH:              .word 0x00 @ Length of Sequence of Music Code, If End, Automatically Cleared
+SND32_COUNT:               .word 0x00 @ Incremental Count, Once Sequence of Music Code Reaches Last, This Value will Be Reset
 SND32_REPEAT:              .word 0x00 @ -1 is Infinite Loop
+SND32_CURRENTCODE:         .word 0x00 @ Currently Playng Music Code
 
 SND32_SUSPEND_CODE:        .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
 SND32_SUSPEND_LENGTH:      .word 0x00 @ Length of Music Code, If End, Automatically Cleared
@@ -19,7 +20,7 @@ SND32_SUSPEND_REPEAT:      .word 0x00 @ -1 is Infinite Loop
 SND32_INTERRUPT_COUNT:     .word 0x00
 
 /**
- * Bit[0] Not Started(0)/ Started (1)
+ * Bit[0] Stopped (0)/ Started (1)
  * Bit[1] Regular State(0)/ Interrupt State(1)
  * Bit[2] MIDI Note Off(0)/ Note On(1)
  * Bit[3] Reserved
@@ -373,6 +374,12 @@ snd32_sounddecode:
 		b snd32_sounddecode_common
 
 	snd32_sounddecode_success:
+
+		/* Store Null (End of Sequence of Music Code) in Current Music Code for Sound Play */
+		mov temp, #0xFF00
+		orr temp, temp, #0x00FF
+		str temp, SND32_CURRENTCODE
+
 		/* Set Base Divisor on Modulation */
 		ldr temp2, SND32_DIVISOR_ADDR
 		cmp mode, #2
@@ -415,6 +422,7 @@ snd32_sounddecode:
 /**
  * function snd32_soundclear
  * Clear Music Code
+ * This function is also used for PWM mode to initially set voltage bias to speaker, line, etc.
  *
  * Parameters
  * r0: 0 as PWM Mode, 1 as PCM Mode
@@ -446,10 +454,16 @@ snd32_soundclear:
 	cmp mode, #0
 	bne snd32_soundclear_pcm
 
-	tst status, #0x1
+	/* PWM Mode */
+
+	/* Store Silence Code in Current Music Code for Sound Play */
+	mov temp, #equ32_snd32_silence
+	str temp, SND32_CURRENTCODE
+
+	tst status, #0x1                 @ Check Started Bit[0]
 	bne snd32_soundclear_pwmcontinue
 
-	/* First */
+	/* First on PWM Mode */
 
 	push {r0-r3}
 	mov r0, #equ32_snd32_dma_channel
@@ -467,7 +481,7 @@ snd32_soundclear:
 	b snd32_soundclear_modulation
 
 	snd32_soundclear_pwmcontinue:
-		/* PWM Mode */
+		/* Continue on PWM Mode */
 		push {r0-r3}
 		mov r0, #equ32_snd32_dma_channel
 		mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
@@ -483,7 +497,12 @@ snd32_soundclear:
 		bl dma32_clear_channel
 		pop {r0-r3}
 
-		bic status, status, #0x1                          @ Clear Bit[0]
+		/* Store Null (End of Sequence of Music Code) in Current Music Code for Sound Play */
+		mov temp, #0xFF00
+		orr temp, temp, #0x00FF
+		str temp, SND32_CURRENTCODE
+
+		bic status, status, #0x1                          @ Clear Started Bit[0]
 
 	snd32_soundclear_modulation:
 		/* Set Base Divisor on Modulation */
@@ -501,7 +520,7 @@ snd32_soundclear:
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str temp, [temp2]
 
-		bic status, status, #0x2                          @ Clear Bit[1]
+		bic status, status, #0x2                          @ Clear Interrupt State Bit[1]
 		str status, SND32_STATUS
 
 	snd32_soundclear_success:
@@ -604,12 +623,12 @@ snd32_soundplay:
 		pop {r0-r3}
 
 		orr status, status, #0x1
-		str code, snd32_soundplay_currentcode
+		str code, SND32_CURRENTCODE
 
 		b snd32_soundplay_tune
 
 	snd32_soundplay_continue:
-		ldr temp, snd32_soundplay_currentcode
+		ldr temp, SND32_CURRENTCODE
 		cmp temp, code
 		beq snd32_soundplay_countup
 
@@ -619,7 +638,7 @@ snd32_soundplay:
 		bl dma32_change_nextcb
 		pop {r0-r3}
 
-		str code, snd32_soundplay_currentcode
+		str code, SND32_CURRENTCODE
 
 	snd32_soundplay_tune:
 
@@ -722,6 +741,10 @@ snd32_soundplay:
 		bl dma32_change_nextcb
 		pop {r0-r3}
 
+		/* Store Silence Code in Current Music Code for Sound Play */
+		mov temp, #equ32_snd32_silence
+		str temp, SND32_CURRENTCODE
+
 		b snd32_soundplay_free_modulation
 
 		snd32_soundplay_free_pcm:
@@ -733,6 +756,11 @@ snd32_soundplay:
 			mov r0, #equ32_snd32_dma_channel
 			bl dma32_clear_channel
 			pop {r0-r3}
+
+			/* Store Null (End of Sequence of Music Code) in Current Music Code for Sound Play */
+			mov temp, #0xFF00
+			orr temp, temp, #0x00FF
+			str temp, SND32_CURRENTCODE
 
 		snd32_soundplay_free_modulation:
 
@@ -816,7 +844,6 @@ snd32_soundplay:
 .unreq temp
 .unreq temp2
 
-snd32_soundplay_currentcode: .word 0x0
 
 
 /**
@@ -1248,8 +1275,6 @@ snd32_musiclen:
 .unreq end
 
 
-
-
 /**
  * function snd32_soundmidi
  * MIDI Handler
@@ -1372,6 +1397,10 @@ snd32_soundmidi:
 		bl dma32_change_nextcb
 		pop {r0-r3}
 
+		/* Store Silence Code in Current Music Code for Sound Play */
+		mov temp, #equ32_snd32_silence
+		str temp, SND32_CURRENTCODE
+
 		b snd32_soundmidi_noteoff_common
 
 		snd32_soundmidi_noteoff_pcm:
@@ -1380,6 +1409,11 @@ snd32_soundmidi:
 			mov r0, #equ32_snd32_dma_channel
 			bl dma32_clear_channel
 			pop {r0-r3}
+
+			/* Store Null (End of Sequence of Music Code) in Current Music Code for Sound Play */
+			mov temp, #0xFF00
+			orr temp, temp, #0x00FF
+			str temp, SND32_CURRENTCODE
 
 			bic status, status, #0x1
 
@@ -1479,8 +1513,8 @@ macro32_debug data1, 0, 88
 
 	snd32_soundmidi_noteon_common:
 
-		/* After Interrupt */
-		str data1, snd32_soundplay_currentcode
+		/* Store Current Music Code Translated from MIDI Note */
+		str data1, SND32_CURRENTCODE
 
 		/* Tune Tone */
 
@@ -1589,10 +1623,18 @@ macro32_debug data1, 0, 112
 			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
 			str data2, SND32_MODULATION_RANGE
 
-			tst status, #0x00000004                        @ Check MIDI Note On
-			beq snd32_soundmidi_success                    @ If MIDI Note Off
+			/* Check If Silence on Current Music Code*/
+			ldr temp, SND32_CURRENTCODE                    @ Check Current Code
+			cmp temp, #equ32_snd32_silence
+			beq snd32_soundmidi_success                    @ If Silence
 
-			/* If MIDI Note On, Immediately Change Frequency Range */
+			/* Check If Null (End of Sequence) on Current Music Code */
+			mov temp2, #0xFF00
+			orr temp2, temp2, #0x00FF
+			cmp temp, temp2
+			beq snd32_soundmidi_success                    @ If Null
+
+			/* Except Silence or Null (End of Sequence of Music Code), Immediately Change Frequency Range */
 
 			/* Get Base Divisor on Modulation */
 			ldr temp2, SND32_DIVISOR_ADDR
@@ -1704,27 +1746,46 @@ macro32_debug data1, 100, 100
 		sub data1, data1, #0x1000                     @ Neutral (8192 / 2) to 0, Make Signed Value
 
 		cmp mode, #0
-		ldreq temp, SND32_NEUTRALDIV_PWM
 		moveq data2, #equ32_snd32_mul_pwm
-		ldrne temp, SND32_NEUTRALDIV_PCM
 		movne data2, #equ32_snd32_mul_pcm
 		mul data1, data1, data2                       @ Multiply with Multiplier
 
-		sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-		cmp data1, #0x2000
-		movlt data1, #0x2000                          @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+		ldr temp2, SND32_DIVISOR_ADDR
+		ldr temp, [temp2]
+
+		sub temp, temp, data1                         @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+		cmp temp, #0x2000
+		movlt temp, #0x2000                           @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 
 		push {r0-r3}
 		cmp mode, #0
 		moveq r0, #equ32_cm_pwm
 		movne r0, #equ32_cm_pcm
-		mov r1, data1
+		mov r1, temp
 		bl arm32_clockmanager_divisor
 		pop {r0-r3}
 
 		/* Set Base Divisor on Modulation */
-		ldr temp, SND32_DIVISOR_ADDR
-		str data1, [temp]
+		str temp, [temp2]
+
+		/* Make Frequency Range on Modulation */
+		ldr data1, SND32_MODULATION_RANGE
+		cmp mode, #0
+		moveq data2, #equ32_snd32_mul_pwm
+		movne data2, #equ32_snd32_mul_pcm
+		mul data1, data1, data2
+
+		/* Maximum Frequency on Modulation */
+		add data2, temp, data1
+		ldr temp2, SND32_MODULATION_MAX_ADDR
+		str data2, [temp2]
+
+		/* Minimum Frequency on Modulation */
+		sub data2, temp, data1
+		cmp data2, #0x2000
+		movlt data2, #0x2000                              @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+		ldr temp2, SND32_MODULATION_MIN_ADDR
+		str data2, [temp2]
 
 		mov count, #0
 		b snd32_soundmidi_success
