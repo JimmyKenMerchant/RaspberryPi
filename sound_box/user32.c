@@ -14,19 +14,22 @@
 #include "snd32/musiccode.h"
 
 #define timer_count_multiplicand        5
-#define timer_count_multiplier_default  500
-#define timer_count_multiplier_minlimit 125
-#define timer_count_multiplier_maxlimit 1000
+#define timer_count_multiplier_default  100
+#define timer_count_multiplier_minlimit 20
+#define timer_count_multiplier_maxlimit 200
 
 void makesilence();
 
+#define loop_countdown_default          10 // one out of ten
+
 /**
- * In default, there is a 48Hz synchronization clock (it's a half of 96Hz on Arm Timer beacause of toggling).
+ * In default, there is a 480Hz synchronization clock (it's a half of 960Hz on Arm Timer beacause of toggling).
+ * To set 48 beats as 60 BPM, decoding of sequence of music code (_soundplay) plays at only one clock out of ten clocks.
  * A set of 48 beats (= delta times) is 60BPM on 48HZ (one delta time is 1/48 seconds).
- * Arm Timer sets 240000Hz as clock.
- * 2500 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 2500 / 2 equals 48Hz (60BPM).
- * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 192Hz (240BPM).
- * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 24Hz (30BPM).
+ * Arm Timer sets 480000Hz as clock.
+ * 500 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 480000Hz / 250 / 2 equals 480Hz (60BPM).
+ * The Maximum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 2400Hz (300BPM).
+ * The minimum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 240Hz (30BPM).
  *
  * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _soundset.
  */
@@ -273,6 +276,7 @@ int32 _user_start()
 {
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
+	uint32 loop_countdown = loop_countdown_default;
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
@@ -504,13 +508,17 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 				makesilence();
 			}
 
-			result = _soundplay( mode_soundplay );
-			if ( result == 0 ) { // Playing
-				playing_signal = _GPIOTOGGLE_HIGH;
-			} else { // Not Playing
-				playing_signal = _GPIOTOGGLE_LOW;
+			loop_countdown--; // Decrement Counter
+			if ( loop_countdown <= 0 ) { // If Reaches Zero
+				result = _soundplay( mode_soundplay );
+				if ( result == 0 ) { // Playing
+					playing_signal = _GPIOTOGGLE_HIGH;
+				} else { // Not Playing
+					playing_signal = _GPIOTOGGLE_LOW;
+				}
+				_gpiotoggle( 16, playing_signal );
+				loop_countdown = loop_countdown_default; // Reset Counter
 			}
-			_gpiotoggle( 16, playing_signal );
 		}
 	}
 

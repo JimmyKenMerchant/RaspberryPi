@@ -1601,15 +1601,15 @@ macro32_debug data1, 0, 112
 		cmp data1, #1
 		beq snd32_soundmidi_control_msb_modulation
 		cmp data1, #16
-		beq snd32_soundmidi_control_msb_gp1
-		cmp data1, #17
-		beq snd32_soundmidi_control_msb_gp2
+		beq snd32_soundmidi_control_msb_gp1                @ Frequency Range (Interval) of Modulation
+		cmp data1, #19
+		beq snd32_soundmidi_control_msb_gp4                @ Virtual Parallel for Sequence of Music Code
 
 		b snd32_soundmidi_success
 
 		snd32_soundmidi_control_msb_modulation:
 			/* Incremental / Decremental Delta of Modulation */
-			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
+			lsr data2, data2, #6                           @ Divide by 64, Resolution 16384 to 256
 			cmp mode, #0
 			moveq temp, #equ32_snd32_mul_pwm
 			movne temp, #equ32_snd32_mul_pcm
@@ -1661,7 +1661,7 @@ macro32_debug data1, 0, 112
 
 			b snd32_soundmidi_success
 
-		snd32_soundmidi_control_msb_gp2:
+		snd32_soundmidi_control_msb_gp4:
 			/* Virtual Parallel of Coconuts */
 			lsr data2, data2, #7                           @ Use Only MSB[13:7]
 			ldr temp, SND32_VIRTUAL_PARALLEL_ADDR
