@@ -1166,7 +1166,7 @@ heap32_wave_square:
 
 /**
  * function heap32_wave_random
- * Make Random Wave on Memory Space
+ * Make Random Wave on Memory Space, Type No.1
  * Caution! The Value of Addition of Height and Medium Must Be Within 16-bit (0-65535)
  *
  * Parameters
@@ -1341,6 +1341,133 @@ heap32_wave_random:
 .unreq vfp_random
 .unreq vfp_resolution
 .unreq vfp_height
+
+
+/**
+ * function heap32_wave_random2
+ * Make Random Wave on Memory Space, Type No.2
+ * Caution! The Value of Addition of Height and Medium Must Be Within 16-bit (0-65535)
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Memory Space to be Made Wave
+ * r1: Length of Wave (32-bit Words, Must Be 2 and More)
+ * r2: Height of Wave (Signed 32-bit Integer)
+ * r3: Medium of Wave (Signed 32-bit Integer)
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
+ * Error(2): Sizing is Wrong | Length is Less Than 2
+ */
+.globl heap32_wave_random2
+heap32_wave_random2:
+	/* Auto (Local) Variables, but just Aliases */
+	block_start      .req r0
+	length           .req r1
+	height           .req r2
+	medium           .req r3
+	block_size       .req r4
+	temp             .req r5
+	lower            .req r6
+	upper            .req r7
+
+	push {r4-r7,lr}
+
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	cmp length, #2                              @ If Less than 2
+	blo heap32_wave_random2_error2
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov block_size, r0
+	cmp r0, #-1
+	pop {r0-r3}
+
+	beq heap32_wave_random2_error1
+
+	lsl length, length, #2                        @ Substitution of Multiplication by 4
+	cmp length, block_size
+	bhi heap32_wave_random2_error2
+
+	add length, block_start, length
+
+	heap32_wave_random2_loop:
+		cmp block_start, length
+		bge heap32_wave_random2_success
+
+		heap32_wave_random2_loop_random:
+
+			/**
+			 * To avoid over cycles of CPU by randomness, arm32_random have fine numbers for its argument (max. number).
+			 * Decimal 255/127/63/31/15/7/3/1 is prefered.
+			 * If you want 16-bit random number, take Bit[7:0] one of these prefered, take Bit[15:8] one of these too.
+			 */
+
+			cmp height, #0x100
+			bichs upper, height, #0xFF              @ If 16-bit, Clear Bit[7:0]
+			subhs lower, height, upper              @ If 16-bit, Get Max. Value in Bit[7:0]
+			movlo lower, height                     @ If 8-bit
+
+			push {r0-r3}
+			mov r0, lower
+			bl arm32_random
+			mov temp, r0
+			pop {r0-r3}
+
+			cmp height, #0x100
+			blo heap32_wave_random2_loop_common      @ If 8-bit
+
+			/* If 16-bit */
+
+			push {r0-r3}
+			lsr r0, upper, #8
+			bl arm32_random
+			lsl r0, r0, #8
+			add temp, temp, r0
+			pop {r0-r3}
+
+			cmp temp, height                       @ Ensure Range in Intended Value
+			bhi heap32_wave_random2_loop_random
+
+		heap32_wave_random2_loop_common:
+			/* 0 or 1, Addition or Subtruction */
+			push {r0-r3}
+			mov r0, #1
+			bl arm32_random
+			cmp r0, #0
+			pop {r0-r3}
+			addeq temp, medium, temp
+			subne temp, medium, temp
+			str temp, [block_start]
+			add block_start, block_start, #4
+
+			macro32_dsb ip
+
+			b heap32_wave_random2_loop
+
+	heap32_wave_random2_error1:
+		mov r0, #1
+		b heap32_wave_random2_common
+
+	heap32_wave_random2_error2:
+		mov r0, #2
+		b heap32_wave_random2_common
+
+	heap32_wave_random2_success:
+		mov r0, #0
+
+	heap32_wave_random2_common:
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4-r7,pc}
+
+.unreq block_start
+.unreq length
+.unreq height
+.unreq medium
+.unreq block_size
+.unreq temp
+.unreq lower
+.unreq upper
 
 
 /**
