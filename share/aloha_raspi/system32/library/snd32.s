@@ -1863,7 +1863,6 @@ SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
 
 .globl SND32_SOUNDMIDI_CTL
 SND32_SOUNDMIDI_CTL:            .word _SND32_SOUNDMIDI_CTL @ Value List of Control Message
-_SND32_SOUNDMIDI_CTL:           .space 64, 0x00 @ 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 
 SND32_VIRTUAL_PARALLEL_ADDR:    .word SND32_VIRTUAL_PARALLEL
 SND32_DIVISOR_ADDR:             .word SND32_DIVISOR
@@ -1873,6 +1872,7 @@ SND32_MODULATION_MIN_ADDR:      .word SND32_MODULATION_MIN
 SND32_MODULATION_RANGE:         .word equ32_snd32_range
 
 .section	.data
+_SND32_SOUNDMIDI_CTL:           .space 64, 0x00 @ 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 .globl SND32_VIRTUAL_PARALLEL
 SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
 .globl SND32_DIVISOR
