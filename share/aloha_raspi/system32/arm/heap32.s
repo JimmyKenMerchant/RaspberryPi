@@ -1782,14 +1782,21 @@ heap32_wave_triangle:
 			add block_point, block_point, length       @ Make Next Quarter
 
 			tst direction, #1                          @ Check Bit[0] of direction to Know Whether Half(High) or Quarter(Low) at Each End
+			beq heap32_wave_triangle_loop_common_jump
 			tstne flag_odd, #1                         @ If Half
-			tsteq flag_odd, #2                         @ If Quarter
 			vaddne.f32 vfp_omega, vfp_omega, vfp_one   @ If Odd, Correct Positions
 			subne block_point, block_point, #4
 
 			sub direction, direction, #1               @ Make New Direction for Next Quarter
-
 			b heap32_wave_triangle_loop
+
+			heap32_wave_triangle_loop_common_jump:
+				tst flag_odd, #2                           @ If Quarter
+				vaddne.f32 vfp_omega, vfp_omega, vfp_one   @ If Odd, Correct Positions
+				subne block_point, block_point, #4
+
+				sub direction, direction, #1               @ Make New Direction for Next Quarter
+				b heap32_wave_triangle_loop
 
 	heap32_wave_triangle_error1:
 		mov r0, #1

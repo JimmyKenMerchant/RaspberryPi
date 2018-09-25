@@ -55,6 +55,7 @@
 .equ equ32_snd32_soundmidi_sound3_baseoffset,  204        @ Fourth Sound Base Offset in Sound Index, Noise
 .equ equ32_snd32_soundmidi_sound3_lownote,     33         @ Fourth Sound Lowest Note
 .equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
+.equ equ32_snd32_soundmidi_adsr,               0          @ Turn On ADSR Model of Envelope If 1, ADS Model If 0, EG Is Needed.
 .equ equ32_snd32_mul_pwm,                      4          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
 .equ equ32_snd32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
 .equ equ32_snd32_range,                        0x400      @ Default Freq. Range on Modulation, +-(This Value * equ32_snd32_mul_*)

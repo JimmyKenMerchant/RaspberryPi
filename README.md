@@ -1,10 +1,10 @@
 # Raspberry Pi System Project Based on Minimalism
 
-**Demonstration on Video**
+## Demonstration on Video
 
 [![Demonstration of Sound Projects on Video](https://img.youtube.com/vi/hjSrRYd4Wx0/0.jpg "Demonstration of Synthesizer on Video")](https://www.youtube.com/watch?v=hjSrRYd4Wx0)
 
-**PURPOSE**
+## PURPOSE
 
 This project is aiming to obtain a conclusion of the software system. Purposes of this project are listed below. I call the sofware system, "Aloha Operating System".
 
@@ -98,7 +98,7 @@ arm32_sleep:
 5. Coconuts
 	* Some of projects in Aloha Operating System are aiming to make RasPi act like dedicated IC such as Sound Box, Synthesizer, LED Driver nicknamed "Coconut". Coconuts are made of admiration for microprocessors. Microprocessors are general-purpose, and can transform any ICs by installed programs. Coconuts are evidences which RasPi can be a good microprocessor.
 
-**INSTALL**
+## INSTALL
 
 * On Raspbian Command Line (Linux Bash)
 
@@ -156,6 +156,8 @@ The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kerne
 
 * About USB current source, there are experiences online. 600mA/1200mA switchable (RasPi3B is 1200mA in default) seems to be an answer. But, [there is no official document about the USB maximum ratings](https://www.raspberrypi.org/documentation/hardware/raspberrypi/usb/README.md), and [the official document restricts the total usage of the current on a RasPi for peripherals including USB devices up to 1A](https://www.raspberrypi.org/documentation/hardware/raspberrypi/power/README.md). 
 
+## LICENSES
+
 **LICENSE ABOUT CODES**
 
 Copyright 2017 Kenta Ishii
@@ -172,7 +174,7 @@ Copyright © 2017-2018 Kenta Ishii. All Rights Reserved.
 
 Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), melodies of musics, and other properties except codes are retained these intellectual property rights by Kenta Ishii. For example, texts in READMEs are restricted your commercial usage except fair use which is described in copyright cases of United States Courts.
 
-**Links of References**
+## Links of References
 
 **About Raspberry Pi**
 

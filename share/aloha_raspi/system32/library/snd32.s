@@ -47,7 +47,8 @@ SND32_SOUND_ADJUST:        .word 0x00 @ Pointer of Sound Adjust Table
  *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
  *             If Bit[11:0] is 1, Super Long (0x3E80, Decimal 16000).
  * Bit[12:11]: Volume of Wave, 0 is Large, 1 is Medium, 2 is Small, 3 is Tiny
- * Bit[15:13]: Type of Wave, 0 is Sine, 1 is Saw Tooth, 2 is Square, 3 is Noise, ordered by less edges which cause harmonics. 7 is Silence.
+ * Bit[15:13]: Type of Wave, 0 is Sine, 1 is Saw Tooth, 2 is Square, 3 is Triangle, 4 is Distortion
+ *              6 is Noise, 7 is Silence.
  *
  * Maximum number of blocks is 4096.
  * 0 means End of Sound Index
@@ -121,7 +122,7 @@ snd32_sounddecode:
 			temp3 .req r2
 
 			/* Check Wether Wave Type is Random or Not */
-			cmp wave_type, #3
+			cmp wave_type, #6
 			beq snd32_sounddecode_main_wave_random
 
 			cmp wave_length, #0
@@ -160,6 +161,10 @@ snd32_sounddecode:
 			lslhs r2, r2, #5                           @ Applied for 16-bit Resolution for PCM, Substitute of Multiplication by 32
 			subhs r2, r2, #1                           @ Applied for 16-bit Resolution for PCM
 			mov r1, wave_length                        @ Assign r1 at Last Bacause mode Requires r1
+			cmp wave_type, #4
+			bleq heap32_wave_random2
+			cmp wave_type, #3
+			bleq heap32_wave_triangle
 			cmp wave_type, #2
 			bleq heap32_wave_square
 			cmp wave_type, #1
@@ -1387,6 +1392,11 @@ snd32_soundmidi:
 		movne count, #0
 		bne snd32_soundmidi_success
 
+		/* If Note ADSR Model, Stay Note But Gate Off */
+		mov temp, #0
+		cmp temp, #equ32_snd32_soundmidi_adsr
+		bne snd32_soundmidi_noteoff_common
+
 		cmp mode, #0
 		bne snd32_soundmidi_noteoff_pcm
 
@@ -1401,7 +1411,7 @@ snd32_soundmidi:
 		mov temp, #equ32_snd32_silence
 		str temp, SND32_CURRENTCODE
 
-		b snd32_soundmidi_noteoff_common
+		b snd32_soundmidi_noteoff_modulation
 
 		snd32_soundmidi_noteoff_pcm:
 			/* PCM Mode */
@@ -1417,7 +1427,7 @@ snd32_soundmidi:
 
 			bic status, status, #0x1
 
-		snd32_soundmidi_noteoff_common:
+		snd32_soundmidi_noteoff_modulation:
 			/* Set Base Divisor on Modulation */
 			ldr temp2, SND32_DIVISOR_ADDR
 			cmp mode, #0
@@ -1433,6 +1443,7 @@ snd32_soundmidi:
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str temp, [temp2]
 
+		snd32_soundmidi_noteoff_common:
 			bic status, status, #0x00000004                   @ Clear MIDI Note On
 			mov count, #0
 			b snd32_soundmidi_success
