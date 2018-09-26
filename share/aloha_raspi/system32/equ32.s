@@ -54,7 +54,7 @@
 .equ equ32_snd32_soundmidi_sound2_highnote,    108        @ Third Sound Highest Note, C8
 .equ equ32_snd32_soundmidi_sound3_baseoffset,  204        @ Fourth Sound Base Offset in Sound Index, Noise
 .equ equ32_snd32_soundmidi_sound3_lownote,     33         @ Fourth Sound Lowest Note
-.equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
+.equ equ32_snd32_soundmidi_sound3_highnote,    84         @ Fourth Sound Highest Note
 .equ equ32_snd32_soundmidi_sound4_baseoffset,  256        @ Fifth Sound Base Offset in Sound Index, Triangle Wave
 .equ equ32_snd32_soundmidi_sound4_lownote,     33         @ Fifth Sound Lowest Note, A1
 .equ equ32_snd32_soundmidi_sound4_highnote,    96         @ Fifth Sound Highest Note, C7
@@ -336,7 +336,7 @@
 .equ equ32_uart0_fr_cts,    0x001     @ Clear to Send (CTS) from Another
 
 .equ equ32_uart0_lcrh_sps,  0x80      @ Stick Parity Select
-.equ equ32_uart0_lcrh_sps,  5         @ Word Length Bit[6:5], 11b is 8 Bits, 00b is 5 Bits
+.equ equ32_uart0_lcrh_wlen, 5         @ Word Length Bit[6:5], 11b is 8 Bits, 00b is 5 Bits
 .equ equ32_uart0_lcrh_fen,  0x10      @ Enable TxFIFO and RxFIFO
 .equ equ32_uart0_lcrh_stp2, 0x08      @ Two Stop Bits Select
 .equ equ32_uart0_lcrh_eps,  0x04      @ Even Parity Select

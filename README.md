@@ -18,7 +18,7 @@
 
 ## Purpose
 
-This project is aiming to obtain a conclusion of the software system. Purposes of this project are listed below. I call the sofware system, "Aloha Operating System".
+This project is aiming to obtain a conclusion of the software system. Purposes of this project are listed below. I call the software system, "Aloha Operating System".
 
 1. To obtain themes on electronics for the future.
 	* We are currently (December 25, 2017) facing an odd situation on electronics. It seems that we bite the future of electronics too much. The future, Artificial Intelligence (AI), Augmented Reality (AR), Working Robot, is now on business actually. It's just a real, but we need to get more technological innovations to come true. We are suffering a traffic jam on Internet. The word, Net neutrality, is on trend. This reserves fair treatment of any data, even if it's not for video. According to Cisco (2017), in 2016, Internet video used 73 percents of Internet traffic. Remember, Internet is not only for video. In spite of this, commercially, the business needs more traffic for video. So we are having a problem, how to increase capacity of Internet traffic or reduce data for video. Many think the answer will be brought only by increasing capacity with predictable innovation of computer and network. But we can say in the near future, we will watch a scene that video will occupy Internet traffic, and other data will be stuck, at all. Calm down, we have known that data of video is so huge and resolved this issue many times. So, right now, the business is flying beyond the reality of the technology. I think this project reveals themes on electronics, seeks issues and tasks for further innovation to give newer technology to the business.
@@ -112,9 +112,9 @@ arm32_sleep:
 
 ## Installation
 
-**Guide for Installtion On Raspbian command line (Linux Bash)**
+**Guide for Installation On Raspbian command line (Linux Bash)**
 
-* In advance, prepare FAT32 formatted SD Card as a boot media. If you haven't installed Git, a open source version control system, install Git to your operating system.
+* In advance, prepare FAT32 formatted SD card as a boot media. Several ways are introduced to format FAT32 SD card online, even by video. If you haven't installed Git, a open source version control system, install Git to your operating system.
 
 ```bash
 # Do as Superuser, Install Git
@@ -151,7 +151,7 @@ make type=zerow sound=i2s
 	* fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM.
 	* The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on Raspberry Pi with ARMv7 and later.
 
-**Arguments for 'make'. Compatibilities are diffrent on each project. Please check README of programs.**
+**Arguments for 'make'. Compatibilities are different on each project. Please check README of programs.**
 
 * `type=3b`: Use for Raspberry Pi 3 B
 

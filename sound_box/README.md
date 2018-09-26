@@ -6,19 +6,35 @@
 
 ## Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
 
-**Purpose**
+**Table of Contents**
 
-* Programmable Sound Generator, Wave Forms Have Been Stored to RAM in Advance by Running Codes
+* [Purpose](#purpose)
 
-* Mono Sound of Sine, Sawtooth, Square, and Noise
+* [Output and Input](#output-and-input)
 
-* Flat and Powerful Sound Like Analogue
+* [Compatibility](#compatibility)
 
-* 4 Steps Volume, Predefined Macros of Music Codes and Scales, etc.
+* [MIDI IN](#midi-in)
+
+* [Sound](#sound)
+
+* [Draft](#draft)
+
+## Purpose
+
+* Programmable Sound Generator, Wave Forms Have Been Stored to RAM in Advance with Booting Codes
+
+* Mono Selectable Sound. Sine Wave, Sawtooth Wave, Square Wave, Noise, Triangle Wave, and Distortion Wave
+
+* Flat and Powerful Sound Like Analogue, Tunable Tones
+
+* 4 Steps Volume, Predefined Macros of Music Codes and Scales.
+
+* MIDI IN, Modulation, Pitch Bend
 
 * Output by DMA Control, Low CPU Usage
 
-**Output/Input**
+## Output and Input
 
 * GPIO9 as Input of MIDI Channel Select Bit[0]
 
@@ -48,23 +64,25 @@
 
 * HDMI as VIDEO Output (For Debug Only)
 
-* To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
+* To Test Input of GPIO for Buttons, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
 
-## GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+* To Test MIDI IN, Use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
+
+### YOU'LL MEET BIG SOUND! PLEASE CARE OF YOUR EARS! I RECOMMEND THAT YOU DON'T USE ANY EARPHONE OR HEADPHONE FOR THIS PROJECT.
+
+### GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
 ![Output Connection of I2S](../images/i2s_1.jpg "(DON'T USE ANY EARPHONE!) Output Connection Between RasPi 2B and UDA1334 on Module: GPIO17 and GPIO27 are connected by a sanguine jumper.")
 
-**About PWM0/1 Output** 
+**About PWM0/1 Output**
 
-* From PWM1, the sound that is phase-shifted from PWM0 outputs. This aims for balanced monaural.
+* You would see this project can be a digitally controlled oscillator (digital VCO or DCO) of your modular synthesizer. Yes, it can be. But I recognized that the signal level of modular synthesizers are higher (in my research, +-5V, 10Vp-p on Eurorack) than the output of this project. To fit the signal level, I recommend that you use balanced PWM output. This allows you to cancel noise and obtain high voltage (max. 2.6928Vp-p) by connecting two outputs with an Op-amp (positive input to normal output and negative input to inverted output; usage of an Op-amp as a buffer. Use resisters on appropriate points). Plus, amplify the second output by another Op-amp.
 
-* You would see this project can be a digital voltage-controlled oscillator (digital VCO or DCO) of your modular synthesizer. Yes, it can be. But I recognized that the voltage level of modular synthesizers higher (in my research, +-5V) than the output of this project. To fit the voltage level, I recommend that you use balanced monaural. This allows you to cancel noise and obtain high voltage by connecting two outputs with an Op-amp (positive input to normal output and negative input to inverted output; usage of an Op-amp as a buffer. Use resisters on appropriate points). Plus, amplify the second output by another Op-amp.
-
-* you may consider of possible making of triangle wave and changing duty ratio of square wave. These are possible by external filters. A high-pass filter makes square wave that is changed duty ratio, and a low-pass filter makes triangle wave from square wave.
+* You may consider of possible making of triangle wave and changing duty ratio of square wave. These are possible by external filters. A high-pass filter makes square wave that is changed duty ratio, and a low-pass filter makes triangle wave from square wave (triangle wave is selectable on the latest version).
 
 * By disabling the video signal, the sound signal from the 3.5mm jack may be possible for stable use. Otherwise, the analogue video signal outputs from the 3.5mm jack (on Zero, TV pin) when any HDMI cable is not plugged in. This seems to make possible noise.
 
-* This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal may be higher than expected as microphone. Besides, as line level, the voltage of the signal may be lower than expected.
+* This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p and higher). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal is much higher than expected as a microphone. Besides, as line level, the voltage of the signal may be slight lower than expected. However, LR combinational monaural makes high level because typically an Op-amp voltage adder mixes L and R in a monaural receiver (e.g. Mono Aux In).
 
 * The sampling rate is adjusted to 3.1680Khz for fitting A4.
 
@@ -78,7 +96,19 @@
 
 * I'm using UDA1334A, one of I2S Stereo DAC. As of July 2018, you can purchase online a module which UDA1334A is boarded on.
 
-**Compatibility**
+**Caution on Sound Output**
+
+* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone or headphone for this project.
+
+* Speaker and other sound outputs are so easy to break if you supply Direct Current to these. Sound outputs are made with considering of supplying Alternating Current. If you apply any sound outputs to GPIO pins directly, it causes to break these your materials.
+
+* Typically, sound outputs made of coils. The coil generate electric surge that breaks your Raspberry Pi. To hide this, there are some solutions. Please search.
+
+* If you want to check the wave by your oscilloscope, a decoupling capacitor is needed. In my experience, a 1-microfarad-capacitor without any attenuator makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
+
+* Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
+
+## Compatibility
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
 
@@ -96,25 +126,29 @@
 
 * I recommend that you use `sound=jack` for debugging. DON'T USE ANY EARPHONE OR HEADPHONE. MAKE SURE TO TURN DOWN SOUND VOLUME OF CONNECTED SPEAKER.
 
-## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
+### Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
-## Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
+### Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
 
-**Caution on Sound Output**
+## MIDI IN
 
-* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone or headphone for this project.
+* Sound Box can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
 
-* Speaker and other sound outputs are so easy to break if you supply Direct Current to these. Sound outputs are made with considering of supplying Alternating Current. If you apply any sound outputs to GPIO pins directly, it causes to break these your materials. 
+## Sound
 
-* Typically, sound outputs made of coils. The coil generate electric surge that breaks your Raspberry Pi. To hide this, there are some solutions. Please search.
+* Sine Wave (Program 0 in MIDI IN): Scale range is A1 to C7.
 
-* If you want to check the wave by your oscilloscope, a decoupling capacitor is needed. In my experience, a 1-microfarad-capacitor without any attenuator makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
+* Sawtooth Wave (Program 1 in MIDI IN): Scale range is A1 to C7.
 
-* Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
+* Square Wave (Program 2 in MIDI IN): Scale range is A1 to C8. High notes are possible.
 
-**MIDI IN**
+* Noise (Program 3 in MIDI IN): No Scale (Keys A1 to C6 are used).
 
-This function is under construction.
+* Triangle Wave (Program 4 in MIDI IN): Scale range is A1 to C7.
+
+* Distortion Wave (Program 5 in MIDI IN): Scale range is A1 to C7. Sound colors of notes differ on each power on.
+
+## Draft
 
 **Draft of Description about "DMA Transfer to PWM"**
 
@@ -130,4 +164,4 @@ This function is under construction.
 
 * RasPi is not a tool to source electric current, but to source electric voltage. If you want to make big sound with your RasPi solely, it will make any possible malfunction. Even if you source PWM from any GPIO, the current from the GPIO should be under 1mA. Furthermore, I tested 2K Resister and 10K Resister to attach to GPIO for PWM output as an attenuator. 10K Resister apparently made RasPi stable, but 2K Resister made RasPi take on unpredictable malfunctions, such as stopping the PWM and Video output. PWM output seems to be more sensitive to electric conditions than others.　Any anti-static measure is needed for the properly working.
 
-* To work an amplifier to attach to GPIO for PWM output, you should not use power pins on RasPi. Power pins have noise. Use batteries (two 1.5-Volts batteries are preferred) to work it, but make sure to check polarity of the batteries. Don't power to GND of RasPi. 
+* To work an amplifier to attach to GPIO for PWM output, you should not use power pins on RasPi. Power pins have noise. Use batteries (two 1.5-Volts batteries are preferred) to work it, but make sure to check polarity of the batteries. Don't power to GND of RasPi.
