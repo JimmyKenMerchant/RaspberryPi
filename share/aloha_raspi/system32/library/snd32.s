@@ -1728,9 +1728,19 @@ macro32_debug data1, 100, 100
 		moveq temp2, #equ32_snd32_soundmidi_sound2_highnote
 
 		cmp data1, #3
-		movhs data2, #equ32_snd32_soundmidi_sound3_baseoffset
-		movhs temp, #equ32_snd32_soundmidi_sound3_lownote
-		movhs temp2, #equ32_snd32_soundmidi_sound3_highnote
+		moveq data2, #equ32_snd32_soundmidi_sound3_baseoffset
+		moveq temp, #equ32_snd32_soundmidi_sound3_lownote
+		moveq temp2, #equ32_snd32_soundmidi_sound3_highnote
+
+		cmp data1, #4
+		moveq data2, #equ32_snd32_soundmidi_sound4_baseoffset
+		moveq temp, #equ32_snd32_soundmidi_sound4_lownote
+		moveq temp2, #equ32_snd32_soundmidi_sound4_highnote
+
+		cmp data1, #5
+		movhs data2, #equ32_snd32_soundmidi_sound5_baseoffset
+		movhs temp, #equ32_snd32_soundmidi_sound5_lownote
+		movhs temp2, #equ32_snd32_soundmidi_sound5_highnote
 
 		str data2, SND32_SOUNDMIDI_BASEOFFSET
 		str temp, SND32_SOUNDMIDI_LOWNOTE

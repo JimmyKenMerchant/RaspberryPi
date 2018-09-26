@@ -39,8 +39,8 @@
 .equ equ32_snd32_sounddecode_noise_len_upper,  0x280      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_resolution, 15         @ Affecting Sound Color, 255/127/63/31/15/7
-.equ equ32_snd32_silence,                      0x400      @ Silence in Sound Index
-.equ equ32_snd32_soundmidi_volumeoffset,       0x100      @ Volume Offset in Sound Index, Descending Order
+.equ equ32_snd32_silence,                      0x800      @ Silence in Sound Index
+.equ equ32_snd32_soundmidi_volumeoffset,       0x200      @ Volume Offset in Sound Index, Descending Order
 .equ equ32_snd32_soundmidi_volumethres,        32         @ Volume Thereshold, Assume 4 Steps, i.e., 128 / 4 Equals 32
 .equ equ32_snd32_soundmidi_volumesteps,        4          @ Volume Steps
 .equ equ32_snd32_soundmidi_sound0_baseoffset,  0          @ Default Sound Base Offset in Sound Index, Sine Wave
@@ -55,6 +55,12 @@
 .equ equ32_snd32_soundmidi_sound3_baseoffset,  204        @ Fourth Sound Base Offset in Sound Index, Noise
 .equ equ32_snd32_soundmidi_sound3_lownote,     33         @ Fourth Sound Lowest Note
 .equ equ32_snd32_soundmidi_sound3_highnote,    85         @ Fourth Sound Highest Note
+.equ equ32_snd32_soundmidi_sound4_baseoffset,  256        @ Fifth Sound Base Offset in Sound Index, Triangle Wave
+.equ equ32_snd32_soundmidi_sound4_lownote,     33         @ Fifth Sound Lowest Note, A1
+.equ equ32_snd32_soundmidi_sound4_highnote,    96         @ Fifth Sound Highest Note, C7
+.equ equ32_snd32_soundmidi_sound5_baseoffset,  320        @ Sixth Sound Base Offset in Sound Index, Distortion Wave
+.equ equ32_snd32_soundmidi_sound5_lownote,     33         @ Sixth Sound Lowest Note, A1
+.equ equ32_snd32_soundmidi_sound5_highnote,    96         @ Sixth Sound Highest Note, C7
 .equ equ32_snd32_soundmidi_adsr,               0          @ Turn On ADSR Model of Envelope If 1, ADS Model If 0, EG Is Needed.
 .equ equ32_snd32_mul_pwm,                      4          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
 .equ equ32_snd32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
