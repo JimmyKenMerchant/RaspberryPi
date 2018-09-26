@@ -1,10 +1,22 @@
 # Raspberry Pi System Project Based on Minimalism
 
+**Table of Contents**
+
+* [Demonstration on Video](#demonstration-on-video)
+
+* [Purpose](#purpose)
+
+* [Installation](#installation)
+
+* [Licenses](#licenses)
+
+* [Links of References](#links-of-references)
+
 ## Demonstration on Video
 
 [![Demonstration of Sound Projects on Video](https://img.youtube.com/vi/hjSrRYd4Wx0/0.jpg "Demonstration of Synthesizer on Video")](https://www.youtube.com/watch?v=hjSrRYd4Wx0)
 
-## PURPOSE
+## Purpose
 
 This project is aiming to obtain a conclusion of the software system. Purposes of this project are listed below. I call the sofware system, "Aloha Operating System".
 
@@ -98,37 +110,74 @@ arm32_sleep:
 5. Coconuts
 	* Some of projects in Aloha Operating System are aiming to make RasPi act like dedicated IC such as Sound Box, Synthesizer, LED Driver nicknamed "Coconut". Coconuts are made of admiration for microprocessors. Microprocessors are general-purpose, and can transform any ICs by installed programs. Coconuts are evidences which RasPi can be a good microprocessor.
 
-## INSTALL
+## Installation
 
-* On Raspbian Command Line (Linux Bash)
+**Guide for Installtion On Raspbian command line (Linux Bash)**
 
-e.g. To get kernel.img of Frequency Counter.
+* In advance, prepare FAT32 formatted SD Card as a boot media. If you haven't installed Git, a open source version control system, install Git to your operating system.
+
+```bash
+# Do as Superuser, Install Git
+sudo apt-get update
+sudo apt-get install git
+```
+
+* Clone this project using Git.
+
 ```bash
 cd ~/Desktop
 git clone https://github.com/JimmyKenMerchant/RaspberryPi.git
-cd RaspberryPi/frequency_counter
-make type=zerow
+# Enter Directory
+cd RaspberryPi
 ```
-You need to paste kernel.img, config.txt, and LICENSE.aloha to the root directory of your boot media (e.g. FAT32 formatted SD Card). config.txt and LICENSE.aloha are in share/assets/ of this project.
-You also need to get latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from RasPi Official Repository, and paste these to the root directory of your boot media. fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM.
 
-The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on ARMv7 Raspberry Pi.
+* Assembly and compile a program you want.
 
-**Preprocessor Definition on `Make` Command. Compatibilities are diffrent on each project. Please check README of these.**
+e.g. To get kernel.img of Frequency Counter for Raspberry Pi 3 B.
+```bash
+cd frequency_counter
+make type=3b
+```
 
-* `make type=3b`: Use for Raspberry Pi 3 B
+e.g. To get kernel.img of Sound Box for Raspberry Pi Zero W with I2S Output.
+```bash
+cd sound_box
+make type=zerow sound=i2s
+```
 
-* `make type=2b`: Use for Raspberry Pi 2 B with BCM2836
+* Paste kernel.img, config.txt, and LICENSE.aloha to the root directory of your boot media. config.txt and LICENSE.aloha are in share/assets/ of this project.
 
-* `make type=new2b`: Use for Raspberry Pi 2 B with BCM2837
+* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and paste these to the root directory of your boot media.
+	* fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM.
+	* The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on Raspberry Pi with ARMv7 and later.
 
-* `make type=1b`: Use for Raspberry Pi 1 B Plus
+**Arguments for 'make'. Compatibilities are diffrent on each project. Please check README of programs.**
 
-* `make type=1a`: Use for Raspberry Pi 1 A Plus
+* `type=3b`: Use for Raspberry Pi 3 B
 
-* `make type=zero`: Use for Raspberry Pi Zero
+* `type=2b`: Use for Raspberry Pi 2 B with BCM2836
 
-* `make type=zerow`: Use for Raspberry Pi Zero W
+* `type=zerow`: Use for Raspberry Pi Zero W
+
+* `type=zero`: Use for Raspberry Pi Zero (tested only by Zero W so far)
+
+* `type=new2b`: Use for Raspberry Pi 2 B with BCM2837 (not tested its compatibility so far)
+
+* `type=1b`: Use for Raspberry Pi 1 B Plus (not tested its compatibility so far)
+
+* `type=1a`: Use for Raspberry Pi 1 A Plus (not tested its compatibility so far)
+
+* `sound=pwm`: PWM Output, use only in sound projects (Synthesizer, Sound Box, and Aloha Calc)
+
+* `sound=i2s`: I2S Output, use only in sound projects (Synthesizer, Sound Box, and Aloha Calc)
+
+* `sound=jack`: Audio Jack Output, use only in sound projects (Synthesizer, Sound Box, and Aloha Calc)
+
+* `sound=pwmb`: Balanced PWM Output, use only in dedicated sound projects (Synthesizer, and Sound Box)
+
+* `sound=i2sb`: Balanced I2S Output, use only in dedicated sound projects (Synthesizer, and Sound Box)
+
+* `sound=jackb`: Balanced Audio Jack Output, use only in dedicated sound projects (Synthesizer, and Sound Box)
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 
@@ -156,7 +205,7 @@ The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kerne
 
 * About USB current source, there are experiences online. 600mA/1200mA switchable (RasPi3B is 1200mA in default) seems to be an answer. But, [there is no official document about the USB maximum ratings](https://www.raspberrypi.org/documentation/hardware/raspberrypi/usb/README.md), and [the official document restricts the total usage of the current on a RasPi for peripherals including USB devices up to 1A](https://www.raspberrypi.org/documentation/hardware/raspberrypi/power/README.md). 
 
-## LICENSES
+## Licenses
 
 **LICENSE ABOUT CODES**
 
@@ -192,7 +241,7 @@ Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), me
 
 * [Raspberry Pi ARM based bare metal examples](https://github.com/dwelch67/raspberrypi)
 
-* [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware/tree/master/boot)
+* [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware)
 
 * [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
 
