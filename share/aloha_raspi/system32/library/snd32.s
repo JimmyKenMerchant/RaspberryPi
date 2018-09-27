@@ -1313,7 +1313,7 @@ snd32_soundmidi:
 	push {r4-r10,lr}
 
 	ldr status, SND32_STATUS
-	tst status, #0x80000000            @ If Not Initialized
+	tst status, #0x80000000           @ If Not Initialized
 	beq snd32_soundmidi_error1
 
 	ldr count, SND32_SOUNDMIDI_COUNT
@@ -1397,21 +1397,22 @@ snd32_soundmidi:
 		cmp temp, #equ32_snd32_soundmidi_adsr
 		bne snd32_soundmidi_noteoff_common
 
-		cmp mode, #0
-		bne snd32_soundmidi_noteoff_pcm
+		snd32_soundmidi_noteoff_pwm:
+			cmp mode, #0
+			bne snd32_soundmidi_noteoff_pcm
 
-		/* PWM Mode */
-		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
-		mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
-		bl dma32_change_nextcb
-		pop {r0-r3}
+			/* PWM Mode */
+			push {r0-r3}
+			mov r0, #equ32_snd32_dma_channel
+			mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
+			bl dma32_change_nextcb
+			pop {r0-r3}
 
-		/* Store Silence Code in Current Music Code for Sound Play */
-		mov temp, #equ32_snd32_silence
-		str temp, SND32_CURRENTCODE
+			/* Store Silence Code in Current Music Code for Sound Play */
+			mov temp, #equ32_snd32_silence
+			str temp, SND32_CURRENTCODE
 
-		b snd32_soundmidi_noteoff_modulation
+			b snd32_soundmidi_noteoff_modulation
 
 		snd32_soundmidi_noteoff_pcm:
 			/* PCM Mode */
@@ -1816,7 +1817,7 @@ macro32_debug data1, 100, 100
 
 	snd32_soundmidi_status:
 		/* If 0b11111000 and Above, Jump to Event on System Real Time Messages */
-		cmp byte, #0x248
+		cmp byte, #248
 		bhs snd32_soundmidi_systemrealtime
 
 		bic temp, byte, #0xF0
@@ -1831,6 +1832,11 @@ macro32_debug data1, 100, 100
 		b snd32_soundmidi_success
 
 	snd32_soundmidi_systemrealtime:
+
+		/* If Reset, Hook to Note Off Event */
+		cmp byte, #255
+		beq snd32_soundmidi_noteoff_pwm
+
 		mov count, #0
 		b snd32_soundmidi_success
 
@@ -1882,9 +1888,7 @@ SND32_SOUNDMIDI_LOWNOTE:        .word equ32_snd32_soundmidi_sound0_lownote
 SND32_SOUNDMIDI_HIGHNOTE:       .word equ32_snd32_soundmidi_sound0_highnote
 SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
 
-.globl SND32_SOUNDMIDI_CTL
-SND32_SOUNDMIDI_CTL:            .word _SND32_SOUNDMIDI_CTL @ Value List of Control Message
-
+SND32_SOUNDMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 SND32_VIRTUAL_PARALLEL_ADDR:    .word SND32_VIRTUAL_PARALLEL
 SND32_DIVISOR_ADDR:             .word SND32_DIVISOR
 SND32_MODULATION_DELTA_ADDR:    .word SND32_MODULATION_DELTA
@@ -1893,7 +1897,6 @@ SND32_MODULATION_MIN_ADDR:      .word SND32_MODULATION_MIN
 SND32_MODULATION_RANGE:         .word equ32_snd32_range
 
 .section	.data
-_SND32_SOUNDMIDI_CTL:           .space 64, 0x00 @ 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 .globl SND32_VIRTUAL_PARALLEL
 SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
 .globl SND32_DIVISOR
@@ -1925,6 +1928,7 @@ snd32_soundmidi_malloc:
 
 	push {lr}
 
+	/* Buffer to Receive MIDI Message */
 	push {r0}
 	bl heap32_malloc
 	mov buffer, r0
@@ -1939,6 +1943,18 @@ snd32_soundmidi_malloc:
 	str buffer, SND32_SOUNDMIDI_BUFFER
 	mov words_buffer, #0
 	str words_buffer, SND32_SOUNDMIDI_COUNT
+
+	/* Buffer for Control Message No. 0 to No. 31 */
+	push {r0}
+	mov r0, #16                                    @ 16 Words Multiplied by 4 Bytes Equals 64 Bytes (2 Bytes Half Word * 32)
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0}
+
+	cmp buffer, #0
+	beq snd32_soundmidi_malloc_error
+
+	str buffer, SND32_SOUNDMIDI_CTL
 
 	b snd32_soundmidi_malloc_success
 

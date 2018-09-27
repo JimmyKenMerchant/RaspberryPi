@@ -1,4 +1,4 @@
-# Sound BOX
+# Sound Box
 
 * Author: Kenta Ishii
 * License: MIT
@@ -84,17 +84,17 @@
 
 * This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p and higher). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal is much higher than expected as a microphone. Besides, as line level, the voltage of the signal may be slight lower than expected. However, LR combinational monaural makes high level because typically an Op-amp voltage adder mixes L and R in a monaural receiver (e.g. Mono Aux In).
 
-* The sampling rate is adjusted to 3.1680Khz for fitting A4.
+* The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on snd32/soundadjust.h.
+
+* You can hear noise, this derives from several causes. Audible clock jitter, steps of volume, steps of frequency on pitch bend and modulation, power source, resonance in the circuit caused by static electricity, magnetic energy in the circuit, external radio wave and unexpected antenna in the circuit, etc. Noise directions are normal mode and common mode. I recommend that you use analogue Low-pass filter (Cut off) to intermediate digital output and any input. Balanced PWM output reduces noise from common mode.
 
 **About PCM Output**
-
-* The sampling rate is adjusted to 3.1680Khz for fitting A4.
-
-* This sampling rate has jitter. Your DAC is needed its jitter remover.
 
 * SCLK (System Clock) / MCLK (Master Clock) is not supported because the modern IC on your DAC generates the clock by itself.
 
 * I'm using UDA1334A, one of I2S Stereo DAC. As of July 2018, you can purchase online a module which UDA1334A is boarded on.
+
+* The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on snd32/soundadjust.h.
 
 **Caution on Sound Output**
 
@@ -133,6 +133,8 @@
 ## MIDI IN
 
 * Sound Box can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
+
+* MIDI channel of Sound Box is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
 
 ## Sound
 

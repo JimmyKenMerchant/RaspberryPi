@@ -173,11 +173,11 @@ make type=zerow sound=i2s
 
 * `sound=jack`: Audio Jack Output, use only in sound projects (Synthesizer, Sound Box, and Aloha Calc)
 
-* `sound=pwmb`: Balanced PWM Output, use only in dedicated sound projects (Synthesizer, and Sound Box)
+* `sound=pwmb`: Balanced PWM Output, use only in Sound Box.
 
-* `sound=i2sb`: Balanced I2S Output, use only in dedicated sound projects (Synthesizer, and Sound Box)
+* `sound=i2sb`: Balanced I2S Output, use only in Sound Box.
 
-* `sound=jackb`: Balanced Audio Jack Output, use only in dedicated sound projects (Synthesizer, and Sound Box)
+* `sound=jackb`: Balanced Audio Jack Output, use only in Sound Box.
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 
