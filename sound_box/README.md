@@ -4,7 +4,7 @@
 * License: MIT
 * License URL: https://opensource.org/licenses/MIT
 
-## Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
+### Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
 
 **Table of Contents**
 
@@ -135,6 +135,8 @@
 * Sound Box can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
 
 * MIDI channel of Sound Box is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
+
+* Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing Music code.
 
 ## Sound
 

@@ -281,31 +281,32 @@ int32 _user_start()
 	uchar8 result;
 	uchar8 playing_signal;
 	bool mode_soundplay;
+	uint32 delta_multiplier;
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 	mode_soundplay = True;
-	//SND32_MODULATION_DELTA = 0x600;
+	delta_multiplier = 6;
 #elif defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = True;
-	//SND32_MODULATION_DELTA = 0x600;
+	delta_multiplier = 6;
 #elif defined(__SOUND_PWM)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_DELTA = 0x400;
+	delta_multiplier = 4;
 #elif defined(__SOUND_PWM_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_DELTA = 0x400;
+	delta_multiplier = 4;
 #elif defined(__SOUND_JACK)
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_DELTA = 0x400;
+	delta_multiplier = 4;
 #elif defined(__SOUND_JACK_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_PWM_BALANCED, _SOUND_ADJUST );
 	mode_soundplay = False;
-	//SND32_MODULATION_DELTA = 0x400;
+	delta_multiplier = 4;
 #endif
 
 	// To Get Proper Latency, Get Lengths in Advance
@@ -411,11 +412,13 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
-				makesilence();
+				SND32_MODULATION_DELTA = 0x10 * delta_multiplier;
+				SND32_MODULATION_RANGE = 0x1000;
 
 			// 0b01010 (10)
 			} else if ( detect_parallel == 0b01010<<22 ) {
-				makesilence();
+				SND32_MODULATION_DELTA = 0x0 * delta_multiplier;
+				SND32_MODULATION_RANGE = 0x0;
 
 			// 0b01011 (11)
 			} else if ( detect_parallel == 0b01011<<22 ) {

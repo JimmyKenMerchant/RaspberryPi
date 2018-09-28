@@ -1306,6 +1306,7 @@ extern uint32 SND32_DIVISOR;
 extern uint32 SND32_MODULATION_DELTA;
 extern uint32 SND32_MODULATION_MAX;
 extern uint32 SND32_MODULATION_MIN;
+extern uint32 SND32_MODULATION_RANGE;
 
 /* Relative System Calls  */
 

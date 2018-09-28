@@ -677,7 +677,8 @@ snd32_soundplay:
 		beq snd32_soundplay_tune_silence           @ If Silence
 
 		/* Make Frequency Range on Modulation */
-		ldr temp3, SND32_MODULATION_RANGE
+		ldr temp3, SND32_MODULATION_RANGE_ADDR
+		ldr temp3, [temp3]
 		cmp mode, #0
 		moveq temp4, #equ32_snd32_mul_pwm
 		movne temp4, #equ32_snd32_mul_pcm
@@ -1551,7 +1552,8 @@ macro32_debug data1, 0, 88
 		str temp, [temp2]
 
 		/* Make Frequency Range on Modulation */
-		ldr data1, SND32_MODULATION_RANGE
+		ldr data1, SND32_MODULATION_RANGE_ADDR
+		ldr data1, [data1]
 		cmp mode, #0
 		moveq data2, #equ32_snd32_mul_pwm
 		movne data2, #equ32_snd32_mul_pcm
@@ -1633,7 +1635,8 @@ macro32_debug data1, 0, 112
 		snd32_soundmidi_control_msb_gp1:
 			/* Frequency Range (Interval) of Modulation */
 			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
-			str data2, SND32_MODULATION_RANGE
+			ldr temp, SND32_MODULATION_RANGE_ADDR
+			str data2, [temp]
 
 			/* Check If Silence on Current Music Code*/
 			ldr temp, SND32_CURRENTCODE                    @ Check Current Code
@@ -1791,7 +1794,8 @@ macro32_debug data1, 100, 100
 		str temp, [temp2]
 
 		/* Make Frequency Range on Modulation */
-		ldr data1, SND32_MODULATION_RANGE
+		ldr data1, SND32_MODULATION_RANGE_ADDR
+		ldr data1, [data1]
 		cmp mode, #0
 		moveq data2, #equ32_snd32_mul_pwm
 		movne data2, #equ32_snd32_mul_pcm
@@ -1894,7 +1898,7 @@ SND32_DIVISOR_ADDR:             .word SND32_DIVISOR
 SND32_MODULATION_DELTA_ADDR:    .word SND32_MODULATION_DELTA
 SND32_MODULATION_MAX_ADDR:      .word SND32_MODULATION_MAX
 SND32_MODULATION_MIN_ADDR:      .word SND32_MODULATION_MIN
-SND32_MODULATION_RANGE:         .word equ32_snd32_range
+SND32_MODULATION_RANGE_ADDR:    .word SND32_MODULATION_RANGE
 
 .section	.data
 .globl SND32_VIRTUAL_PARALLEL
@@ -1907,6 +1911,8 @@ SND32_MODULATION_DELTA:         .word 0x00
 SND32_MODULATION_MAX:           .word 0x00
 .globl SND32_MODULATION_MIN
 SND32_MODULATION_MIN:           .word 0x00
+.globl SND32_MODULATION_RANGE
+SND32_MODULATION_RANGE:         .word equ32_snd32_range
 .section	.library_system32
 
 
