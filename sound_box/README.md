@@ -28,7 +28,7 @@
 
 * Flat and Powerful Sound Like Analogue, Tunable Tones
 
-* 4 Steps Volume, Predefined Macros of Music Codes and Scales.
+* 4 Steps Volume, Predefined Macros of Music Code and Scales.
 
 * MIDI IN, Modulation, Pitch Bend
 
@@ -84,8 +84,6 @@
 
 * This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p and higher). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal is much higher than expected as a microphone. Besides, as line level, the voltage of the signal may be slight lower than expected. However, LR combinational monaural makes high level because typically an Op-amp voltage adder mixes L and R in a monaural receiver (e.g. Mono Aux In).
 
-* The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on snd32/soundadjust.h.
-
 * You can hear noise, this derives from several causes. Audible clock jitter, steps of volume, steps of frequency on pitch bend and modulation, power source, resonance in the circuit caused by static electricity, magnetic energy in the circuit, external radio wave and unexpected antenna in the circuit, etc. Noise directions are normal mode and common mode. I recommend that you use analogue Low-pass filter (Cut off) to intermediate digital output and any input. Balanced PWM output reduces noise from common mode.
 
 **About PCM Output**
@@ -93,8 +91,6 @@
 * SCLK (System Clock) / MCLK (Master Clock) is not supported because the modern IC on your DAC generates the clock by itself.
 
 * I'm using UDA1334A, one of I2S Stereo DAC. As of July 2018, you can purchase online a module which UDA1334A is boarded on.
-
-* The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on snd32/soundadjust.h.
 
 **Caution on Sound Output**
 
@@ -104,7 +100,7 @@
 
 * Typically, sound outputs made of coils. The coil generate electric surge that breaks your Raspberry Pi. To hide this, there are some solutions. Please search.
 
-* If you want to check the wave by your oscilloscope, a decoupling capacitor is needed. In my experience, a 1-microfarad-capacitor without any attenuator makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
+* If you want to check the outputting wave by your oscilloscope, a decoupling capacitor (or a low-pass filter) is needed. In my experience, a 1-microfarad-capacitor makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
 
 * Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
 
@@ -138,19 +134,31 @@
 
 * Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing Music code.
 
+* Modulation, low-frequency oscillator, is implemented. CC#1 sets changing speed (delta) of frequency and CC#16 sets range (interval) of highest-lowest frequency.
+
+* Pitch bending is implemented. Range is fixed within appx. +-5 semitones.
+
 ## Sound
 
-* Sine Wave (Program 0 in MIDI IN): Scale range is A1 to C7.
+* Sine Wave (Program 0 in MIDI IN, [Note Name]_SIN[L/M/S/T] in Music Code): Scale range is A1 to C7.
 
-* Sawtooth Wave (Program 1 in MIDI IN): Scale range is A1 to C7.
+* Sawtooth Wave (Program 1 in MIDI IN, [Note Name]_SAW[L/M/S/T] in Music Code): Scale range is A1 to C7.
 
-* Square Wave (Program 2 in MIDI IN): Scale range is A1 to C8. High notes are possible.
+* Square Wave (Program 2 in MIDI IN, [Note Name]_SQU[L/M/S/T] in Music Code): Scale range is A1 to C8. High notes are possible.
 
-* Noise (Program 3 in MIDI IN): No Scale (Keys A1 to C6 are used).
+* Noise (Program 3 in MIDI IN, [Number]_NOI[L/M/S/T] in Music Code): No Scale (Keys A1 to C6 are used).
 
-* Triangle Wave (Program 4 in MIDI IN): Scale range is A1 to C7.
+* Triangle Wave (Program 4 in MIDI IN, [Note Name]_TRI[L/M/S/T] in Music Code): Scale range is A1 to C7.
 
-* Distortion Wave (Program 5 in MIDI IN): Scale range is A1 to C7. Sound colors of notes differ on each power on.
+* Distortion Wave (Program 5 in MIDI IN, [Note Name]_DIS[L/M/S/T] in Music Code): Scale range is A1 to C7. Sound colors of notes differ on each power on.
+
+* Music code is a set of unique macros (predefinitions) of sound types and music notes. These macros are stored in share/include/snd32/musiccode.h.
+
+* Low-frequency oscillator can be controlled not only in MIDI IN as modulation, but also in user32.c directly.
+	 * Value of `SND32_MODULATION_DELTA` sets changing speed (delta) of frequency. This value immediately affects the outgoing sound. This value varies between PWM mode and PCM mode. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
+	 * Value of `SND32_MODULATION_RANGE` sets range (interval) of highest-lowest frequency. This value affects the sound after changing note of Music code.
+
+* The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on share/include/snd32/soundadjust.h.
 
 ## Draft
 
