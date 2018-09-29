@@ -14,13 +14,18 @@
  * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs L and R with each 16-bit depth.
  */
 
-STS32_CODE:            .word 0x00 @ Pointer of Music Code, If End, Automatically Cleared
-STS32_LENGTH:          .word 0x00 @ Length of Music Code, If End, Automatically Cleared
-STS32_COUNT:           .word 0x00 @ Incremental Count, Once Music Code Reaches Last, This Value will Be Reset
-STS32_REPEAT:          .word 0x00 @ -1 is Infinite Loop
+/* If End or Step Up, Automatically Cleared */
+STS32_CODE:            .word 0x00 @ Pointer of Synthesizer Code
+STS32_LENGTH:          .word 0x00 @ Length of Synthesizer Code
+STS32_REPEAT:          .word 0x00 @ Repeat status of Synthesizer Code
+STS32_COUNT:           .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+STS32_CODE_NEXT:       .word 0x00 @ Pointer of Next Synthesizer Code
+STS32_LENGTH_NEXT:     .word 0x00 @ Length of Next Synthesizer Code
+STS32_REPEAT_NEXT:     .word 0x00 @ Repeat status of Next Synthesizer Code
+STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
 
 /**
- * Bit[0] Not Started(0)/ Started (1)
+ * Bit[0] Synthesizer Code Stop(0)/ Playing (1)
  * Bit[1] Reserved
  * Bit[2] Reserved
  * Bit[3] Reserved
@@ -81,7 +86,7 @@ STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
  * r0: Pitch Bend Rate, Must Be Single Precision Float
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Not Started
+ * Error(1): Reserved
  * Error(2): PCM FIFO is Full
  */
 .globl sts32_synthewave_pwm
@@ -121,8 +126,10 @@ sts32_synthewave_pwm:
 	ldr flag_rl, STS32_SYNTHEWAVE_RL
 
 	ldr temp, STS32_STATUS
+	/*
 	tst temp, #1
 	beq sts32_synthewave_pwm_error1
+	*/
 
 	ldr time, STS32_SYNTHEWAVE_TIME
 	vmov vfp_time, time
@@ -370,7 +377,7 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
  * r0: Pitch Bend Rate, Must Be Single Precision Float
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Not Started
+ * Error(1): Reserved
  * Error(2): PCM FIFO is Full
  */
 .globl sts32_synthewave_i2s
@@ -396,8 +403,10 @@ sts32_synthewave_i2s:
 	vpush {s0-s8}
 
 	ldr temp, STS32_STATUS
+	/*
 	tst temp, #1
 	beq sts32_synthewave_i2s_error1
+	*/
 
 	vmov vfp_bend, memorymap_base
 
@@ -635,7 +644,7 @@ sts32_syntheset:
 	length      .req r1 @ Scratch Register
 	count       .req r2 @ Scratch Register
 	repeat      .req r3 @ Scratch Register
-	temp        .req r4
+	status      .req r4
 
 	push {r4}
 
@@ -644,25 +653,28 @@ sts32_syntheset:
 	cmp length, #0
 	beq sts32_syntheset_error
 
-	mov temp, #0
+	ldr status, STS32_STATUS
+	tst status, #1
+	bne sts32_syntheset_next
 
-	str temp, STS32_CODE       @ Reset to Prevent Odd Playing Sound
-
-	macro32_dsb ip
-
-	ldr temp, STS32_STATUS
-	bic temp, temp, #1         @ Clear Bit[0]
-	str temp, STS32_STATUS
-
+	/* First Set */
+	str addr_code, STS32_CODE
 	str length, STS32_LENGTH
 	str count, STS32_COUNT
 	str repeat, STS32_REPEAT
 
-	macro32_dsb ip
-
-	str addr_code, STS32_CODE  @ Should Set Music Code at End for Polling Functions, `sts32_syntheplay`
+	orr status, status, #1         @ Set Synthesizer Code Playing Bit[0]
+	str status, STS32_STATUS
 
 	b sts32_syntheset_success
+
+	sts32_syntheset_next:
+		str addr_code, STS32_CODE_NEXT
+		str length, STS32_LENGTH_NEXT
+		str count, STS32_COUNT_NEXT
+		str repeat, STS32_REPEAT_NEXT
+
+		b sts32_syntheset_success
 
 	sts32_syntheset_error:
 		mov r0, #1
@@ -680,7 +692,7 @@ sts32_syntheset:
 .unreq length
 .unreq count
 .unreq repeat
-.unreq temp
+.unreq status
 
 
 /**
@@ -733,6 +745,11 @@ sts32_syntheplay:
 	cmp count, length
 	blo sts32_syntheplay_jump
 
+	/* If Next Synthesizer Code Exists Alter Current Code on Point of Repeating */
+	ldr temp, STS32_CODE_NEXT
+	cmp temp, #0
+	bne sts32_syntheplay_next
+
 	mov count, #0
 
 	cmp repeat, #-1
@@ -741,7 +758,22 @@ sts32_syntheplay:
 	sub repeat, repeat, #1
 
 	cmp repeat, #0
-	beq sts32_syntheplay_free
+	ble sts32_syntheplay_free
+
+	sts32_syntheplay_next:
+		mov addr_code, temp
+		ldr length, STS32_LENGTH_NEXT
+		ldr count, STS32_COUNT_NEXT
+		ldr repeat, STS32_REPEAT_NEXT
+
+		str addr_code, STS32_CODE
+		str length, STS32_LENGTH
+
+		mov temp, #0
+		str temp, STS32_CODE_NEXT
+		str temp, STS32_LENGTH_NEXT
+		str temp, STS32_COUNT_NEXT
+		str temp, STS32_REPEAT_NEXT
 
 	sts32_syntheplay_jump:
 		/* Hard Code of Single Precision Float 0.125 */
@@ -844,8 +876,6 @@ sts32_syntheplay:
 		vmov temp, vfp_temp
 		str temp, STS32_SYNTHEWAVE_MAGB_R
 
-		tst status, #1
-		orreq status, status, #1
 
 		add count, count, #1
 		str count, STS32_COUNT
@@ -855,16 +885,25 @@ sts32_syntheplay:
 		b sts32_syntheplay_success
 
 	sts32_syntheplay_free:
+		bic status, status, #1                     @ Clear Bit[0]
+		str status, STS32_STATUS
+
 		mov addr_code, #0
 		mov length, #0
-		bic status, status, #1                     @ Clear Bit[0]
 
 		str addr_code, STS32_CODE
-
 		str length, STS32_LENGTH
 		str count, STS32_COUNT                     @ count is Already Zero
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
-		str status, STS32_STATUS
+
+		str addr_code, STS32_SYNTHEWAVE_FREQA_L
+		str addr_code, STS32_SYNTHEWAVE_FREQB_L
+		str addr_code, STS32_SYNTHEWAVE_MAGA_L
+		str addr_code, STS32_SYNTHEWAVE_MAGB_L
+		str addr_code, STS32_SYNTHEWAVE_FREQA_R
+		str addr_code, STS32_SYNTHEWAVE_FREQB_R
+		str addr_code, STS32_SYNTHEWAVE_MAGA_R
+		str addr_code, STS32_SYNTHEWAVE_MAGB_R
 
 		b sts32_syntheplay_success
 
@@ -912,19 +951,30 @@ sts32_syntheclear:
 	/* Auto (Local) Variables, but just Aliases */
 	temp   .req r0
 
-	mov temp, #0
-
-	str temp, STS32_CODE
-
-	str temp, STS32_LENGTH
-	str temp, STS32_COUNT
-	str temp, STS32_REPEAT
-
 	ldr temp, STS32_STATUS
 	bic temp, temp, #1                         @ Clear Bit[1]
 	str temp, STS32_STATUS
 
-	macro32_dsb ip
+	mov temp, #0
+
+	str temp, STS32_CODE
+	str temp, STS32_LENGTH
+	str temp, STS32_COUNT
+	str temp, STS32_REPEAT
+
+	str temp, STS32_CODE_NEXT
+	str temp, STS32_LENGTH_NEXT
+	str temp, STS32_COUNT_NEXT
+	str temp, STS32_REPEAT_NEXT
+
+	str temp, STS32_SYNTHEWAVE_FREQA_L
+	str temp, STS32_SYNTHEWAVE_FREQB_L
+	str temp, STS32_SYNTHEWAVE_MAGA_L
+	str temp, STS32_SYNTHEWAVE_MAGB_L
+	str temp, STS32_SYNTHEWAVE_FREQA_R
+	str temp, STS32_SYNTHEWAVE_FREQB_R
+	str temp, STS32_SYNTHEWAVE_MAGA_R
+	str temp, STS32_SYNTHEWAVE_MAGB_R
 
 	sts32_syntheclear_success:
 		macro32_dsb ip

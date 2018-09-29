@@ -586,7 +586,7 @@ int32 _user_start()
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
 			if ( detect_parallel == 0b00001<<22 ) {
-				_syntheset( synthe1, synthelen1, 0, -1 );
+				_syntheset( synthe1, synthelen1, 0, 1 );
 				//_syntheclear();
 
 			// 0b00010 (2)

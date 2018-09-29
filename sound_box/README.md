@@ -134,7 +134,7 @@
 
 * Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing Music code.
 
-* Modulation, low-frequency oscillator, is implemented. CC#1 sets changing speed (delta) of frequency and CC#16 sets range (interval) of highest-lowest frequency.
+* Modulation, low-frequency oscillator, is implemented. CC#1 (Modulation) sets changing speed (delta) of frequency and CC#16 (General Purpose Controller 1) sets range (interval) of highest-lowest frequency.
 
 * Pitch bending is implemented. Range is fixed within appx. +-5 semitones.
 
@@ -159,6 +159,8 @@
 	 * Value of `SND32_MODULATION_RANGE` sets range (interval) of highest-lowest frequency. This value affects the sound after changing note of Music code.
 
 * The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on share/include/snd32/soundadjust.h.
+
+* MIDI IN has outputting priority. If MIDI IN makes note on, Music code stops.
 
 ## Draft
 
