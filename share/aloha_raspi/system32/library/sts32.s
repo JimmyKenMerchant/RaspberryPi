@@ -1706,3 +1706,387 @@ sts32_syntheinit_i2s:
 .unreq memorymap_base
 .unreq value
 
+
+/**
+ * function sts32_synthemidi
+ * MIDI Handler
+ * Use this function in UART interrupt.
+ *
+ * Parameters
+ * r0: Channel, 0-15 (MIDI Channel No. 1 to 16)
+ * r1: 0 as PWM Mode, 1 as PCM Mode
+ *
+ * Return: r0 (0 as success, 1, 2, and 3 as error)
+ * Error(1): Not Initialized on sts32_syntheinit_*, No Buffer to Receive on UART, or UART Overrun
+ * Error(2): Character Is Not Received
+ * Error(3): MIDI Channel is Not Matched, or Only Data Bytes Received
+ */
+.globl sts32_synthemidi
+sts32_synthemidi:
+	/* Auto (Local) Variables, but just Aliases */
+	channel       .req r0
+	mode          .req r1
+	buffer        .req r2
+	count         .req r3
+	max_size      .req r4
+	bytebuffer    .req r5
+	byte          .req r6
+	temp          .req r7
+	data1         .req r8
+	data2         .req r9
+	status        .req r10
+
+	push {r4-r10,lr}
+
+	ldr status, STS32_STATUS
+	tst status, #0x80000000           @ If Not Initialized
+	beq sts32_synthemidi_error1
+
+	ldr count, STS32_SYNTHEMIDI_COUNT
+	ldr max_size, STS32_SYNTHEMIDI_LENGTH
+	ldr buffer, STS32_SYNTHEMIDI_BUFFER
+
+	cmp buffer, #0
+	beq sts32_synthemidi_error1       @ If No Buffer
+
+	ldr bytebuffer, STS32_SYNTHEMIDI_BYTEBUFFER
+
+	push {r0-r3}
+	mov r0, bytebuffer
+	mov r1, #1                        @ 1 Bytes
+	bl uart32_uartrx
+	mov temp, r0                      @ Whether Overrun or Not
+	pop {r0-r3}
+
+	tst temp, #0x8                    @ Whether Overrun or Not
+	bne sts32_synthemidi_error1       @ If Overrun
+
+	tst temp, #0x10                   @ Whether Not Received or So
+	bne sts32_synthemidi_error2       @ If Not Received
+
+	/* Check Whether Status or Data Bytes */
+	ldrb byte, [bytebuffer]
+
+	tst byte, #0x80
+	bne sts32_synthemidi_status
+
+	/* Check Whether Only Data Bytes (Status Is For Other Channels, etc.) */
+	cmp count, #0
+	beq sts32_synthemidi_error3
+
+	/* Data Bytes */
+	strb byte, [buffer,count]
+
+	/* Slide Offset Count */
+	add count, count, #1
+	cmp count, max_size
+	subge count, max_size, #1         @ If Exceeds Maximum Size of Heap, Stay Count
+
+	.unreq max_size
+	temp2 .req r4
+
+	/* Check Message Type and Procedures for Each Message */
+	ldrb temp, [buffer]
+	ldrb data1, [buffer, #1]
+	ldrb data2, [buffer, #2]
+	cmp temp, #0x8
+	beq sts32_synthemidi_noteoff           @ Velocity is Ignored
+	cmp temp, #0x9
+	beq sts32_synthemidi_noteon
+	cmp temp, #0xA
+	beq sts32_synthemidi_polyaftertouch    @ Polyphonic Key Pressure
+	cmp temp, #0xB
+	beq sts32_synthemidi_control
+	cmp temp, #0xC
+	beq sts32_synthemidi_programchange
+	cmp temp, #0xD
+	beq sts32_synthemidi_monoaftertouch    @ Monophonic Key Pressure
+	cmp temp, #0xE
+	beq sts32_synthemidi_pitchbend
+	cmp temp, #0xF
+	beq sts32_synthemidi_systemcommon
+
+	b sts32_synthemidi_success
+
+	sts32_synthemidi_noteoff:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		/* Load Concurrent Note, If Not Matched Do Nothing */
+		ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
+		cmp data1, temp
+		movne count, #0
+		bne sts32_synthemidi_success
+
+		/* Note Off Code Here */
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_noteon:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		/* Store Concurrent Note */
+		str data1, STS32_SYNTHEMIDI_CURRENTNOTE
+
+		/* Note On Code Here */
+
+/*
+macro32_debug data1, 0, 112
+*/
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_polyaftertouch:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_control:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		cmp data1, #64
+		bhs sts32_synthemidi_control_others
+		cmp data1, #32
+		bhs sts32_synthemidi_control_lsb
+
+		/* Most Significant Bits */
+
+		ldr temp, STS32_SYNTHEMIDI_CTL
+		and data1, data1, #0x1F                            @ Only Use 0 to 31
+		lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
+		ldrh temp2, [temp, data1]
+		bic temp2, #0x3F80                                 @ Bit[13:7]
+		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+		orr data2, temp2, data2, lsl #7
+		strh data2, [temp, data1]
+
+		mov count, #0
+
+		/**
+		 * Immediate Changes Here
+		 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
+		 */
+		lsr data1, data1, #1                               @ Divide by 2
+		cmp data1, #1
+		beq sts32_synthemidi_control_msb_modulation
+		cmp data1, #16
+		beq sts32_synthemidi_control_msb_gp1               @ Frequency Range (Interval) of Modulation
+		cmp data1, #19
+		beq sts32_synthemidi_control_msb_gp4               @ Virtual Parallel for Sequence of Music Code
+
+		b sts32_synthemidi_success
+
+		sts32_synthemidi_control_msb_modulation:
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_msb_gp1:
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_msb_gp4:
+			/* Virtual Parallel of Coconuts */
+			lsr data2, data2, #7                           @ Use Only MSB[13:7]
+			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
+			str data2, [temp]
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_lsb:
+
+			/* Least Significant Bits */
+
+			ldr temp, STS32_SYNTHEMIDI_CTL
+			and data1, data1, #0x1F                            @ Only Use 0 to 31
+			lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
+			ldrh temp2, [temp, data1]
+			bic temp2, #0x7F                                   @ Bit[6:0]
+			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+			orr data2, temp2, data2
+			strh data2, [temp, data1]
+
+			mov count, #0
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_others:
+
+			mov count, #0
+			b sts32_synthemidi_success
+
+	sts32_synthemidi_programchange:
+		cmp count, #2
+		blo sts32_synthemidi_success
+
+		ldr temp, STS32_SYNTHEMIDI_CTL
+		ldr temp, [temp]                               @ Bank Select Bit[13:0]
+		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
+		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
+/*
+macro32_debug data1, 100, 100
+*/
+
+		/* Program Change Code Here */
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_monoaftertouch:
+		cmp count, #2
+		blo sts32_synthemidi_success
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_pitchbend:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		/* Pitch Bend Code Here */
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_systemcommon:
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_status:
+		/* If 0b11111000 and Above, Jump to Event on System Real Time Messages */
+		cmp byte, #248
+		bhs sts32_synthemidi_systemrealtime
+
+		bic temp, byte, #0xF0
+		cmp temp, channel
+		movne count, #0
+		bne sts32_synthemidi_error2   @ If Channel Is Not Matched
+
+		/* Channel Is Matched */
+		lsr byte, byte, #4            @ Omit Channel Number
+		strb byte, [buffer]
+		mov count, #1
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_systemrealtime:
+
+		/* If Reset, Hook to Note Off Event */
+		cmp byte, #255
+		/*beq sts32_synthemidi_noteoff*/
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_error1:
+		mov r0, #1
+		b sts32_synthemidi_common
+
+	sts32_synthemidi_error2:
+		mov r0, #2
+		b sts32_synthemidi_common
+
+	sts32_synthemidi_error3:
+		mov r0, #3
+		b sts32_synthemidi_common
+
+	sts32_synthemidi_success:
+		mov r0, #0
+
+	sts32_synthemidi_common:
+		str status, STS32_STATUS
+		str count, STS32_SYNTHEMIDI_COUNT
+		macro32_dsb ip
+/*
+macro32_debug_hexa buffer, 100, 100, 8
+*/
+		pop {r4-r10,pc}
+
+.unreq channel
+.unreq mode
+.unreq buffer
+.unreq count
+.unreq temp2
+.unreq bytebuffer
+.unreq byte
+.unreq temp
+.unreq data1
+.unreq data2
+.unreq status
+
+STS32_SYNTHEMIDI_COUNT:          .word 0x00
+STS32_SYNTHEMIDI_LENGTH:         .word 0x00
+STS32_SYNTHEMIDI_BUFFER:         .word 0x00 @ Second Buffer to Store Outstanding MIDI Message
+STS32_SYNTHEMIDI_BYTEBUFFER:     .word _STS32_SYNTHEMIDI_BYTEBUFFER
+STS32_SYNTHEMIDI_CURRENTNOTE:    .word 0x00
+
+STS32_SYNTHEMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
+STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
+
+.section	.data
+_STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
+.globl STS32_VIRTUAL_PARALLEL
+STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
+.section	.library_system32
+
+
+/**
+ * function sts32_synthemidi_malloc
+ * Make Buffer for Function, sts32_synthemidi
+ *
+ * Parameters
+ * r0: Size of Buffer (Words)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Memory Allocation Is Not Succeeded
+ */
+.globl sts32_synthemidi_malloc
+sts32_synthemidi_malloc:
+	/* Auto (Local) Variables, but just Aliases */
+	words_buffer .req r0
+	buffer       .req r1
+
+	push {lr}
+
+	/* Buffer to Receive MIDI Message */
+	push {r0}
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0}
+
+	cmp buffer, #0
+	beq sts32_synthemidi_malloc_error
+
+	lsl words_buffer, words_buffer, #2             @ Multiply by 4
+	sub words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
+	str words_buffer, STS32_SYNTHEMIDI_LENGTH
+	str buffer, STS32_SYNTHEMIDI_BUFFER
+	mov words_buffer, #0
+	str words_buffer, STS32_SYNTHEMIDI_COUNT
+
+	/* Buffer for Control Message No. 0 to No. 31 */
+	push {r0}
+	mov r0, #16                                    @ 16 Words Multiplied by 4 Bytes Equals 64 Bytes (2 Bytes Half Word * 32)
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0}
+
+	cmp buffer, #0
+	beq sts32_synthemidi_malloc_error
+
+	str buffer, STS32_SYNTHEMIDI_CTL
+
+	b sts32_synthemidi_malloc_success
+
+	sts32_synthemidi_malloc_error:
+		mov r0, #1
+		b sts32_synthemidi_malloc_common
+
+	sts32_synthemidi_malloc_success:
+		mov r0, #0
+
+	sts32_synthemidi_malloc_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq words_buffer
+.unreq buffer
+

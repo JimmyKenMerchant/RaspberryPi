@@ -1349,6 +1349,10 @@ extern uint32 snd32_musiclen
 #define STS32_RIS      0
 #define STS32_FAL      16
 
+/* Global Variable */
+
+extern uint32 STS32_VIRTUAL_PARALLEL;
+
 /* Relative System Calls  */
 
 __attribute__((noinline)) uint32 _synthewave_pwm( float32 bend_rate );

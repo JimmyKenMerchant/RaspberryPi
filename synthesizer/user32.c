@@ -580,6 +580,10 @@ int32 _user_start()
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+			if ( STS32_VIRTUAL_PARALLEL ) {
+				detect_parallel |= STS32_VIRTUAL_PARALLEL<<22;
+				STS32_VIRTUAL_PARALLEL = 0;
+			}
 
 //print32_debug( detect_parallel, 100, 100 );
 
