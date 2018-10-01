@@ -563,7 +563,9 @@ int32 _user_start()
 	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
 
 	uint32 tempo_count = tempo_count_default;
-	uint32 tempo = tempo_default;
+	uint32 tempo_count_reload = tempo_count_default;
+	int32 tempo = tempo_default;
+	int32 tempo_table_offset;
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
@@ -721,16 +723,18 @@ int32 _user_start()
 				/* Beat Up */
 				tempo++;
 				if ( tempo > tempo_max ) tempo = tempo_max;
-				_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
-				tempo_count = tempo_table[(tempo<<1) + 1];
+				tempo_table_offset = tempo<<1;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo_table_offset] );
+				tempo_count_reload = tempo_table[tempo_table_offset + 1];
 
 			// 0b11110 (30)
 			} else if ( detect_parallel == 0b11110<<22 ) {
 				/* Beat Down */
 				tempo--;
-				if ( tempo > tempo_max ) tempo = 0;
-				_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
-				tempo_count = tempo_table[(tempo<<1) + 1];
+				if ( tempo < 0 ) tempo = 0;
+				tempo_table_offset = tempo<<1;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo_table_offset] );
+				tempo_count_reload = tempo_table[tempo_table_offset + 1];
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {
@@ -749,7 +753,7 @@ int32 _user_start()
 				}
 				_gpiotoggle( 16, playing_signal );
 
-				tempo_count = tempo_count_default; // Reset Counter
+				tempo_count = tempo_count_reload; // Reset Counter
 			}
 		}
 	}
