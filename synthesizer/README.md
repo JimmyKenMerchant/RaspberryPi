@@ -4,7 +4,7 @@
 * License: MIT
 * License URL: https://opensource.org/licenses/MIT
 
-## Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
+### Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
 
 **Purpose**
 
@@ -15,6 +15,10 @@
 * Programming Time Up to 29 Minutes for Entire Tracks
 
 **Output/Input**
+
+* GPIO9 as Input of MIDI Channel Select Bit[0]
+
+* GPIO10 as Input of MIDI Channel Select Bit[1]
 
 * GPIO12 as Output of PWM0 on sound=pwm
 
@@ -28,6 +32,8 @@
 
 * GPIO17 as Output of Synchronization Clock OUT
 
+* GPIO15 as Input of RXD0 (UART) for MIDI IN
+
 * GPIO27 as Input of Synchronization Clock IN, Connect with Any Synchronization Clock OUT.
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
@@ -38,7 +44,7 @@
 
 * To Test Input, Use [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes).
 
-## GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+### GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
 ![Output Connection of I2S](../images/i2s_1.jpg "(DON'T USE ANY EARPHONE!) Output Connection Between RasPi 2B and UDA1334 on Module: GPIO17 and GPIO27 are connected by a sanguine jumper.")
 
@@ -66,9 +72,9 @@
 
 * I recommend that you use `sound=jack` for debugging. DON'T USE ANY EARPHONE OR HEADPHONE. MAKE SURE TO TURN DOWN SOUND VOLUME OF CONNECTED SPEAKER.
 
-## Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
+### Make sure to build your own RC Low-pass Filter for PWM0/1 from GPIO Pins.
 
-## Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
+### Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
 
 **Caution on Sound Output**
 
@@ -83,3 +89,11 @@
 * Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
 
 * When you input from PCM or PWM output directly, you can hear buggy high tone noise (appx. 2KHz) such as bass and high tones. It's harmonics. I recommend that you use analogue Low-pass filter (Cut Off) to intermediate digital output and any input. Digital output has high frequency noise that hold harmonics bigger than anologue output. This seems to derive from steps of changing volume or pulses of a digital-analogue converter. It sometimes takes pre-sound state that is not natural to be heared.
+
+**MIDI IN**
+
+* Synthesizer can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
+
+* MIDI channel of Sound Box is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
+
+* Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing Music code.

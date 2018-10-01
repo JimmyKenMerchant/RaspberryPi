@@ -10,11 +10,16 @@
 #include "system32.h"
 #include "system32.c"
 #include "sts32.h"
+#include "user32_tempo.h"
 
-#define timer_count_multiplicand        1
-#define timer_count_multiplier_default  100
-#define timer_count_multiplier_minlimit 25
-#define timer_count_multiplier_maxlimit 200
+#define tempo_count_default  2
+#define tempo_default 60
+#define tempo_max 420
+
+/**
+ * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on GPCLK1).
+ * A set of 2400 beats (= delta times) is 60BPM on 2400HZ (one delta time is 1/2400 seconds).
+ */
 
 /**
  * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on Arm Timer beacause of toggling).
@@ -557,7 +562,8 @@ int32 _user_start()
 	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
 
-	uint32 timer_count_multiplier = timer_count_multiplier_default;
+	uint32 tempo_count = tempo_count_default;
+	uint32 tempo = tempo_default;
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
@@ -576,7 +582,7 @@ int32 _user_start()
 #ifdef __SOUND_JACK
 		_synthewave_pwm( bent_rate );
 #endif
-		if ( _gpio_detect( 27 ) ) { // Time of This Loop Around 40us in My Experience
+		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
@@ -713,16 +719,18 @@ int32 _user_start()
 			// 0b11101 (29)
 			} else if ( detect_parallel == 0b11101<<22 ) {
 				/* Beat Up */
-				timer_count_multiplier--;
-				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				tempo++;
+				if ( tempo > tempo_max ) tempo = tempo_max;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
+				tempo_count = tempo_table[(tempo<<1) + 1];
 
 			// 0b11110 (30)
 			} else if ( detect_parallel == 0b11110<<22 ) {
 				/* Beat Down */
-				timer_count_multiplier++;
-				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				tempo--;
+				if ( tempo > tempo_max ) tempo = 0;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
+				tempo_count = tempo_table[(tempo<<1) + 1];
 
 			// 0b11111 (31)
 			} else if ( detect_parallel == 0b11111<<22 ) {
@@ -730,13 +738,19 @@ int32 _user_start()
 
 			}
 
-			result = _syntheplay();
-			if ( result == 0 ) { // Playing
-				playing_signal = _GPIOTOGGLE_HIGH;
-			} else { // Not Playing
-				playing_signal = _GPIOTOGGLE_LOW;
+			tempo_count--; // Decrement Counter
+			if ( tempo_count <= 0 ) { // If Reaches Zero
+
+				result = _syntheplay();
+				if ( result == 0 ) { // Playing
+					playing_signal = _GPIOTOGGLE_HIGH;
+				} else { // Not Playing
+					playing_signal = _GPIOTOGGLE_LOW;
+				}
+				_gpiotoggle( 16, playing_signal );
+
+				tempo_count = tempo_count_default; // Reset Counter
 			}
-			_gpiotoggle( 16, playing_signal );
 		}
 	}
 

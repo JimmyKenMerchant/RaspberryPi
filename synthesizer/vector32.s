@@ -56,8 +56,10 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
+	/*
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
+	*/
 
 	/* Enable UART IRQ */
 	mov r1, #1<<25                                   @ UART IRQ #57
@@ -68,12 +70,14 @@ os_reset:
 	 */
 
 	/* Get a 4800hz Timer Interrupt (480000/100) */
+	/*
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
 	mov r1, #0x0000                           @ High 1 Byte of decimal 99 (100 - 1), 16 bits counter on default
 	orr r1, r1, #0x63                         @ Low 1 Byte of decimal 99, 16 bits counter on default
 	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
 	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
+	*/
 
 	/**
 	 * GPIO
@@ -101,6 +105,8 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 ALT 0 as GPCLK1
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 6 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 9 INPUT, MIDI Channel Select Bit[0]
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
@@ -108,27 +114,24 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[1]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 17 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0   @ Set GPIO 20 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_3    @ Set GPIO 23 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 25 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio06                                      @ Set GPIO6 Rising Edge Detect
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
 	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
 	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
 	orr r1, r1, #equ32_gpio25                                      @ Set GPIO25 Rising Edge Detect
 	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 Rising Edge Detect
-	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
@@ -141,6 +144,15 @@ os_reset:
 	tst r1, #equ32_gpio10
 	addne r2, r2, #2
 	str r2, os_irq_midi_channel
+
+	/**
+	 * Clock Manager for GPCLK1. Make 4800Hz
+	 */
+	mov r0, #equ32_cm_gp1
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #4000<<equ32_cm_div_integer
+	bl arm32_clockmanager
 
 	/**
 	 * Synthsizer Initialization
@@ -261,10 +273,12 @@ os_fiq:
 .endif
 .endif
 
+	/*
 	mov r0, #17
 	mov r1, #2
 	bl gpio32_gpiotoggle
 	macro32_dsb ip
+	*/
 
 	pop {r0-r7,pc}
 
