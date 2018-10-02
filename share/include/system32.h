@@ -1363,7 +1363,7 @@ __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length,
 
 __attribute__((noinline)) uint32 _syntheplay( uint32 number_voices );
 
-__attribute__((noinline)) uint32 _syntheclear();
+__attribute__((noinline)) uint32 _syntheclear( uint32 number_voices );
 
 
 /* Regular Functions */

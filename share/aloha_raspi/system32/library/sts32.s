@@ -34,9 +34,9 @@ STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, 
 STS32_STATUS:             .word 0x00
 
 /**
- * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 7 as Synthesizer Code
- * Bit[2:0] L
- * Bit[5:3] R
+ * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
+ * Bit[3:0] L
+ * Bit[7:4] R
  */
 STS32_VOICES:             .word 0x00
 
@@ -93,6 +93,7 @@ STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
  *
  * Parameters
  * r0: Pitch Bend Rate, Must Be Single Precision Float
+ * r1: Number of Voices on Each R or L, Must Be Unsigned Integer
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Reserved
@@ -384,6 +385,7 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
  *
  * Parameters
  * r0: Pitch Bend Rate, Must Be Single Precision Float
+ * r1: Number of Voices on Each R or L, Must Be Unsigned Integer
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Reserved
@@ -725,7 +727,7 @@ sts32_syntheplay:
 	status        .req r4
 	code          .req r5
 	temp          .req r6
-	fraction      .req r7
+	status_voices .req r7
 	voices        .req r8
 	addr_param    .req r9
 	num_voices    .req r10
@@ -754,6 +756,7 @@ sts32_syntheplay:
 	ldr count, STS32_COUNT
 	ldr repeat, STS32_REPEAT
 	ldr status, STS32_STATUS
+	ldr status_voices, STS32_VOICES
 
 	macro32_dsb ip
 
@@ -822,22 +825,32 @@ sts32_syntheplay:
 
 			lsl offset_param, voices, #4               @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
 
-			/* Main */
+			/**
+			 * Main
+			 */
+
 			ldr code, [addr_code, offset_code]
 			add offset_code, offset_code, #4           @ Slide Offset for Synthesizer Code
-			lsl temp, code, #15                        @ Extract [16:0]
-			lsr temp, temp, #15                        @ Extract [16:0]
-			and fraction, temp, #0b111                 @ Bit [2:0]
-			lsr temp, temp, #3                         @ Bit [16:3]
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vmov vfp_fraction, fraction
+
+			/* Fraction */
+			and temp, code, #0b111                     @ Bit [2:0]
+			vmov vfp_fraction, temp
 			vcvt.f32.u32 vfp_fraction, vfp_fraction
 			vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
-			vadd.f32 vfp_temp, vfp_temp, vfp_fraction  @ Add fraction
+
+			/* Integer */
+			lsl temp, code, #15                        @ Extract [16:0]
+			lsr temp, temp, #18                        @ Bit [16:3]
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+
+			/* Main Frequency */
+			vadd.f32 vfp_temp, vfp_temp, vfp_fraction  @ Add fraction and Integer
 			vmov temp, vfp_temp
 			str temp, [addr_param, offset_param]       @ Main Frequency
 			add offset_param, offset_param, #4
+
+			/* Main Amplitude  */
 			asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
 			lsl temp, temp, #1                         @ Multiply by 2
 			vmov vfp_temp, temp
@@ -846,22 +859,32 @@ sts32_syntheplay:
 			str temp, [addr_param, offset_param]       @ Main Amplitude
 			add offset_param, offset_param, #4
 
-			/* Sub */
+			/**
+			 * Sub
+			 */
+
 			ldr code, [addr_code, offset_code]
 			add offset_code, offset_code, #4           @ Slide Offset for Synthesizer Code
-			lsl temp, code, #15                        @ Extract [16:0]
-			lsr temp, temp, #15                        @ Extract [16:0]
-			and fraction, temp, #0b111                 @ Bit [2:0]
-			lsr temp, temp, #3                         @ Bit [16:3]
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vmov vfp_fraction, fraction
+
+			/* Fraction */
+			and temp, code, #0b111                     @ Bit [2:0]
+			vmov vfp_fraction, temp
 			vcvt.f32.u32 vfp_fraction, vfp_fraction
 			vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
-			vadd.f32 vfp_temp, vfp_temp, vfp_fraction  @ Add fraction
+
+			/* Integer */
+			lsl temp, code, #15                        @ Extract [16:0]
+			lsr temp, temp, #18                        @ Bit [16:3]
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+
+			/* Sub Frequency */
+			vadd.f32 vfp_temp, vfp_temp, vfp_fraction  @ Add fraction and Integer
 			vmov temp, vfp_temp
 			str temp, [addr_param, offset_param]       @ Sub Frequency
 			add offset_param, offset_param, #4
+
+			/* Sub Amplitude */
 			lsr temp, code, #17                        @ Bit[31:17]
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
@@ -869,6 +892,13 @@ sts32_syntheplay:
 			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
 			vmov temp, vfp_temp
 			str temp, [addr_param, offset_param]       @ Sub Amplitude
+
+			/* Set Voices Status */
+			mov code, #4
+			mul code, voices, code
+			mov temp, #0b1000
+			lsl temp, temp, code
+			orr status_voices, status_voices, temp
 
 			add voices, voices, #1
 			b sts32_syntheplay_encode_loop
@@ -879,6 +909,7 @@ sts32_syntheplay:
 			str count, STS32_COUNT
 			str repeat, STS32_REPEAT
 			str status, STS32_STATUS
+			str status_voices, STS32_VOICES
 
 			b sts32_syntheplay_success
 
@@ -892,6 +923,19 @@ sts32_syntheplay:
 		str addr_code, STS32_LENGTH
 		str count, STS32_COUNT                     @ count is Already Zero
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
+
+		/* Clear Voices Status */
+		sts32_syntheplay_free_voices:
+			sub num_voices, num_voices, #1
+			mov voices, #4
+			mul voices, num_voices, voices
+			mov temp, #0b1000
+			lsl temp, temp, voices
+			bic status_voices, status_voices, temp
+			cmp num_voices, #0
+			bgt sts32_syntheplay_free_voices
+
+		str status_voices, STS32_VOICES
 
 		str addr_code, STS32_SYNTHEWAVE_FREQA_L
 		str addr_code, STS32_SYNTHEWAVE_FREQB_L
@@ -927,7 +971,7 @@ sts32_syntheplay:
 .unreq status
 .unreq code
 .unreq temp
-.unreq fraction
+.unreq status_voices
 .unreq voices
 .unreq addr_param
 .unreq num_voices
@@ -945,16 +989,37 @@ sts32_syntheplay_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
  * function sts32_syntheclear
  * Clear Synthesizer Code
  *
+ * Parameters
+ * r0: Number of Voices
+ *
  * Return: r0 (0 as success)
  */
 .globl sts32_syntheclear
 sts32_syntheclear:
 	/* Auto (Local) Variables, but just Aliases */
-	temp   .req r0
+	num_voices .req r0
+	temp       .req r1
+	temp2      .req r2
+	temp3      .req r3
 
 	ldr temp, STS32_STATUS
 	bic temp, temp, #1                         @ Clear Bit[1]
 	str temp, STS32_STATUS
+
+	ldr temp, STS32_VOICES
+
+	/* Clear Voices Status */
+	sts32_syntheclear_voices:
+		sub num_voices, num_voices, #1
+		mov temp2, #4
+		mul temp2, num_voices, temp2
+		mov temp3, #0b1000
+		lsl temp3, temp3, temp2
+		bic temp, temp, temp3
+		cmp num_voices, #0
+		bgt sts32_syntheclear_voices
+
+	str temp, STS32_VOICES
 
 	mov temp, #0
 
@@ -984,7 +1049,10 @@ sts32_syntheclear:
 	sts32_syntheclear_common:
 		mov pc, lr
 
+.unreq num_voices
 .unreq temp
+.unreq temp2
+.unreq temp3
 
 
 /**
