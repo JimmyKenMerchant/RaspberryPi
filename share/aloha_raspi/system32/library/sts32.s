@@ -31,29 +31,38 @@ STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, 
  * Bit[3] Reserved
  * Bit[31] Not Initialized(0)/ Initialized(1)
  */
-STS32_STATUS:          .word 0x00
+STS32_STATUS:             .word 0x00
+
+/**
+ * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 7 as Synthesizer Code
+ * Bit[2:0] L
+ * Bit[5:3] R
+ */
+STS32_VOICES:             .word 0x00
 
 STS32_SYNTHEWAVE_TIME:    .word 0x00 @ One Equals 1/sampling-rate Seconds
-STS32_SYNTHEWAVE_FREQA_L: .word 0x00
-STS32_SYNTHEWAVE_FREQB_L: .word 0x00
-STS32_SYNTHEWAVE_MAGA_L:  .word 0x00
-STS32_SYNTHEWAVE_MAGB_L:  .word 0x00
-STS32_SYNTHEWAVE_FREQA_R: .word 0x00
-STS32_SYNTHEWAVE_FREQB_R: .word 0x00
-STS32_SYNTHEWAVE_MAGA_R:  .word 0x00
-STS32_SYNTHEWAVE_MAGB_R:  .word 0x00
 STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
+STS32_SYNTHEWAVE_PARAM:   .word STS32_SYNTHEWAVE_FREQA_L
+
+STS32_SYNTHEWAVE_FREQA_L: .word 0x00
+STS32_SYNTHEWAVE_AMPA_L:  .word 0x00
+STS32_SYNTHEWAVE_FREQB_L: .word 0x00
+STS32_SYNTHEWAVE_AMPB_L:  .word 0x00
+STS32_SYNTHEWAVE_FREQA_R: .word 0x00
+STS32_SYNTHEWAVE_AMPA_R:  .word 0x00
+STS32_SYNTHEWAVE_FREQB_R: .word 0x00
+STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
 
 /**
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Lower Bit[16-3] Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB, Should Be -8192 to 8191 in PWM Output
+ * Lower Bit[31-17] Amplitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB, Should Be -8192 to 8191 in PWM Output
  * Higher Bit[2-0] Decimal Part of Frequency-B (Sub): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Higher Bit[16-3] Frequency-B (Sub): 0 to 16383 Hz
- * Higher Bit[31-17] Magnitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
+ * Higher Bit[31-17] Amplitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
  * The wave is synthesized the formula:
- * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
+ * Amplitude on T = Amplitude-A * sin((T * (2Pi * Frequency-A)) + Amplitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
  * This type of synthesis is named as "Frequency Modulation Synthesis" developed by John Chowning in 1973, so to speak, a brief formula of Fourier series.
  * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
@@ -151,7 +160,7 @@ sts32_synthewave_pwm:
 	bne sts32_synthewave_pwm_loop_l
 
 	/**
-	 * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
+	 * Amplitude on T = Amplitude-A * sin((T * (2Pi * Frequency-A)) + Amplitude-B * sin(T * (2Pi * Frequency-B))).
 	 * Where T is time (seconds); one is 1/sampling-rate seconds.
 	 */
 	sts32_synthewave_pwm_loop:
@@ -164,8 +173,8 @@ sts32_synthewave_pwm:
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
 		ldr temp, STS32_SYNTHEWAVE_FREQB_R
 		vmov vfp_freq_b, temp
-		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
-		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
+		vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_R
+		vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_R
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -242,8 +251,8 @@ sts32_synthewave_pwm:
 			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
 			ldr temp, STS32_SYNTHEWAVE_FREQB_L
 			vmov vfp_freq_b, temp
-			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
-			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
+			vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_L
+			vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_L
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -433,7 +442,7 @@ sts32_synthewave_i2s:
 	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
 
 	/**
-	 * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
+	 * Amplitude on T = Amplitude-A * sin((T * (2Pi * Frequency-A)) + Amplitude-B * sin(T * (2Pi * Frequency-B))).
 	 * Where T is time (seconds); one is 1/sampling-rate seconds.
 	 */
 	sts32_synthewave_i2s_loop:
@@ -446,8 +455,8 @@ sts32_synthewave_i2s:
 		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
 		ldr temp, STS32_SYNTHEWAVE_FREQB_L
 		vmov vfp_freq_b, temp
-		vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_L
-		vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_L
+		vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_L
+		vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_L
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -511,8 +520,8 @@ sts32_synthewave_i2s:
 			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
 			ldr temp2, STS32_SYNTHEWAVE_FREQB_R
 			vmov vfp_freq_b, temp2
-			vldr vfp_mag_a, STS32_SYNTHEWAVE_MAGA_R
-			vldr vfp_mag_b, STS32_SYNTHEWAVE_MAGB_R
+			vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_R
+			vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_R
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -699,6 +708,9 @@ sts32_syntheset:
  * function sts32_syntheplay
  * Play Synthesizer
  *
+ * Parameters
+ * r0: Number of Voices
+ *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Music Code is Not Assgined
  * Error(2): Not Initialized
@@ -714,6 +726,10 @@ sts32_syntheplay:
 	code          .req r5
 	temp          .req r6
 	fraction      .req r7
+	voices        .req r8
+	addr_param    .req r9
+	num_voices    .req r10
+	offset_code   .req r11
 
 	/* VFP Registers */
 	vfp_temp      .req s0
@@ -722,8 +738,10 @@ sts32_syntheplay:
 	vfp_eighth    .req s3
 	vfp_fraction  .req s4
 
-	push {r4-r7,lr}
+	push {r4-r11,lr}
 	vpush {s0-s4}
+
+	mov num_voices, addr_code
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
@@ -743,7 +761,7 @@ sts32_syntheplay:
 	beq sts32_syntheplay_error2
 
 	cmp count, length
-	blo sts32_syntheplay_jump
+	blo sts32_syntheplay_encode
 
 	/* If Next Synthesizer Code Exists Alter Current Code on Point of Repeating */
 	ldr temp, STS32_CODE_NEXT
@@ -753,7 +771,7 @@ sts32_syntheplay:
 	mov count, #0
 
 	cmp repeat, #-1
-	beq sts32_syntheplay_jump
+	beq sts32_syntheplay_encode
 
 	sub repeat, repeat, #1
 
@@ -775,7 +793,10 @@ sts32_syntheplay:
 		str temp, STS32_COUNT_NEXT
 		str temp, STS32_REPEAT_NEXT
 
-	sts32_syntheplay_jump:
+		.unreq length
+		offset_param .req r1
+
+	sts32_syntheplay_encode:
 		/* Hard Code of Single Precision Float 0.125 */
 		mov temp, #0x3E000000
 		vmov vfp_eighth, temp
@@ -787,123 +808,99 @@ sts32_syntheplay:
 		vmov vfp_max, temp
 		vcvt.f32.u32 vfp_max, vfp_max
 
-		lsl temp, count, #4                        @ Substitute of Multiplication by 16
-		ldr code, [addr_code, temp]
-		lsl temp, code, #15                        @ Extract [16:0]
-		lsr temp, temp, #15                        @ Extract [16:0]
-		and fraction, temp, #0b111                 @ Bit [2:0]
-		lsr temp, temp, #3                         @ Bit [16:3]
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vmov vfp_fraction, fraction
-		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
-		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_FREQA_L
-		asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
-		lsl temp, temp, #1                         @ Multiply by 2
-		vmov vfp_temp, temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_MAGA_L
+		mov voices, #0
+		ldr addr_param, STS32_SYNTHEWAVE_PARAM
 
-		lsl temp, count, #4                        @ Substitute of Multiplication by 16
-		add temp, temp, #4
-		ldr code, [addr_code, temp]
-		lsl temp, code, #15                        @ Extract [16:0]
-		lsr temp, temp, #15                        @ Extract [16:0]
-		and fraction, temp, #0b111                 @ Bit [2:0]
-		lsr temp, temp, #3                         @ Bit [16:3]
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vmov vfp_fraction, fraction
-		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
-		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_FREQB_L
-		lsr temp, code, #17                        @ Bit[31:17]
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vdiv.f32 vfp_temp, vfp_temp, vfp_max
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_MAGB_L
+		/* Make Offset for Code */
+		mov temp, #8
+		mul temp, num_voices, temp                     @ Multiply by 8 to Make Stride, One Set for Each Voice is 8 Bytes (Two Words)
+		mul offset_code, count, temp                   @ Multiply by Stride
 
-		lsl temp, count, #4                        @ Substitute of Multiplication by 16
-		add temp, temp, #8
-		ldr code, [addr_code, temp]
-		lsl temp, code, #15                        @ Extract [16:0]
-		lsr temp, temp, #15                        @ Extract [16:0]
-		and fraction, temp, #0b111                 @ Bit [2:0]
-		lsr temp, temp, #3                         @ Bit [16:3]
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vmov vfp_fraction, fraction
-		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
-		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_FREQA_R
-		asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
-		lsl temp, temp, #1                         @ Multiply by 2
-		vmov vfp_temp, temp
-		vcvt.f32.s32 vfp_temp, vfp_temp
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_MAGA_R
+		sts32_syntheplay_encode_loop:
+			cmp voices, num_voices
+			bge sts32_syntheplay_encode_common
 
-		lsl temp, count, #4                        @ Substitute of Multiplication by 16
-		add temp, temp, #12
-		ldr code, [addr_code, temp]
-		lsl temp, code, #15                        @ Extract [16:0]
-		lsr temp, temp, #15                        @ Extract [16:0]
-		and fraction, temp, #0b111                 @ Bit [2:0]
-		lsr temp, temp, #3                         @ Bit [16:3]
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vmov vfp_fraction, fraction
-		vcvt.f32.u32 vfp_fraction, vfp_fraction
-		vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
-		vadd.f32 vfp_temp, vfp_temp, vfp_fraction   @ Add fraction
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_FREQB_R
-		lsr temp, code, #17                        @ Bit[31:17]
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vdiv.f32 vfp_temp, vfp_temp, vfp_max
-		vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-		vmov temp, vfp_temp
-		str temp, STS32_SYNTHEWAVE_MAGB_R
+			lsl offset_param, voices, #4               @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
 
+			/* Main */
+			ldr code, [addr_code, offset_code]
+			add offset_code, offset_code, #4           @ Slide Offset for Synthesizer Code
+			lsl temp, code, #15                        @ Extract [16:0]
+			lsr temp, temp, #15                        @ Extract [16:0]
+			and fraction, temp, #0b111                 @ Bit [2:0]
+			lsr temp, temp, #3                         @ Bit [16:3]
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vmov vfp_fraction, fraction
+			vcvt.f32.u32 vfp_fraction, vfp_fraction
+			vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
+			vadd.f32 vfp_temp, vfp_temp, vfp_fraction  @ Add fraction
+			vmov temp, vfp_temp
+			str temp, [addr_param, offset_param]       @ Main Frequency
+			add offset_param, offset_param, #4
+			asr temp, code, #17                        @ Arighmetic Logical Shift Right to Hold Signess, Bit[31:17]
+			lsl temp, temp, #1                         @ Multiply by 2
+			vmov vfp_temp, temp
+			vcvt.f32.s32 vfp_temp, vfp_temp
+			vmov temp, vfp_temp
+			str temp, [addr_param, offset_param]       @ Main Amplitude
+			add offset_param, offset_param, #4
 
-		add count, count, #1
-		str count, STS32_COUNT
-		str repeat, STS32_REPEAT
-		str status, STS32_STATUS
+			/* Sub */
+			ldr code, [addr_code, offset_code]
+			add offset_code, offset_code, #4           @ Slide Offset for Synthesizer Code
+			lsl temp, code, #15                        @ Extract [16:0]
+			lsr temp, temp, #15                        @ Extract [16:0]
+			and fraction, temp, #0b111                 @ Bit [2:0]
+			lsr temp, temp, #3                         @ Bit [16:3]
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vmov vfp_fraction, fraction
+			vcvt.f32.u32 vfp_fraction, vfp_fraction
+			vmul.f32 vfp_fraction, vfp_fraction, vfp_eighth
+			vadd.f32 vfp_temp, vfp_temp, vfp_fraction  @ Add fraction
+			vmov temp, vfp_temp
+			str temp, [addr_param, offset_param]       @ Sub Frequency
+			add offset_param, offset_param, #4
+			lsr temp, code, #17                        @ Bit[31:17]
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_temp, vfp_max
+			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+			vmov temp, vfp_temp
+			str temp, [addr_param, offset_param]       @ Sub Amplitude
 
-		b sts32_syntheplay_success
+			add voices, voices, #1
+			b sts32_syntheplay_encode_loop
+
+		sts32_syntheplay_encode_common:
+
+			add count, count, #1
+			str count, STS32_COUNT
+			str repeat, STS32_REPEAT
+			str status, STS32_STATUS
+
+			b sts32_syntheplay_success
 
 	sts32_syntheplay_free:
 		bic status, status, #1                     @ Clear Bit[0]
 		str status, STS32_STATUS
 
 		mov addr_code, #0
-		mov length, #0
 
 		str addr_code, STS32_CODE
-		str length, STS32_LENGTH
+		str addr_code, STS32_LENGTH
 		str count, STS32_COUNT                     @ count is Already Zero
 		str repeat, STS32_REPEAT                   @ repeat is Already Zero
 
 		str addr_code, STS32_SYNTHEWAVE_FREQA_L
 		str addr_code, STS32_SYNTHEWAVE_FREQB_L
-		str addr_code, STS32_SYNTHEWAVE_MAGA_L
-		str addr_code, STS32_SYNTHEWAVE_MAGB_L
+		str addr_code, STS32_SYNTHEWAVE_AMPA_L
+		str addr_code, STS32_SYNTHEWAVE_AMPB_L
 		str addr_code, STS32_SYNTHEWAVE_FREQA_R
 		str addr_code, STS32_SYNTHEWAVE_FREQB_R
-		str addr_code, STS32_SYNTHEWAVE_MAGA_R
-		str addr_code, STS32_SYNTHEWAVE_MAGB_R
+		str addr_code, STS32_SYNTHEWAVE_AMPA_R
+		str addr_code, STS32_SYNTHEWAVE_AMPB_R
 
 		b sts32_syntheplay_success
 
@@ -921,16 +918,20 @@ sts32_syntheplay:
 
 	sts32_syntheplay_common:
 		vpop {s0-s4}
-		pop {r4-r7,pc}
+		pop {r4-r11,pc}
 
 .unreq addr_code
-.unreq length
+.unreq offset_param
 .unreq count
 .unreq repeat
 .unreq status
 .unreq code
 .unreq temp
 .unreq fraction
+.unreq voices
+.unreq addr_param
+.unreq num_voices
+.unreq offset_code
 .unreq vfp_temp
 .unreq vfp_pi_double
 .unreq vfp_max
@@ -969,12 +970,12 @@ sts32_syntheclear:
 
 	str temp, STS32_SYNTHEWAVE_FREQA_L
 	str temp, STS32_SYNTHEWAVE_FREQB_L
-	str temp, STS32_SYNTHEWAVE_MAGA_L
-	str temp, STS32_SYNTHEWAVE_MAGB_L
+	str temp, STS32_SYNTHEWAVE_AMPA_L
+	str temp, STS32_SYNTHEWAVE_AMPB_L
 	str temp, STS32_SYNTHEWAVE_FREQA_R
 	str temp, STS32_SYNTHEWAVE_FREQB_R
-	str temp, STS32_SYNTHEWAVE_MAGA_R
-	str temp, STS32_SYNTHEWAVE_MAGB_R
+	str temp, STS32_SYNTHEWAVE_AMPA_R
+	str temp, STS32_SYNTHEWAVE_AMPB_R
 
 	sts32_syntheclear_success:
 		macro32_dsb ip

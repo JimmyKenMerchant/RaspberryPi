@@ -26,12 +26,12 @@
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Lower Bit[16-3] Frequency-A (Main): 0 to 16383 Hz
- * Lower Bit[31-17] Magnitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB, Should Be -8192 to 8191 in PWM Output
+ * Lower Bit[31-17] Amplitude-A = Volume: -16384 to 16383, Minus for Inverted Wave, Absolute 16383 is Appx. 0dB, Should Be -8192 to 8191 in PWM Output
  * Higher Bit[2-0] Decimal Part of Frequency-B (Sub): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
  * Higher Bit[16-3] Frequency-B (Sub): 0 to 16383 Hz
- * Higher Bit[31-17] Magnitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
+ * Higher Bit[31-17] Amplitude-B: 0 to 32767, 1 is 2Pi/32767, 32767 is 2Pi
  * The wave is synthesized the formula:
- * Amplitude on T = Magnitude-A * sin((T * (2Pi * Frequency-A)) + Magnitude-B * sin(T * (2Pi * Frequency-B))).
+ * Amplitude on T = Amplitude-A * sin((T * (2Pi * Frequency-A)) + Amplitude-B * sin(T * (2Pi * Frequency-B))).
  * Where T is time (seconds); one is 1/sampling-rate seconds.
  * This type of synthesis is named as "Frequency Modulation Synthesis" developed by John Chowning in 1973, so to speak, a brief formula of Fourier series.
  * 0x00,0x00 (zeros on lower and higher) means End of Synthesizer Code.
@@ -729,7 +729,7 @@ int32 _user_start()
 
 				}
 
-				result = _syntheplay();
+				result = _syntheplay( 2 );
 				if ( result == 0 ) { // Playing
 					playing_signal = _GPIOTOGGLE_HIGH;
 				} else { // Not Playing

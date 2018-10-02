@@ -239,7 +239,7 @@ __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length,
 	return result;
 }
 
-__attribute__((noinline)) uint32 _syntheplay()
+__attribute__((noinline)) uint32 _syntheplay( uint32 number_voices )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x23");

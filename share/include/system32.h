@@ -1361,7 +1361,7 @@ __attribute__((noinline)) uint32 _synthewave_i2s( float32 bend_rate );
 
 __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length, uint32 count, int32 repeat );
 
-__attribute__((noinline)) uint32 _syntheplay();
+__attribute__((noinline)) uint32 _syntheplay( uint32 number_voices );
 
 __attribute__((noinline)) uint32 _syntheclear();
 
