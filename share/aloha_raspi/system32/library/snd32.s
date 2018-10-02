@@ -1886,7 +1886,6 @@ SND32_SOUNDMIDI_COUNT:          .word 0x00
 SND32_SOUNDMIDI_LENGTH:         .word 0x00
 SND32_SOUNDMIDI_BUFFER:         .word 0x00  @ Second Buffer to Store Outstanding MIDI Message
 SND32_SOUNDMIDI_BYTEBUFFER:     .word _SND32_SOUNDMIDI_BYTEBUFFER
-_SND32_SOUNDMIDI_BYTEBUFFER:    .word 0x00  @ First Buffer to Receive A Byte from UART
 SND32_SOUNDMIDI_BASEOFFSET:     .word equ32_snd32_soundmidi_sound0_baseoffset
 SND32_SOUNDMIDI_LOWNOTE:        .word equ32_snd32_soundmidi_sound0_lownote
 SND32_SOUNDMIDI_HIGHNOTE:       .word equ32_snd32_soundmidi_sound0_highnote
@@ -1901,6 +1900,7 @@ SND32_MODULATION_MIN_ADDR:      .word SND32_MODULATION_MIN
 SND32_MODULATION_RANGE_ADDR:    .word SND32_MODULATION_RANGE
 
 .section	.data
+_SND32_SOUNDMIDI_BYTEBUFFER:    .word 0x00  @ First Buffer to Receive A Byte from UART
 .globl SND32_VIRTUAL_PARALLEL
 SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
 .globl SND32_DIVISOR

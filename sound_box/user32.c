@@ -336,12 +336,14 @@ int32 _user_start()
 {
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
-	uint32 loop_countdown = loop_countdown_default;
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
 	bool mode_soundplay;
 	uint32 delta_multiplier;
+
+	/* Use Signed Integer to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
+	int32 loop_countdown = loop_countdown_default;
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );

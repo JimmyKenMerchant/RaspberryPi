@@ -19,17 +19,7 @@
 /**
  * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on GPCLK1).
  * A set of 2400 beats (= delta times) is 60BPM on 2400HZ (one delta time is 1/2400 seconds).
- */
-
-/**
- * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on Arm Timer beacause of toggling).
- * A set of 2400 beats (= delta times) is 60BPM on 2400HZ (one delta time is 1/2400 seconds).
- * Arm Timer sets 480000Hz as clock.
- * 100 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 480000Hz / 100 / 2 equals 2400Hz (60BPM).
- * The Maximum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 9600Hz (240BPM).
- * The minimum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 1200Hz (30BPM).
- *
- * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _syntheset.
+ * BPM is controlled with a table in "user32_tempo.h"
  */
 
 /**
@@ -522,6 +512,12 @@ synthe_precode pre_synthe16_r[] = {
 };
 
 
+/* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
+int32 tempo_count = tempo_count_default;
+int32 tempo_count_reload = tempo_count_default;
+int32 tempo = tempo_default;
+
+
 int32 _user_start()
 {
 
@@ -562,10 +558,10 @@ int32 _user_start()
 	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
 
-	uint32 tempo_count = tempo_count_default;
-	uint32 tempo_count_reload = tempo_count_default;
-	int32 tempo = tempo_default;
-	int32 tempo_table_offset;
+	tempo_count = tempo_count_default;
+	tempo_count_reload = tempo_count_default;
+	tempo = tempo_default;
+
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
@@ -586,164 +582,152 @@ int32 _user_start()
 #endif
 		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
 
-			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
-			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			if ( STS32_VIRTUAL_PARALLEL ) {
-				detect_parallel |= STS32_VIRTUAL_PARALLEL<<22;
-				STS32_VIRTUAL_PARALLEL = 0;
-			}
+			tempo_count--; // Decrement Counter
+			if ( tempo_count <= 0 ) { // If Reaches Zero
+
+				detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
+				_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+				if ( STS32_VIRTUAL_PARALLEL ) {
+					detect_parallel |= STS32_VIRTUAL_PARALLEL<<22;
+					STS32_VIRTUAL_PARALLEL = 0;
+				}
 
 //print32_debug( detect_parallel, 100, 100 );
 
-			/* GPIO22-26 as Bit[26:22] */
-			// 0b00001 (1)
-			if ( detect_parallel == 0b00001<<22 ) {
-				_syntheset( synthe1, synthelen1, 0, 1 );
-				//_syntheclear();
+				/* GPIO22-26 as Bit[26:22] */
+				// 0b00001 (1)
+				if ( detect_parallel == 0b00001<<22 ) {
+					_syntheset( synthe1, synthelen1, 0, 1 );
 
-			// 0b00010 (2)
-			} else if ( detect_parallel == 0b00010<<22 ) {
-				_syntheset( synthe2, synthelen2, 0, -1 );
-				/* Beat Up */
-				//timer_count_multiplier--;
-				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				// 0b00010 (2)
+				} else if ( detect_parallel == 0b00010<<22 ) {
+					_syntheset( synthe2, synthelen2, 0, -1 );
 
+				// 0b00011 (3)
+				} else if ( detect_parallel == 0b00011<<22 ) {
+					_syntheset( synthe3, synthelen3, 0, -1 );
 
-			// 0b00011 (3)
-			} else if ( detect_parallel == 0b00011<<22 ) {
-				_syntheset( synthe3, synthelen3, 0, -1 );
+				// 0b00100 (4)
+				} else if ( detect_parallel == 0b00100<<22 ) {
+					_syntheset( synthe4, synthelen4, 0, -1 );
 
-			// 0b00100 (4)
-			} else if ( detect_parallel == 0b00100<<22 ) {
-				_syntheset( synthe4, synthelen4, 0, -1 );
-				/* Beat Down */
-				//timer_count_multiplier++;
-				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
+				// 0b00101 (5)
+				} else if ( detect_parallel == 0b00101<<22 ) {
+					_syntheset( synthe5, synthelen5, 0, -1 );
 
-			// 0b00101 (5)
-			} else if ( detect_parallel == 0b00101<<22 ) {
-				_syntheset( synthe5, synthelen5, 0, -1 );
+				// 0b00110 (6)
+				} else if ( detect_parallel == 0b00110<<22 ) {
+					_syntheset( synthe6, synthelen6, 0, -1 );
 
-			// 0b00110 (6)
-			} else if ( detect_parallel == 0b00110<<22 ) {
-				_syntheset( synthe6, synthelen6, 0, -1 );
+				// 0b00111 (7)
+				} else if ( detect_parallel == 0b00111<<22 ) {
+					_syntheset( synthe7, synthelen7, 0, -1 );
 
-			// 0b00111 (7)
-			} else if ( detect_parallel == 0b00111<<22 ) {
-				_syntheset( synthe7, synthelen7, 0, -1 );
+				// 0b01000 (8)
+				} else if ( detect_parallel == 0b01000<<22 ) {
+					_syntheset( synthe8, synthelen8, 0, -1 );
 
-			// 0b01000 (8)
-			} else if ( detect_parallel == 0b01000<<22 ) {
-				_syntheset( synthe8, synthelen8, 0, -1 );
+				// 0b01001 (9)
+				} else if ( detect_parallel == 0b01001<<22 ) {
+					_syntheclear();
 
-			// 0b01001 (9)
-			} else if ( detect_parallel == 0b01001<<22 ) {
-				_syntheclear();
+				// 0b01010 (10)
+				} else if ( detect_parallel == 0b01010<<22 ) {
+					_syntheclear();
 
-			// 0b01010 (10)
-			} else if ( detect_parallel == 0b01010<<22 ) {
-				_syntheclear();
+				// 0b01011 (11)
+				} else if ( detect_parallel == 0b01011<<22 ) {
+					_syntheclear();
 
-			// 0b01011 (11)
-			} else if ( detect_parallel == 0b01011<<22 ) {
-				_syntheclear();
+				// 0b01100 (12)
+				} else if ( detect_parallel == 0b01100<<22 ) {
+					_syntheclear();
 
-			// 0b01100 (12)
-			} else if ( detect_parallel == 0b01100<<22 ) {
-				_syntheclear();
+				// 0b01101 (13)
+				} else if ( detect_parallel == 0b01101<<22 ) {
+					_syntheclear();
 
-			// 0b01101 (13)
-			} else if ( detect_parallel == 0b01101<<22 ) {
-				_syntheclear();
+				// 0b01110 (14)
+				} else if ( detect_parallel == 0b01110<<22 ) {
+					_syntheclear();
 
-			// 0b01110 (14)
-			} else if ( detect_parallel == 0b01110<<22 ) {
-				_syntheclear();
+				// 0b01111 (15)
+				} else if ( detect_parallel == 0b01111<<22 ) {
+					_syntheclear();
 
-			// 0b01111 (15)
-			} else if ( detect_parallel == 0b01111<<22 ) {
-				_syntheclear();
+				// 0b10000 (16)
+				} else if ( detect_parallel == 0b10000<<22 ) {
+					_syntheset( synthe16, synthelen16, 0, -1 );
 
-			// 0b10000 (16)
-			} else if ( detect_parallel == 0b10000<<22 ) {
-				_syntheset( synthe16, synthelen16, 0, -1 );
+				// 0b10001 (17)
+				} else if ( detect_parallel == 0b10001<<22 ) {
+					_syntheclear();
 
-			// 0b10001 (17)
-			} else if ( detect_parallel == 0b10001<<22 ) {
-				_syntheclear();
+				// 0b10010 (18)
+				} else if ( detect_parallel == 0b10010<<22 ) {
+					_syntheclear();
 
-			// 0b10010 (18)
-			} else if ( detect_parallel == 0b10010<<22 ) {
-				_syntheclear();
+				// 0b10011 (19)
+				} else if ( detect_parallel == 0b10011<<22 ) {
+					_syntheclear();
 
-			// 0b10011 (19)
-			} else if ( detect_parallel == 0b10011<<22 ) {
-				_syntheclear();
+				// 0b10100 (20)
+				} else if ( detect_parallel == 0b10100<<22 ) {
+					_syntheclear();
 
-			// 0b10100 (20)
-			} else if ( detect_parallel == 0b10100<<22 ) {
-				_syntheclear();
+				// 0b10101 (21)
+				} else if ( detect_parallel == 0b10101<<22 ) {
+					_syntheclear();
 
-			// 0b10101 (21)
-			} else if ( detect_parallel == 0b10101<<22 ) {
-				_syntheclear();
+				// 0b10110 (22)
+				} else if ( detect_parallel == 0b10110<<22 ) {
+					_syntheclear();
 
-			// 0b10110 (22)
-			} else if ( detect_parallel == 0b10110<<22 ) {
-				_syntheclear();
+				// 0b10111 (23)
+				} else if ( detect_parallel == 0b10111<<22 ) {
+					_syntheclear();
 
-			// 0b10111 (23)
-			} else if ( detect_parallel == 0b10111<<22 ) {
-				_syntheclear();
+				// 0b11000 (24)
+				} else if ( detect_parallel == 0b11000<<22 ) {
+					_syntheclear();
 
-			// 0b11000 (24)
-			} else if ( detect_parallel == 0b11000<<22 ) {
-				_syntheclear();
+				// 0b11001 (25)
+				} else if ( detect_parallel == 0b11001<<22 ) {
+					_syntheclear();
 
-			// 0b11001 (25)
-			} else if ( detect_parallel == 0b11001<<22 ) {
-				_syntheclear();
+				// 0b11010 (26)
+				} else if ( detect_parallel == 0b11010<<22 ) {
+					_syntheclear();
 
-			// 0b11010 (26)
-			} else if ( detect_parallel == 0b11010<<22 ) {
-				_syntheclear();
+				// 0b11011 (27)
+				} else if ( detect_parallel == 0b11011<<22 ) {
+					_syntheclear();
 
-			// 0b11011 (27)
-			} else if ( detect_parallel == 0b11011<<22 ) {
-				_syntheclear();
+				// 0b11100 (28)
+				} else if ( detect_parallel == 0b11100<<22 ) {
+					_syntheclear();
 
-			// 0b11100 (28)
-			} else if ( detect_parallel == 0b11100<<22 ) {
-				_syntheclear();
+				// 0b11101 (29)
+				} else if ( detect_parallel == 0b11101<<22 ) {
+					/* Beat Up */
+					tempo++;
+					if ( tempo > tempo_max ) tempo = tempo_max;
+					_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
+					tempo_count_reload = tempo_table[(tempo<<1) + 1];
 
-			// 0b11101 (29)
-			} else if ( detect_parallel == 0b11101<<22 ) {
-				/* Beat Up */
-				tempo++;
-				if ( tempo > tempo_max ) tempo = tempo_max;
-				tempo_table_offset = tempo<<1;
-				_clockmanager_divisor( _cm_gp1, tempo_table[tempo_table_offset] );
-				tempo_count_reload = tempo_table[tempo_table_offset + 1];
+				// 0b11110 (30)
+				} else if ( detect_parallel == 0b11110<<22 ) {
+					/* Beat Down */
+					tempo--;
+					if ( tempo < 0 ) tempo = 0;
+					_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
+					tempo_count_reload = tempo_table[(tempo<<1) + 1];
 
-			// 0b11110 (30)
-			} else if ( detect_parallel == 0b11110<<22 ) {
-				/* Beat Down */
-				tempo--;
-				if ( tempo < 0 ) tempo = 0;
-				tempo_table_offset = tempo<<1;
-				_clockmanager_divisor( _cm_gp1, tempo_table[tempo_table_offset] );
-				tempo_count_reload = tempo_table[tempo_table_offset + 1];
+				// 0b11111 (31)
+				} else if ( detect_parallel == 0b11111<<22 ) {
+					_syntheclear();
 
-			// 0b11111 (31)
-			} else if ( detect_parallel == 0b11111<<22 ) {
-				_syntheclear();
-
-			}
-
-			tempo_count--; // Decrement Counter
-			if ( tempo_count <= 0 ) { // If Reaches Zero
+				}
 
 				result = _syntheplay();
 				if ( result == 0 ) { // Playing
