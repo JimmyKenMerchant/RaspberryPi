@@ -35,8 +35,10 @@ STS32_STATUS:             .word 0x00
 
 /**
  * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
- * Bit[3:0] L
- * Bit[7:4] R
+ * Bit[3:0] Voice L1
+ * Bit[7:4] Voice R1
+ * Bit[11:8] Voice L2
+ * Bit[15:12] Voice R2
  */
 STS32_VOICES:             .word 0x00
 
@@ -93,7 +95,7 @@ STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
  *
  * Parameters
  * r0: Pitch Bend Rate, Must Be Single Precision Float
- * r1: Number of Voices on Each R or L, Must Be Unsigned Integer
+ * r1: Number of Voices, A Multiple of 2
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Reserved
@@ -106,6 +108,11 @@ sts32_synthewave_pwm:
 	time           .req r1
 	temp           .req r2
 	flag_rl        .req r3
+	num_voices     .req r4
+	status_voices  .req r5
+	voices         .req r6
+	addr_param     .req r7
+	offset_param   .req r8
 
 	/* VFP Registers */
 	vfp_temp       .req s0
@@ -118,29 +125,31 @@ sts32_synthewave_pwm:
 	vfp_time       .req s7
 	vfp_divisor    .req s8
 	vfp_bend       .req s9
+	vfp_sum        .req s10
 
-	push {lr}
-	vpush {s0-s9}
+	push {r4-r8,lr}
+	vpush {s0-s10}
 
 	vmov vfp_bend, memorymap_base
+	mov num_voices, time
+	lsr num_voices, num_voices, #1
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
+	/* Check Wether Already Full on FIFO Stack */
 	ldr temp, [memorymap_base, #equ32_pwm_sta]
 	tst temp, #equ32_pwm_sta_full1
-	bne sts32_synthewave_pwm_error2
+	bne sts32_synthewave_pwm_error1
 
-	/* Get RL Flag */
-	ldr flag_rl, STS32_SYNTHEWAVE_RL
+	/* Get Pointer of Parameters */
+	ldr addr_param, STS32_SYNTHEWAVE_PARAM
 
-	ldr temp, STS32_STATUS
-	/*
-	tst temp, #1
-	beq sts32_synthewave_pwm_error1
-	*/
+	/* Get Voices Status */
+	ldr status_voices, STS32_VOICES
 
+	/* Get Time (Seconds) */
 	ldr time, STS32_SYNTHEWAVE_TIME
 	vmov vfp_time, time
 	vcvt.f32.u32 vfp_time, vfp_time
@@ -149,14 +158,18 @@ sts32_synthewave_pwm:
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
 	vmul.f32 vfp_samplerate, vfp_samplerate, vfp_bend          @ Multiply Pitch Bend Rate to Sample Rate
+
+	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
+	/* Get Double PI */
 	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
 
+	/* Divisor of Amplitude Only for PWM Output */
 	vldr vfp_divisor, sts32_synthewave_pwm_divisor
 
-	/* Get Time (Seconds) */
-	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
-
+	/* Get RL Flag Only for PWM Output */
+	ldr flag_rl, STS32_SYNTHEWAVE_RL
 	tst flag_rl, #1
 	bne sts32_synthewave_pwm_loop_l
 
@@ -331,25 +344,7 @@ sts32_synthewave_pwm:
 				b sts32_synthewave_pwm_loop
 
 	sts32_synthewave_pwm_error1:
-		ldr temp, [memorymap_base, #equ32_pwm_sta]
-		tst temp, #equ32_pwm_sta_full1
-		bne sts32_synthewave_pwm_error1_common
-
-		mov temp, #equ32_sts32_synthewave_pwm_bias
-		str temp, [memorymap_base, #equ32_pwm_fif1]
-
-		macro32_dsb ip
-
-		eor flag_rl, flag_rl, #1
-		b sts32_synthewave_pwm_error1
-
-		sts32_synthewave_pwm_error1_common:
-			str flag_rl, STS32_SYNTHEWAVE_RL
-			mov r0, #1
-			b sts32_synthewave_pwm_common
-
-	sts32_synthewave_pwm_error2:
-		mov r0, #2
+		mov r0, #1
 		b sts32_synthewave_pwm_common
 
 	sts32_synthewave_pwm_success:
@@ -358,13 +353,18 @@ sts32_synthewave_pwm:
 		mov r0, #0
 
 	sts32_synthewave_pwm_common:
-		vpop {s0-s9}
-		pop {pc}
+		vpop {s0-s10}
+		pop {r4-r8,pc}
 
 .unreq memorymap_base
 .unreq time
 .unreq temp
 .unreq flag_rl
+.unreq num_voices
+.unreq status_voices
+.unreq voices
+.unreq addr_param
+.unreq offset_param
 .unreq vfp_temp
 .unreq vfp_freq_a
 .unreq vfp_freq_b
@@ -375,6 +375,7 @@ sts32_synthewave_pwm:
 .unreq vfp_time
 .unreq vfp_divisor
 .unreq vfp_bend
+.unreq vfp_sum
 
 sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
 
@@ -385,7 +386,7 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
  *
  * Parameters
  * r0: Pitch Bend Rate, Must Be Single Precision Float
- * r1: Number of Voices on Each R or L, Must Be Unsigned Integer
+ * r1: Number of Voices, A Multiple of 2
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Reserved

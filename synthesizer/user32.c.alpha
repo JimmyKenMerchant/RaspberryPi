@@ -312,13 +312,13 @@ int32 _user_start()
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s( bend_rate );
+		_synthewave_i2s( bend_rate, 2 );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm( bend_rate );
+		_synthewave_pwm( bend_rate, 2 );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm( bend_rate );
+		_synthewave_pwm( bend_rate, 2 );
 #endif
 		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
 
