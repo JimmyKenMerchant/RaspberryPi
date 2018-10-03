@@ -46,15 +46,6 @@ STS32_SYNTHEWAVE_TIME:    .word 0x00 @ One Equals 1/sampling-rate Seconds
 STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
 STS32_SYNTHEWAVE_PARAM:   .word STS32_SYNTHEWAVE_FREQA_L
 
-STS32_SYNTHEWAVE_FREQA_L: .word 0x00
-STS32_SYNTHEWAVE_AMPA_L:  .word 0x00
-STS32_SYNTHEWAVE_FREQB_L: .word 0x00
-STS32_SYNTHEWAVE_AMPB_L:  .word 0x00
-STS32_SYNTHEWAVE_FREQA_R: .word 0x00
-STS32_SYNTHEWAVE_AMPA_R:  .word 0x00
-STS32_SYNTHEWAVE_FREQB_R: .word 0x00
-STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
-
 /**
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
@@ -97,9 +88,8 @@ STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
  * r0: Pitch Bend Rate, Must Be Single Precision Float
  * r1: Number of Voices, A Multiple of 2
  *
- * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Reserved
- * Error(2): PCM FIFO is Full
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): PWM FIFO is Already Full
  */
 .globl sts32_synthewave_pwm
 sts32_synthewave_pwm:
@@ -132,7 +122,7 @@ sts32_synthewave_pwm:
 
 	vmov vfp_bend, memorymap_base
 	mov num_voices, time
-	lsr num_voices, num_voices, #1
+	lsr num_voices, num_voices, #1                             @ Divide by 2
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
@@ -171,38 +161,63 @@ sts32_synthewave_pwm:
 	/* Get RL Flag Only for PWM Output */
 	ldr flag_rl, STS32_SYNTHEWAVE_RL
 	tst flag_rl, #1
-	bne sts32_synthewave_pwm_loop_l
+	bne sts32_synthewave_pwm_loop_lfifo
 
 	/**
 	 * Amplitude on T = Amplitude-A * sin((T * (2Pi * Frequency-A)) + Amplitude-B * sin(T * (2Pi * Frequency-B))).
 	 * Where T is time (seconds); one is 1/sampling-rate seconds.
 	 */
 	sts32_synthewave_pwm_loop:
+		/* Check FIFO Stack for R */
 		ldr temp, [memorymap_base, #equ32_pwm_sta]
 		tst temp, #equ32_pwm_sta_full1
 		bne sts32_synthewave_pwm_success
 
-		/* R Wave */
+		mov voices, #0
 
-		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
-		ldr temp, STS32_SYNTHEWAVE_FREQB_R
+		/* Clear Summation to Zero */
+		vmov vfp_sum, voices
+
+	/* R Wave */
+	sts32_synthewave_pwm_loop_r:
+		cmp voices, num_voices
+		bge sts32_synthewave_pwm_loop_r_common
+
+		/* If Status of The Voice Is Inactive, Pass Through */
+		lsl offset_param, voices, #3                @ Multiply by 8
+		add offset_param, offset_param, #4
+		mov temp, #0xF
+		lsl temp, temp, offset_param
+		tst status_voices, temp
+		addeq voices, voices, #1
+		beq sts32_synthewave_pwm_loop_r
+
+		lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
+		add offset_param, offset_param, #16         @ Add 16, 16 Bytes (Four Words) Offset for R
+		add offset_param, addr_param, offset_param
+
+		vldr vfp_freq_a, [offset_param]             @ Main Frequency
+		add offset_param, offset_param, #4
+		vldr vfp_mag_a, [offset_param]              @ Main Amplitude
+		add offset_param, offset_param, #4
+		ldr temp, [offset_param]                    @ Sub Frequency
+		add offset_param, offset_param, #4
 		vmov vfp_freq_b, temp
-		vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_R
-		vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_R
+		vldr vfp_mag_b, [offset_param]              @ Sub Amplitude
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
 
 		/* Check Noise */
 		cmp temp, #0
-		beq sts32_synthewave_pwm_loop_rnoise
+		beq sts32_synthewave_pwm_loop_r_noise
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 
-		b sts32_synthewave_pwm_loop_rcommon
+		b sts32_synthewave_pwm_loop_r_calc
 
-		sts32_synthewave_pwm_loop_rnoise:
+		sts32_synthewave_pwm_loop_r_noise:
 
 			push {r0-r3}
 			mov r0, #255
@@ -212,7 +227,7 @@ sts32_synthewave_pwm:
 
 			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 
-		sts32_synthewave_pwm_loop_rcommon:
+		sts32_synthewave_pwm_loop_r_calc:
 
 			/* Round Radian within 2Pi */
 			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -244,29 +259,57 @@ sts32_synthewave_pwm:
 			pop {r0-r3}
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-			vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
-			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-			vmov temp, vfp_freq_a
-			add temp, temp, #equ32_sts32_synthewave_pwm_bias
+			vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
 
+			add voices, voices, #1
+			b sts32_synthewave_pwm_loop_r
+
+		sts32_synthewave_pwm_loop_r_common:
+			vdiv.f32 vfp_sum, vfp_sum, vfp_divisor
+			vcvtr.s32.f32 vfp_sum, vfp_sum
+			vmov temp, vfp_sum
+			add temp, temp, #equ32_sts32_synthewave_pwm_bias
 			str temp, [memorymap_base, #equ32_pwm_fif1]
 
 			macro32_dsb ip
 
 			mov flag_rl, #1
 
-		/* L Wave */
-
-		sts32_synthewave_pwm_loop_l:
+		sts32_synthewave_pwm_loop_lfifo:
+			/* Check FIFO Stack for L */
 			ldr temp, [memorymap_base, #equ32_pwm_sta]
 			tst temp, #equ32_pwm_sta_full1
 			bne sts32_synthewave_pwm_success
 
-			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
-			ldr temp, STS32_SYNTHEWAVE_FREQB_L
+			mov voices, #0
+
+			/* Clear Summation to Zero */
+			vmov vfp_sum, voices
+
+		/* L Wave */
+		sts32_synthewave_pwm_loop_l:
+			cmp voices, num_voices
+			bge sts32_synthewave_pwm_loop_l_common
+
+			/* If Status of The Voice Is Inactive, Pass Through */
+			lsl offset_param, voices, #3                @ Multiply by 8
+			mov temp, #0xF
+			lsl temp, temp, offset_param
+			tst status_voices, temp
+			addeq voices, voices, #1
+			beq sts32_synthewave_pwm_loop_l
+
+			lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
+			add offset_param, addr_param, offset_param
+
+			vldr vfp_freq_a, [offset_param]             @ Main Frequency
+			add offset_param, offset_param, #4
+			vldr vfp_mag_a, [offset_param]              @ Main Amplitude
+			add offset_param, offset_param, #4
+			ldr temp, [offset_param]                    @ Sub Frequency
+			add offset_param, offset_param, #4
 			vmov vfp_freq_b, temp
-			vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_L
-			vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_L
+			vldr vfp_mag_b, [offset_param]              @ Sub Amplitude
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
@@ -278,7 +321,7 @@ sts32_synthewave_pwm:
 			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 
-			b sts32_synthewave_pwm_loop_l_common
+			b sts32_synthewave_pwm_loop_l_calc
 
 			sts32_synthewave_pwm_loop_l_noise:
 
@@ -290,7 +333,7 @@ sts32_synthewave_pwm:
 
 				vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 
-			sts32_synthewave_pwm_loop_l_common:
+			sts32_synthewave_pwm_loop_l_calc:
 
 				/* Round Radian within 2Pi */
 				vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -322,9 +365,15 @@ sts32_synthewave_pwm:
 				pop {r0-r3}
 
 				vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-				vdiv.f32 vfp_freq_a, vfp_freq_a, vfp_divisor
-				vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-				vmov temp, vfp_freq_a
+				vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
+
+				add voices, voices, #1
+				b sts32_synthewave_pwm_loop_l
+
+			sts32_synthewave_pwm_loop_l_common:
+				vdiv.f32 vfp_sum, vfp_sum, vfp_divisor
+				vcvtr.s32.f32 vfp_sum, vfp_sum
+				vmov temp, vfp_sum
 				add temp, temp, #equ32_sts32_synthewave_pwm_bias
 				str temp, [memorymap_base, #equ32_pwm_fif1]
 
@@ -388,9 +437,8 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
  * r0: Pitch Bend Rate, Must Be Single Precision Float
  * r1: Number of Voices, A Multiple of 2
  *
- * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Reserved
- * Error(2): PCM FIFO is Full
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): PCM FIFO is Full
  */
 .globl sts32_synthewave_i2s
 sts32_synthewave_i2s:
@@ -398,7 +446,12 @@ sts32_synthewave_i2s:
 	memorymap_base .req r0
 	time           .req r1
 	temp           .req r2
-	temp2          .req r3
+	value          .req r3
+	num_voices     .req r4
+	status_voices  .req r5
+	voices         .req r6
+	addr_param     .req r7
+	offset_param   .req r8
 
 	/* VFP Registers */
 	vfp_temp       .req s0
@@ -410,26 +463,31 @@ sts32_synthewave_i2s:
 	vfp_samplerate .req s6
 	vfp_time       .req s7
 	vfp_bend       .req s8
+	vfp_sum        .req s9
 
-	push {lr}
-	vpush {s0-s8}
-
-	ldr temp, STS32_STATUS
-	/*
-	tst temp, #1
-	beq sts32_synthewave_i2s_error1
-	*/
+	push {r4-r8,lr}
+	vpush {s0-s9}
 
 	vmov vfp_bend, memorymap_base
+	mov num_voices, time
+	lsr num_voices, num_voices, #1                             @ Divide by 2
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
 	add memorymap_base, memorymap_base, #equ32_pcm_base_upper
 
+	/* Check Wether Already Full on FIFO Stack */
 	ldr temp, [memorymap_base, #equ32_pcm_cs]
 	tst temp, #equ32_pcm_cs_txw
-	beq sts32_synthewave_i2s_error2
+	beq sts32_synthewave_i2s_error1
 
+	/* Get Pointer of Parameters */
+	ldr addr_param, STS32_SYNTHEWAVE_PARAM
+
+	/* Get Voices Status */
+	ldr status_voices, STS32_VOICES
+
+	/* Get Time (Seconds) */
 	ldr time, STS32_SYNTHEWAVE_TIME
 	vmov vfp_time, time
 	vcvt.f32.u32 vfp_time, vfp_time
@@ -438,42 +496,68 @@ sts32_synthewave_i2s:
 	vmov vfp_samplerate, temp
 	vcvt.f32.u32 vfp_samplerate, vfp_samplerate
 	vmul.f32 vfp_samplerate, vfp_samplerate, vfp_bend          @ Multiply Pitch Bend Rate to Sample Rate
+
+	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
+	/* Get Double PI */
 	ldr temp, sts32_synthewave_MATH32_PI_DOUBLE
 	vldr vfp_pi_double, [temp]
-
-	/* Get Time (Seconds) */
-	vdiv.f32 vfp_time, vfp_time, vfp_samplerate
 
 	/**
 	 * Amplitude on T = Amplitude-A * sin((T * (2Pi * Frequency-A)) + Amplitude-B * sin(T * (2Pi * Frequency-B))).
 	 * Where T is time (seconds); one is 1/sampling-rate seconds.
 	 */
 	sts32_synthewave_i2s_loop:
+		/* Check FIFO Stack for R */
 		ldr temp, [memorymap_base, #equ32_pcm_cs]
 		tst temp, #equ32_pcm_cs_txw
 		beq sts32_synthewave_i2s_success
 
-		/* L Wave */
+		mov voices, #0
 
-		vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_L
-		ldr temp, STS32_SYNTHEWAVE_FREQB_L
+		/* Clear Summation to Zero */
+		vmov vfp_sum, voices
+
+	/* R Wave */
+	sts32_synthewave_i2s_loop_r:
+		cmp voices, num_voices
+		bge sts32_synthewave_i2s_loop_r_common
+
+		/* If Status of The Voice Is Inactive, Pass Through */
+		lsl offset_param, voices, #3                @ Multiply by 8
+		add offset_param, offset_param, #4
+		mov temp, #0xF
+		lsl temp, temp, offset_param
+		tst status_voices, temp
+		addeq voices, voices, #1
+		beq sts32_synthewave_i2s_loop_r
+
+		lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
+		add offset_param, offset_param, #16         @ Add 16, 16 Bytes (Four Words) Offset for R
+		add offset_param, addr_param, offset_param
+
+		vldr vfp_freq_a, [offset_param]             @ Main Frequency
+		add offset_param, offset_param, #4
+		vldr vfp_mag_a, [offset_param]              @ Main Amplitude
+		add offset_param, offset_param, #4
+		ldr temp, [offset_param]                    @ Sub Frequency
+		add offset_param, offset_param, #4
 		vmov vfp_freq_b, temp
-		vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_L
-		vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_L
+		vldr vfp_mag_b, [offset_param]              @ Sub Amplitude
 
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 		vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
 
 		/* Check Noise */
 		cmp temp, #0
-		beq sts32_synthewave_i2s_loop_lnoise
+		beq sts32_synthewave_i2s_loop_r_noise
 
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 		vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 
-		b sts32_synthewave_i2s_loop_lcommon
+		b sts32_synthewave_i2s_loop_r_calc
 
-		sts32_synthewave_i2s_loop_lnoise:
+		sts32_synthewave_i2s_loop_r_noise:
 
 			push {r0-r3}
 			mov r0, #255
@@ -483,7 +567,7 @@ sts32_synthewave_i2s:
 
 			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 
-		sts32_synthewave_i2s_loop_lcommon:
+		sts32_synthewave_i2s_loop_r_calc:
 
 			/* Round Radian within 2Pi */
 			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
@@ -515,100 +599,135 @@ sts32_synthewave_i2s:
 			pop {r0-r3}
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-			vmov temp, vfp_freq_a
+			vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
 
-			/* R Wave */
+			add voices, voices, #1
+			b sts32_synthewave_i2s_loop_r
 
-			vldr vfp_freq_a, STS32_SYNTHEWAVE_FREQA_R
-			ldr temp2, STS32_SYNTHEWAVE_FREQB_R
-			vmov vfp_freq_b, temp2
-			vldr vfp_mag_a, STS32_SYNTHEWAVE_AMPA_R
-			vldr vfp_mag_b, STS32_SYNTHEWAVE_AMPB_R
+		sts32_synthewave_i2s_loop_r_common:
+			vcvtr.s32.f32 vfp_sum, vfp_sum
+			vmov value, vfp_sum
+
+			/**
+			 * For L Wave
+		   	 */
+
+			mov voices, #0
+
+			/* Clear Summation to Zero */
+			vmov vfp_sum, voices
+
+		/* L Wave */
+		sts32_synthewave_i2s_loop_l:
+			cmp voices, num_voices
+			bge sts32_synthewave_i2s_loop_l_common
+
+			/* If Status of The Voice Is Inactive, Pass Through */
+			lsl offset_param, voices, #3                @ Multiply by 8
+			mov temp, #0xF
+			lsl temp, temp, offset_param
+			tst status_voices, temp
+			addeq voices, voices, #1
+			beq sts32_synthewave_i2s_loop_l
+
+			lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
+			add offset_param, addr_param, offset_param
+
+			vldr vfp_freq_a, [offset_param]             @ Main Frequency
+			add offset_param, offset_param, #4
+			vldr vfp_mag_a, [offset_param]              @ Main Amplitude
+			add offset_param, offset_param, #4
+			ldr temp, [offset_param]                    @ Sub Frequency
+			add offset_param, offset_param, #4
+			vmov vfp_freq_b, temp
+			vldr vfp_mag_b, [offset_param]              @ Sub Amplitude
 
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_pi_double
 			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_time
 
 			/* Check Noise */
-			cmp temp2, #0
-			beq sts32_synthewave_i2s_loop_rnoise
+			cmp temp, #0
+			beq sts32_synthewave_i2s_loop_l_noise
 
 			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_pi_double
 			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_time
 
-			b sts32_synthewave_i2s_loop_rcommon
+			b sts32_synthewave_i2s_loop_l_calc
 
-		sts32_synthewave_i2s_loop_rnoise:
+			sts32_synthewave_i2s_loop_l_noise:
 
-			push {r0-r3}
-			mov r0, #255
-			bl arm32_random
-			vmov vfp_freq_b, r0
-			pop {r0-r3}
+				push {r0-r3}
+				mov r0, #255
+				bl arm32_random
+				vmov vfp_freq_b, r0
+				pop {r0-r3}
 
-			vcvt.f32.u32 vfp_freq_b, vfp_freq_b
+				vcvt.f32.u32 vfp_freq_b, vfp_freq_b
 
-		sts32_synthewave_i2s_loop_rcommon:
+			sts32_synthewave_i2s_loop_l_calc:
 
-			/* Round Radian within 2Pi */
-			vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
-			vcvt.s32.f32 vfp_temp, vfp_temp
-			vcvt.f32.s32 vfp_temp, vfp_temp
-			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-			vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
+				/* Round Radian within 2Pi */
+				vdiv.f32 vfp_temp, vfp_freq_b, vfp_pi_double
+				vcvt.s32.f32 vfp_temp, vfp_temp
+				vcvt.f32.s32 vfp_temp, vfp_temp
+				vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+				vsub.f32 vfp_freq_b, vfp_freq_b, vfp_temp
 
-			push {r0-r3}
-			vmov r0, vfp_freq_b
-			bl math32_sin
-			vmov vfp_freq_b, r0
-			pop {r0-r3}
+				push {r0-r3}
+				vmov r0, vfp_freq_b
+				bl math32_sin
+				vmov vfp_freq_b, r0
+				pop {r0-r3}
 
-			vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
-			vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
+				vmul.f32 vfp_freq_b, vfp_freq_b, vfp_mag_b
+				vadd.f32 vfp_freq_a, vfp_freq_a, vfp_freq_b
 
-			/* Round Radian within 2Pi */
-			vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
-			vcvt.s32.f32 vfp_temp, vfp_temp
-			vcvt.f32.s32 vfp_temp, vfp_temp
-			vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
-			vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
+				/* Round Radian within 2Pi */
+				vdiv.f32 vfp_temp, vfp_freq_a, vfp_pi_double
+				vcvt.s32.f32 vfp_temp, vfp_temp
+				vcvt.f32.s32 vfp_temp, vfp_temp
+				vmul.f32 vfp_temp, vfp_temp, vfp_pi_double
+				vsub.f32 vfp_freq_a, vfp_freq_a, vfp_temp
 
-			push {r0-r3}
-			vmov r0, vfp_freq_a
-			bl math32_sin
-			vmov vfp_freq_a, r0
-			pop {r0-r3}
+				push {r0-r3}
+				vmov r0, vfp_freq_a
+				bl math32_sin
+				vmov vfp_freq_a, r0
+				pop {r0-r3}
 
-			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
-			vcvtr.s32.f32 vfp_freq_a, vfp_freq_a
-			vmov temp2, vfp_freq_a
+				vmul.f32 vfp_freq_a, vfp_freq_a, vfp_mag_a
+				vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
 
-			bic temp2, temp2, #0xFF000000
-			bic temp2, temp2, #0x00FF0000               @ Bit[15:0] for R
-			lsl temp, temp, #16                         @ Bit[31:16] for L
-			orr temp, temp, temp2
+				add voices, voices, #1
+				b sts32_synthewave_i2s_loop_l
 
-			str temp, [memorymap_base, #equ32_pcm_fifo]
+			sts32_synthewave_i2s_loop_l_common:
+				vcvtr.s32.f32 vfp_sum, vfp_sum
+				vmov temp, vfp_sum
 
-			macro32_dsb ip
+				bic value, value, #0xFF000000
+				bic value, value, #0x00FF0000               @ Bit[15:0] for R
 
-			add time, time, #1
-			cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz, Multiply Sample Rate by 8
-			movge time, #0
-			vmov vfp_time, time
-			vcvt.f32.u32 vfp_time, vfp_time
+				lsl temp, temp, #16                         @ Bit[31:16] for L
+				orr value, value, temp
 
-			/* Get Time (Seconds) */
-			vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+				str value, [memorymap_base, #equ32_pcm_fifo]
 
-			b sts32_synthewave_i2s_loop
+				macro32_dsb ip
+
+				add time, time, #1
+				cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz, Multiply Sample Rate by 8
+				movge time, #0
+				vmov vfp_time, time
+				vcvt.f32.u32 vfp_time, vfp_time
+
+				/* Get Time (Seconds) */
+				vdiv.f32 vfp_time, vfp_time, vfp_samplerate
+
+				b sts32_synthewave_i2s_loop
 
 	sts32_synthewave_i2s_error1:
 		mov r0, #1
-		b sts32_synthewave_i2s_common
-
-	sts32_synthewave_i2s_error2:
-		mov r0, #2
 		b sts32_synthewave_i2s_common
 
 	sts32_synthewave_i2s_success:
@@ -616,13 +735,18 @@ sts32_synthewave_i2s:
 		mov r0, #0
 
 	sts32_synthewave_i2s_common:
-		vpop {s0-s8}
-		pop {pc}
+		vpop {s0-s9}
+		pop {r4-r8,pc}
 
 .unreq memorymap_base
 .unreq time
 .unreq temp
-.unreq temp2
+.unreq value
+.unreq num_voices
+.unreq status_voices
+.unreq voices
+.unreq addr_param
+.unreq offset_param
 .unreq vfp_temp
 .unreq vfp_freq_a
 .unreq vfp_freq_b
@@ -632,6 +756,7 @@ sts32_synthewave_i2s:
 .unreq vfp_samplerate
 .unreq vfp_time
 .unreq vfp_bend
+.unreq vfp_sum
 
 sts32_synthewave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 
@@ -938,6 +1063,7 @@ sts32_syntheplay:
 
 		str status_voices, STS32_VOICES
 
+		/*
 		str addr_code, STS32_SYNTHEWAVE_FREQA_L
 		str addr_code, STS32_SYNTHEWAVE_FREQB_L
 		str addr_code, STS32_SYNTHEWAVE_AMPA_L
@@ -946,6 +1072,7 @@ sts32_syntheplay:
 		str addr_code, STS32_SYNTHEWAVE_FREQB_R
 		str addr_code, STS32_SYNTHEWAVE_AMPA_R
 		str addr_code, STS32_SYNTHEWAVE_AMPB_R
+		*/
 
 		b sts32_syntheplay_success
 
@@ -1034,6 +1161,7 @@ sts32_syntheclear:
 	str temp, STS32_COUNT_NEXT
 	str temp, STS32_REPEAT_NEXT
 
+	/*
 	str temp, STS32_SYNTHEWAVE_FREQA_L
 	str temp, STS32_SYNTHEWAVE_FREQB_L
 	str temp, STS32_SYNTHEWAVE_AMPA_L
@@ -1042,6 +1170,7 @@ sts32_syntheclear:
 	str temp, STS32_SYNTHEWAVE_FREQB_R
 	str temp, STS32_SYNTHEWAVE_AMPA_R
 	str temp, STS32_SYNTHEWAVE_AMPB_R
+	*/
 
 	sts32_syntheclear_success:
 		macro32_dsb ip
@@ -2062,7 +2191,6 @@ macro32_debug data1, 100, 100
 		mov r0, #0
 
 	sts32_synthemidi_common:
-		str status, STS32_STATUS
 		str count, STS32_SYNTHEMIDI_COUNT
 		macro32_dsb ip
 /*
@@ -2095,6 +2223,15 @@ STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
 _STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
 .globl STS32_VIRTUAL_PARALLEL
 STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
+STS32_SYNTHEWAVE_FREQA_L: .word 0x00
+STS32_SYNTHEWAVE_AMPA_L:  .word 0x00
+STS32_SYNTHEWAVE_FREQB_L: .word 0x00
+STS32_SYNTHEWAVE_AMPB_L:  .word 0x00
+STS32_SYNTHEWAVE_FREQA_R: .word 0x00
+STS32_SYNTHEWAVE_AMPA_R:  .word 0x00
+STS32_SYNTHEWAVE_FREQB_R: .word 0x00
+STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
+.space 32, 0x00
 .section	.library_system32
 
 
