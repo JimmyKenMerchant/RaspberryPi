@@ -39,6 +39,10 @@ STS32_STATUS:             .word 0x00
  * Bit[7:4] Voice R1
  * Bit[11:8] Voice L2
  * Bit[15:12] Voice R2
+ * Bit[19:16] Voice L3
+ * Bit[23:20] Voice R3
+ * Bit[27:24] Voice L4
+ * Bit[31:28] Voice R4
  */
 STS32_VOICES:             .word 0x00
 
@@ -122,6 +126,8 @@ sts32_synthewave_pwm:
 
 	vmov vfp_bend, memorymap_base
 	mov num_voices, time
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
 	lsr num_voices, num_voices, #1                             @ Divide by 2
 
 	mov memorymap_base, #equ32_peripherals_base
@@ -181,7 +187,7 @@ sts32_synthewave_pwm:
 	/* R Wave */
 	sts32_synthewave_pwm_loop_r:
 		cmp voices, num_voices
-		bge sts32_synthewave_pwm_loop_r_common
+		bhs sts32_synthewave_pwm_loop_r_common
 
 		/* If Status of The Voice Is Inactive, Pass Through */
 		lsl offset_param, voices, #3                @ Multiply by 8
@@ -289,7 +295,7 @@ sts32_synthewave_pwm:
 		/* L Wave */
 		sts32_synthewave_pwm_loop_l:
 			cmp voices, num_voices
-			bge sts32_synthewave_pwm_loop_l_common
+			bhs sts32_synthewave_pwm_loop_l_common
 
 			/* If Status of The Voice Is Inactive, Pass Through */
 			lsl offset_param, voices, #3                @ Multiply by 8
@@ -383,7 +389,7 @@ sts32_synthewave_pwm:
 
 				add time, time, #1
 				cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz, Multiply Sample Rate by 8
-				movge time, #0
+				movhs time, #0
 				vmov vfp_time, time
 				vcvt.f32.u32 vfp_time, vfp_time
 
@@ -470,6 +476,8 @@ sts32_synthewave_i2s:
 
 	vmov vfp_bend, memorymap_base
 	mov num_voices, time
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
 	lsr num_voices, num_voices, #1                             @ Divide by 2
 
 	mov memorymap_base, #equ32_peripherals_base
@@ -521,7 +529,7 @@ sts32_synthewave_i2s:
 	/* R Wave */
 	sts32_synthewave_i2s_loop_r:
 		cmp voices, num_voices
-		bge sts32_synthewave_i2s_loop_r_common
+		bhs sts32_synthewave_i2s_loop_r_common
 
 		/* If Status of The Voice Is Inactive, Pass Through */
 		lsl offset_param, voices, #3                @ Multiply by 8
@@ -610,7 +618,7 @@ sts32_synthewave_i2s:
 
 			/**
 			 * For L Wave
-		   	 */
+			 */
 
 			mov voices, #0
 
@@ -620,7 +628,7 @@ sts32_synthewave_i2s:
 		/* L Wave */
 		sts32_synthewave_i2s_loop_l:
 			cmp voices, num_voices
-			bge sts32_synthewave_i2s_loop_l_common
+			bhs sts32_synthewave_i2s_loop_l_common
 
 			/* If Status of The Voice Is Inactive, Pass Through */
 			lsl offset_param, voices, #3                @ Multiply by 8
@@ -717,7 +725,7 @@ sts32_synthewave_i2s:
 
 				add time, time, #1
 				cmp time, #equ32_sts32_samplerate<<3          @ To apply Up To 0.125Hz, Multiply Sample Rate by 8
-				movge time, #0
+				movhs time, #0
 				vmov vfp_time, time
 				vcvt.f32.u32 vfp_time, vfp_time
 
@@ -870,6 +878,8 @@ sts32_syntheplay:
 	vpush {s0-s4}
 
 	mov num_voices, addr_code
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
 
 	ldr addr_code, STS32_CODE
 	cmp addr_code, #0
@@ -1059,7 +1069,7 @@ sts32_syntheplay:
 			lsl temp, temp, voices
 			bic status_voices, status_voices, temp
 			cmp num_voices, #0
-			bgt sts32_syntheplay_free_voices
+			bhi sts32_syntheplay_free_voices
 
 		str status_voices, STS32_VOICES
 
@@ -1130,6 +1140,9 @@ sts32_syntheclear:
 	temp2      .req r2
 	temp3      .req r3
 
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
+
 	ldr temp, STS32_STATUS
 	bic temp, temp, #1                         @ Clear Bit[1]
 	str temp, STS32_STATUS
@@ -1145,7 +1158,7 @@ sts32_syntheclear:
 		lsl temp3, temp3, temp2
 		bic temp, temp, temp3
 		cmp num_voices, #0
-		bgt sts32_syntheclear_voices
+		bhi sts32_syntheclear_voices
 
 	str temp, STS32_VOICES
 
@@ -2231,7 +2244,7 @@ STS32_SYNTHEWAVE_FREQA_R: .word 0x00
 STS32_SYNTHEWAVE_AMPA_R:  .word 0x00
 STS32_SYNTHEWAVE_FREQB_R: .word 0x00
 STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
-.space 32, 0x00
+.space 96, 0x00
 .section	.library_system32
 
 
