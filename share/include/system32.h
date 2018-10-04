@@ -1365,6 +1365,8 @@ __attribute__((noinline)) uint32 _syntheplay( uint32 number_voices );
 
 __attribute__((noinline)) uint32 _syntheclear( uint32 number_voices );
 
+__attribute__((noinline)) uint32 _synthemidi_envelope( uint32 number_voices );
+
 
 /* Regular Functions */
 

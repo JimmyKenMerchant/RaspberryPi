@@ -737,6 +737,8 @@ int32 _user_start()
 				}
 				_gpiotoggle( 16, playing_signal );
 
+				_synthemidi_envelope( 2 );
+
 				tempo_count = tempo_count_reload; // Reset Counter
 			}
 		}
