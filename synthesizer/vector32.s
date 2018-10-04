@@ -205,10 +205,14 @@ os_reset:
 
 	push {r0-r3}
 	mov r0, #64
+	ldr r1, os_reset_SYNTHE_NOTES
 	bl sts32_synthemidi_malloc
 	pop {r0-r3}
 
 	pop {pc}
+
+/* From share/include/sts32.h (Matched at Linker) */
+os_reset_SYNTHE_NOTES: .word _SYNTHE_NOTES
 
 os_debug:
 	push {lr}

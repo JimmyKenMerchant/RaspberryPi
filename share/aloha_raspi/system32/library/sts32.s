@@ -14,42 +14,6 @@
  * On using PCM, the CPU calculates a form of a synthesized wave as binary data, and transmits it to PCM. PCM sends the form to a digital to analogue converter (DAC). DAC treats the form as an output of voltage. Differences of voltage of the form make sound wave through any speaker. PCM outputs L and R with each 16-bit depth.
  */
 
-/* If End or Step Up, Automatically Cleared */
-STS32_CODE:            .word 0x00 @ Pointer of Synthesizer Code
-STS32_LENGTH:          .word 0x00 @ Length of Synthesizer Code
-STS32_REPEAT:          .word 0x00 @ Repeat status of Synthesizer Code
-STS32_COUNT:           .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
-STS32_CODE_NEXT:       .word 0x00 @ Pointer of Next Synthesizer Code
-STS32_LENGTH_NEXT:     .word 0x00 @ Length of Next Synthesizer Code
-STS32_REPEAT_NEXT:     .word 0x00 @ Repeat status of Next Synthesizer Code
-STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
-
-/**
- * Bit[0] Synthesizer Code Stop(0)/ Playing (1)
- * Bit[1] Reserved
- * Bit[2] Reserved
- * Bit[3] Reserved
- * Bit[31] Not Initialized(0)/ Initialized(1)
- */
-STS32_STATUS:             .word 0x00
-
-/**
- * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
- * Bit[3:0] Voice L1
- * Bit[7:4] Voice R1
- * Bit[11:8] Voice L2
- * Bit[15:12] Voice R2
- * Bit[19:16] Voice L3
- * Bit[23:20] Voice R3
- * Bit[27:24] Voice L4
- * Bit[31:28] Voice R4
- */
-STS32_VOICES:             .word 0x00
-
-STS32_SYNTHEWAVE_TIME:    .word 0x00 @ One Equals 1/sampling-rate Seconds
-STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
-STS32_SYNTHEWAVE_PARAM:   .word STS32_SYNTHEWAVE_FREQA_L
-
 /**
  * Synthesizer Code is 64-bit Block (Two 32-bit Words) consists two frequencies and magnitudes to Synthesize.
  * Lower Bit[2-0] Decimal Part of Frequency-A (Main): 1 as 0.125 (0.125 * 1), 7 as 0.875 (0.875 * 8)
@@ -134,7 +98,7 @@ sts32_synthewave_pwm:
 	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
 	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
 
-	/* Check Wether Already Full on FIFO Stack */
+	/* Check Whether Already Full on FIFO Stack */
 	ldr temp, [memorymap_base, #equ32_pwm_sta]
 	tst temp, #equ32_pwm_sta_full1
 	bne sts32_synthewave_pwm_error1
@@ -484,7 +448,7 @@ sts32_synthewave_i2s:
 	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
 	add memorymap_base, memorymap_base, #equ32_pcm_base_upper
 
-	/* Check Wether Already Full on FIFO Stack */
+	/* Check Whether Already Full on FIFO Stack */
 	ldr temp, [memorymap_base, #equ32_pcm_cs]
 	tst temp, #equ32_pcm_cs_txw
 	beq sts32_synthewave_i2s_error1
@@ -767,6 +731,43 @@ sts32_synthewave_i2s:
 .unreq vfp_sum
 
 sts32_synthewave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
+
+STS32_SYNTHEWAVE_TIME:    .word 0x00 @ One Equals 1/sampling-rate Seconds
+STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
+STS32_SYNTHEWAVE_PARAM:   .word STS32_SYNTHEWAVE_FREQA_L
+
+
+/* If End or Step Up, Automatically Cleared */
+STS32_CODE:            .word 0x00 @ Pointer of Synthesizer Code
+STS32_LENGTH:          .word 0x00 @ Length of Synthesizer Code
+STS32_REPEAT:          .word 0x00 @ Repeat status of Synthesizer Code
+STS32_COUNT:           .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+STS32_CODE_NEXT:       .word 0x00 @ Pointer of Next Synthesizer Code
+STS32_LENGTH_NEXT:     .word 0x00 @ Length of Next Synthesizer Code
+STS32_REPEAT_NEXT:     .word 0x00 @ Repeat status of Next Synthesizer Code
+STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+
+/**
+ * Bit[0] Synthesizer Code Stop(0)/ Playing (1)
+ * Bit[1] Reserved
+ * Bit[2] Reserved
+ * Bit[3] Reserved
+ * Bit[31] Not Initialized(0)/ Initialized(1)
+ */
+STS32_STATUS:             .word 0x00
+
+/**
+ * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
+ * Bit[3:0] Voice L1
+ * Bit[7:4] Voice R1
+ * Bit[11:8] Voice L2
+ * Bit[15:12] Voice R2
+ * Bit[19:16] Voice L3
+ * Bit[23:20] Voice R3
+ * Bit[27:24] Voice L4
+ * Bit[31:28] Voice R4
+ */
+STS32_VOICES:             .word 0x00
 
 
 /**
@@ -1063,8 +1064,7 @@ sts32_syntheplay:
 		/* Clear Voices Status */
 		sts32_syntheplay_free_voices:
 			sub num_voices, num_voices, #1
-			mov voices, #4
-			mul voices, num_voices, voices
+			lsl voices, num_voices, #2             @ Multiply by 4
 			mov temp, #0b1000
 			lsl temp, temp, voices
 			bic status_voices, status_voices, temp
@@ -1152,8 +1152,7 @@ sts32_syntheclear:
 	/* Clear Voices Status */
 	sts32_syntheclear_voices:
 		sub num_voices, num_voices, #1
-		mov temp2, #4
-		mul temp2, num_voices, temp2
+		lsl temp2, num_voices, #2              @ Multiply by 4
 		mov temp3, #0b1000
 		lsl temp3, temp3, temp2
 		bic temp, temp, temp3
@@ -2227,24 +2226,42 @@ STS32_SYNTHEMIDI_COUNT:          .word 0x00
 STS32_SYNTHEMIDI_LENGTH:         .word 0x00
 STS32_SYNTHEMIDI_BUFFER:         .word 0x00 @ Second Buffer to Store Outstanding MIDI Message
 STS32_SYNTHEMIDI_BYTEBUFFER:     .word _STS32_SYNTHEMIDI_BYTEBUFFER
-STS32_SYNTHEMIDI_CURRENTNOTE:    .word 0x00
+STS32_SYNTHEMIDI_CURRENTNOTE:    .word _STS32_SYNTHEMIDI_CURRENTNOTE
+STS32_SYNTHEMIDI_TABLENOTES:     .word 0x00
 
 STS32_SYNTHEMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
 
+STS32_SYNTHEMIDI_ATTACK:         .word equ32_sts32_synthemidi_attack
+STS32_SYNTEHMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
+STS32_SYNTHEMIDI_SUSTAIN:        .float 1.0
+STS32_SYNTHEMIDI_RELEASE:        .word equ32_sts32_synthemidi_release
+
+STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_DELTA_ATTACK1
+
 .section	.data
 _STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
+_STS32_SYNTHEMIDI_CURRENTNOTE:   .space 8, 0x00
 .globl STS32_VIRTUAL_PARALLEL
 STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
-STS32_SYNTHEWAVE_FREQA_L: .word 0x00
-STS32_SYNTHEWAVE_AMPA_L:  .word 0x00
-STS32_SYNTHEWAVE_FREQB_L: .word 0x00
-STS32_SYNTHEWAVE_AMPB_L:  .word 0x00
-STS32_SYNTHEWAVE_FREQA_R: .word 0x00
-STS32_SYNTHEWAVE_AMPA_R:  .word 0x00
-STS32_SYNTHEWAVE_FREQB_R: .word 0x00
-STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
-.space 96, 0x00
+STS32_SYNTHEWAVE_FREQA_L:        .word 0x00
+STS32_SYNTHEWAVE_AMPA_L:         .word 0x00
+STS32_SYNTHEWAVE_FREQB_L:        .word 0x00
+STS32_SYNTHEWAVE_AMPB_L:         .word 0x00
+STS32_SYNTHEWAVE_FREQA_R:        .word 0x00
+STS32_SYNTHEWAVE_AMPA_R:         .word 0x00
+STS32_SYNTHEWAVE_FREQB_R:        .word 0x00
+STS32_SYNTHEWAVE_AMPB_R:         .word 0x00
+.space 96, 0x00                             @ Rest 6 Sets
+STS32_SYNTHEMIDI_COUNT1:         .word 0x00
+STS32_SYNTHEMIDI_DELTA_ATTACK1:  .float 0.0
+STS32_SYNTHEMIDI_DELTA_DECAY1:   .float 0.0
+STS32_SYNTHEMIDI_DELTA_RELEASE1: .float 0.0
+STS32_SYNTHEMIDI_COUNT2:         .word 0x00
+STS32_SYNTHEMIDI_DELTA_ATTACK2:  .float 0.0
+STS32_SYNTHEMIDI_DELTA_DECAY2:   .float 0.0
+STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
+.space 96, 0x00                             @ Rest 6 Sets
 .section	.library_system32
 
 
@@ -2254,6 +2271,7 @@ STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
  *
  * Parameters
  * r0: Size of Buffer (Words)
+ * r1: Pointer of Table of Notes Frequency
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Memory Allocation Is Not Succeeded
@@ -2262,15 +2280,16 @@ STS32_SYNTHEWAVE_AMPB_R:  .word 0x00
 sts32_synthemidi_malloc:
 	/* Auto (Local) Variables, but just Aliases */
 	words_buffer .req r0
-	buffer       .req r1
+	addr_table   .req r1
+	buffer       .req r2
 
 	push {lr}
 
 	/* Buffer to Receive MIDI Message */
-	push {r0}
+	push {r0-r1}
 	bl heap32_malloc
 	mov buffer, r0
-	pop {r0}
+	pop {r0-r1}
 
 	cmp buffer, #0
 	beq sts32_synthemidi_malloc_error
@@ -2283,16 +2302,18 @@ sts32_synthemidi_malloc:
 	str words_buffer, STS32_SYNTHEMIDI_COUNT
 
 	/* Buffer for Control Message No. 0 to No. 31 */
-	push {r0}
+	push {r0-r1}
 	mov r0, #16                                    @ 16 Words Multiplied by 4 Bytes Equals 64 Bytes (2 Bytes Half Word * 32)
 	bl heap32_malloc
 	mov buffer, r0
-	pop {r0}
+	pop {r0-r1}
 
 	cmp buffer, #0
 	beq sts32_synthemidi_malloc_error
 
 	str buffer, STS32_SYNTHEMIDI_CTL
+
+	str addr_table, STS32_SYNTHEMIDI_TABLENOTES
 
 	b sts32_synthemidi_malloc_success
 
@@ -2308,5 +2329,184 @@ sts32_synthemidi_malloc:
 		pop {pc}
 
 .unreq words_buffer
+.unreq addr_table
 .unreq buffer
+
+
+/**
+ * function sts32_synthemidi_envelope
+ * Make Envelope for Notes from MIDI IN
+ *
+ * Parameters
+ * r0: Number of Voices
+ *
+ * Return: r0 (0 as success)
+ */
+.globl sts32_synthemidi_envelope
+sts32_synthemidi_envelope:
+	/* Auto (Local) Variables, but just Aliases */
+	num_voices     .req r0
+	status_voices  .req r1
+	addr_envelope  .req r2
+	addr_param     .req r3
+	voices         .req r4
+	check          .req r5
+	offset         .req r6
+	count          .req r7
+	max_count      .req r8
+	addr           .req r9
+
+	/* VFP Registers */
+	vfp_volume     .req s0
+	vfp_delta      .req s1
+
+	push {r4-r9,lr}
+	vpush {s0-s1}
+
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
+
+	ldr status_voices, STS32_VOICES
+	ldr addr_envelope, STS32_SYNTHEMIDI_ENVELOPE
+	ldr addr_param, STS32_SYNTHEWAVE_PARAM
+
+	mov voices, #0
+	sts32_synthemidi_envelope_loop:
+		cmp voices, num_voices
+		bhs sts32_synthemidi_envelope_success
+
+		/* Test Whether The Voice Is under Usage with MIDI or Not */
+		lsl offset, voices, #2              @ Multiply by 4
+		mov check, #0b111
+		lsl check, check, offset
+		tst status_voices, check
+		beq sts32_synthemidi_envelope_loop_common
+
+		lsr check, status_voices, offset
+		and check, check, #0b111
+		cmp check, #1
+		beq sts32_synthemidi_envelope_loop_attack
+		cmp check, #2
+		beq sts32_synthemidi_envelope_loop_decay
+		cmp check, #3
+		beq sts32_synthemidi_envelope_loop_sustain
+		cmp check, #4
+		bhs sts32_synthemidi_envelope_loop_release
+
+		sts32_synthemidi_envelope_loop_attack:
+			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+
+			/* Increase Volume (Main Amplitude) */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			add addr, addr, #4                       @ Add Offset for Attack Delta
+			vldr vfp_delta, [addr]
+
+			add addr, addr_param, offset             @ Pointer for Parameter
+			add addr, addr, #4                       @ Main Amplitude
+			vldr vfp_volume, [addr]
+
+			vadd.f32 vfp_volume, vfp_volume, vfp_delta
+			vstr vfp_volume, [addr]
+
+			/* Increase Count, Reset Count and Change The Voice Status to 2 If Reaches Maximum */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			ldr count, [addr]
+			ldr max_count, STS32_SYNTHEMIDI_ATTACK
+			add count, count, #1
+			cmp count, max_count
+			movhs count, #0
+			lslhs offset, voices, #2                 @ Multiply by 4
+			movhs check, #0b1
+			lslhs check, check, offset
+			addhs status_voices, status_voices, check
+			str count, [addr]
+
+			b sts32_synthemidi_envelope_loop_common
+
+		sts32_synthemidi_envelope_loop_decay:
+			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+
+			/* Decrease Volume (Main Amplitude) */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			add addr, addr, #8                       @ Add Offset for Delay Delta
+			vldr vfp_delta, [addr]
+
+			add addr, addr_param, offset             @ Pointer for Parameter
+			add addr, addr, #4                       @ Main Amplitude
+			vldr vfp_volume, [addr]
+
+			vsub.f32 vfp_volume, vfp_volume, vfp_delta
+			vstr vfp_volume, [addr]
+
+			/* Increase Count, Reset Count and Change The Voice Status to 3 If Reaches Maximum */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			ldr count, [addr]
+			ldr max_count, STS32_SYNTEHMIDI_DECAY
+			add count, count, #1
+			cmp count, max_count
+			movhs count, #0
+			lslhs offset, voices, #2                 @ Multiply by 4
+			movhs check, #0b1
+			lslhs check, check, offset
+			addhs status_voices, status_voices, check
+			str count, [addr]
+			b sts32_synthemidi_envelope_loop_common
+
+		sts32_synthemidi_envelope_loop_sustain:
+			/* Do Nothing */
+			b sts32_synthemidi_envelope_loop_common
+
+		sts32_synthemidi_envelope_loop_release:
+			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+
+			/* Decrease Volume (Main Amplitude) */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			add addr, addr, #12                      @ Add Offset for Release Delta
+			vldr vfp_delta, [addr]
+
+			add addr, addr_param, offset             @ Pointer for Parameter
+			add addr, addr, #4                       @ Main Amplitude
+			vldr vfp_volume, [addr]
+
+			vsub.f32 vfp_volume, vfp_volume, vfp_delta
+			vstr vfp_volume, [addr]
+
+			/* Increase Count, Reset Count and Change The Voice Status to 0 If Reaches Maximum */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			ldr count, [addr]
+			ldr max_count, STS32_SYNTHEMIDI_RELEASE
+			add count, count, #1
+			cmp count, max_count
+			movhs count, #0
+			lslhs offset, voices, #2                 @ Multiply by 4
+			movhs check, #0b111
+			lslhs check, check, offset
+			bichs status_voices, status_voices, check
+			str count, [addr]
+
+		sts32_synthemidi_envelope_loop_common:
+			add voices, voices, #1
+			b sts32_synthemidi_envelope_loop
+
+	sts32_synthemidi_envelope_success:
+		str status_voices, STS32_VOICES
+		mov r0, #0
+
+	sts32_synthemidi_envelope_common:
+		macro32_dsb ip
+		vpop {s0-s1}
+		pop {r4-r9,pc}
+
+.unreq num_voices
+.unreq status_voices
+.unreq addr_envelope
+.unreq addr_param
+.unreq voices
+.unreq check
+.unreq offset
+.unreq count
+.unreq max_count
+.unreq addr
+.unreq vfp_volume
+.unreq vfp_delta
 
