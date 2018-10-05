@@ -2069,6 +2069,28 @@ sts32_synthemidi:
 			lsl temp2, temp2, temp
 			orr status_voices, status_voices, temp2
 
+			/**
+			 * Store Delta for Release to Envelope Pointer
+			 */
+
+			lsl data1, voices, #4              @ Multiply by 16
+			ldr temp, STS32_SYNTHEWAVE_PARAM
+			add data2, temp, data1             @ vldr/vstr Has Offset Only with Immediate Value
+			add data2, data2, #4               @ Offset Voice No. + 4 Bytes
+			vldr vfp_volume, [data2]           @ Get Current Main Amplitude
+
+			vldr vfp_temp, STS32_SYNTHEMIDI_RELEASE
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_volume, vfp_temp
+
+			/* Reset Count to Zero and Store Delta for Release */
+			ldr temp, STS32_SYNTHEMIDI_ENVELOPE
+			add data2, temp, data1             @ vldr/vstr Has Offset Only with Immediate Value
+			mov temp2, #0
+			str temp2, [data2]
+			add data2, data2, #12              @ Offset Voice No. + 12 Bytes
+			vstr vfp_temp, [data2]             @ Store Delta for Release
+
 			/* Break Loop */
 			b sts32_synthemidi_noteoff_common
 
@@ -2159,12 +2181,6 @@ sts32_synthemidi:
 			vdiv.f32 vfp_temp, vfp_temp2, vfp_temp
 			vstr vfp_temp, [data1]
 			add data1, data1, #4
-
-			/* Store Delta for Release to Envelope Pointer */
-			vldr vfp_temp, STS32_SYNTHEMIDI_RELEASE
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_temp, vfp_sustain, vfp_temp
-			vstr vfp_temp, [data1]
 
 			/* Break Loop */
 			b sts32_synthemidi_noteon_common
