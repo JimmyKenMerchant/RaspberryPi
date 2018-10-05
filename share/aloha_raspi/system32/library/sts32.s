@@ -1031,8 +1031,7 @@ sts32_syntheplay:
 			str temp, [addr_param, offset_param]       @ Sub Amplitude
 
 			/* Set Voices Status */
-			mov code, #4
-			mul code, voices, code
+			lsl code, voices, #2                       @ Multiply by 4
 			mov temp, #0b1000
 			lsl temp, temp, code
 			orr status_voices, status_voices, temp
@@ -1926,6 +1925,7 @@ sts32_syntheinit_i2s:
  * Parameters
  * r0: Channel, 0-15 (MIDI Channel No. 1 to 16)
  * r1: 0 as PWM Mode, 1 as PCM Mode
+ * r2: Number of Voices
  *
  * Return: r0 (0 as success, 1, 2, and 3 as error)
  * Error(1): Not Initialized on sts32_syntheinit_*, No Buffer to Receive on UART, or UART Overrun
@@ -1935,23 +1935,38 @@ sts32_syntheinit_i2s:
 .globl sts32_synthemidi
 sts32_synthemidi:
 	/* Auto (Local) Variables, but just Aliases */
-	channel       .req r0
-	mode          .req r1
-	buffer        .req r2
-	count         .req r3
-	max_size      .req r4
-	bytebuffer    .req r5
-	byte          .req r6
-	temp          .req r7
-	data1         .req r8
-	data2         .req r9
-	status        .req r10
+	channel        .req r0
+	mode           .req r1
+	buffer         .req r2
+	count          .req r3
+	max_size       .req r4
+	bytebuffer     .req r5
+	byte           .req r6
+	temp           .req r7
+	data1          .req r8
+	data2          .req r9
+	status         .req r10
+	num_voices     .req r11
 
-	push {r4-r10,lr}
+	/* VFP Registers */
+	vfp_volume     .req s0
+	vfp_sustain    .req s1
+	vfp_temp       .req s2
+	vfp_temp2      .req s3
+
+	push {r4-r11,lr}
+	vpush {s0-s3}
+
+	mov num_voices, buffer
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
 
 	ldr status, STS32_STATUS
 	tst status, #0x80000000           @ If Not Initialized
 	beq sts32_synthemidi_error1
+
+	.unreq status
+	status_voices .req r10
 
 	ldr count, STS32_SYNTHEMIDI_COUNT
 	ldr max_size, STS32_SYNTHEMIDI_LENGTH
@@ -1995,6 +2010,8 @@ sts32_synthemidi:
 
 	.unreq max_size
 	temp2 .req r4
+	.unreq bytebuffer
+	voices .req r5
 
 	/* Check Message Type and Procedures for Each Message */
 	ldrb temp, [buffer]
@@ -2023,31 +2040,143 @@ sts32_synthemidi:
 		cmp count, #3
 		blo sts32_synthemidi_success
 
-		/* Load Concurrent Note, If Not Matched Do Nothing */
-		ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
-		cmp data1, temp
-		movne count, #0
-		bne sts32_synthemidi_success
+		ldr status_voices, STS32_VOICES
 
-		/* Note Off Code Here */
+		mov voices, #0
+		sts32_synthemidi_noteoff_voicesearch:
+			cmp voices, num_voices
+			bhs sts32_synthemidi_noteoff_common
 
-		mov count, #0
-		b sts32_synthemidi_success
+			/* Test Whether The Voice Is under Usage as Attack, Decay, and Sustain with MIDI or Not */
+			lsl temp, voices, #2              @ Multiply by 4
+			mov temp2, #0b11
+			lsl temp2, temp2, temp
+			tst status_voices, temp2
+			beq sts32_synthemidi_noteoff_voicesearch_common
+
+			/* Load Concurrent Notes, If Not Matched Do Nothing */
+			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
+			ldrb temp2, [temp, voices]
+			cmp temp2, data1
+			bne sts32_synthemidi_noteoff_voicesearch_common
+
+			/* If Matched, Change Status to Release */
+			lsl temp, voices, #2              @ Multiply by 4
+			mov temp2, #0b11
+			lsl temp2, temp2, temp
+			bic status_voices, status_voices, temp2
+			mov temp2, #0b100
+			lsl temp2, temp2, temp
+			orr status_voices, status_voices, temp2
+
+			/* Break Loop */
+			b sts32_synthemidi_noteoff_common
+
+			sts32_synthemidi_noteoff_voicesearch_common:
+				add voices, voices, #1
+				b sts32_synthemidi_noteoff_voicesearch
+
+		sts32_synthemidi_noteoff_common:
+			str status_voices, STS32_VOICES
+			mov count, #0
+			b sts32_synthemidi_success
 
 	sts32_synthemidi_noteon:
 		cmp count, #3
 		blo sts32_synthemidi_success
 
-		/* Store Concurrent Note */
-		str data1, STS32_SYNTHEMIDI_CURRENTNOTE
+		/* If Velocity Is Zero, Go to Note Off Event */
+		cmp data2, #0
+		beq sts32_synthemidi_noteoff
 
-		/* Note On Code Here */
+		ldr status_voices, STS32_VOICES
 
-/*
-macro32_debug data1, 0, 112
-*/
-		mov count, #0
-		b sts32_synthemidi_success
+		mov voices, #0
+		sts32_synthemidi_noteon_voicesearch:
+			cmp voices, num_voices
+			bhs sts32_synthemidi_noteon_common
+
+			/* Test Whether The Voice Is under Any Usage with MIDI or Synthesizer Code, or Not */
+			lsl temp, voices, #2               @ Multiply by 4
+			mov temp2, #0b1111
+			lsl temp2, temp2, temp
+			tst status_voices, temp2
+			bne sts32_synthemidi_noteon_voicesearch_common
+
+			/* Set Attack */
+			mov temp2, #0b1
+			lsl temp2, temp2, temp
+			orr status_voices, status_voices, temp2
+
+			/* Store Concurrent Notes */
+			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
+			strb data1, [temp, voices]
+
+			/* Set Main Frequency from Table of Notes, and Main Amplitude as Zero */
+			ldr temp, STS32_SYNTHEMIDI_TABLENOTES
+			lsl data1, data1, #2               @ Multiply by 4, Array of Single Precision Float
+			ldr data1, [temp, data1]
+			lsl temp2, voices, #4              @ Multiply by 16
+			ldr temp, STS32_SYNTHEWAVE_PARAM
+			str data1, [temp, temp2]           @ Main Frequency
+			mov data1, #0
+			add temp2, temp2, #4
+			str data1, [temp, temp2]           @ Main Amplitude
+
+			/**
+			 * Make Deltas
+			 */
+
+			/* Make Maximum Volume with Floating Point */
+			ldr temp2, STS32_SYNTHEMIDI_VOLUME
+			mul data2, data2, temp2
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Make Envelope Pointer for The Voice */
+			lsl temp, voices, #4              @ Multiply by 16
+			ldr data1, STS32_SYNTHEMIDI_ENVELOPE
+			add data1, data1, temp
+
+			/* Store Count to Envelope Pointer */
+			mov temp, #0
+			str temp, [data1]
+			add data1, data1, #4
+
+			/* Store Delta for Attack to Envelope Pointer */
+			vldr vfp_temp, STS32_SYNTHEMIDI_ATTACK
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_volume, vfp_temp
+			vstr vfp_temp, [data1]
+			add data1, data1, #4
+
+			/* Store Delta for Decay to Envelope Pointer */
+			vldr vfp_sustain, STS32_SYNTHEMIDI_SUSTAIN
+			vmul.f32 vfp_sustain, vfp_volume, vfp_sustain
+			vsub.f32 vfp_temp2, vfp_volume, vfp_sustain
+			vldr vfp_temp, STS32_SYNTEHMIDI_DECAY
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_temp2, vfp_temp
+			vstr vfp_temp, [data1]
+			add data1, data1, #4
+
+			/* Store Delta for Release to Envelope Pointer */
+			vldr vfp_temp, STS32_SYNTHEMIDI_RELEASE
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_sustain, vfp_temp
+			vstr vfp_temp, [data1]
+
+			/* Break Loop */
+			b sts32_synthemidi_noteon_common
+
+			sts32_synthemidi_noteon_voicesearch_common:
+				add voices, voices, #1
+				b sts32_synthemidi_noteon_voicesearch
+
+		sts32_synthemidi_noteon_common:
+			str status_voices, STS32_VOICES
+			mov count, #0
+			b sts32_synthemidi_success
 
 	sts32_synthemidi_polyaftertouch:
 		cmp count, #3
@@ -2208,19 +2337,25 @@ macro32_debug data1, 100, 100
 /*
 macro32_debug_hexa buffer, 100, 100, 8
 */
-		pop {r4-r10,pc}
+		vpop {s0-s3}
+		pop {r4-r11,pc}
 
 .unreq channel
 .unreq mode
 .unreq buffer
 .unreq count
 .unreq temp2
-.unreq bytebuffer
+.unreq voices
 .unreq byte
 .unreq temp
 .unreq data1
 .unreq data2
-.unreq status
+.unreq status_voices
+.unreq num_voices
+.unreq vfp_volume
+.unreq vfp_sustain
+.unreq vfp_temp
+.unreq vfp_temp2
 
 STS32_SYNTHEMIDI_COUNT:          .word 0x00
 STS32_SYNTHEMIDI_LENGTH:         .word 0x00
@@ -2236,8 +2371,9 @@ STS32_SYNTHEMIDI_ATTACK:         .word equ32_sts32_synthemidi_attack
 STS32_SYNTEHMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
 STS32_SYNTHEMIDI_SUSTAIN:        .float 1.0
 STS32_SYNTHEMIDI_RELEASE:        .word equ32_sts32_synthemidi_release
+STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
 
-STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_DELTA_ATTACK1
+STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
 
 .section	.data
 _STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
@@ -2384,13 +2520,13 @@ sts32_synthemidi_envelope:
 
 		lsr check, status_voices, offset
 		and check, check, #0b111
-		cmp check, #1
+		cmp check, #0b001
 		beq sts32_synthemidi_envelope_loop_attack
-		cmp check, #2
+		cmp check, #0b010
 		beq sts32_synthemidi_envelope_loop_decay
-		cmp check, #3
+		cmp check, #0b011
 		beq sts32_synthemidi_envelope_loop_sustain
-		cmp check, #4
+		cmp check, #0b100
 		bhs sts32_synthemidi_envelope_loop_release
 
 		sts32_synthemidi_envelope_loop_attack:

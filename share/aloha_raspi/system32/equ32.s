@@ -39,6 +39,7 @@
 .equ equ32_sts32_synthemidi_attack,            200        @ Default Attack Time (Beats)
 .equ equ32_sts32_synthemidi_decay,             200        @ Default Decay Time (Beats)
 .equ equ32_sts32_synthemidi_release,           200        @ Default Release Time (Beats)
+.equ equ32_sts32_synthemidi_volume,            20         @ Default Volume Multiplier
 .equ equ32_snd32_sounddecode_pwm_bias,         624        @ 10-bit Depth
 .equ equ32_snd32_sounddecode_noise_len_upper,  0x280      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat

@@ -225,26 +225,32 @@ os_irq:
 
 .ifdef __SOUND_I2S
 	mov r1, #1
+	mov r2, #8
 	bl sts32_synthemidi
 .endif
 .ifdef __SOUND_I2S_BALANCED
 	mov r1, #1
+	mov r2, #8
 	bl sts32_synthemidi
 .endif
 .ifdef __SOUND_PWM
 	mov r1, #0
+	mov r2, #8
 	bl sts32_synthemidi
 .endif
 .ifdef __SOUND_PWM_BALANCED
 	mov r1, #0
+	mov r2, #8
 	bl sts32_synthemidi
 .endif
 .ifdef __SOUND_JACK
 	mov r1, #0
+	mov r2, #8
 	bl sts32_synthemidi
 .endif
 .ifdef __SOUND_JACK_BALANCED
 	mov r1, #0
+	mov r2, #8
 	bl sts32_synthemidi
 .endif
 
