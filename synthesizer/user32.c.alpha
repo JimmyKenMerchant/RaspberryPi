@@ -16,6 +16,8 @@
 #define tempo_default 60
 #define tempo_max 420
 
+extern uint32 OS_IRQ_MIDI_CHANNEL;
+
 /**
  * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on GPCLK1).
  * A set of 2400 beats (= delta times) is 60BPM on 2400HZ (one delta time is 1/2400 seconds).
@@ -312,13 +314,16 @@ int32 _user_start()
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s( bend_rate, 2 );
+		_synthewave_i2s( bend_rate, 8 );
+		_synthemidi( OS_IRQ_MIDI_CHANNEL, STS32_I2S, 8 );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm( bend_rate, 2 );
+		_synthewave_pwm( bend_rate, 8 );
+		_synthemidi( OS_IRQ_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm( bend_rate, 2 );
+		_synthewave_pwm( bend_rate, 8 );
+		_synthemidi( OS_IRQ_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
 

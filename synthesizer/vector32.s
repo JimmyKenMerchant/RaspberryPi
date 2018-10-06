@@ -62,8 +62,10 @@ os_reset:
 	*/
 
 	/* Enable UART IRQ */
+	/*
 	mov r1, #1<<25                                   @ UART IRQ #57
 	str r1, [r0, #equ32_interrupt_enable_irqs2]
+	*/
 
 	/**
 	 * Timer
@@ -138,12 +140,12 @@ os_reset:
 
 	/* Check MIDI Channel, GPIO9 (Bit[0]) and GPIO10 (Bit[1]) */
 	ldr r1, [r0, #equ32_gpio_gplev0]
-	ldr r2, os_irq_midi_channel
+	ldr r2, OS_IRQ_MIDI_CHANNEL
 	tst r1, #equ32_gpio09
 	addne r2, r2, #1
 	tst r1, #equ32_gpio10
 	addne r2, r2, #2
-	str r2, os_irq_midi_channel
+	str r2, OS_IRQ_MIDI_CHANNEL
 
 	/**
 	 * Clock Manager for GPCLK1. Make 4800Hz
@@ -211,7 +213,7 @@ os_reset:
 
 	pop {pc}
 
-/* From share/include/sts32.h (Matched at Linker) */
+/* From share/include/sts32.h (Matched at Linker), C Compiler Implicitly Adds ".globl" Attribute to Variables Globally Scoped, Which Use Memory Space */
 os_reset_SYNTHE_NOTES: .word _SYNTHE_NOTES
 
 os_debug:
@@ -221,7 +223,7 @@ os_debug:
 os_irq:
 	push {r0-r12,lr}
 
-	ldr r0, os_irq_midi_channel
+	ldr r0, OS_IRQ_MIDI_CHANNEL
 
 .ifdef __SOUND_I2S
 	mov r1, #1
@@ -256,7 +258,8 @@ os_irq:
 
 	pop {r0-r12,pc}
 
-os_irq_midi_channel: .word __MIDI_BASECHANNEL
+.globl OS_IRQ_MIDI_CHANNEL
+OS_IRQ_MIDI_CHANNEL: .word __MIDI_BASECHANNEL
 
 os_fiq:
 	push {r0-r7,lr}

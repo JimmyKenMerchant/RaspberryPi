@@ -1348,6 +1348,8 @@ extern uint32 snd32_musiclen
 #define STS32_BEAT     0
 #define STS32_RIS      0
 #define STS32_FAL      16
+#define STS32_PWM      0
+#define STS32_I2S      1
 
 /* Global Variable */
 
@@ -1364,6 +1366,8 @@ __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length,
 __attribute__((noinline)) uint32 _syntheplay( uint32 number_voices );
 
 __attribute__((noinline)) uint32 _syntheclear( uint32 number_voices );
+
+__attribute__((noinline)) uint32 _synthemidi( uint32 channel, uint32 mode, uint32 number_voices );
 
 __attribute__((noinline)) uint32 _synthemidi_envelope( uint32 number_voices );
 
