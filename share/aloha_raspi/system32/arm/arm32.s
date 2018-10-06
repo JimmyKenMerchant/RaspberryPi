@@ -1441,7 +1441,7 @@ arm32_mul:
 
 /**
  * function arm32_udiv
- * Unsigned Division of Two Signed Integers
+ * Unsigned Division of Two Integers
  *
  * Parameters
  * r0: Dividend (Numerator)
@@ -1547,7 +1547,7 @@ arm32_urem:
 
 /**
  * function arm32_sdiv
- * Signed Division of Two Signed Integers
+ * Signed Division of Two Integers
  *
  * Parameters
  * r0: Dividend (Numerator)

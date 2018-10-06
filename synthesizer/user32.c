@@ -16,7 +16,7 @@
 #define tempo_default 60
 #define tempo_max 420
 
-extern uint32 OS_IRQ_MIDI_CHANNEL;
+extern uint32 OS_RESET_MIDI_CHANNEL;
 
 /**
  * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on GPCLK1).
@@ -514,6 +514,41 @@ synthe_precode pre_synthe16_r[] = {
 };
 
 
+uint32 pre_synthe1[] = {
+	(uint32)pre_synthe1_l,
+	(uint32)pre_synthe1_r
+};
+
+uint32 pre_synthe2[] = {
+	(uint32)pre_synthe2_l,
+	(uint32)pre_synthe2_r
+};
+
+uint32 pre_synthe3[] = {
+	(uint32)pre_synthe3_l,
+	(uint32)pre_synthe3_r
+};
+
+uint32 pre_synthe4[] = {
+	(uint32)pre_synthe4_l,
+	(uint32)pre_synthe4_r
+};
+
+uint32 pre_synthe5[] = {
+	(uint32)pre_synthe5_l,
+	(uint32)pre_synthe5_r
+};
+
+uint32 pre_synthe8[] = {
+	(uint32)pre_synthe8_l,
+	(uint32)pre_synthe8_r
+};
+
+uint32 pre_synthe16[] = {
+	(uint32)pre_synthe16_l,
+	(uint32)pre_synthe16_r
+};
+
 /* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
 int32 tempo_count = tempo_count_default;
 int32 tempo_count_reload = tempo_count_default;
@@ -524,23 +559,23 @@ int32 _user_start()
 {
 
 	// To Get Proper Latency, Get Lengths in Advance
-	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
+	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1, 2 );
 	if ( (uint32)synthe1 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen1 = sts32_synthelen( synthe1 ) / 2;
 
-	synthe_code* synthe2 = sts32_synthedecodelr( pre_synthe2_l, pre_synthe2_r );
+	synthe_code* synthe2 = sts32_synthedecodelr( pre_synthe2, 2 );
 	if ( (uint32)synthe2 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen2 = sts32_synthelen( synthe2 ) / 2;
 
-	synthe_code* synthe3 = sts32_synthedecodelr( pre_synthe3_l, pre_synthe3_r );
+	synthe_code* synthe3 = sts32_synthedecodelr( pre_synthe3, 2 );
 	if ( (uint32)synthe3 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen3 = sts32_synthelen( synthe3 ) / 2;
 
-	synthe_code* synthe4 = sts32_synthedecodelr( pre_synthe4_l, pre_synthe4_r );
+	synthe_code* synthe4 = sts32_synthedecodelr( pre_synthe4, 2 );
 	if ( (uint32)synthe4 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen4 = sts32_synthelen( synthe4 ) / 2;
 
-	synthe_code* synthe5 = sts32_synthedecodelr( pre_synthe5_l, pre_synthe5_r );
+	synthe_code* synthe5 = sts32_synthedecodelr( pre_synthe5, 2 );
 	if ( (uint32)synthe5 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen5 = sts32_synthelen( synthe5 ) / 2;
 
@@ -552,11 +587,11 @@ int32 _user_start()
 	if ( (uint32)synthe7 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 2;
 
-	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8_l, pre_synthe8_r );
+	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8, 2 );
 	if ( (uint32)synthe8 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 2;
 
-	synthe_code* synthe16 = sts32_synthedecodelr( pre_synthe16_l, pre_synthe16_r );
+	synthe_code* synthe16 = sts32_synthedecodelr( pre_synthe16, 2 );
 	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
 	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
 
@@ -575,15 +610,15 @@ int32 _user_start()
 	while ( true ) {
 #ifdef __SOUND_I2S
 		_synthewave_i2s( bend_rate, 8 );
-		_synthemidi( OS_IRQ_MIDI_CHANNEL, STS32_I2S, 8 );
+		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_I2S, 8 );
 #endif
 #ifdef __SOUND_PWM
 		_synthewave_pwm( bend_rate, 8 );
-		_synthemidi( OS_IRQ_MIDI_CHANNEL, STS32_PWM, 8 );
+		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 #ifdef __SOUND_JACK
 		_synthewave_pwm( bend_rate, 8 );
-		_synthemidi( OS_IRQ_MIDI_CHANNEL, STS32_PWM, 8 );
+		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
 

@@ -1290,8 +1290,8 @@ sts32_synthebeatlen:
  * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
- * r0: Pointer of Array of Synthesizer Pre-code for L
- * r0: Pointer of Array of Synthesizer Pre-code for R
+ * r0: Pointer of Array of Sequences of Synthesizer Pre-code (Two Dimentional, L and R Alternatively)
+ * r1: Number of Voices
  *
  * Return: r0 (Pointer of Array of Synthesizer Code, If 0, 1, and 2 Error)
  * Error(0): Memory Space for Synthesizer Code is Not Allocated (On heap32_malloc)
@@ -1301,73 +1301,90 @@ sts32_synthebeatlen:
 .globl sts32_synthedecodelr
 sts32_synthedecodelr:
 	/* Auto (Local) Variables, but just Aliases */
-	synt_pre_point_l .req r0
-	synt_pre_point_r .req r1
-	beat_l           .req r2
-	beat_r           .req r3
-	heap             .req r4
-	result           .req r5
+	array_synt_pre_point .req r0
+	num_voices           .req r1
+	beat                 .req r2
+	temp                 .req r3
+	heap                 .req r4
+	result               .req r5
+	voices               .req r6
 
-	push {r4-r5,lr}
+	push {r4-r6,lr}
 
-	push {r0-r1}
-	bl sts32_synthebeatlen
-	mov beat_l, r0
-	pop {r0-r1}
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
 
-	push {r0-r2}
-	mov r0, synt_pre_point_r
-	bl sts32_synthebeatlen
-	mov beat_r, r0
-	pop {r0-r2}
+	/**
+	 * Get Maximum Beat Length
+	 */
+	mov beat, #0
+	mov voices, #0
+	sts32_synthedecodelr_beatlen:
+		cmp voices, num_voices
+		bhs sts32_synthedecodelr_malloc
 
-	cmp beat_l, beat_r
-	movlt beat_l, beat_r
+		lsl temp, voices, #2                 @ Multiply by 4
 
-	lsl beat_l, beat_l, #2               @ Substitute of Multiplication by 4, Make 128-bit Block (LR Synthe Code)
-	add beat_l, beat_l, #2               @ End of Synthe Code (64-bit)
+		push {r0-r2}
+		ldr r0, [array_synt_pre_point, temp]
+		bl sts32_synthebeatlen
+		mov temp, r0
+		pop {r0-r2}
 
-	push {r0-r3}
-	mov r0, beat_l
-	bl heap32_malloc
-	mov heap, r0
-	pop {r0-r3}
+		cmp temp, beat
+		movhi beat, temp
 
-	cmp heap, #0
-	beq sts32_synthedecodelr_common
+		add voices, voices, #1
+		b sts32_synthedecodelr_beatlen
 
-	push {r0-r3}
-	mov r1, synt_pre_point_l
-	mov r0, heap
-	mov r2, #0
-	bl sts32_synthedecode
-	mov result, r0
-	pop {r0-r3}
+	sts32_synthedecodelr_malloc:
+		lsl temp, num_voices, #1             @ Multiply by 2, One Synthesizer Code on Each Voice Has Two Words (64-bit, 8 Bytes)
+		mul beat, beat, temp
+		add beat, beat, #2                   @ End of Synthe Code (64-bit, 8 Bytes)
 
-	cmp result, #0
-	movne heap, result
-	bne sts32_synthedecodelr_common
+		push {r0-r3}
+		mov r0, beat                         @ The Number of Words (32-bit, 4 Bytes)
+		bl heap32_malloc
+		mov heap, r0
+		pop {r0-r3}
 
-	push {r0-r3}
-	mov r0, heap
-	mov r2, #1
-	bl sts32_synthedecode
-	mov result, r0
-	pop {r0-r3}
+		cmp heap, #0
+		beq sts32_synthedecodelr_common
 
-	cmp result, #0
-	movne heap, result
+	mov voices, #0
+	sts32_synthedecodelr_decode:
+		cmp voices, num_voices
+		bhs sts32_synthedecodelr_common
+
+		lsl temp, voices, #2                 @ Multiply by 4
+
+		push {r0-r3}
+		mov r2, num_voices                   @ num_voices is r1
+		ldr r1, [array_synt_pre_point, temp] @ Using r0 and r3
+		mov r0, heap
+		mov r3, voices
+		bl sts32_synthedecode
+		mov result, r0
+		pop {r0-r3}
+
+		cmp result, #0
+		movne heap, result
+		bne sts32_synthedecodelr_common
+
+		add voices, voices, #1
+		b sts32_synthedecodelr_decode
 
 	sts32_synthedecodelr_common:
 		mov r0, heap
-		pop {r4-r5,pc}
+		pop {r4-r6,pc}
 
-.unreq synt_pre_point_l
-.unreq synt_pre_point_r
-.unreq beat_l
-.unreq beat_r
+.unreq array_synt_pre_point
+.unreq num_voices
+.unreq beat
+.unreq temp
 .unreq heap
 .unreq result
+.unreq voices
 
 
 /**
@@ -1377,7 +1394,8 @@ sts32_synthedecodelr:
  * Parameters
  * r0: Pointer of Array of Synthesizer Code
  * r1: Pointer of Array of Synthesizer Pre-code
- * r2: L (0) or R (1)
+ * r2: Number of Voices (Total)
+ * r3: Offset, L1 = First Voice (0), R1 = Second Voice (1), L2 = Third Voice (2), R2 = Fourth Voice (3), etc.
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Memory Space for Synthesizer Code is Not Allocated
@@ -1388,7 +1406,7 @@ sts32_synthedecode:
 	/* Auto (Local) Variables, but just Aliases */
 	synt_point        .req r0
 	synt_pre_point    .req r1
-	flag_lr           .req r2
+	stride_voices     .req r2
 	synt_max_length   .req r3
 	synt_pre_length   .req r4
 	code_lower        .req r5
@@ -1416,6 +1434,10 @@ sts32_synthedecode:
 	push {r4-r11,lr}
 	vpush {s0-s11}
 
+	/* Move Fourth Parameter */
+	mov temp, synt_max_length
+
+	/* Check Size (Bytes) of Heap (synt_point) for Synthesizer Code */
 	push {r0-r2}
 	bl heap32_mcount
 	mov synt_max_length, r0
@@ -1425,9 +1447,19 @@ sts32_synthedecode:
 	beq sts32_synthedecode_error1
 
 	sub synt_max_length, synt_max_length, #8   @ Subtract for End of Synthe code
-	lsr synt_max_length, synt_max_length, #4   @ Substitute of Division by 16, Counts as 128-bit (4 Words) Blocks for LR Synthe Code
-	cmp flag_lr, #0
-	addne synt_point, synt_point, #8           @ Set Offset for R
+
+	/* Make Offset For The Voice */
+	lsl temp, temp, #3                         @ Multiply by 8 (8 Bytes, Two Words, One Synthesizer Code)
+	add synt_point, synt_point, temp
+
+	lsl stride_voices, stride_voices, #3       @ Multiply by 8 (8 Bytes, Two Words, One Synthesizer Code), Make Offset for Total Voices
+
+	push {r0-r2}
+	mov r0, synt_max_length
+	mov r1, stride_voices
+	bl arm32_udiv
+	mov synt_max_length, r0
+	pop {r0-r2}
 
 	push {r0-r3}
 	mov r0, synt_pre_point
@@ -1585,7 +1617,7 @@ macro32_debug synt_point, 200, 48
 
 			str code_lower, [synt_point]
 			str code_upper, [synt_point, #4]
-			add synt_point, synt_point, #16
+			add synt_point, synt_point, stride_voices
 
 			vadd.f32 vfp_volume, vfp_volume, vfp_attack_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
@@ -1606,7 +1638,7 @@ macro32_debug synt_point, 200, 48
 
 			str code_lower, [synt_point]
 			str code_upper, [synt_point, #4]
-			add synt_point, synt_point, #16
+			add synt_point, synt_point, stride_voices
 
 			vsub.f32 vfp_volume, vfp_volume, vfp_decay_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
@@ -1626,7 +1658,7 @@ macro32_debug synt_point, 200, 48
 
 			str code_lower, [synt_point]
 			str code_upper, [synt_point, #4]
-			add synt_point, synt_point, #16
+			add synt_point, synt_point, stride_voices
 
 			b sts32_synthedecode_main_sustain
 
@@ -1638,7 +1670,7 @@ macro32_debug synt_point, 200, 48
 
 			str code_lower, [synt_point]
 			str code_upper, [synt_point, #4]
-			add synt_point, synt_point, #16
+			add synt_point, synt_point, stride_voices
 
 			vsub.f32 vfp_volume, vfp_volume, vfp_release_delta
 			vcvtr.s32.f32 vfp_temp, vfp_volume
@@ -1670,7 +1702,7 @@ macro32_debug synt_point, 200, 60
 
 .unreq synt_point
 .unreq synt_pre_point
-.unreq flag_lr
+.unreq stride_voices
 .unreq synt_max_length
 .unreq synt_pre_length
 .unreq code_lower

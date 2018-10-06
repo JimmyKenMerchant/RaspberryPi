@@ -140,12 +140,12 @@ os_reset:
 
 	/* Check MIDI Channel, GPIO9 (Bit[0]) and GPIO10 (Bit[1]) */
 	ldr r1, [r0, #equ32_gpio_gplev0]
-	ldr r2, OS_IRQ_MIDI_CHANNEL
+	ldr r2, OS_RESET_MIDI_CHANNEL
 	tst r1, #equ32_gpio09
 	addne r2, r2, #1
 	tst r1, #equ32_gpio10
 	addne r2, r2, #2
-	str r2, OS_IRQ_MIDI_CHANNEL
+	str r2, OS_RESET_MIDI_CHANNEL
 
 	/**
 	 * Clock Manager for GPCLK1. Make 4800Hz
@@ -199,11 +199,13 @@ os_reset:
 	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
 	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
 	/* But Now on Only Using Rx Timeout */
+	/*
 	push {r0-r3}
 	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
 	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
 	bl uart32_uartsetint
 	pop {r0-r3}
+	*/
 
 	push {r0-r3}
 	mov r0, #64
@@ -216,6 +218,9 @@ os_reset:
 /* From share/include/sts32.h (Matched at Linker), C Compiler Implicitly Adds ".globl" Attribute to Variables Globally Scoped, Which Use Memory Space */
 os_reset_SYNTHE_NOTES: .word _SYNTHE_NOTES
 
+.globl OS_RESET_MIDI_CHANNEL
+OS_RESET_MIDI_CHANNEL: .word __MIDI_BASECHANNEL
+
 os_debug:
 	push {lr}
 	pop {pc}
@@ -223,7 +228,7 @@ os_debug:
 os_irq:
 	push {r0-r12,lr}
 
-	ldr r0, OS_IRQ_MIDI_CHANNEL
+	ldr r0, OS_RESET_MIDI_CHANNEL
 
 .ifdef __SOUND_I2S
 	mov r1, #1
@@ -257,9 +262,6 @@ os_irq:
 .endif
 
 	pop {r0-r12,pc}
-
-.globl OS_IRQ_MIDI_CHANNEL
-OS_IRQ_MIDI_CHANNEL: .word __MIDI_BASECHANNEL
 
 os_fiq:
 	push {r0-r7,lr}
