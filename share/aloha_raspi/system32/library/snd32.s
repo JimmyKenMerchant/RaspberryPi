@@ -1613,17 +1613,46 @@ macro32_debug data1, 0, 112
 		 */
 		lsr data1, data1, #1                               @ Divide by 2
 		cmp data1, #1
-		beq snd32_soundmidi_control_msb_modulation
+		beq snd32_soundmidi_control_modulation
 		cmp data1, #16
-		beq snd32_soundmidi_control_msb_gp1                @ Frequency Range (Interval) of Modulation
+		beq snd32_soundmidi_control_gp1                    @ Frequency Range (Interval) of Modulation
 		cmp data1, #19
-		beq snd32_soundmidi_control_msb_gp4                @ Virtual Parallel for Sequence of Music Code
+		beq snd32_soundmidi_control_gp4                    @ Virtual Parallel for Sequence of Music Code
 
 		b snd32_soundmidi_success
 
-		snd32_soundmidi_control_msb_modulation:
+		snd32_soundmidi_control_lsb:
+
+			/* Least Significant Bits */
+
+			ldr temp, SND32_SOUNDMIDI_CTL
+			and data1, data1, #0x1F                            @ Only Use 0 to 31
+			lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
+			ldrh temp2, [temp, data1]
+			bic temp2, #0x7F                                   @ Bit[6:0]
+			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+			orr data2, temp2, data2
+			strh data2, [temp, data1]
+
+			mov count, #0
+
+			/**
+			 * Immediate Changes Here
+			 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
+			 */
+			lsr data1, data1, #1                               @ Divide by 2
+			cmp data1, #1
+			beq snd32_soundmidi_control_modulation
+			cmp data1, #16
+			beq snd32_soundmidi_control_gp1                    @ Frequency Range (Interval) of Modulation
+			cmp data1, #19
+			beq snd32_soundmidi_control_gp4                    @ Virtual Parallel for Sequence of Music Code
+
+			b snd32_soundmidi_success
+
+		snd32_soundmidi_control_modulation:
 			/* Incremental / Decremental Delta of Modulation */
-			lsr data2, data2, #6                           @ Divide by 64, Resolution 16384 to 256
+			lsr data2, data2, #6                               @ Divide by 64, Resolution 16384 to 256
 			cmp mode, #0
 			moveq temp, #equ32_snd32_mul_pwm
 			movne temp, #equ32_snd32_mul_pcm
@@ -1632,22 +1661,22 @@ macro32_debug data1, 0, 112
 			str data2, [temp]
 			b snd32_soundmidi_success
 
-		snd32_soundmidi_control_msb_gp1:
+		snd32_soundmidi_control_gp1:
 			/* Frequency Range (Interval) of Modulation */
-			lsr data2, data2, #2                           @ Divide by 4, Resolution 16384 to 4096
+			lsr data2, data2, #2                               @ Divide by 4, Resolution 16384 to 4096
 			ldr temp, SND32_MODULATION_RANGE_ADDR
 			str data2, [temp]
 
 			/* Check If Silence on Current Music Code*/
-			ldr temp, SND32_CURRENTCODE                    @ Check Current Code
+			ldr temp, SND32_CURRENTCODE                        @ Check Current Code
 			cmp temp, #equ32_snd32_silence
-			beq snd32_soundmidi_success                    @ If Silence
+			beq snd32_soundmidi_success                        @ If Silence
 
 			/* Check If Null (End of Sequence) on Current Music Code */
 			mov temp2, #0xFF00
 			orr temp2, temp2, #0x00FF
 			cmp temp, temp2
-			beq snd32_soundmidi_success                    @ If Null
+			beq snd32_soundmidi_success                        @ If Null
 
 			/* Except Silence or Null (End of Sequence of Music Code), Immediately Change Frequency Range */
 
@@ -1670,34 +1699,17 @@ macro32_debug data1, 0, 112
 			/* Minimum Frequency on Modulation */
 			sub data2, temp, data1
 			cmp data2, #0x2000
-			movlt data2, #0x2000                              @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+			movlt data2, #0x2000                               @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str data2, [temp2]
 
 			b snd32_soundmidi_success
 
-		snd32_soundmidi_control_msb_gp4:
+		snd32_soundmidi_control_gp4:
 			/* Virtual Parallel of Coconuts */
-			lsr data2, data2, #7                           @ Use Only MSB[13:7]
+			lsr data2, data2, #7                               @ Use Only MSB[13:7]
 			ldr temp, SND32_VIRTUAL_PARALLEL_ADDR
 			str data2, [temp]
-			b snd32_soundmidi_success
-
-		snd32_soundmidi_control_lsb:
-
-			/* Least Significant Bits */
-
-			ldr temp, SND32_SOUNDMIDI_CTL
-			and data1, data1, #0x1F                            @ Only Use 0 to 31
-			lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
-			ldrh temp2, [temp, data1]
-			bic temp2, #0x7F                                   @ Bit[6:0]
-			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
-			orr data2, temp2, data2
-			strh data2, [temp, data1]
-
-			mov count, #0
-
 			b snd32_soundmidi_success
 
 		snd32_soundmidi_control_others:
@@ -1710,12 +1722,10 @@ macro32_debug data1, 0, 112
 		blo snd32_soundmidi_success
 
 		ldr temp, SND32_SOUNDMIDI_CTL
-		ldr temp, [temp]                               @ Bank Select Bit[13:0]
+		ldrh temp, [temp]                              @ Bank Select Bit[13:0]
 		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
 		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
-/*
-macro32_debug data1, 100, 100
-*/
+
 		cmp data1, #0
 		moveq data2, #equ32_snd32_soundmidi_sound0_baseoffset
 		moveq temp, #equ32_snd32_soundmidi_sound0_lownote

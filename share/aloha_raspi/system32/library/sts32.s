@@ -2181,9 +2181,15 @@ sts32_synthemidi:
 			add temp2, temp2, #4
 			str byte, [temp, temp2]            @ Main Amplitude
 
-			/* Set Sub Frequency from Parameter */
+			/* Set Sub Frequency from Parameter, Round to Nearest 0.125 */
 			vmov vfp_temp, data1
 			vldr vfp_temp2, STS32_SYNTHEMIDI_SUBPITCH
+			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
+			mov data1, #0x3E000000             @ Hard Code 0.125 in Float
+			vmov vfp_temp2, data1
+			vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
+			vcvtr.u32.f32 vfp_temp, vfp_temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
 			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
 			vmov data1, vfp_temp
 			add temp2, temp2, #4
@@ -2264,7 +2270,10 @@ sts32_synthemidi:
 		ldr temp, STS32_SYNTHEMIDI_CTL
 		and data1, data1, #0x1F                            @ Only Use 0 to 31
 		lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
-		lsl data2, #7                                      @ Bit[13:7], LSB[6:0] Becomes Zero
+		ldrh temp2, [temp, data1]
+		bic temp2, #0x3F80                                 @ Bit[13:7]
+		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+		orr data2, temp2, data2, lsl #7
 		strh data2, [temp, data1]
 
 		mov count, #0
@@ -2387,7 +2396,7 @@ sts32_synthemidi:
 		blo sts32_synthemidi_success
 
 		ldr temp, STS32_SYNTHEMIDI_CTL
-		ldr temp, [temp]                               @ Bank Select Bit[13:0]
+		ldrh temp, [temp]                              @ Bank Select Bit[13:0]
 		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
 		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
 /*
