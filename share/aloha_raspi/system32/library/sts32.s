@@ -2082,17 +2082,17 @@ sts32_synthemidi:
 			/* Test Whether The Voice Is under Usage as Attack, Decay, and Sustain with MIDI or Not */
 			lsl temp, voices, #2              @ Multiply by 4
 			mov temp2, #0b11
-			lsl temp2, temp2, temp
-			tst status_voices, temp2
+			lsl temp, temp2, temp
+			tst status_voices, temp
 			beq sts32_synthemidi_noteoff_voicesearch_common
 
-			/* Load Concurrent Notes, If Not Matched Do Nothing */
+			/* Load Each Concurrent Note, If Not Matched Do Nothing */
 			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
-			ldrb temp2, [temp, voices]
-			cmp temp2, data1
+			ldrb temp, [temp, voices]
+			cmp temp, data1
 			bne sts32_synthemidi_noteoff_voicesearch_common
 
-			/* If Matched, Change Status to Release */
+			/* If Note is Matched, Change Status to Release */
 			lsl temp, voices, #2              @ Multiply by 4
 			mov temp2, #0b11
 			lsl temp2, temp2, temp
@@ -2105,26 +2105,28 @@ sts32_synthemidi:
 			 * Store Delta for Release to Envelope Pointer
 			 */
 
-			lsl data1, voices, #4              @ Multiply by 16
-			ldr temp, STS32_SYNTHEWAVE_PARAM
-			add data2, temp, data1             @ vldr/vstr Has Offset Only with Immediate Value
+			lsl temp, voices, #4               @ Multiply by 16
+			ldr temp2, STS32_SYNTHEWAVE_PARAM
+			add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
 			add data2, data2, #4               @ Offset Voice No. + 4 Bytes
 			vldr vfp_volume, [data2]           @ Get Current Main Amplitude
 
 			vldr vfp_temp, STS32_SYNTHEMIDI_RELEASE
 			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_temp, vfp_volume, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
 
 			/* Reset Count to Zero and Store Delta for Release */
-			ldr temp, STS32_SYNTHEMIDI_ENVELOPE
-			add data2, temp, data1             @ vldr/vstr Has Offset Only with Immediate Value
-			mov temp2, #0
-			str temp2, [data2]
+			ldr temp2, STS32_SYNTHEMIDI_ENVELOPE
+			add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
+			mov temp, #0
+			str temp, [data2]                  @ Store Count Zero
 			add data2, data2, #12              @ Offset Voice No. + 12 Bytes
-			vstr vfp_temp, [data2]             @ Store Delta for Release
+			vstr vfp_volume, [data2]           @ Store Delta for Release
 
 			/* Break Loop */
+			/* Deprecated Because of Endless Sounding after Pushing Same Note on Pedaling Sustain
 			b sts32_synthemidi_noteoff_common
+			*/
 
 			sts32_synthemidi_noteoff_voicesearch_common:
 				add voices, voices, #1
@@ -2166,16 +2168,31 @@ sts32_synthemidi:
 			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
 			strb data1, [temp, voices]
 
-			/* Set Main Frequency from Table of Notes, and Main Amplitude as Zero */
+			/* Set Main Frequency from Table of Notes */
 			ldr temp, STS32_SYNTHEMIDI_TABLENOTES
 			lsl data1, data1, #2               @ Multiply by 4, Array of Single Precision Float
 			ldr data1, [temp, data1]
 			lsl temp2, voices, #4              @ Multiply by 16
 			ldr temp, STS32_SYNTHEWAVE_PARAM
 			str data1, [temp, temp2]           @ Main Frequency
-			mov data1, #0
+
+			/* Set Main Amplitude as Zero */
+			mov byte, #0
 			add temp2, temp2, #4
-			str data1, [temp, temp2]           @ Main Amplitude
+			str byte, [temp, temp2]            @ Main Amplitude
+
+			/* Set Sub Frequency from Parameter */
+			vmov vfp_temp, data1
+			vldr vfp_temp2, STS32_SYNTHEMIDI_SUBPITCH
+			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
+			vmov data1, vfp_temp
+			add temp2, temp2, #4
+			str data1, [temp, temp2]           @ Sub Frequency
+
+			/* Set Sub Amplitude from Parameter */
+			ldr data1, STS32_SYNTHEMIDI_SUBAMP
+			add temp2, temp2, #4
+			str data1, [temp, temp2]           @ Sub Amplitude
 
 			/**
 			 * Make Deltas
@@ -2247,10 +2264,7 @@ sts32_synthemidi:
 		ldr temp, STS32_SYNTHEMIDI_CTL
 		and data1, data1, #0x1F                            @ Only Use 0 to 31
 		lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
-		ldrh temp2, [temp, data1]
-		bic temp2, #0x3F80                                 @ Bit[13:7]
-		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
-		orr data2, temp2, data2, lsl #7
+		lsl data2, #7                                      @ Bit[13:7], LSB[6:0] Becomes Zero
 		strh data2, [temp, data1]
 
 		mov count, #0
@@ -2261,26 +2275,17 @@ sts32_synthemidi:
 		 */
 		lsr data1, data1, #1                               @ Divide by 2
 		cmp data1, #1
-		beq sts32_synthemidi_control_msb_modulation
+		beq sts32_synthemidi_control_modulation
 		cmp data1, #16
-		beq sts32_synthemidi_control_msb_gp1               @ Frequency Range (Interval) of Modulation
+		beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
+		cmp data1, #17
+		beq sts32_synthemidi_control_gp2                   @ Sub Frequency Pitch on Synthesis
+		cmp data1, #18
+		beq sts32_synthemidi_control_gp3                   @ Sub Amplitude on Synthesis
 		cmp data1, #19
-		beq sts32_synthemidi_control_msb_gp4               @ Virtual Parallel for Sequence of Music Code
+		beq sts32_synthemidi_control_gp4                   @ Virtual Parallel for Sequence of Music Code
 
 		b sts32_synthemidi_success
-
-		sts32_synthemidi_control_msb_modulation:
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_msb_gp1:
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_msb_gp4:
-			/* Virtual Parallel of Coconuts */
-			lsr data2, data2, #7                           @ Use Only MSB[13:7]
-			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
-			str data2, [temp]
-			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_lsb:
 
@@ -2296,10 +2301,84 @@ sts32_synthemidi:
 			strh data2, [temp, data1]
 
 			mov count, #0
+
+			/**
+			 * Immediate Changes Here
+			 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
+			 */
+			lsr data1, data1, #1                               @ Divide by 2
+			cmp data1, #1
+			beq sts32_synthemidi_control_modulation
+			cmp data1, #16
+			beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
+			cmp data1, #17
+			beq sts32_synthemidi_control_gp2                   @ Sub Frequency Pitch on Synthesis
+			cmp data1, #18
+			beq sts32_synthemidi_control_gp3                   @ Sub Amplitude on Synthesis
+			cmp data1, #19
+			beq sts32_synthemidi_control_gp4                   @ Virtual Parallel for Sequence of Music Code
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_modulation:
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp1:
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp2:
+			vmov vfp_volume, data2                             @ Range 0 - 16383, Bit[13:0]
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			mov temp, #0x3F00                                  @ Decimal 16383
+			orr temp, temp, #0x00FF                            @ Decimal 16383
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			mov temp, #10
+			vmov vfp_temp2, temp
+			vcvt.f32.u32 vfp_temp2, vfp_temp2
+
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp2
+
+			vmov temp, vfp_volume
+			str temp, STS32_SYNTHEMIDI_SUBPITCH
+			/* Warning on Assmbler
+			vstr vfp_volume, STS32_SYNTHEMIDI_SUBPITCH
+			*/
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp3:
+			vmov vfp_volume, data2                             @ Range 0 - 16383, Bit[13:0]
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			mov temp, #0x3F00                                  @ Decimal 16383
+			orr temp, temp, #0x00FF                            @ Decimal 16383
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
+			vldr vfp_temp2, [temp]
+
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp2
+
+			vmov temp, vfp_volume
+			str temp, STS32_SYNTHEMIDI_SUBAMP
+			/* Warning on Assmbler
+			vstr vfp_volume, STS32_SYNTHEMIDI_SUBAMP
+			*/
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp4:
+			/* Virtual Parallel of Coconuts */
+			lsr data2, data2, #7                               @ Use Only MSB[13:7]
+			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
+			str data2, [temp]
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_others:
-
 			mov count, #0
 			b sts32_synthemidi_success
 
@@ -2358,8 +2437,11 @@ macro32_debug data1, 100, 100
 	sts32_synthemidi_systemrealtime:
 
 		/* If Reset, Hook to Note Off Event */
+		/*
 		cmp byte, #255
-		/*beq sts32_synthemidi_noteoff*/
+		moveq count #3
+		beq sts32_synthemidi_noteoff
+		*/
 
 		mov count, #0
 		b sts32_synthemidi_success
@@ -2420,6 +2502,8 @@ STS32_SYNTEHMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
 STS32_SYNTHEMIDI_SUSTAIN:        .float 1.0
 STS32_SYNTHEMIDI_RELEASE:        .word equ32_sts32_synthemidi_release
 STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
+STS32_SYNTHEMIDI_SUBPITCH:       .float 1.0
+STS32_SYNTHEMIDI_SUBAMP:         .float 0.0
 
 STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
 

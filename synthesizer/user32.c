@@ -514,39 +514,41 @@ synthe_precode pre_synthe16_r[] = {
 };
 
 
-uint32 pre_synthe1[] = {
-	(uint32)pre_synthe1_l,
-	(uint32)pre_synthe1_r
+/* Two Dimentional Array (Array of Pointers) */
+
+synthe_precode* pre_synthe1[] = {
+	pre_synthe1_l,
+	pre_synthe1_r
 };
 
-uint32 pre_synthe2[] = {
-	(uint32)pre_synthe2_l,
-	(uint32)pre_synthe2_r
+synthe_precode* pre_synthe2[] = {
+	pre_synthe2_l,
+	pre_synthe2_r
 };
 
-uint32 pre_synthe3[] = {
-	(uint32)pre_synthe3_l,
-	(uint32)pre_synthe3_r
+synthe_precode* pre_synthe3[] = {
+	pre_synthe3_l,
+	pre_synthe3_r
 };
 
-uint32 pre_synthe4[] = {
-	(uint32)pre_synthe4_l,
-	(uint32)pre_synthe4_r
+synthe_precode* pre_synthe4[] = {
+	pre_synthe4_l,
+	pre_synthe4_r
 };
 
-uint32 pre_synthe5[] = {
-	(uint32)pre_synthe5_l,
-	(uint32)pre_synthe5_r
+synthe_precode* pre_synthe5[] = {
+	pre_synthe5_l,
+	pre_synthe5_r
 };
 
-uint32 pre_synthe8[] = {
-	(uint32)pre_synthe8_l,
-	(uint32)pre_synthe8_r
+synthe_precode* pre_synthe8[] = {
+	pre_synthe8_l,
+	pre_synthe8_r
 };
 
-uint32 pre_synthe16[] = {
-	(uint32)pre_synthe16_l,
-	(uint32)pre_synthe16_r
+synthe_precode* pre_synthe16[] = {
+	pre_synthe16_l,
+	pre_synthe16_r
 };
 
 /* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */

@@ -253,24 +253,26 @@ synthe_precode pre_synthe8_r[] = {
 };
 
 
-uint32 pre_synthe1[] = {
-	(uint32)pre_synthe1_l,
-	(uint32)pre_synthe1_r
+/* Two Dimentional Array (Array of Pointers) */
+
+synthe_precode* pre_synthe1[] = {
+	pre_synthe1_l,
+	pre_synthe1_r
 };
 
-uint32 pre_synthe2[] = {
-	(uint32)pre_synthe2_l,
-	(uint32)pre_synthe2_r
+synthe_precode* pre_synthe2[] = {
+	pre_synthe2_l,
+	pre_synthe2_r
 };
 
-uint32 pre_synthe4[] = {
-	(uint32)pre_synthe4_l,
-	(uint32)pre_synthe4_r
+synthe_precode* pre_synthe4[] = {
+	pre_synthe4_l,
+	pre_synthe4_r
 };
 
-uint32 pre_synthe8[] = {
-	(uint32)pre_synthe8_l,
-	(uint32)pre_synthe8_r
+synthe_precode* pre_synthe8[] = {
+	pre_synthe8_l,
+	pre_synthe8_r
 };
 
 /* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */

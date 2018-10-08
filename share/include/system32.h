@@ -1396,7 +1396,7 @@ extern uint32 sts32_synthelen
  */
 extern synthe_code* sts32_synthedecodelr
 (
-	uint32* array_synthe_precode, // Two Dimentional, L and R Alternatively
+	synthe_precode** array_synthe_precode, // Two Dimentional (Array of Pointers), L and R Alternatively
 	uint32 number_voices
 );
 
