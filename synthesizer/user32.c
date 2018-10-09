@@ -604,22 +604,21 @@ int32 _user_start()
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
-	float32 bend_rate = 1.0;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s( bend_rate, 8 );
+		_synthewave_i2s( STS32_MODULATION_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_I2S, 8 );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm( bend_rate, 8 );
+		_synthewave_pwm( STS32_MODULATION_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm( bend_rate, 8 );
+		_synthewave_pwm( STS32_MODULATION_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
@@ -635,6 +634,13 @@ int32 _user_start()
 				}
 
 //print32_debug( detect_parallel, 100, 100 );
+
+				// Triangle LFO
+				STS32_MODULATION_MEDIUM = vfp32_fadd( STS32_MODULATION_MEDIUM, STS32_MODULATION_DELTA );
+				if ( vfp32_fgt( STS32_MODULATION_MEDIUM, STS32_MODULATION_MAX ) |
+					vfp32_flt( STS32_MODULATION_MEDIUM, STS32_MODULATION_MIN ) ) {
+					STS32_MODULATION_DELTA = vfp32_fmul( STS32_MODULATION_DELTA, -1.0 );
+				}
 
 				/* GPIO22-26 as Bit[26:22] */
 				// 0b00001 (1)

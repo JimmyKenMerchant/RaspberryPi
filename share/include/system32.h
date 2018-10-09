@@ -1354,6 +1354,10 @@ extern uint32 snd32_musiclen
 /* Global Variable */
 
 extern uint32 STS32_VIRTUAL_PARALLEL;
+extern float32 STS32_MODULATION_DELTA;
+extern float32 STS32_MODULATION_MAX;
+extern float32 STS32_MODULATION_MIN;
+extern float32 STS32_MODULATION_MEDIUM;
 
 /* Relative System Calls  */
 

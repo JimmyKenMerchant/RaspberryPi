@@ -2111,7 +2111,8 @@ sts32_synthemidi:
 			add data2, data2, #4               @ Offset Voice No. + 4 Bytes
 			vldr vfp_volume, [data2]           @ Get Current Main Amplitude
 
-			vldr vfp_temp, STS32_SYNTHEMIDI_RELEASE
+			ldr data2, STS32_SYNTHEMIDI_RELEASE
+			vmov vfp_temp, data2
 			vcvt.f32.u32 vfp_temp, vfp_temp
 			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
 
@@ -2330,47 +2331,97 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_modulation:
+			sub data2, data2, #0x2000                     @ Neutral (8192) to 0, Make Signed Value
+			asr data2, data2, #3                          @ Range -8192 - 8191 to -1024 - 1023
+			vmov vfp_volume, data2
+			vcvt.f32.s32 vfp_volume, vfp_volume
+
+			/* Divisor, 16384 */
+			mov temp, #0x4000
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range -1024 - 1023 to -0.0625 - 0.0624
+
+			ldr temp, STS32_MODULATION_DELTA_ADDR
+			vstr vfp_volume, [temp]
+
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_gp1:
+			lsr data2, data2, #2                          @ Range 0 - 16383 to 0 - 4095
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Divisor, 16380 */
+			mov temp, #0x3F00
+			orr temp, temp, #0x00FC
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 4095 to 0 - 0.25
+
+			vmov temp, vfp_volume
+			str temp, STS32_MODULATION_RANGE
+
+			ldr temp, STS32_MODULATION_MEDIUM_ADDR
+			vldr vfp_temp, [temp]
+
+			vadd.f32 vfp_temp2, vfp_temp, vfp_volume
+			ldr temp, STS32_MODULATION_MAX_ADDR
+			vstr vfp_temp2, [temp]
+
+			vsub.f32 vfp_temp2, vfp_temp, vfp_volume
+			ldr temp, STS32_MODULATION_MIN_ADDR
+			vstr vfp_temp2, [temp]
+
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_gp2:
-			vmov vfp_volume, data2                             @ Range 0 - 16383, Bit[13:0]
-			vcvt.f32.u32 vfp_volume, vfp_volume
-
-			mov temp, #0x3F00                                  @ Decimal 16383
-			orr temp, temp, #0x00FF                            @ Decimal 16383
+			/* Maximum Value 16000, Divisor */
+			mov temp, #0x3E00                                  @ Decimal 16000
+			orr temp, temp, #0x0080                            @ Decimal 16000
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
-			mov temp, #10
+
+			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
+			cmp data2, temp
+			movhi data2, temp
+
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Value of Multiplier */
+			mov temp, #4
 			vmov vfp_temp2, temp
 			vcvt.f32.u32 vfp_temp2, vfp_temp2
 
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
-			vmul.f32 vfp_volume, vfp_volume, vfp_temp2
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp2         @ Range 0 - 4.0
 
 			vmov temp, vfp_volume
 			str temp, STS32_SYNTHEMIDI_SUBPITCH
-			/* Warning on Assmbler
-			vstr vfp_volume, STS32_SYNTHEMIDI_SUBPITCH
-			*/
 
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_gp3:
-			vmov vfp_volume, data2                             @ Range 0 - 16383, Bit[13:0]
-			vcvt.f32.u32 vfp_volume, vfp_volume
-
-			mov temp, #0x3F00                                  @ Decimal 16383
-			orr temp, temp, #0x00FF                            @ Decimal 16383
+			/* Maximum Value 16000, Divisor */
+			mov temp, #0x3E00                                  @ Decimal 16000
+			orr temp, temp, #0x0080                            @ Decimal 16000
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
+
+			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
+			cmp data2, temp
+			movhi data2, temp
+
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Value of Multiplier */
 			ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
 			vldr vfp_temp2, [temp]
 
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
-			vmul.f32 vfp_volume, vfp_volume, vfp_temp2
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp2         @ Range 0 - 2PI
 
 			vmov temp, vfp_volume
 			str temp, STS32_SYNTHEMIDI_SUBAMP
@@ -2419,7 +2470,36 @@ macro32_debug data1, 100, 100
 		cmp count, #3
 		blo sts32_synthemidi_success
 
-		/* Pitch Bend Code Here */
+		/* Concatenate Data1 and Data2, 0 to 16383, 8192 (0x2000) is Neutral */
+		lsl data2, data2, #7                          @ MSB Bit[13:7]
+		orr data1, data1, data2
+		sub data1, data1, #0x2000                     @ Neutral (8192) to 0, Make Signed Value, -8192 - 8191
+		vmov vfp_volume, data1
+		vcvt.f32.s32 vfp_volume, vfp_volume
+
+		/* Divisor, 16384 */
+		mov temp, #0x4000
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range -8192 - 8191 to -0.5 - 0.4999
+
+		mov temp, #1
+		vmov vfp_temp, temp
+		vcvt.f32.u32 vfp_temp, vfp_temp
+		vadd.f32 vfp_volume, vfp_volume, vfp_temp     @ Range -0.5 - 0.4999 to 0.5 - 1.4999
+
+		ldr temp, STS32_MODULATION_MEDIUM_ADDR
+		vstr vfp_volume, [temp]
+
+		vldr vfp_temp, STS32_MODULATION_RANGE
+
+		vadd.f32 vfp_temp2, vfp_volume, vfp_temp
+		ldr temp, STS32_MODULATION_MAX_ADDR
+		vstr vfp_temp2, [temp]
+
+		vsub.f32 vfp_temp2, vfp_volume, vfp_temp
+		ldr temp, STS32_MODULATION_MIN_ADDR
+		vstr vfp_temp2, [temp]
 
 		mov count, #0
 		b sts32_synthemidi_success
@@ -2516,6 +2596,12 @@ STS32_SYNTHEMIDI_SUBAMP:         .float 0.0
 
 STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
 
+STS32_MODULATION_DELTA_ADDR:     .word STS32_MODULATION_DELTA
+STS32_MODULATION_MAX_ADDR:       .word STS32_MODULATION_MAX
+STS32_MODULATION_MIN_ADDR:       .word STS32_MODULATION_MIN
+STS32_MODULATION_MEDIUM_ADDR:    .word STS32_MODULATION_MEDIUM
+STS32_MODULATION_RANGE:          .float 0.0
+
 .section	.data
 _STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
 _STS32_SYNTHEMIDI_CURRENTNOTE:   .space 8, 0x00
@@ -2539,6 +2625,14 @@ STS32_SYNTHEMIDI_DELTA_ATTACK2:  .float 0.0
 STS32_SYNTHEMIDI_DELTA_DECAY2:   .float 0.0
 STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
 .space 96, 0x00                             @ Rest 6 Sets
+.globl STS32_MODULATION_DELTA
+STS32_MODULATION_DELTA:          .float 0.0
+.globl STS32_MODULATION_MAX
+STS32_MODULATION_MAX:            .float 1.0
+.globl STS32_MODULATION_MIN
+STS32_MODULATION_MIN:            .float 1.0
+.globl STS32_MODULATION_MEDIUM
+STS32_MODULATION_MEDIUM:         .float 1.0
 .section	.library_system32
 
 

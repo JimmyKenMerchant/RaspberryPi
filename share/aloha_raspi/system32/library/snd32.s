@@ -1652,7 +1652,8 @@ macro32_debug data1, 0, 112
 
 		snd32_soundmidi_control_modulation:
 			/* Incremental / Decremental Delta of Modulation */
-			lsr data2, data2, #6                               @ Divide by 64, Resolution 16384 to 256
+			lsr data2, data2, #5                               @ Divide by 32, Resolution 16384 to 512
+			sub data2, data2, #0x100                           @ 256 to 0, Make Signed Value
 			cmp mode, #0
 			moveq temp, #equ32_snd32_mul_pwm
 			movne temp, #equ32_snd32_mul_pcm
