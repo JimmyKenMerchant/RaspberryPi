@@ -40,6 +40,10 @@
 .equ equ32_sts32_synthemidi_decay,             200        @ Default Decay Time (Beats)
 .equ equ32_sts32_synthemidi_release,           200        @ Default Release Time (Beats)
 .equ equ32_sts32_synthemidi_volume,            20         @ Default Volume Multiplier
+.equ equ32_sts32_mul_pwm,                      1          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
+.equ equ32_sts32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
+.equ equ32_sts32_neutraldiv_pwm,               0x3200     @ Neutral Clock Divisor on Pitch Bend on PWM Mode, Already Multiplied
+.equ equ32_sts32_neutraldiv_pcm,               0x12C00    @ Neutral Clock Divisor on Pitch Bend on PCM Mode, Already Multiplied
 .equ equ32_snd32_sounddecode_pwm_bias,         624        @ 10-bit Depth
 .equ equ32_snd32_sounddecode_noise_len_upper,  0x280      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat

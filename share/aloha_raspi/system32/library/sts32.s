@@ -756,6 +756,7 @@ STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, 
  */
 STS32_STATUS:             .word 0x00
 
+
 /**
  * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
  * Bit[3:0] Voice L1
@@ -1072,17 +1073,6 @@ sts32_syntheplay:
 
 		str status_voices, STS32_VOICES
 
-		/*
-		str addr_code, STS32_SYNTHEWAVE_FREQA_L
-		str addr_code, STS32_SYNTHEWAVE_FREQB_L
-		str addr_code, STS32_SYNTHEWAVE_AMPA_L
-		str addr_code, STS32_SYNTHEWAVE_AMPB_L
-		str addr_code, STS32_SYNTHEWAVE_FREQA_R
-		str addr_code, STS32_SYNTHEWAVE_FREQB_R
-		str addr_code, STS32_SYNTHEWAVE_AMPA_R
-		str addr_code, STS32_SYNTHEWAVE_AMPB_R
-		*/
-
 		b sts32_syntheplay_success
 
 	sts32_syntheplay_error1:
@@ -1172,17 +1162,6 @@ sts32_syntheclear:
 	str temp, STS32_COUNT_NEXT
 	str temp, STS32_REPEAT_NEXT
 
-	/*
-	str temp, STS32_SYNTHEWAVE_FREQA_L
-	str temp, STS32_SYNTHEWAVE_FREQB_L
-	str temp, STS32_SYNTHEWAVE_AMPA_L
-	str temp, STS32_SYNTHEWAVE_AMPB_L
-	str temp, STS32_SYNTHEWAVE_FREQA_R
-	str temp, STS32_SYNTHEWAVE_FREQB_R
-	str temp, STS32_SYNTHEWAVE_AMPA_R
-	str temp, STS32_SYNTHEWAVE_AMPB_R
-	*/
-
 	sts32_syntheclear_success:
 		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
@@ -1194,6 +1173,1195 @@ sts32_syntheclear:
 .unreq temp
 .unreq temp2
 .unreq temp3
+
+
+/**
+ * function sts32_syntheinit_pwm
+ * Sound Initializer for PWM Mode
+ *
+ * Parameters
+ * r0: 0 as GPIO 12/13 PWM, 1 as GPIO 40/45(41) PWM, 2 as Both
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl sts32_syntheinit_pwm
+sts32_syntheinit_pwm:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	value             .req r1
+	gpio_set          .req r2
+
+	push {lr}
+
+	mov gpio_set, memorymap_base
+
+	/**
+	 * GPIO for PWM
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	cmp gpio_set, #0
+	cmpne gpio_set, #2
+
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 12
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2   @ Set GPIO 12 PWM0
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 13
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3   @ Set GPIO 13 PWM1
+	str value, [memorymap_base, #equ32_gpio_gpfsel10]
+
+	cmp gpio_set, #1
+	cmpne gpio_set, #2
+
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel40]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0          @ Clear GPIO 40
+	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
+.ifdef __RASPI3B
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1          @ Clear GPIO 41
+	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1         @ Set GPIO 41 PWM1 (to Minijack)
+.else
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5          @ Clear GPIO 45
+	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5         @ Set GPIO 45 PWM1 (to Minijack)
+.endif
+	str value, [memorymap_base, #equ32_gpio_gpfsel40]
+
+	macro32_dsb ip
+
+	/**
+	 * Clock Manager for PWM.
+	 * Makes 160Mhz (From PLLD). 500Mhz Div by 3.125 Equals 200Mhz.
+	 */
+	push {r0-r3}
+	mov r0, #equ32_cm_pwm
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld           @ 500Mhz
+	mov r2, #3<<equ32_cm_div_integer
+	orr r2, r2, #0x200<<equ32_cm_div_fraction                      @ 0.125 * 4096, Decimal 512
+	bl arm32_clockmanager
+	pop {r0-r3}
+
+	/**
+	 * PWM Enable
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
+	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
+
+	/**
+	 * 160Mhz Div By 5000 Equals 32000hz.
+	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 5000, but Is Actually 4096).
+	 */
+	mov value, #0x1300
+	orr value, value, #0x0088
+	str value, [memorymap_base, #equ32_pwm_rng1]
+	str value, [memorymap_base, #equ32_pwm_rng2]
+
+	mov value, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_usef1|equ32_pwm_ctl_pwen1
+	orr value, value, #equ32_pwm_ctl_msen2|equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
+	str value, [memorymap_base, #equ32_pwm_ctl]
+
+	macro32_dsb ip
+
+	ldr value, STS32_STATUS
+	orr value, value, #0x80000000
+	str value, STS32_STATUS
+
+	macro32_dsb ip
+
+	sts32_syntheinit_pwm_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq memorymap_base
+.unreq value
+.unreq gpio_set
+
+
+/**
+ * function sts32_syntheinit_i2s
+ * Synthesizer Initializer for I2S Mode (Outputs Both L and R Side by 32Khz)
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl sts32_syntheinit_i2s
+sts32_syntheinit_i2s:
+	/* Auto (Local) Variables, but just Aliases */
+	memorymap_base    .req r0
+	value             .req r1
+
+	push {lr}
+
+	/**
+	 * GPIO for PCM
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_gpio_base
+
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8    @ Clear GPIO 18
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_8     @ Set GPIO 18 PCM_CLK
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_9    @ Clear GPIO 19
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_9     @ Set GPIO 19 PCM_FS
+	str value, [memorymap_base, #equ32_gpio_gpfsel10]
+
+	/* GPIO 20 can be set to PCM_DIN, but No Use */
+	ldr value, [memorymap_base, #equ32_gpio_gpfsel20]
+	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 21
+	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1     @ Set GPIO 21 PCM_DOUT
+	str value, [memorymap_base, #equ32_gpio_gpfsel20]
+
+	macro32_dsb ip
+
+	/**
+	 * Clock Manager for PCM Clock.
+	 * Makes 19.2Mhz (From Oscillator). Div by 18.75 Equals 1.024Mhz
+	 */
+	push {r0-r3}
+	mov r0, #equ32_cm_pcm
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #18<<equ32_cm_div_integer
+	orr r2, r2, #0xC00<<equ32_cm_div_fraction                      @ 0.75 * 4096, Decimal 3072
+	bl arm32_clockmanager
+	pop {r0-r3}
+
+	/**
+	 * PCM Enable
+	 */
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
+	add memorymap_base, memorymap_base, #equ32_pcm_base_upper
+
+	mov value, #equ32_pcm_cs_en
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	/* Make I2S Compatible LRCLK/WCLK by 16-bit Depth on Both L and R */
+	mov value, #31<<equ32_pcm_mode_flen
+	orr value, value, #16<<equ32_pcm_mode_fslen
+	orr value, value, #equ32_pcm_mode_clki|equ32_pcm_mode_fsi     @ Invert Clock and Frame Sync
+	str value, [memorymap_base, #equ32_pcm_mode]
+
+	/* Channel 1 */
+	mov value, #equ32_pcm_rtxc_ch1en|equ32_pcm_rtxc_ch1wex        @ 32 Bits for Outputs Both L and R
+	orr value, value, #1<<equ32_pcm_rtxc_ch1pos                   @ Make Sure Offset 1 Bit from Frame Sync to Fit I2S Signal Regulation
+	orr value, value, #8<<equ32_pcm_rtxc_ch1wid
+	str value, [memorymap_base, #equ32_pcm_txc]
+
+	/* Clear TxFIFO, Two PCM Clocks Are Needed */
+	ldr value, [memorymap_base, #equ32_pcm_cs]
+	orr value, value, #equ32_pcm_cs_txclr
+	orr value, value, #equ32_pcm_cs_sync
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	sts32_syntheinit_i2s_clrtxf:
+		ldr value, [memorymap_base, #equ32_pcm_cs]
+		tst value, #equ32_pcm_cs_sync
+		beq sts32_syntheinit_i2s_clrtxf
+
+	/* Clear RxFIFO, No need of Clear RxFIFO, but RAM Preperation Needs Four PCM Clocks */
+	ldr value, [memorymap_base, #equ32_pcm_cs]
+	orr value, value, #equ32_pcm_cs_rxclr
+	orr value, value, #equ32_pcm_cs_sync
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	sts32_syntheinit_i2s_clrrxf:
+		ldr value, [memorymap_base, #equ32_pcm_cs]
+		tst value, #equ32_pcm_cs_sync
+		beq sts32_syntheinit_i2s_clrrxf
+
+	/* PCM Transmit Enable */
+	bic value, value, #equ32_pcm_cs_sync
+	orr value, value, #0b11 << equ32_pcm_cs_txthr @ Flag Down If Full
+	orr value, value, #equ32_pcm_cs_txon
+	str value, [memorymap_base, #equ32_pcm_cs]
+
+	macro32_dsb ip
+
+	ldr value, STS32_STATUS
+	orr value, value, #0x80000000
+	str value, STS32_STATUS
+
+	macro32_dsb ip
+
+	sts32_syntheinit_i2s_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq memorymap_base
+.unreq value
+
+
+/**
+ * function sts32_synthemidi
+ * MIDI Handler
+ * Use this function in UART interrupt.
+ *
+ * Parameters
+ * r0: Channel, 0-15 (MIDI Channel No. 1 to 16)
+ * r1: 0 as PWM Mode, 1 as PCM Mode
+ * r2: Number of Voices
+ *
+ * Return: r0 (0 as success, 1, 2, and 3 as error)
+ * Error(1): Not Initialized on sts32_syntheinit_*, No Buffer to Receive on UART, or UART Overrun
+ * Error(2): Character Is Not Received
+ * Error(3): MIDI Channel is Not Matched, or Only Data Bytes Received
+ */
+.globl sts32_synthemidi
+sts32_synthemidi:
+	/* Auto (Local) Variables, but just Aliases */
+	channel        .req r0
+	mode           .req r1
+	buffer         .req r2
+	count          .req r3
+	max_size       .req r4
+	bytebuffer     .req r5
+	byte           .req r6
+	temp           .req r7
+	data1          .req r8
+	data2          .req r9
+	status         .req r10
+	num_voices     .req r11
+
+	/* VFP Registers */
+	vfp_volume     .req s0
+	vfp_sustain    .req s1
+	vfp_temp       .req s2
+	vfp_temp2      .req s3
+
+	push {r4-r11,lr}
+	vpush {s0-s3}
+
+	mov num_voices, buffer
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
+
+	ldr status, STS32_STATUS
+	tst status, #0x80000000           @ If Not Initialized
+	beq sts32_synthemidi_error1
+
+	.unreq status
+	status_voices .req r10
+
+	ldr count, STS32_SYNTHEMIDI_COUNT
+	ldr max_size, STS32_SYNTHEMIDI_LENGTH
+	ldr buffer, STS32_SYNTHEMIDI_BUFFER
+
+	cmp buffer, #0
+	beq sts32_synthemidi_error1       @ If No Buffer
+
+	ldr bytebuffer, STS32_SYNTHEMIDI_BYTEBUFFER
+
+	push {r0-r3}
+	mov r0, bytebuffer
+	mov r1, #1                        @ 1 Bytes
+	bl uart32_uartrx
+	mov temp, r0                      @ Whether Overrun or Not
+	pop {r0-r3}
+
+	tst temp, #0x8                    @ Whether Overrun or Not
+	bne sts32_synthemidi_error1       @ If Overrun
+
+	tst temp, #0x10                   @ Whether Not Received or So
+	bne sts32_synthemidi_error2       @ If Not Received
+
+	/* Check Whether Status or Data Bytes */
+	ldrb byte, [bytebuffer]
+
+	tst byte, #0x80
+	bne sts32_synthemidi_status
+
+	/* Check Whether Only Data Bytes (Status Is For Other Channels, etc.) */
+	cmp count, #0
+	beq sts32_synthemidi_error3
+
+	/* Data Bytes */
+	strb byte, [buffer,count]
+
+	/* Slide Offset Count */
+	add count, count, #1
+	cmp count, max_size
+	subge count, max_size, #1         @ If Exceeds Maximum Size of Heap, Stay Count
+
+	.unreq max_size
+	temp2 .req r4
+	.unreq bytebuffer
+	voices .req r5
+
+	/* Check Message Type and Procedures for Each Message */
+	ldrb temp, [buffer]
+	ldrb data1, [buffer, #1]
+	ldrb data2, [buffer, #2]
+	cmp temp, #0x8
+	beq sts32_synthemidi_noteoff           @ Velocity is Ignored
+	cmp temp, #0x9
+	beq sts32_synthemidi_noteon
+	cmp temp, #0xA
+	beq sts32_synthemidi_polyaftertouch    @ Polyphonic Key Pressure
+	cmp temp, #0xB
+	beq sts32_synthemidi_control
+	cmp temp, #0xC
+	beq sts32_synthemidi_programchange
+	cmp temp, #0xD
+	beq sts32_synthemidi_monoaftertouch    @ Monophonic Key Pressure
+	cmp temp, #0xE
+	beq sts32_synthemidi_pitchbend
+	cmp temp, #0xF
+	beq sts32_synthemidi_systemcommon
+
+	b sts32_synthemidi_success
+
+	sts32_synthemidi_noteoff:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		ldr status_voices, STS32_VOICES
+
+		mov voices, #0
+		sts32_synthemidi_noteoff_voicesearch:
+			cmp voices, num_voices
+			bhs sts32_synthemidi_noteoff_common
+
+			/* Test Whether The Voice Is under Usage as Attack, Decay, and Sustain with MIDI or Not */
+			lsl temp, voices, #2              @ Multiply by 4
+			mov temp2, #0b11
+			lsl temp, temp2, temp
+			tst status_voices, temp
+			beq sts32_synthemidi_noteoff_voicesearch_common
+
+			/* Load Each Concurrent Note, If Not Matched Do Nothing */
+			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
+			ldrb temp, [temp, voices]
+			cmp temp, data1
+			bne sts32_synthemidi_noteoff_voicesearch_common
+
+			/* If Note is Matched, Change Status to Release */
+			lsl temp, voices, #2              @ Multiply by 4
+			mov temp2, #0b11
+			lsl temp2, temp2, temp
+			bic status_voices, status_voices, temp2
+			mov temp2, #0b100
+			lsl temp2, temp2, temp
+			orr status_voices, status_voices, temp2
+
+			/**
+			 * Store Delta for Release to Envelope Pointer
+			 */
+
+			lsl temp, voices, #4               @ Multiply by 16
+			ldr temp2, STS32_SYNTHEWAVE_PARAM
+			add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
+			add data2, data2, #4               @ Offset Voice No. + 4 Bytes
+			vldr vfp_volume, [data2]           @ Get Current Main Amplitude
+
+			ldr data2, STS32_SYNTHEMIDI_RELEASE
+			vmov vfp_temp, data2
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+
+			/* Reset Count to Zero and Store Delta for Release */
+			ldr temp2, STS32_SYNTHEMIDI_ENVELOPE
+			add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
+			mov temp, #0
+			str temp, [data2]                  @ Store Count Zero
+			add data2, data2, #12              @ Offset Voice No. + 12 Bytes
+			vstr vfp_volume, [data2]           @ Store Delta for Release
+
+			/* Break Loop */
+			/* Deprecated Because of Endless Sounding after Pushing Same Note on Pedaling Sustain
+			b sts32_synthemidi_noteoff_common
+			*/
+
+			sts32_synthemidi_noteoff_voicesearch_common:
+				add voices, voices, #1
+				b sts32_synthemidi_noteoff_voicesearch
+
+		sts32_synthemidi_noteoff_common:
+			str status_voices, STS32_VOICES
+			mov count, #0
+			b sts32_synthemidi_success
+
+	sts32_synthemidi_noteon:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		/* If Velocity Is Zero, Go to Note Off Event */
+		cmp data2, #0
+		beq sts32_synthemidi_noteoff
+
+		ldr status_voices, STS32_VOICES
+
+		mov voices, #0
+		sts32_synthemidi_noteon_voicesearch:
+			cmp voices, num_voices
+			bhs sts32_synthemidi_noteon_common
+
+			/* Test Whether The Voice Is under Any Usage with MIDI or Synthesizer Code, or Not */
+			lsl temp, voices, #2               @ Multiply by 4
+			mov temp2, #0b1111
+			lsl temp2, temp2, temp
+			tst status_voices, temp2
+			bne sts32_synthemidi_noteon_voicesearch_common
+
+			/* Set Attack */
+			mov temp2, #0b1
+			lsl temp2, temp2, temp
+			orr status_voices, status_voices, temp2
+
+			/* Store Concurrent Notes */
+			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
+			strb data1, [temp, voices]
+
+			/* Set Main Frequency from Table of Notes */
+			ldr temp, STS32_SYNTHEMIDI_TABLENOTES
+			lsl data1, data1, #2               @ Multiply by 4, Array of Single Precision Float
+			ldr data1, [temp, data1]
+			lsl temp2, voices, #4              @ Multiply by 16
+			ldr temp, STS32_SYNTHEWAVE_PARAM
+			str data1, [temp, temp2]           @ Main Frequency
+
+			/* Set Main Amplitude as Zero */
+			mov byte, #0
+			add temp2, temp2, #4
+			str byte, [temp, temp2]            @ Main Amplitude
+
+			/* Set Sub Frequency from Parameter, Round to Nearest 0.125 */
+			vmov vfp_temp, data1
+			vldr vfp_temp2, STS32_SYNTHEMIDI_SUBPITCH
+			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
+			mov data1, #0x3E000000             @ Hard Code 0.125 in Float
+			vmov vfp_temp2, data1
+			vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
+			vcvtr.u32.f32 vfp_temp, vfp_temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
+			vmov data1, vfp_temp
+			add temp2, temp2, #4
+			str data1, [temp, temp2]           @ Sub Frequency
+
+			/* Set Sub Amplitude from Parameter */
+			ldr data1, STS32_SYNTHEMIDI_SUBAMP
+			add temp2, temp2, #4
+			str data1, [temp, temp2]           @ Sub Amplitude
+
+			/**
+			 * Make Deltas
+			 */
+
+			/* Make Maximum Volume with Floating Point */
+			ldr temp2, STS32_SYNTHEMIDI_VOLUME
+			mul data2, data2, temp2
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Make Envelope Pointer for The Voice */
+			lsl temp, voices, #4              @ Multiply by 16
+			ldr data1, STS32_SYNTHEMIDI_ENVELOPE
+			add data1, data1, temp
+
+			/* Store Count to Envelope Pointer */
+			mov temp, #0
+			str temp, [data1]
+			add data1, data1, #4
+
+			/* Store Delta for Attack to Envelope Pointer */
+			vldr vfp_temp, STS32_SYNTHEMIDI_ATTACK
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_volume, vfp_temp
+			vstr vfp_temp, [data1]
+			add data1, data1, #4
+
+			/* Store Delta for Decay to Envelope Pointer */
+			vldr vfp_sustain, STS32_SYNTHEMIDI_SUSTAIN
+			vmul.f32 vfp_sustain, vfp_volume, vfp_sustain
+			vsub.f32 vfp_temp2, vfp_volume, vfp_sustain
+			vldr vfp_temp, STS32_SYNTEHMIDI_DECAY
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_temp, vfp_temp2, vfp_temp
+			vstr vfp_temp, [data1]
+			add data1, data1, #4
+
+			/* Break Loop */
+			b sts32_synthemidi_noteon_common
+
+			sts32_synthemidi_noteon_voicesearch_common:
+				add voices, voices, #1
+				b sts32_synthemidi_noteon_voicesearch
+
+		sts32_synthemidi_noteon_common:
+			str status_voices, STS32_VOICES
+			mov count, #0
+			b sts32_synthemidi_success
+
+	sts32_synthemidi_polyaftertouch:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_control:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		mov count, #0
+
+		cmp data1, #72
+		beq sts32_synthemidi_control_release               @ Sound Controller 3
+		cmp data1, #73
+		beq sts32_synthemidi_control_attack                @ Sound Controller 4
+		cmp data1, #75
+		beq sts32_synthemidi_control_decay                 @ Sound Controller 6
+		cmp data1, #79
+		beq sts32_synthemidi_control_sustain               @ Sound Controller 10 Undefined in Default
+		cmp data1, #64
+		bhs sts32_synthemidi_control_others
+		cmp data1, #32
+		bhs sts32_synthemidi_control_lsb
+
+		/* Most Significant Bits */
+
+		ldr temp, STS32_SYNTHEMIDI_CTL
+		and data1, data1, #0x1F                            @ Only Use 0 to 31
+		lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
+		ldrh temp2, [temp, data1]
+		bic temp2, #0x3F80                                 @ Bit[13:7]
+		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+		orr data2, temp2, data2, lsl #7
+		strh data2, [temp, data1]
+
+		/**
+		 * Immediate Changes Here
+		 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
+		 */
+		lsr data1, data1, #1                               @ Divide by 2
+		cmp data1, #1
+		beq sts32_synthemidi_control_modulation
+		cmp data1, #7
+		beq sts32_synthemidi_control_volume
+		cmp data1, #16
+		beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
+		cmp data1, #17
+		beq sts32_synthemidi_control_gp2                   @ Sub Frequency Pitch on Synthesis
+		cmp data1, #18
+		beq sts32_synthemidi_control_gp3                   @ Sub Amplitude on Synthesis
+		cmp data1, #19
+		beq sts32_synthemidi_control_gp4                   @ Virtual Parallel for Sequence of Music Code
+
+		b sts32_synthemidi_success
+
+		sts32_synthemidi_control_lsb:
+
+			/* Least Significant Bits */
+
+			ldr temp, STS32_SYNTHEMIDI_CTL
+			and data1, data1, #0x1F                            @ Only Use 0 to 31
+			lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
+			ldrh temp2, [temp, data1]
+			bic temp2, #0x7F                                   @ Bit[6:0]
+			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
+			orr data2, temp2, data2
+			strh data2, [temp, data1]
+
+			/**
+			 * Immediate Changes Here
+			 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
+			 */
+			lsr data1, data1, #1                               @ Divide by 2
+			cmp data1, #1
+			beq sts32_synthemidi_control_modulation
+			cmp data1, #7
+			beq sts32_synthemidi_control_volume
+			cmp data1, #16
+			beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
+			cmp data1, #17
+			beq sts32_synthemidi_control_gp2                   @ Sub Frequency Pitch on Synthesis
+			cmp data1, #18
+			beq sts32_synthemidi_control_gp3                   @ Sub Amplitude on Synthesis
+			cmp data1, #19
+			beq sts32_synthemidi_control_gp4                   @ Virtual Parallel for Sequence of Music Code
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_modulation:
+			cmp data2, #0
+			beq sts32_synthemidi_control_modulation_zero
+			lsr data2, data2, #4                          @ Range 0 - 16383 to 0 - 1023
+			vmov vfp_volume, data2
+			vcvt.f32.s32 vfp_volume, vfp_volume
+
+			/* Divisor, 16368 */
+			mov temp, #0x3F00
+			orr temp, temp, #0x00F0
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 1023 to 0.0 - 0.0625
+
+			ldr temp, STS32_MODULATION_DELTA_ADDR
+			vstr vfp_volume, [temp]
+
+			b sts32_synthemidi_success
+
+			sts32_synthemidi_control_modulation_zero:
+				/* Reset Medium Value to 1.0, Prevent Glitch on Sample Rate */
+				mov temp, #0x3F800000                     @ Hard Code 1.0 in Float
+				ldr temp2, STS32_MODULATION_MEDIUM_ADDR
+				str temp, [temp2]
+
+				mov temp, #0
+				ldr temp2, STS32_MODULATION_DELTA_ADDR
+				str temp, [temp2]
+
+				b sts32_synthemidi_success
+
+		sts32_synthemidi_control_volume:
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp1:
+			lsr data2, data2, #2                          @ Range 0 - 16383 to 0 - 4095
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Divisor, 16380 */
+			mov temp, #0x3F00
+			orr temp, temp, #0x00FC
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 4095 to 0 - 0.25
+
+			mov temp, #0x3F800000                         @ Hard Code 1.0 in Float
+			vmov vfp_temp, temp
+
+			/* Reset Medium Value to 1.0 */
+			ldr temp, STS32_MODULATION_MEDIUM_ADDR
+			vstr vfp_temp, [temp]
+
+			/* Maximum Value of Interval */
+			vadd.f32 vfp_temp2, vfp_temp, vfp_volume
+			ldr temp, STS32_MODULATION_MAX_ADDR
+			vstr vfp_temp2, [temp]
+
+			/* Minimum Value of Interval */
+			vsub.f32 vfp_temp2, vfp_temp, vfp_volume
+			ldr temp, STS32_MODULATION_MIN_ADDR
+			vstr vfp_temp2, [temp]
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp2:
+			/* Maximum Value 16000, Divisor */
+			mov temp, #0x3E00                                  @ Decimal 16000
+			orr temp, temp, #0x0080                            @ Decimal 16000
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+
+			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
+			cmp data2, temp
+			movhi data2, temp
+
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Value of Multiplier */
+			mov temp, #4
+			vmov vfp_temp2, temp
+			vcvt.f32.u32 vfp_temp2, vfp_temp2
+
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp2         @ Range 0 - 4.0
+
+			vmov temp, vfp_volume
+			str temp, STS32_SYNTHEMIDI_SUBPITCH
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp3:
+			/* Maximum Value 16000, Divisor */
+			mov temp, #0x3E00                                  @ Decimal 16000
+			orr temp, temp, #0x0080                            @ Decimal 16000
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+
+			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
+			cmp data2, temp
+			movhi data2, temp
+
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			/* Value of Multiplier */
+			ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
+			vldr vfp_temp2, [temp]
+
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp2         @ Range 0 - 2PI
+
+			vmov temp, vfp_volume
+			str temp, STS32_SYNTHEMIDI_SUBAMP
+			/* Warning on Assmbler
+			vstr vfp_volume, STS32_SYNTHEMIDI_SUBAMP
+			*/
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp4:
+			/* Virtual Parallel of Coconuts */
+			lsr data2, data2, #7                               @ Use Only MSB[13:7]
+			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
+			str data2, [temp]
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_release:
+			b sts32_synthemidi_success
+		sts32_synthemidi_control_attack:
+			b sts32_synthemidi_success
+		sts32_synthemidi_control_decay:
+			b sts32_synthemidi_success
+		sts32_synthemidi_control_sustain:
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_others:
+			b sts32_synthemidi_success
+
+	sts32_synthemidi_programchange:
+		cmp count, #2
+		blo sts32_synthemidi_success
+
+		ldr temp, STS32_SYNTHEMIDI_CTL
+		ldrh temp, [temp]                              @ Bank Select Bit[13:0]
+		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
+		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
+/*
+macro32_debug data1, 100, 100
+*/
+
+		/* Program Change Code Here */
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_monoaftertouch:
+		cmp count, #2
+		blo sts32_synthemidi_success
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_pitchbend:
+		cmp count, #3
+		blo sts32_synthemidi_success
+
+		/* Concatenate Data1 and Data2, 0 to 16383, 8192 (0x2000) is Neutral */
+		lsl data2, data2, #7                          @ MSB Bit[13:7]
+		orr data1, data1, data2
+		lsr data1, data1, #1                          @ Divisor of Resolution (This Case Divided by 2)
+		sub data1, data1, #0x1000                     @ Neutral (8192 / 2) to 0, Make Signed Value
+
+		cmp mode, #0
+		moveq data2, #equ32_sts32_mul_pwm
+		moveq temp, #equ32_sts32_neutraldiv_pwm
+		movne data2, #equ32_sts32_mul_pcm
+		movne temp, #equ32_sts32_neutraldiv_pcm
+		mul data1, data1, data2                       @ Multiply with Multiplier
+
+		sub temp, temp, data1                         @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+		cmp temp, #0x2000
+		movlt temp, #0x2000                           @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+
+		push {r0-r3}
+		cmp mode, #0
+		moveq r0, #equ32_cm_pwm
+		movne r0, #equ32_cm_pcm
+		mov r1, temp
+		bl arm32_clockmanager_divisor
+		pop {r0-r3}
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_systemcommon:
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_status:
+		/* If 0b11111000 and Above, Jump to Event on System Real Time Messages */
+		cmp byte, #248
+		bhs sts32_synthemidi_systemrealtime
+
+		bic temp, byte, #0xF0
+		cmp temp, channel
+		movne count, #0
+		bne sts32_synthemidi_error2   @ If Channel Is Not Matched
+
+		/* Channel Is Matched */
+		lsr byte, byte, #4            @ Omit Channel Number
+		strb byte, [buffer]
+		mov count, #1
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_systemrealtime:
+
+		/* If Reset, Hook to Note Off Event */
+		/*
+		cmp byte, #255
+		moveq count #3
+		beq sts32_synthemidi_noteoff
+		*/
+
+		mov count, #0
+		b sts32_synthemidi_success
+
+	sts32_synthemidi_error1:
+		mov r0, #1
+		b sts32_synthemidi_common
+
+	sts32_synthemidi_error2:
+		mov r0, #2
+		b sts32_synthemidi_common
+
+	sts32_synthemidi_error3:
+		mov r0, #3
+		b sts32_synthemidi_common
+
+	sts32_synthemidi_success:
+		mov r0, #0
+
+	sts32_synthemidi_common:
+		str count, STS32_SYNTHEMIDI_COUNT
+		macro32_dsb ip
+/*
+macro32_debug_hexa buffer, 100, 100, 8
+*/
+		vpop {s0-s3}
+		pop {r4-r11,pc}
+
+.unreq channel
+.unreq mode
+.unreq buffer
+.unreq count
+.unreq temp2
+.unreq voices
+.unreq byte
+.unreq temp
+.unreq data1
+.unreq data2
+.unreq status_voices
+.unreq num_voices
+.unreq vfp_volume
+.unreq vfp_sustain
+.unreq vfp_temp
+.unreq vfp_temp2
+
+STS32_SYNTHEMIDI_SUBPITCH:       .float 1.0
+STS32_SYNTHEMIDI_SUBAMP:         .float 0.0
+
+STS32_SYNTHEMIDI_COUNT:          .word 0x00
+STS32_SYNTHEMIDI_LENGTH:         .word 0x00
+STS32_SYNTHEMIDI_BUFFER:         .word 0x00 @ Second Buffer to Store Outstanding MIDI Message
+STS32_SYNTHEMIDI_BYTEBUFFER:     .word _STS32_SYNTHEMIDI_BYTEBUFFER
+STS32_SYNTHEMIDI_CURRENTNOTE:    .word _STS32_SYNTHEMIDI_CURRENTNOTE
+STS32_SYNTHEMIDI_TABLENOTES:     .word 0x00
+
+STS32_SYNTHEMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
+STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
+
+STS32_SYNTHEMIDI_ATTACK:         .word equ32_sts32_synthemidi_attack
+STS32_SYNTEHMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
+STS32_SYNTHEMIDI_SUSTAIN:        .float 1.0
+STS32_SYNTHEMIDI_RELEASE:        .word equ32_sts32_synthemidi_release
+STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
+
+STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
+
+STS32_MODULATION_DELTA_ADDR:     .word STS32_MODULATION_DELTA
+STS32_MODULATION_MAX_ADDR:       .word STS32_MODULATION_MAX
+STS32_MODULATION_MIN_ADDR:       .word STS32_MODULATION_MIN
+STS32_MODULATION_MEDIUM_ADDR:    .word STS32_MODULATION_MEDIUM
+
+.section	.data
+_STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
+_STS32_SYNTHEMIDI_CURRENTNOTE:   .space 8, 0x00
+.globl STS32_VIRTUAL_PARALLEL
+STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
+STS32_SYNTHEWAVE_FREQA_L:        .word 0x00
+STS32_SYNTHEWAVE_AMPA_L:         .word 0x00
+STS32_SYNTHEWAVE_FREQB_L:        .word 0x00
+STS32_SYNTHEWAVE_AMPB_L:         .word 0x00
+STS32_SYNTHEWAVE_FREQA_R:        .word 0x00
+STS32_SYNTHEWAVE_AMPA_R:         .word 0x00
+STS32_SYNTHEWAVE_FREQB_R:        .word 0x00
+STS32_SYNTHEWAVE_AMPB_R:         .word 0x00
+.space 96, 0x00                             @ Rest 6 Sets
+STS32_SYNTHEMIDI_COUNT1:         .word 0x00
+STS32_SYNTHEMIDI_DELTA_ATTACK1:  .float 0.0
+STS32_SYNTHEMIDI_DELTA_DECAY1:   .float 0.0
+STS32_SYNTHEMIDI_DELTA_RELEASE1: .float 0.0
+STS32_SYNTHEMIDI_COUNT2:         .word 0x00
+STS32_SYNTHEMIDI_DELTA_ATTACK2:  .float 0.0
+STS32_SYNTHEMIDI_DELTA_DECAY2:   .float 0.0
+STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
+.space 96, 0x00                             @ Rest 6 Sets
+.globl STS32_MODULATION_DELTA
+STS32_MODULATION_DELTA:          .float 0.0
+.globl STS32_MODULATION_MAX
+STS32_MODULATION_MAX:            .float 1.0
+.globl STS32_MODULATION_MIN
+STS32_MODULATION_MIN:            .float 1.0
+.globl STS32_MODULATION_MEDIUM
+STS32_MODULATION_MEDIUM:         .float 1.0
+.section	.library_system32
+
+
+/**
+ * function sts32_synthemidi_malloc
+ * Make Buffer for Function, sts32_synthemidi
+ *
+ * Parameters
+ * r0: Size of Buffer (Words)
+ * r1: Pointer of Table of Notes Frequency
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Memory Allocation Is Not Succeeded
+ */
+.globl sts32_synthemidi_malloc
+sts32_synthemidi_malloc:
+	/* Auto (Local) Variables, but just Aliases */
+	words_buffer .req r0
+	addr_table   .req r1
+	buffer       .req r2
+
+	push {lr}
+
+	/* Buffer to Receive MIDI Message */
+	push {r0-r1}
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0-r1}
+
+	cmp buffer, #0
+	beq sts32_synthemidi_malloc_error
+
+	lsl words_buffer, words_buffer, #2             @ Multiply by 4
+	sub words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
+	str words_buffer, STS32_SYNTHEMIDI_LENGTH
+	str buffer, STS32_SYNTHEMIDI_BUFFER
+	mov words_buffer, #0
+	str words_buffer, STS32_SYNTHEMIDI_COUNT
+
+	/* Buffer for Control Message No. 0 to No. 31 */
+	push {r0-r1}
+	mov r0, #16                                    @ 16 Words Multiplied by 4 Bytes Equals 64 Bytes (2 Bytes Half Word * 32)
+	bl heap32_malloc
+	mov buffer, r0
+	pop {r0-r1}
+
+	cmp buffer, #0
+	beq sts32_synthemidi_malloc_error
+
+	str buffer, STS32_SYNTHEMIDI_CTL
+
+	str addr_table, STS32_SYNTHEMIDI_TABLENOTES
+
+	b sts32_synthemidi_malloc_success
+
+	sts32_synthemidi_malloc_error:
+		mov r0, #1
+		b sts32_synthemidi_malloc_common
+
+	sts32_synthemidi_malloc_success:
+		mov r0, #0
+
+	sts32_synthemidi_malloc_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq words_buffer
+.unreq addr_table
+.unreq buffer
+
+
+/**
+ * function sts32_synthemidi_envelope
+ * Make Envelope for Notes from MIDI IN
+ *
+ * Parameters
+ * r0: Number of Voices
+ *
+ * Return: r0 (0 as success)
+ */
+.globl sts32_synthemidi_envelope
+sts32_synthemidi_envelope:
+	/* Auto (Local) Variables, but just Aliases */
+	num_voices     .req r0
+	status_voices  .req r1
+	addr_envelope  .req r2
+	addr_param     .req r3
+	voices         .req r4
+	check          .req r5
+	offset         .req r6
+	count          .req r7
+	max_count      .req r8
+	addr           .req r9
+
+	/* VFP Registers */
+	vfp_volume     .req s0
+	vfp_delta      .req s1
+
+	push {r4-r9,lr}
+	vpush {s0-s1}
+
+	cmp num_voices, #equ32_sts32_voice_max
+	movhi num_voices, #equ32_sts32_voice_max
+
+	ldr status_voices, STS32_VOICES
+	ldr addr_envelope, STS32_SYNTHEMIDI_ENVELOPE
+	ldr addr_param, STS32_SYNTHEWAVE_PARAM
+
+	mov voices, #0
+	sts32_synthemidi_envelope_loop:
+		cmp voices, num_voices
+		bhs sts32_synthemidi_envelope_success
+
+		/* Test Whether The Voice Is under Usage with MIDI or Not */
+		lsl offset, voices, #2              @ Multiply by 4
+		mov check, #0b111
+		lsl check, check, offset
+		tst status_voices, check
+		beq sts32_synthemidi_envelope_loop_common
+
+		lsr check, status_voices, offset
+		and check, check, #0b111
+		cmp check, #0b001
+		beq sts32_synthemidi_envelope_loop_attack
+		cmp check, #0b010
+		beq sts32_synthemidi_envelope_loop_decay
+		cmp check, #0b011
+		beq sts32_synthemidi_envelope_loop_sustain
+		cmp check, #0b100
+		bhs sts32_synthemidi_envelope_loop_release
+
+		sts32_synthemidi_envelope_loop_attack:
+			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+
+			/* Increase Volume (Main Amplitude) */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			add addr, addr, #4                       @ Add Offset for Attack Delta
+			vldr vfp_delta, [addr]
+
+			add addr, addr_param, offset             @ Pointer for Parameter
+			add addr, addr, #4                       @ Main Amplitude
+			vldr vfp_volume, [addr]
+
+			vadd.f32 vfp_volume, vfp_volume, vfp_delta
+			vstr vfp_volume, [addr]
+
+			/* Increase Count, Reset Count and Change The Voice Status to 2 If Reaches Maximum */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			ldr count, [addr]
+			ldr max_count, STS32_SYNTHEMIDI_ATTACK
+			add count, count, #1
+			cmp count, max_count
+			movhs count, #0
+			lslhs offset, voices, #2                 @ Multiply by 4
+			movhs check, #0b1
+			lslhs check, check, offset
+			addhs status_voices, status_voices, check
+			str count, [addr]
+
+			b sts32_synthemidi_envelope_loop_common
+
+		sts32_synthemidi_envelope_loop_decay:
+			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+
+			/* Decrease Volume (Main Amplitude) */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			add addr, addr, #8                       @ Add Offset for Delay Delta
+			vldr vfp_delta, [addr]
+
+			add addr, addr_param, offset             @ Pointer for Parameter
+			add addr, addr, #4                       @ Main Amplitude
+			vldr vfp_volume, [addr]
+
+			vsub.f32 vfp_volume, vfp_volume, vfp_delta
+			vstr vfp_volume, [addr]
+
+			/* Increase Count, Reset Count and Change The Voice Status to 3 If Reaches Maximum */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			ldr count, [addr]
+			ldr max_count, STS32_SYNTEHMIDI_DECAY
+			add count, count, #1
+			cmp count, max_count
+			movhs count, #0
+			lslhs offset, voices, #2                 @ Multiply by 4
+			movhs check, #0b1
+			lslhs check, check, offset
+			addhs status_voices, status_voices, check
+			str count, [addr]
+			b sts32_synthemidi_envelope_loop_common
+
+		sts32_synthemidi_envelope_loop_sustain:
+			/* Do Nothing */
+			b sts32_synthemidi_envelope_loop_common
+
+		sts32_synthemidi_envelope_loop_release:
+			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+
+			/* Decrease Volume (Main Amplitude) */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			add addr, addr, #12                      @ Add Offset for Release Delta
+			vldr vfp_delta, [addr]
+
+			add addr, addr_param, offset             @ Pointer for Parameter
+			add addr, addr, #4                       @ Main Amplitude
+			vldr vfp_volume, [addr]
+
+			vsub.f32 vfp_volume, vfp_volume, vfp_delta
+			vstr vfp_volume, [addr]
+
+			/* Increase Count, Reset Count and Change The Voice Status to 0 If Reaches Maximum */
+			add addr, addr_envelope, offset          @ Pointer for Envelope
+			ldr count, [addr]
+			ldr max_count, STS32_SYNTHEMIDI_RELEASE
+			add count, count, #1
+			cmp count, max_count
+			movhs count, #0
+			lslhs offset, voices, #2                 @ Multiply by 4
+			movhs check, #0b111
+			lslhs check, check, offset
+			bichs status_voices, status_voices, check
+			str count, [addr]
+
+		sts32_synthemidi_envelope_loop_common:
+			add voices, voices, #1
+			b sts32_synthemidi_envelope_loop
+
+	sts32_synthemidi_envelope_success:
+		str status_voices, STS32_VOICES
+		mov r0, #0
+
+	sts32_synthemidi_envelope_common:
+		macro32_dsb ip
+		vpop {s0-s1}
+		pop {r4-r9,pc}
+
+.unreq num_voices
+.unreq status_voices
+.unreq addr_envelope
+.unreq addr_param
+.unreq voices
+.unreq check
+.unreq offset
+.unreq count
+.unreq max_count
+.unreq addr
+.unreq vfp_volume
+.unreq vfp_delta
 
 
 /**
@@ -1724,1160 +2892,4 @@ macro32_debug synt_point, 200, 60
 .unreq vfp_release_delta
 .unreq vfp_sustain_level
 .unreq vfp_zero
-
-
-/**
- * function sts32_syntheinit_pwm
- * Sound Initializer for PWM Mode
- *
- * Parameters
- * r0: 0 as GPIO 12/13 PWM, 1 as GPIO 40/45(41) PWM, 2 as Both
- *
- * Return: r0 (0 as Success)
- */
-.globl sts32_syntheinit_pwm
-sts32_syntheinit_pwm:
-	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	value             .req r1
-	gpio_set          .req r2
-
-	push {lr}
-
-	mov gpio_set, memorymap_base
-
-	/**
-	 * GPIO for PWM
-	 */
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_gpio_base
-
-	cmp gpio_set, #0
-	cmpne gpio_set, #2
-
-	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 12
-	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2   @ Set GPIO 12 PWM0
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 13
-	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3   @ Set GPIO 13 PWM1
-	str value, [memorymap_base, #equ32_gpio_gpfsel10]
-
-	cmp gpio_set, #1
-	cmpne gpio_set, #2
-
-	ldr value, [memorymap_base, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0          @ Clear GPIO 40
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
-.ifdef __RASPI3B
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1          @ Clear GPIO 41
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1         @ Set GPIO 41 PWM1 (to Minijack)
-.else
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5          @ Clear GPIO 45
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5         @ Set GPIO 45 PWM1 (to Minijack)
-.endif
-	str value, [memorymap_base, #equ32_gpio_gpfsel40]
-
-	macro32_dsb ip
-
-	/**
-	 * Clock Manager for PWM.
-	 * Makes 160Mhz (From PLLD). 500Mhz Div by 3.125 Equals 200Mhz.
-	 */
-	push {r0-r3}
-	mov r0, #equ32_cm_pwm
-	mov r1, #equ32_cm_ctl_mash_1
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld           @ 500Mhz
-	mov r2, #3<<equ32_cm_div_integer
-	orr r2, r2, #512<<equ32_cm_div_fraction                        @ 0.125 * 4096
-	bl arm32_clockmanager
-	pop {r0-r3}
-
-	/**
-	 * PWM Enable
-	 */
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_pwm_base_lower
-	add memorymap_base, memorymap_base, #equ32_pwm_base_upper
-
-	/**
-	 * 160Mhz Div By 5000 Equals 32000hz.
-	 * Sampling Rate 32000hz, Bit Depth 12bit (Range is 5000, but Is Actually 4096).
-	 */
-	mov value, #0x1300
-	orr value, value, #0x0088
-	str value, [memorymap_base, #equ32_pwm_rng1]
-	str value, [memorymap_base, #equ32_pwm_rng2]
-
-	mov value, #equ32_pwm_ctl_msen1|equ32_pwm_ctl_clrf1|equ32_pwm_ctl_usef1|equ32_pwm_ctl_pwen1
-	orr value, value, #equ32_pwm_ctl_msen2|equ32_pwm_ctl_usef2|equ32_pwm_ctl_pwen2
-	str value, [memorymap_base, #equ32_pwm_ctl]
-
-	macro32_dsb ip
-
-	ldr value, STS32_STATUS
-	orr value, value, #0x80000000
-	str value, STS32_STATUS
-
-	macro32_dsb ip
-
-	sts32_syntheinit_pwm_common:
-		mov r0, #0
-		pop {pc}
-
-.unreq memorymap_base
-.unreq value
-.unreq gpio_set
-
-
-/**
- * function sts32_syntheinit_i2s
- * Synthesizer Initializer for I2S Mode (Outputs Both L and R Side by 32Khz)
- *
- * Return: r0 (0 as Success)
- */
-.globl sts32_syntheinit_i2s
-sts32_syntheinit_i2s:
-	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	value             .req r1
-
-	push {lr}
-
-	/**
-	 * GPIO for PCM
-	 */
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_gpio_base
-
-	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_8    @ Clear GPIO 18
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_8     @ Set GPIO 18 PCM_CLK
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_9    @ Clear GPIO 19
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_9     @ Set GPIO 19 PCM_FS
-	str value, [memorymap_base, #equ32_gpio_gpfsel10]
-
-	/* GPIO 20 can be set to PCM_DIN, but No Use */
-	ldr value, [memorymap_base, #equ32_gpio_gpfsel20]
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1    @ Clear GPIO 21
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1     @ Set GPIO 21 PCM_DOUT
-	str value, [memorymap_base, #equ32_gpio_gpfsel20]
-
-	macro32_dsb ip
-
-	/**
-	 * Clock Manager for PCM Clock.
-	 * Makes 19.2Mhz (From Oscillator). Div by 18.75 Equals 1.024Mhz
-	 */
-	push {r0-r3}
-	mov r0, #equ32_cm_pcm
-	mov r1, #equ32_cm_ctl_mash_1
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #18<<equ32_cm_div_integer
-	orr r2, r2, #3072<<equ32_cm_div_fraction                       @ 0.75 * 4096
-	bl arm32_clockmanager
-	pop {r0-r3}
-
-	/**
-	 * PCM Enable
-	 */
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_pcm_base_lower
-	add memorymap_base, memorymap_base, #equ32_pcm_base_upper
-
-	mov value, #equ32_pcm_cs_en
-	str value, [memorymap_base, #equ32_pcm_cs]
-
-	macro32_dsb ip
-
-	/* Make I2S Compatible LRCLK/WCLK by 16-bit Depth on Both L and R */
-	mov value, #31<<equ32_pcm_mode_flen
-	orr value, value, #16<<equ32_pcm_mode_fslen
-	orr value, value, #equ32_pcm_mode_clki|equ32_pcm_mode_fsi     @ Invert Clock and Frame Sync
-	str value, [memorymap_base, #equ32_pcm_mode]
-
-	/* Channel 1 */
-	mov value, #equ32_pcm_rtxc_ch1en|equ32_pcm_rtxc_ch1wex        @ 32 Bits for Outputs Both L and R
-	orr value, value, #1<<equ32_pcm_rtxc_ch1pos                   @ Make Sure Offset 1 Bit from Frame Sync to Fit I2S Signal Regulation
-	orr value, value, #8<<equ32_pcm_rtxc_ch1wid
-	str value, [memorymap_base, #equ32_pcm_txc]
-
-	/* Clear TxFIFO, Two PCM Clocks Are Needed */
-	ldr value, [memorymap_base, #equ32_pcm_cs]
-	orr value, value, #equ32_pcm_cs_txclr
-	orr value, value, #equ32_pcm_cs_sync
-	str value, [memorymap_base, #equ32_pcm_cs]
-
-	macro32_dsb ip
-
-	sts32_syntheinit_i2s_clrtxf:
-		ldr value, [memorymap_base, #equ32_pcm_cs]
-		tst value, #equ32_pcm_cs_sync
-		beq sts32_syntheinit_i2s_clrtxf
-
-	/* Clear RxFIFO, No need of Clear RxFIFO, but RAM Preperation Needs Four PCM Clocks */
-	ldr value, [memorymap_base, #equ32_pcm_cs]
-	orr value, value, #equ32_pcm_cs_rxclr
-	orr value, value, #equ32_pcm_cs_sync
-	str value, [memorymap_base, #equ32_pcm_cs]
-
-	macro32_dsb ip
-
-	sts32_syntheinit_i2s_clrrxf:
-		ldr value, [memorymap_base, #equ32_pcm_cs]
-		tst value, #equ32_pcm_cs_sync
-		beq sts32_syntheinit_i2s_clrrxf
-
-	/* PCM Transmit Enable */
-	bic value, value, #equ32_pcm_cs_sync
-	orr value, value, #0b11 << equ32_pcm_cs_txthr @ Flag Down If Full
-	orr value, value, #equ32_pcm_cs_txon
-	str value, [memorymap_base, #equ32_pcm_cs]
-
-	macro32_dsb ip
-
-	ldr value, STS32_STATUS
-	orr value, value, #0x80000000
-	str value, STS32_STATUS
-
-	macro32_dsb ip
-
-	sts32_syntheinit_i2s_common:
-		mov r0, #0
-		pop {pc}
-
-.unreq memorymap_base
-.unreq value
-
-
-/**
- * function sts32_synthemidi
- * MIDI Handler
- * Use this function in UART interrupt.
- *
- * Parameters
- * r0: Channel, 0-15 (MIDI Channel No. 1 to 16)
- * r1: 0 as PWM Mode, 1 as PCM Mode
- * r2: Number of Voices
- *
- * Return: r0 (0 as success, 1, 2, and 3 as error)
- * Error(1): Not Initialized on sts32_syntheinit_*, No Buffer to Receive on UART, or UART Overrun
- * Error(2): Character Is Not Received
- * Error(3): MIDI Channel is Not Matched, or Only Data Bytes Received
- */
-.globl sts32_synthemidi
-sts32_synthemidi:
-	/* Auto (Local) Variables, but just Aliases */
-	channel        .req r0
-	mode           .req r1
-	buffer         .req r2
-	count          .req r3
-	max_size       .req r4
-	bytebuffer     .req r5
-	byte           .req r6
-	temp           .req r7
-	data1          .req r8
-	data2          .req r9
-	status         .req r10
-	num_voices     .req r11
-
-	/* VFP Registers */
-	vfp_volume     .req s0
-	vfp_sustain    .req s1
-	vfp_temp       .req s2
-	vfp_temp2      .req s3
-
-	push {r4-r11,lr}
-	vpush {s0-s3}
-
-	mov num_voices, buffer
-	cmp num_voices, #equ32_sts32_voice_max
-	movhi num_voices, #equ32_sts32_voice_max
-
-	ldr status, STS32_STATUS
-	tst status, #0x80000000           @ If Not Initialized
-	beq sts32_synthemidi_error1
-
-	.unreq status
-	status_voices .req r10
-
-	ldr count, STS32_SYNTHEMIDI_COUNT
-	ldr max_size, STS32_SYNTHEMIDI_LENGTH
-	ldr buffer, STS32_SYNTHEMIDI_BUFFER
-
-	cmp buffer, #0
-	beq sts32_synthemidi_error1       @ If No Buffer
-
-	ldr bytebuffer, STS32_SYNTHEMIDI_BYTEBUFFER
-
-	push {r0-r3}
-	mov r0, bytebuffer
-	mov r1, #1                        @ 1 Bytes
-	bl uart32_uartrx
-	mov temp, r0                      @ Whether Overrun or Not
-	pop {r0-r3}
-
-	tst temp, #0x8                    @ Whether Overrun or Not
-	bne sts32_synthemidi_error1       @ If Overrun
-
-	tst temp, #0x10                   @ Whether Not Received or So
-	bne sts32_synthemidi_error2       @ If Not Received
-
-	/* Check Whether Status or Data Bytes */
-	ldrb byte, [bytebuffer]
-
-	tst byte, #0x80
-	bne sts32_synthemidi_status
-
-	/* Check Whether Only Data Bytes (Status Is For Other Channels, etc.) */
-	cmp count, #0
-	beq sts32_synthemidi_error3
-
-	/* Data Bytes */
-	strb byte, [buffer,count]
-
-	/* Slide Offset Count */
-	add count, count, #1
-	cmp count, max_size
-	subge count, max_size, #1         @ If Exceeds Maximum Size of Heap, Stay Count
-
-	.unreq max_size
-	temp2 .req r4
-	.unreq bytebuffer
-	voices .req r5
-
-	/* Check Message Type and Procedures for Each Message */
-	ldrb temp, [buffer]
-	ldrb data1, [buffer, #1]
-	ldrb data2, [buffer, #2]
-	cmp temp, #0x8
-	beq sts32_synthemidi_noteoff           @ Velocity is Ignored
-	cmp temp, #0x9
-	beq sts32_synthemidi_noteon
-	cmp temp, #0xA
-	beq sts32_synthemidi_polyaftertouch    @ Polyphonic Key Pressure
-	cmp temp, #0xB
-	beq sts32_synthemidi_control
-	cmp temp, #0xC
-	beq sts32_synthemidi_programchange
-	cmp temp, #0xD
-	beq sts32_synthemidi_monoaftertouch    @ Monophonic Key Pressure
-	cmp temp, #0xE
-	beq sts32_synthemidi_pitchbend
-	cmp temp, #0xF
-	beq sts32_synthemidi_systemcommon
-
-	b sts32_synthemidi_success
-
-	sts32_synthemidi_noteoff:
-		cmp count, #3
-		blo sts32_synthemidi_success
-
-		ldr status_voices, STS32_VOICES
-
-		mov voices, #0
-		sts32_synthemidi_noteoff_voicesearch:
-			cmp voices, num_voices
-			bhs sts32_synthemidi_noteoff_common
-
-			/* Test Whether The Voice Is under Usage as Attack, Decay, and Sustain with MIDI or Not */
-			lsl temp, voices, #2              @ Multiply by 4
-			mov temp2, #0b11
-			lsl temp, temp2, temp
-			tst status_voices, temp
-			beq sts32_synthemidi_noteoff_voicesearch_common
-
-			/* Load Each Concurrent Note, If Not Matched Do Nothing */
-			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
-			ldrb temp, [temp, voices]
-			cmp temp, data1
-			bne sts32_synthemidi_noteoff_voicesearch_common
-
-			/* If Note is Matched, Change Status to Release */
-			lsl temp, voices, #2              @ Multiply by 4
-			mov temp2, #0b11
-			lsl temp2, temp2, temp
-			bic status_voices, status_voices, temp2
-			mov temp2, #0b100
-			lsl temp2, temp2, temp
-			orr status_voices, status_voices, temp2
-
-			/**
-			 * Store Delta for Release to Envelope Pointer
-			 */
-
-			lsl temp, voices, #4               @ Multiply by 16
-			ldr temp2, STS32_SYNTHEWAVE_PARAM
-			add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
-			add data2, data2, #4               @ Offset Voice No. + 4 Bytes
-			vldr vfp_volume, [data2]           @ Get Current Main Amplitude
-
-			ldr data2, STS32_SYNTHEMIDI_RELEASE
-			vmov vfp_temp, data2
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
-
-			/* Reset Count to Zero and Store Delta for Release */
-			ldr temp2, STS32_SYNTHEMIDI_ENVELOPE
-			add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
-			mov temp, #0
-			str temp, [data2]                  @ Store Count Zero
-			add data2, data2, #12              @ Offset Voice No. + 12 Bytes
-			vstr vfp_volume, [data2]           @ Store Delta for Release
-
-			/* Break Loop */
-			/* Deprecated Because of Endless Sounding after Pushing Same Note on Pedaling Sustain
-			b sts32_synthemidi_noteoff_common
-			*/
-
-			sts32_synthemidi_noteoff_voicesearch_common:
-				add voices, voices, #1
-				b sts32_synthemidi_noteoff_voicesearch
-
-		sts32_synthemidi_noteoff_common:
-			str status_voices, STS32_VOICES
-			mov count, #0
-			b sts32_synthemidi_success
-
-	sts32_synthemidi_noteon:
-		cmp count, #3
-		blo sts32_synthemidi_success
-
-		/* If Velocity Is Zero, Go to Note Off Event */
-		cmp data2, #0
-		beq sts32_synthemidi_noteoff
-
-		ldr status_voices, STS32_VOICES
-
-		mov voices, #0
-		sts32_synthemidi_noteon_voicesearch:
-			cmp voices, num_voices
-			bhs sts32_synthemidi_noteon_common
-
-			/* Test Whether The Voice Is under Any Usage with MIDI or Synthesizer Code, or Not */
-			lsl temp, voices, #2               @ Multiply by 4
-			mov temp2, #0b1111
-			lsl temp2, temp2, temp
-			tst status_voices, temp2
-			bne sts32_synthemidi_noteon_voicesearch_common
-
-			/* Set Attack */
-			mov temp2, #0b1
-			lsl temp2, temp2, temp
-			orr status_voices, status_voices, temp2
-
-			/* Store Concurrent Notes */
-			ldr temp, STS32_SYNTHEMIDI_CURRENTNOTE
-			strb data1, [temp, voices]
-
-			/* Set Main Frequency from Table of Notes */
-			ldr temp, STS32_SYNTHEMIDI_TABLENOTES
-			lsl data1, data1, #2               @ Multiply by 4, Array of Single Precision Float
-			ldr data1, [temp, data1]
-			lsl temp2, voices, #4              @ Multiply by 16
-			ldr temp, STS32_SYNTHEWAVE_PARAM
-			str data1, [temp, temp2]           @ Main Frequency
-
-			/* Set Main Amplitude as Zero */
-			mov byte, #0
-			add temp2, temp2, #4
-			str byte, [temp, temp2]            @ Main Amplitude
-
-			/* Set Sub Frequency from Parameter, Round to Nearest 0.125 */
-			vmov vfp_temp, data1
-			vldr vfp_temp2, STS32_SYNTHEMIDI_SUBPITCH
-			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
-			mov data1, #0x3E000000             @ Hard Code 0.125 in Float
-			vmov vfp_temp2, data1
-			vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
-			vcvtr.u32.f32 vfp_temp, vfp_temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
-			vmov data1, vfp_temp
-			add temp2, temp2, #4
-			str data1, [temp, temp2]           @ Sub Frequency
-
-			/* Set Sub Amplitude from Parameter */
-			ldr data1, STS32_SYNTHEMIDI_SUBAMP
-			add temp2, temp2, #4
-			str data1, [temp, temp2]           @ Sub Amplitude
-
-			/**
-			 * Make Deltas
-			 */
-
-			/* Make Maximum Volume with Floating Point */
-			ldr temp2, STS32_SYNTHEMIDI_VOLUME
-			mul data2, data2, temp2
-			vmov vfp_volume, data2
-			vcvt.f32.u32 vfp_volume, vfp_volume
-
-			/* Make Envelope Pointer for The Voice */
-			lsl temp, voices, #4              @ Multiply by 16
-			ldr data1, STS32_SYNTHEMIDI_ENVELOPE
-			add data1, data1, temp
-
-			/* Store Count to Envelope Pointer */
-			mov temp, #0
-			str temp, [data1]
-			add data1, data1, #4
-
-			/* Store Delta for Attack to Envelope Pointer */
-			vldr vfp_temp, STS32_SYNTHEMIDI_ATTACK
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_temp, vfp_volume, vfp_temp
-			vstr vfp_temp, [data1]
-			add data1, data1, #4
-
-			/* Store Delta for Decay to Envelope Pointer */
-			vldr vfp_sustain, STS32_SYNTHEMIDI_SUSTAIN
-			vmul.f32 vfp_sustain, vfp_volume, vfp_sustain
-			vsub.f32 vfp_temp2, vfp_volume, vfp_sustain
-			vldr vfp_temp, STS32_SYNTEHMIDI_DECAY
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_temp, vfp_temp2, vfp_temp
-			vstr vfp_temp, [data1]
-			add data1, data1, #4
-
-			/* Break Loop */
-			b sts32_synthemidi_noteon_common
-
-			sts32_synthemidi_noteon_voicesearch_common:
-				add voices, voices, #1
-				b sts32_synthemidi_noteon_voicesearch
-
-		sts32_synthemidi_noteon_common:
-			str status_voices, STS32_VOICES
-			mov count, #0
-			b sts32_synthemidi_success
-
-	sts32_synthemidi_polyaftertouch:
-		cmp count, #3
-		blo sts32_synthemidi_success
-
-		mov count, #0
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_control:
-		cmp count, #3
-		blo sts32_synthemidi_success
-
-		cmp data1, #64
-		bhs sts32_synthemidi_control_others
-		cmp data1, #32
-		bhs sts32_synthemidi_control_lsb
-
-		/* Most Significant Bits */
-
-		ldr temp, STS32_SYNTHEMIDI_CTL
-		and data1, data1, #0x1F                            @ Only Use 0 to 31
-		lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
-		ldrh temp2, [temp, data1]
-		bic temp2, #0x3F80                                 @ Bit[13:7]
-		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
-		orr data2, temp2, data2, lsl #7
-		strh data2, [temp, data1]
-
-		mov count, #0
-
-		/**
-		 * Immediate Changes Here
-		 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
-		 */
-		lsr data1, data1, #1                               @ Divide by 2
-		cmp data1, #1
-		beq sts32_synthemidi_control_modulation
-		cmp data1, #16
-		beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
-		cmp data1, #17
-		beq sts32_synthemidi_control_gp2                   @ Sub Frequency Pitch on Synthesis
-		cmp data1, #18
-		beq sts32_synthemidi_control_gp3                   @ Sub Amplitude on Synthesis
-		cmp data1, #19
-		beq sts32_synthemidi_control_gp4                   @ Virtual Parallel for Sequence of Music Code
-
-		b sts32_synthemidi_success
-
-		sts32_synthemidi_control_lsb:
-
-			/* Least Significant Bits */
-
-			ldr temp, STS32_SYNTHEMIDI_CTL
-			and data1, data1, #0x1F                            @ Only Use 0 to 31
-			lsl data1, data1, #1                               @ Multiply by 2 to Fit Half Word Align
-			ldrh temp2, [temp, data1]
-			bic temp2, #0x7F                                   @ Bit[6:0]
-			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
-			orr data2, temp2, data2
-			strh data2, [temp, data1]
-
-			mov count, #0
-
-			/**
-			 * Immediate Changes Here
-			 * Sending CC#1 to CC#31 Trigger to Change Each Parameter
-			 */
-			lsr data1, data1, #1                               @ Divide by 2
-			cmp data1, #1
-			beq sts32_synthemidi_control_modulation
-			cmp data1, #16
-			beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
-			cmp data1, #17
-			beq sts32_synthemidi_control_gp2                   @ Sub Frequency Pitch on Synthesis
-			cmp data1, #18
-			beq sts32_synthemidi_control_gp3                   @ Sub Amplitude on Synthesis
-			cmp data1, #19
-			beq sts32_synthemidi_control_gp4                   @ Virtual Parallel for Sequence of Music Code
-
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_modulation:
-			sub data2, data2, #0x2000                     @ Neutral (8192) to 0, Make Signed Value
-			asr data2, data2, #3                          @ Range -8192 - 8191 to -1024 - 1023
-			vmov vfp_volume, data2
-			vcvt.f32.s32 vfp_volume, vfp_volume
-
-			/* Divisor, 16384 */
-			mov temp, #0x4000
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range -1024 - 1023 to -0.0625 - 0.0624
-
-			ldr temp, STS32_MODULATION_DELTA_ADDR
-			vstr vfp_volume, [temp]
-
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_gp1:
-			lsr data2, data2, #2                          @ Range 0 - 16383 to 0 - 4095
-			vmov vfp_volume, data2
-			vcvt.f32.u32 vfp_volume, vfp_volume
-
-			/* Divisor, 16380 */
-			mov temp, #0x3F00
-			orr temp, temp, #0x00FC
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 4095 to 0 - 0.25
-
-			vmov temp, vfp_volume
-			str temp, STS32_MODULATION_RANGE
-
-			ldr temp, STS32_MODULATION_MEDIUM_ADDR
-			vldr vfp_temp, [temp]
-
-			vadd.f32 vfp_temp2, vfp_temp, vfp_volume
-			ldr temp, STS32_MODULATION_MAX_ADDR
-			vstr vfp_temp2, [temp]
-
-			vsub.f32 vfp_temp2, vfp_temp, vfp_volume
-			ldr temp, STS32_MODULATION_MIN_ADDR
-			vstr vfp_temp2, [temp]
-
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_gp2:
-			/* Maximum Value 16000, Divisor */
-			mov temp, #0x3E00                                  @ Decimal 16000
-			orr temp, temp, #0x0080                            @ Decimal 16000
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-
-			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
-			cmp data2, temp
-			movhi data2, temp
-
-			vmov vfp_volume, data2
-			vcvt.f32.u32 vfp_volume, vfp_volume
-
-			/* Value of Multiplier */
-			mov temp, #4
-			vmov vfp_temp2, temp
-			vcvt.f32.u32 vfp_temp2, vfp_temp2
-
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
-			vmul.f32 vfp_volume, vfp_volume, vfp_temp2         @ Range 0 - 4.0
-
-			vmov temp, vfp_volume
-			str temp, STS32_SYNTHEMIDI_SUBPITCH
-
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_gp3:
-			/* Maximum Value 16000, Divisor */
-			mov temp, #0x3E00                                  @ Decimal 16000
-			orr temp, temp, #0x0080                            @ Decimal 16000
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-
-			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
-			cmp data2, temp
-			movhi data2, temp
-
-			vmov vfp_volume, data2
-			vcvt.f32.u32 vfp_volume, vfp_volume
-
-			/* Value of Multiplier */
-			ldr temp, sts32_syntheplay_MATH32_PI_DOUBLE
-			vldr vfp_temp2, [temp]
-
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
-			vmul.f32 vfp_volume, vfp_volume, vfp_temp2         @ Range 0 - 2PI
-
-			vmov temp, vfp_volume
-			str temp, STS32_SYNTHEMIDI_SUBAMP
-			/* Warning on Assmbler
-			vstr vfp_volume, STS32_SYNTHEMIDI_SUBAMP
-			*/
-
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_gp4:
-			/* Virtual Parallel of Coconuts */
-			lsr data2, data2, #7                               @ Use Only MSB[13:7]
-			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
-			str data2, [temp]
-			b sts32_synthemidi_success
-
-		sts32_synthemidi_control_others:
-			mov count, #0
-			b sts32_synthemidi_success
-
-	sts32_synthemidi_programchange:
-		cmp count, #2
-		blo sts32_synthemidi_success
-
-		ldr temp, STS32_SYNTHEMIDI_CTL
-		ldrh temp, [temp]                              @ Bank Select Bit[13:0]
-		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
-		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
-/*
-macro32_debug data1, 100, 100
-*/
-
-		/* Program Change Code Here */
-
-		mov count, #0
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_monoaftertouch:
-		cmp count, #2
-		blo sts32_synthemidi_success
-
-		mov count, #0
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_pitchbend:
-		cmp count, #3
-		blo sts32_synthemidi_success
-
-		/* Concatenate Data1 and Data2, 0 to 16383, 8192 (0x2000) is Neutral */
-		lsl data2, data2, #7                          @ MSB Bit[13:7]
-		orr data1, data1, data2
-		sub data1, data1, #0x2000                     @ Neutral (8192) to 0, Make Signed Value, -8192 - 8191
-		vmov vfp_volume, data1
-		vcvt.f32.s32 vfp_volume, vfp_volume
-
-		/* Divisor, 16384 */
-		mov temp, #0x4000
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range -8192 - 8191 to -0.5 - 0.4999
-
-		mov temp, #1
-		vmov vfp_temp, temp
-		vcvt.f32.u32 vfp_temp, vfp_temp
-		vadd.f32 vfp_volume, vfp_volume, vfp_temp     @ Range -0.5 - 0.4999 to 0.5 - 1.4999
-
-		ldr temp, STS32_MODULATION_MEDIUM_ADDR
-		vstr vfp_volume, [temp]
-
-		vldr vfp_temp, STS32_MODULATION_RANGE
-
-		vadd.f32 vfp_temp2, vfp_volume, vfp_temp
-		ldr temp, STS32_MODULATION_MAX_ADDR
-		vstr vfp_temp2, [temp]
-
-		vsub.f32 vfp_temp2, vfp_volume, vfp_temp
-		ldr temp, STS32_MODULATION_MIN_ADDR
-		vstr vfp_temp2, [temp]
-
-		mov count, #0
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_systemcommon:
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_status:
-		/* If 0b11111000 and Above, Jump to Event on System Real Time Messages */
-		cmp byte, #248
-		bhs sts32_synthemidi_systemrealtime
-
-		bic temp, byte, #0xF0
-		cmp temp, channel
-		movne count, #0
-		bne sts32_synthemidi_error2   @ If Channel Is Not Matched
-
-		/* Channel Is Matched */
-		lsr byte, byte, #4            @ Omit Channel Number
-		strb byte, [buffer]
-		mov count, #1
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_systemrealtime:
-
-		/* If Reset, Hook to Note Off Event */
-		/*
-		cmp byte, #255
-		moveq count #3
-		beq sts32_synthemidi_noteoff
-		*/
-
-		mov count, #0
-		b sts32_synthemidi_success
-
-	sts32_synthemidi_error1:
-		mov r0, #1
-		b sts32_synthemidi_common
-
-	sts32_synthemidi_error2:
-		mov r0, #2
-		b sts32_synthemidi_common
-
-	sts32_synthemidi_error3:
-		mov r0, #3
-		b sts32_synthemidi_common
-
-	sts32_synthemidi_success:
-		mov r0, #0
-
-	sts32_synthemidi_common:
-		str count, STS32_SYNTHEMIDI_COUNT
-		macro32_dsb ip
-/*
-macro32_debug_hexa buffer, 100, 100, 8
-*/
-		vpop {s0-s3}
-		pop {r4-r11,pc}
-
-.unreq channel
-.unreq mode
-.unreq buffer
-.unreq count
-.unreq temp2
-.unreq voices
-.unreq byte
-.unreq temp
-.unreq data1
-.unreq data2
-.unreq status_voices
-.unreq num_voices
-.unreq vfp_volume
-.unreq vfp_sustain
-.unreq vfp_temp
-.unreq vfp_temp2
-
-STS32_SYNTHEMIDI_COUNT:          .word 0x00
-STS32_SYNTHEMIDI_LENGTH:         .word 0x00
-STS32_SYNTHEMIDI_BUFFER:         .word 0x00 @ Second Buffer to Store Outstanding MIDI Message
-STS32_SYNTHEMIDI_BYTEBUFFER:     .word _STS32_SYNTHEMIDI_BYTEBUFFER
-STS32_SYNTHEMIDI_CURRENTNOTE:    .word _STS32_SYNTHEMIDI_CURRENTNOTE
-STS32_SYNTHEMIDI_TABLENOTES:     .word 0x00
-
-STS32_SYNTHEMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
-STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
-
-STS32_SYNTHEMIDI_ATTACK:         .word equ32_sts32_synthemidi_attack
-STS32_SYNTEHMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
-STS32_SYNTHEMIDI_SUSTAIN:        .float 1.0
-STS32_SYNTHEMIDI_RELEASE:        .word equ32_sts32_synthemidi_release
-STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
-STS32_SYNTHEMIDI_SUBPITCH:       .float 1.0
-STS32_SYNTHEMIDI_SUBAMP:         .float 0.0
-
-STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
-
-STS32_MODULATION_DELTA_ADDR:     .word STS32_MODULATION_DELTA
-STS32_MODULATION_MAX_ADDR:       .word STS32_MODULATION_MAX
-STS32_MODULATION_MIN_ADDR:       .word STS32_MODULATION_MIN
-STS32_MODULATION_MEDIUM_ADDR:    .word STS32_MODULATION_MEDIUM
-STS32_MODULATION_RANGE:          .float 0.0
-
-.section	.data
-_STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
-_STS32_SYNTHEMIDI_CURRENTNOTE:   .space 8, 0x00
-.globl STS32_VIRTUAL_PARALLEL
-STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
-STS32_SYNTHEWAVE_FREQA_L:        .word 0x00
-STS32_SYNTHEWAVE_AMPA_L:         .word 0x00
-STS32_SYNTHEWAVE_FREQB_L:        .word 0x00
-STS32_SYNTHEWAVE_AMPB_L:         .word 0x00
-STS32_SYNTHEWAVE_FREQA_R:        .word 0x00
-STS32_SYNTHEWAVE_AMPA_R:         .word 0x00
-STS32_SYNTHEWAVE_FREQB_R:        .word 0x00
-STS32_SYNTHEWAVE_AMPB_R:         .word 0x00
-.space 96, 0x00                             @ Rest 6 Sets
-STS32_SYNTHEMIDI_COUNT1:         .word 0x00
-STS32_SYNTHEMIDI_DELTA_ATTACK1:  .float 0.0
-STS32_SYNTHEMIDI_DELTA_DECAY1:   .float 0.0
-STS32_SYNTHEMIDI_DELTA_RELEASE1: .float 0.0
-STS32_SYNTHEMIDI_COUNT2:         .word 0x00
-STS32_SYNTHEMIDI_DELTA_ATTACK2:  .float 0.0
-STS32_SYNTHEMIDI_DELTA_DECAY2:   .float 0.0
-STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
-.space 96, 0x00                             @ Rest 6 Sets
-.globl STS32_MODULATION_DELTA
-STS32_MODULATION_DELTA:          .float 0.0
-.globl STS32_MODULATION_MAX
-STS32_MODULATION_MAX:            .float 1.0
-.globl STS32_MODULATION_MIN
-STS32_MODULATION_MIN:            .float 1.0
-.globl STS32_MODULATION_MEDIUM
-STS32_MODULATION_MEDIUM:         .float 1.0
-.section	.library_system32
-
-
-/**
- * function sts32_synthemidi_malloc
- * Make Buffer for Function, sts32_synthemidi
- *
- * Parameters
- * r0: Size of Buffer (Words)
- * r1: Pointer of Table of Notes Frequency
- *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Memory Allocation Is Not Succeeded
- */
-.globl sts32_synthemidi_malloc
-sts32_synthemidi_malloc:
-	/* Auto (Local) Variables, but just Aliases */
-	words_buffer .req r0
-	addr_table   .req r1
-	buffer       .req r2
-
-	push {lr}
-
-	/* Buffer to Receive MIDI Message */
-	push {r0-r1}
-	bl heap32_malloc
-	mov buffer, r0
-	pop {r0-r1}
-
-	cmp buffer, #0
-	beq sts32_synthemidi_malloc_error
-
-	lsl words_buffer, words_buffer, #2             @ Multiply by 4
-	sub words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
-	str words_buffer, STS32_SYNTHEMIDI_LENGTH
-	str buffer, STS32_SYNTHEMIDI_BUFFER
-	mov words_buffer, #0
-	str words_buffer, STS32_SYNTHEMIDI_COUNT
-
-	/* Buffer for Control Message No. 0 to No. 31 */
-	push {r0-r1}
-	mov r0, #16                                    @ 16 Words Multiplied by 4 Bytes Equals 64 Bytes (2 Bytes Half Word * 32)
-	bl heap32_malloc
-	mov buffer, r0
-	pop {r0-r1}
-
-	cmp buffer, #0
-	beq sts32_synthemidi_malloc_error
-
-	str buffer, STS32_SYNTHEMIDI_CTL
-
-	str addr_table, STS32_SYNTHEMIDI_TABLENOTES
-
-	b sts32_synthemidi_malloc_success
-
-	sts32_synthemidi_malloc_error:
-		mov r0, #1
-		b sts32_synthemidi_malloc_common
-
-	sts32_synthemidi_malloc_success:
-		mov r0, #0
-
-	sts32_synthemidi_malloc_common:
-		macro32_dsb ip
-		pop {pc}
-
-.unreq words_buffer
-.unreq addr_table
-.unreq buffer
-
-
-/**
- * function sts32_synthemidi_envelope
- * Make Envelope for Notes from MIDI IN
- *
- * Parameters
- * r0: Number of Voices
- *
- * Return: r0 (0 as success)
- */
-.globl sts32_synthemidi_envelope
-sts32_synthemidi_envelope:
-	/* Auto (Local) Variables, but just Aliases */
-	num_voices     .req r0
-	status_voices  .req r1
-	addr_envelope  .req r2
-	addr_param     .req r3
-	voices         .req r4
-	check          .req r5
-	offset         .req r6
-	count          .req r7
-	max_count      .req r8
-	addr           .req r9
-
-	/* VFP Registers */
-	vfp_volume     .req s0
-	vfp_delta      .req s1
-
-	push {r4-r9,lr}
-	vpush {s0-s1}
-
-	cmp num_voices, #equ32_sts32_voice_max
-	movhi num_voices, #equ32_sts32_voice_max
-
-	ldr status_voices, STS32_VOICES
-	ldr addr_envelope, STS32_SYNTHEMIDI_ENVELOPE
-	ldr addr_param, STS32_SYNTHEWAVE_PARAM
-
-	mov voices, #0
-	sts32_synthemidi_envelope_loop:
-		cmp voices, num_voices
-		bhs sts32_synthemidi_envelope_success
-
-		/* Test Whether The Voice Is under Usage with MIDI or Not */
-		lsl offset, voices, #2              @ Multiply by 4
-		mov check, #0b111
-		lsl check, check, offset
-		tst status_voices, check
-		beq sts32_synthemidi_envelope_loop_common
-
-		lsr check, status_voices, offset
-		and check, check, #0b111
-		cmp check, #0b001
-		beq sts32_synthemidi_envelope_loop_attack
-		cmp check, #0b010
-		beq sts32_synthemidi_envelope_loop_decay
-		cmp check, #0b011
-		beq sts32_synthemidi_envelope_loop_sustain
-		cmp check, #0b100
-		bhs sts32_synthemidi_envelope_loop_release
-
-		sts32_synthemidi_envelope_loop_attack:
-			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
-
-			/* Increase Volume (Main Amplitude) */
-			add addr, addr_envelope, offset          @ Pointer for Envelope
-			add addr, addr, #4                       @ Add Offset for Attack Delta
-			vldr vfp_delta, [addr]
-
-			add addr, addr_param, offset             @ Pointer for Parameter
-			add addr, addr, #4                       @ Main Amplitude
-			vldr vfp_volume, [addr]
-
-			vadd.f32 vfp_volume, vfp_volume, vfp_delta
-			vstr vfp_volume, [addr]
-
-			/* Increase Count, Reset Count and Change The Voice Status to 2 If Reaches Maximum */
-			add addr, addr_envelope, offset          @ Pointer for Envelope
-			ldr count, [addr]
-			ldr max_count, STS32_SYNTHEMIDI_ATTACK
-			add count, count, #1
-			cmp count, max_count
-			movhs count, #0
-			lslhs offset, voices, #2                 @ Multiply by 4
-			movhs check, #0b1
-			lslhs check, check, offset
-			addhs status_voices, status_voices, check
-			str count, [addr]
-
-			b sts32_synthemidi_envelope_loop_common
-
-		sts32_synthemidi_envelope_loop_decay:
-			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
-
-			/* Decrease Volume (Main Amplitude) */
-			add addr, addr_envelope, offset          @ Pointer for Envelope
-			add addr, addr, #8                       @ Add Offset for Delay Delta
-			vldr vfp_delta, [addr]
-
-			add addr, addr_param, offset             @ Pointer for Parameter
-			add addr, addr, #4                       @ Main Amplitude
-			vldr vfp_volume, [addr]
-
-			vsub.f32 vfp_volume, vfp_volume, vfp_delta
-			vstr vfp_volume, [addr]
-
-			/* Increase Count, Reset Count and Change The Voice Status to 3 If Reaches Maximum */
-			add addr, addr_envelope, offset          @ Pointer for Envelope
-			ldr count, [addr]
-			ldr max_count, STS32_SYNTEHMIDI_DECAY
-			add count, count, #1
-			cmp count, max_count
-			movhs count, #0
-			lslhs offset, voices, #2                 @ Multiply by 4
-			movhs check, #0b1
-			lslhs check, check, offset
-			addhs status_voices, status_voices, check
-			str count, [addr]
-			b sts32_synthemidi_envelope_loop_common
-
-		sts32_synthemidi_envelope_loop_sustain:
-			/* Do Nothing */
-			b sts32_synthemidi_envelope_loop_common
-
-		sts32_synthemidi_envelope_loop_release:
-			lsl offset, voices, #4                   @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
-
-			/* Decrease Volume (Main Amplitude) */
-			add addr, addr_envelope, offset          @ Pointer for Envelope
-			add addr, addr, #12                      @ Add Offset for Release Delta
-			vldr vfp_delta, [addr]
-
-			add addr, addr_param, offset             @ Pointer for Parameter
-			add addr, addr, #4                       @ Main Amplitude
-			vldr vfp_volume, [addr]
-
-			vsub.f32 vfp_volume, vfp_volume, vfp_delta
-			vstr vfp_volume, [addr]
-
-			/* Increase Count, Reset Count and Change The Voice Status to 0 If Reaches Maximum */
-			add addr, addr_envelope, offset          @ Pointer for Envelope
-			ldr count, [addr]
-			ldr max_count, STS32_SYNTHEMIDI_RELEASE
-			add count, count, #1
-			cmp count, max_count
-			movhs count, #0
-			lslhs offset, voices, #2                 @ Multiply by 4
-			movhs check, #0b111
-			lslhs check, check, offset
-			bichs status_voices, status_voices, check
-			str count, [addr]
-
-		sts32_synthemidi_envelope_loop_common:
-			add voices, voices, #1
-			b sts32_synthemidi_envelope_loop
-
-	sts32_synthemidi_envelope_success:
-		str status_voices, STS32_VOICES
-		mov r0, #0
-
-	sts32_synthemidi_envelope_common:
-		macro32_dsb ip
-		vpop {s0-s1}
-		pop {r4-r9,pc}
-
-.unreq num_voices
-.unreq status_voices
-.unreq addr_envelope
-.unreq addr_param
-.unreq voices
-.unreq check
-.unreq offset
-.unreq count
-.unreq max_count
-.unreq addr
-.unreq vfp_volume
-.unreq vfp_delta
 
