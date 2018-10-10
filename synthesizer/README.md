@@ -6,15 +6,29 @@
 
 ### Information of this README and comments in this project may be incorrect. This project is not an official document of ARM, Broadcom Ltd., Raspberry Pi Foundation and other holders of any Intellectual Property (IP), and is made of my experience, and even my hypothesis to the architecture of Raspberry Pi. Please don't apply these information in this project to your development. `TEST IT BY YOURSELF AND CONFIRM IT BY AUTHORITY FOR SAFETY` is an important value as a developer.
 
-**Purpose**
+**Table of Contents**
 
-* Programmable Synthesizer
+* [Purpose](#purpose)
+
+* [Output and Input](#output-and-input)
+
+* [Compatibility](#compatibility)
+
+* [MIDI IN](#midi-in)
+
+## Purpose
+
+* Programmable Synthesizer, MIDI IN Acceptable
+
+* Polyphonic Up to 8 Voices
 
 * Multipurpose, Drum Machine to Music Sequencer
 
-* Programming Time Up to 29 Minutes for Entire Tracks
+* Programmable Drum Machine / Music Sequencer Time Up to 29 Minutes with Two Voices for Entire Tracks
 
-**Output/Input**
+* Two Types of Synthesis, Digital LFO Modulation and Frequency Modulation
+
+## Output and Input
 
 * GPIO9 as Input of MIDI Channel Select Bit[0]
 
@@ -58,7 +72,21 @@
 
 * I'm using UDA1334A, one of I2S Stereo DAC. As of July 2018, you can purchase online a module which UDA1334A is boarded on.
 
-**Compatibility**
+**Caution on Sound Output**
+
+* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone or headphone for this project.
+
+* Speaker and other sound outputs are so easy to break if you supply Direct Current to these. Sound outputs are made with considering of supplying Alternating Current. If you apply any sound outputs to GPIO pins directly, it causes to break these your materials.
+
+* Typically, sound outputs made of coils. The coil generate electric surge that breaks your Raspberry Pi. To hide this, there are some solutions. Please search.
+
+* If you want to check the outputting wave by your oscilloscope, a decoupling capacitor (or a low-pass filter) is needed. In my experience, a 1-microfarad-capacitor makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
+
+* Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
+
+* When you input from PCM or PWM output directly, you can hear buggy high tone noise (appx. 2KHz) such as bass and high tones. It's harmonics. I recommend that you use analogue Low-pass filter (Cut Off) to intermediate digital output and any input. Digital output has high frequency noise that hold harmonics bigger than anologue output. This seems to derive from steps of changing volume or pulses of a digital-analogue converter. It sometimes takes pre-sound state that is not natural to be heard.
+
+## Compatibility
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
 
@@ -76,24 +104,26 @@
 
 ### Sound outputs generate unpredictable voltage or current. This affects the digital circuit of your Raspberry Pi as resonance, surge, etc. Basically, separation between a digital circuit (in this case, Raspberry Pi) and a analogue circuit (Low-pass Filter, Amplifier, Speaker, etc.) is common sense among hardware developers, otherwise, break or malfunction occurs on your Raspberry Pi.
 
-**Caution on Sound Output**
-
-* You'll meet big sound. Please care of your ears. I recommend that you don't use any earphone or headphone for this project.
-
-* Speaker and other sound outputs are so easy to break if you supply Direct Current to these. Sound outputs are made with considering of supplying Alternating Current. If you apply any sound outputs to GPIO pins directly, it causes to break these your materials.
-
-* Typically, sound outputs made of coils. The coil generate electric surge that breaks your Raspberry Pi. To hide this, there are some solutions. Please search.
-
-* If you want to check the outputting wave by your oscilloscope, a decoupling capacitor (or a low-pass filter) is needed. In my experience, a 1-microfarad-capacitor makes the figure of the wave. Besides, if you don't apply any capacitor, pulses of PWM will be directly caught by your oscilloscope and it will breaks the figure of the wave.
-
-* Sound outputs change your RasPi's electrical status. The big problem is the change of the voltage of ground (by means of chassis). This may make black-out/brown-out of your RasPi. If possible and having your skills, you can apply earth wire with the chassis of your RasPi.
-
-* When you input from PCM or PWM output directly, you can hear buggy high tone noise (appx. 2KHz) such as bass and high tones. It's harmonics. I recommend that you use analogue Low-pass filter (Cut Off) to intermediate digital output and any input. Digital output has high frequency noise that hold harmonics bigger than anologue output. This seems to derive from steps of changing volume or pulses of a digital-analogue converter. It sometimes takes pre-sound state that is not natural to be heared.
-
-**MIDI IN**
+## MIDI IN
 
 * Synthesizer can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
 
-* MIDI channel of Sound Box is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
+* MIDI channel of Synthesizer is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
 
-* Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing Music code.
+* Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing a sequence of Synthesizer codes.
+
+* Note on / Note off is acceptable and polyphonic up to 8 voices, playing a sequence of Synthesizer codes subtracts voices to use.
+
+* Pitch bend is acceptable.
+
+* There are two types of synthesis, digital modulation and frequency modulation.
+	* Digital LFO modulation is in fact low-frequency oscillator. The sound is just wild. CC#1 (Modulation Coarse) and CC#33 (Modulation Fine) sets changing speed (delta) of frequency, and CC#16 (General Purpose Controller 1 Coarse) and CC#48 (General Purpose Controller 1 Fine) sets range (interval) of highest-lowest frequency.
+	* Frequency modulation is implemented. CC#17 (General Purpose Controller 2 Coarse) and CC#49 (General Purpose Controller 2 Fine) sets the pitch of the sub frequency. CC#18 (General Purpose Controller 3 Coarse) and CC#50 (General Purpose Controller 3 Fine) sets the amplitude of the sub frequency.
+
+* Envelope is changeable.
+	* CC#72 sets release time. 64 is the default value.
+	* CC#73 sets attack time. 64 is the default value.
+	* CC#75 sets decay time. 64 is the default value.
+	* CC#79 sets sustain level. 127 is the default value (100% sustain).
+
+* Volume is changeable thorough CC#7.
