@@ -1625,15 +1625,17 @@ sts32_synthemidi:
 			lsl temp2, voices, #4              @ Multiply by 16
 			ldr temp, STS32_SYNTHEWAVE_PARAM
 			str data1, [temp, temp2]           @ Main Frequency
+			add temp2, temp2, #4
 
 			/* Set Main Amplitude as Zero */
 			mov byte, #0
-			add temp2, temp2, #4
 			str byte, [temp, temp2]            @ Main Amplitude
+			add temp2, temp2, #4
 
 			/* Set Sub Frequency from Parameter, Round to Nearest 0.125 */
 			vmov vfp_temp, data1
-			vldr vfp_temp2, STS32_SYNTHEMIDI_SUBPITCH
+			ldr data1, STS32_SYNTHEMIDI_SUBPITCH
+			vmov vfp_temp2, data1
 			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
 			mov data1, #0x3E000000             @ Hard Code 0.125 in Float
 			vmov vfp_temp2, data1
@@ -1642,12 +1644,11 @@ sts32_synthemidi:
 			vcvt.f32.u32 vfp_temp, vfp_temp
 			vmul.f32 vfp_temp, vfp_temp, vfp_temp2
 			vmov data1, vfp_temp
-			add temp2, temp2, #4
 			str data1, [temp, temp2]           @ Sub Frequency
+			add temp2, temp2, #4
 
 			/* Set Sub Amplitude from Parameter */
 			ldr data1, STS32_SYNTHEMIDI_SUBAMP
-			add temp2, temp2, #4
 			str data1, [temp, temp2]           @ Sub Amplitude
 
 			/**
@@ -1655,37 +1656,39 @@ sts32_synthemidi:
 			 */
 
 			/* Make Maximum Volume with Floating Point */
-			ldr temp2, STS32_SYNTHEMIDI_VOLUME
-			mul data2, data2, temp2
+			ldr temp, STS32_SYNTHEMIDI_VOLUME
+			mul data2, data2, temp
 			vmov vfp_volume, data2
 			vcvt.f32.u32 vfp_volume, vfp_volume
 
 			/* Make Envelope Pointer for The Voice */
-			lsl temp, voices, #4              @ Multiply by 16
-			ldr data1, STS32_SYNTHEMIDI_ENVELOPE
-			add data1, data1, temp
+			lsl temp2, voices, #4              @ Multiply by 16
+			ldr temp, STS32_SYNTHEMIDI_ENVELOPE
+			add temp, temp, temp2
 
 			/* Store Count to Envelope Pointer */
-			mov temp, #0
-			str temp, [data1]
-			add data1, data1, #4
+			mov data1, #0
+			str data1, [temp]
+			add temp, temp, #4
 
 			/* Store Delta for Attack to Envelope Pointer */
-			vldr vfp_temp, STS32_SYNTHEMIDI_ATTACK
+			ldr data1, STS32_SYNTHEMIDI_ATTACK
+			vmov vfp_temp, data1
 			vcvt.f32.u32 vfp_temp, vfp_temp
 			vdiv.f32 vfp_temp, vfp_volume, vfp_temp
-			vstr vfp_temp, [data1]
-			add data1, data1, #4
+			vstr vfp_temp, [temp]
+			add temp, temp, #4
 
 			/* Store Delta for Decay to Envelope Pointer */
-			vldr vfp_sustain, STS32_SYNTHEMIDI_SUSTAIN
-			vmul.f32 vfp_sustain, vfp_volume, vfp_sustain
+			ldr data1, STS32_SYNTHEMIDI_SUSTAIN
+			vmov vfp_temp, data1
+			vmul.f32 vfp_sustain, vfp_volume, vfp_temp
 			vsub.f32 vfp_temp2, vfp_volume, vfp_sustain
-			vldr vfp_temp, STS32_SYNTEHMIDI_DECAY
+			ldr data1, STS32_SYNTHEMIDI_DECAY
+			vmov vfp_temp, data1
 			vcvt.f32.u32 vfp_temp, vfp_temp
 			vdiv.f32 vfp_temp, vfp_temp2, vfp_temp
-			vstr vfp_temp, [data1]
-			add data1, data1, #4
+			vstr vfp_temp, [temp]
 
 			/* Break Loop */
 			b sts32_synthemidi_noteon_common
@@ -1792,16 +1795,16 @@ sts32_synthemidi:
 		sts32_synthemidi_control_modulation:
 			cmp data2, #0
 			beq sts32_synthemidi_control_modulation_zero
-			lsr data2, data2, #4                          @ Range 0 - 16383 to 0 - 1023
+			lsr data2, data2, #6                          @ Range 0 - 16383 to 0 - 255
 			vmov vfp_volume, data2
 			vcvt.f32.s32 vfp_volume, vfp_volume
 
-			/* Divisor, 16368 */
+			/* Divisor, 16320 */
 			mov temp, #0x3F00
-			orr temp, temp, #0x00F0
+			orr temp, temp, #0x00C0
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 1023 to 0.0 - 0.0625
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 255 to 0.0 - 0.015625
 
 			ldr temp, STS32_MODULATION_DELTA_ADDR
 			vstr vfp_volume, [temp]
@@ -1821,6 +1824,18 @@ sts32_synthemidi:
 				b sts32_synthemidi_success
 
 		sts32_synthemidi_control_volume:
+			/* (data^1/2) / 2 */
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+			mov temp, #2
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vsqrt.f32 vfp_volume, vfp_volume
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+			vcvt.u32.f32 vfp_volume, vfp_volume
+			vmov temp, vfp_volume
+			str temp, STS32_SYNTHEMIDI_VOLUME
+
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_gp1:
@@ -1919,12 +1934,46 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_release:
+			/* (data^2) / 16 */
+			mul data2, data2, data2
+			lsr data2, data2, #4
+			cmp data2, #0
+			moveq data2, #1
+			str data2, STS32_SYNTHEMIDI_RELEASE
+
 			b sts32_synthemidi_success
+
 		sts32_synthemidi_control_attack:
+			/* (data^2) / 16 */
+			mul data2, data2, data2
+			lsr data2, data2, #4
+			cmp data2, #0
+			moveq data2, #1
+			str data2, STS32_SYNTHEMIDI_ATTACK
+
 			b sts32_synthemidi_success
+
 		sts32_synthemidi_control_decay:
+			/* (data^2) / 16 */
+			mul data2, data2, data2
+			lsr data2, data2, #4
+			cmp data2, #0
+			moveq data2, #1
+			str data2, STS32_SYNTHEMIDI_DECAY
+
 			b sts32_synthemidi_success
+
 		sts32_synthemidi_control_sustain:
+			/* data / 127 */
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+			mov temp, #127
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+			vmov temp, vfp_volume
+			str temp, STS32_SYNTHEMIDI_SUSTAIN
+
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_others:
@@ -2072,7 +2121,7 @@ STS32_SYNTHEMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 
 STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
 
 STS32_SYNTHEMIDI_ATTACK:         .word equ32_sts32_synthemidi_attack
-STS32_SYNTEHMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
+STS32_SYNTHEMIDI_DECAY:          .word equ32_sts32_synthemidi_decay
 STS32_SYNTHEMIDI_SUSTAIN:        .float 1.0
 STS32_SYNTHEMIDI_RELEASE:        .word equ32_sts32_synthemidi_release
 STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
@@ -2110,9 +2159,9 @@ STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
 .globl STS32_MODULATION_DELTA
 STS32_MODULATION_DELTA:          .float 0.0
 .globl STS32_MODULATION_MAX
-STS32_MODULATION_MAX:            .float 1.0
+STS32_MODULATION_MAX:            .float 1.2
 .globl STS32_MODULATION_MIN
-STS32_MODULATION_MIN:            .float 1.0
+STS32_MODULATION_MIN:            .float 0.8
 .globl STS32_MODULATION_MEDIUM
 STS32_MODULATION_MEDIUM:         .float 1.0
 .section	.library_system32
@@ -2294,7 +2343,7 @@ sts32_synthemidi_envelope:
 			/* Increase Count, Reset Count and Change The Voice Status to 3 If Reaches Maximum */
 			add addr, addr_envelope, offset          @ Pointer for Envelope
 			ldr count, [addr]
-			ldr max_count, STS32_SYNTEHMIDI_DECAY
+			ldr max_count, STS32_SYNTHEMIDI_DECAY
 			add count, count, #1
 			cmp count, max_count
 			movhs count, #0
