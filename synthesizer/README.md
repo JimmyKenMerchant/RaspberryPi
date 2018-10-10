@@ -16,6 +16,8 @@
 
 * [MIDI IN](#midi-in)
 
+* [Synthesizer Pre-code](#synthesizer-pre-code)
+
 ## Purpose
 
 * Programmable Synthesizer, MIDI IN Acceptable
@@ -117,7 +119,7 @@
 * Pitch bend is acceptable.
 
 * There are two types of synthesis, digital modulation and frequency modulation.
-	* Digital LFO modulation is in fact low-frequency oscillator. The sound is just wild. CC#1 (Modulation Coarse) and CC#33 (Modulation Fine) sets changing speed (delta) of frequency, and CC#16 (General Purpose Controller 1 Coarse) and CC#48 (General Purpose Controller 1 Fine) sets range (interval) of highest-lowest frequency.
+	* Digital LFO modulation is in fact low-frequency oscillator. This modulation is under a chaotic complex nonlinear system, so you sets high changing speed (delta) of frequency, the sound becomes noise. This modulation is made from frequently changing a variable value, which effects the result complexly, in the function which makes sound waves. CC#1 (Modulation Coarse) and CC#33 (Modulation Fine) sets changing speed (delta) of frequency, and CC#16 (General Purpose Controller 1 Coarse) and CC#48 (General Purpose Controller 1 Fine) sets range (interval) of highest-lowest frequency.
 	* Frequency modulation is implemented. CC#17 (General Purpose Controller 2 Coarse) and CC#49 (General Purpose Controller 2 Fine) sets the pitch of the sub frequency. CC#18 (General Purpose Controller 3 Coarse) and CC#50 (General Purpose Controller 3 Fine) sets the amplitude of the sub frequency.
 
 * Envelope is changeable.
@@ -127,3 +129,7 @@
 	* CC#79 sets sustain level. 127 is the default value (100% sustain).
 
 * Volume is changeable thorough CC#7.
+
+## Synthesizer Pre-code
+
+* Other than MIDI IN, there is unique programmable codes, called "Synthesizer Code". To decode this, "Synthesizer Pre-code" helps you.

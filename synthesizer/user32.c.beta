@@ -61,11 +61,11 @@ synthe_code synthe1[] = {
 			_C4<<_FREQ|2000<<_MAG,_C4<<_FREQ|8000<<_MAG, // L1
 			_C4<<_FREQ|2000<<_MAG,_C4<<_FREQ|8000<<_MAG, // R1
 			_E4<<_FREQ|2000<<_MAG,_E4<<_FREQ|8000<<_MAG, // L2
-			_E4<<_FREQ|2000<<_MAG,_E4<<_FREQ|8000<<_MAG, // R2
-			_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // L3
-			_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // R3
-			_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG, // L4
-			_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG  // R4
+			_E4<<_FREQ|2000<<_MAG,_E4<<_FREQ|8000<<_MAG // R2
+			//_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // L3
+			//_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // R3
+			//_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG, // L4
+			//_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG  // R4
 		))
 	))
 	_20_BIG(_RAP(
@@ -73,14 +73,42 @@ synthe_code synthe1[] = {
 			_C4<<_FREQ|2000<<_MAG,_C4<<_FREQ|8000<<_MAG, // L1
 			_C4<<_FREQ|2000<<_MAG,_C4<<_FREQ|8000<<_MAG, // R1
 			_E4<<_FREQ|2000<<_MAG,_E4<<_FREQ|8000<<_MAG, // L2
-			_E4<<_FREQ|2000<<_MAG,_E4<<_FREQ|8000<<_MAG, // R2
-			_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // L3
-			_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // R3
-			_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG, // L4
-			_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG  // R4
+			_E4<<_FREQ|2000<<_MAG,_E4<<_FREQ|8000<<_MAG // R2
+			//_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // L3
+			//_G4<<_FREQ|2000<<_MAG,_G4<<_FREQ|8000<<_MAG, // R3
+			//_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG, // L4
+			//_B4<<_FREQ|2000<<_MAG,_B4<<_FREQ|8000<<_MAG  // R4
 		))
 	))
 	_END
+};
+
+/* String */
+synthe_precode pre_synthe8_1[] = {
+	_E5<<_FREQ|2000<<_MAG,((_E5)+(2<<_FRAC))<<_FREQ|32000<<_MAG,7200<<_BEAT,70<<_ATK|0<<_DCY|100<<_STN|30<<_RLS,
+	_END
+};
+
+synthe_precode pre_synthe8_2[] = {
+	_G5<<_FREQ|2000<<_MAG,((_G5)+(2<<_FRAC))<<_FREQ|32000<<_MAG,7200<<_BEAT,70<<_ATK|0<<_DCY|100<<_STN|30<<_RLS,
+	_END
+};
+
+synthe_precode pre_synthe8_3[] = {
+	_A5<<_FREQ|2000<<_MAG,((_A5)+(2<<_FRAC))<<_FREQ|32000<<_MAG,7200<<_BEAT,70<<_ATK|0<<_DCY|100<<_STN|30<<_RLS,
+	_END
+};
+
+synthe_precode pre_synthe8_4[] = {
+	_C5<<_FREQ|2000<<_MAG,((_C5)+(2<<_FRAC))<<_FREQ|32000<<_MAG,7200<<_BEAT,70<<_ATK|0<<_DCY|100<<_STN|30<<_RLS,
+	_END
+};
+
+synthe_precode* pre_synthe8[] = {
+	pre_synthe8_1,
+	pre_synthe8_2,
+	pre_synthe8_3,
+	pre_synthe8_4
 };
 
 
@@ -94,43 +122,39 @@ int32 _user_start()
 {
 
 	// To Get Proper Latency, Get Lengths in Advance
-	/*
-	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1_l, pre_synthe1_r );
-	if ( (uint32)synthe1 == -1 ) return EXIT_FAILURE;
-	*/
-	uint32 synthelen1 = sts32_synthelen( synthe1 ) / 8;
+	uint32 synthelen1 = sts32_synthelen( synthe1 ) / 4;
 
 	synthe_code* synthe2 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe2 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen2 = sts32_synthelen( synthe2 ) / 2;
+	uint32 synthelen2 = sts32_synthelen( synthe2 ) / 4;
 
 	synthe_code* synthe3 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe3 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen3 = sts32_synthelen( synthe3 ) / 2;
+	uint32 synthelen3 = sts32_synthelen( synthe3 ) / 4;
 
 	synthe_code* synthe4 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe4 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen4 = sts32_synthelen( synthe4 ) / 2;
+	uint32 synthelen4 = sts32_synthelen( synthe4 ) / 4;
 
 	synthe_code* synthe5 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe5 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen5 = sts32_synthelen( synthe5 ) / 2;
+	uint32 synthelen5 = sts32_synthelen( synthe5 ) / 4;
 
 	synthe_code* synthe6 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe6 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen6 = sts32_synthelen( synthe6 ) / 2;
+	uint32 synthelen6 = sts32_synthelen( synthe6 ) / 4;
 
 	synthe_code* synthe7 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe7 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 2;
+	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 4;
 
-	synthe_code* synthe8 = (synthe_code*)heap32_malloc( 2 );
+	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8, 4 );
 	if ( (uint32)synthe8 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 2;
+	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 4;
 
 	synthe_code* synthe16 = (synthe_code*)heap32_malloc( 2 );
 	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
+	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 4;
 
 	tempo_count = tempo_count_default;
 	tempo_count_reload = tempo_count_default;
@@ -170,6 +194,13 @@ int32 _user_start()
 
 //print32_debug( detect_parallel, 100, 100 );
 
+				// Triangle LFO
+				STS32_MODULATION_MEDIUM = vfp32_fadd( STS32_MODULATION_MEDIUM, STS32_MODULATION_DELTA );
+				if ( vfp32_fgt( STS32_MODULATION_MEDIUM, STS32_MODULATION_MAX ) |
+					vfp32_flt( STS32_MODULATION_MEDIUM, STS32_MODULATION_MIN ) ) {
+					STS32_MODULATION_DELTA = vfp32_fmul( STS32_MODULATION_DELTA, -1.0 );
+				}
+
 				/* GPIO22-26 as Bit[26:22] */
 				// 0b00001 (1)
 				if ( detect_parallel == 0b00001<<22 ) {
@@ -201,8 +232,7 @@ int32 _user_start()
 
 				// 0b01000 (8)
 				} else if ( detect_parallel == 0b01000<<22 ) {
-					//_syntheset( synthe8, synthelen8, 0, -1 );
-					_syntheclear( 4 );
+					_syntheset( synthe8, synthelen8, 0, -1 );
 
 				// 0b01001 (9)
 				} else if ( detect_parallel == 0b01001<<22 ) {
@@ -235,7 +265,7 @@ int32 _user_start()
 				// 0b10000 (16)
 				} else if ( detect_parallel == 0b10000<<22 ) {
 					//_syntheset( synthe16, synthelen16, 0, -1 );
-					_syntheclear( 8 );
+					_syntheclear( 4 );
 
 				// 0b10001 (17)
 				} else if ( detect_parallel == 0b10001<<22 ) {
@@ -307,13 +337,15 @@ int32 _user_start()
 
 				}
 
-				result = _syntheplay( 8 );
+				result = _syntheplay( 4 );
 				if ( result == 0 ) { // Playing
 					playing_signal = _GPIOTOGGLE_HIGH;
 				} else { // Not Playing
 					playing_signal = _GPIOTOGGLE_LOW;
 				}
 				_gpiotoggle( 16, playing_signal );
+
+				_synthemidi_envelope( 8 );
 
 				tempo_count = tempo_count_reload; // Reset Counter
 			}

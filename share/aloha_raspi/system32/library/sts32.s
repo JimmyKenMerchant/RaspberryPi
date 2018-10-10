@@ -1795,16 +1795,16 @@ sts32_synthemidi:
 		sts32_synthemidi_control_modulation:
 			cmp data2, #0
 			beq sts32_synthemidi_control_modulation_zero
-			lsr data2, data2, #6                          @ Range 0 - 16383 to 0 - 255
+			lsr data2, data2, #7                          @ Range 0 - 16383 to 0 - 127
 			vmov vfp_volume, data2
 			vcvt.f32.s32 vfp_volume, vfp_volume
 
-			/* Divisor, 16320 */
+			/* Divisor, 16256 */
 			mov temp, #0x3F00
-			orr temp, temp, #0x00C0
+			orr temp, temp, #0x0080
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 255 to 0.0 - 0.015625
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 255 to 0.0 - 0.0078125
 
 			ldr temp, STS32_MODULATION_DELTA_ADDR
 			vstr vfp_volume, [temp]
@@ -1843,12 +1843,12 @@ sts32_synthemidi:
 			vmov vfp_volume, data2
 			vcvt.f32.u32 vfp_volume, vfp_volume
 
-			/* Divisor, 16380 */
-			mov temp, #0x3F00
-			orr temp, temp, #0x00FC
+			/* Divisor, 8190 */
+			mov temp, #0x1F00
+			orr temp, temp, #0x00FE
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 4095 to 0 - 0.25
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 4095 to 0 - 0.5
 
 			mov temp, #0x3F800000                         @ Hard Code 1.0 in Float
 			vmov vfp_temp, temp

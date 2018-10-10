@@ -13,9 +13,9 @@
 int32 _user_start()
 {
 	uint32 memory_space = heap32_malloc( 32 );
-	_store_8( memory_space, 0xA9 );
-	_store_8( memory_space + 1, 0xB8 );
-	_store_8( memory_space + 2, 0xC7 );
+	_store_8( memory_space, 0xA2 );
+	_store_8( memory_space + 1, 0xB3 );
+	_store_8( memory_space + 2, 0xC4 );
 	_store_8( memory_space + 3, 0xD5 );
 	uint32 chip_select = 0b000;
 	uint32 address_memory = 0x00;
