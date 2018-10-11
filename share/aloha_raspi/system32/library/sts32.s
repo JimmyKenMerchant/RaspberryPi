@@ -2029,9 +2029,9 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_release:
-			/* (data^2) / 16 */
+			/* (data^2) / 8 */
 			mul data2, data2, data2
-			lsr data2, data2, #4
+			lsr data2, data2, #3
 			cmp data2, #0
 			moveq data2, #1
 			str data2, STS32_SYNTHEMIDI_RELEASE
@@ -2039,9 +2039,9 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_attack:
-			/* (data^2) / 16 */
+			/* (data^2) / 8 */
 			mul data2, data2, data2
-			lsr data2, data2, #4
+			lsr data2, data2, #3
 			cmp data2, #0
 			moveq data2, #1
 			str data2, STS32_SYNTHEMIDI_ATTACK
@@ -2049,9 +2049,9 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_decay:
-			/* (data^2) / 16 */
+			/* (data^2) / 8 */
 			mul data2, data2, data2
-			lsr data2, data2, #4
+			lsr data2, data2, #3
 			cmp data2, #0
 			moveq data2, #1
 			str data2, STS32_SYNTHEMIDI_DECAY
@@ -2082,11 +2082,35 @@ sts32_synthemidi:
 		ldrh temp, [temp]                              @ Bank Select Bit[13:0]
 		lsl temp, temp, #7                             @ Bit[20:7] (Bank Select)
 		orr data1, data1, temp                         @ Bit[20:7] (Bank Select) or Bit[6:0] (data1)
-/*
-macro32_debug data1, 100, 100
-*/
 
-		/* Program Change Code Here */
+		cmp data1, #equ32_sts32_synthemidi_presets
+		movhi data1, #equ32_sts32_synthemidi_presets
+		mov data2, #24                                 @ One Presets has 24 Bytes
+		mul data1, data1, data2
+		ldr temp, STS32_SYNTHEMIDI_TABLEPRESETS
+
+		ldr temp2, [temp, data1]
+		str temp2, STS32_SYNTHEMIDI_SUBPITCH
+		add data1, data1, #4
+
+		ldr temp2, [temp, data1]
+		str temp2, STS32_SYNTHEMIDI_SUBAMP
+		add data1, data1, #4
+
+		ldr temp2, [temp, data1]
+		str temp2, STS32_SYNTHEMIDI_ATTACK
+		add data1, data1, #4
+
+		ldr temp2, [temp, data1]
+		str temp2, STS32_SYNTHEMIDI_DECAY
+		add data1, data1, #4
+
+		ldr temp2, [temp, data1]
+		str temp2, STS32_SYNTHEMIDI_RELEASE
+		add data1, data1, #4
+
+		ldr temp2, [temp, data1]
+		str temp2, STS32_SYNTHEMIDI_SUSTAIN
 
 		mov count, #0
 		b sts32_synthemidi_success
@@ -2227,6 +2251,7 @@ STS32_SYNTHEMIDI_BUFFER:         .word 0x00 @ Second Buffer to Store Outstanding
 STS32_SYNTHEMIDI_BYTEBUFFER:     .word _STS32_SYNTHEMIDI_BYTEBUFFER
 STS32_SYNTHEMIDI_CURRENTNOTE:    .word _STS32_SYNTHEMIDI_CURRENTNOTE
 STS32_SYNTHEMIDI_TABLENOTES:     .word 0x00
+STS32_SYNTHEMIDI_TABLEPRESETS:   .word 0x00
 
 STS32_SYNTHEMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 STS32_VIRTUAL_PARALLEL_ADDR:     .word STS32_VIRTUAL_PARALLEL
@@ -2301,6 +2326,7 @@ STS32_DIGITALMOD_MEDIUM:         .float 1.0
  * Parameters
  * r0: Size of Buffer (Words)
  * r1: Pointer of Table of Notes Frequency
+ * r2: Pointer of Table of Presets
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Memory Allocation Is Not Succeeded
@@ -2310,15 +2336,16 @@ sts32_synthemidi_malloc:
 	/* Auto (Local) Variables, but just Aliases */
 	words_buffer .req r0
 	addr_table   .req r1
-	buffer       .req r2
+	addr_presets .req r2
+	buffer       .req r3
 
 	push {lr}
 
 	/* Buffer to Receive MIDI Message */
-	push {r0-r1}
+	push {r0-r2}
 	bl heap32_malloc
 	mov buffer, r0
-	pop {r0-r1}
+	pop {r0-r2}
 
 	cmp buffer, #0
 	beq sts32_synthemidi_malloc_error
@@ -2331,11 +2358,11 @@ sts32_synthemidi_malloc:
 	str words_buffer, STS32_SYNTHEMIDI_COUNT
 
 	/* Buffer for Control Message No. 0 to No. 31 */
-	push {r0-r1}
+	push {r0-r2}
 	mov r0, #16                                    @ 16 Words Multiplied by 4 Bytes Equals 64 Bytes (2 Bytes Half Word * 32)
 	bl heap32_malloc
 	mov buffer, r0
-	pop {r0-r1}
+	pop {r0-r2}
 
 	cmp buffer, #0
 	beq sts32_synthemidi_malloc_error
@@ -2343,6 +2370,7 @@ sts32_synthemidi_malloc:
 	str buffer, STS32_SYNTHEMIDI_CTL
 
 	str addr_table, STS32_SYNTHEMIDI_TABLENOTES
+	str addr_presets, STS32_SYNTHEMIDI_TABLEPRESETS
 
 	b sts32_synthemidi_malloc_success
 
@@ -2359,6 +2387,7 @@ sts32_synthemidi_malloc:
 
 .unreq words_buffer
 .unreq addr_table
+.unreq addr_presets
 .unreq buffer
 
 

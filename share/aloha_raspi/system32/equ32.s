@@ -36,10 +36,11 @@
 .equ equ32_sts32_voice_max,                    8
 .equ equ32_sts32_samplerate,                   32000
 .equ equ32_sts32_synthewave_pwm_bias,          2496       @ 12-bit Depth
-.equ equ32_sts32_synthemidi_attack,            256        @ Default Attack Time (Beats) (64^2)/16
-.equ equ32_sts32_synthemidi_decay,             256        @ Default Decay Time (Beats) (64^2)/16
-.equ equ32_sts32_synthemidi_release,           256        @ Default Release Time (Beats) (64^2)/16
+.equ equ32_sts32_synthemidi_attack,            512        @ Default Attack Time (Beats) (64^2)/8
+.equ equ32_sts32_synthemidi_decay,             512        @ Default Decay Time (Beats) (64^2)/8
+.equ equ32_sts32_synthemidi_release,           512        @ Default Release Time (Beats) (64^2)/8
 .equ equ32_sts32_synthemidi_volume,            20         @ Default Volume Multiplier
+.equ equ32_sts32_synthemidi_presets,           2          @ Maximum Index of Presets (Number of Presets - 1)
 .equ equ32_sts32_mul_pwm,                      1          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
 .equ equ32_sts32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
 .equ equ32_sts32_range,                        0x400      @ Default Freq. Range on Modulation, +-(This Value * equ32_sts32_mul_*)

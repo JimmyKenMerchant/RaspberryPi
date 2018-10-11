@@ -210,16 +210,18 @@ os_reset:
 	push {r0-r3}
 	mov r0, #64
 	ldr r1, os_reset_SYNTHE_NOTES
+	ldr r2, os_reset_SYNTHE_PRESETS
 	bl sts32_synthemidi_malloc
 	pop {r0-r3}
 
 	pop {pc}
 
 /* From share/include/sts32.h (Matched at Linker), C Compiler Implicitly Adds ".globl" Attribute to Variables Globally Scoped, Which Use Memory Space */
-os_reset_SYNTHE_NOTES: .word _SYNTHE_NOTES
+os_reset_SYNTHE_NOTES:   .word _SYNTHE_NOTES
+os_reset_SYNTHE_PRESETS: .word _SYNTHE_PRESETS
 
 .globl OS_RESET_MIDI_CHANNEL
-OS_RESET_MIDI_CHANNEL: .word __MIDI_BASECHANNEL
+OS_RESET_MIDI_CHANNEL:   .word __MIDI_BASECHANNEL
 
 os_debug:
 	push {lr}
