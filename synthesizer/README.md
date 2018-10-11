@@ -116,10 +116,12 @@
 
 * Note on / Note off is acceptable and polyphonic up to 8 voices, playing a sequence of Synthesizer codes subtracts voices to use.
 
-* Pitch bend is acceptable.
+* Pitch bending is implemented. Range is fixed within appx. +-2.5 semitones.
+
+* Modulation (Vibration) is implemented, CC#1 (Modulation Coarse) and CC#33 (Modulation Fine) sets changing speed (delta) of frequency, and CC#16 (General Purpose Controller 1 Coarse) and CC#48 (General Purpose Controller 1 Fine) sets range (interval) of highest-lowest frequency.
 
 * There are two types of synthesis, digital modulation and frequency modulation.
-	* Digital LFO modulation is in fact low-frequency oscillator. This modulation is under a chaotic complex nonlinear system, so you sets high changing speed (delta) of frequency, the sound becomes noise. This modulation is made from frequently changing a variable value, which effects the result complexly, in the function which makes sound waves. CC#1 (Modulation Coarse) and CC#33 (Modulation Fine) sets changing speed (delta) of frequency, and CC#16 (General Purpose Controller 1 Coarse) and CC#48 (General Purpose Controller 1 Fine) sets range (interval) of highest-lowest frequency.
+	* Digital LFO modulation is in fact low-frequency oscillator. This modulation is under a chaotic complex nonlinear system, so you sets high changing speed (delta) of frequency, the sound becomes noise. This modulation is made from frequently changing a variable value, which effects the result complexly, in the function which makes sound waves. CC#12 (Effect Control 1 Coarse) and CC#44 (Effect Control 1 Fine) sets changing speed (delta) of frequency, and CC#13 (Effect Control 2 Coarse) and CC#45 (Effect Control 2 Fine) sets range (interval) of highest-lowest frequency.
 	* Frequency modulation is implemented. CC#17 (General Purpose Controller 2 Coarse) and CC#49 (General Purpose Controller 2 Fine) sets the pitch of the sub frequency. CC#18 (General Purpose Controller 3 Coarse) and CC#50 (General Purpose Controller 3 Fine) sets the amplitude of the sub frequency.
 
 * Envelope is changeable.

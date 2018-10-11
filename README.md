@@ -108,7 +108,7 @@ arm32_sleep:
 	* This system does not allow you to make empty (zero) arrays, which are placed in ".bss" section, in user32.s because functions to allocate memory spaces are only allowed to make dynamic arrays.
 
 5. Coconuts
-	* Some of projects in Aloha Operating System are aiming to make RasPi act like dedicated IC such as Sound Box, Synthesizer, LED Driver nicknamed "Coconut". Coconuts are made of admiration for microprocessors. Microprocessors are general-purpose, and can transform any ICs by installed programs. Coconuts are evidences which RasPi can be a good microprocessor.
+	* Some of projects in Aloha Operating System are aiming to make RasPi act like a dedicated IC such as Sound Box, Synthesizer, LED Driver nicknamed "Coconut". Coconuts are made of admiration for microprocessors. Microprocessors are general-purpose, and can transform any ICs by installed programs. Coconuts are evidences which RasPi can be a good microprocessor. I think, even today, microprocessors can alter a lot of digital signal processors (dedicated DSPs) to theirselves. Actually, video processors need to have more registers and memory caches to get a quick procedure than ordinary microprocessors. But innovation of microprocessors can surpass the advantages of dedicated DSPs. We tends to ignore the production cost of ICs. Microprocessors can be made with mass production, which reduces its cost. Don't forget, REDUCING COST MAKES FURTHER INNOVATION. If the speed and the liability of microprocessors is just as good as DSPs, we have to consider of the change for the innovaion. Even if the change erases the advantage of us, we need to accept it for the future.
 
 ## Installation
 

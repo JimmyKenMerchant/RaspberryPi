@@ -1303,7 +1303,7 @@ extern uint64 draw32_line
 
 extern uint32 SND32_VIRTUAL_PARALLEL;
 extern uint32 SND32_DIVISOR;
-extern uint32 SND32_MODULATION_DELTA;
+extern int32 SND32_MODULATION_DELTA;
 extern uint32 SND32_MODULATION_MAX;
 extern uint32 SND32_MODULATION_MIN;
 extern uint32 SND32_MODULATION_RANGE;
@@ -1354,10 +1354,15 @@ extern uint32 snd32_musiclen
 /* Global Variable */
 
 extern uint32 STS32_VIRTUAL_PARALLEL;
-extern float32 STS32_MODULATION_DELTA;
-extern float32 STS32_MODULATION_MAX;
-extern float32 STS32_MODULATION_MIN;
-extern float32 STS32_MODULATION_MEDIUM;
+extern uint32 STS32_DIVISOR;
+extern int32 STS32_MODULATION_DELTA;
+extern uint32 STS32_MODULATION_MAX;
+extern uint32 STS32_MODULATION_MIN;
+extern uint32 STS32_MODULATION_RANGE;
+extern float32 STS32_DIGITALMOD_DELTA;
+extern float32 STS32_DIGITALMOD_MAX;
+extern float32 STS32_DIGITALMOD_MIN;
+extern float32 STS32_DIGITALMOD_MEDIUM;
 
 /* Relative System Calls  */
 

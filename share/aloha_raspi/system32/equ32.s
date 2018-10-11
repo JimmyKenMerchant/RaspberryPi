@@ -42,6 +42,7 @@
 .equ equ32_sts32_synthemidi_volume,            20         @ Default Volume Multiplier
 .equ equ32_sts32_mul_pwm,                      1          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
 .equ equ32_sts32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
+.equ equ32_sts32_range,                        0x400      @ Default Freq. Range on Modulation, +-(This Value * equ32_sts32_mul_*)
 .equ equ32_sts32_neutraldiv_pwm,               0x3200     @ Neutral Clock Divisor on Pitch Bend on PWM Mode, Already Multiplied
 .equ equ32_sts32_neutraldiv_pcm,               0x12C00    @ Neutral Clock Divisor on Pitch Bend on PCM Mode, Already Multiplied
 .equ equ32_snd32_sounddecode_pwm_bias,         624        @ 10-bit Depth

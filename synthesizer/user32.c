@@ -610,15 +610,15 @@ int32 _user_start()
 
 	while ( true ) {
 #ifdef __SOUND_I2S
-		_synthewave_i2s( STS32_MODULATION_MEDIUM, 8 );
+		_synthewave_i2s( STS32_DIGITALMOD_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_I2S, 8 );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm( STS32_MODULATION_MEDIUM, 8 );
+		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm( STS32_MODULATION_MEDIUM, 8 );
+		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
@@ -635,11 +635,29 @@ int32 _user_start()
 
 //print32_debug( detect_parallel, 100, 100 );
 
-				// Triangle LFO
-				STS32_MODULATION_MEDIUM = vfp32_fadd( STS32_MODULATION_MEDIUM, STS32_MODULATION_DELTA );
-				if ( vfp32_fgt( STS32_MODULATION_MEDIUM, STS32_MODULATION_MAX ) |
-					vfp32_flt( STS32_MODULATION_MEDIUM, STS32_MODULATION_MIN ) ) {
-					STS32_MODULATION_DELTA = vfp32_fmul( STS32_MODULATION_DELTA, -1.0 );
+#ifdef __SOUND_I2S
+			_clockmanager_divisor( _cm_pcm, STS32_DIVISOR );
+#elif defined(__SOUND_PWM)
+			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR );
+#elif defined(__SOUND_JACK)
+			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR );
+#endif
+
+				/* Triangle LFO for MODULATION (Vibration) */
+				STS32_DIVISOR += STS32_MODULATION_DELTA;
+				if ( STS32_DIVISOR >= STS32_MODULATION_MAX ) {
+					STS32_DIVISOR = STS32_MODULATION_MAX;
+					STS32_MODULATION_DELTA = -( STS32_MODULATION_DELTA );
+				} else if ( STS32_DIVISOR <= STS32_MODULATION_MIN ) {
+					STS32_DIVISOR = STS32_MODULATION_MIN;
+					STS32_MODULATION_DELTA = -( STS32_MODULATION_DELTA );
+				}
+
+				/* Triangle LFO for DIGITALMOD */
+				STS32_DIGITALMOD_MEDIUM = vfp32_fadd( STS32_DIGITALMOD_MEDIUM, STS32_DIGITALMOD_DELTA );
+				if ( vfp32_fgt( STS32_DIGITALMOD_MEDIUM, STS32_DIGITALMOD_MAX ) |
+					vfp32_flt( STS32_DIGITALMOD_MEDIUM, STS32_DIGITALMOD_MIN ) ) {
+					STS32_DIGITALMOD_DELTA = vfp32_fmul( STS32_DIGITALMOD_DELTA, -1.0 );
 				}
 
 				/* GPIO22-26 as Bit[26:22] */

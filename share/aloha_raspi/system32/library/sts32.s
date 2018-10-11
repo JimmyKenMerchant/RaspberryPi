@@ -1190,6 +1190,7 @@ sts32_syntheinit_pwm:
 	memorymap_base    .req r0
 	value             .req r1
 	gpio_set          .req r2
+	temp              .req r3
 
 	push {lr}
 
@@ -1228,6 +1229,9 @@ sts32_syntheinit_pwm:
 
 	macro32_dsb ip
 
+	.unreq gpio_set
+	temp2 .req r2
+
 	/**
 	 * Clock Manager for PWM.
 	 * Makes 160Mhz (From PLLD). 500Mhz Div by 3.125 Equals 200Mhz.
@@ -1263,6 +1267,25 @@ sts32_syntheinit_pwm:
 
 	macro32_dsb ip
 
+	mov value, #equ32_sts32_neutraldiv_pwm
+	ldr memorymap_base, STS32_DIVISOR_ADDR
+	str value, [memorymap_base]
+
+	mov temp, #equ32_sts32_range
+	mov temp2, #equ32_sts32_mul_pwm
+	mul temp, temp, temp2
+
+	ldr memorymap_base, STS32_MODULATION_RANGE_ADDR
+	str temp, [memorymap_base]
+
+	add temp2, value, temp
+	ldr memorymap_base, STS32_MODULATION_MAX_ADDR
+	str temp2, [memorymap_base]
+
+	sub temp2, value, temp
+	ldr memorymap_base, STS32_MODULATION_MIN_ADDR
+	str temp2, [memorymap_base]
+
 	ldr value, STS32_STATUS
 	orr value, value, #0x80000000
 	str value, STS32_STATUS
@@ -1275,7 +1298,8 @@ sts32_syntheinit_pwm:
 
 .unreq memorymap_base
 .unreq value
-.unreq gpio_set
+.unreq temp2
+.unreq temp
 
 
 /**
@@ -1289,6 +1313,8 @@ sts32_syntheinit_i2s:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base    .req r0
 	value             .req r1
+	temp2             .req r2
+	temp              .req r3
 
 	push {lr}
 
@@ -1384,6 +1410,25 @@ sts32_syntheinit_i2s:
 
 	macro32_dsb ip
 
+	mov value, #equ32_sts32_neutraldiv_pcm
+	ldr memorymap_base, STS32_DIVISOR_ADDR
+	str value, [memorymap_base]
+
+	mov temp, #equ32_sts32_range
+	mov temp2, #equ32_sts32_mul_pcm
+	mul temp, temp, temp2
+
+	ldr memorymap_base, STS32_MODULATION_RANGE_ADDR
+	str temp, [memorymap_base]
+
+	add temp2, value, temp
+	ldr memorymap_base, STS32_MODULATION_MAX_ADDR
+	str temp2, [memorymap_base]
+
+	sub temp2, value, temp
+	ldr memorymap_base, STS32_MODULATION_MIN_ADDR
+	str temp2, [memorymap_base]
+
 	ldr value, STS32_STATUS
 	orr value, value, #0x80000000
 	str value, STS32_STATUS
@@ -1396,6 +1441,8 @@ sts32_syntheinit_i2s:
 
 .unreq memorymap_base
 .unreq value
+.unreq temp2
+.unreq temp
 
 
 /**
@@ -1748,6 +1795,10 @@ sts32_synthemidi:
 		beq sts32_synthemidi_control_modulation
 		cmp data1, #7
 		beq sts32_synthemidi_control_volume
+		cmp data1, #12
+		beq sts32_synthemidi_control_dmoddelta
+		cmp data1, #13
+		beq sts32_synthemidi_control_dmodrange
 		cmp data1, #16
 		beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
 		cmp data1, #17
@@ -1781,6 +1832,10 @@ sts32_synthemidi:
 			beq sts32_synthemidi_control_modulation
 			cmp data1, #7
 			beq sts32_synthemidi_control_volume
+			cmp data1, #12
+			beq sts32_synthemidi_control_dmoddelta
+			cmp data1, #13
+			beq sts32_synthemidi_control_dmodrange
 			cmp data1, #16
 			beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
 			cmp data1, #17
@@ -1793,35 +1848,15 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_modulation:
-			cmp data2, #0
-			beq sts32_synthemidi_control_modulation_zero
-			lsr data2, data2, #7                          @ Range 0 - 16383 to 0 - 127
-			vmov vfp_volume, data2
-			vcvt.f32.s32 vfp_volume, vfp_volume
-
-			/* Divisor, 16256 */
-			mov temp, #0x3F00
-			orr temp, temp, #0x0080
-			vmov vfp_temp, temp
-			vcvt.f32.u32 vfp_temp, vfp_temp
-			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 255 to 0.0 - 0.0078125
-
+			/* Incremental / Decremental Delta of Modulation */
+			lsr data2, data2, #8                               @ Divide by 256, Resolution 16384 to 64
+			cmp mode, #0
+			moveq temp, #equ32_sts32_mul_pwm
+			movne temp, #equ32_sts32_mul_pcm
+			mul data2, data2, temp
 			ldr temp, STS32_MODULATION_DELTA_ADDR
-			vstr vfp_volume, [temp]
-
+			str data2, [temp]
 			b sts32_synthemidi_success
-
-			sts32_synthemidi_control_modulation_zero:
-				/* Reset Medium Value to 1.0, Prevent Glitch on Sample Rate */
-				mov temp, #0x3F800000                     @ Hard Code 1.0 in Float
-				ldr temp2, STS32_MODULATION_MEDIUM_ADDR
-				str temp, [temp2]
-
-				mov temp, #0
-				ldr temp2, STS32_MODULATION_DELTA_ADDR
-				str temp, [temp2]
-
-				b sts32_synthemidi_success
 
 		sts32_synthemidi_control_volume:
 			/* (data^1/2) / 2 */
@@ -1838,7 +1873,38 @@ sts32_synthemidi:
 
 			b sts32_synthemidi_success
 
-		sts32_synthemidi_control_gp1:
+		sts32_synthemidi_control_dmoddelta:
+			cmp data2, #0
+			beq sts32_synthemidi_control_dmoddelta_zero
+			lsr data2, data2, #7                          @ Range 0 - 16383 to 0 - 127
+			vmov vfp_volume, data2
+			vcvt.f32.s32 vfp_volume, vfp_volume
+
+			/* Divisor, 16256 */
+			mov temp, #0x3F00
+			orr temp, temp, #0x0080
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp     @ Range 0 - 255 to 0.0 - 0.0078125
+
+			ldr temp, STS32_DIGITALMOD_DELTA_ADDR
+			vstr vfp_volume, [temp]
+
+			b sts32_synthemidi_success
+
+			sts32_synthemidi_control_dmoddelta_zero:
+				/* Reset Medium Value to 1.0, Prevent Glitch on Sample Rate */
+				mov temp, #0x3F800000                     @ Hard Code 1.0 in Float
+				ldr temp2, STS32_DIGITALMOD_MEDIUM_ADDR
+				str temp, [temp2]
+
+				mov temp, #0
+				ldr temp2, STS32_DIGITALMOD_DELTA_ADDR
+				str temp, [temp2]
+
+				b sts32_synthemidi_success
+
+		sts32_synthemidi_control_dmodrange:
 			lsr data2, data2, #2                          @ Range 0 - 16383 to 0 - 4095
 			vmov vfp_volume, data2
 			vcvt.f32.u32 vfp_volume, vfp_volume
@@ -1854,18 +1920,47 @@ sts32_synthemidi:
 			vmov vfp_temp, temp
 
 			/* Reset Medium Value to 1.0 */
-			ldr temp, STS32_MODULATION_MEDIUM_ADDR
+			ldr temp, STS32_DIGITALMOD_MEDIUM_ADDR
 			vstr vfp_temp, [temp]
 
 			/* Maximum Value of Interval */
 			vadd.f32 vfp_temp2, vfp_temp, vfp_volume
-			ldr temp, STS32_MODULATION_MAX_ADDR
+			ldr temp, STS32_DIGITALMOD_MAX_ADDR
 			vstr vfp_temp2, [temp]
 
 			/* Minimum Value of Interval */
 			vsub.f32 vfp_temp2, vfp_temp, vfp_volume
-			ldr temp, STS32_MODULATION_MIN_ADDR
+			ldr temp, STS32_DIGITALMOD_MIN_ADDR
 			vstr vfp_temp2, [temp]
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_gp1:
+			/* Frequency Range (Interval) of Modulation */
+			lsr data1, data2, #3                          @ Divide by 8, Resolution 16384 to 2048
+			cmp mode, #0
+			moveq data2, #equ32_sts32_mul_pwm
+			movne data2, #equ32_sts32_mul_pcm
+			mul data1, data1, data2
+
+			ldr temp, STS32_MODULATION_RANGE_ADDR
+			str data1, [temp]
+
+			/* Get Base Divisor on Modulation */
+			ldr temp2, STS32_DIVISOR_ADDR
+			ldr temp, [temp2]
+
+			/* Maximum Frequency on Modulation */
+			add data2, temp, data1
+			ldr temp2, STS32_MODULATION_MAX_ADDR
+			str data2, [temp2]
+
+			/* Minimum Frequency on Modulation */
+			sub data2, temp, data1
+			cmp data2, #0x2000
+			movlt data2, #0x2000                               @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+			ldr temp2, STS32_MODULATION_MIN_ADDR
+			str data2, [temp2]
 
 			b sts32_synthemidi_success
 
@@ -2010,8 +2105,8 @@ macro32_debug data1, 100, 100
 		/* Concatenate Data1 and Data2, 0 to 16383, 8192 (0x2000) is Neutral */
 		lsl data2, data2, #7                          @ MSB Bit[13:7]
 		orr data1, data1, data2
-		lsr data1, data1, #1                          @ Divisor of Resolution (This Case Divided by 2)
-		sub data1, data1, #0x1000                     @ Neutral (8192 / 2) to 0, Make Signed Value
+		lsr data1, data1, #2                          @ Divisor of Resolution (This Case Divided by 4)
+		sub data1, data1, #0x800                      @ Neutral (8192 / 4) to 0, Make Signed Value
 
 		cmp mode, #0
 		moveq data2, #equ32_sts32_mul_pwm
@@ -2020,17 +2115,33 @@ macro32_debug data1, 100, 100
 		movne temp, #equ32_sts32_neutraldiv_pcm
 		mul data1, data1, data2                       @ Multiply with Multiplier
 
-		sub temp, temp, data1                         @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-		cmp temp, #0x2000
-		movlt temp, #0x2000                           @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
+		sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+		cmp data1, #0x2000
+		movlt data1, #0x2000                          @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 
 		push {r0-r3}
 		cmp mode, #0
 		moveq r0, #equ32_cm_pwm
 		movne r0, #equ32_cm_pcm
-		mov r1, temp
+		mov r1, data1
 		bl arm32_clockmanager_divisor
 		pop {r0-r3}
+
+		ldr temp, STS32_DIVISOR_ADDR
+		str data1, [temp]
+
+		ldr temp, STS32_MODULATION_RANGE_ADDR
+		ldr data2, [temp]
+
+		/* Maximum Value of Modulation */
+		add temp2, data1, data2
+		ldr temp, STS32_MODULATION_MAX_ADDR
+		str temp2, [temp]
+
+		/* Minimum Value of Modulation */
+		sub temp2, data1, data2
+		ldr temp, STS32_MODULATION_MIN_ADDR
+		str temp2, [temp]
 
 		mov count, #0
 		b sts32_synthemidi_success
@@ -2128,16 +2239,20 @@ STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
 
 STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
 
+STS32_DIVISOR_ADDR:              .word STS32_DIVISOR
 STS32_MODULATION_DELTA_ADDR:     .word STS32_MODULATION_DELTA
 STS32_MODULATION_MAX_ADDR:       .word STS32_MODULATION_MAX
 STS32_MODULATION_MIN_ADDR:       .word STS32_MODULATION_MIN
-STS32_MODULATION_MEDIUM_ADDR:    .word STS32_MODULATION_MEDIUM
+STS32_MODULATION_RANGE_ADDR:     .word STS32_MODULATION_RANGE
+
+STS32_DIGITALMOD_DELTA_ADDR:     .word STS32_DIGITALMOD_DELTA
+STS32_DIGITALMOD_MAX_ADDR:       .word STS32_DIGITALMOD_MAX
+STS32_DIGITALMOD_MIN_ADDR:       .word STS32_DIGITALMOD_MIN
+STS32_DIGITALMOD_MEDIUM_ADDR:    .word STS32_DIGITALMOD_MEDIUM
 
 .section	.data
 _STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
 _STS32_SYNTHEMIDI_CURRENTNOTE:   .space 8, 0x00
-.globl STS32_VIRTUAL_PARALLEL
-STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
 STS32_SYNTHEWAVE_FREQA_L:        .word 0x00
 STS32_SYNTHEWAVE_AMPA_L:         .word 0x00
 STS32_SYNTHEWAVE_FREQB_L:        .word 0x00
@@ -2156,14 +2271,26 @@ STS32_SYNTHEMIDI_DELTA_ATTACK2:  .float 0.0
 STS32_SYNTHEMIDI_DELTA_DECAY2:   .float 0.0
 STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
 .space 96, 0x00                             @ Rest 6 Sets
+.globl STS32_VIRTUAL_PARALLEL
+STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
+.globl STS32_DIVISOR
+STS32_DIVISOR:                   .word 0x00
 .globl STS32_MODULATION_DELTA
-STS32_MODULATION_DELTA:          .float 0.0
+STS32_MODULATION_DELTA:          .word 0x00
 .globl STS32_MODULATION_MAX
-STS32_MODULATION_MAX:            .float 1.2
+STS32_MODULATION_MAX:            .word 0x00
 .globl STS32_MODULATION_MIN
-STS32_MODULATION_MIN:            .float 0.8
-.globl STS32_MODULATION_MEDIUM
-STS32_MODULATION_MEDIUM:         .float 1.0
+STS32_MODULATION_MIN:            .word 0x00
+.globl STS32_MODULATION_RANGE
+STS32_MODULATION_RANGE:          .word 0x00
+.globl STS32_DIGITALMOD_DELTA
+STS32_DIGITALMOD_DELTA:          .float 0.0
+.globl STS32_DIGITALMOD_MAX
+STS32_DIGITALMOD_MAX:            .float 1.2
+.globl STS32_DIGITALMOD_MIN
+STS32_DIGITALMOD_MIN:            .float 0.8
+.globl STS32_DIGITALMOD_MEDIUM
+STS32_DIGITALMOD_MEDIUM:         .float 1.0
 .section	.library_system32
 
 
