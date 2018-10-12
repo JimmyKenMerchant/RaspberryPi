@@ -400,6 +400,15 @@ snd32_sounddecode:
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str temp, [temp2]
 
+		/* Range of Frequencies on Modulation */
+		mov temp, #equ32_snd32_range
+		cmp mode, #2
+		movlo temp2, #equ32_snd32_mul_pwm
+		movhs temp2, #equ32_snd32_mul_pcm
+		mul temp, temp, temp2
+		ldr temp2, SND32_MODULATION_RANGE_ADDR
+		str temp, [temp2]
+
 		ldr temp, SND32_STATUS
 		orr temp, temp, #0x80000000
 		str temp, SND32_STATUS
@@ -657,6 +666,10 @@ snd32_soundplay:
 		movne temp2, #equ32_snd32_mul_pcm
 		mul temp, temp, temp2
 
+		/* Current Pitch Bend */
+		ldr temp4, SND32_SOUNDMIDI_PITCHBEND
+		sub temp, temp, temp4                      @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+
 		push {r0-r3}
 		cmp mode, #0
 		moveq r0, #equ32_cm_pwm
@@ -676,13 +689,9 @@ snd32_soundplay:
 
 		beq snd32_soundplay_tune_silence           @ If Silence
 
-		/* Make Frequency Range on Modulation */
+		/* Frequency Range on Modulation */
 		ldr temp3, SND32_MODULATION_RANGE_ADDR
 		ldr temp3, [temp3]
-		cmp mode, #0
-		moveq temp4, #equ32_snd32_mul_pwm
-		movne temp4, #equ32_snd32_mul_pcm
-		mul temp3, temp3, temp4
 
 		/* Maximum Frequency on Modulation */
 		add temp4, temp, temp3
@@ -691,8 +700,6 @@ snd32_soundplay:
 
 		/* Minimum Frequency on Modulation */
 		sub temp4, temp, temp3
-		cmp temp4, #0x2000
-		movlt temp4, #0x2000                       @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str temp4, [temp2]
 
@@ -1539,6 +1546,11 @@ macro32_debug data1, 0, 88
 		movne temp2, #equ32_snd32_mul_pcm
 		mul temp, temp, temp2
 
+		/* Current Pitch Bend */
+		ldr data1, SND32_SOUNDMIDI_PITCHBEND
+
+		sub temp, temp, data1                             @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+
 		push {r0-r3}
 		cmp mode, #0
 		moveq r0, #equ32_cm_pwm
@@ -1551,13 +1563,9 @@ macro32_debug data1, 0, 88
 		ldr temp2, SND32_DIVISOR_ADDR
 		str temp, [temp2]
 
-		/* Make Frequency Range on Modulation */
+		/* Frequency Range on Modulation */
 		ldr data1, SND32_MODULATION_RANGE_ADDR
 		ldr data1, [data1]
-		cmp mode, #0
-		moveq data2, #equ32_snd32_mul_pwm
-		movne data2, #equ32_snd32_mul_pcm
-		mul data1, data1, data2
 
 		/* Maximum Frequency on Modulation */
 		add data2, temp, data1
@@ -1566,8 +1574,6 @@ macro32_debug data1, 0, 88
 
 		/* Minimum Frequency on Modulation */
 		sub data2, temp, data1
-		cmp data2, #0x2000
-		movlt data2, #0x2000                              @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str data2, [temp2]
 
@@ -1662,34 +1668,44 @@ macro32_debug data1, 0, 112
 			b snd32_soundmidi_success
 
 		snd32_soundmidi_control_gp1:
-			/* Frequency Range (Interval) of Modulation */
+			/* Make Frequency Range (Interval) of Modulation */
 			lsr data2, data2, #2                               @ Divide by 4, Resolution 16384 to 4096
+			cmp mode, #0
+			moveq temp, #equ32_snd32_mul_pwm
+			movne temp, #equ32_snd32_mul_pcm
+			mul data2, data2, temp
 			ldr temp, SND32_MODULATION_RANGE_ADDR
 			str data2, [temp]
 
 			/* Check If Silence on Current Music Code*/
-			ldr temp, SND32_CURRENTCODE                        @ Check Current Code
-			cmp temp, #equ32_snd32_silence
+			ldr data1, SND32_CURRENTCODE                       @ Check Current Code
+			cmp data1, #equ32_snd32_silence
 			beq snd32_soundmidi_success                        @ If Silence
 
 			/* Check If Null (End of Sequence) on Current Music Code */
 			mov temp2, #0xFF00
 			orr temp2, temp2, #0x00FF
-			cmp temp, temp2
+			cmp data1, temp2
 			beq snd32_soundmidi_success                        @ If Null
 
 			/* Except Silence or Null (End of Sequence of Music Code), Immediately Change Frequency Range */
 
-			/* Get Base Divisor on Modulation */
-			ldr temp2, SND32_DIVISOR_ADDR
-			ldr temp, [temp2]
+			/* Tune Tone */
 
-			/* Make Frequency Range on Modulation */
-			mov data1, data2
+			ldr temp, SND32_SOUND_ADJUST
+			lsl temp2, data1, #1                               @ Multiply by 2
+			ldrh temp, [temp, temp2]                           @ Half Word
 			cmp mode, #0
-			moveq data2, #equ32_snd32_mul_pwm
-			movne data2, #equ32_snd32_mul_pcm
-			mul data1, data1, data2
+			moveq temp2, #equ32_snd32_mul_pwm
+			movne temp2, #equ32_snd32_mul_pcm
+			mul temp, temp, temp2
+
+			/* Current Pitch Bend */
+			ldr data1, SND32_SOUNDMIDI_PITCHBEND
+
+			sub temp, temp, data1                              @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
+
+			mov data1, data2
 
 			/* Maximum Frequency on Modulation */
 			add data2, temp, data1
@@ -1698,8 +1714,6 @@ macro32_debug data1, 0, 112
 
 			/* Minimum Frequency on Modulation */
 			sub data2, temp, data1
-			cmp data2, #0x2000
-			movlt data2, #0x2000                               @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 			ldr temp2, SND32_MODULATION_MIN_ADDR
 			str data2, [temp2]
 
@@ -1784,13 +1798,17 @@ macro32_debug data1, 0, 112
 		moveq data2, #equ32_snd32_mul_pwm
 		movne data2, #equ32_snd32_mul_pcm
 		mul data1, data1, data2                       @ Multiply with Multiplier
+		str data1, SND32_SOUNDMIDI_PITCHBEND
 
-		ldr temp2, SND32_DIVISOR_ADDR
-		ldr temp, [temp2]
+		/* Tune Tone */
+
+		ldr temp, SND32_SOUND_ADJUST
+		ldr temp2, SND32_CURRENTCODE
+		lsl temp2, temp2, #1                          @ Multiply by 2
+		ldrh temp, [temp, temp2]                      @ Half Word
+		mul temp, temp, data2                         @ Multiply with Multiplier
 
 		sub temp, temp, data1                         @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-		cmp temp, #0x2000
-		movlt temp, #0x2000                           @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 
 		push {r0-r3}
 		cmp mode, #0
@@ -1801,15 +1819,12 @@ macro32_debug data1, 0, 112
 		pop {r0-r3}
 
 		/* Set Base Divisor on Modulation */
+		ldr temp2, SND32_DIVISOR_ADDR
 		str temp, [temp2]
 
 		/* Make Frequency Range on Modulation */
 		ldr data1, SND32_MODULATION_RANGE_ADDR
 		ldr data1, [data1]
-		cmp mode, #0
-		moveq data2, #equ32_snd32_mul_pwm
-		movne data2, #equ32_snd32_mul_pcm
-		mul data1, data1, data2
 
 		/* Maximum Frequency on Modulation */
 		add data2, temp, data1
@@ -1818,8 +1833,6 @@ macro32_debug data1, 0, 112
 
 		/* Minimum Frequency on Modulation */
 		sub data2, temp, data1
-		cmp data2, #0x2000
-		movlt data2, #0x2000                              @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str data2, [temp2]
 
@@ -1900,8 +1913,9 @@ SND32_SOUNDMIDI_BASEOFFSET:     .word equ32_snd32_soundmidi_sound0_baseoffset
 SND32_SOUNDMIDI_LOWNOTE:        .word equ32_snd32_soundmidi_sound0_lownote
 SND32_SOUNDMIDI_HIGHNOTE:       .word equ32_snd32_soundmidi_sound0_highnote
 SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
+SND32_SOUNDMIDI_PITCHBEND:      .word 0x00
 
-SND32_SOUNDMIDI_CTL:            .word 0x00 @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
+SND32_SOUNDMIDI_CTL:            .word 0x00  @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 SND32_VIRTUAL_PARALLEL_ADDR:    .word SND32_VIRTUAL_PARALLEL
 SND32_DIVISOR_ADDR:             .word SND32_DIVISOR
 SND32_MODULATION_DELTA_ADDR:    .word SND32_MODULATION_DELTA
@@ -1922,7 +1936,7 @@ SND32_MODULATION_MAX:           .word 0x00
 .globl SND32_MODULATION_MIN
 SND32_MODULATION_MIN:           .word 0x00
 .globl SND32_MODULATION_RANGE
-SND32_MODULATION_RANGE:         .word equ32_snd32_range
+SND32_MODULATION_RANGE:         .word 0x00
 .section	.library_system32
 
 

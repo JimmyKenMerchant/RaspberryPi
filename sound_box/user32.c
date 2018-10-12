@@ -475,12 +475,12 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 			// 0b01001 (9)
 			} else if ( detect_parallel == 0b01001<<22 ) {
 				SND32_MODULATION_DELTA = 0x10 * delta_multiplier;
-				SND32_MODULATION_RANGE = 0x1000;
+				SND32_MODULATION_RANGE = 0x1000 * delta_multiplier;
 
 			// 0b01010 (10)
 			} else if ( detect_parallel == 0b01010<<22 ) {
 				SND32_MODULATION_DELTA = 0x0 * delta_multiplier;
-				SND32_MODULATION_RANGE = 0x0;
+				SND32_MODULATION_RANGE = 0x0 * delta_multiplier;
 
 			// 0b01011 (11)
 			} else if ( detect_parallel == 0b01011<<22 ) {

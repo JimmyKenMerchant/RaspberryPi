@@ -2010,6 +2010,15 @@ arm32_clockmanager_divisor:
 		bne arm32_clockmanager_divisor_loop
 	*/
 
+	/**
+	 * This function uses for frequently changing the frequency of the clock.
+	 * However, its divisor has minimum limitation, e.g., 2.0 (0x2000 on fixed point decimal) in 1-stage Mash.
+	 * If the divisor is less than the limitation, the clock has malfunctions.
+	 * To prevent malfunctions in the clock, this function implements the limiter.
+	 */
+	cmp clk_divisors, #equ32_arm32_clockmanager_divisor_limiter
+	movlt clk_divisors, #equ32_arm32_clockmanager_divisor_limiter
+
 	/* Set Divisors */
 	orr clk_divisors, clk_divisors, #equ32_cm_passwd
 	str clk_divisors, [memorymap_base, #equ32_cm_div]

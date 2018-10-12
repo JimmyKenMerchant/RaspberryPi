@@ -156,7 +156,7 @@
 
 * Low-frequency oscillator can be controlled not only in MIDI IN as modulation, but also in user32.c directly.
 	 * Value of `SND32_MODULATION_DELTA` sets changing speed (delta) of frequency. This value immediately affects the outgoing sound. This value varies between PWM mode and PCM mode. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
-	 * Value of `SND32_MODULATION_RANGE` sets range (interval) of highest-lowest frequency. This value affects the sound after changing note of Music code.
+	 * Value of `SND32_MODULATION_RANGE` sets range (interval) of highest-lowest frequency. This value affects the sound after changing note of Music code. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
 
 * The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on share/include/snd32/soundadjust.h.
 

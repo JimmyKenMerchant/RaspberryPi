@@ -1957,8 +1957,6 @@ sts32_synthemidi:
 
 			/* Minimum Frequency on Modulation */
 			sub data2, temp, data1
-			cmp data2, #0x2000
-			movlt data2, #0x2000                               @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 			ldr temp2, STS32_MODULATION_MIN_ADDR
 			str data2, [temp2]
 
@@ -2140,8 +2138,6 @@ sts32_synthemidi:
 		mul data1, data1, data2                       @ Multiply with Multiplier
 
 		sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-		cmp data1, #0x2000
-		movlt data1, #0x2000                          @ Divisor Less than 2.0 Is Prohibited by Setting of Clock Manager
 
 		push {r0-r3}
 		cmp mode, #0

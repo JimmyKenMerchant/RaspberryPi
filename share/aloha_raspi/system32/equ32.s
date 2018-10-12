@@ -17,6 +17,7 @@
 .equ equ32_bcm32_height,                       648
 .equ equ32_bcm32_alpha,                        16
 .equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
+.equ equ32_arm32_clockmanager_divisor_limiter, 0x2000     @ Minimum Limiter of Divisor, 2 on Integer Places and .0 on Decimal Places
 .equ equ32_i2c32_timeout,                      0x00FF0000
 .equ equ32_fb32_image_16bit_tp_color,          0x0000     @ Assigned 16-bit Color Code as Full Transparent
 .equ equ32_print32_font_color,                 0xFFFFFFFF @ Default Font Color
@@ -40,7 +41,7 @@
 .equ equ32_sts32_synthemidi_decay,             512        @ Default Decay Time (Beats) (64^2)/8
 .equ equ32_sts32_synthemidi_release,           512        @ Default Release Time (Beats) (64^2)/8
 .equ equ32_sts32_synthemidi_volume,            20         @ Default Volume Multiplier
-.equ equ32_sts32_synthemidi_presets,           2          @ Maximum Index of Presets (Number of Presets - 1)
+.equ equ32_sts32_synthemidi_presets,           3          @ Maximum Index of Presets (Number of Presets - 1)
 .equ equ32_sts32_mul_pwm,                      1          @ Multiplier to Make Clock Divisor on PWM, with Value in Header, etc.
 .equ equ32_sts32_mul_pcm,                      6          @ Multiplier to Make Clock Divisor on PCM, with Value in Header, etc.
 .equ equ32_sts32_range,                        0x400      @ Default Freq. Range on Modulation, +-(This Value * equ32_sts32_mul_*)
