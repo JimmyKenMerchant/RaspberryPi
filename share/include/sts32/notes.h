@@ -493,20 +493,3 @@ float32 _SYNTHE_NOTES[] =
 	12543.875
 };
 
-
-/**
- * One Preset is 24 Bytes (6 Words)
- * First Word: Pitch of Sub Frequency (Float),
- * Second Word: Amplitude of Sub Frequency (Float, 0 - 2PI),
- * Third Word: Attack (Unsigned Integer),
- * Fourth Word: Decay (Unsigned Integer),
- * Fifth Word: Release (Unsigned Integer),
- * Sixth Word: Sustain Level (Float 0 - 1.0)
- */
-uint32 _SYNTHE_PRESETS[] =
-{
-	0x3F800000, 0x00000000, 512, 512, 512, 0x3F800000, // Flute (1.0, 0.0, 1.0)
-	0x3F800000, 0x40C90FE4, 512, 512, 512, 0x3F000000, // String (1.0, 2PI, 0.5)
-	0x3F800000, 0x40C90FE4, 18, 242, 338, 0x3F000000,  // Electric Piano (1.0, 2PI, 0.5)
-	0x40000000, 0x40C90FE4, 18, 512, 800, 0x3F000000   // Metallophone (2.0, 2PI, 0.5)
-};

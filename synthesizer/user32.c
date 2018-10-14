@@ -9,7 +9,8 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "sts32.h"
+#include "sts32/notes.h"
+#include "sts32/presets.h"
 #include "user32_tempo.h"
 
 #define tempo_count_default  2
@@ -609,6 +610,7 @@ int32 _user_start()
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
 
 	while ( true ) {
+		// Time of _synthewave_i2s and synthemidi Is Up to Appx. 55us with Zero W in My Experience
 #ifdef __SOUND_I2S
 		_synthewave_i2s( STS32_DIGITALMOD_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_I2S, 8 );
@@ -621,10 +623,11 @@ int32 _user_start()
 		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
-		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
+		if ( _gpio_detect( 6 ) ) {
 
 			tempo_count--; // Decrement Counter
 			if ( tempo_count <= 0 ) { // If Reaches Zero
+				// Time of This Procedure Is Up to Appx. 5us with Zero W in My Experience
 
 				detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 				_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
