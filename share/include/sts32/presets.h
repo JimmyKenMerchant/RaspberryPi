@@ -1,5 +1,5 @@
 /**
- * sts32.h
+ * sts32/presets.h
  *
  * Author: Kenta Ishii
  * License: MIT

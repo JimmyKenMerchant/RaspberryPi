@@ -1,5 +1,5 @@
 /**
- * sts32.h
+ * sts32/notes.h
  *
  * Author: Kenta Ishii
  * License: MIT
