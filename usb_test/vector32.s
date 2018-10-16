@@ -77,8 +77,6 @@ os_reset:
 .ifndef __ARMV6
 	/**
 	 * Set GPCLK1 to 25.00Mhz
-	 * Considering of the latency by instructions,
-	 * The counted value has a minus error toward the right value.
 	 */
 	mov r0, #equ32_cm_gp1
 	mov r1, #equ32_cm_ctl_mash_0

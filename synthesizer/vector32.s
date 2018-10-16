@@ -13,6 +13,9 @@
 /* Define 31250 Baud Rate on UART for Actual MIDI In */
 /*.equ __MIDIIN, 1*/
 
+/* If You Want External Synchronization Clock */
+/*.equ __NOSYNCCLOCK, 1*/
+
 .equ __MIDI_BASECHANNEL, 0                               @ Default MIDI Channel (Actual Channel No. Minus One)
 
 .include "system32/equ32.s"
@@ -107,8 +110,11 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
+.ifdef __NOSYNCCLOCK
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 5 INPUT
+.else
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 ALT 0 as GPCLK1
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 6 INPUT
+.endif
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 9 INPUT, MIDI Channel Select Bit[0]
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
@@ -128,7 +134,7 @@ os_reset:
 
 	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gpren0]
-	orr r1, r1, #equ32_gpio06                                      @ Set GPIO6 Rising Edge Detect
+	orr r1, r1, #equ32_gpio05                                      @ Set GPIO5 Rising Edge Detect
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
 	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
 	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
@@ -147,6 +153,7 @@ os_reset:
 	addne r2, r2, #2
 	str r2, OS_RESET_MIDI_CHANNEL
 
+.ifndef __NOSYNCCLOCK
 	/**
 	 * Clock Manager for GPCLK1. Make 4800Hz
 	 */
@@ -155,6 +162,7 @@ os_reset:
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
 	mov r2, #4000<<equ32_cm_div_integer
 	bl arm32_clockmanager
+.endif
 
 	/**
 	 * Synthsizer Initialization

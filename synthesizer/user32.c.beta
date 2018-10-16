@@ -182,7 +182,7 @@ int32 _user_start()
 		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
-		if ( _gpio_detect( 6 ) ) { // Time of This Loop Around 40us in My Experience
+		if ( _gpio_detect( 5 ) ) { // Time of This Loop Around 40us in My Experience
 
 			tempo_count--; // Decrement Counter
 			if ( tempo_count <= 0 ) { // If Reaches Zero

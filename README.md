@@ -120,6 +120,8 @@ arm32_sleep:
 # Do as Superuser, Install Git
 sudo apt-get update
 sudo apt-get install git
+# Install Cross Compiler Tool for ARM Microprocessors, "none" Means No OS, "eabi" Means Embedded Application Binary Interface (ABI)
+sudo apt-get install gcc-arm-none-eabi
 ```
 
 * Clone this project using Git.

@@ -13,6 +13,9 @@
 /* Define 31250 Baud Rate on UART for Actual MIDI In */
 /*.equ __MIDIIN, 1*/
 
+/* If You Want External Synchronization Clock */
+/*.equ __NOSYNCCLOCK, 1*/
+
 .equ __MIDI_BASECHANNEL, 0                               @ Default MIDI Channel (Actual Channel No. Minus One)
 
 .include "system32/equ32.s"
@@ -108,7 +111,6 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[1]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 17 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
@@ -118,7 +120,11 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 25 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
+.ifdef __NOSYNCCLOCK
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
+.else
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 27 OUTPUT
+.endif
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	/* Set Status Detect */
@@ -281,10 +287,12 @@ os_fiq:
 .endif
 .endif
 
-	mov r0, #17
+.ifndef __NOSYNCCLOCK
+	mov r0, #27
 	mov r1, #2
 	bl gpio32_gpiotoggle
 	macro32_dsb ip
+.endif
 
 	pop {r0-r7,pc}
 
