@@ -53,9 +53,9 @@ bool init_usb_keyboard()
 
 	_otg_host_reset_bcm();
 
-	_sleep( 100000 ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
+	_sleep( 200000 ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
 
-	timeout = 20;
+	timeout = 30;
 	do {
 		ticket_hub = _hub_activate( usb_channel, 0 );
 		if ( ticket_hub ) break; // Break Except Zero (No Detection)
@@ -65,7 +65,7 @@ bool init_usb_keyboard()
 
 	arm32_dsb();
 
-	_sleep( 100000 ); // Hub Port is Powerd On, So Wait for Detection of Devices (on Inner Activation)
+	_sleep( 200000 ); // Hub Port is Powerd On, So Wait for Detection of Devices (on Inner Activation)
 
 print32_debug( ticket_hub, 500, 230 );
 
@@ -73,7 +73,7 @@ print32_debug( ticket_hub, 500, 230 );
 		ticket_hid = 0; // Direct Connection
 		_sleep( 2000000 ); // Further Wait
 	} else if ( ticket_hub > 0 ) {
-		timeout = 20;
+		timeout = 30;
 		do {
 			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
 			if ( ticket_hid ) break; // Break Except Zero (No Detection)
@@ -84,7 +84,7 @@ print32_debug( ticket_hub, 500, 230 );
 // Hubs on B type uses port no.1 for an ethernet adaptor. To get a HID, search another device again.
 #ifdef __B
 		arm32_dsb();
-		timeout = 20;
+		timeout = 30;
 		do {
 			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
 			if ( ticket_hid ) break; // Break Except Zero (No Detection)
@@ -102,9 +102,9 @@ print32_debug( ticket_hub, 500, 230 );
 
 print32_debug( ticket_hid, 500, 242 );
 
-	_sleep( 100000 ); // HID is Detected, So Wait for Activation of Devices (on Inner Resetting Procedure)
+	_sleep( 200000 ); // HID is Detected, So Wait for Activation of Devices (on Inner Resetting Procedure)
 
-	timeout = 20;
+	timeout = 30;
 	do {
 		ticket_hid_passed = _hid_activate( usb_channel, 1, ticket_hid );
 		if (ticket_hid_passed > 0) break; // Break Except Errors

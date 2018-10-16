@@ -25,6 +25,7 @@
 .include "vector32/os.s"
 
 os_reset:
+	push {lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
@@ -79,29 +80,11 @@ os_reset:
 	 * Considering of the latency by instructions,
 	 * The counted value has a minus error toward the right value.
 	 */
-
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_cm_base_lower
-	add r0, r0, #equ32_cm_base_upper
-
-	ldr r1, [r0, #equ32_cm_gp1ctl]
-	orr r1, r1, #equ32_cm_passwd
-	bic r1, r1, #equ32_cm_ctl_enab
-	str r1, [r0, #equ32_cm_gp1ctl]
-
-	os_reset_loop1:
-		ldr r1, [r0, #equ32_cm_gp1ctl]
-		tst r1, #equ32_cm_ctl_busy
-		bne os_reset_loop1
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #20 << equ32_cm_div_integer
-	str r1, [r0, #equ32_cm_gp1div]
-
-	mov r1, #equ32_cm_passwd
-	add r1, r1, #equ32_cm_ctl_mash_0
+	mov r0, #equ32_cm_gp1
+	mov r1, #equ32_cm_ctl_mash_0
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld       @ 500Mhz
-	str r1, [r0, #equ32_cm_gp1ctl]
+	mov r2, #20<<equ32_cm_div_integer
+	bl arm32_clockmanager
 .endif
 
 	/* Obtain Framebuffer from VideoCore IV */
@@ -117,23 +100,23 @@ os_reset:
 
 	macro32_clean_cache r1, ip
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl bcm32_get_framebuffer
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	bl bcm32_poweron_usb
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	/*
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, #0x3
 	mov r1, #0b01
 	bl bcm32_set_powerstate
-	pop {r0-r3,lr}
+	pop {r0-r3}
 	*/
 
-	mov pc, lr
+	pop {pc}
 
 os_debug_:
 	push {r0-r8,lr}

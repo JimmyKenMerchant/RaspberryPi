@@ -280,4 +280,7 @@ sys_timer_previous:
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4
+
+.include "data.s" @ If you want binary, use `.incbin`
+.balign 4
 /* End of Line is Needed */

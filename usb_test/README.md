@@ -14,7 +14,7 @@
 
 **Compatibility**
 
-* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`, Using High Speed USB 2.0 Hub is Preferred
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`, Using High Speed USB 2.0 Hub Is Preferred to Connect USB 1.x Devices Such as Human Interface Device (HID)
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
 

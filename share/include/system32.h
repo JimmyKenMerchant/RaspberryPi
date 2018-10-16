@@ -2736,13 +2736,3 @@ extern uint32 COLOR32_WHITE;
 extern uint32 COLOR32_LIGHTGRAY;
 extern uint32 COLOR32_GRAY;
 extern uint32 COLOR32_BLACK;
-
-
-/********************************
- * system32/library/data.s
- ********************************/
-
-extern uint32 DATA_COLOR32_SAMPLE_IMAGE0;
-extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
-extern uint32 DATA_COLOR32_SAMPLE_IMAGE1;
-extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;

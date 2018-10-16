@@ -10,6 +10,11 @@
 #include "system32.h"
 #include "system32.c"
 
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE0;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE1;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;
+
 int32 _user_start()
 {
 

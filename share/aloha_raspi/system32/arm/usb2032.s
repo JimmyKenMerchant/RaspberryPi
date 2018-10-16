@@ -2063,7 +2063,7 @@ usb2032_otg_host_reset_bcm:
 		sub timeout, timeout, #1
 		bne usb2032_otg_host_reset_bcm_resetcore
 
-	orr temp, temp, #0x02                                     @ HClk Soft Reset Bit[0]
+	orr temp, temp, #0x02                                     @ HClk Soft Reset Bit[1]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 
 	macro32_dsb ip
@@ -2130,7 +2130,7 @@ usb2032_otg_host_reset_bcm:
 
 	ldr temp, [memorymap_base, #equ32_usb20_otg_grstctl]
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_reset_bcm_error1                         @ If Bus is Not in Idle
+	beq usb2032_otg_host_reset_bcm_error1                     @ If Bus is Not in Idle
 
 	orr temp, temp, #0x20                                     @ TxFIFO Flush Bit[5]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -2148,7 +2148,7 @@ usb2032_otg_host_reset_bcm:
 		bne usb2032_otg_host_reset_bcm_flushtxfifo
 
 	tst temp, #0x80000000                                     @ ANDS AHB Idle Bit[31]
-	beq usb2032_otg_host_reset_bcm_error1                         @ If Bus is Not in Idle
+	beq usb2032_otg_host_reset_bcm_error1                     @ If Bus is Not in Idle
 
 	orr temp, temp, #0x10                                     @ RxFIFO Flush Bit[4]
 	str temp, [memorymap_base, #equ32_usb20_otg_grstctl]
@@ -2220,21 +2220,22 @@ usb2032_otg_host_reset_bcm:
 
 			/**
 			 * If already connected with devices including Hub,
-			 * HPRT bit[1:0] become set, Port Connection Deteched Bit[1] causes
-			 * an interrupt on GINTSTS. If you want clear it, you will need to write-clear to Bit[1]
-			 * Also, Port Enable/Disable Change Bit[3], Port Overcurrent Change Bit[5] are to write-clear
+			 * Port Connect Detected Bit[1] and Port Connect Status Bit[0] become set.
+			 * Port Connect Detected Bit[1] causes
+			 * an interrupt on GINTSTS. If you want clear it, you need to write-clear to Bit[1].
+			 * Also, Port Enable/Disable Change Bit[3], Port Overcurrent Change Bit[5] are needed to write-clear
 			 */
 			bic temp, #0x4                                         @ Clear Port Enable Bit[2] Because Write-clear
 			str temp, [memorymap_base, #equ32_usb20_otg_hprt]
 
 			/**
-			 * Global OTG Control ans Status
+			 * Global OTG Control and Status
 			 * Set Host Negotiation Protocol (Change Host Side to Device Side)
 			 */
 			mov memorymap_base, #equ32_peripherals_base
 			add memorymap_base, memorymap_base, #equ32_usb20_otg_base
-			ldr temp, [memorymap_base, #equ32_usb20_otg_gotgctl]       @ Global OTG Control and Status
-			orr temp, temp, #0x00000400                                @ Host Set HNP Enable Bit[10]
+			ldr temp, [memorymap_base, #equ32_usb20_otg_gotgctl]   @ Global OTG Control and Status
+			orr temp, temp, #0x00000400                            @ Host Set HNP Enable Bit[10]
 			str temp,  [memorymap_base, #equ32_usb20_otg_gotgctl]
 
 			ldr temp, usb2032_otg_host_setter_addr
