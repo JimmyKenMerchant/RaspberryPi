@@ -59,12 +59,13 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
-	str r1, [r0, #equ32_interrupt_fiq_control]
-
 	/* Enable UART IRQ */
 	mov r1, #1<<25                                   @ UART IRQ #57
 	str r1, [r0, #equ32_interrupt_enable_irqs2]
+
+.ifndef __NOSYNCCLOCK
+	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
+	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
 	 * Timer
@@ -77,6 +78,7 @@ os_reset:
 	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
 	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
+.endif
 
 	/**
 	 * GPIO
@@ -111,6 +113,11 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[1]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
+.ifdef __NOSYNCCLOCK
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 17 INPUT
+.else
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 17 OUTPUT
+.endif
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
@@ -120,21 +127,16 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 25 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
-.ifdef __NOSYNCCLOCK
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
-.else
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7   @ Set GPIO 27 OUTPUT
-.endif
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio17                                      @ Set GPIO17 Rising Edge Detect
 	orr r1, r1, #equ32_gpio22                                      @ Set GPIO22 Rising Edge Detect
 	orr r1, r1, #equ32_gpio23                                      @ Set GPIO23 Rising Edge Detect
 	orr r1, r1, #equ32_gpio24                                      @ Set GPIO24 Rising Edge Detect
 	orr r1, r1, #equ32_gpio25                                      @ Set GPIO25 Rising Edge Detect
 	orr r1, r1, #equ32_gpio26                                      @ Set GPIO26 Rising Edge Detect
-	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
@@ -287,12 +289,10 @@ os_fiq:
 .endif
 .endif
 
-.ifndef __NOSYNCCLOCK
-	mov r0, #27
+	mov r0, #17
 	mov r1, #2
 	bl gpio32_gpiotoggle
 	macro32_dsb ip
-.endif
 
 	pop {r0-r7,pc}
 

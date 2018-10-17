@@ -239,7 +239,7 @@ int32 _user_start()
 	uint32 gpiolen16 = gpio32_gpiolen( gpio16 );
 
 	while ( true ) {
-		if ( _gpio_detect( 27 ) ) {
+		if ( _gpio_detect( 17 ) ) {
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
