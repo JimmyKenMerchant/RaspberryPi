@@ -10,6 +10,8 @@
 
 * [Licenses](#licenses)
 
+* [Vocabulary](#vocabulary)
+
 * [Links of References](#links-of-references)
 
 ## Demonstration on Video
@@ -224,6 +226,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Copyright © 2017-2018 Kenta Ishii. All Rights Reserved.
 
 Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), melodies of musics, and other properties except codes are retained these intellectual property rights by Kenta Ishii. For example, texts in READMEs are restricted your commercial usage except fair use which is described in copyright cases of United States Courts.
+
+## Vocabulary
+
+* Several vocabularies are ambiguous or vague in this project.
+	* You can see "heap" word in *.s files. This means memory space to be used in a process dynamically. But in this project, the meaning of "heap" word is expanded. It's a pointer of a memory space. The heap, in this project, can be accessed by User mode which is low privileged. In User mode, data only can be written to the heap and predefined arrays. Several functions (heap32_malloc*, etc.) assigns a pointer in the heap for dynamic usage in a process. To distinguish between high privileged memory space and low privileged memory space, "heap" word is used as a pointer of a special memory space assigned from the heap.
 
 ## Links of References
 
