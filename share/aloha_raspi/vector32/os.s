@@ -294,7 +294,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x45                            @ Prevent Overflow SVC Table
+	cmp ip, #0x47                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -581,6 +581,14 @@ _os_svc:
 
 	_os_svc_0x45:
 		bl rom32_romwrite_i2c
+		b _os_svc_common
+
+	_os_svc_0x46:
+		bl softuart32_softuartrx
+		b _os_svc_common
+
+	_os_svc_0x47:
+		bl softuart32_softuarttx
 		b _os_svc_common
 
 	_os_svc_common:

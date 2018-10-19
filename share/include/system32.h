@@ -1453,6 +1453,23 @@ __attribute__((noinline)) int32 _romwrite_i2c(
 
 
 /********************************
+ * system32/library/softuart32.s
+ ********************************/
+
+__attribute__((noinline)) uint32 _softuartrx(
+	uint32 address_heap,
+	uint32 size,
+	uint32 address_fifo
+);
+
+__attribute__((noinline)) uint32 _softuarttx(
+	uint32 address_heap,
+	uint32 size,
+	uint32 address_fifo
+);
+
+
+/********************************
  * system32/library/math32.s
  ********************************/
 

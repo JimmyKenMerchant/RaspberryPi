@@ -484,6 +484,20 @@ __attribute__((noinline)) int32 _romwrite_i2c( uint32 address_heap, uint32 chip_
 	return result;
 }
 
+__attribute__((noinline)) uint32 _softuartrx( uint32 address_heap, uint32 size, uint32 address_fifo )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x46");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _softuarttx( uint32 address_heap, uint32 size, uint32 address_fifo )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x47");
+	return result;
+}
+
 
 /**
  * Unique Definitions
