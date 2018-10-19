@@ -60,12 +60,8 @@ os_reset:
 
 	/* Get a 38400hz Timer Interrupt (960000/25) */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
-	/*
 	mov r1, #0x000                            @ High 1 Byte of decimal 24 (25 - 1), 16 bits counter on default
-	orr r1, r1, #0x019                        @ Low 1 Byte of decimal 24, 16 bits counter on default
-	*/
-	mov r1, #0x17000                            @ High 1 Byte of decimal 24 (25 - 1), 16 bits counter on default
-	orr r1, r1, #0x700                        @ Low 1 Byte of decimal 24, 16 bits counter on default
+	orr r1, r1, #0x018                        @ Low 1 Byte of decimal 24, 16 bits counter on default
 	mov r2, #0x000                            @ Decimal 249 to divide 240Mz by 250 to 960Khz (Predivider is 10 Bits Wide)
 	orr r2, r2, #0x0F9                        @ Decimal 249 to divide 240Mz by 250 to 960Khz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
@@ -102,14 +98,18 @@ os_reset:
 
 	macro32_dsb ip
 
-	/* FIFO Continers */
+	/* FIFO Continers, Allocate and Initialize */
 
 	mov r0, #5
 	bl heap32_malloc
+	mov r1, #0x04
+	strb r1, [r0]
 	str r0, OS_FIQ_RXFIFO
 
 	mov r0, #5
 	bl heap32_malloc
+	mov r1, #0x04
+	strb r1, [r0]
 	str r0, OS_FIQ_TXFIFO
 
 	/* Pull Up */
@@ -123,9 +123,10 @@ os_reset:
 	bl gpio32_gpiopull
 
 	/* Software UART Output High */
-	mov r1, #equ32_gpio20
-	str r1, [r0, #equ32_gpio_gpset0]                               @ GPIO 38 OUTPUT High
-	
+	mov r0, #20
+	mov r1, #1
+	bl gpio32_gpiotoggle
+
 	pop {pc}
 
 os_debug:

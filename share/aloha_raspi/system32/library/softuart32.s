@@ -12,7 +12,7 @@
  * First Byte: Bit[0] Break (Only RxFIFO)
  *             Bit[1] Overrun (FIFO Has Already Been Full)
  *             Bit[2] FIFO Is Fully Empty
- *             Bit[7:4] Stack Pointer, 0 to 16
+ *             Bit[7:3] Stack Pointer, 0 to 16 (0 is Empty, Size is 16)
  * Second Byte to 17th Byte: Bit[7:0] Character to Receive
  */
 
@@ -47,7 +47,7 @@ softuart32_pop:
 	macro32_dsb ip
 
 	ldrb status, [fifo]
-	lsr sp_uart, status, #4
+	lsr sp_uart, status, #3
 
 	ldrb byte, [fifo, sp_uart]
 	cmp sp_uart, #0
@@ -65,10 +65,10 @@ softuart32_pop:
 
 	sub sp_uart, sp_uart, #1
 	cmp sp_uart, #0
-	orreq status, status, #0b0100                 @ Set Fully Empty
-	lsl sp_uart, sp_uart, #4
-	and status, status, #0b1111
-	bic status, status, #0b0010                   @ Clear Overrun
+	orreq status, status, #0b100                  @ Set Fully Empty
+	lsl sp_uart, sp_uart, #3
+	and status, status, #0b111
+	bic status, status, #0b010                    @ Clear Overrun
 	orr status, status, sp_uart
 	strb status, [fifo]
 
@@ -122,7 +122,7 @@ softuart32_push:
 	macro32_dsb ip
 
 	ldrb status, [fifo]
-	lsr sp_uart, status, #4
+	lsr sp_uart, status, #3
 
 	tst status, #0b0010                           @ If Overrun
 	bne softuart32_push_common
@@ -141,10 +141,10 @@ softuart32_push:
 
 	add sp_uart, sp_uart, #1
 	cmp sp_uart, #16
-	orrhs status, status, #0b0010                 @ Set Overrun
-	lsl sp_uart, sp_uart, #4
-	and status, #0b1111
-	bic status, status, #0b0100                   @ Clear Fully Empty
+	orrhs status, status, #0b010                  @ Set Overrun
+	lsl sp_uart, sp_uart, #3
+	and status, #0b111
+	bic status, status, #0b100                    @ Clear Fully Empty
 	orr status, status, sp_uart
 	strb status, [fifo]
 
@@ -193,7 +193,7 @@ softuart32_softuartrx:
 
 	softuart32_softuartrx_fifo:
 		ldrb temp, [fifo]
-		tst temp, #0b0101                    @ Break or Fully Empty
+		tst temp, #0b101                     @ Break or Fully Empty
 		bne softuart32_softuartrx_error
 
 		push {r0-r3}
@@ -213,7 +213,7 @@ softuart32_softuartrx:
 		b softuart32_softuartrx_success
 
 	softuart32_softuartrx_error:
-		and r0, temp, #0b1111
+		and r0, temp, #0b0111
 		orr r0, r0, size_rx, lsl #4
 		b softuart32_softuartrx_common
 
@@ -254,7 +254,7 @@ softuart32_softuarttx:
 
 	softuart32_softuarttx_fifo:
 		ldrb temp, [fifo]
-		tst temp, #0b0010                   @ Overrun (Already Full)
+		tst temp, #0b010                    @ Overrun (Already Full)
 		bne softuart32_softuarttx_fifo
 
 		push {r0-r3}
@@ -347,14 +347,14 @@ softuart32_softuartreceiver:
 
 		tst num_gpio, temp
 
-		/* If Low State, Set Bit */
+		/* If High State, Set Bit */
 
-		subeq temp, sequence, #1
-		moveq num_gpio, #1
-		lsleq temp, num_gpio, temp
-		ldreq byte, softuart32_softuartreceiver_byte
-		orreq byte, byte, temp
-		streq byte, softuart32_softuartreceiver_byte
+		subne temp, sequence, #1
+		movne num_gpio, #1
+		lslne temp, num_gpio, temp
+		ldrne byte, softuart32_softuartreceiver_byte
+		orrne byte, byte, temp
+		strne byte, softuart32_softuartreceiver_byte
 
 		add sequence, sequence, #1
 
@@ -373,7 +373,7 @@ softuart32_softuartreceiver:
 
 		tst num_gpio, temp
 		ldreqb temp, [fifo]
-		orreq temp, temp, #0b0001                        @ Set Break
+		orreq temp, temp, #0b001                         @ Set Break
 		streqb temp, [fifo]
 		moveq sequence, #0
 		beq softuart32_softuartreceiver_error
@@ -479,8 +479,8 @@ macro32_debug_hexa fifo, 100, 112, 17
 
 		push {r0-r3}
 		tst byte, #1
-		moveq r1, #1                               @ High (0 in This Case)
-		movne r1, #0                               @ Low (1 in This Case)
+		moveq r1, #0                               @ Low (0)
+		movne r1, #1                               @ High (1)
 		bl gpio32_gpiotoggle
 		pop {r0-r3}
 
