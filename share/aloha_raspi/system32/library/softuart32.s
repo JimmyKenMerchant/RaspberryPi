@@ -124,22 +124,13 @@ softuart32_push:
 	ldrb status, [fifo]
 	lsr sp_uart, status, #3
 
-	tst status, #0b0010                           @ If Overrun
+	tst status, #0b010                            @ If Overrun
 	bne softuart32_push_common
 
-	mov i, #15
-	mov j, #16
-	softuart32_push_loop:
-		ldrb temp, [fifo, i]
-		strb temp, [fifo, j]
-		sub i, i, #1
-		sub j, j, #1
-		cmp i, #0
-		bhi softuart32_push_loop
-
-	strb byte, [fifo, #1]
-
 	add sp_uart, sp_uart, #1
+
+	strb byte, [fifo, sp_uart]
+
 	cmp sp_uart, #16
 	orrhs status, status, #0b010                  @ Set Overrun
 	lsl sp_uart, sp_uart, #3
