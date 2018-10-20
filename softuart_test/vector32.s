@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-/*.equ __DEBUG, 1*/
+.equ __DEBUG, 1
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -164,10 +164,14 @@ os_fiq:
 
 	mov r0, #21
 	ldr r1, OS_FIQ_RXFIFO
+	mov r2, #8
+	mov r3, #1
 	bl softuart32_softuartreceiver
 
 	mov r0, #20
 	ldr r1, OS_FIQ_TXFIFO
+	mov r2, #8
+	mov r3, #1
 	bl softuart32_softuarttransceiver
 
 	pop {r0-r7,pc}

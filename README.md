@@ -52,6 +52,7 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
 
 3. Structure of System.
 	* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
+
 ```assembly
 /**
  * function arm32_sleep
@@ -104,10 +105,95 @@ arm32_sleep:
 .unreq time_high
 ```
 
+	* gcc-arm-none-eabi (one of ARM cross compilers) uses registers r0 to r3 as scratch registers to call a function. You need to push values in r0 - r3 to stack before calling a function, and pop values to r0 - r3 after calling a function.
+
+```assembly
+	push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+	ldr r0, [font_ascii_base, string_byte]   @ Character Pointer
+	mov r3, color
+	push {char_width,char_height}            @ Push Character Width and Hight
+	bl fb32_char
+	add sp, sp, #8
+	cmp r0, #0                               @ Compare Return 0
+	pop {r0-r3}                              @ Retrieve Registers Before Error Check, POP does not flags-update
+	bne print32_string_error
+```
+
+	* If you assign five arguments and over to call a function, push the value to stack. For example, a function fb32_char needs six arguments. Before calling this functions, char_width and char_height, fifth and sixth arguments are pushed. After calling this functions, stack pointer is retrieved through `add sp, sp, #8` (two words backed). Error is tested before popping values to r0 - r3.
+
+```assembly
+	/* Auto (Local) Variables, but just Aliases */
+	char_point  .req r0  @ Parameter, Register for Argument and Result, Scratch Register
+	x_coord     .req r1  @ Parameter, Register for Argument and Result, Scratch Register
+	y_coord     .req r2  @ Parameter, Register for Argument, Scratch Register
+	color       .req r3  @ Parameter, Register for Argument, Scratch Register
+	char_width  .req r4  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Use for Vertical Counter
+	char_height .req r5  @ Parameter, have to PUSH/POP in ARM C lang Regulation, Horizontal Counter Reserved Number
+	f_buffer    .req r6  @ Pointer of Framebuffer
+	width       .req r7
+	depth       .req r8
+	size        .req r9
+	char_byte   .req r10
+	j           .req r11 @ Use for Horizontal Counter
+
+	push {r4-r11}   @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
+                    @ similar to `STMDB r13! {r4-r11}` Decrement Before, r13 (SP) Saves Decremented Number
+
+	add sp, sp, #32                                  @ r4-r11 offset 32 bytes
+	pop {char_width,char_height}                     @ Get Fifth and Sixth Arguments
+	sub sp, sp, #40                                  @ Retrieve SP
+```
+
+	* Lines written above are codes in fb32_char. These lines enumerate registers and get fifth and sixth parameters from stack. Retrieving stack pointer is needed.
+
+```assembly
+	push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
+	mov r3, x_coord
+	mov r1, #0
+	push {temp}
+	bl fb32_block_color
+	add sp, sp, #4
+	pop {r0-r3}
+```
+
+	* Lines written above are calling a function in print32_esc_sequence. Register r3 (fourth argument) is assigned before r1 (second argument). Lines written below enumerate registers. Check that x_coord is r1.
+
+```assembly
+/**
+ * function print32_esc_sequence
+ * Escape Sequence of ANSI Standard
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Length of String
+ *
+ * Return: r0 (X Coordinate), r1 (Y Coordinate)
+ * Error: Number of Characters Which Were Not Drawn
+ */
+.globl print32_esc_sequence
+print32_esc_sequence:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point      .req r0
+	x_coord           .req r1
+	y_coord           .req r2
+	length            .req r3
+	byte              .req r4
+	number            .req r5
+	temp              .req r6
+	temp2             .req r7
+
+	push {r4-r7,lr}
+```
+
+	* If you assign r1 before r3, the value of x_coord becomes zero. Assigning r1 after r3 prevents this odd.
+
 4. Security of System.
 	* Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally. So, in this system, I'm trying to mock-up Harvard architecture even in Von Neumann architecture. Besides, multi-core made us attention to the security much better, because multi-core is a new architecture. Researchers has not yet gotten the conclusion for secure treating of multi-core. If we handle multi-core, we should consider of the security in a very cautious manner.
 	* So, one question is there. `In this system, I have placed pointers of memory address and several parameters near instructions. Is it safe or danger?`. In Harvard, it's never be done because the space for instructions is separated from the space for data. If intentional memory overflow occurs, instructions may be rewrote, and invaders will easily manipulated your system. In Von Neumann, it's possible, and the safety depends on developers. Pointers and parameters near instructions give us speedy accesses to memory. If you can treat memory overflow well, it's safe. We should consider of cons and pros on both architectures. So, ARM has several ways of restriction on memory access. One popular way is usage of user mode and privileged mode to control the restriction. I designed this system that user mode is as well as Harvard, and privileged mode can access instruction memory to rewrite.
 	* This system does not allow you to make empty (zero) arrays, which are placed in ".bss" section, in user32.s because functions to allocate memory spaces are only allowed to make dynamic arrays.
+	* If you are aware of inconsistency of using a function -- heap32_mcount which detects whether the memory address pointer is in heap area or not -- in peripheral I/O functions, you are right. Functions in i2c.s only uses heap32_mcount. Peripheral I/O functions with unintended memory area make security issues. However, you can protect the pointer not to be changed in several ways. Manipulating memory address pointer is one of big targets of hackers. Processes in codes should consider of this issue. Peripheral I/O functions called after external usage of heap32_mcount are as well as functions in i2c.s.
 
 5. Coconuts
 	* Some of projects in Aloha Operating System are aiming to make RasPi act like a dedicated IC such as Sound Box, Synthesizer, LED Driver nicknamed "Coconut". Coconuts are made of admiration for microprocessors. Microprocessors are general-purpose, and can transform any ICs by installed programs. Coconuts are evidences which RasPi can be a good microprocessor. I think, even today, microprocessors can alter a lot of digital signal processors (dedicated DSPs) to theirselves. Actually, video processors need to have more registers and memory caches to get a quick procedure than ordinary microprocessors. But innovation of microprocessors can surpass the advantages of dedicated DSPs. We tends to ignore the production cost of ICs. Microprocessors can be made with mass production, which reduces its cost. Don't forget, REDUCING COST MAKES FURTHER INNOVATION. If the speed and the liability of microprocessors is just as good as DSPs, we have to consider of the change for the innovaion. Even if the change erases the advantage of us, we need to accept it for the future.

@@ -12,7 +12,7 @@
  * First Byte: Bit[0] Break (Only RxFIFO)
  *             Bit[1] Overrun (FIFO Has Already Been Full)
  *             Bit[2] FIFO Is Fully Empty
- *             Bit[7:3] Stack Pointer, 0 to 16 (0 is Empty, Size is 16)
+ *             Bit[7:3] Stack Pointer, 0 to 16 (0 Is Empty, Size Is 16)
  * Second Byte to 17th Byte: Bit[7:0] Character to Receive
  */
 
@@ -107,12 +107,10 @@ softuart32_push:
 	byte         .req r1
 	temp         .req r2
 	sp_uart      .req r3
-	i            .req r4
-	j            .req r5
-	save_cpsr    .req r6
-	status       .req r7
+	save_cpsr    .req r4
+	status       .req r5
 
-	push {r4-r7}
+	push {r4-r5}
 
 	/* For Atomic Procedure, Set FIQ and IRQ Disable to CPSR */
 	mrs save_cpsr, cpsr
@@ -144,15 +142,13 @@ softuart32_push:
 
 	softuart32_push_common:
 		mov r0, #0
-		pop {r4-r7}
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq fifo
 .unreq byte
 .unreq temp
 .unreq sp_uart
-.unreq i
-.unreq j
 .unreq save_cpsr
 .unreq status
 
@@ -280,6 +276,8 @@ softuart32_softuarttx:
  * Parameters
  * r0: GPIO Number
  * r1: Pointer of FIFO Container
+ * r2: Number of Bits to Be Received
+ * r3: Number of Stop Bits
  *
  * Return: r0 (0 as success, 1 as Error)
  * Error: Overrun (FIFO Has Already Been Full)
@@ -289,19 +287,21 @@ softuart32_softuartreceiver:
 	/* Auto (Local) Variables, but just Aliases */
 	num_gpio       .req r0
 	fifo           .req r1
-	temp           .req r2
-	sequence       .req r3
-	byte           .req r4
-	memorymap_base .req r5
+	bits_receive   .req r2
+	bits_stop      .req r3
+	temp           .req r4
+	sequence       .req r5
+	byte           .req r6
+	memorymap_base .req r7
 
-	push {r4-r5,lr}
+	push {r4-r7,lr}
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_gpio_base
 
 	ldr sequence, softuart32_softuartreceiver_sequence
-	cmp sequence, #9
-	bhs softuart32_softuartreceiver_stopbit
+	cmp sequence, bits_receive
+	bhi softuart32_softuartreceiver_stopbit
 	cmp sequence, #0
 	beq softuart32_softuartreceiver_startbit
 
@@ -377,7 +377,10 @@ softuart32_softuartreceiver:
 		bl softuart32_push
 		pop {r0-r3}
 
-		mov sequence, #0
+		add bits_stop, bits_receive, bits_stop
+		cmp sequence, bits_stop
+		movhs sequence, #0
+		addlo sequence, sequence, #1
 
 		b softuart32_softuartreceiver_success
 
@@ -391,10 +394,12 @@ softuart32_softuartreceiver:
 
 	softuart32_softuartreceiver_common:
 		macro32_dsb ip
-		pop {r4-r5,pc}
+		pop {r4-r7,pc}
 
 .unreq num_gpio
 .unreq fifo
+.unreq bits_receive
+.unreq bits_stop
 .unreq temp
 .unreq sequence
 .unreq byte
@@ -411,6 +416,8 @@ softuart32_softuartreceiver_byte:     .word 0x00
  * Parameters
  * r0: GPIO Number
  * r1: Pointer of FIFO Container
+ * r2: Number of Bits to Be Received
+ * r3: Number of Stop Bits
  *
  * Return: r0 (0 as success, 1 as Error)
  * Error: FIFO Is Fully Empty
@@ -418,17 +425,19 @@ softuart32_softuartreceiver_byte:     .word 0x00
 .globl softuart32_softuarttransceiver
 softuart32_softuarttransceiver:
 	/* Auto (Local) Variables, but just Aliases */
-	num_gpio .req r0
-	fifo     .req r1
-	temp     .req r2
-	sequence .req r3
-	byte     .req r4
+	num_gpio     .req r0
+	fifo         .req r1
+	bits_receive .req r2
+	bits_stop    .req r3
+	temp         .req r4
+	sequence     .req r5
+	byte         .req r6
 
-	push {r4,lr}
+	push {r4-r6,lr}
 
 	ldr sequence, softuart32_softuarttransceiver_sequence
-	cmp sequence, #9
-	bhs softuart32_softuarttransceiver_stopbit
+	cmp sequence, bits_receive
+	bhi softuart32_softuarttransceiver_stopbit
 	cmp sequence, #0
 	beq softuart32_softuarttransceiver_startbit
 
@@ -484,7 +493,10 @@ macro32_debug_hexa fifo, 100, 112, 17
 		bl gpio32_gpiotoggle
 		pop {r0-r3}
 
-		mov sequence, #0
+		add bits_stop, bits_receive, bits_stop
+		cmp sequence, bits_stop
+		movhs sequence, #0
+		addlo sequence, sequence, #1
 
 		b softuart32_softuarttransceiver_success
 
@@ -498,10 +510,12 @@ macro32_debug_hexa fifo, 100, 112, 17
 
 	softuart32_softuarttransceiver_common:
 		macro32_dsb ip
-		pop {r4,pc}
+		pop {r4-r6,pc}
 
 .unreq num_gpio
 .unreq fifo
+.unreq bits_receive
+.unreq bits_stop
 .unreq temp
 .unreq sequence
 .unreq byte

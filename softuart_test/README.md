@@ -8,34 +8,16 @@
 
 ## Output and Input
 
-* GPIO9 as Input of MIDI Channel Select Bit[0]
+* GPIO20 as Output of TXD (Software UART)
 
-* GPIO10 as Input of MIDI Channel Select Bit[1]
-
-* GPIO12 as Output of PWM0 on sound=pwm or sound=pwmb
-
-* GPIO13 as Output of PWM1 on sound=pwm or sound=pwmb, 180 Degrees Phase-shifted from PWM0 if sound=pwmb
-
-* GPIO40 as Output of PWM0 (R of Phone Connector) on sound=jack or sound=jackb
-
-* GPIO45 (GPIO41 on RasPi 3B) as Output of PWM1 (L of Phone Connector) on sound=jack or sound=jackb, 180 Degrees Phase-shifted from PWM0 if sound=jackb
-
-* GPIO16 as Output of Playing Signal
-
-* GPIO17 as Output of Synchronization Clock OUT of Sound Box
-
-* GPIO20 as Output of GATE Signal Synchronized with MIDI IN (On Note Off Event)
-
-* GPIO15 as Input of RXD0 (UART) for MIDI IN
-
-* GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
-
-* GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S (as known as 3-wire I2S) on sound=i2s
+* GPIO21 as Input of RXD (Software UART)
 
 * HDMI as VIDEO Output
 
-### GPIO 22-27 ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
+### GPIO ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
 ## Compatibility
 
-Under Construction
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
