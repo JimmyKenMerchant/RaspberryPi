@@ -279,8 +279,7 @@ softuart32_softuarttx:
  * r2: Number of Bits to Be Received
  * r3: Number of Stop Bits
  *
- * Return: r0 (0 as success, 1 as Error)
- * Error: Overrun (FIFO Has Already Been Full)
+ * Return: r0 (0 as success)
  */
 .globl softuart32_softuartreceiver
 softuart32_softuartreceiver:
@@ -352,6 +351,13 @@ softuart32_softuartreceiver:
 		b softuart32_softuartreceiver_success
 
 	softuart32_softuartreceiver_stopbit:
+		add bits_stop, bits_receive, bits_stop
+		cmp sequence, bits_stop
+		addlo sequence, sequence, #1
+		blo softuart32_softuartreceiver_success
+
+		mov sequence, #0
+
 		cmp num_gpio, #31
 		subhi num_gpio, num_gpio, #32
 		mov temp, #1
@@ -366,8 +372,7 @@ softuart32_softuartreceiver:
 		ldreqb temp, [fifo]
 		orreq temp, temp, #0b001                         @ Set Break
 		streqb temp, [fifo]
-		moveq sequence, #0
-		beq softuart32_softuartreceiver_error
+		beq softuart32_softuartreceiver_success
 
 		/* If High State, Got Stop Bit Correctly */
 
@@ -376,17 +381,6 @@ softuart32_softuartreceiver:
 		ldr r1, softuart32_softuartreceiver_byte
 		bl softuart32_push
 		pop {r0-r3}
-
-		add bits_stop, bits_receive, bits_stop
-		cmp sequence, bits_stop
-		movhs sequence, #0
-		addlo sequence, sequence, #1
-
-		b softuart32_softuartreceiver_success
-
-	softuart32_softuartreceiver_error:
-		mov r0, #1
-		b softuart32_softuartreceiver_common
 
 	softuart32_softuartreceiver_success:
 		str sequence, softuart32_softuartreceiver_sequence
@@ -419,8 +413,7 @@ softuart32_softuartreceiver_byte:     .word 0x00
  * r2: Number of Bits to Be Received
  * r3: Number of Stop Bits
  *
- * Return: r0 (0 as success, 1 as Error)
- * Error: FIFO Is Fully Empty
+ * Return: r0 (0 as success)
  */
 .globl softuart32_softuarttransceiver
 softuart32_softuarttransceiver:
@@ -446,7 +439,7 @@ softuart32_softuarttransceiver:
 	softuart32_softuarttransceiver_startbit:
 		ldr temp, [fifo]
 		tst temp, #0b100
-		bne softuart32_softuarttransceiver_error
+		bne softuart32_softuarttransceiver_success
 
 		push {r0-r3}
 		mov r1, #0                                @ Low
@@ -497,12 +490,6 @@ macro32_debug_hexa fifo, 100, 112, 17
 		cmp sequence, bits_stop
 		movhs sequence, #0
 		addlo sequence, sequence, #1
-
-		b softuart32_softuarttransceiver_success
-
-	softuart32_softuarttransceiver_error:
-		mov r0, #1
-		b softuart32_softuarttransceiver_common
 
 	softuart32_softuarttransceiver_success:
 		str sequence, softuart32_softuarttransceiver_sequence
