@@ -9,7 +9,7 @@
 
 /**
  * FIFO container is a block of 1-byte character.
- * First Byte: Bit[0] Break (Only RxFIFO)
+ * First Byte: Bit[0] Break (Only RxFIFO, Receiver Stops)
  *             Bit[1] Overrun (FIFO Has Already Been Full)
  *             Bit[2] FIFO Is Fully Empty
  *             Bit[7:3] Stack Pointer, 0 to 16 (0 Is Empty, Size Is 16)
@@ -294,6 +294,10 @@ softuart32_softuartreceiver:
 	memorymap_base .req r7
 
 	push {r4-r7,lr}
+
+	ldrb temp, [fifo]
+	tst temp, #0b001                                 @ Check Break
+	bne softuart32_softuartreceiver_success          @ Receiver Stops If Break
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_gpio_base
