@@ -51,7 +51,8 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
 	* Is minimalism as having measles? My opinion is NO, because this thought is a fitting architecture of computer science. This system is with minimalism. On the postmodern world, minimalism is a stream as well as constructivism. Constructivism is like roman, which is enthusiastic to architecture itself. Minimalism is a venture to simple one and study of architecture. Minimalism, in computer science, is relevant to the stance committing with C. C is derived from Natural Language Processing (NLP), which claims the ideal of computer languages is like a natural language such as English, Chinese, Hawaiian, and Japanese language. NLP is developed with mathematical sign and symbol that we used to learn on schools. Mathematical sign and symbol on computer language have given us better understanding than binary (0 and 1 only!) Machine language (Machine) or Asm. Plus, parenthesis from grammar also has given us understanding. One answer of these is C. So is Asm no need? No, Asm is actually needed to understand a computer deeply. Asm is close to Machine, but it gives the least NLP. If you want to handle a computer directly, the best answer is Machine. Machine is used on the world of 8/16-bit microcontrollers even now. But if you want a big computer to handle, it's difficult to stay with Machine. Asm is the alternative to Machine on the 32/64-bit world. In this system, Asm is used for its booting process, exceptions, and functions. C is used for the process after the booting. I'm also attempting to use several macros for Asm. I can say that C is conditioned macros for Asm. If I have a time, I'll show you how C is made of macros. In economy, minimalism is against over-consuming. Sometimes, atmosphere to like over-consuming take people out of their ethics. Minimalism defines global economic conflicts these days are caused by over-consuming. Over-consuming means under-consuming in the future. We tend to borrow money for over-consuming, even though your debt is money for consuming in the future. So we have to fear the future that will be lack of money for consuming. Global economic conflicts are just figures to fear the future to be destroyed by over-consuming these days, if minimalism tells. The foreseeing of minimalism in economy gets only nations in their trouble because their budget systems depends on their debt and over-consuming by people. Nations tells over-consuming as their economical growth and it's a delightful thing. We can't forget their hypocrisy get us in our sadness as independent people.
 
 3. Structure of System.
-	* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
+
+* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
 
 ```assembly
 /**
@@ -105,7 +106,53 @@ arm32_sleep:
 .unreq time_high
 ```
 
-	* gcc-arm-none-eabi (one of ARM cross compilers) uses registers r0 to r3 as scratch registers to call a function. You need to push values in r0 - r3 to stack before calling a function, and pop values to r0 - r3 after calling a function.
+* Lines written above are all codes of arm32_sleep in share/aloha_raspi/system32/arm/arm32.s. This function counts microseconds and waits for end of counting. `.globl arm32_sleep` makes this functions usable in other files to link after assembling or compiling, such as files written by C Language. `arm32_sleep` in the next line is a label, which is used for branching from other process. `usecond .req r0` is naming. r0 is a register, which is assigned as `usecond`. To clear this assignation, `.unreq usecond` is used at the end of this function. There is a big difference from other computer languages. It's just a local variable in C Language, etc. `push {r4,lr}` is used for saving data in r4, which is used as `time_high`, and Link Register (lr). Data in Link Register is changed by calling other functions like a line, `bl arm32_timestamp`. `pop {r4,pc}` at the last retrieves data in r4 and back to the previous process through storing the original data of Link Register to Program Counter. `mov r0, #0` is a return value. r0 and r1 can be return values. If you want 64-bit value to return, use r1 in addition to r0. r0 to r11 are needed to save at first and load at last if you use these. r12 is Intra-procedure Call Scratch Register (ip) which is used for temporary usage, so you don't need to save and load.
+
+* If you want `arm32_sleep` in files written by C language. More processes is needed.
+
+```c
+/* Relative System Calls  */
+
+__attribute__((noinline)) void _sleep( uint32 u_seconds );
+
+/* ... */
+
+/* Regular Functions */
+
+extern void arm32_dsb();
+```
+
+* Lines written above are codes in share/include/system32.h. arm32_sleep accesses restricted memory area, so this should be a system call. Besides, `arm32_dsb` does not access restricted memory area, so just coding like `extern void arm32_dsb()`. `_sleep` is defined as a void type (no return), even though this function returns zero in assembly.
+
+```c
+__attribute__((noinline)) void _sleep( uint32 u_seconds )
+{
+	asm volatile ("svc #0x08");
+}
+```
+
+* Lines written above are codes in share/include/system32.c. Since arm32_sleep is a system call, `asm volatile ("svc #0x08")` calls Supervisor mode of Arm architecture with a value, 0x08.
+
+```assembly
+_os_svc:
+	push {lr}                                @ Push fp and lr
+	ldr ip, [lr, #-4]                        @ Load SVC Instruction
+	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
+	cmp ip, #0x47                            @ Prevent Overflow SVC Table
+	bhi _os_svc_common
+	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
+	add pc, pc, ip
+
+/* ... */
+
+	_os_svc_0x08:
+		bl arm32_sleep
+		b _os_svc_common
+```
+
+* Lines written above are codes in share/aloha_raspi/vector32/os.s. `arm32_sleep` is called at this point in Supervisor mode.
+
+* gcc-arm-none-eabi (one of ARM cross compilers) uses registers r0 to r3 as scratch registers to call a function. You need to push values in r0 - r3 to stack before calling a function, and pop values to r0 - r3 after calling a function.
 
 ```assembly
 	push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
@@ -119,7 +166,7 @@ arm32_sleep:
 	bne print32_string_error
 ```
 
-	* If you assign five arguments and over to call a function, push the value to stack. For example, a function fb32_char needs six arguments. Before calling this functions, char_width and char_height, fifth and sixth arguments are pushed. After calling this functions, stack pointer is retrieved through `add sp, sp, #8` (two words backed). Error is tested before popping values to r0 - r3.
+* If you assign five arguments and over to call a function, push the value to stack. For example, a function fb32_char in share/aloha_raspi/system32/library/fb32.s needs six arguments. Before calling this functions, char_width and char_height, fifth and sixth arguments are pushed. After calling this functions, stack pointer is retrieved through `add sp, sp, #8` (two words backed). Error is tested before popping values to r0 - r3.
 
 ```assembly
 	/* Auto (Local) Variables, but just Aliases */
@@ -144,7 +191,7 @@ arm32_sleep:
 	sub sp, sp, #40                                  @ Retrieve SP
 ```
 
-	* Lines written above are codes in fb32_char. These lines enumerate registers and get fifth and sixth parameters from stack. Retrieving stack pointer is needed.
+* Lines written above are codes in fb32_char. These lines enumerate registers and get fifth and sixth parameters from stack. Retrieving stack pointer is needed.
 
 ```assembly
 	push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
@@ -156,7 +203,7 @@ arm32_sleep:
 	pop {r0-r3}
 ```
 
-	* Lines written above are calling a function in print32_esc_sequence. Register r3 (fourth argument) is assigned before r1 (second argument). Lines written below enumerate registers. Check that x_coord is r1.
+* Lines written above are calling a function in print32_esc_sequence in share/aloha_raspi/system32/library/print32.s. Register r3 (fourth argument) is assigned before r1 (second argument). Lines written below enumerate registers. Check that x_coord is r1.
 
 ```assembly
 /**
@@ -187,7 +234,25 @@ print32_esc_sequence:
 	push {r4-r7,lr}
 ```
 
-	* If you assign r1 before r3, the value of x_coord becomes zero. Assigning r1 after r3 prevents this odd.
+* If you assign r1 before r3, the value of x_coord becomes zero. Assigning r1 after r3 prevents this odd.
+
+```assembly
+	/* Set Location to Render the Character */
+
+	cmp y_coord, #0                                  @ If Value of y_coord is Signed Minus
+	addlt char_height, char_height, y_coord          @ Subtract y_coord Value from char_height
+	sublt char_point, char_point, y_coord            @ Add y_coord Value to char_point
+	mulge y_coord, width, y_coord                    @ Vertical Offset Bytes, Rd should not be Rm in `MUL` from Warning
+	addge f_buffer, f_buffer, y_coord
+
+	.unreq y_coord
+	width_check .req r2                              @ Store the Limitation of Width on this Y Coordinate
+
+	mov width_check, f_buffer
+	add width_check, width
+```
+
+* Lines written above are codes in fb32_char. Assignation of a register, r2, is changed. Be careful when you modify this function. If you change assignations to registers at top lines, you also needed to change the register to be re-assigned.
 
 4. Security of System.
 	* Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally. So, in this system, I'm trying to mock-up Harvard architecture even in Von Neumann architecture. Besides, multi-core made us attention to the security much better, because multi-core is a new architecture. Researchers has not yet gotten the conclusion for secure treating of multi-core. If we handle multi-core, we should consider of the security in a very cautious manner.

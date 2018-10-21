@@ -21,13 +21,18 @@ int32 _user_start() {
 	memory_space_rx = heap32_malloc( 1 );
 	memory_space_tx = heap32_malloc( 1 );
 	increment = 0x20;
+	uint32 error;
 
 	_sleep( 100000 );
 
 	while( True ) {
 print32_debug_hexa( OS_FIQ_RXFIFO, 200, 88, 4 );
 
-		_softuartrx( memory_space_rx, 1, OS_FIQ_RXFIFO );
+		error = _softuartrx( memory_space_rx, 1, OS_FIQ_RXFIFO );
+		if ( error ) {
+print32_debug_hexa( error, 200, 88, 4 );
+			_store_8( OS_FIQ_RXFIFO, 0x04 ); // Reset FIFO
+		}
 
 print32_debug_hexa( memory_space_rx, 200, 100, 4 );
 print32_debug_hexa( memory_space_tx, 200, 112, 4 );
