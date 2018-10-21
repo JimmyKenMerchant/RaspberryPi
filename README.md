@@ -52,7 +52,7 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
 
 3. Structure of System.
 
-* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system.
+* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. There are two essences, "indents by tabs" and "labels like postal addresses". Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system. Before discovering ACR, visit [ARM Information Center](http://infocenter.arm.com/help) and enter ARM Architecture Reference Manuals. Instruction set quick reference cards are good to know what is going on with ACR. This system is premised on assembling and compiling with gcc-arm-none-eabi, one of ARM cross compilers.
 
 ```assembly
 /**
@@ -106,9 +106,9 @@ arm32_sleep:
 .unreq time_high
 ```
 
-* Lines written above are all codes of arm32_sleep in share/aloha_raspi/system32/arm/arm32.s. This function counts microseconds and waits for end of counting. `.globl arm32_sleep` makes this functions usable in other files to link after assembling or compiling, such as files written by C Language. `arm32_sleep` in the next line is a label, which is used for branching from other process. `usecond .req r0` is naming. r0 is a register, which is assigned as `usecond`. To clear this assignation, `.unreq usecond` is used at the end of this function. There is a big difference from other computer languages. It's just a local variable in C Language, etc. `push {r4,lr}` is used for saving data in r4, which is used as `time_high`, and Link Register (lr). Data in Link Register is changed by calling other functions like a line, `bl arm32_timestamp`. `pop {r4,pc}` at the last retrieves data in r4 and back to the previous process through storing the original data of Link Register to Program Counter. `mov r0, #0` is a return value. r0 and r1 can be return values. If you want 64-bit value to return, use r1 in addition to r0. r0 to r11 are needed to save at first and load at last if you use these. r12 is Intra-procedure Call Scratch Register (ip) which is used for temporary usage, so you don't need to save and load.
+* Lines written above are all codes of arm32_sleep in share/aloha_raspi/system32/arm/arm32.s. This function counts microseconds and waits for end of counting. `.globl arm32_sleep` makes this functions usable in other files to link after assembling or compiling, such as files written by C Language. `arm32_sleep` in the next line is a global label, which is used for branching from other process. In contrast to a global label, `arm32_sleep_loop` and `arm32_sleep_common` are local labels which are referenced only in a function, `arm32_sleep`. `usecond .req r0` is naming. r0 is a register, which is assigned as `usecond`. To clear this assignation, `.unreq usecond` is used at the end of this function. There is a big difference from other computer languages. It's just a local variable in C Language. `push {r4,lr}` is used for saving data in r4, which is used as `time_high` in this function, and Link Register (lr). Data in Link Register is changed by calling other functions like a line, `bl arm32_timestamp`. `pop {r4,pc}` at `arm32_sleep_common` retrieves data in r4 and back to the previous process through storing the original data of Link Register to Program Counter. `mov r0, #0` makes a return value. In this system, r0 and r1 can be return values. If you want 64-bit value to return, use r1 in addition to r0. r4 to r11 are needed to save at first and load at last if you use these. r12 is Intra-procedure Call Scratch Register (ip) which is used for temporary usage, so you don't need to save and load. r0 to r3 are scratch registers, you don't need to save and load in a function, but you may need to save and load before or after calling a function. These rules of registers are used by gcc-arm-none-eabi.
 
-* If you want `arm32_sleep` in files written by C language. More processes is needed.
+* If you want `arm32_sleep` in files written by C language. More processes are needed.
 
 ```c
 /* Relative System Calls  */
@@ -122,7 +122,7 @@ __attribute__((noinline)) void _sleep( uint32 u_seconds );
 extern void arm32_dsb();
 ```
 
-* Lines written above are codes in share/include/system32.h. arm32_sleep accesses restricted memory area, so this should be a system call. Besides, `arm32_dsb` does not access restricted memory area, so just coding like `extern void arm32_dsb()`. `_sleep` is defined as a void type (no return), even though this function returns zero in assembly.
+* Lines written above are codes in share/include/system32.h. The function, `arm32_sleep`, accesses restricted memory area, so this should be a system call. Besides, `arm32_dsb` does not access restricted memory area, so just coding like `extern void arm32_dsb()`. An under bar before the name of a function like `_sleep` indicates the function is a system call. An under bar indicates labels for interrupt vectors of this system. `_sleep` is defined as a void type (no return), even though this function returns zero in Asm with ACR.
 
 ```c
 __attribute__((noinline)) void _sleep( uint32 u_seconds )
@@ -152,7 +152,7 @@ _os_svc:
 
 * Lines written above are codes in share/aloha_raspi/vector32/os.s. `arm32_sleep` is called at this point in Supervisor mode.
 
-* gcc-arm-none-eabi (one of ARM cross compilers) uses registers r0 to r3 as scratch registers to call a function. You need to push values in r0 - r3 to stack before calling a function, and pop values to r0 - r3 after calling a function.
+* gcc-arm-none-eabi uses registers r0 to r3 as scratch registers to call a function. To save data in these registers, you may need to push values in r0 - r3 to stack before calling a function, and pop values to r0 - r3 after calling a function.
 
 ```assembly
 	push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
@@ -252,7 +252,7 @@ print32_esc_sequence:
 	add width_check, width
 ```
 
-* Lines written above are codes in fb32_char. Assignation of a register, r2, is changed. Be careful when you modify this function. If you change assignations to registers at top lines, you also needed to change the register to be re-assigned.
+* Lines written above are codes in fb32_char. Naming of a register, r2, is changed. Be careful when you modify this function. If you change a register for naming at the first lines, you also need to change the register to be renamed.
 
 4. Security of System.
 	* Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally. So, in this system, I'm trying to mock-up Harvard architecture even in Von Neumann architecture. Besides, multi-core made us attention to the security much better, because multi-core is a new architecture. Researchers has not yet gotten the conclusion for secure treating of multi-core. If we handle multi-core, we should consider of the security in a very cautious manner.
@@ -409,7 +409,7 @@ Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), me
 
 * [Anton's OpenGL4 Tutorials](http://antongerdelan.net/opengl/)
 
-* [ARM Information Center](http://infocenter.arm.com/): Application Note (AN) 228 "Implementing DMA on ARM SMP Systems", ARM Limited, 2009.
+* [ARM Information Center](http://infocenter.arm.com/help): Application Note (AN) 228 "Implementing DMA on ARM SMP Systems", ARM Limited, 2009.
 
 * [Cisco Visual Networking Index: Forecast and Methodology, 2016-2021](https://www.cisco.com/c/en/us/solutions/collateral/service-provider/visual-networking-index-vni/complete-white-paper-c11-481360.html): Cisco Systems, Inc., 2017.
 

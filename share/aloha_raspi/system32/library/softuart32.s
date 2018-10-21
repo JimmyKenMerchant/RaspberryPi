@@ -49,9 +49,11 @@ softuart32_pop:
 	ldrb status, [fifo]
 	lsr sp_uart, status, #3
 
-	ldrb byte, [fifo, sp_uart]
-	cmp sp_uart, #0
-	beq softuart32_pop_common
+	tst status, #0b100                            @ If Fully Empty
+	movne byte, #0
+	bne softuart32_pop_common
+
+	ldrb byte, [fifo, #1]
 
 	mov i, #2
 	mov j, #1
