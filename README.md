@@ -191,7 +191,7 @@ _os_svc:
 	sub sp, sp, #40                                  @ Retrieve SP
 ```
 
-* Lines written above are codes in fb32_char. These lines enumerate registers and get fifth and sixth parameters from stack. Retrieving stack pointer is needed.
+* Lines written above are codes in fb32_char. These lines enumerate registers for naming and get fifth and sixth parameters from stack. Retrieving stack pointer is needed.
 
 ```assembly
 	push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
@@ -203,7 +203,7 @@ _os_svc:
 	pop {r0-r3}
 ```
 
-* Lines written above are calling a function in print32_esc_sequence in share/aloha_raspi/system32/library/print32.s. Register r3 (fourth argument) is assigned before r1 (second argument). Lines written below enumerate registers. Check that x_coord is r1.
+* Lines written above are calling a function in print32_esc_sequence in share/aloha_raspi/system32/library/print32.s. A value is substituted for Register r3 (fourth argument) before r1 (second argument).
 
 ```assembly
 /**
@@ -234,7 +234,7 @@ print32_esc_sequence:
 	push {r4-r7,lr}
 ```
 
-* If you assign r1 before r3, the value of x_coord becomes zero. Assigning r1 after r3 prevents this odd.
+* Lines written above naming registers. Check that x_coord is r1. If you substitute a value for r1 before r3, the value of x_coord becomes zero. Substituting for r1 after r3 prevents this odd.
 
 ```assembly
 	/* Set Location to Render the Character */
@@ -253,6 +253,70 @@ print32_esc_sequence:
 ```
 
 * Lines written above are codes in fb32_char. Naming of a register, r2, is changed. Be careful when you modify this function. If you change a register for naming at the first lines, you also need to change the register to be renamed.
+
+```assembly
+/**
+ * "arm_system32" is to be used for drivers of ARM system registers, and standard peripherals,
+ * USB, I2C, UART, etc. These are usually aiming compatibility with other ARM CPUs,
+ * but memory mapping differs among CPUs. Addresses of peripherals in "equ32.s" should be changed. 
+ */
+.section	.arm_system32
+
+.balign 4
+.include "system32/arm/arm32.s"
+
+/* ... */
+
+/**
+ * "library_system32" is to be used for libraries, Drawing, Sound, Color, Font, etc. which have
+ * compatibility with other ARM CPUs.
+ */
+.section	.library_system32
+
+.balign 4
+.include "system32/library/fb32.s"            @ Having Section .data
+.balign 4
+.include "system32/library/print32.s"         @ Having Section .data
+```
+
+* Lines written above are codes in share/aloha_raspi/system32/system32.s. Asm files are included. If you add your original files, include your Asm files to system32.s.
+
+* So at last you can use functions for your project. Let's go to a sample project, simple_test. Each project has at least four files; vector32.s, user32.s, Makefile, and README.md.
+
+```assembly
+	/* GPIO */
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1   @ Clear GPIO 21
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1  @ Set GPIO 21 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel20]
+```
+
+* Lines written above are codes in simple_test/vector32.s. These codes set GPIO 21 as OUTPUT. In vector32.s, you can set status of peripherals, and write codes for interrupts before starting codes in simple_test/user32.s.
+
+```c
+#include "system32.h"
+#include "system32.c"
+
+int32 _user_start()
+{
+	_gpiomode( 20, _GPIOMODE_IN );
+	//_gpiomode( 21, _GPIOMODE_OUT ); // Already Set in vector32.s
+
+	while(True) {
+		// If GPIO 20 Detects Voltage, GPIO 21 Keeps Lighting
+		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_HIGH );
+
+		_sleep( 1000 ); // Wait for 1000 Microseconds
+	}
+
+	return EXIT_SUCCESS;
+}
+```
+
+* Lines written above are all codes of simple_test/user32.c. `_sleep( 1000 )` is definitely used!
 
 4. Security of System.
 	* Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally. So, in this system, I'm trying to mock-up Harvard architecture even in Von Neumann architecture. Besides, multi-core made us attention to the security much better, because multi-core is a new architecture. Researchers has not yet gotten the conclusion for secure treating of multi-core. If we handle multi-core, we should consider of the security in a very cautious manner.

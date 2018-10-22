@@ -12,28 +12,14 @@
 
 int32 _user_start()
 {
-	_gpiomode( 18, _GPIOMODE_IN );
-	_gpiomode( 19, _GPIOMODE_IN );
 	_gpiomode( 20, _GPIOMODE_IN );
-	_gpiopull( 20, _GPIOPULL_UP );
-	_gpioevent( 18, _GPIOEVENT_RISING, TRUE );
-	_gpioevent( 19, _GPIOEVENT_RISING, TRUE );
-	_gpioevent( 20, _GPIOEVENT_RISING, TRUE );
+	//_gpiomode( 21, _GPIOMODE_OUT ); // Already Set in vector32.s
 
 	while(True) {
-		int32 value;
-		//if ( _gpio_detect( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_SWAP );
-		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_SWAP );
-		if ( _gpio_detect( 18 ) ) {
-			value = _display_off( false );
-			print32_debug( value, 100, 100 );
-		}
-		if ( _gpio_detect( 19 ) ) {
-			value = _display_off( true );
-			print32_debug( value, 100, 112 );
-		}
+		// If GPIO 20 Detects Voltage, GPIO 21 Keeps Lighting
+		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_HIGH );
 
-		_sleep(1000);
+		_sleep( 1000 ); // Wait for 1000 Microseconds
 	}
 
 	return EXIT_SUCCESS;
