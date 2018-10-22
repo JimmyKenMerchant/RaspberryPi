@@ -17,6 +17,11 @@
  */
 
 /**
+ * To get a sample at center of signal in Receiver,
+ * sample rate of Receiver/Transceiver is multiple of baud rate and 5.
+ */
+
+/**
  * function softuart32_pop
  * Pop for Software UART
  *
@@ -294,8 +299,9 @@ softuart32_softuartreceiver:
 	sequence       .req r5
 	byte           .req r6
 	memorymap_base .req r7
+	count_sample   .req r8
 
-	push {r4-r7,lr}
+	push {r4-r8,lr}
 
 	ldrb temp, [fifo]
 	tst temp, #0b001                                 @ Check Break
@@ -305,12 +311,25 @@ softuart32_softuartreceiver:
 	add memorymap_base, memorymap_base, #equ32_gpio_base
 
 	ldr sequence, softuart32_softuartreceiver_sequence
-	cmp sequence, bits_receive
-	bhi softuart32_softuartreceiver_stopbit
+	ldr count_sample, softuart32_softuartreceiver_count_sample
+
 	cmp sequence, #0
 	beq softuart32_softuartreceiver_startbit
 
-	b softuart32_softuartreceiver_character
+	cmp count_sample, #0
+	moveq count_sample, #4
+	beq softuart32_softuartreceiver_jump
+
+	sub count_sample, count_sample, #1
+
+	b softuart32_softuartreceiver_success
+
+	softuart32_softuartreceiver_jump:
+
+		cmp sequence, bits_receive
+		bhi softuart32_softuartreceiver_stopbit
+
+		b softuart32_softuartreceiver_character
 
 	softuart32_softuartreceiver_startbit:
 		cmp num_gpio, #31
@@ -329,6 +348,7 @@ softuart32_softuartreceiver:
 		mov byte, #0
 		str byte, softuart32_softuartreceiver_byte
 		add sequence, sequence, #1
+		mov count_sample, #7                         @ To Get Sample at Center of Signal
 
 		b softuart32_softuartreceiver_success
 
@@ -390,11 +410,12 @@ softuart32_softuartreceiver:
 
 	softuart32_softuartreceiver_success:
 		str sequence, softuart32_softuartreceiver_sequence
+		str count_sample, softuart32_softuartreceiver_count_sample
 		mov r0, #0
 
 	softuart32_softuartreceiver_common:
 		macro32_dsb ip
-		pop {r4-r7,pc}
+		pop {r4-r8,pc}
 
 .unreq num_gpio
 .unreq fifo
@@ -404,9 +425,11 @@ softuart32_softuartreceiver:
 .unreq sequence
 .unreq byte
 .unreq memorymap_base
+.unreq count_sample
 
-softuart32_softuartreceiver_sequence: .word 0x00
-softuart32_softuartreceiver_byte:     .word 0x00
+softuart32_softuartreceiver_sequence:     .word 0x00
+softuart32_softuartreceiver_byte:         .word 0x00
+softuart32_softuartreceiver_count_sample: .word 0x00
 
 
 /**
@@ -431,16 +454,29 @@ softuart32_softuarttransceiver:
 	temp         .req r4
 	sequence     .req r5
 	byte         .req r6
+	count_sample .req r7
 
-	push {r4-r6,lr}
+	push {r4-r7,lr}
 
 	ldr sequence, softuart32_softuarttransceiver_sequence
-	cmp sequence, bits_receive
-	bhi softuart32_softuarttransceiver_stopbit
-	cmp sequence, #0
-	beq softuart32_softuarttransceiver_startbit
+	ldr count_sample, softuart32_softuarttransceiver_count_sample
 
-	b softuart32_softuarttransceiver_character
+	cmp count_sample, #0
+	moveq count_sample, #4
+	beq softuart32_softuarttransceiver_jump
+
+	sub count_sample, count_sample, #1
+
+	b softuart32_softuarttransceiver_success
+
+	softuart32_softuarttransceiver_jump:
+
+		cmp sequence, bits_receive
+		bhi softuart32_softuarttransceiver_stopbit
+		cmp sequence, #0
+		beq softuart32_softuarttransceiver_startbit
+
+		b softuart32_softuarttransceiver_character
 
 	softuart32_softuarttransceiver_startbit:
 		ldr temp, [fifo]
@@ -499,11 +535,12 @@ macro32_debug_hexa fifo, 100, 112, 17
 
 	softuart32_softuarttransceiver_success:
 		str sequence, softuart32_softuarttransceiver_sequence
+		str count_sample, softuart32_softuarttransceiver_count_sample
 		mov r0, #0
 
 	softuart32_softuarttransceiver_common:
 		macro32_dsb ip
-		pop {r4-r6,pc}
+		pop {r4-r7,pc}
 
 .unreq num_gpio
 .unreq fifo
@@ -512,7 +549,9 @@ macro32_debug_hexa fifo, 100, 112, 17
 .unreq temp
 .unreq sequence
 .unreq byte
+.unreq count_sample
 
-softuart32_softuarttransceiver_sequence: .word 0x00
-softuart32_softuarttransceiver_byte:     .word 0x00
+softuart32_softuarttransceiver_sequence:     .word 0x00
+softuart32_softuarttransceiver_byte:         .word 0x00
+softuart32_softuarttransceiver_count_sample: .word 0x00
 
