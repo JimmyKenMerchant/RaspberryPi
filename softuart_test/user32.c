@@ -32,7 +32,7 @@ int32 _user_start() {
 	while( True ) {
 		print32_debug_hexa( OS_FIQ_RXFIFO, 200, 52, 4 );
 
-		error = _softuartrx( memory_space_rx, 1, OS_FIQ_RXFIFO );
+		error = _softuartrx( memory_space_rx, 3, OS_FIQ_RXFIFO );
 		if ( error & 0b1 ) { // Check If Break Error
 			count_error++;
 			print32_debug( count_error, 200, 64 );
@@ -47,8 +47,12 @@ int32 _user_start() {
 		print32_debug_hexa( memory_space_tx, 200, 112, 4 );
 
 		_store_8( memory_space_tx, increment );
-		_softuarttx( memory_space_tx, 1, OS_FIQ_TXFIFO );
 		increment++;
+		_store_8( memory_space_tx + 1, increment );
+		increment++;
+		_store_8( memory_space_tx + 2, increment );
+		increment++;
+		_softuarttx( memory_space_tx, 3, OS_FIQ_TXFIFO );
 
 		_sleep( 500000 );
 	}
