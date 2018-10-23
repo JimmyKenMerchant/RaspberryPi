@@ -44,6 +44,9 @@ rom32_romread_i2c:
 	cmp temp, #-1
 	beq rom32_romread_i2c_error
 
+	cmp length, temp
+	movgt length, temp                @ Prevent Overflow
+
 	push {r0-r3}
 	add r0, #1
 	bl heap32_malloc

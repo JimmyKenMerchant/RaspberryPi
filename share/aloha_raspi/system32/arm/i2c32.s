@@ -81,9 +81,6 @@ i2c32_i2ctx:
 
 	push {r4-r6,lr}
 
-	cmp size_tx, temp
-	movgt size_tx, temp                          @ Prevent Overflow
-
 	mov addr_i2c, #equ32_peripherals_base
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_lower
@@ -185,9 +182,6 @@ i2c32_i2crx:
 	addr_i2c     .req r6
 
 	push {r4-r6,lr}
-
-	cmp size_rx, temp
-	movgt size_rx, temp                          @ Prevent Overflow
 
 	mov addr_i2c, #equ32_peripherals_base
 	add addr_i2c, addr_i2c, #equ32_i2c1_base_upper
