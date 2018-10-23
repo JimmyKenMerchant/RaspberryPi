@@ -112,6 +112,8 @@ print32_debug( ticket_hid, 500, 242 );
 
 	ticket_hid = result;
 
+	if ( ticket_hid <= 0 ) return False; // Communication Error or No HID Device If Direct Connection
+
 	arm32_dsb();
 
 print32_debug( ticket_hid, 500, 254 );
