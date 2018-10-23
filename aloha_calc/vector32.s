@@ -55,42 +55,46 @@ os_reset:
 	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
-	/* GPIO */
+	/**
+	 * GPIO
+	 */
+
+	/* GPIO0-45 Reset and Pull Down */
+	bl gpio32_gpioreset
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-	/* Use ACT LED Only in Debugging to Reduce Noise */
 .ifndef __RASPI3B
-	ldr r1, [r0, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 47 OUTPUT
-	str r1, [r0, #equ32_gpio_gpfsel40]
+	/* USB Current Up */
+	ldr r1, [r0, #equ32_gpio_gpfsel30]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8   @ Set GPIO 38 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel30]
+
+	macro32_dsb ip
+
+	/* Set USB Current Up (RasPi3 has already as default) */
+	mov r1, #equ32_gpio38
+	str r1, [r0, #equ32_gpio_gpset1]                               @ GPIO 38 OUTPUT High
 .endif
 
+	/* I/O Settings */
+
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 2
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 2 ALT 0 as SDA1
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 3
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3       @ Set GPIO 3 ALT 0 as SCL1
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 14
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 14 ALT 0 as TXD0
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 15
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5       @ Set GPIO 15 ALT 0 as RXD0
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2      @ Clear GPIO 22
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2     @ Set GPIO 22 OUTPUT
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3      @ Clear GPIO 23
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2      @ Set GPIO 22 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3     @ Set GPIO 23 OUTPUT
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4      @ Clear GPIO 24
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 24 OUTPUT
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5      @ Clear GPIO 25
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 25 OUTPUT
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_6      @ Clear GPIO 26
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
@@ -197,19 +201,10 @@ os_fiq:
 
 
 .ifndef __RASPI3B
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
-
-	ldrb r1, os_fiq_gpio_toggle
-	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	strb r1, os_fiq_gpio_toggle
-
-	cmp r1, #0
-	addeq r0, r0, #equ32_gpio_gpclr1
-	addne r0, r0, #equ32_gpio_gpset1
-	mov r1, #equ32_gpio47
-	str r1, [r0]
-
+	/* ACT Blinker */
+	mov r0, #47
+	mov r1, #2
+	bl gpio32_gpiotoggle
 	macro32_dsb ip
 .endif
 
@@ -227,7 +222,7 @@ os_fiq:
 .endif
 
 	push {r0-r3}
-	mov r0, #0x07C00000                        @ GPIO22-26
+	mov r0, #0x07800000                        @ GPIO23-26
 	bl gpio32_gpioplay
 	pop {r0-r3}
 
@@ -247,9 +242,7 @@ _string_hello:
 .balign 4
 string_hello:
 	.word _string_hello
-os_fiq_gpio_toggle: .byte 0b00000000
-.balign 4
 
 .include "addr32.s" @ If you want binary, use `.incbin`
-.balign 4
+
 /* End of Line is Needed */

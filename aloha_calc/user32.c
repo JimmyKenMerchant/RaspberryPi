@@ -21,7 +21,7 @@
 #define initial_line         1
 #define argument_maxlength   8
 #define label_maxlength      64 // Maximum Limitation of Length of Labels
-#define gpio_output          0x07C00000 // GPIO22-26
+#define gpio_output          0x07800000 // GPIO23-26
 
 /**
  * Maximum limitation of the length of characters on each label.

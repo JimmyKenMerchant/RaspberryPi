@@ -33,7 +33,9 @@
 
 * GPIO 15 as RXD0
 
-* GPIO22-26 as Output
+* GPIO22 as Input for Start Up Bit
+
+* GPIO23-26 as Output
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s (If you no need, uncomment __SOUND on the top of vector.s)
 
