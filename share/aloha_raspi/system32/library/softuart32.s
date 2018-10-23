@@ -17,8 +17,10 @@
  */
 
 /**
- * To get a sample at center of signal in Receiver,
+ * To get a sample at the center of a signal (which means one bit) in Receiver,
  * sample rate of Receiver/Transceiver is multiple of baud rate and 5.
+ * However, the point of sample is not exactly center. It's the point of 40 percents from beginning of a signal.
+ * The number of sampling is one for a signal. These specifications affects acceptable error of baud rate.
  */
 
 /**

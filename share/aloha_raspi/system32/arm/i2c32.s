@@ -67,7 +67,6 @@ i2c32_i2cinit:
  * Error(1): Device Address Error
  * Error(2): Clock Stretch Timeout
  * Error(3): Transaction Error on Checking Process
- * Error(4): No Heap Area
  */
 .globl i2c32_i2ctx
 i2c32_i2ctx:
@@ -81,14 +80,6 @@ i2c32_i2ctx:
 	addr_i2c     .req r6
 
 	push {r4-r6,lr}
-
-	push {r0-r3}
-	bl heap32_mcount
-	mov temp, r0
-	pop {r0-r3}
-
-	cmp temp, #-1
-	beq i2c32_i2ctx_error4
 
 	cmp size_tx, temp
 	movgt size_tx, temp                          @ Prevent Overflow
@@ -152,10 +143,6 @@ macro32_debug temp, 0, 100
 		mov r0, #3
 		b i2c32_i2ctx_common
 
-	i2c32_i2ctx_error4:
-		mov r0, #4
-		b i2c32_i2ctx_common
-
 	i2c32_i2ctx_success:
 		mov r0, #0
 
@@ -185,7 +172,6 @@ macro32_debug temp, 0, 100
  * Error(1): Device Address Error
  * Error(2): Clock Stretch Timeout
  * Error(3): Transaction Error on Checking Process
- * Error(4): No Heap Area
  */
 .globl i2c32_i2crx
 i2c32_i2crx:
@@ -199,14 +185,6 @@ i2c32_i2crx:
 	addr_i2c     .req r6
 
 	push {r4-r6,lr}
-
-	push {r0-r3}
-	bl heap32_mcount
-	mov temp, r0
-	pop {r0-r3}
-
-	cmp temp, #-1
-	beq i2c32_i2crx_error4
 
 	cmp size_rx, temp
 	movgt size_rx, temp                          @ Prevent Overflow
@@ -269,10 +247,6 @@ macro32_debug temp, 0, 112
 
 	i2c32_i2crx_error3:
 		mov r0, #3
-		b i2c32_i2crx_common
-
-	i2c32_i2crx_error4:
-		mov r0, #4
 		b i2c32_i2crx_common
 
 	i2c32_i2crx_success:

@@ -23,7 +23,6 @@
  * Error(1): Device Address Error (Derived From I2C)
  * Error(2): Clock Stretch Timeout (Derived From I2C)
  * Error(3): Transaction Error on Checking Process (Derived From I2C)
- * Error(4): No Heap Area (Derived From I2C)
  */
 .globl rom32_romread_i2c
 rom32_romread_i2c:
@@ -32,10 +31,18 @@ rom32_romread_i2c:
 	chip_select     .req r1
 	addr            .req r2
 	length          .req r3
-	heap_addr       .req r4
+	heap_addr       .req r4 @ Heap for Writing Address
 	temp            .req r5
 
 	push {r4-r5,lr}
+
+	push {r0-r3}
+	bl heap32_mcount
+	mov temp, r0
+	pop {r0-r3}
+
+	cmp temp, #-1
+	beq rom32_romread_i2c_error
 
 	push {r0-r3}
 	add r0, #1
@@ -133,7 +140,6 @@ macro32_debug temp, 0, 112
  * Error(1): Device Address Error (Derived From I2C)
  * Error(2): Clock Stretch Timeout (Derived From I2C)
  * Error(3): Transaction Error on Checking Process (Derived From I2C)
- * Error(4): No Heap Area (Derived From I2C)
  */
 .globl rom32_romwrite_i2c
 rom32_romwrite_i2c:
@@ -142,7 +148,7 @@ rom32_romwrite_i2c:
 	chip_select     .req r1
 	addr            .req r2
 	length          .req r3
-	heap_addr       .req r4
+	heap_addr       .req r4 @ Heap for Writing Address
 	temp            .req r5
 
 	push {r4-r5,lr}
@@ -160,7 +166,7 @@ rom32_romwrite_i2c:
 	pop {r0-r3}
 
 	cmp heap_addr, #0
-	beq rom32_romread_i2c_error
+	beq rom32_romwrite_i2c_error
 
 	/* Most Significant Word Will Be Send at First, Least Significant Word Will Be Send at Second */
 	and temp, addr, #0xFF00
@@ -181,7 +187,7 @@ rom32_romwrite_i2c:
 	pop {r0-r3}
 
 	cmp temp, #0
-	beq rom32_romwrite_i2c_common     @ If Error on Memory Copy
+	beq rom32_romwrite_i2c_error      @ If Error on Memory Copy
 
 	/**
 	 * Bit[6:3] is Fixed, Bit[6:0] becomes Device Address Bit[7:1], Bit[0] is Write/Read
