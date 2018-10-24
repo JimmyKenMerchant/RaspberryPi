@@ -49,7 +49,10 @@ bool init_usb_keyboard( uint32 usb_channel ) {
 	uint32 timeout;
 	uint32 result;
 
-	_otg_host_reset_bcm();
+	_sleep( 100000 ); // Wait for Root Hub Activation
+
+	if ( _otg_host_reset_bcm() ) return False;
+	arm32_dsb();
 
 	_sleep( 500000 ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
 

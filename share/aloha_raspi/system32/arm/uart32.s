@@ -1956,7 +1956,7 @@ UART32_UARTCLIENT_MODE: .word 0x00
  * Route UART Interrupt to Host Mode or Client Mode
  *
  * Parameters
- * r0: Mirror Data to Teletype (1) or Send ACK (0) in Host Mode
+ * r0: 0 as Host Mode, 1 as Client Mode
  *
  * Return: r0 (Return Value of Host Mode or Client Mode)
  */

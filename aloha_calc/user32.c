@@ -21,7 +21,7 @@
 #define initial_line         1
 #define argument_maxlength   8
 #define label_maxlength      64 // Maximum Limitation of Length of Labels
-#define gpio_output          0x07800000 // GPIO23-26
+#define gpio_output          0x0F800000 // GPIO23-27
 
 /**
  * Maximum limitation of the length of characters on each label.
@@ -278,16 +278,6 @@ int32 _user_start() {
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
-	/* Sound */
-
-#ifdef __SOUND_I2S
-	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
-#else
-	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
-#endif
-
-	sound_makesilence();
-
 	/* Keyboard */
 
 	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
@@ -301,6 +291,16 @@ int32 _user_start() {
 		_uarttx( str_aloha, str32_strlen( str_aloha ) );
 	}
 
+	/* Sound */
+
+#ifdef __SOUND_I2S
+	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
+#else
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
+#endif
+
+	sound_makesilence();
+
 	/* Startup */
 
 	if ( _gpio_in( 22 ) ) {
@@ -310,7 +310,12 @@ int32 _user_start() {
 	}
 
 	if ( ! _uartsetheap( initial_line ) ) {
+		/* Some Errors May Be Received */
+		heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+		_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 		process_counter();
+	} else {
+		return False;
 	}
 
 	flag_execute = false;
@@ -1827,43 +1832,84 @@ bool console_rollup() {
 
 bool init_usb_keyboard( uint32 usb_channel ) {
 
-	if ( _otg_host_reset_bcm() ) return false;
+	uint32 timeout;
+	uint32 result;
+
+	_sleep( 100000 ); // Wait for Root Hub Activation
+
+	if ( _otg_host_reset_bcm() ) return False;
 	arm32_dsb();
 
-	ticket_hub = _hub_activate( usb_channel, 0 );
+	_sleep( 500000 ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
+
+	timeout = 20;
+	do {
+		_sleep( 500000 );
+		ticket_hub = _hub_activate( usb_channel, 0 );
+		if ( ticket_hub ) break; // Break Except Zero (No Detection)
+		timeout--;
+	} while ( timeout ); // Except Zero
+
 	arm32_dsb();
 
-	_sleep( 200000 );
+	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Detection of Devices (on Inner Activation)
 
 //print32_debug( ticket_hub, 500, 230 );
 
-	if ( ticket_hub == -2 ) {
+	if ( ticket_hub == -1 ) {
 		ticket_hid = 0; // Direct Connection
+		_sleep( 500000 ); // Further Wait
 	} else if ( ticket_hub > 0 ) {
-		ticket_hid = _hub_search_device( usb_channel, ticket_hub );
+		timeout = 20;
+		do {
+			_sleep( 500000 );
+			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
+			if ( ticket_hid ) break; // Break Except Zero (No Detection)
+			timeout--;
+		} while ( timeout ); // Except Zero
+
+// Hubs on B type uses port no.1 for an ethernet adaptor. To get a HID, search another device again.
 #ifdef __B
 		arm32_dsb();
-		ticket_hid = _hub_search_device( usb_channel, ticket_hub );
+		timeout = 20;
+		do {
+			_sleep( 500000 );
+			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
+			if ( ticket_hid ) break; // Break Except Zero (No Detection)
+			timeout--;
+		} while ( timeout ); // Except Zero
 #endif
+
+		if ( ticket_hid <= 0 ) return False; // Hub Exists But No Connection with Device or Communication Error
+
 	} else {
-		return false;
+		return False; // Communication Error on Activation of Hub
 	}
 	arm32_dsb();
 
 //print32_debug( ticket_hid, 500, 242 );
 
-	if ( ticket_hid <= 0 ) return false;
+	_sleep( 500000 ); // HID is Detected, So Wait for Activation of Devices (on Inner Resetting Procedure)
 
-	_sleep( 200000 ); // Hub Port is Powerd On, So Wait for Activation of Device
+	timeout = 20;
+	do {
+		_sleep( 500000 );
+		result = _hid_activate( usb_channel, 1, ticket_hid );
+		if ( result > 0 ) break; // Break Except Errors
+		timeout--;
+	} while ( timeout ); // Except Zero
 
-	uint32 response = _hid_activate( usb_channel, 1, ticket_hid );
+	ticket_hid = result;
+
+	if ( ticket_hid <= 0 ) return False; // Communication Error or No HID Device If Direct Connection
+
 	arm32_dsb();
 
-	if ( response != ticket_hid ) return false;
+//print32_debug( ticket_hid, 500, 254 );
 
 	//_hid_setidle( usb_channel, 0, ticket_hid );
 
-	return true;
+	return True;
 }
 
 

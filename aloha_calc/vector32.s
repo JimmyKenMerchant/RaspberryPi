@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-.equ __DEBUG, 1
+/*.equ __DEBUG, 1*/
 .equ __SOUND, 1
 
 .include "system32/equ32.s"
@@ -96,7 +96,27 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 24 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 25 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 27 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
+
+.ifdef __B
+	ldr r1, [r0, #equ32_gpio_gpfsel40]
+.ifdef __RASPI3B
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 42 AlT0 (GPCLK1)
+.else
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 44 AlT0 (GPCLK1)
+.endif
+	str r1, [r0, #equ32_gpio_gpfsel40]
+
+	/**
+	 * Set GPCLK1 to 25.00Mhz
+	 */
+	mov r0, #equ32_cm_gp1
+	mov r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld       @ 500Mhz
+	mov r2, #20<<equ32_cm_div_integer
+	bl arm32_clockmanager
+.endif
 
 	/* Obtain Framebuffer from VideoCore IV */
 
@@ -135,7 +155,7 @@ os_reset:
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, #128                                             @ 128 Lines Minus 1 Line for #0, 127 Lines Available
+	mov r0, #256                                             @ 256 Lines Minus 1 Line for #0, 255 Lines Available
 	mov r1, #16                                              @ 16 Words, 64 Bytes per Each Row
 	bl uart32_uartmalloc
 	pop {r0-r3}
@@ -201,7 +221,7 @@ os_fiq:
 
 
 .ifndef __RASPI3B
-	/* ACT Blinker */
+	/* ACT Blinker, GPIO 47 Is Preset as OUT */
 	mov r0, #47
 	mov r1, #2
 	bl gpio32_gpiotoggle
@@ -222,7 +242,7 @@ os_fiq:
 .endif
 
 	push {r0-r3}
-	mov r0, #0x07800000                        @ GPIO23-26
+	mov r0, #0x0F800000                        @ GPIO23-27
 	bl gpio32_gpioplay
 	pop {r0-r3}
 
