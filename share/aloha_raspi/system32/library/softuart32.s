@@ -17,10 +17,14 @@
  */
 
 /**
- * To get a sample at the center of a signal (which means one bit) in Receiver,
- * sample rate of Receiver/Transceiver is multiple of baud rate and 5.
- * However, the point of sample is not exactly center. It's the point of 40 percents from beginning of a signal.
- * The number of sampling is one for a signal. These specifications affects acceptable error of baud rate.
+ * To get a sample at the almost center of a signal (which means one bit) in Receiver,
+ * sample rate of Receiver/Transceiver is multiple of baud rate and 4.
+ * This sample rate makes up to 25 percents phase shift.
+ * 50 percents of acceptable error of baud rate is reduced by this phase shift.
+ * If you sent 8 bits, which you need 10 bits because of addition of start and stop bits,
+ * acceptable error of baud rate is that (50 - 25) / 10 = 2.5 percents.
+ * 2.5 percents of error are shared by Rx device and Tx device, so it should be 1.25 percents for each device.
+ * Plus, 1.25 percents of error should be reduced because of other factors to increase error.
  */
 
 /**
@@ -319,7 +323,7 @@ softuart32_softuartreceiver:
 	beq softuart32_softuartreceiver_startbit
 
 	cmp count_sample, #0
-	moveq count_sample, #4
+	moveq count_sample, #3                           @ Sample Rate 4 in One Bit
 	beq softuart32_softuartreceiver_jump
 
 	sub count_sample, count_sample, #1
@@ -350,7 +354,7 @@ softuart32_softuartreceiver:
 		mov byte, #0
 		str byte, softuart32_softuartreceiver_byte
 		add sequence, sequence, #1
-		mov count_sample, #7                         @ To Get Sample at Center of Signal
+		mov count_sample, #5                         @ To Get Sample at Center of Signal (One Bit)
 
 		b softuart32_softuartreceiver_success
 
@@ -464,7 +468,7 @@ softuart32_softuarttransceiver:
 	ldr count_sample, softuart32_softuarttransceiver_count_sample
 
 	cmp count_sample, #0
-	moveq count_sample, #4
+	moveq count_sample, #3                        @ Sample Rate 4 in One Bit
 	beq softuart32_softuarttransceiver_jump
 
 	sub count_sample, count_sample, #1
