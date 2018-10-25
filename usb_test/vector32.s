@@ -39,42 +39,38 @@ os_reset:
 	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_armtimer_base
-
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
-	str r1, [r0, #equ32_armtimer_predivider]
-
+	/**
+	 * Get a 12hz Timer Interrupt (120000/10000).
+	 */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
 	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
 	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
-	str r1, [r0, #equ32_armtimer_load]
+	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
 
-	mov r1, #0x3E0000                         @ High 2 Bytes
-	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 100K
-	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
-	str r1, [r0, #equ32_armtimer_control]
+	/**
+	 * GPIO
+	 */
 
-	/* So We can get a 10hz Timer Interrupt (100000/10000) */
+	/* GPIO0-45 Reset and Pull Down */
+	/**
+	 * No use because of keeping default GPIO status, gpio32_gpioreset accesses GPIO peripheral a lot of times.
+	 * These behaviors in gpio32_gpioreset may affect GPIO status such as output of GPCLK1.
+	 */
+	/*bl gpio32_gpioreset*/
 
-	/* GPIO */
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
+.ifdef __B
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
-
-.ifndef __ARMV6
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_4   @ Clear GPIO 44
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4    @ Set GPIO 44 AlT0 (GPCLK1)
+.ifdef __RASPI3B
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 42 AlT0 (GPCLK1)
+.else
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 44 AlT0 (GPCLK1)
 .endif
-
-.ifndef __RASPI3B
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7   @ Clear GPIO 47
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7  @ Set GPIO 47 OUTPUT
-.endif
-
 	str r1, [r0, #equ32_gpio_gpfsel40]
 
-.ifndef __ARMV6
 	/**
 	 * Set GPCLK1 to 25.00Mhz
 	 */
@@ -222,25 +218,26 @@ os_irq:
 
 os_fiq:
 	push {r0-r7,lr}
+
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	macro32_dsb ip
+
 .ifndef __RASPI3B
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
-
-	ldrb r1, gpio_toggle
-	eor r1, #0b00000001                       @ Exclusive OR to toggle
-	strb r1, gpio_toggle
-
-	cmp r1, #0
-	addeq r0, r0, #equ32_gpio_gpclr1
-	addne r0, r0, #equ32_gpio_gpset1
-	mov r1, #equ32_gpio47
-	str r1, [r0]
+	/* ACT Blinker, GPIO 47 Is Preset as OUT */
+	mov r0, #47
+	mov r1, #2
+	bl gpio32_gpiotoggle
+	macro32_dsb ip
 .endif
 
 	/* Get HID IN */
@@ -256,7 +253,6 @@ os_fiq:
 macro32_debug r0, 500, 254
 	*/
 
-	macro32_dsb ip
 	pop {r0-r7,pc}
 
 /**
