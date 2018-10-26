@@ -10,8 +10,11 @@
 /* Define Debug Status */
 .equ __DEBUG, 1
 
-/* Same as Baud Rate for DMX-512, Stage Lighting */
-/*.equ __DMX, 1*/
+/* Same as Baud Rate for DMX512, Stage Lighting */
+/*.equ __DMX512, 1*/
+
+/* Baud Rate 115200 */
+/*.equ __HIGHBAUD, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -61,11 +64,20 @@ os_reset:
 	 * Timer
 	 */
 
-.ifdef __DMX
+.ifdef __DMX512
 	/* Get a 1000000hz (4 * 250000) Timer Interrupt (240000000/240) */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
 	mov r1, #0x0000                           @ High 1 Byte of decimal 239 (240 - 1), 16 bits counter on default
 	orr r1, r1, #0xEF                         @ Low 1 Byte of decimal 239, 16 bits counter on default
+	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
+.else
+.ifdef __HIGHBAUD
+	/* Get a 460652.59hz (Nearest to 4 * 115200) Timer Interrupt (240000000/521) */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
+	mov r1, #0x0200                           @ High 1 Byte of decimal 520 (521 - 1), 16 bits counter on default
+	orr r1, r1, #0x08                         @ Low 1 Byte of decimal 520, 16 bits counter on default
 	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
 	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
@@ -77,6 +89,7 @@ os_reset:
 	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
 	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
+.endif
 .endif
 
 	/**
@@ -175,7 +188,7 @@ os_fiq:
 .endif
 .endif
 
-.ifdef __DMX
+.ifdef __DMX512
 	mov r0, #21
 	ldr r1, OS_FIQ_RXFIFO
 	mov r2, #8

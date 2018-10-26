@@ -9,7 +9,7 @@
 
 /**
  * FIFO container is a block of 1-byte character.
- * First Byte: Bit[0] Break (Only RxFIFO, Receiver Stops)
+ * First Byte: Bit[0] Break (Only RxFIFO), Will Be Cleared If New Bytes with No Break Received (No Detect of Mark After Break)
  *             Bit[1] Overrun (FIFO Has Already Been Full)
  *             Bit[2] FIFO Is Fully Empty
  *             Bit[7:3] Stack Pointer, 0 to 16 (0 Is Empty, Size Is 16)
@@ -290,7 +290,7 @@ softuart32_softuarttx:
  * r0: GPIO Number
  * r1: Pointer of FIFO Container
  * r2: Number of Bits to Be Received
- * r3: Number of Stop Bits
+ * r3: Number of Stop Bits (0: Same as 1)
  *
  * Return: r0 (0 as success)
  */
@@ -308,10 +308,6 @@ softuart32_softuartreceiver:
 	count_sample   .req r8
 
 	push {r4-r8,lr}
-
-	ldrb temp, [fifo]
-	tst temp, #0b001                                 @ Check Break
-	bne softuart32_softuartreceiver_success          @ Receiver Stops If Break
 
 	mov memorymap_base, #equ32_peripherals_base
 	add memorymap_base, memorymap_base, #equ32_gpio_base
@@ -398,13 +394,14 @@ softuart32_softuartreceiver:
 		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
 		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
 
-		/* If Low State, Set Break and Error */
+		/* If Low State, Set Break and No Push */
 
 		tst num_gpio, temp
-		ldreqb temp, [fifo]
-		orreq temp, temp, #0b001                         @ Set Break
-		streqb temp, [fifo]
-		beq softuart32_softuartreceiver_success
+		ldrb temp, [fifo]
+		orreq temp, temp, #0b001                         @ Set Break If Low
+		bicne temp, temp, #0b001                         @ Clear Break If High
+		strb temp, [fifo]
+		beq softuart32_softuartreceiver_success          @ No Push If Low
 
 		/* If High State, Got Stop Bit Correctly */
 
@@ -446,7 +443,7 @@ softuart32_softuartreceiver_count_sample: .word 0x00
  * r0: GPIO Number
  * r1: Pointer of FIFO Container
  * r2: Number of Bits to Be Received
- * r3: Number of Stop Bits
+ * r3: Number of Stop Bits (0: Same as 1, 1: One Stop Bit High, 2: Two Stop Bits High, 3: One Stop Bit Low, 4: Two Stop Bits Low)
  *
  * Return: r0 (0 as success)
  */
@@ -530,10 +527,14 @@ macro32_debug_hexa fifo, 100, 112, 17
 
 	softuart32_softuarttransceiver_stopbit:
 		push {r0-r3}
-		mov r1, #1                                 @ High
+		cmp bits_stop, #3
+		movlo r1, #1                               @ High if 1 or 2 (0 is Same as 1)
+		movhs r1, #0                               @ Low if 3 and Over
 		bl gpio32_gpiotoggle
 		pop {r0-r3}
 
+		cmp bits_stop, #3
+		lsrhs bits_stop, bits_stop, #1             @ Divide by 2 if 3 and Over
 		add bits_stop, bits_receive, bits_stop
 		cmp sequence, bits_stop
 		movhs sequence, #0

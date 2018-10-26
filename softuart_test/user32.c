@@ -37,7 +37,6 @@ int32 _user_start() {
 			count_error++;
 			print32_debug( count_error, 200, 64 );
 			print32_debug( error, 200, 76 );
-			_store_8( OS_FIQ_RXFIFO, 0x04 ); // Reset FIFO
 		} else if ( ! error ) { // Check If Success
 			count_receive++;
 			print32_debug( count_receive, 200, 88 );
