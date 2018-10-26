@@ -209,13 +209,13 @@ os_fiq:
 	mov r0, #21
 	ldr r1, OS_FIQ_RXFIFO
 	mov r2, #8                                @ 8 Bits to Receive
-	mov r3, #1                                @ 1 Stop Bits
+	mov r3, #1                                @ 1 Stop Bit
 	bl softuart32_softuartreceiver
 
 	mov r0, #20
 	ldr r1, OS_FIQ_TXFIFO
 	mov r2, #8                                @ 8 Bits to Receive
-	mov r3, #1                                @ 1 Stop Bits
+	mov r3, #1                                @ 1 Stop Bit
 	bl softuart32_softuarttransceiver
 .endif
 

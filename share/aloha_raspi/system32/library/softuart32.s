@@ -16,6 +16,10 @@
  * Second Byte to 17th Byte: Bit[7:0] Character to Receive
  *
  * Break Bit[0] is implemented for receiving Break signals on protocols. This bit is automatically set or cleared.
+ * Each Break signal needs to send a byte which has all zeros and one or two stop bits with low level state.
+ * For example, DMX512 needs two Break signals and a Mark After Break (MAB) signal to start sending actual data.
+ * A MAB is a high level state for a while.
+ * If the byte has one and over, this accidentally triggers MAB and receiving bytes make glitches afterward.
  */
 
 /**
