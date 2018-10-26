@@ -204,7 +204,7 @@ os_fiq:
 	ldr r1, OS_FIQ_TXFIFO
 	mov r2, #8                                @ 8 Bits to Receive
 	mov r3, #2                                @ 2 Stop Bits
-	bl softuart32_softuarttransceiver
+	bl softuart32_softuarttransmitter
 .else
 	mov r0, #21
 	ldr r1, OS_FIQ_RXFIFO
@@ -216,7 +216,7 @@ os_fiq:
 	ldr r1, OS_FIQ_TXFIFO
 	mov r2, #8                                @ 8 Bits to Receive
 	mov r3, #1                                @ 1 Stop Bit
-	bl softuart32_softuarttransceiver
+	bl softuart32_softuarttransmitter
 .endif
 
 	pop {r0-r7,pc}

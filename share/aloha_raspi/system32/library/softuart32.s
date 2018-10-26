@@ -24,7 +24,7 @@
 
 /**
  * To get a sample at the almost center of a signal (which means one bit) in Receiver,
- * sample rate of Receiver/Transceiver is multiple of baud rate and 4.
+ * sample rate of Receiver/Transmitter is multiple of baud rate and 4.
  * This sample rate makes up to 25 percents phase shift.
  * 50 percents of acceptable error of baud rate is reduced by this phase shift.
  * If you sent 8 bits, which you need 10 bits because of addition of start and stop bits,
@@ -451,8 +451,8 @@ softuart32_softuartreceiver_count_sample: .word 0x00
 
 
 /**
- * function softuart32_softuarttransceiver
- * Transceiver from Software UART
+ * function softuart32_softuarttransmitter
+ * Transmitter from Software UART
  *
  * Parameters
  * r0: GPIO Number
@@ -462,8 +462,8 @@ softuart32_softuartreceiver_count_sample: .word 0x00
  *
  * Return: r0 (0 as success)
  */
-.globl softuart32_softuarttransceiver
-softuart32_softuarttransceiver:
+.globl softuart32_softuarttransmitter
+softuart32_softuarttransmitter:
 	/* Auto (Local) Variables, but just Aliases */
 	num_gpio     .req r0
 	fifo         .req r1
@@ -476,30 +476,30 @@ softuart32_softuarttransceiver:
 
 	push {r4-r7,lr}
 
-	ldr sequence, softuart32_softuarttransceiver_sequence
-	ldr count_sample, softuart32_softuarttransceiver_count_sample
+	ldr sequence, softuart32_softuarttransmitter_sequence
+	ldr count_sample, softuart32_softuarttransmitter_count_sample
 
 	cmp count_sample, #0
 	moveq count_sample, #3                        @ Sample Rate 4 in One Bit
-	beq softuart32_softuarttransceiver_jump
+	beq softuart32_softuarttransmitter_jump
 
 	sub count_sample, count_sample, #1
 
-	b softuart32_softuarttransceiver_success
+	b softuart32_softuarttransmitter_success
 
-	softuart32_softuarttransceiver_jump:
+	softuart32_softuarttransmitter_jump:
 
 		cmp sequence, bits_receive
-		bhi softuart32_softuarttransceiver_stopbit
+		bhi softuart32_softuarttransmitter_stopbit
 		cmp sequence, #0
-		beq softuart32_softuarttransceiver_startbit
+		beq softuart32_softuarttransmitter_startbit
 
-		b softuart32_softuarttransceiver_character
+		b softuart32_softuarttransmitter_character
 
-	softuart32_softuarttransceiver_startbit:
+	softuart32_softuarttransmitter_startbit:
 		ldr temp, [fifo]
 		tst temp, #0b100
-		bne softuart32_softuarttransceiver_success
+		bne softuart32_softuarttransmitter_success
 
 		push {r0-r3}
 		mov r1, #0                                @ Low
@@ -521,12 +521,12 @@ macro32_debug byte, 100, 100
 macro32_debug_hexa fifo, 100, 112, 17
 */
 
-		str byte, softuart32_softuarttransceiver_byte
+		str byte, softuart32_softuarttransmitter_byte
 		add sequence, sequence, #1
-		b softuart32_softuarttransceiver_success
+		b softuart32_softuarttransmitter_success
 
-	softuart32_softuarttransceiver_character:
-		ldr byte, softuart32_softuarttransceiver_byte
+	softuart32_softuarttransmitter_character:
+		ldr byte, softuart32_softuarttransmitter_byte
 		sub temp, sequence, #1
 		lsr byte, byte, temp
 
@@ -538,9 +538,9 @@ macro32_debug_hexa fifo, 100, 112, 17
 		pop {r0-r3}
 
 		add sequence, sequence, #1
-		b softuart32_softuarttransceiver_success
+		b softuart32_softuarttransmitter_success
 
-	softuart32_softuarttransceiver_stopbit:
+	softuart32_softuarttransmitter_stopbit:
 		push {r0-r3}
 		cmp bits_stop, #3
 		movlo r1, #1                               @ High if 1 or 2 (0 is Same as 1)
@@ -555,12 +555,12 @@ macro32_debug_hexa fifo, 100, 112, 17
 		movhs sequence, #0
 		addlo sequence, sequence, #1
 
-	softuart32_softuarttransceiver_success:
-		str sequence, softuart32_softuarttransceiver_sequence
-		str count_sample, softuart32_softuarttransceiver_count_sample
+	softuart32_softuarttransmitter_success:
+		str sequence, softuart32_softuarttransmitter_sequence
+		str count_sample, softuart32_softuarttransmitter_count_sample
 		mov r0, #0
 
-	softuart32_softuarttransceiver_common:
+	softuart32_softuarttransmitter_common:
 		macro32_dsb ip
 		pop {r4-r7,pc}
 
@@ -573,7 +573,7 @@ macro32_debug_hexa fifo, 100, 112, 17
 .unreq byte
 .unreq count_sample
 
-softuart32_softuarttransceiver_sequence:     .word 0x00
-softuart32_softuarttransceiver_byte:         .word 0x00
-softuart32_softuarttransceiver_count_sample: .word 0x00
+softuart32_softuarttransmitter_sequence:     .word 0x00
+softuart32_softuarttransmitter_byte:         .word 0x00
+softuart32_softuarttransmitter_count_sample: .word 0x00
 
