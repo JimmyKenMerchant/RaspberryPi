@@ -118,9 +118,14 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0   @ Set GPIO 20 OUTPUT
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0   @ Set GPIO 20 OUTPUT (Software UART Tx)
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT (Software UART Rx)
 	str r1, [r0, #equ32_gpio_gpfsel20]
+
+	/* Set Status Detect */
+	ldr r1, [r0, #equ32_gpio_gpfen0]
+	orr r1, r1, #equ32_gpio21                                      @ Set GPIO21 (Software UART Rx) Falling Edge Detect
+	str r1, [r0, #equ32_gpio_gpfen0]
 
 	macro32_dsb ip
 
@@ -191,26 +196,26 @@ os_fiq:
 .ifdef __DMX512
 	mov r0, #21
 	ldr r1, OS_FIQ_RXFIFO
-	mov r2, #8
-	mov r3, #2
+	mov r2, #8                                @ 8 Bits to Receive
+	mov r3, #2                                @ 2 Stop Bits
 	bl softuart32_softuartreceiver
 
 	mov r0, #20
 	ldr r1, OS_FIQ_TXFIFO
-	mov r2, #8
-	mov r3, #2
+	mov r2, #8                                @ 8 Bits to Receive
+	mov r3, #2                                @ 2 Stop Bits
 	bl softuart32_softuarttransceiver
 .else
 	mov r0, #21
 	ldr r1, OS_FIQ_RXFIFO
-	mov r2, #8
-	mov r3, #1
+	mov r2, #8                                @ 8 Bits to Receive
+	mov r3, #1                                @ 1 Stop Bits
 	bl softuart32_softuartreceiver
 
 	mov r0, #20
 	ldr r1, OS_FIQ_TXFIFO
-	mov r2, #8
-	mov r3, #1
+	mov r2, #8                                @ 8 Bits to Receive
+	mov r3, #1                                @ 1 Stop Bits
 	bl softuart32_softuarttransceiver
 .endif
 

@@ -9,11 +9,13 @@
 
 /**
  * FIFO container is a block of 1-byte character.
- * First Byte: Bit[0] Break (Only RxFIFO), Will Be Cleared If New Bytes with No Break Received (No Detect of Mark After Break)
+ * First Byte: Bit[0] Break (Only RxFIFO), Will Be Cleared If New Bytes with No Break Received
  *             Bit[1] Overrun (FIFO Has Already Been Full)
  *             Bit[2] FIFO Is Fully Empty
  *             Bit[7:3] Stack Pointer, 0 to 16 (0 Is Empty, Size Is 16)
  * Second Byte to 17th Byte: Bit[7:0] Character to Receive
+ *
+ * Break Bit[0] is implemented for receiving Break signals on protocols. This bit is automatically set or cleared.
  */
 
 /**
@@ -339,11 +341,14 @@ softuart32_softuartreceiver:
 		mov temp, #1
 		lsl num_gpio, temp, num_gpio
 
-		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
-		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
+		/* Falling Edge Detection (Needs to Set Status Detection to GPIO) and Clear */
+		ldrls temp, [memorymap_base, #equ32_gpio_gpeds0]
+		strls num_gpio, [memorymap_base, #equ32_gpio_gpeds0]
+		ldrhi temp, [memorymap_base, #equ32_gpio_gpeds1]
+		strhi num_gpio, [memorymap_base, #equ32_gpio_gpeds1]
 
 		tst num_gpio, temp
-		bne softuart32_softuartreceiver_success
+		beq softuart32_softuartreceiver_success
 
 		/* If Low State, Beginning of Receving */
 
@@ -360,8 +365,11 @@ softuart32_softuartreceiver:
 		mov temp, #1
 		lsl num_gpio, temp, num_gpio
 
+		/* High/Low Level Check and Clear Falling Edge Detection */
 		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
+		strls num_gpio, [memorymap_base, #equ32_gpio_gpeds0]
 		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
+		strhi num_gpio, [memorymap_base, #equ32_gpio_gpeds1]
 
 		tst num_gpio, temp
 
@@ -391,8 +399,11 @@ softuart32_softuartreceiver:
 		mov temp, #1
 		lsl num_gpio, temp, num_gpio
 
+		/* High/Low Level Check and Clear Falling Edge Detection */
 		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
+		strls num_gpio, [memorymap_base, #equ32_gpio_gpeds0]
 		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
+		strhi num_gpio, [memorymap_base, #equ32_gpio_gpeds1]
 
 		/* If Low State, Set Break and No Push */
 
@@ -443,7 +454,7 @@ softuart32_softuartreceiver_count_sample: .word 0x00
  * r0: GPIO Number
  * r1: Pointer of FIFO Container
  * r2: Number of Bits to Be Received
- * r3: Number of Stop Bits (0: Same as 1, 1: One Stop Bit High, 2: Two Stop Bits High, 3: One Stop Bit Low, 4: Two Stop Bits Low)
+ * r3: Number of Stop Bits (0: Same as 1, 1: One Stop Bit High, 2: Two Stop Bits High, 3: One Stop Bit Low for Break Signal, 4: Two Stop Bits Low for Break Signal)
  *
  * Return: r0 (0 as success)
  */
