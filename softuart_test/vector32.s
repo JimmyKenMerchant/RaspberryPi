@@ -200,6 +200,14 @@ os_fiq:
 	mov r3, #2                                @ 2 Stop Bits
 	bl softuart32_softuartreceiver
 
+	ldr r0, OS_FIQ_RXFIFO
+	ldrb r0, [r0]
+
+	ldr r1, OS_FIQ_BREAK
+	tst r0, #0b1
+	addne r1, r1, #1                          @ Increment If Break, Counts Bits from Break
+	str r1, OS_FIQ_BREAK
+
 	mov r0, #20
 	ldr r1, OS_FIQ_TXFIFO
 	mov r2, #8                                @ 8 Bits to Receive
@@ -212,6 +220,14 @@ os_fiq:
 	mov r3, #1                                @ 1 Stop Bit
 	bl softuart32_softuartreceiver
 
+	ldr r0, OS_FIQ_RXFIFO
+	ldrb r0, [r0]
+
+	ldr r1, OS_FIQ_BREAK
+	tst r0, #0b1
+	addne r1, r1, #1                          @ Increment If Break, Counts Bits from Break
+	str r1, OS_FIQ_BREAK
+
 	mov r0, #20
 	ldr r1, OS_FIQ_TXFIFO
 	mov r2, #8                                @ 8 Bits to Receive
@@ -223,8 +239,10 @@ os_fiq:
 
 .globl OS_FIQ_RXFIFO
 .globl OS_FIQ_TXFIFO
+.globl OS_FIQ_BREAK
 OS_FIQ_RXFIFO: .word 0x00
 OS_FIQ_TXFIFO: .word 0x00
+OS_FIQ_BREAK:  .word 0x00
 
 /**
  * Variables

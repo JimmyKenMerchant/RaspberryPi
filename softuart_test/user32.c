@@ -12,6 +12,7 @@
 
 extern uint32 OS_FIQ_RXFIFO;
 extern uint32 OS_FIQ_TXFIFO;
+extern uint32 OS_FIQ_BREAK;
 
 uint32 memory_space_rx;
 uint32 memory_space_tx;
@@ -44,6 +45,8 @@ int32 _user_start() {
 
 		print32_debug_hexa( memory_space_rx, 200, 100, 4 );
 		print32_debug_hexa( memory_space_tx, 200, 112, 4 );
+
+		print32_debug( OS_FIQ_BREAK, 200, 136 );
 
 		_store_8( memory_space_tx, increment );
 		increment++;
