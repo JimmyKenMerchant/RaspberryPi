@@ -9,7 +9,7 @@
 
 /**
  * FIFO container is a block of 1-byte character.
- * First Byte: Bit[0] Break (Only RxFIFO), Will Be Cleared If New Bytes with No Break Received
+ * First Byte: Bit[0] Break (Only RxFIFO), Will Be Cleared If Mark After Break (MAB) Received
  *             Bit[1] Overrun (FIFO Has Already Been Full)
  *             Bit[2] FIFO Is Fully Empty
  *             Bit[7:3] Stack Pointer, 0 to 16 (0 Is Empty, Size Is 16)
@@ -321,6 +321,10 @@ softuart32_softuartreceiver:
 	ldr sequence, softuart32_softuartreceiver_sequence
 	ldr count_sample, softuart32_softuartreceiver_count_sample
 
+	ldrb temp, [fifo]
+	tst temp, #0b001                                 @ Check Break
+	bne softuart32_softuartreceiver_mab              @ Mark After Break (High State) Check If Break
+
 	cmp sequence, #0
 	beq softuart32_softuartreceiver_startbit
 
@@ -345,14 +349,11 @@ softuart32_softuartreceiver:
 		mov temp, #1
 		lsl num_gpio, temp, num_gpio
 
-		/* Falling Edge Detection (Needs to Set Status Detection to GPIO) and Clear */
-		ldrls temp, [memorymap_base, #equ32_gpio_gpeds0]
-		strls num_gpio, [memorymap_base, #equ32_gpio_gpeds0]
-		ldrhi temp, [memorymap_base, #equ32_gpio_gpeds1]
-		strhi num_gpio, [memorymap_base, #equ32_gpio_gpeds1]
+		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
+		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
 
 		tst num_gpio, temp
-		beq softuart32_softuartreceiver_success
+		bne softuart32_softuartreceiver_success
 
 		/* If Low State, Beginning of Receving */
 
@@ -369,11 +370,8 @@ softuart32_softuartreceiver:
 		mov temp, #1
 		lsl num_gpio, temp, num_gpio
 
-		/* High/Low Level Check and Clear Falling Edge Detection */
 		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
-		strls num_gpio, [memorymap_base, #equ32_gpio_gpeds0]
 		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
-		strhi num_gpio, [memorymap_base, #equ32_gpio_gpeds1]
 
 		tst num_gpio, temp
 
@@ -403,20 +401,16 @@ softuart32_softuartreceiver:
 		mov temp, #1
 		lsl num_gpio, temp, num_gpio
 
-		/* High/Low Level Check and Clear Falling Edge Detection */
 		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
-		strls num_gpio, [memorymap_base, #equ32_gpio_gpeds0]
 		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
-		strhi num_gpio, [memorymap_base, #equ32_gpio_gpeds1]
 
 		/* If Low State, Set Break and No Push */
 
 		tst num_gpio, temp
-		ldrb temp, [fifo]
-		orreq temp, temp, #0b001                         @ Set Break If Low
-		bicne temp, temp, #0b001                         @ Clear Break If High
-		strb temp, [fifo]
-		beq softuart32_softuartreceiver_success          @ No Push If Low
+		ldreqb temp, [fifo]
+		orreq temp, temp, #0b001                         @ Set Break
+		streqb temp, [fifo]
+		beq softuart32_softuartreceiver_success
 
 		/* If High State, Got Stop Bit Correctly */
 
@@ -425,6 +419,26 @@ softuart32_softuartreceiver:
 		ldr r1, softuart32_softuartreceiver_byte
 		bl softuart32_push
 		pop {r0-r3}
+
+		b softuart32_softuartreceiver_success
+
+	softuart32_softuartreceiver_mab:
+		cmp num_gpio, #31
+		subhi num_gpio, num_gpio, #32
+		mov temp, #1
+		lsl num_gpio, temp, num_gpio
+
+		ldrls temp, [memorymap_base, #equ32_gpio_gplev0]
+		ldrhi temp, [memorymap_base, #equ32_gpio_gplev1]
+
+		tst num_gpio, temp
+
+		/* If High State, Clear Break */
+
+		tst num_gpio, temp
+		ldrneb temp, [fifo]
+		bicne temp, temp, #0b001                         @ Set Break
+		strneb temp, [fifo]
 
 	softuart32_softuartreceiver_success:
 		str sequence, softuart32_softuartreceiver_sequence

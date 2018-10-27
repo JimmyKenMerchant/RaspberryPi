@@ -122,11 +122,6 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT (Software UART Rx)
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-	/* Set Status Detect */
-	ldr r1, [r0, #equ32_gpio_gpfen0]
-	orr r1, r1, #equ32_gpio21                                      @ Set GPIO21 (Software UART Rx) Falling Edge Detect
-	str r1, [r0, #equ32_gpio_gpfen0]
-
 	macro32_dsb ip
 
 	/* FIFO Continers, Allocate and Initialize */
