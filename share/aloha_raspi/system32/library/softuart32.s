@@ -433,11 +433,11 @@ softuart32_softuartreceiver:
 
 		tst num_gpio, temp
 
-		/* If High State, Clear Break */
+		/* If High State (Mark After Break: MAB), Clear Break */
 
 		tst num_gpio, temp
 		ldrneb temp, [fifo]
-		bicne temp, temp, #0b001                         @ Set Break
+		bicne temp, temp, #0b001                         @ Clear Break
 		strneb temp, [fifo]
 
 	softuart32_softuartreceiver_success:
