@@ -10,6 +10,9 @@
 /* Define Debug Status */
 .equ __DEBUG, 1
 
+/* Baud Rate 115200 */
+/*.equ __HIGHBAUD, 1*/
+
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
@@ -68,13 +71,23 @@ os_reset:
 	 * Timer
 	 */
 
-	/* Get a 960hz Timer Interrupt (480000/500) */
+.ifdef __HIGHBAUD
+	/* Get a 460652.59hz (Nearest to 4 * 115200) Timer Interrupt (240000000/521) */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
-	mov r1, #0x100                            @ High 1 Byte of decimal 499 (500 - 1), 16 bits counter on default
-	orr r1, r1, #0x0F3                        @ Low 1 Byte of decimal 499, 16 bits counter on default
-	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
-	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
+	mov r1, #0x0200                           @ High 1 Byte of decimal 520 (521 - 1), 16 bits counter on default
+	orr r1, r1, #0x08                         @ Low 1 Byte of decimal 520, 16 bits counter on default
+	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
+.else
+	/* Get a 153550.86hz (Nearest to 4 * 38400) Timer Interrupt (240000000/1563) */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
+	mov r1, #0x0600                           @ High 1 Byte of decimal 1562 (1563 - 1), 16 bits counter on default
+	orr r1, r1, #0x1A                         @ Low 1 Byte of decimal 1562, 16 bits counter on default
+	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
+.endif
 
 	/**
 	 * GPIO
@@ -102,23 +115,23 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 ALT 0 as GPCLK1
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK1
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gpren0]
-	orr r1, r1, #equ32_gpio05                                      @ Set GPIO5 Rising Edge Detect
+	orr r1, r1, #equ32_gpio04                                      @ Set GPIO4 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
 
 	/**
-	 * Clock Manager for GPCLK1. Make 4800Hz
+	 * Clock Manager for GPCLK. Make 25000Hz
 	 */
-	mov r0, #equ32_cm_gp1
+	mov r0, #equ32_cm_gp0
 	mov r1, #equ32_cm_ctl_mash_1
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #4000<<equ32_cm_div_integer
+	mov r2, #768<<equ32_cm_div_integer
 	bl arm32_clockmanager
 
 	pop {pc}
@@ -130,10 +143,15 @@ os_debug:
 os_irq:
 	push {r0-r12,lr}
 
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
+
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
 	ldr r1, [r0, #equ32_interrupt_pending_irqs2]
-macro32_debug r1, 100, 88
+/*macro32_debug r1, 100, 88*/
 
 	macro32_dsb ip
 
@@ -141,20 +159,21 @@ macro32_debug r1, 100, 88
 	add r0, r0, #equ32_gpio_base
 	ldr r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
 	str r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
-macro32_debug r1, 100, 100
+/*macro32_debug r1, 100, 100*/
 
 	macro32_dsb ip
 
-	ldr r0, os_irq_count
+	ldr r0, OS_IRQ_COUNT
 	add r0, r0, #1
-	str r0, os_irq_count
-macro32_debug r0, 100, 112
+	str r0, OS_IRQ_COUNT
+/*macro32_debug r0, 100, 112*/
 
 	macro32_dsb ip
 
 	pop {r0-r12,pc}
 
-os_irq_count: .word 0x00
+.globl OS_IRQ_COUNT
+OS_IRQ_COUNT: .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}
@@ -181,7 +200,17 @@ os_fiq:
 .endif
 .endif
 
+	ldr r0, OS_FIQ_COUNT
+	add r0, r0, #1
+	str r0, OS_FIQ_COUNT
+/*macro32_debug r0, 100, 124*/
+
+	macro32_dsb ip
+
 	pop {r0-r7,pc}
+
+.globl OS_FIQ_COUNT
+OS_FIQ_COUNT: .word 0x00
 
 /**
  * Variables
