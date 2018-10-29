@@ -1,0 +1,198 @@
+/**
+ * vector32.s
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+/* Define Debug Status */
+.equ __DEBUG, 1
+
+.include "system32/equ32.s"
+.include "system32/macro32.s"
+
+.ifdef __ARMV6
+	.include "vector32/el01_armv6.s"
+	.include "vector32/el3_armv6.s"
+.else
+	.include "vector32/el01_armv7.s"
+	.include "vector32/el2_armv7.s"
+	.include "vector32/el3_armv7.s"
+.endif
+
+.include "vector32/os.s"
+
+os_reset:
+	push {lr}
+
+	/**
+	 * Video
+	 */
+
+.ifdef __DEBUG
+	/* Obtain Framebuffer from VideoCore IV */
+	bl bcm32_get_framebuffer
+.else
+	mov r0, #1
+	bl bcm32_display_off
+.endif
+
+	/**
+	 * Interrupt
+	 */
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_interrupt_base
+
+	mvn r1, #0                                       @ Whole Inverter
+	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All IRQs
+	str r1, [r0, #equ32_interrupt_disable_irqs2]
+	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
+
+	/**
+	 * Enable GPIO IRQ
+	 * INT[0] is for 0-27 Pins
+	 * INT[1] is for 28-45 Pins
+	 * INT[2] is for 46-53 Pins
+	 * INT[3] is for All Pins
+	 */
+	mov r1, #0b1111<<17                              @ GPIO INT[3:0]
+	str r1, [r0, #equ32_interrupt_enable_irqs2]
+
+	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
+	str r1, [r0, #equ32_interrupt_fiq_control]
+
+	/**
+	 * Timer
+	 */
+
+	/* Get a 960hz Timer Interrupt (480000/500) */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
+	mov r1, #0x100                            @ High 1 Byte of decimal 499 (500 - 1), 16 bits counter on default
+	orr r1, r1, #0x0F3                        @ Low 1 Byte of decimal 499, 16 bits counter on default
+	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
+
+	/**
+	 * GPIO
+	 */
+
+	/* GPIO0-45 Reset and Pull Down */
+	bl gpio32_gpioreset
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+
+.ifndef __RASPI3B
+	/* USB Current Up */
+	ldr r1, [r0, #equ32_gpio_gpfsel30]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8   @ Set GPIO 38 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel30]
+
+	macro32_dsb ip
+
+	/* Set USB Current Up (RasPi3 has already as default) */
+	mov r1, #equ32_gpio38
+	str r1, [r0, #equ32_gpio_gpset1]                               @ GPIO 38 OUTPUT High
+.endif
+
+	/* I/O Settings */
+
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 ALT 0 as GPCLK1
+	str r1, [r0, #equ32_gpio_gpfsel00]
+
+	/* Set Status Detect */
+	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio05                                      @ Set GPIO5 Rising Edge Detect
+	str r1, [r0, #equ32_gpio_gpren0]
+
+	macro32_dsb ip
+
+	/**
+	 * Clock Manager for GPCLK1. Make 4800Hz
+	 */
+	mov r0, #equ32_cm_gp1
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #4000<<equ32_cm_div_integer
+	bl arm32_clockmanager
+
+	pop {pc}
+
+os_debug:
+	push {lr}
+	pop {pc}
+
+os_irq:
+	push {r0-r12,lr}
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_interrupt_base
+	ldr r1, [r0, #equ32_interrupt_pending_irqs2]
+macro32_debug r1, 100, 88
+
+	macro32_dsb ip
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+	ldr r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
+	str r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
+macro32_debug r1, 100, 100
+
+	macro32_dsb ip
+
+	ldr r0, os_irq_count
+	add r0, r0, #1
+	str r0, os_irq_count
+macro32_debug r0, 100, 112
+
+	macro32_dsb ip
+
+	pop {r0-r12,pc}
+
+os_irq_count: .word 0x00
+
+os_fiq:
+	push {r0-r7,lr}
+
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
+
+	/* Clear Timer Interrupt */
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_armtimer_base
+	mov r1, #0
+	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
+	macro32_dsb ip
+
+.ifdef __DEBUG
+.ifndef __RASPI3B
+	/* ACT Blinker */
+	mov r0, #47
+	mov r1, #2
+	bl gpio32_gpiotoggle
+	macro32_dsb ip
+.endif
+.endif
+
+	pop {r0-r7,pc}
+
+/**
+ * Variables
+ */
+.balign 4
+_string_hello:
+	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+.balign 4
+string_hello:
+	.word _string_hello
+
+.include "addr32.s" @ If you want binary, use `.incbin`
+
+/* End of Line is Needed */
