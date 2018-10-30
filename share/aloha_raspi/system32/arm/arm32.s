@@ -605,38 +605,56 @@ arm32_sleep:
 	count_high     .req r2 @ Scratch Register
 	time_low       .req r3 @ Scratch Register
 	time_high      .req r4
+	memorymap_base .req r5
 
-	push {r4,lr}
+	push {r4-r5,lr}
 
-	push {r0}
-	bl arm32_timestamp
-	mov count_high, r1
-	mov count_low, r0
-	pop {r0}
+	mov memorymap_base, #equ32_peripherals_base
+	add memorymap_base, memorymap_base, #equ32_systemtimer_base
 
-	adds count_low, usecond                                     @ Add with Changing Status Flags
-	adc count_high, #0                                          @ Add with Carry Flag
+	/**
+	 * Mills,D.L. & Venters,S. 2012 Timestamp Capture Principle.
+	 * https://www.eecis.udel.edu/~mills/stamp.html
+	 *
+	 * Reference About 64-bit Counter in 32-bit System
+	 * (As of March 4, 2018) https://stackoverflow.com/questions/5162673/how-to-read-two-32bit-counters-as-a-64bit-integer-without-race-condition
+	 */
+	arm32_sleep_gettime:
+		ldr count_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+		ldr count_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
+		macro32_dsb ip
+		ldr ip, [memorymap_base, #equ32_systemtimer_counter_higher]         @ Get Higher 32 Bits
+		cmp count_high, ip
+		bne arm32_sleep_gettime
+
+	adds count_low, usecond                                                 @ Add with Changing Status Flags
+	adc count_high, #0                                                      @ Add with Carry Flag
 
 	arm32_sleep_loop:
-		push {r0-r2}
-		bl arm32_timestamp
-		mov time_low, r0
-		mov time_high, r1
-		pop {r0-r2}
-		cmp count_high, time_high                                   @ Similar to `SUBS`, Compare Higher 32 Bits
-		blo arm32_sleep_common                                      @ End Loop If Higher Timer Reaches
-		cmpeq count_low, time_low                                   @ Compare Lower 32 Bits If Higher 32 Bits Are Same
+
+		arm32_sleep_loop_gettime:
+			ldr time_high, [memorymap_base, #equ32_systemtimer_counter_higher] @ Get Higher 32 Bits
+			ldr time_low, [memorymap_base, #equ32_systemtimer_counter_lower]   @ Get Lower 32 Bits
+			macro32_dsb ip
+			ldr ip, [memorymap_base, #equ32_systemtimer_counter_higher]        @ Get Higher 32 Bits
+			cmp time_high, ip
+			bne arm32_sleep_loop_gettime
+
+		cmp count_high, time_high                                           @ Similar to `SUBS`, Compare Higher 32 Bits
+		blo arm32_sleep_common                                              @ End Loop If Higher Timer Reaches
+		cmpeq count_low, time_low                                           @ Compare Lower 32 Bits If Higher 32 Bits Are Same
 		bhi arm32_sleep_loop
 
 	arm32_sleep_common:
 		mov r0, #0
-		pop {r4,pc}
+		pop {r4-r5,pc}
 
 .unreq usecond
 .unreq count_low
 .unreq count_high
 .unreq time_low
 .unreq time_high
+.unreq memorymap_base
 
 
 /**
@@ -1748,6 +1766,10 @@ arm32_tst:
 /**
  * function arm32_timestamp
  * Get 64-bit Timestamp from System Timer
+ * Caution! This Function has an atomic procedure, preventing interrupts, IRQ and FIQ.
+ * Particularly, the atomic procedure seems to prevent IRQ because FIQ has a priority rather than IRQ.
+ * Memo (Not Examined): Entering modes with SVC, SMC, HVC, or Interrupts seems to keep other interrupts able,
+ * even if you have marked diable bits on cpsr at previous entering. Needed to search any documents about this.
  *
  * Return: r0 (Lower 32 Bits of Timestamp), r1 (Higher 32 Bits of Timestamp)
  */

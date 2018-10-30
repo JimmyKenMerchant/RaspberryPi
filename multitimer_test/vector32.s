@@ -126,7 +126,7 @@ os_reset:
 	macro32_dsb ip
 
 	/**
-	 * Clock Manager for GPCLK. Make 25000Hz
+	 * Clock Manager for GPCLK1. Make 25000Hz
 	 */
 	mov r0, #equ32_cm_gp0
 	mov r1, #equ32_cm_ctl_mash_1
