@@ -291,7 +291,7 @@ _os_undefined_instruction_remark:      .ascii "\x1B[0mUndefined Instruction At:\
 
 
 _os_svc:
-	cpsie afi                                @ Enable FIQ, IRQ, and Aborts
+	cpsie ai                                 @ Enable IRQ and Aborts, FIQ Is Automatically Enabled (Effective Only for One Time)
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
@@ -594,7 +594,6 @@ _os_svc:
 
 	_os_svc_common:
 		pop {lr}                         @ Pop lr
-		cpsid afi                        @ Disable FIQ, IRQ, and Aborts
 		movs pc, lr
 
 
@@ -626,7 +625,7 @@ _os_data_abort_remark:      .ascii "\x1B[0mData Abort At:\0"
 
 _os_irq:
 	/*cpsid i*/                                  @ Disable IRQ(i) Automatically (IRQ Will be Disabled on Every Exceptions)
-	cpsie a                                      @ Enable Aborts
+	cpsie a                                      @ Enable Aborts (Effective Only for One Time)
 	push {lr}
 
 	/*push {r0-r12,lr}*/                         @ Equals to stmfd (stack pointer full, decrement order)
@@ -634,15 +633,14 @@ _os_irq:
 	bl os_irq
 
 	/*pop {r0-r12,lr}*/                          @ Equals to ldmfd (stack pointer full, decrement order)
+
 	pop {lr}
-	/*cpsie i*/                                  @ Enable IRQ(i) Automatically by SPSR to CPSR
-	cpsid a                                      @ Disable Aborts
 	subs pc, lr, #4
 
 
 _os_fiq:
 	/*cpsid fi*/                                 @ Disable FIQ(f) and IRQ(i) Automatically
-	cpsie a                                      @ Enable Aborts
+	cpsie a                                      @ Enable Aborts (Effective Only for One Time)
 	push {lr}
 
 	/*push {r0-r7,lr}*/                          @ Equals to stmfd (stack pointer full, decrement order)
@@ -656,6 +654,4 @@ _os_fiq:
 	/*pop {r0-r7,lr}*/                           @ Equals to ldmfd (stack pointer full, decrement order)
 
 	pop {lr}
-	/*cpsie fi*/                                 @ Enable FIQ(f) and IRQ(i) Automatically by SPSR to CPSR
-	cpsid a                                      @ Disable Aborts
 	subs pc, lr, #4
