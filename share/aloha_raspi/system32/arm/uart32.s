@@ -64,6 +64,43 @@ uart32_uartinit:
 
 
 /**
+ * function uart32_uartbreak
+ * Set/Unset Break Signal
+ *
+ * Parameters
+ * r0: 0 as Unset Break, 1 as Set Break
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl uart32_uartbreak
+uart32_uartbreak:
+	/* Auto (Local) Variables, but just Aliases */
+	flag_break      .req r0
+	line_ctl        .req r1
+	addr_uart       .req r2
+
+	mov addr_uart, #equ32_peripherals_base
+	add addr_uart, addr_uart, #equ32_uart0_base_upper
+	add addr_uart, addr_uart, #equ32_uart0_base_lower
+
+	ldr line_ctl, [addr_uart, #equ32_uart0_lcrh]
+	cmp flag_break, #0
+	biceq line_ctl, line_ctl, #equ32_uart0_lcrh_brk
+	orrne line_ctl, line_ctl, #equ32_uart0_lcrh_brk
+	str line_ctl, [addr_uart, #equ32_uart0_lcrh]
+
+	macro32_dsb ip
+
+	uart32_uartbreak_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq flag_break
+.unreq line_ctl
+.unreq addr_uart
+
+
+/**
  * function uart32_uartsettest
  * Test Data On/Off and Transmit/Receive On/Off
  *
