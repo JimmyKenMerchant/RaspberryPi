@@ -27,8 +27,8 @@ dmx32_dmx512doublebuffer_init:
 
 	str num_data, DMX32_BUFFER_LENGTH
 
-	lsr num_data, num_data, #2
-	add num_data, num_data, #1
+	lsr num_data, num_data, #2              @ Divide by 4
+	add num_data, num_data, #1              @ Complement for Remainder
 
 	push {r0}
 	bl heap32_malloc
@@ -64,9 +64,6 @@ dmx32_dmx512doublebuffer_init:
 		pop {pc}
 
 .unreq num_data
-.unreq data_point
-.unreq sequence
-.unreq memorymap_base
 .unreq temp
 
 .globl DMX32_BUFFER_FRONT
@@ -96,6 +93,8 @@ dmx32_dmx512doublebuffer:
 	bl dmx32_dmx512transmitter
 	cmp r0, #1
 	bne dmx32_dmx512doublebuffer_common
+
+	/* Flip Front/Back If A Packet Reaches End */
 
 	ldr temp, DMX32_BUFFER_FRONT
 	ldr temp2, DMX32_BUFFER_BACK
@@ -153,18 +152,22 @@ dmx32_dmx512transmitter:
 	b dmx32_dmx512transmitter_data
 
 	dmx32_dmx512transmitter_break:
+		/*
 		push {r0-r3}
 		mov r0, #1
 		bl uart32_uartbreak
 		pop {r0-r3}
+		*/
 
 		b dmx32_dmx512transmitter_success
 
 	dmx32_dmx512transmitter_mab:
+		/*
 		push {r0-r3}
 		mov r0, #0
 		bl uart32_uartbreak
 		pop {r0-r3}
+		*/
 
 		b dmx32_dmx512transmitter_success
 
@@ -174,12 +177,10 @@ dmx32_dmx512transmitter:
 		bge dmx32_dmx512transmitter_successend
 
 		push {r0-r3}
-		ldr r0, [data_point, temp]
+		add r0, data_point, temp
 		mov r1, #1
 		bl uart32_uarttx
 		pop {r0-r3}
-
-		b dmx32_dmx512transmitter_success
 
 	dmx32_dmx512transmitter_success:
 		add sequence, sequence, #1
@@ -247,12 +248,13 @@ dmx32_dmx512receiver:
 	tst temp, #0x1B                   @ Whether Overrun, Parity Error, Framing Error, Not Received, or Not
 	bne dmx32_dmx512receiver_common   @ If Overrun, Parity Error, Framing Error, Not Received
 
+	/* Increment Sequence Number If Character Is Received */
 	add sequence, sequence, #1
 
 	dmx32_dmx512receiver_common:
 		str sequence, dmx32_dmx512receiver_sequence
 		macro32_dsb ip
-		mov r0, sequence
+		mov r0, #0
 		pop {pc}
 
 .unreq data_point

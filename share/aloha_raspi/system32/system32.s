@@ -127,6 +127,8 @@ SYSTEM32_BUFFER_SIZE: .word SYSTEM32_BUFFER_END - SYSTEM32_BUFFER
 .balign 4
 .include "system32/library/softuart32.s"
 .balign 4
+.include "system32/library/dmx32.s"
+.balign 4
 .include "system32/library/font_mono_12px.s"
 .balign 4
 .include "system32/library/color.s"
