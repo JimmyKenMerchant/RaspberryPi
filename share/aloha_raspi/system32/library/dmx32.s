@@ -152,22 +152,18 @@ dmx32_dmx512transmitter:
 	b dmx32_dmx512transmitter_data
 
 	dmx32_dmx512transmitter_break:
-		/*
 		push {r0-r3}
 		mov r0, #1
 		bl uart32_uartbreak
 		pop {r0-r3}
-		*/
 
 		b dmx32_dmx512transmitter_success
 
 	dmx32_dmx512transmitter_mab:
-		/*
 		push {r0-r3}
 		mov r0, #0
 		bl uart32_uartbreak
 		pop {r0-r3}
-		*/
 
 		b dmx32_dmx512transmitter_success
 
@@ -216,7 +212,10 @@ dmx32_dmx512transmitter_sequence: .word 0x00
  * r0: Pointer of Array of Start Code and Channel Data
  * r1: Number of Frames, Start Code and Channel Data
  *
- * Return: r0 (0 as success)
+ * Return: r0 (current sequence number, -1 as break signal, -2, -3, and -4 as error)
+ * Error(-2): Not Received
+ * Error(-3): Overrun, Parity Error, Framing Error, Not Received
+ * Error(-4): Overflow of Pointer of Array
  */
 .globl dmx32_dmx512receiver
 dmx32_dmx512receiver:
@@ -231,8 +230,7 @@ dmx32_dmx512receiver:
 	ldr sequence, dmx32_dmx512receiver_sequence
 
 	cmp sequence, num_data
-	movge sequence, #0
-	bge dmx32_dmx512receiver_common
+	bge dmx32_dmx512receiver_error3
 
 	push {r0-r2}
 	add r0, data_point, sequence
@@ -242,19 +240,43 @@ dmx32_dmx512receiver:
 	pop {r0-r2}
 
 	tst temp, #0x4                    @ Whether Break or Not
-	movne sequence, #0                @ If Break
-	bne dmx32_dmx512receiver_common   @ If Break
+	bne dmx32_dmx512receiver_break    @ If Break
 
-	tst temp, #0x1B                   @ Whether Overrun, Parity Error, Framing Error, Not Received, or Not
-	bne dmx32_dmx512receiver_common   @ If Overrun, Parity Error, Framing Error, Not Received
+	tst temp, #0xB                    @ Whether Overrun, Parity Error, Framing Error, Not Received, or Not
+	bne dmx32_dmx512receiver_error2   @ If Overrun, Parity Error, Framing Error, Not Received
 
-	/* Increment Sequence Number If Character Is Received */
-	add sequence, sequence, #1
+	tst temp, #0x10                   @ Whether Not Received or Not
+	bne dmx32_dmx512receiver_error1   @ If Not Received
 
-	dmx32_dmx512receiver_common:
+	b dmx32_dmx512receiver_success
+
+	dmx32_dmx512receiver_error1:
+		mov r0, #-2
+		b dmx32_dmx512receiver_common
+
+	dmx32_dmx512receiver_error2:
+		mov r0, #-3
+		b dmx32_dmx512receiver_common
+
+	dmx32_dmx512receiver_error3:
+		mov r0, #-4
+		b dmx32_dmx512receiver_common
+
+	dmx32_dmx512receiver_break:
+		mov sequence, #0
 		str sequence, dmx32_dmx512receiver_sequence
 		macro32_dsb ip
-		mov r0, #0
+		mvn r0, #0
+		b dmx32_dmx512receiver_common
+
+	dmx32_dmx512receiver_success:
+		/* Increment Sequence Number If Character Is Received */
+		add temp, sequence, #1
+		str temp, dmx32_dmx512receiver_sequence
+		macro32_dsb ip
+		mov r0, sequence
+
+	dmx32_dmx512receiver_common:
 		pop {pc}
 
 .unreq data_point

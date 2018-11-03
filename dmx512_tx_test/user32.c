@@ -18,8 +18,8 @@ int32 _user_start() {
 	print32_debug( DMX32_BUFFER_FRONT, 100, 100 );
 	print32_debug( DMX32_BUFFER_BACK, 100, 112 );
 
-	heap32_mfill( DMX32_BUFFER_FRONT, 0x62626262 );
-	heap32_mfill( DMX32_BUFFER_BACK, 0xAAAAAAAA );
+	heap32_mfill( DMX32_BUFFER_FRONT, 0x23242526 );
+	heap32_mfill( DMX32_BUFFER_BACK, 0x89ABCDEF );
 
 	print32_debug_hexa( DMX32_BUFFER_FRONT, 100, 124, 8 );
 	print32_debug_hexa( DMX32_BUFFER_BACK, 100, 136, 8 );

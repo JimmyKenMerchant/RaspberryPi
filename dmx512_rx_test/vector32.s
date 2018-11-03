@@ -51,12 +51,27 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	/* Enable UART IRQ */
-	mov r1, #1<<25                                   @ UART IRQ #57
+	/**
+	 * Enable GPIO IRQ
+	 * INT[0] is for 0-27 Pins
+	 * INT[1] is for 28-45 Pins
+	 * INT[2] is for 46-53 Pins
+	 * INT[3] is for All Pins
+	 */
+	mov r1, #0b1111<<17                              @ GPIO INT[3:0]
 	str r1, [r0, #equ32_interrupt_enable_irqs2]
 
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
+
+	/**
+	 * Get a 12hz Timer Interrupt (120000/10000).
+	 */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
+	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
+	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
 
 	/**
 	 * GPIO
@@ -83,9 +98,18 @@ os_reset:
 
 	/* I/O Settings */
 
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK1
+	str r1, [r0, #equ32_gpio_gpfsel00]
+
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	str r1, [r0, #equ32_gpio_gpfsel10]
+
+	/* Set Status Detect */
+	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio04                                      @ Set GPIO4 Rising Edge Detect
+	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
 
@@ -94,11 +118,20 @@ os_reset:
 	bl heap32_malloc
 	str r0, OS_IRQ_DMX512RX
 
+	/**
+	 * Clock Manager for GPCLK1. Make 23244.55Hz (43.02 Micro Seconds)
+	 */
+	mov r0, #equ32_cm_gp0
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #0x330<<equ32_cm_div_integer                           @ Decimal 826
+	orr r2, r2, #0x00A<<equ32_cm_div_integer                       @ Decimal 826
+	bl arm32_clockmanager
+
 	/* UART Receive 250000 Baud */
 	mov r0, #4                                                     @ Integer Divisor Bit[15:0], 18000000 / 16 * 250000 is 4.5
 	mov r1, #0b100000                                              @ Fractional Divisor Bit[5:0], Fixed Point Float 0.5
-	/*mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen|equ32_uart0_lcrh_stp2*/ @ Line Control
-	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen
+	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen|equ32_uart0_lcrh_stp2 @ Line Control
 	mov r3, #equ32_uart0_cr_rxe                                    @ Control
 	bl uart32_uartinit
 
@@ -121,15 +154,32 @@ os_irq:
 	macro32_dsb ip
 .endif
 
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_interrupt_base
+	ldr r1, [r0, #equ32_interrupt_pending_irqs2]
+/*macro32_debug r1, 100, 88*/
+
+	macro32_dsb ip
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+	ldr r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
+	str r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
+/*macro32_debug r1, 100, 100*/
+
+	macro32_dsb ip
+
 	ldr r0, OS_IRQ_DMX512RX
 	mov r1, #512
 	add r1, r1, #1
 	bl dmx32_dmx512receiver
 
+	cmp r0, #-1                                                    @ Break
+
 	ldr r0, OS_IRQ_COUNT
-	add r0, r0, #1
+	addeq r0, r0, #1
 	str r0, OS_IRQ_COUNT
-/*macro32_debug r0, 100, 112*/
+/*macro32_debug r0, 100, 124*/
 
 	macro32_dsb ip
 
