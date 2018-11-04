@@ -1936,8 +1936,7 @@ bool startup_executer() {
 }
 
 
-void sound_makesilence()
-{
+void sound_makesilence() {
 
 #ifdef __SOUND_I2S
 	_soundclear(True);

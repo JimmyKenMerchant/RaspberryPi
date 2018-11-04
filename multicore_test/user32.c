@@ -10,8 +10,7 @@
 #include "system32.h"
 #include "system32.c"
 
-int32 _user_start()
-{
+int32 _user_start() {
 	
 	while(True) {
 	}

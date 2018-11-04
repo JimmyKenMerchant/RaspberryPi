@@ -309,8 +309,7 @@ music_code interrupt16[] =
 	_END
 };
 
-void makesilence()
-{
+void makesilence() {
 
 #ifdef __SOUND_I2S
 	_soundclear(True);
@@ -332,8 +331,7 @@ void makesilence()
 
 }
 
-int32 _user_start()
-{
+int32 _user_start() {
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	uint32 detect_parallel;

@@ -558,8 +558,7 @@ int32 tempo_count_reload = tempo_count_default;
 int32 tempo = tempo_default;
 
 
-int32 _user_start()
-{
+int32 _user_start() {
 
 	// To Get Proper Latency, Get Lengths in Advance
 	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1, 2 );
