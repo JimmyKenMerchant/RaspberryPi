@@ -12,7 +12,6 @@
 
 extern uint32 OS_IRQ_COUNT;
 extern uint32 OS_FIQ_COUNT;
-extern obj OS_IRQ_DMX512RX;
 
 int32 _user_start() {
 	//uint32 error;
@@ -20,9 +19,9 @@ int32 _user_start() {
 	while(True) {
 		print32_debug( OS_IRQ_COUNT, 100, 200 );
 		print32_debug( OS_FIQ_COUNT, 100, 212 );
-		print32_debug_hexa( OS_IRQ_DMX512RX, 100, 224, 513 );
+		print32_debug_hexa( DMX32_BUFFER_BACK, 100, 224, 513 );
 
-		//error = _uartrx( OS_IRQ_DMX512RX, 1 );
+		//error = _uartrx( DMX32_BUFFER_BACK, 1 );
 		//print32_debug( error, 0, 200 );
 
 		_sleep( 1000000 );

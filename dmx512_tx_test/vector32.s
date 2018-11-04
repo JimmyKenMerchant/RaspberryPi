@@ -224,7 +224,7 @@ os_irq:
 
 	macro32_dsb ip
 
-	bl dmx32_dmx512doublebuffer
+	bl dmx32_dmx512doublebuffer_tx
 
 	pop {r0-r12,pc}
 

@@ -114,9 +114,9 @@ os_reset:
 	macro32_dsb ip
 
 	/* DMX512 Receive */
-	mov r0, #129                                                   @ Start Code and Channel Data / 4
-	bl heap32_malloc
-	str r0, OS_IRQ_DMX512RX
+	mov r0, #1                                                     @ Start Code
+	add r0, r0, #512                                               @ Channel Data
+	bl dmx32_dmx512doublebuffer_init
 
 	/**
 	 * Clock Manager for GPCLK1. Make 23244.55Hz (43.02 Micro Seconds)
@@ -134,11 +134,6 @@ os_reset:
 	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen|equ32_uart0_lcrh_stp2 @ Line Control
 	mov r3, #equ32_uart0_cr_rxe                                    @ Control
 	bl uart32_uartinit
-
-	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
-	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
-	bl uart32_uartsetint
 
 	pop {pc}
 
@@ -169,10 +164,7 @@ os_irq:
 
 	macro32_dsb ip
 
-	ldr r0, OS_IRQ_DMX512RX
-	mov r1, #512
-	add r1, r1, #1
-	bl dmx32_dmx512receiver
+	bl dmx32_dmx512doublebuffer_rx
 
 	cmp r0, #-1                                                    @ Break
 
@@ -187,9 +179,6 @@ os_irq:
 
 .globl OS_IRQ_COUNT
 OS_IRQ_COUNT:    .word 0x00
-
-.globl OS_IRQ_DMX512RX
-OS_IRQ_DMX512RX: .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}
