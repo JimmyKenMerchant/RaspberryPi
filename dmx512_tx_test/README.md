@@ -8,4 +8,6 @@
 
 ## Compatibility
 
-Under Construction
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`

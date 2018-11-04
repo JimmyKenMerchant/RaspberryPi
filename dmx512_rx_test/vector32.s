@@ -168,17 +168,23 @@ os_irq:
 
 	cmp r0, #-1                                                    @ Break
 
-	ldr r0, OS_IRQ_COUNT
-	addeq r0, r0, #1
-	str r0, OS_IRQ_COUNT
-/*macro32_debug r0, 100, 124*/
+	ldr r1, OS_IRQ_COUNT
+	addeq r1, r1, #1
+	str r1, OS_IRQ_COUNT
+/*macro32_debug r1, 100, 124*/
+
+	cmp r0, #512                                                   @ Reach End of Packet
+	moveq r1, #1
+	streq r1, OS_IRQ_RECEIVE
 
 	macro32_dsb ip
 
 	pop {r0-r12,pc}
 
 .globl OS_IRQ_COUNT
-OS_IRQ_COUNT:    .word 0x00
+.globl OS_IRQ_RECEIVE
+OS_IRQ_COUNT:   .word 0x00
+OS_IRQ_RECEIVE: .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}

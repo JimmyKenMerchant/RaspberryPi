@@ -78,7 +78,8 @@ DMX32_BUFFER_LENGTH: .word 0x00
  * function dmx32_dmx512doublebuffer_tx
  * DMX512 Double Buffer Transmitter
  *
- * Return: r0 (0 as success, 1 as success and end of packet)
+ * Return: r0 (current sequence number, -1 as end of packet, -2 as error)
+ * Error(-2): Overflow of Pointer of Array, Resets Sequence Number
  */
 .globl dmx32_dmx512doublebuffer_tx
 dmx32_dmx512doublebuffer_tx:

@@ -226,10 +226,16 @@ os_irq:
 
 	bl dmx32_dmx512doublebuffer_tx
 
+	cmp r0, #-1                                                    @ End of Packet
+	moveq r0, #1
+	streq r0, OS_IRQ_TRANSMIT
+
 	pop {r0-r12,pc}
 
 .globl OS_IRQ_COUNT
-OS_IRQ_COUNT: .word 0x00
+OS_IRQ_COUNT:    .word 0x00
+.globl OS_IRQ_TRANSMIT
+OS_IRQ_TRANSMIT: .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}
