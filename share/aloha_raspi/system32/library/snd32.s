@@ -1321,12 +1321,12 @@ snd32_soundmidi:
 	push {r4-r10,lr}
 
 	ldr status, SND32_STATUS
-	tst status, #0x80000000           @ If Not Initialized
-	beq snd32_soundmidi_error1
-
 	ldr count, SND32_SOUNDMIDI_COUNT
 	ldr max_size, SND32_SOUNDMIDI_LENGTH
 	ldr buffer, SND32_SOUNDMIDI_BUFFER
+
+	tst status, #0x80000000           @ If Not Initialized
+	beq snd32_soundmidi_error1
 
 	cmp buffer, #0
 	beq snd32_soundmidi_error1        @ If No Buffer
@@ -1868,6 +1868,9 @@ macro32_debug data1, 0, 112
 		b snd32_soundmidi_success
 
 	snd32_soundmidi_error1:
+		push {r0-r3}
+		bl uart32_uartclrrx           @ Clear RxFIFO
+		pop {r0-r3}
 		mov r0, #1
 		b snd32_soundmidi_common
 

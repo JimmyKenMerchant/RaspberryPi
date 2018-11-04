@@ -1490,15 +1490,15 @@ sts32_synthemidi:
 	movhi num_voices, #equ32_sts32_voice_max
 
 	ldr status, STS32_STATUS
+	ldr count, STS32_SYNTHEMIDI_COUNT
+	ldr max_size, STS32_SYNTHEMIDI_LENGTH
+	ldr buffer, STS32_SYNTHEMIDI_BUFFER
+
 	tst status, #0x80000000           @ If Not Initialized
 	beq sts32_synthemidi_error1
 
 	.unreq status
 	status_voices .req r10
-
-	ldr count, STS32_SYNTHEMIDI_COUNT
-	ldr max_size, STS32_SYNTHEMIDI_LENGTH
-	ldr buffer, STS32_SYNTHEMIDI_BUFFER
 
 	cmp buffer, #0
 	beq sts32_synthemidi_error1       @ If No Buffer
@@ -2198,6 +2198,9 @@ sts32_synthemidi:
 		b sts32_synthemidi_success
 
 	sts32_synthemidi_error1:
+		push {r0-r3}
+		bl uart32_uartclrrx           @ Clear RxFIFO
+		pop {r0-r3}
 		mov r0, #1
 		b sts32_synthemidi_common
 
