@@ -44,7 +44,7 @@
 typedef enum _command_list {
 	null_command_list,
 	end,
-	print, // Print string, "print %D %S1": Print string from D. The length of lines is the number in S1. If S1 is zero or undefined, the value becomes one. 
+	print, // Print string, "print %D": Print string from D.
 	sleep, // Sleep microseconds by integer "Sleep %S1": Number in S1 means micro seconds to sleep.
 	/**
 	 * Set calender and clock, "stime %S1 %S2 %S3 %S4 %S5 %S6 %S7":
@@ -169,12 +169,15 @@ typedef enum _command_list {
  * 4. Indirect Number, indicated by "[".
  */
 
+/**
+ * This runtime consists blocks to run scripts.
+ */
 typedef enum _pipe_list {
-	search_command,
-	enumurate_sources,
-	execute_command,
-	go_nextline,
-	termination
+	search_command,    // 1. Know Command in The Target Line and Line Numbers Stored Arguments
+	enumurate_sources, // 2. Get Sources from Arguments If Conversion from String to Any Other Type Is Needed
+	execute_command,   // 3. Execute Command
+	go_nextline,       // 4. Go to The Next Line and Back to "search_command"
+	termination        // 5. If No Command Exists in The Target Line, Runtime Ends and Wait with Edit Mode
 } pipe_list;
 
 
@@ -235,7 +238,7 @@ uint32 startup_length = 4;
 
 int32 _user_start() {
 
-	String str_aloha = "Aloha Calc Version 0.9.0 Beta: Copyright (C) 2018 Kenta Ishii\r\n\0";
+	String str_aloha = "Aloha Calc Version 0.9.8 Beta: Copyright (C) 2018 Kenta Ishii\r\n\0";
 	String str_serialmode = "\x1B[31mSerial Mode\x1B[0m\r\n\0";
 	String str_direction = null;
 	obj array_source = heap32_malloc( argument_maxlength );
@@ -278,10 +281,11 @@ int32 _user_start() {
 
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
+	/* Title */
+	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
+
 	/* Keyboard */
 
-	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
-	
 	if ( init_usb_keyboard( 0 ) ) {
 		kb_enable = true;
 		_uartclient( true );
@@ -309,10 +313,11 @@ int32 _user_start() {
 		startup = false;
 	}
 
+	/* Clear Line No. Zero Because Some Errors May Be Received on It */
+	heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
+	_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
+
 	if ( ! _uartsetheap( initial_line ) ) {
-		/* Some Errors May Be Received */
-		heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 );
-		_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 		process_counter();
 	} else {
 		return False;
@@ -344,9 +349,8 @@ int32 _user_start() {
 							pipe_type = termination;
 						} else if ( str32_strmatch( temp_str, 5, "print\0", 5 ) ) {
 							command_type = print;
-							length_arg = 2;
-							pipe_type = enumurate_sources;
-							src_index = 1; // 0 is Start Point
+							length_arg = 1;
+							pipe_type = execute_command;
 						} else if ( str32_strmatch( temp_str, 5, "sleep\0", 5 ) ) {
 							command_type = sleep;
 							length_arg = 1;
@@ -831,13 +835,8 @@ int32 _user_start() {
 						switch ( command_type ) {
 							case print:
 								var_temp.u32 = _load_32( array_argpointer );
-								var_temp2.u32 = _load_32( array_source + 4 );
-								if ( var_temp2.u32 == 0 ) var_temp2.u32 = 1;
-								var_temp2.u32 += var_temp.u32;
-								for ( uint32 i = var_temp.u32; i < var_temp2.u32; i++ ) {
-									if ( _uartsetheap( i ) ) break; 
-									command_print( UART32_UARTINT_HEAP );
-								}
+								if ( _uartsetheap( var_temp.u32 ) ) break;
+								command_print( UART32_UARTINT_HEAP );
 
 								break;
 							case sleep:
