@@ -233,9 +233,10 @@ os_irq:
 	pop {r0-r12,pc}
 
 .globl OS_IRQ_COUNT
-OS_IRQ_COUNT:    .word 0x00
-.globl OS_IRQ_TRANSMIT
-OS_IRQ_TRANSMIT: .word 0x00
+.globl OS_IRQ_TRANSMIT_ADDR
+OS_IRQ_COUNT:         .word 0x00
+OS_IRQ_TRANSMIT_ADDR: .word OS_IRQ_TRANSMIT
+OS_IRQ_TRANSMIT:      .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}

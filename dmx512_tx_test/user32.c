@@ -11,7 +11,7 @@
 #include "system32.c"
 
 extern uint32 OS_IRQ_COUNT;
-extern uint32 OS_IRQ_TRANSMIT;
+extern uint32 OS_IRQ_TRANSMIT_ADDR;
 extern uint32 OS_FIQ_COUNT;
 
 uint32 increment;
@@ -35,14 +35,14 @@ int32 _user_start() {
 		print32_debug( OS_IRQ_COUNT, 100, 200 );
 		print32_debug( OS_FIQ_COUNT, 100, 212 );
 
-		if (OS_IRQ_TRANSMIT) {
+		if ( _load_32( OS_IRQ_TRANSMIT_ADDR ) ) {
 			_store_8( DMX32_BUFFER_BACK + increment, turn );
 			increment++;
-			if ( increment > 512 ) {
+			if ( increment > 511 ) {
 				increment = 0;
 				turn++;
 			}
-			_store_32( OS_IRQ_TRANSMIT, 0x00 );
+			_store_32( OS_IRQ_TRANSMIT_ADDR, 0x00 );
 		}
 
 		//_sleep( 1000000 );

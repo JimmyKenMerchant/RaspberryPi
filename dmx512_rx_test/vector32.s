@@ -182,9 +182,10 @@ os_irq:
 	pop {r0-r12,pc}
 
 .globl OS_IRQ_COUNT
-.globl OS_IRQ_RECEIVE
-OS_IRQ_COUNT:   .word 0x00
-OS_IRQ_RECEIVE: .word 0x00
+.globl OS_IRQ_RECEIVE_ADDR
+OS_IRQ_COUNT:        .word 0x00
+OS_IRQ_RECEIVE_ADDR: .word OS_IRQ_RECEIVE
+OS_IRQ_RECEIVE:      .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}
