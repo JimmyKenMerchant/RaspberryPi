@@ -16,6 +16,10 @@
 
 **Version Information**
 
+* 1.1.0 on November 6, 2018:
+Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
+Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
+
 * 1.0.0 on August 12, 2018:
 Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
