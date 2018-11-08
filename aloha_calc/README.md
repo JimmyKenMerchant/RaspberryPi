@@ -49,7 +49,7 @@
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
 
-* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`, Needs Commented Out of `bl gpio32_gpioreset`, However Only One Is Tested.
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`, Needs Commented Out of `bl gpio32_gpioreset` for USB Keyboard, However Only One Is Tested.
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
 

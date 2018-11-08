@@ -172,7 +172,7 @@ os_reset:
 	bl dmx32_dmx512doublebuffer_init
 
 	/**
-	 * Clock Manager for GPCLK1. Make 21694.92Hz (46.09 Micro Seconds)
+	 * Clock Manager for GPCLK0. Make 21694.92Hz (46.09 Micro Seconds)
 	 */
 	mov r0, #equ32_cm_gp0
 	mov r1, #equ32_cm_ctl_mash_1
@@ -269,6 +269,26 @@ os_fiq:
 /*macro32_debug r0, 100, 124*/
 
 	macro32_dsb ip
+
+	mov r0, #21
+	ldr r1, OS_FIQ_RXFIFO
+	mov r2, #8                                @ 8 Bits to Receive
+	mov r3, #1                                @ 1 Stop Bit
+	bl softuart32_softuartreceiver
+
+	ldr r0, OS_FIQ_RXFIFO
+	ldrb r0, [r0]
+
+	ldr r1, OS_FIQ_BREAK
+	tst r0, #0b1
+	addne r1, r1, #1                          @ Increment If Break, Counts Bits from Break
+	str r1, OS_FIQ_BREAK
+
+	mov r0, #20
+	ldr r1, OS_FIQ_TXFIFO
+	mov r2, #8                                @ 8 Bits to Receive
+	mov r3, #1                                @ 1 Stop Bit
+	bl softuart32_softuarttransmitter
 
 	pop {r0-r7,pc}
 

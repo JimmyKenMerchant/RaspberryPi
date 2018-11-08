@@ -119,7 +119,7 @@ os_reset:
 	bl dmx32_dmx512doublebuffer_init
 
 	/**
-	 * Clock Manager for GPCLK1. Make 23244.55Hz (43.02 Micro Seconds)
+	 * Clock Manager for GPCLK0. Make 23244.55Hz (43.02 Micro Seconds)
 	 */
 	mov r0, #equ32_cm_gp0
 	mov r1, #equ32_cm_ctl_mash_1

@@ -8,6 +8,8 @@
 
 ## Output and Input
 
+* GPIO4 as GPCLK0 for Second Timer
+
 * GPIO20 as Output of TXD (Software UART)
 
 * GPIO21 as Input of RXD (Software UART)
