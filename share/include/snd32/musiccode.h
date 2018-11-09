@@ -1785,11 +1785,11 @@
 #define _24_DOR_ARP(x)     _2(x) _2(x+1) _2(x+3) _2(x+5) _2(x+7) _2(x+8) _2(x+10) _2(x+8) _2(x+7) _2(x+5) _2(x+3) _2(x+1) // Dorian, Diatonic on E
 #define _24_PHR_ARP(x)     _2(x) _2(x+2) _2(x+3) _2(x+5) _2(x+7) _2(x+9) _2(x+10) _2(x+9) _2(x+7) _2(x+5) _2(x+3) _2(x+2) // Phrygian, Diatonic on D
 #define _24_BLU_ARP(x)     _2(x) _2(x+2) _2(x+3) _2(x+5) _2(x+6) _2(x+7) _2(x+10) _2(x+7) _2(x+6) _2(x+5) _2(x+3) _2(x+2) // Blue-note
-#define _24_ROC_ARP(x)     _4(x) _4(x+3) _4(x+5) _4(x+7) _4(x+10) _4(x+7) _4(x+5) _4(x+3) // Rock
-#define _24_RYU_ARP(x)     _4(x) _4(x+4) _4(x+5) _4(x+7) _4(x+11) _4(x+7) _4(x+5) _4(x+4) // Ryukyu
-#define _24_ENK_ARP(x)     _4(x) _4(x+2) _4(x+4) _4(x+7) _4(x+9) _4(x+7) _4(x+4) _4(x+2) // Major Enka
-#define _24_MEN_ARP(x)     _4(x) _4(x+2) _4(x+3) _4(x+7) _4(x+8) _4(x+7) _4(x+3) _4(x+2) // Minor Enka
-#define _24_DOM_ARP(x)     _4(x) _4(x-5) _4(x) _4(x-5) _4(x) _4(x-5) _4(x) _4(x-5) // Dominant
+#define _24_ROC_ARP(x)     _3(x) _3(x+3) _3(x+5) _3(x+7) _3(x+10) _3(x+7) _3(x+5) _3(x+3) // Rock
+#define _24_RYU_ARP(x)     _3(x) _3(x+4) _3(x+5) _3(x+7) _3(x+11) _3(x+7) _3(x+5) _3(x+4) // Ryukyu
+#define _24_ENK_ARP(x)     _3(x) _3(x+2) _3(x+4) _3(x+7) _3(x+9) _3(x+7) _3(x+4) _3(x+2) // Major Enka
+#define _24_MEN_ARP(x)     _3(x) _3(x+2) _3(x+3) _3(x+7) _3(x+8) _3(x+7) _3(x+3) _3(x+2) // Minor Enka
+#define _24_DOM_ARP(x)     _4(x) _4(x-5) _4(x) _4(x-5) _4(x) _4(x-5) // Dominant
 
 #define _48_MAJ_ARP(x)     _12(x) _12(x+4) _12(x+7) _12(x+4)
 #define _48_M_ARP(x)       _12(x) _12(x+3) _12(x+7) _12(x+3)
@@ -1805,11 +1805,11 @@
 #define _48_DOR_ARP(x)     _4(x) _4(x+1) _4(x+3) _4(x+5) _4(x+7) _4(x+8) _4(x+10) _4(x+8) _4(x+7) _4(x+5) _4(x+3) _4(x+1) // Dorian, Diatonic on E
 #define _48_PHR_ARP(x)     _4(x) _4(x+2) _4(x+3) _4(x+5) _4(x+7) _4(x+9) _4(x+10) _4(x+9) _4(x+7) _4(x+5) _4(x+3) _4(x+2) // Phrygian, Diatonic on D
 #define _48_BLU_ARP(x)     _4(x) _4(x+2) _4(x+3) _4(x+5) _4(x+6) _4(x+7) _4(x+10) _4(x+7) _4(x+6) _4(x+5) _4(x+3) _4(x+2) // Blue-note
-#define _48_ROC_ARP(x)     _8(x) _8(x+3) _8(x+5) _8(x+7) _8(x+10) _8(x+7) _8(x+5) _8(x+3) // Rock
-#define _48_RYU_ARP(x)     _8(x) _8(x+4) _8(x+5) _8(x+7) _8(x+11) _8(x+7) _8(x+5) _8(x+4) // Ryukyu
-#define _48_ENK_ARP(x)     _8(x) _8(x+2) _8(x+4) _8(x+7) _8(x+9) _8(x+7) _8(x+4) _8(x+2) // Major Enka
-#define _48_MEN_ARP(x)     _8(x) _8(x+2) _8(x+3) _8(x+7) _8(x+8) _8(x+7) _8(x+3) _8(x+2) // Minor Enka
-#define _48_DOM_ARP(x)     _8(x) _8(x-5) _8(x) _8(x-5) _8(x) _8(x-5) _8(x) _8(x-5) // Dominant
+#define _48_ROC_ARP(x)     _6(x) _6(x+3) _6(x+5) _6(x+7) _6(x+10) _6(x+7) _6(x+5) _6(x+3) // Rock
+#define _48_RYU_ARP(x)     _6(x) _6(x+4) _6(x+5) _6(x+7) _6(x+11) _6(x+7) _6(x+5) _6(x+4) // Ryukyu
+#define _48_ENK_ARP(x)     _6(x) _6(x+2) _6(x+4) _6(x+7) _6(x+9) _6(x+7) _6(x+4) _6(x+2) // Major Enka
+#define _48_MEN_ARP(x)     _6(x) _6(x+2) _6(x+3) _6(x+7) _6(x+8) _6(x+7) _6(x+3) _6(x+2) // Minor Enka
+#define _48_DOM_ARP(x)     _8(x) _8(x-5) _8(x) _8(x-5) _8(x) _8(x-5) // Dominant
 
 /* Decay, Need of Big Volume */
 #define _4_DEC(x)       _1(x) _1(x+0x200) _1(x+0x400) _1(x+0x600)
