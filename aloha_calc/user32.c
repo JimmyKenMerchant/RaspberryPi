@@ -285,8 +285,9 @@ int32 _user_start() {
 	direction.s32 = 0;
 	String src_str = null;
 	String dst_str = null;
-	String temp_str = null;
-	String temp_str2 = null;
+	String temp_str = null; // Use for Search Commands and Arguments
+	String temp_str2 = null; // Use for Search Arguments with Pointer
+	String temp_str_dup = null;
 
 	input_keyboard_continue_flag = false;
 	input_keyboard_kb_str = null;
@@ -347,6 +348,7 @@ int32 _user_start() {
 
 						/*  Pass Spaces and Label*/
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
+						temp_str_dup =  temp_str;
 
 						/* Numeration Process */
 
@@ -1156,6 +1158,45 @@ int32 _user_start() {
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
 
 								break;
+							case _if:
+								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+								length_temp = str32_strlen( temp_str_dup );
+
+
+								if ( str32_strsearch( temp_str_dup, length_temp, "== \0", 3 ) != -1 ) {
+									/* Equal; Z Bit[30] == 1 */
+									if ( ! ( status_nzcv & 0x40000000 ) ) current_line++;
+//print32_debug(1, 0, 200);
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "!= \0", 3 ) != -1 ) {
+									/* Not Equal: Z Bit[30] != 1 */
+									if ( ! ( ! ( status_nzcv & 0x40000000 ) ) ) current_line++;
+//print32_debug(2, 0, 200);
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, ">= \0", 3 ) != -1 ) {
+									/* Greater Than or Equal: N Bit[31] == V Bit[28] */
+									if ( ! ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) ) ) current_line++;
+//print32_debug(3, 0, 200);
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "<= \0", 3 ) != -1 ) {
+									/* Less Than or Equal: N Bit[31] != V Bit[28] || Z Bit[30] == 1 */
+									if ( ! ( ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) || ( status_nzcv & 0x40000000 ) ) ) ) current_line++;
+//print32_debug(4, 0, 200);
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "> \0", 2 ) != -1 ) {
+									/* Greater Than: N Bit[31] == V Bit[28] && Z Bit[30] == 0 */
+									if ( ! ( ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) && ( ! ( status_nzcv & 0x40000000 ) ) ) ) ) current_line++;
+//print32_debug(5, 0, 200);
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "< \0", 2 ) != -1 ) {
+									/* Less Than: N Bit[31] != V Bit[28] */
+									if ( ! ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) ) ) current_line++;
+//print32_debug(6, 0, 200);
+
+								}
+
+//print32_debug(current_line, 0, 212);
+
 							case tst:
 								status_nzcv = arm32_tst( _load_32( array_source ), _load_32( array_source + 4 ) );
 
