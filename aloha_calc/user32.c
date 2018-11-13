@@ -43,9 +43,10 @@
 /* D: Number of Line for Destination, S: Number of Line Stored Source */
 typedef enum _command_list {
 	null_command_list,
-	endif, // IF statement, Reset Pass Flag
+	endif, // IF statement, reset the pass flag,
 	end, // End of script, should search after "end*" on search_command to prevent missing.
-	_else, // IF statement, Flip Pass Flag
+	_else, // IF statement, flip the pass flag.
+	next, // FOR loop, return to the first of the loop.
 	print, // Print string, "print @D": Print string from D.
 	sleep, // Sleep microseconds by integer "Sleep @S1": Number in S1 means micro seconds to sleep.
 	/**
@@ -107,13 +108,13 @@ typedef enum _command_list {
 	lsl, // Logical shift left, "lsl @D @S1 @S2"
 	lsr, // Logical shift right, "lsr @D @S1 @S2"
 	rand, // Random value 0-255, "rand @D"
-	cmp, // Arithmetic comparison, "cmp @S1 @S2": Reflects NZCV flags.
 	_if, // IF statement, "if @S1 <Comparison Symbol> @S2": Compare S1 and S2 as singed integer.
+	_for, // FOR loop, "for @S1 <Comparison Symbol> @S2": Compare S1 and S2 as singed integer.
 	ifu, // IF statement, "ifu @S1 <Comparison Symbol> @S2": Compare S1 and S2 as unsinged integer.
-	tst, // Logical comparison, "tst @S1 @S2": Reflects NZCV flags.
+	foru, // FOR loop, "foru @S1 <Comparison Symbol> @S2": Compare S1 and S2 as unsinged integer.
 	intb, // Binary-coded decimal calculation, "intb @D @S1 <operator> @S2": Range is -9,999,999,999,999,999 through 9,999,999,999,999,999.
-	cmpb, // Compare two values of binary-coded decimal, "cmpb @S1 @S2": Reflects NZCV flags.
 	ifb, // IF statement, "ifb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
+	forb, // FOR loop, "forb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
 	_float, // Floating point calculation, "float @D @S1 <operator> @S2"
 	sqrtf, // Square root, "sqrtf @D @S1": D = S1^1/2.
 	radf, // Radian, "radf @D @S1": D = S1 * pi/180.0.
@@ -124,29 +125,21 @@ typedef enum _command_list {
 	logf,
 	absf,
 	negf,
-	cmpf, // Compare two values of floating point, "cmpf @S1 @S2": Reflects NZCV flags.
 	iff, // IF statement, "iff @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
+	forf, // FOR loop, "forf @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
 	input, // Input to the line, "input @D".
-	cmps, // String Compare
 	ifs, // IF statement, "ifs @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
+	fors, // FOR loop, "fors @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
 	mov, // Copy, "mov @D @S1".
 	apd, // Append, "apd @D @S1".
 	vlen, // Vertical Length, "vlen @D @S1".
 	hlen, // Horizontal Length, "hlen @D @S1".
 	jmp, // Jump to the line, "jmp @S1": Next line will be the number in S1.
-	call, // Jump to the line and store number of current line to array (Last In First Out) for link.
-	ret, // Return to the line stored in array for link.
+	call, // Jump to the line and store number of current line to the array (Last In First Out) for linking.
+	ret, // Return to the line stored in the array for linking.
 	push,
 	pop,
 	ptr, // Store the number of line which has label, "ptr @D .S1": D = line number of S1.
-	skpeq, // Skip one line if equal: Use next to a "cmp.." command.
-	skpne,
-	skpge,
-	skple,
-	skpgt,
-	skplt,
-	skpcs, // Skip one line if carry flag is set (Unsigned Higher or Equal)
-	skpcc, // Skip one line if carry flag is not set (Unsigned Lower)
 	label, // Re-enumeration of labels from the line, "label".
 	clear, // Clear all in every Line then end, "clear".
 	run, // Meta Command: Runs script from list number zero
@@ -159,14 +152,27 @@ typedef enum _command_list {
  * 1. Indirect Label, indicated by ":", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
  * 3. Line Number, indicated by "@".
  * 4. Indirect Number, indicated by "[".
- * Caution that labels should not use characters, ".:@[=!<>+-/%*", for their naming.
+ * Caution that labels should not use characters, "&|^.:@[=!<>+-/%*", for their naming.
  */
 
 /**
  * IF statements (if, ifu, ifb, iff, ifs):
- * IF statements compares two values. If the comparison is false, skip the next line.
+ * IF statements compare two values. If the comparison is false, skip commands in the lines until "else" or "endif".
  * For Example, "if @1 < @2" checks whether the value in line No. 1 is less than the value in line No. 2 as signed integer.
- * If the comparison is true, the target line becomes the next line to execute. If not, the next line is not executed.
+ * If the comparison is true, the target line becomes the next line to execute.
+ * If not (false), the next line is not executed and the lines afterwards are not executed until "else" or "endif".
+ * "else" switches the pass flag; thus the lines between "else" and "endif" are not executed on true, or the lines are executed on false.
+ * Comparison symbols are "== (equal)", "!= (not equal)", "<= (less than or equal)", ">= (greater than or equal)", "< (less than)", and "> (greater than)".
+ */
+
+/**
+ * FOR loops (for, foru, forb, forf, fors):
+ * FOR loops compare two values. If the comparison is false, skip commands in the lines until "next".
+ * For Example, "for @1 < @2" checks whether the value in line No. 1 is less than the value in line No. 2 as signed integer.
+ * If the comparison is true, the target line becomes the next line to execute.
+ * If not (false), the next line is not executed and the lines afterwards are not executed until "next".
+ * "next" returns the target lines to the first of the loop if the loop is underway.
+ * FOR loops use the array for linking that "call" and "ret" also use. Caution that the array has limitation to store links.
  * Comparison symbols are "== (equal)", "!= (not equal)", "<= (less than or equal)", ">= (greater than or equal)", "< (less than)", and "> (greater than)".
  */
 
@@ -175,6 +181,8 @@ typedef enum _command_list {
  * Type statements Calculate two values.
  * For Example, "int @1 @2 + @3" adds the value in line No. 2 with the value in No. 3 as signed integer. The result is stored in the line No. 1.
  * Operators are "+ (addition)", "- (subtraction)", "* (multiplication)", "/ (division)", and "% (remainder of division)".
+ * "& (logical AND)", "| (logical OR)", "^ (logical XOR)", "<< (logical bit shift left)", and ">> (arithemetic/logical bit shift right)" are
+ * only available on int and intu.
  */
 
 /**
@@ -225,6 +233,8 @@ bool console_rollup();
 bool init_usb_keyboard( uint32 usb_channel );
 bool startup_executer();
 void sound_makesilence();
+bool compare_signed( String target_str, uint32 length, uint32 status_nzcv );
+bool compare_unsigned( String target_str, uint32 length, uint32 status_nzcv );
 
 /* Variables on Global Scope */
 bool input_keyboard_continue_flag;
@@ -235,7 +245,7 @@ int32 ticket_hid; // Use in init_usb_keyboard()
 dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
-bool flag_pass; // Use in IF and FOR Statements
+bool flag_pass; // Use in IF Statements and FOR Loops
 
 /* Start Up */
 bool startup;
@@ -346,7 +356,7 @@ int32 _user_start() {
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
 						temp_str_dup =  temp_str;
 
-						/* Check Pass Flag from IF and FOR Statements  */
+						/* Check Pass Flag from IF Statements and FOR Loops */
 						if ( ! flag_pass ) {
 
 							/* Numeration Process */
@@ -371,6 +381,10 @@ int32 _user_start() {
 								length_arg = 0;
 								pipe_type = go_nextline;
 								flag_pass = ! flag_pass;
+							} else if ( str32_strmatch( temp_str, 4, "next\0", 4 ) ) {
+								command_type = next;
+								length_arg = 0;
+								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 6, "print \0", 6 ) ) {
 								command_type = print;
 								length_arg = 1;
@@ -497,13 +511,13 @@ int32 _user_start() {
 								command_type = rand;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "cmp \0", 4 ) ) {
-								command_type = cmp;
+							} else if ( str32_strmatch( temp_str, 3, "if \0", 3 ) ) {
+								command_type = _if;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 3, "if \0", 3 ) ) {
-								command_type = _if;
+							} else if ( str32_strmatch( temp_str, 4, "for \0", 4 ) ) {
+								command_type = _for;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
@@ -512,21 +526,11 @@ int32 _user_start() {
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 4, "tst \0", 4 ) ) {
-								command_type = tst;
-								length_arg = 2;
-								pipe_type = enumurate_sources;
-								src_index = 0; // No Direction
 							} else if ( str32_strmatch( temp_str, 5, "intb \0", 5 ) ) {
 								command_type = intb;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "cmpb \0", 5 ) ) {
-								command_type = cmpb;
-								length_arg = 2;
-								pipe_type = enumurate_sources;
-								src_index = 0; // No Direction
 							} else if ( str32_strmatch( temp_str, 4, "ifb \0", 4 ) ) {
 								command_type = ifb;
 								length_arg = 2;
@@ -582,11 +586,6 @@ int32 _user_start() {
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "cmpf \0", 5 ) ) {
-								command_type = cmpf;
-								length_arg = 2;
-								pipe_type = enumurate_sources;
-								src_index = 0; // No Direction
 							} else if ( str32_strmatch( temp_str, 4, "iff \0", 4 ) ) {
 								command_type = iff;
 								length_arg = 2;
@@ -595,10 +594,6 @@ int32 _user_start() {
 							} else if ( str32_strmatch( temp_str, 6, "input \0", 6 ) ) {
 								command_type = input;
 								length_arg = 1;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "cmps \0", 5 ) ) {
-								command_type = cmps;
-								length_arg = 2;
 								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 4, "ifs \0", 4 ) ) {
 								command_type = ifs;
@@ -644,42 +639,6 @@ int32 _user_start() {
 								command_type = ptr;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skpeq\0", 5 ) ) {
-								command_type = skpeq;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skpne\0", 5 ) ) {
-								command_type = skpne;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skpge\0", 5 ) ) {
-								/* Jump Over One Line If Signed Greater Than or Equal */
-								command_type = skpge;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skple\0", 5 ) ) {
-								/* Jump Over One Line If Signed Less Than or Equal */
-								command_type = skple;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skpgt\0", 5 ) ) {
-								/* Jump Over One Line If Signed Greater Than */
-								command_type = skpgt;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skplt\0", 5 ) ) {
-								/* Jump Over One Line If Signed Less Than */
-								command_type = skplt;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skpcs\0", 5 ) ) {
-								command_type = skpcs;
-								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "skpcc\0", 5 ) ) {
-								command_type = skpcc;
-								length_arg = 0;
-								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 5, "label\0", 5 ) ) {
 								command_type = label;
 								length_arg = 0;
@@ -716,6 +675,10 @@ int32 _user_start() {
 								length_arg = 0;
 								pipe_type = go_nextline;
 								flag_pass = false;
+							} else if ( str32_strmatch( temp_str, 4, "next\0", 4 ) ) {
+								command_type = next;
+								length_arg = 0;
+								pipe_type = execute_command;
 							} else {
 								command_type = null;
 								length_arg = 0;
@@ -724,11 +687,7 @@ int32 _user_start() {
 
 						}
 
-//print32_debug( flag_pass, 300, 300 );
-
 						current_line = UART32_UARTMALLOC_NUMBER;
-
-//print32_debug( current_line, 300, 312 );
 
 						for ( uint32 i = 0; i < length_arg; ) {
 							length_temp = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
@@ -790,7 +749,6 @@ int32 _user_start() {
 								/*  Pass Spaces and Label*/
 								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								var_temp2.u32 = cvt32_string_to_int32( temp_str2, str32_strlen( temp_str2 ) );
-/*print32_debug( var_temp2.u32, 300, 300  );*/
 								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
 								i++;
 							} else { // Nothing of . : @ [
@@ -836,6 +794,16 @@ int32 _user_start() {
 					case execute_command:
 
 						switch ( command_type ) {
+							case next:
+								if ( ! flag_pass ) { // Under Looping
+									if ( array_link_offset <= 0 ) break;
+									array_link_offset--;
+									current_line = _load_32( array_link + array_link_offset * 4 ) - 1;
+								} else { // At End of For Loop
+									flag_pass = false;
+								}
+
+								break;
 							case print:
 								var_temp.u32 = _load_32( array_argpointer );
 								if ( _uartsetheap( var_temp.u32 ) ) break;
@@ -1061,6 +1029,21 @@ int32 _user_start() {
 								} else if ( str32_strsearch( temp_str_dup, length_temp, "% \0", 2 ) != -1 ) {
 									direction.s32 = arm32_srem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
 
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "& \0", 2 ) != -1 ) {
+									direction.s32 = _load_32( array_source + 4 ) & _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "| \0", 2 ) != -1 ) {
+									direction.s32 = _load_32( array_source + 4 ) | _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "^ \0", 2 ) != -1 ) {
+									direction.s32 = _load_32( array_source + 4 ) ^ _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "<< \0", 3 ) != -1 ) {
+									direction.s32 = _load_32( array_source + 4 ) << _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, ">> \0", 3 ) != -1 ) {
+									direction.s32 = _load_32( array_source + 4 ) >> _load_32( array_source + 8 );
+
 								}
 
 								str_direction = cvt32_int32_to_string_deci( direction.s32, 1, 1 );
@@ -1082,6 +1065,21 @@ int32 _user_start() {
 
 								} else if ( str32_strsearch( temp_str_dup, length_temp, "% \0", 2 ) != -1 ) {
 									direction.u32 = arm32_urem( _load_32( array_source + 4 ), _load_32( array_source + 8 ) );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "& \0", 2 ) != -1 ) {
+									direction.u32 = _load_32( array_source + 4 ) & _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "| \0", 2 ) != -1 ) {
+									direction.u32 = _load_32( array_source + 4 ) | _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "^ \0", 2 ) != -1 ) {
+									direction.u32 = _load_32( array_source + 4 ) ^ _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, "<< \0", 3 ) != -1 ) {
+									direction.u32 = _load_32( array_source + 4 ) << _load_32( array_source + 8 );
+
+								} else if ( str32_strsearch( temp_str_dup, length_temp, ">> \0", 3 ) != -1 ) {
+									direction.u32 = _load_32( array_source + 4 ) >> _load_32( array_source + 8 );
 
 								}
 
@@ -1115,52 +1113,41 @@ int32 _user_start() {
 								direction.u32 =  _random( 255 );
 								str_direction = cvt32_int32_to_string_deci( direction.u32, 1, 0 );
 								break;
-							case cmp:
-								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
-
-								break;
 							case _if:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
 								length_temp = str32_strlen( temp_str_dup );
-								flag_pass = false;
-
-								if ( str32_strsearch( temp_str_dup, length_temp, "== \0", 3 ) != -1 ) {
-									/* Equal; Z Bit[30] == 1 */
-									if ( ! ( status_nzcv & 0x40000000 ) ) flag_pass = true;
-//print32_debug( 1, 400, 200 );
-
-								} else if ( str32_strsearch( temp_str_dup, length_temp, "!= \0", 3 ) != -1 ) {
-									/* Not Equal: Z Bit[30] != 1 */
-									if ( ! ( ! ( status_nzcv & 0x40000000 ) ) ) flag_pass = true;
-//print32_debug( 2, 400, 200 );
-
-								} else if ( str32_strsearch( temp_str_dup, length_temp, ">= \0", 3 ) != -1 ) {
-									/* Greater Than or Equal: N Bit[31] == V Bit[28] */
-									if ( ! ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) ) ) flag_pass = true;
-//print32_debug( 3, 400, 200 );
-
-								} else if ( str32_strsearch( temp_str_dup, length_temp, "<= \0", 3 ) != -1 ) {
-									/* Less Than or Equal: N Bit[31] != V Bit[28] || Z Bit[30] == 1 */
-									if ( ! ( ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) || ( status_nzcv & 0x40000000 ) ) ) ) flag_pass = true;
-//print32_debug( 4, 400, 200 );
-
-								} else if ( str32_strsearch( temp_str_dup, length_temp, "> \0", 2 ) != -1 ) {
-									/* Greater Than: N Bit[31] == V Bit[28] && Z Bit[30] == 0 */
-									if ( ! ( ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) && ( ! ( status_nzcv & 0x40000000 ) ) ) ) ) flag_pass = true;
-//print32_debug( 5, 400, 200 );
-
-								} else if ( str32_strsearch( temp_str_dup, length_temp, "< \0", 2 ) != -1 ) {
-									/* Less Than: N Bit[31] != V Bit[28] */
-									if ( ! ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) ) ) flag_pass= true;
-//print32_debug( 6, 400, 200 );
-
-								}
-
-//print32_debug( flag_pass, 400, 212 );
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
 								break;
-							case tst:
-								status_nzcv = arm32_tst( _load_32( array_source ), _load_32( array_source + 4 ) );
+
+							case _for:
+								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								if ( ! flag_pass ) {
+									_store_32( array_link + array_link_offset * 4, current_line );
+									array_link_offset++;
+									if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
+								}
+
+								break;
+							case ifu:
+								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_unsigned( temp_str_dup, length_temp, status_nzcv );
+
+								break;
+							case foru:
+								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_unsigned( temp_str_dup, length_temp, status_nzcv );
+
+								if ( ! flag_pass ) {
+									_store_32( array_link + array_link_offset * 4, current_line );
+									array_link_offset++;
+									if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
+								}
 
 								break;
 							case intb:
@@ -1184,8 +1171,22 @@ int32 _user_start() {
 								}
 
 								break;
-							case cmpb:
+							case ifb:
 								status_nzcv = bcd32_bcmp( (String)_load_32( array_source ), _load_32( array_source + 4 ), (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								break;
+							case forb:
+								status_nzcv = bcd32_bcmp( (String)_load_32( array_source ), _load_32( array_source + 4 ), (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								if ( ! flag_pass ) {
+									_store_32( array_link + array_link_offset * 4, current_line );
+									array_link_offset++;
+									if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
+								}
 
 								break;
 							case _float:
@@ -1244,8 +1245,22 @@ int32 _user_start() {
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 
 								break;
-							case cmpf:
+							case iff:
 								status_nzcv = vfp32_fcmp( vfp32_hexatof32( _load_32( array_source ) ), vfp32_hexatof32( _load_32( array_source + 4 ) ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								break;
+							case forf:
+								status_nzcv = vfp32_fcmp( vfp32_hexatof32( _load_32( array_source ) ), vfp32_hexatof32( _load_32( array_source + 4 ) ) );
+								length_temp = str32_strlen( temp_str_dup );
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								if ( ! flag_pass ) {
+									_store_32( array_link + array_link_offset * 4, current_line );
+									array_link_offset++;
+									if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
+								}
 
 								break;
 							case input:
@@ -1273,15 +1288,37 @@ int32 _user_start() {
 								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clear Line to Be Used as Input Buffer
 
 								break;
-							case cmps:
+							case ifs:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								temp_str = pass_space_label( UART32_UARTINT_HEAP );
-								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break; 
+								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
 								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
 								status_nzcv = 0;
 								if ( str32_strmatch( temp_str, str32_strlen( temp_str ), temp_str2, str32_strlen( temp_str2 ) ) ) {
 									/* Equal; Z Bit[30] == 1 */
 									status_nzcv |= 0x40000000;
+								}
+
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								break;
+							case fors:
+								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
+								temp_str = pass_space_label( UART32_UARTINT_HEAP );
+								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
+								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
+								status_nzcv = 0;
+								if ( str32_strmatch( temp_str, str32_strlen( temp_str ), temp_str2, str32_strlen( temp_str2 ) ) ) {
+									/* Equal; Z Bit[30] == 1 */
+									status_nzcv |= 0x40000000;
+								}
+
+								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
+
+								if ( ! flag_pass ) {
+									_store_32( array_link + array_link_offset * 4, current_line );
+									array_link_offset++;
+									if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
 								}
 
 								break;
@@ -1346,7 +1383,7 @@ int32 _user_start() {
 
 								break;
 							case call:
-								_store_32( array_link + array_link_offset * 4, current_line );
+ 								_store_32( array_link + array_link_offset * 4, current_line );
 								array_link_offset++;
 								if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
 								current_line = _load_32( array_argpointer ) - 1;
@@ -1395,46 +1432,6 @@ int32 _user_start() {
 								/* Equal; Z Bit[30] == 1 */
 								direction.u32 = _load_32( array_argpointer + 4 );
 								str_direction = cvt32_int32_to_string_deci( direction.u32, 1, 0 );
-
-								break;
-							case skpeq:
-								/* Equal; Z Bit[30] == 1 */
-								if ( status_nzcv & 0x40000000 ) current_line++;
-
-								break;
-							case skpne:
-								/* Not Equal: Z Bit[30] != 1 */
-								if ( ! ( status_nzcv & 0x40000000 ) ) current_line++;
-
-								break;
-							case skpge:
-								/* Greater Than or Equal: N Bit[31] == V Bit[28] */
-								if ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) ) current_line++;
-
-								break;
-							case skple:
-								/* Less Than or Equal: N Bit[31] != V Bit[28] || Z Bit[30] == 1 */
-								if ( ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) || ( status_nzcv & 0x40000000 ) ) ) current_line++;
-
-								break;
-							case skpgt:
-								/* Greater Than: N Bit[31] == V Bit[28] && Z Bit[30] == 0 */
-								if ( ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) && ( ! ( status_nzcv & 0x40000000 ) ) ) ) current_line++;
-
-								break;
-							case skplt:
-								/* Less Than: N Bit[31] != V Bit[28] */
-								if ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) ) current_line++;
-
-								break;
-							case skpcs:
-								/* Less Than: C Bit[29] == 1 */
-								if ( status_nzcv & 0x20000000 ) current_line++;
-
-								break;
-							case skpcc:
-								/* Less Than: C Bit[29] != 1 */
-								if ( ! ( status_nzcv & 0x20000000 ) ) current_line++;
 
 								break;
 							case label:
@@ -1994,6 +1991,72 @@ void sound_makesilence() {
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
 	_soundclear(False);
 #endif
+
+}
+
+
+bool compare_signed( String target_str, uint32 length, uint32 status_nzcv ) {
+
+	if ( str32_strsearch( target_str, length, "== \0", 3 ) != -1 ) {
+		/* Equal; Z Bit[30] == 1 */
+		if (  status_nzcv & 0x40000000  ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "!= \0", 3 ) != -1 ) {
+		/* Not Equal: Z Bit[30] == 0 */
+		if ( ! ( status_nzcv & 0x40000000 )  ) return false;
+
+	} else if ( str32_strsearch( target_str, length, ">= \0", 3 ) != -1 ) {
+		/* Signed Greater Than or Equal: N Bit[31] == V Bit[28] */
+		if ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "<= \0", 3 ) != -1 ) {
+		/* Signed Less Than or Equal: N Bit[31] != V Bit[28] || Z Bit[30] == 1 */
+		if ( ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) || ( status_nzcv & 0x40000000 ) ) ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "> \0", 2 ) != -1 ) {
+		/* Signed Greater Than: N Bit[31] == V Bit[28] && Z Bit[30] == 0 */
+		if ( ( ( status_nzcv & 0x80000000 ) == ( status_nzcv & 0x10000000 ) && ( ! ( status_nzcv & 0x40000000 ) ) ) ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "< \0", 2 ) != -1 ) {
+		/* Signed Less Than: N Bit[31] != V Bit[28] */
+		if ( ( status_nzcv & 0x80000000 ) != ( status_nzcv & 0x10000000 ) ) return false;
+
+	}
+
+	return true;
+
+}
+
+
+bool compare_unsigned( String target_str, uint32 length, uint32 status_nzcv ) {
+
+	if ( str32_strsearch( target_str, length, "== \0", 3 ) != -1 ) {
+		/* Equal; Z Bit[30] == 1 */
+		if ( status_nzcv & 0x40000000 ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "!= \0", 3 ) != -1 ) {
+		/* Not Equal: Z Bit[30] == 0 */
+		if ( ! ( status_nzcv & 0x40000000 ) ) return false;
+
+	} else if ( str32_strsearch( target_str, length, ">= \0", 3 ) != -1 ) {
+		/* Unsinged Greater Than or Equal: C Bit[29] == 1 */
+		if ( status_nzcv & 0x20000000 ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "<= \0", 3 ) != -1 ) {
+		/* Unsigned Less Than or Equal: C Bit[29] == 0 || Z Bit[30] == 1 */
+		if ( ( ! ( status_nzcv & 0x20000000 ) ) || ( status_nzcv & 0x40000000 ) ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "> \0", 2 ) != -1 ) {
+		/* Unsigned Greater Than: C Bit[29] == 1 && Z Bit[30] == 0 */
+		if ( ( status_nzcv & 0x20000000 ) && ( ! ( status_nzcv & 0x40000000 ) ) ) return false;
+
+	} else if ( str32_strsearch( target_str, length, "< \0", 2 ) != -1 ) {
+		/* Unsigned Less Than: C Bit[29] == 0 */
+		if ( ! ( status_nzcv & 0x20000000 ) ) return false;
+
+	}
+
+	return true;
 
 }
 
