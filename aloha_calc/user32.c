@@ -43,10 +43,11 @@
 /* D: Number of Line for Destination, S: Number of Line Stored Source */
 typedef enum _command_list {
 	null_command_list,
-	endif, // IF statement, reset the pass flag,
+	endif, // IF statement, reset the pass flag.
+	endwhile, // WHILE loop, return to the first of the loop.
 	end, // End of script, should search after "end*" on search_command to prevent missing.
 	_else, // IF statement, flip the pass flag.
-	next, // FOR loop, return to the first of the loop.
+	_break, // FOR/WHILE loop, break the loop
 	print, // Print string, "print @D": Print string from D.
 	sleep, // Sleep microseconds by integer "Sleep @S1": Number in S1 means micro seconds to sleep.
 	/**
@@ -109,12 +110,14 @@ typedef enum _command_list {
 	lsr, // Logical shift right, "lsr @D @S1 @S2"
 	rand, // Random value 0-255, "rand @D"
 	_if, // IF statement, "if @S1 <Comparison Symbol> @S2": Compare S1 and S2 as singed integer.
-	_for, // FOR loop, "for @S1 <Comparison Symbol> @S2": Compare S1 and S2 as singed integer.
+	_for, // FOR loop, "for @S1 @S2": Loop until the value in S1 reaches the value in S2 (inclusively).
+	next, // FOR loop, "next @D": return to the first of the loop and increment the value in D.
+	_while, // WHILE Loop, "while @S1 <Comparison Symbol> @S2": Compare S1 and S2 as singed integer.
 	ifu, // IF statement, "ifu @S1 <Comparison Symbol> @S2": Compare S1 and S2 as unsinged integer.
-	foru, // FOR loop, "foru @S1 <Comparison Symbol> @S2": Compare S1 and S2 as unsinged integer.
+	whileu, // WHILE loop, "whileu @S1 <Comparison Symbol> @S2": Compare S1 and S2 as unsinged integer.
 	intb, // Binary-coded decimal calculation, "intb @D @S1 <operator> @S2": Range is -9,999,999,999,999,999 through 9,999,999,999,999,999.
 	ifb, // IF statement, "ifb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
-	forb, // FOR loop, "forb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
+	whileb, // WHILE loop, "whileb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
 	_float, // Floating point calculation, "float @D @S1 <operator> @S2"
 	sqrtf, // Square root, "sqrtf @D @S1": D = S1^1/2.
 	radf, // Radian, "radf @D @S1": D = S1 * pi/180.0.
@@ -126,12 +129,12 @@ typedef enum _command_list {
 	absf,
 	negf,
 	iff, // IF statement, "iff @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
-	forf, // FOR loop, "forf @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
+	whilef, // WHILE loop, "whilef @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
 	input, // Input to the line, "input @D".
 	ifs, // IF statement, "ifs @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
-	fors, // FOR loop, "fors @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
-	mov, // Copy, "mov @D @S1".
-	apd, // Append, "apd @D @S1".
+	whiles, // WHILE loop, "whiles @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
+	equal, // Copy, "equal @D @S1".
+	append, // Append, "append @D @S1".
 	vlen, // Vertical Length, "vlen @D @S1".
 	hlen, // Horizontal Length, "hlen @D @S1".
 	jmp, // Jump to the line, "jmp @S1": Next line will be the number in S1.
@@ -166,14 +169,24 @@ typedef enum _command_list {
  */
 
 /**
- * FOR loops (for, foru, forb, forf, fors):
- * FOR loops compare two values. If the comparison is false, skip commands in the lines until "next".
+ * WHILE loops (while, whileu, whileb, whilef, whiles):
+ * WHILE loops compare two values. If the comparison is false, skip commands in the lines until "endwhile".
  * For Example, "for @1 < @2" checks whether the value in line No. 1 is less than the value in line No. 2 as signed integer.
  * If the comparison is true, the target line becomes the next line to execute.
- * If not (false), the next line is not executed and the lines afterwards are not executed until "next".
- * "next" returns the target lines to the first of the loop if the loop is underway.
- * FOR loops use the array for linking that "call" and "ret" also use. Caution that the array has limitation to store links.
+ * If not (false), the next line is not executed and the lines afterwards are not executed until "endwhile".
+ * "endwhile" returns the target lines to the first of the loop if the loop is underway.
+ * WHILE loops use the array for linking that "call" and "ret" also use. Caution that the array has limitation to store links.
  * Comparison symbols are "== (equal)", "!= (not equal)", "<= (less than or equal)", ">= (greater than or equal)", "< (less than)", and "> (greater than)".
+ */
+
+/**
+ * FOR loop (for):
+ * FOR loop compares two values as unsigned integer. If the first value is greater than the second value, skip commands in the lines until "next".
+ * For Example, "for @1 @2" checks whether the value in line No. 1 is greater than the value in line No. 2 as unsigned integer.
+ * If the comparison is false, the target line becomes the next line to execute.
+ * If not (true), the next line is not executed and the lines afterwards are not executed until "next".
+ * "next @1" returns the target lines to the first of the loop if the loop is underway, and increments the value in line No.1 by 1.
+ * FOR loop uses the array for linking that "call" and "ret" also use. Caution that the array has limitation to store links.
  */
 
 /**
@@ -245,7 +258,7 @@ int32 ticket_hid; // Use in init_usb_keyboard()
 dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
-bool flag_pass; // Use in IF Statements and FOR Loops
+bool flag_pass; // Use in IF Statements and FOR/WHILE Loops
 
 /* Start Up */
 bool startup;
@@ -356,7 +369,7 @@ int32 _user_start() {
 						temp_str = pass_space_label( UART32_UARTINT_HEAP );
 						temp_str_dup =  temp_str;
 
-						/* Check Pass Flag from IF Statements and FOR Loops */
+						/* Check Pass Flag from IF Statements and FOR/WHILE Loops */
 						if ( ! flag_pass ) {
 
 							/* Numeration Process */
@@ -372,6 +385,10 @@ int32 _user_start() {
 								length_arg = 0;
 								pipe_type = go_nextline;
 								//flag_pass = false;
+							} else if ( str32_strmatch( temp_str, 8, "endwhile\0", 8 ) ) {
+								command_type = endwhile;
+								length_arg = 0;
+								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 3, "end\0", 3 ) ) {
 								command_type = null;
 								length_arg = 0;
@@ -381,8 +398,8 @@ int32 _user_start() {
 								length_arg = 0;
 								pipe_type = go_nextline;
 								flag_pass = ! flag_pass;
-							} else if ( str32_strmatch( temp_str, 4, "next\0", 4 ) ) {
-								command_type = next;
+							} else if ( str32_strmatch( temp_str, 5, "break\0", 5 ) ) {
+								command_type = _break;
 								length_arg = 0;
 								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 6, "print \0", 6 ) ) {
@@ -520,9 +537,24 @@ int32 _user_start() {
 								command_type = _for;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
+								src_index = 0;
+							} else if ( str32_strmatch( temp_str, 5, "next \0", 5 ) ) {
+								command_type = next;
+								length_arg = 1;
+								pipe_type = enumurate_sources;
+								src_index = 0; // 0 is Direction and Source
+							} else if ( str32_strmatch( temp_str, 6, "while \0", 6 ) ) {
+								command_type = _while;
+								length_arg = 2;
+								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
 							} else if ( str32_strmatch( temp_str, 4, "ifu \0", 4 ) ) {
 								command_type = ifu;
+								length_arg = 2;
+								pipe_type = enumurate_sources;
+								src_index = 0; // No Direction
+							} else if ( str32_strmatch( temp_str, 7, "whileu \0", 7 ) ) {
+								command_type = whileu;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
@@ -533,6 +565,11 @@ int32 _user_start() {
 								src_index = 1; // 0 is Direction
 							} else if ( str32_strmatch( temp_str, 4, "ifb \0", 4 ) ) {
 								command_type = ifb;
+								length_arg = 2;
+								pipe_type = enumurate_sources;
+								src_index = 0; // No Direction
+							} else if ( str32_strmatch( temp_str, 7, "whileb \0", 7 ) ) {
+								command_type = whileb;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
@@ -591,6 +628,11 @@ int32 _user_start() {
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
+							} else if ( str32_strmatch( temp_str, 7, "whilef \0", 7 ) ) {
+								command_type = whilef;
+								length_arg = 2;
+								pipe_type = enumurate_sources;
+								src_index = 0; // No Direction
 							} else if ( str32_strmatch( temp_str, 6, "input \0", 6 ) ) {
 								command_type = input;
 								length_arg = 1;
@@ -599,12 +641,16 @@ int32 _user_start() {
 								command_type = ifs;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "mov \0", 4 ) ) {
-								command_type = mov;
+							} else if ( str32_strmatch( temp_str, 7, "whiles \0", 7 ) ) {
+								command_type = whiles;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "apd \0", 4 ) ) {
-								command_type = apd;
+							} else if ( str32_strmatch( temp_str, 4, "equal \0", 4 ) ) {
+								command_type = equal;
+								length_arg = 2;
+								pipe_type = execute_command;
+							} else if ( str32_strmatch( temp_str, 4, "append \0", 4 ) ) {
+								command_type = append;
 								length_arg = 2;
 								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 5, "vlen \0", 5 ) ) {
@@ -675,10 +721,15 @@ int32 _user_start() {
 								length_arg = 0;
 								pipe_type = go_nextline;
 								flag_pass = false;
-							} else if ( str32_strmatch( temp_str, 4, "next\0", 4 ) ) {
-								command_type = next;
+							} else if ( str32_strmatch( temp_str, 8, "endwhile\0", 8 ) ) {
+								command_type = endwhile;
 								length_arg = 0;
 								pipe_type = execute_command;
+							} else if ( str32_strmatch( temp_str, 5, "next \0", 5 ) ) {
+								command_type = next;
+								length_arg = 1;
+								pipe_type = enumurate_sources;
+								src_index = 0; // 0 is Direction and Source
 							} else {
 								command_type = null;
 								length_arg = 0;
@@ -776,7 +827,7 @@ int32 _user_start() {
 							if ( var_temp.u32 == -1 ) var_temp.u32 = str32_strlen( temp_str );
 							_store_32( array_source + 8 * src_index, (obj)temp_str );
 							_store_32( array_source + 8 * src_index + 4, var_temp.u32 );
-						} else { // Type of 32-bit Signed Integer
+						} else { // Type of 32-bit Signed/Unsigned Integer
 							if( str32_charindex( temp_str, 0x2E ) != -1 ) { // Ascii Code of Period
 								var_temp.f32 = cvt32_string_to_float32( temp_str, str32_strlen( temp_str ) );
 								var_temp.s32 = vfp32_f32tos32( var_temp.f32 );
@@ -794,13 +845,21 @@ int32 _user_start() {
 					case execute_command:
 
 						switch ( command_type ) {
-							case next:
+							case endwhile:
 								if ( ! flag_pass ) { // Under Looping
 									if ( array_link_offset <= 0 ) break;
 									array_link_offset--;
 									current_line = _load_32( array_link + array_link_offset * 4 ) - 1;
-								} else { // At End of For Loop
+								} else { // At End of Loop
 									flag_pass = false;
+								}
+
+								break;
+							case _break:
+								if ( ! flag_pass ) { // Under Looping
+									if ( array_link_offset <= 0 ) break;
+									array_link_offset--;
+									flag_pass = true;
 								}
 
 								break;
@@ -1122,6 +1181,33 @@ int32 _user_start() {
 
 							case _for:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
+								/* Unsigned Greater Than: C Bit[29] == 1 && Z Bit[30] == 0 */
+								if ( ( status_nzcv & 0x20000000 ) && ( ! ( status_nzcv & 0x40000000 ) ) ) {
+									flag_pass = true;
+								} else {
+									flag_pass = false;
+									_store_32( array_link + array_link_offset * 4, current_line );
+									array_link_offset++;
+									if ( array_link_offset >= link_stacksize ) array_link_offset = link_stacksize - 1;
+								}
+
+								break;
+
+							case next:
+								if ( ! flag_pass ) { // Under Looping
+									if ( array_link_offset <= 0 ) break;
+									array_link_offset--;
+									current_line = _load_32( array_link + array_link_offset * 4 ) - 1;
+									direction.u32 =  _load_32( array_source ) + 1;
+									str_direction = cvt32_int32_to_string_deci( direction.u32, 1, 0 );
+								} else { // At End of Loop
+									flag_pass = false;
+								}
+
+								break;
+
+							case _while:
+								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
 								length_temp = str32_strlen( temp_str_dup );
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
@@ -1138,7 +1224,7 @@ int32 _user_start() {
 								flag_pass = compare_unsigned( temp_str_dup, length_temp, status_nzcv );
 
 								break;
-							case foru:
+							case whileu:
 								status_nzcv = arm32_cmp( _load_32( array_source ), _load_32( array_source + 4 ) );
 								length_temp = str32_strlen( temp_str_dup );
 								flag_pass = compare_unsigned( temp_str_dup, length_temp, status_nzcv );
@@ -1177,7 +1263,7 @@ int32 _user_start() {
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
 								break;
-							case forb:
+							case whileb:
 								status_nzcv = bcd32_bcmp( (String)_load_32( array_source ), _load_32( array_source + 4 ), (String)_load_32( array_source + 8 ), _load_32( array_source + 12 ) );
 								length_temp = str32_strlen( temp_str_dup );
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
@@ -1251,7 +1337,7 @@ int32 _user_start() {
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
 								break;
-							case forf:
+							case whilef:
 								status_nzcv = vfp32_fcmp( vfp32_hexatof32( _load_32( array_source ) ), vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								length_temp = str32_strlen( temp_str_dup );
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
@@ -1302,7 +1388,7 @@ int32 _user_start() {
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
 								break;
-							case fors:
+							case whiles:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								temp_str = pass_space_label( UART32_UARTINT_HEAP );
 								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
@@ -1322,7 +1408,7 @@ int32 _user_start() {
 								}
 
 								break;
-							case mov:
+							case equal:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
 								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
@@ -1340,7 +1426,7 @@ int32 _user_start() {
 								line_clean( dst_str );
 
 								break;
-							case apd:
+							case append:
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
 								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
@@ -1448,7 +1534,7 @@ int32 _user_start() {
 						pipe_type = go_nextline;
 						if ( str_direction == null ) break;
 						line_writer( _load_32( array_argpointer ), str_direction );
-						str_direction = (String)heap32_mfree( (obj)str_direction );
+						str_direction = (String)heap32_mfree( (obj)str_direction ); // Clear to Null
 
 						break;
 
