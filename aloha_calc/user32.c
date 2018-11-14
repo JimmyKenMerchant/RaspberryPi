@@ -645,11 +645,11 @@ int32 _user_start() {
 								command_type = whiles;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "equal \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "equal \0", 6 ) ) {
 								command_type = equal;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "append \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 7, "append \0", 7 ) ) {
 								command_type = append;
 								length_arg = 2;
 								pipe_type = execute_command;
@@ -1409,35 +1409,69 @@ int32 _user_start() {
 
 								break;
 							case equal:
+								/* Destination */
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
-								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
-								src_str = UART32_UARTINT_HEAP;
-
-								/* Pass Spaces and Label */
+								/* Get Start Point to Copy */
 								temp_str = pass_space_label( dst_str );
 								var_temp.u32 = temp_str - dst_str;
-								temp_str2 = pass_space_label( src_str );
-								var_temp2.u32 = temp_str2 - src_str;
 
-								var_temp3.u32 = str32_strlen( temp_str2 );
+								/* Source String */
+								var_temp2.u32 =_load_32( array_argpointer + 4 );
+								if ( var_temp2.u32 ) { // If Not Null, That Is, Having Second Argument with Label
+									if ( _uartsetheap( var_temp2.u32 ) ) break;
+									src_str = UART32_UARTINT_HEAP;
+									/* Pass Spaces and Label of Source String */
+									temp_str = pass_space_label( src_str );
+									var_temp2.u32 = temp_str - src_str;
+									var_temp3.u32 = str32_strlen( temp_str );
+								} else { // If Null, That Is, Having Immediate or Nothing of Second Argument
+									if ( _uartsetheap( current_line ) ) break;
+									src_str = UART32_UARTINT_HEAP;
+									/* Pass Spaces, Labels, Command of Source String */
+									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									if ( length_temp == -1 ) break; // Reaching End of Script of Line
+									temp_str_dup += length_temp; // Beyond Command
+									temp_str_dup++; // Next of Space
+									temp_str = pass_space_label( temp_str_dup );
+									var_temp2.u32 = temp_str - src_str;
+									var_temp3.u32 = str32_strlen( temp_str );
+								}
+
 								if ( var_temp3.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp3.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
 								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, var_temp2.u32, var_temp3.u32 + 1 ); // Add Null Character
 								line_clean( dst_str );
 
 								break;
 							case append:
+								/* Destination */
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
-								if ( _uartsetheap( _load_32( array_argpointer + 4 ) ) ) break;
-								src_str = UART32_UARTINT_HEAP;
-
-								/* Pass Spaces and Label */
+								/* Get Start Point to Copy */
 								var_temp.u32 = str32_strlen( dst_str );
-								temp_str2 = pass_space_label( src_str );
-								var_temp2.u32 = temp_str2 - src_str;
 
-								var_temp3.u32 = str32_strlen( temp_str2 );
+								/* Source String */
+								var_temp2.u32 =_load_32( array_argpointer + 4 );
+								if ( var_temp2.u32 ) { // If Not Null, That Is, Having Second Argument with Label
+									if ( _uartsetheap( var_temp2.u32 ) ) break;
+									src_str = UART32_UARTINT_HEAP;
+									/* Pass Spaces and Label of Source String */
+									temp_str = pass_space_label( src_str );
+									var_temp2.u32 = temp_str - src_str;
+									var_temp3.u32 = str32_strlen( temp_str );
+								} else { // If Null, That Is, Having Immediate or Nothing of Second Argument
+									if ( _uartsetheap( current_line ) ) break;
+									src_str = UART32_UARTINT_HEAP;
+									/* Pass Spaces, Labels, Command of Source String */
+									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									if ( length_temp == -1 ) break; // Reaching End of Script of Line
+									temp_str_dup += length_temp; // Beyond Command
+									temp_str_dup++; // Next of Space
+									temp_str = pass_space_label( temp_str_dup );
+									var_temp2.u32 = temp_str - src_str;
+									var_temp3.u32 = str32_strlen( temp_str );
+								}
+
 								if ( var_temp3.u32 > UART32_UARTMALLOC_MAXROW - var_temp.u32 ) var_temp3.u32 = UART32_UARTMALLOC_MAXROW - var_temp.u32; // Limitatin for Safety
 								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, var_temp2.u32, var_temp3.u32 + 1 ); // Add Null Character
 								line_clean( dst_str );
