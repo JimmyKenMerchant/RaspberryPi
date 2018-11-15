@@ -694,6 +694,7 @@ macro32_debug buffer, 320, 12
 
 /*
 macro32_debug data_lower, 320, 24
+macro32_debug data_upper, 320, 36
 */
 
 	push {r0-r3}
@@ -704,7 +705,7 @@ macro32_debug data_lower, 320, 24
 	tst response, #0x4                     @ ACK
 	beq hid32_keyboard_get_error
 
-	/* If we get any arrows at all, we need 24 bytes, because 6 bytes are for characters and 3 bytes needs per one arrow */
+	/* If we get any arrow of escape sequence at all, we need 24 bytes, because 6 bytes are for characters and 3 bytes needs per one arrow */
 
 	push {r0-r2}
 	mov r0, #7                             @ 4 Bytes by 7 Words Equals 28 Bytes
@@ -724,13 +725,21 @@ macro32_debug data_lower, 320, 24
 	.unreq response
 	byte  .req r6
 
-	mov modifier, #0
-
-	tst data_lower, #0x2                   @ Modifier Is Shift
-	ldreq base, hid32_keyboard_get_ascii
-	ldrne base, hid32_keyboard_get_ascii_shift
-	orrne modifier, modifier, #0x2
+	/* Modifier (First Byte of Report)
+	 * Bit[7]: Right GUI
+	 * Bit[6]: Right ALT
+	 * Bit[5]: Right SHIFT
+	 * Bit[4]: Right CTRL
+	 * Bit[3]: Left GUI
+	 * Bit[2]: Left ALT
+	 * Bit[1]: Left SHIFT
+	 * Bit[0]: Left CTRL
+	 */
+	mov modifier, data_lower
 	lsr data_lower, data_lower, #16        @ First and Second Bytes Are for Modifier and Reserved
+	tst modifier, #0b00100010              @ Modifier Has SHIFT
+	ldreq base, HID32_KEYBOARD_GET_ASCII
+	ldrne base, HID32_KEYBOARD_GET_ASCII_SHIFT
 	
 	mov increment, #0
 	mov i, #0
@@ -746,12 +755,9 @@ macro32_debug data_lower, 320, 24
 		lsr temp, temp, i
 
 		cmp temp, #0x39                    @ 0x0 - 0x38 Are Real Characters
-		ldrlob byte, [base, temp]
-		movlo j, #1
-		blo hid32_keyboard_get_loop_store
+		blo hid32_keyboard_get_loop_character
 
 		cmp temp, #0x87                    @ International1
-		moveq j, #1
 		beq hid32_keyboard_get_loop_intl1
 
 		mov byte, #0x001B
@@ -779,10 +785,27 @@ macro32_debug data_lower, 320, 24
 
 		b hid32_keyboard_get_success
 
+		hid32_keyboard_get_loop_character:
+			ldrb byte, [base, temp]
+			mov j, #1
+			tst modifier, #0b00010001          @ Modifier Has CTRL
+			bne hid32_keyboard_get_loop_character_ctrl
+			b hid32_keyboard_get_loop_store
+
+			hid32_keyboard_get_loop_character_ctrl:
+				cmp byte, #0x40
+				subhs byte, byte, #0x40        @ Transform to CTRL Characters (0x00 to 0x1F)
+				/*
+				cmp byte, 0x20
+				subhs byte, byte, #0x20        @ If Small Letter
+				*/
+				b hid32_keyboard_get_loop_store
+
 		hid32_keyboard_get_loop_intl1:
-			tst modifier, #0x2
-			movne byte, #0x5F            @ Ascii Code of Underbar
-			moveq byte, #0x5C            @ Ascii Code of Backslash
+			tst modifier, #0b00100010          @ Modifier Has Shift
+			movne byte, #0x5F                  @ Ascii Code of Underbar
+			moveq byte, #0x5C                  @ Ascii Code of Backslash
+			mov j, #1
 
 		hid32_keyboard_get_loop_store:
 			mov temp, #0xFF
@@ -834,10 +857,14 @@ macro32_debug data_lower, 320, 24
 .unreq increment
 .unreq modifier
 
-hid32_keyboard_get_ascii:        .word _hid32_keyboard_get_ascii
-hid32_keyboard_get_ascii_shift:  .word _hid32_keyboard_get_ascii_shift
-_hid32_keyboard_get_ascii: .ascii "\0\0\0\0abcdefghijklmnopqrstuvwxyz1234567890\xD\x1B\x8\x9 -=[]\\#;'`,./"
+.globl HID32_KEYBOARD_GET_ASCII
+.globl HID32_KEYBOARD_GET_ASCII_SHIFT
+.globl HID32_KEYBOARD_GET_101
+.globl HID32_KEYBOARD_GET_SHIFT_101
+HID32_KEYBOARD_GET_ASCII:        .word HID32_KEYBOARD_GET_101
+HID32_KEYBOARD_GET_ASCII_SHIFT:  .word HID32_KEYBOARD_GET_SHIFT_101
+HID32_KEYBOARD_GET_101: .ascii "\0\0\0\0abcdefghijklmnopqrstuvwxyz1234567890\xD\x1B\x8\x9 -=[]\\#;'`,./"
 .space 7 @ Total 64 Bytes (0x40 Bytest)
-_hid32_keyboard_get_ascii_shift: .ascii "\0\0\0\0ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()\xD\x1B\x8\x9 _+{}|-:\"~<>?"
+HID32_KEYBOARD_GET_SHIFT_101: .ascii "\0\0\0\0ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()\xD\x1B\x8\x9 _+{}|-:\"~<>?"
 .space 7 @ Total 64 Bytes (0x40 Bytest)
 
