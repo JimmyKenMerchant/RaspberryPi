@@ -48,7 +48,7 @@ typedef enum _command_list {
 	end, // End of script, should search after "end*" on search_command to prevent missing.
 	_else, // IF statement, flip the pass flag.
 	_break, // FOR/WHILE loop, break the loop
-	print, // Print string, "print @D": Print string from D.
+	print, // Print string, "print @S" or "print <Immediate Value>" Print string in S or immediate value.
 	sleep, // Sleep microseconds by integer "Sleep @S1": Number in S1 means micro seconds to sleep.
 	/**
 	 * Set calender and clock, "stime @S1 @S2 @S3 @S4 @S5 @S6 @S7":
@@ -156,8 +156,8 @@ typedef enum _command_list {
  * 3. Line Number, indicated by "@".
  * 4. Indirect Number, indicated by "[".
  * Caution that labels should not use characters, "&|^.:@[=!<>+-/%*", for their naming.
- * Strings without these prefixes are ignored. However, "let" and "append" commands allows immediate values as the second arguments.
- * For example, "let @1 1234" stores 1234 to line No. 1.
+ * Strings without these prefixes are ignored. However, "let" and "append" commands allow immediate values as the second argument.
+ * For example, "let @1 1234" stores 1234 to line No. 1. Also, "print" command allows immediate values as the first argument.
  */
 
 /**
@@ -911,8 +911,16 @@ int32 _user_start() {
 								break;
 							case print:
 								var_temp.u32 = _load_32( array_argpointer );
-								if ( _uartsetheap( var_temp.u32 ) ) break;
-								command_print( UART32_UARTINT_HEAP );
+								if ( var_temp.u32 ) { // If Not Null, That Is, Having Second Argument with Label
+									if ( _uartsetheap( var_temp.u32 ) ) break;
+									command_print( UART32_UARTINT_HEAP );
+								} else { // If Null, That Is, Having Immediate or Nothing of Second Argument
+									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									if ( length_temp == -1 ) break; // Reaching End of Script of Line
+									temp_str_dup += length_temp; // Beyond Command
+									temp_str_dup++; // Next of Space
+									command_print( temp_str_dup );
+								}
 
 								break;
 							case sleep:
