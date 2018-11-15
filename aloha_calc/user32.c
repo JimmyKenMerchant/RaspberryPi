@@ -119,22 +119,22 @@ typedef enum _command_list {
 	ifb, // IF statement, "ifb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
 	whileb, // WHILE loop, "whileb @S1 <Comparison Symbol> @S2": Compare S1 and S2 as binary-coded decimal.
 	_float, // Floating point calculation, "float @D @S1 <operator> @S2"
-	sqrtf, // Square root, "sqrtf @D @S1": D = S1^1/2.
-	radf, // Radian, "radf @D @S1": D = S1 * pi/180.0.
-	sinf, // Sine by radian on float, "sin @D @S1": D = sin(S1).
-	cosf,
-	tanf,
-	lnf,
-	logf,
-	absf,
-	negf,
+	sqrt, // Square root, "sqrt @D @S1": D = S1^1/2.
+	rad, // Radian, "rad @D @S1": D = S1 * pi/180.0.
+	sin, // Sine by radian on float, "sin @D @S1": D = sin(S1).
+	cos,
+	tan,
+	ln,
+	log,
+	abs,
+	neg,
 	iff, // IF statement, "iff @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
 	whilef, // WHILE loop, "whilef @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
 	input, // Input to the line, "input @D".
 	ifs, // IF statement, "ifs @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
 	whiles, // WHILE loop, "whiles @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
-	equal, // Copy, "equal @D @S1".
-	append, // Append, "append @D @S1".
+	let, // Copy, "let @D @S1" or "let @D <Immediate Value>".
+	append, // Append, "append @D @S1" or "append @D <Immediate Value>".
 	vlen, // Vertical Length, "vlen @D @S1".
 	hlen, // Horizontal Length, "hlen @D @S1".
 	jmp, // Jump to the line, "jmp @S1": Next line will be the number in S1.
@@ -156,12 +156,14 @@ typedef enum _command_list {
  * 3. Line Number, indicated by "@".
  * 4. Indirect Number, indicated by "[".
  * Caution that labels should not use characters, "&|^.:@[=!<>+-/%*", for their naming.
+ * Strings without these prefixes are ignored. However, "let" and "append" commands allows immediate values as the second arguments.
+ * For example, "let @1 1234" stores 1234 to line No. 1.
  */
 
 /**
  * IF statements (if, ifu, ifb, iff, ifs):
  * IF statements compare two values. If the comparison is false, skip commands in the lines until "else" or "endif".
- * For Example, "if @1 < @2" checks whether the value in line No. 1 is less than the value in line No. 2 as signed integer.
+ * For example, "if @1 < @2" checks whether the value in line No. 1 is less than the value in line No. 2 as signed integer.
  * If the comparison is true, the target line becomes the next line to execute.
  * If not (false), the next line is not executed and the lines afterwards are not executed until "else" or "endif".
  * "else" switches the pass flag; thus the lines between "else" and "endif" are not executed on true, or the lines are executed on false.
@@ -259,6 +261,7 @@ dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
 bool flag_pass; // Use in IF Statements and FOR/WHILE Loops
+uint32 count_pass; // Use in IF Statements and FOR/WHILE Loops, Check Nested Statements and Loops
 
 /* Start Up */
 bool startup;
@@ -358,6 +361,7 @@ int32 _user_start() {
 
 	flag_execute = false;
 	flag_pass = false;
+	count_pass = 0;
 	
 	while ( true ) {
 		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
@@ -402,65 +406,65 @@ int32 _user_start() {
 								command_type = _break;
 								length_arg = 0;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 6, "print \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 5, "print\0", 5 ) ) {
 								command_type = print;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 6, "sleep \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 5, "sleep\0", 5 ) ) {
 								command_type = sleep;
 								length_arg = 1;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 6, "stime \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 5, "stime\0", 5 ) ) {
 								command_type = stime;
 								length_arg = 7;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 6, "gtime \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 5, "gtime\0", 5 ) ) {
 								command_type = gtime;
 								length_arg = 8;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "arr \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "arr\0", 3 ) ) {
 								command_type = arr;
 								length_arg = 4;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Destination to Be Stored Number of Raw Data Array
-							} else if ( str32_strmatch( temp_str, 5, "free \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "free\0", 4 ) ) {
 								command_type = free;
 								length_arg = 1;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 5, "pict \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "pict\0", 4 ) ) {
 								command_type = pict;
 								length_arg = 4;
 								pipe_type = enumurate_sources;
 								src_index = 2; // Only Last Two Is Needed to Translate to Integer
-							} else if ( str32_strmatch( temp_str, 4, "csr \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "csr\0", 3 ) ) {
 								command_type = csr;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 4, "fnt \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "fnt\0", 3 ) ) {
 								command_type = fnt;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 5, "gpio \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "gpio\0", 4 ) ) {
 								command_type = gpio;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 8, "clrgpio \0", 8 ) ) {
+							} else if ( str32_strmatch( temp_str, 7, "clrgpio\0", 7 ) ) {
 								command_type = clrgpio;
 								length_arg = 1;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 4, "snd \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
 								command_type = snd;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 7, "intsnd \0", 7 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "intsnd\0", 6 ) ) {
 								command_type = intsnd;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
@@ -469,203 +473,203 @@ int32 _user_start() {
 								command_type = clrsnd;
 								length_arg = 0;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "beat \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "beat\0", 4 ) ) {
 								command_type = beat;
 								length_arg = 1;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 5, "save \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "save\0", 4 ) ) {
 								command_type = save;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Start Point
-							} else if ( str32_strmatch( temp_str, 5, "load \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "load\0", 4 ) ) {
 								command_type = load;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Start Point
-							} else if ( str32_strmatch( temp_str, 4, "int \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "int \0", 4 ) ) { // Also Search Space Next of String
 								command_type = _int;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "intu \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "intu\0", 4 ) ) {
 								command_type = intu;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "and \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "and\0", 3 ) ) {
 								command_type = and;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "not \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "not\0", 3 ) ) {
 								command_type = not;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 3, "or \0", 3 ) ) {
+							} else if ( str32_strmatch( temp_str, 2, "or\0", 2 ) ) {
 								command_type = or;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "xor \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "xor\0", 3 ) ) {
 								command_type = xor;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "lsl \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "lsl\0", 3 ) ) {
 								command_type = lsl;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "lsr \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "lsr\0", 3 ) ) {
 								command_type = lsr;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "rand \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "rand\0", 4 ) ) {
 								command_type = rand;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 3, "if \0", 3 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "if \0", 3 ) ) { // Also Search Space Next of String
 								command_type = _if;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 4, "for \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "for\0", 3 ) ) {
 								command_type = _for;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 5, "next \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "next\0", 4 ) ) {
 								command_type = next;
 								length_arg = 1;
 								pipe_type = enumurate_sources;
 								src_index = 0; // 0 is Direction and Source
-							} else if ( str32_strmatch( temp_str, 6, "while \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "while \0", 6 ) ) { // Also Search Space Next of String
 								command_type = _while;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 4, "ifu \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "ifu\0", 3 ) ) {
 								command_type = ifu;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 7, "whileu \0", 7 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "whileu\0", 6 ) ) {
 								command_type = whileu;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 5, "intb \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "intb\0", 4 ) ) {
 								command_type = intb;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "ifb \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "ifb\0", 3 ) ) {
 								command_type = ifb;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 7, "whileb \0", 7 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "whileb\0", 6 ) ) {
 								command_type = whileb;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 6, "float \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 5, "float\0", 5 ) ) {
 								command_type = _float;
 								length_arg = 3;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 6, "sqrtf \0", 6 ) ) {
-								command_type = sqrtf;
+							} else if ( str32_strmatch( temp_str, 4, "sqrt\0", 4 ) ) {
+								command_type = sqrt;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "radf \0", 5 ) ) {
-								command_type = radf;
+							} else if ( str32_strmatch( temp_str, 3, "rad\0", 3 ) ) {
+								command_type = rad;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "sinf \0", 5 ) ) {
-								command_type = sinf;
+							} else if ( str32_strmatch( temp_str, 3, "sin\0", 3 ) ) {
+								command_type = sin;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "cosf \0", 5 ) ) {
-								command_type = cosf;
+							} else if ( str32_strmatch( temp_str, 3, "cos\0", 3 ) ) {
+								command_type = cos;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "tanf \0", 5 ) ) {
-								command_type = tanf;
+							} else if ( str32_strmatch( temp_str, 3, "tan\0", 3 ) ) {
+								command_type = tan;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "lnf \0", 4 ) ) {
-								command_type = lnf;
+							} else if ( str32_strmatch( temp_str, 2, "ln\0", 2 ) ) {
+								command_type = ln;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "logf \0", 5 ) ) {
-								command_type = logf;
+							} else if ( str32_strmatch( temp_str, 3, "log\0", 3 ) ) {
+								command_type = log;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "absf \0", 5 ) ) {
-								command_type = absf;
+							} else if ( str32_strmatch( temp_str, 3, "abs\0", 3 ) ) {
+								command_type = abs;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 5, "negf \0", 5 ) ) {
-								command_type = negf;
+							} else if ( str32_strmatch( temp_str, 3, "neg\0", 3 ) ) {
+								command_type = neg;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 1; // 0 is Direction
-							} else if ( str32_strmatch( temp_str, 4, "iff \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "iff\0", 3 ) ) {
 								command_type = iff;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 7, "whilef \0", 7 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "whilef\0", 6 ) ) {
 								command_type = whilef;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0; // No Direction
-							} else if ( str32_strmatch( temp_str, 6, "input \0", 6 ) ) {
+							} else if ( str32_strmatch( temp_str, 5, "input\0", 5 ) ) {
 								command_type = input;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "ifs \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "ifs\0", 3 ) ) {
 								command_type = ifs;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 7, "whiles \0", 7 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "whiles\0", 6 ) ) {
 								command_type = whiles;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 6, "equal \0", 6 ) ) {
-								command_type = equal;
+							} else if ( str32_strmatch( temp_str, 3, "let\0", 3 ) ) {
+								command_type = let;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 7, "append \0", 7 ) ) {
+							} else if ( str32_strmatch( temp_str, 6, "append\0", 6 ) ) {
 								command_type = append;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "vlen \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "vlen\0", 4 ) ) {
 								command_type = vlen;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "hlen \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "hlen\0", 4 ) ) {
 								command_type = hlen;
 								length_arg = 2;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "jmp \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "jmp\0", 3 ) ) {
 								command_type = jmp;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "call \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "call\0", 4 ) ) {
 								command_type = call;
 								length_arg = 1;
 								pipe_type = execute_command;
@@ -673,15 +677,15 @@ int32 _user_start() {
 								command_type = ret;
 								length_arg = 0;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "push \0", 5 ) ) {
+							} else if ( str32_strmatch( temp_str, 4, "push\0", 4 ) ) {
 								command_type = push;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "pop \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "pop\0", 3 ) ) {
 								command_type = pop;
 								length_arg = 1;
 								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 4, "ptr \0", 4 ) ) {
+							} else if ( str32_strmatch( temp_str, 3, "ptr\0", 3 ) ) {
 								command_type = ptr;
 								length_arg = 2;
 								pipe_type = execute_command;
@@ -712,24 +716,66 @@ int32 _user_start() {
 						} else {
 
 							if ( str32_strmatch( temp_str, 4, "else\0", 4 ) ) {
-								command_type = _else;
-								length_arg = 0;
-								pipe_type = go_nextline;
-								flag_pass = ! flag_pass;
+								if ( ! count_pass ) {
+									command_type = null;
+									length_arg = 0;
+									pipe_type = go_nextline;
+									flag_pass = ! flag_pass;
+								} else {
+									command_type = null;
+									length_arg = 0;
+									pipe_type = go_nextline;
+								}
 							} else if ( str32_strmatch( temp_str, 5, "endif\0", 5 ) ) {
-								command_type = endif;
+								if ( ! count_pass ) {
+									command_type = null;
+									length_arg = 0;
+									pipe_type = go_nextline;
+									flag_pass = false;
+								} else {
+									command_type = null;
+									length_arg = 0;
+									pipe_type = go_nextline;
+									count_pass--;
+								}
+							} else if ( str32_strmatch( temp_str, 8, "endwhile\0", 8 ) ) {
+								if ( ! count_pass ) {
+									command_type = endwhile;
+									length_arg = 0;
+									pipe_type = execute_command;
+								} else {
+									command_type = null;
+									length_arg = 0;
+									pipe_type = go_nextline;
+									count_pass--;
+								}
+							} else if ( str32_strmatch( temp_str, 2, "if\0", 2 ) ) { // if, ifb, iff, ifs, Assume Nested
+								command_type = null;
 								length_arg = 0;
 								pipe_type = go_nextline;
-								flag_pass = false;
-							} else if ( str32_strmatch( temp_str, 8, "endwhile\0", 8 ) ) {
-								command_type = endwhile;
+								count_pass++;
+							} else if ( str32_strmatch( temp_str, 3, "for\0", 3 ) ) { // Assume Nested
+								command_type = null;
 								length_arg = 0;
-								pipe_type = execute_command;
-							} else if ( str32_strmatch( temp_str, 5, "next \0", 5 ) ) {
-								command_type = next;
-								length_arg = 1;
-								pipe_type = enumurate_sources;
-								src_index = 0; // 0 is Direction and Source
+								pipe_type = go_nextline;
+								count_pass++;
+							} else if ( str32_strmatch( temp_str, 4, "next\0", 4 ) ) {
+								if ( ! count_pass ) {
+									command_type = next;
+									length_arg = 1;
+									pipe_type = enumurate_sources;
+									src_index = 0; // 0 is Direction and Source
+								} else {
+									command_type = null;
+									length_arg = 0;
+									pipe_type = go_nextline;
+									count_pass--;
+								}
+							} else if ( str32_strmatch( temp_str, 5, "while\0", 5 ) ) { // while, whileb, whilef, whiles, Assume Nested
+								command_type = null;
+								length_arg = 0;
+								pipe_type = go_nextline;
+								count_pass++;
 							} else {
 								command_type = null;
 								length_arg = 0;
@@ -1294,39 +1340,39 @@ int32 _user_start() {
 
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case sqrtf:
+							case sqrt:
 								direction.f32 = vfp32_fsqrt( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case radf:
+							case rad:
 								direction.f32 = math32_degree_to_radian( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case sinf:
+							case sin:
 								direction.f32 = math32_sin( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case cosf:
+							case cos:
 								direction.f32 = math32_cos( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case tanf:
+							case tan:
 								direction.f32 = math32_tan( vfp32_hexatof32( _load_32( array_source + 4 ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case lnf:
+							case ln:
 								direction.f32 = math32_ln( ( vfp32_hexatof32( _load_32( array_source + 4 ) ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case logf:
+							case log:
 								direction.f32 = math32_log( ( vfp32_hexatof32( _load_32( array_source + 4 ) ) ) );
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case absf:
+							case abs:
 								direction.u32 = _load_32( array_source + 4 ) & ~(0x80000000); // ~ is Not (Inverter), Sign Bit[31] Clear
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 								break;
-							case negf:
+							case neg:
 								direction.u32 = _load_32( array_source + 4 ) | 0x80000000; // Sign Bit[31] Set
 								str_direction = cvt32_float32_to_string( direction.f32, 1, 7, 0 );
 
@@ -1408,7 +1454,7 @@ int32 _user_start() {
 								}
 
 								break;
-							case equal:
+							case let:
 								/* Destination */
 								if ( _uartsetheap( _load_32( array_argpointer ) ) ) break;
 								dst_str = UART32_UARTINT_HEAP;
@@ -1612,6 +1658,8 @@ int32 _user_start() {
 						
 						pipe_type = search_command;
 						flag_execute = false;
+						flag_pass = false;
+						count_pass = 0;
 						var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
 						if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
 							var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
