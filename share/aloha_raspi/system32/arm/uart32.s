@@ -543,12 +543,10 @@ uart32_uartint:
 	temp          .req r4
 	flag_escape   .req r5
 	buffer        .req r6
+	byte          .req r7
+	temp2         .req r8
 
-	push {r4-r6,lr}
-
-	ldr temp, UART32_UARTINT_BUSY
-	tst temp, #0x1
-	bne uart32_uartint_error         @ If Busy
+	push {r4-r8,lr}
 
 	/*bl uart32_uartclrint*/         @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
 
@@ -572,6 +570,21 @@ uart32_uartint:
 
 	tst temp, #0x8                   @ Whether Overrun or Not
 	bne uart32_uartint_error         @ If Overrun
+
+	/* Get Byte to Receive from Buffer */
+	ldrb byte, _uart32_uartint_buffer
+
+	/* Check CTRL Characters */
+	cmp byte, #0x20
+	movlo temp, #1
+	lsllo temp, temp, byte
+	ldrlo temp2, UART32_UARTINT_CTRL
+	orrlo temp, temp, temp2
+	strlo temp, UART32_UARTINT_CTRL
+
+	ldr temp, UART32_UARTINT_BUSY
+	tst temp, #0x1
+	bne uart32_uartint_error         @ If Busy
 
 	/* If Succeed to Receive */
 
@@ -602,41 +615,17 @@ uart32_uartint:
 		beq uart32_uartint_escseq        @ If in Escape Sequence
 
 		/* Check Escape */
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x1B                    @ Ascii Code of Escape
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-
-		cmp temp, #-1
-		movne flag_escape, #1
-		bne uart32_uartint_escseq_common @ If Start of Escape Sequence
+		cmp byte, #0x1B                  @ Ascii Code of Escape
+		moveq flag_escape, #1
+		beq uart32_uartint_escseq_common @ If Start of Escape Sequence
 
 		/* Check Back Space */
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x08                    @ Ascii Code of Back Space
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-
-		cmp temp, #-1
-		bne uart32_uartint_backspace
+		cmp byte, #0x08                  @ Ascii Code of Back Space
+		beq uart32_uartint_backspace
 
 		/* Check Carriage Return */
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-
-		cmp temp, #-1
-		bne uart32_uartint_carriagereturn
+		cmp byte, #0x0D                  @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		beq uart32_uartint_carriagereturn
 
 		cmp count, max_size
 		subge count, max_size, #1
@@ -652,9 +641,7 @@ uart32_uartint:
 		blt uart32_uartint_insert
 
 		/* Store Data to Actual Memory Space from Buffer */
-		ldr temp, uart32_uartint_buffer
-		ldrb temp, [temp]
-		strb temp, [heap, count]
+		strb byte, [heap, count]
 
 		/* Slide Offset Count */
 		add count, count, #1
@@ -674,45 +661,17 @@ uart32_uartint:
 
 	uart32_uartint_escseq:
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x41                    @ Ascii Codes of A
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_escseq_up
+		cmp byte, #0x41                  @ Ascii Codes of A
+		beq uart32_uartint_escseq_up
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x42                    @ Ascii Codes of B
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_escseq_down
+		cmp byte, #0x42                  @ Ascii Codes of B
+		beq uart32_uartint_escseq_down
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x43                    @ Ascii Codes of C
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_escseq_right
+		cmp byte, #0x43                  @ Ascii Codes of C
+		beq uart32_uartint_escseq_right
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x44                    @ Ascii Codes of D
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_escseq_left
+		cmp byte, #0x44                  @ Ascii Codes of D
+		beq uart32_uartint_escseq_left
 
 		b uart32_uartint_escseq_common
 
@@ -921,9 +880,8 @@ uart32_uartint:
 
 		sub temp, temp, #1  @ Subtract One For Null Character for Use Later
 
-		ldr buffer, uart32_uartint_buffer
-		ldrb buffer, [buffer]
-		strb buffer, [heap, count]
+		/* Store Data to Actual Memory Space from Buffer */
+		strb byte, [heap, count]
 
 		/* Send Esc[K (Clear From Cursor Right) */
 		push {r0-r3}
@@ -997,7 +955,7 @@ uart32_uartint:
 /*macro32_debug_hexa heap, 100, 112, 36*/
 /*macro32_debug flag_escape, 100, 124*/
 
-		pop {r4-r6,pc}
+		pop {r4-r8,pc}
 
 .unreq flag_mirror
 .unreq max_size
@@ -1006,16 +964,21 @@ uart32_uartint:
 .unreq temp
 .unreq flag_escape
 .unreq buffer
+.unreq byte
+.unreq temp2
 
 .globl UART32_UARTINT_HEAP
 .globl UART32_UARTINT_COUNT_ADDR
 .globl UART32_UARTINT_BUSY_ADDR
+.globl UART32_UARTINT_CTRL_ADDR
 .balign 4
 UART32_UARTINT_HEAP:         .word 0x00
 UART32_UARTINT_COUNT_ADDR:   .word UART32_UARTINT_COUNT
 UART32_UARTINT_COUNT:        .word 0x00
 UART32_UARTINT_BUSY_ADDR:    .word UART32_UARTINT_BUSY
 UART32_UARTINT_BUSY:         .word 0x00
+UART32_UARTINT_CTRL_ADDR:    .word UART32_UARTINT_CTRL
+UART32_UARTINT_CTRL:         .word 0x00
 uart32_flag_escape:          .word 0x00
 uart32_uartint_cr:           .word _uart32_uartint_cr
 _uart32_uartint_cr:          .ascii "\x0D\0"
@@ -1080,18 +1043,15 @@ uart32_uartint_emulate:
 	temp          .req r4
 	flag_escape   .req r5
 	buffer        .req r6
-	character_rx  .req r7
-	string_tx     .req r8
-	string_tx_dup .req r9
+	byte          .req r7
+	temp2         .req r8
+	string_tx     .req r9
+	string_tx_dup .req r10
 
-	push {r4-r9,lr}
+	push {r4-r10,lr}
 
-	mov character_rx, max_size
+	mov byte, max_size
 	ldr string_tx, uart32_uartint_emulate_dummy_str
-
-	ldr temp, UART32_UARTINT_BUSY
-	tst temp, #0x1
-	bne uart32_uartint_emulate_errornak      @ If Busy
 
 	ldr heap, UART32_UARTINT_HEAP
 	cmp heap, #0
@@ -1103,7 +1063,24 @@ uart32_uartint_emulate:
 	ldr flag_escape, uart32_flag_escape
 
 	/* Virtually Received */
-	strb character_rx, _uart32_uartint_buffer
+	strb byte, _uart32_uartint_buffer
+
+	/* Get Byte to Receive from Buffer */
+	/*
+	ldrb byte, _uart32_uartint_buffer
+	*/
+
+	/* Check CTRL Characters */
+	cmp byte, #0x20
+	movlo temp, #1
+	lsllo temp, temp, byte
+	ldrlo temp2, UART32_UARTINT_CTRL
+	orrlo temp, temp, temp2
+	strlo temp, UART32_UARTINT_CTRL
+
+	ldr temp, UART32_UARTINT_BUSY
+	tst temp, #0x1
+	bne uart32_uartint_emulate_errornak      @ If Busy
 
 	/* If Succeed to Receive */
 
@@ -1142,41 +1119,17 @@ uart32_uartint_emulate:
 		beq uart32_uartint_emulate_escseq        @ If in Escape Sequence
 
 		/* Check Escape */
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x1B                    @ Ascii Code of Escape
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-
-		cmp temp, #-1
-		movne flag_escape, #1
-		bne uart32_uartint_emulate_escseq_common @ If Start of Escape Sequence
+		cmp byte, #0x1B                  @ Ascii Code of Escape
+		moveq flag_escape, #1
+		beq uart32_uartint_emulate_escseq_common @ If Start of Escape Sequence
 
 		/* Check Back Space */
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x08                    @ Ascii Code of Back Space
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-
-		cmp temp, #-1
-		bne uart32_uartint_emulate_backspace
+		cmp byte, #0x08                  @ Ascii Code of Back Space
+		beq uart32_uartint_emulate_backspace
 
 		/* Check Carriage Return */
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x0D                    @ Ascii Codes of Carriage Return (By Pressing Enter Key)
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-
-		cmp temp, #-1
-		bne uart32_uartint_emulate_carriagereturn
+		cmp byte, #0x0D                  @ Ascii Codes of Carriage Return (By Pressing Enter Key)
+		beq uart32_uartint_emulate_carriagereturn
 
 		cmp count, max_size
 		subge count, max_size, #1
@@ -1192,9 +1145,7 @@ uart32_uartint_emulate:
 		blt uart32_uartint_emulate_insert
 
 		/* Store Data to Actual Memory Space from Buffer */
-		ldr temp, uart32_uartint_buffer
-		ldrb temp, [temp]
-		strb temp, [heap, count]
+		strb byte, [heap, count]
 
 		/* Slide Offset Count */
 		add count, count, #1
@@ -1225,45 +1176,17 @@ uart32_uartint_emulate:
 
 	uart32_uartint_emulate_escseq:
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x41                    @ Ascii Codes of A
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_emulate_escseq_up
+		cmp byte, #0x41                  @ Ascii Codes of A
+		beq uart32_uartint_emulate_escseq_up
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x42                    @ Ascii Codes of B
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_emulate_escseq_down
+		cmp byte, #0x42                  @ Ascii Codes of B
+		beq uart32_uartint_emulate_escseq_down
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x43                    @ Ascii Codes of C
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_emulate_escseq_right
+		cmp byte, #0x43                  @ Ascii Codes of C
+		beq uart32_uartint_emulate_escseq_right
 
-		push {r0-r3}
-		ldr r0, uart32_uartint_buffer
-		mov r1, #1
-		mov r2, #0x44                    @ Ascii Codes of D
-		bl str32_charsearch
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #-1
-		bne uart32_uartint_emulate_escseq_left
+		cmp byte, #0x44                  @ Ascii Codes of D
+		beq uart32_uartint_emulate_escseq_left
 
 		b uart32_uartint_emulate_escseq_common
 
@@ -1560,9 +1483,8 @@ uart32_uartint_emulate:
 
 		sub temp, temp, #1      @ Subtract One For Null Character for Use Later
 
-		ldr buffer, uart32_uartint_buffer
-		ldrb buffer, [buffer]
-		strb buffer, [heap, count]
+		/* Store Data to Actual Memory Space from Buffer */
+		strb byte, [heap, count]
 
 		/* Send Esc[K (Clear From Cursor Right) */
 		push {r0-r3}
@@ -1680,7 +1602,7 @@ uart32_uartint_emulate:
 /*macro32_debug r0, 100, 112*/
 /*macro32_debug_hexa r0, 100, 124, 64*/
 		macro32_dsb ip
-		pop {r4-r9,pc}
+		pop {r4-r10,pc}
 
 .unreq flag_mirror
 .unreq max_size
@@ -1689,7 +1611,8 @@ uart32_uartint_emulate:
 .unreq temp
 .unreq flag_escape
 .unreq buffer
-.unreq character_rx
+.unreq byte
+.unreq temp2
 .unreq string_tx
 .unreq string_tx_dup
 

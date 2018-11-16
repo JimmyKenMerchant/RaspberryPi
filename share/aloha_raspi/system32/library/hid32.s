@@ -705,7 +705,7 @@ macro32_debug data_upper, 320, 36
 	tst response, #0x4                     @ ACK
 	beq hid32_keyboard_get_error
 
-	/* If we get any arrow of escape sequence at all, we need 24 bytes, because 6 bytes are for characters and 3 bytes needs per one arrow */
+	/* We need 24 bytes, because 6 bytes are received as characters from USB and ASCII escape sequences need up to 3 bytes. */
 
 	push {r0-r2}
 	mov r0, #7                             @ 4 Bytes by 7 Words Equals 28 Bytes
@@ -795,10 +795,10 @@ macro32_debug data_upper, 320, 36
 			hid32_keyboard_get_loop_character_ctrl:
 				cmp byte, #0x40
 				subhs byte, byte, #0x40        @ Transform to CTRL Characters (0x00 to 0x1F)
-				/*
-				cmp byte, 0x20
+				cmp byte, #0x20
 				subhs byte, byte, #0x20        @ If Small Letter
-				*/
+				cmp byte, #0x20
+				movhs byte, #0                 @ If Received Character is 0x80 and Over
 				b hid32_keyboard_get_loop_store
 
 		hid32_keyboard_get_loop_intl1:

@@ -2254,6 +2254,9 @@ usb2032_otg_host_reset_bcm:
 			orr temp, temp, #0x1
 			str temp, USB2032_STATUS
 
+			mov temp, #0
+			str temp, USB2032_ADDRESS_LENGTH
+
 		b usb2032_otg_host_reset_bcm_success
 
 	usb2032_otg_host_reset_bcm_error1:

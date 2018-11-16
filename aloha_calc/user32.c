@@ -32,7 +32,7 @@
 
 #define link_stacksize       64
 #define rawdata_maxlength    16
-#define stack_offset_default 2
+#define stack_offset_default 2 // Last Line Is Used for Input Buffer on "input" Command
 
 /**
  * On this program, the last line will be used as input buffer.
@@ -1412,11 +1412,15 @@ int32 _user_start() {
 
 								_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
+								flag_execute = false; // Use in input_keyboard
 
 								while ( true ) {
 									input_keyboard( true );
+
 									if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) break;
 								}
+
+								flag_execute = true; // Retrieve Regular State
 
 								/* Pass Spaces and Label */
 								temp_str = pass_space_label( dst_str );
@@ -1747,7 +1751,15 @@ int32 _user_start() {
 				}
 			}
 		}
-		if ( ! flag_execute ) input_keyboard( false );
+		input_keyboard( false );
+		var_temp.u32 = _load_32( UART32_UARTINT_CTRL_ADDR );
+		if ( var_temp.u32 & (1 << 0x3) ) { //Bit[3] ETX, Interrupt Signal
+			if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
+				if ( flag_execute ) pipe_type = termination;
+			}
+			var_temp.u32 &= ~(1 << 0x3); // Bit[3] Clear
+			_store_32( UART32_UARTINT_CTRL_ADDR, var_temp.u32 );
+		}
 		if ( startup ) startup_executer();
 	}
 
@@ -1756,26 +1768,40 @@ int32 _user_start() {
 
 
 bool input_keyboard( bool cursor_left_edge ) {
+	String kb_str;
+	flex32 var_temp;
 	if ( kb_enable ) {
-		String kb_str = _keyboard_get( 0, 1, ticket_hid );
-		arm32_dsb();
-		if ( kb_str > 0 ) { // If Key Status Changed
-			if ( input_keyboard_kb_str != null ) { // If Not Initial
-				if ( str32_strmatch( input_keyboard_kb_str, str32_strlen( input_keyboard_kb_str ), kb_str, str32_strlen( kb_str ) ) ) {
-					input_keyboard_continue_flag = true;				
-				} else {
-					heap32_mfree( (obj)input_keyboard_kb_str );
-					input_keyboard_continue_flag = false;				
+		if ( ! flag_execute ) {
+			kb_str = _keyboard_get( 0, 1, ticket_hid );
+			arm32_dsb();
+			if ( kb_str > 0 ) { // If Key Status Changed
+				if ( input_keyboard_kb_str != null ) { // If Not Initial
+					if ( str32_strmatch( input_keyboard_kb_str, str32_strlen( input_keyboard_kb_str ), kb_str, str32_strlen( kb_str ) ) ) {
+						input_keyboard_continue_flag = true;
+					} else {
+						heap32_mfree( (obj)input_keyboard_kb_str );
+						input_keyboard_continue_flag = false;
+					}
 				}
+				input_keyboard_translation( kb_str, cursor_left_edge );
+				if ( ! input_keyboard_continue_flag ) input_keyboard_kb_str = kb_str;
 			}
-			input_keyboard_translation( kb_str, cursor_left_edge );
-			if ( ! input_keyboard_continue_flag ) input_keyboard_kb_str = kb_str;
-		}
 
-		if ( input_keyboard_continue_flag ) { // If Holding Key-pushing
-			input_keyboard_translation( input_keyboard_kb_str, cursor_left_edge );
+			if ( input_keyboard_continue_flag ) { // If Holding Key-pushing
+				input_keyboard_translation( input_keyboard_kb_str, cursor_left_edge );
+			}
+			_sleep( 20000 );
+		} else {
+			kb_str = _keyboard_get( 0, 1, ticket_hid );
+			if ( kb_str > 0 ) { // If Key Status Changed
+				for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
+					var_temp.u8 = _load_8( (obj)kb_str + i );
+					String temp_str = _uartint_emulate( true, var_temp.u8 );
+					heap32_mfree( (obj)temp_str );
+				}
+				heap32_mfree( (obj)kb_str );
+			}
 		}
-		_sleep( 20000 );
 	}
 
 	return true;
