@@ -99,25 +99,6 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 27 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-.ifdef __B
-	ldr r1, [r0, #equ32_gpio_gpfsel40]
-.ifdef __RASPI3B
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 42 AlT0 (GPCLK1)
-.else
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 44 AlT0 (GPCLK1)
-.endif
-	str r1, [r0, #equ32_gpio_gpfsel40]
-
-	/**
-	 * Set GPCLK1 to 25.00Mhz
-	 */
-	mov r0, #equ32_cm_gp1
-	mov r1, #equ32_cm_ctl_mash_0
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_plld       @ 500Mhz
-	mov r2, #20<<equ32_cm_div_integer
-	bl arm32_clockmanager
-.endif
-
 	/* Obtain Framebuffer from VideoCore IV */
 
 	mov r0, #32
@@ -163,10 +144,6 @@ os_reset:
 	push {r0-r3}
 	mov r0, #128                                             @ 128 Words
 	bl uart32_uartmalloc_client
-	pop {r0-r3}
-
-	push {r0-r3}
-	bl bcm32_poweron_usb
 	pop {r0-r3}
 
 	push {r0-r3}

@@ -428,6 +428,9 @@ extern uint32 UART32_UARTINT_COUNT_ADDR;
 extern uint32 UART32_UARTMALLOC_LENGTH;
 extern uint32 UART32_UARTMALLOC_NUMBER;
 extern uint32 UART32_UARTMALLOC_MAXROW;
+extern uint32 UART32_UARTINT_CLIENT_COUNT;
+extern uint32 UART32_UARTINT_CLIENT_LENGTH;
+extern String UART32_UARTINT_CLIENT_BUFFER;
 
 __attribute__((noinline)) uint32 _uartinit
 (
@@ -462,11 +465,7 @@ __attribute__((noinline)) uint32 _uartsetint
 	uint32 int_mask
 );
 
-__attribute__((noinline)) String _uartint_emulate
-(
-	bool flag_mirror,
-	uchar8 character_rx
-);
+__attribute__((noinline)) uint32 _uartint_client_clear();
 
 __attribute__((noinline)) uint32 _uartclrint();
 

@@ -39,8 +39,6 @@
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s (If you no need, uncomment __SOUND on the top of vector.s)
 
-* USB as Input/Output (Use for Keyboard): It is experimental and needed your USB and electrical acknowledgment.
-
 * HDMI as VIDEO Output
 
 ## GPIO PINS ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
@@ -49,7 +47,7 @@
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
 
-* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`, Needs Commented Out of `bl gpio32_gpioreset` for USB Keyboard, However Only One Is Tested.
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
 
@@ -83,6 +81,12 @@ sudo minicom -D /dev/serial0
 
 # https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
 ```
+
+**Version Information**
+
+* Aloha Calc Version 1.0.* (Current Version): BASIC Style
+
+* Aloha Calc Version 0.9.* Beta (Version 1.1.0 of This Repository): Assembly Language Style, Experimental USB Keyboard
 
 **Draft of Description about "UART"**
 

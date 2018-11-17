@@ -525,7 +525,7 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x37:
-		bl uart32_uartint_emulate
+		bl uart32_uartint_client_clear
 		b _os_svc_common
 
 	_os_svc_0x38:

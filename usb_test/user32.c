@@ -11,6 +11,8 @@
 #include "system32.c"
 
 bool init_usb_keyboard( uint32 usb_channel );
+bool console_rollup();
+void user32_print_on_receive();
 uint32 usb_channel; // 0-15
 int32 ticket_hub;
 int32 ticket_hid;
@@ -26,7 +28,10 @@ int32 _user_start() {
 		kb_str = _keyboard_get( usb_channel, 1, ticket_hid );
 		arm32_dsb();
 		if ( kb_str ) {
+#ifdef __DEBUG
 			print32_set_caret( print32_string( kb_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( kb_str ) ) );
+#endif
+			_uarttx( kb_str, str32_strlen( kb_str ) );
 			heap32_mfree( (obj)kb_str );
 		}
 		_sleep( 10000 );
@@ -126,3 +131,27 @@ print32_debug( ticket_hid, 500, 254 );
 	return True;
 }
 
+
+void user32_print_on_receive() {
+		if ( print32_set_caret( print32_string( UART32_UARTINT_CLIENT_BUFFER, FB32_X_CARET, FB32_Y_CARET, str32_strlen( UART32_UARTINT_CLIENT_BUFFER ) ) ) ) console_rollup();
+}
+
+
+bool console_rollup() {
+	fb32_image(
+			FB32_ADDR,
+			0,
+			-PRINT32_FONT_HEIGHT,
+			FB32_WIDTH,
+			FB32_HEIGHT,
+			0,
+			0,
+			0,
+			0
+	);
+	FB32_X_CARET = 0;
+	FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
+	print32_string( "\x1B[2K", FB32_X_CARET, FB32_Y_CARET, 4 );
+
+	return true;
+}

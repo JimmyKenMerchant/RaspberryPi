@@ -36,7 +36,11 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
+	/* Enable UART IRQ */
+	mov r1, #1<<25                                   @ UART IRQ #57
+	str r1, [r0, #equ32_interrupt_enable_irqs2]
+
+	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
@@ -61,6 +65,26 @@ os_reset:
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
+
+.ifndef __RASPI3B
+	/* USB Current Up */
+	ldr r1, [r0, #equ32_gpio_gpfsel30]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8   @ Set GPIO 38 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel30]
+
+	macro32_dsb ip
+
+	/* Set USB Current Up (RasPi3 has already as default) */
+	mov r1, #equ32_gpio38
+	str r1, [r0, #equ32_gpio_gpset1]                               @ GPIO 38 OUTPUT High
+.endif
+
+	/* I/O Settings */
+
+	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 14 ALT 0 as TXD0
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5       @ Set GPIO 15 ALT 0 as RXD0
+	str r1, [r0, #equ32_gpio_gpfsel10]
 
 .ifdef __B
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
@@ -96,6 +120,29 @@ os_reset:
 
 	push {r0-r3}
 	bl bcm32_get_framebuffer
+	pop {r0-r3}
+
+	/* UART 115200 Baud */
+	push {r0-r3}
+	mov r0, #9                                                @ Integer Divisor Bit[15:0], 18000000 / 16 * 115200 is 9.765625
+	mov r1, #0b110001                                         @ Fractional Divisor Bit[5:0], Fixed Point Float 0.765625
+	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen @ Line Control
+	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe            @ Coontrol
+	bl uart32_uartinit
+	pop {r0-r3}
+
+	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
+	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
+	/* But Now on Only Using Rx Timeout */
+	push {r0-r3}
+	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
+	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
+	bl uart32_uartsetint
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, #128                                             @ 128 Words
+	bl uart32_uartmalloc_client
 	pop {r0-r3}
 
 	push {r0-r3}
@@ -212,9 +259,13 @@ macro32_debug r0 500 224
 		pop {r0-r8,pc}
 
 os_irq:
-	push {r0-r12}
-	pop {r0-r12}
-	mov pc, lr
+	push {r0-r12,lr}
+
+	bl uart32_uartint_client
+	bl user32_print_on_receive
+	bl uart32_uartint_client_clear
+
+	pop {r0-r12,pc}
 
 os_fiq:
 	push {r0-r7,lr}

@@ -6,6 +6,10 @@
 
 **Output/Input**
 
+* GPIO 14 as TXD0
+
+* GPIO 15 as RXD0
+
 * GPIO 47 (ACT LED) as Output
 
 * USB as Output

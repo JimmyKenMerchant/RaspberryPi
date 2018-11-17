@@ -233,9 +233,6 @@ typedef struct _dictionary {
 
 /* Functions */
 String pass_space_label( String target_str );
-bool input_keyboard( bool cursor_left_edge );
-bool input_keyboard_translation( String kb_str, bool cursor_left_edge );
-bool input_keyboard_set_cursor();
 bool process_counter();
 bool text_sender( String target_str );
 bool text_sender_length( String target_str, uint32 length );
@@ -245,23 +242,18 @@ bool command_print( String target_str );
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
 bool command_label( uint32 start_line_number ); // Label Enumeration
 bool console_rollup();
-bool init_usb_keyboard( uint32 usb_channel );
 bool startup_executer();
 void sound_makesilence();
 bool compare_signed( String target_str, uint32 length, uint32 status_nzcv );
 bool compare_unsigned( String target_str, uint32 length, uint32 status_nzcv );
 
 /* Variables on Global Scope */
-bool input_keyboard_continue_flag;
-String input_keyboard_kb_str;
-bool kb_enable; // Enabling Flag for USB Keyboard Input
-int32 ticket_hub; // Use in init_usb_keyboard()
-int32 ticket_hid; // Use in init_usb_keyboard()
 dictionary label_list;
 bool flag_execute;
 obj buffer_zero; // Zero Buffer
 bool flag_pass; // Use in IF Statements and FOR/WHILE Loops
 uint32 count_pass; // Use in IF Statements and FOR/WHILE Loops, Check Nested Statements and Loops
+bool flag_display;
 
 /* Start Up */
 bool startup;
@@ -274,7 +266,6 @@ uint32 startup_length = 4;
 int32 _user_start() {
 
 	String str_aloha = "Aloha Calc Version 1.0.0: Copyright (C) 2018 Kenta Ishii\r\n\0";
-	String str_serialmode = "\x1B[31mSerial Mode\x1B[0m\r\n\0";
 	String str_direction = null;
 	obj array_source = heap32_malloc( argument_maxlength );
 	obj array_argpointer = heap32_malloc( argument_maxlength );
@@ -310,26 +301,10 @@ int32 _user_start() {
 	String temp_str2 = null; // Use for Search Arguments with Pointer
 	String temp_str_dup = null;
 
-	input_keyboard_continue_flag = false;
-	input_keyboard_kb_str = null;
-
 	buffer_zero = heap32_malloc( UART32_UARTMALLOC_MAXROW + 1 / 4 ); // Add for Null Character
 
-	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
-
 	/* Title */
-	if ( print32_set_caret( print32_string( str_aloha, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_aloha ) ) ) ) console_rollup();
-
-	/* Keyboard */
-
-	if ( init_usb_keyboard( 0 ) ) {
-		kb_enable = true;
-		_uartclient( true );
-	} else {
-		kb_enable = false;
-		if ( print32_set_caret( print32_string( str_serialmode, FB32_X_CARET, FB32_Y_CARET, str32_strlen( str_serialmode ) ) ) ) console_rollup();
-		_uarttx( str_aloha, str32_strlen( str_aloha ) );
-	}
+	text_sender( str_aloha );
 
 	/* Sound */
 
@@ -362,6 +337,7 @@ int32 _user_start() {
 	flag_execute = false;
 	flag_pass = false;
 	count_pass = 0;
+	flag_display = false;
 	
 	while ( true ) {
 		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
@@ -1412,15 +1388,11 @@ int32 _user_start() {
 
 								_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
-								flag_execute = false; // Use in input_keyboard
 
 								while ( true ) {
-									input_keyboard( true );
 
 									if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) break;
 								}
-
-								flag_execute = true; // Retrieve Regular State
 
 								/* Pass Spaces and Label */
 								temp_str = pass_space_label( dst_str );
@@ -1751,7 +1723,6 @@ int32 _user_start() {
 				}
 			}
 		}
-		input_keyboard( false );
 		var_temp.u32 = _load_32( UART32_UARTINT_CTRL_ADDR );
 		if ( var_temp.u32 & (1 << 0x3) ) { //Bit[3] ETX, Interrupt Signal
 			if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
@@ -1764,102 +1735,6 @@ int32 _user_start() {
 	}
 
 	return EXIT_SUCCESS;
-}
-
-
-bool input_keyboard( bool cursor_left_edge ) {
-	String kb_str;
-	flex32 var_temp;
-	if ( kb_enable ) {
-		if ( ! flag_execute ) {
-			kb_str = _keyboard_get( 0, 1, ticket_hid );
-			arm32_dsb();
-			if ( kb_str > 0 ) { // If Key Status Changed
-				if ( input_keyboard_kb_str != null ) { // If Not Initial
-					if ( str32_strmatch( input_keyboard_kb_str, str32_strlen( input_keyboard_kb_str ), kb_str, str32_strlen( kb_str ) ) ) {
-						input_keyboard_continue_flag = true;
-					} else {
-						heap32_mfree( (obj)input_keyboard_kb_str );
-						input_keyboard_continue_flag = false;
-					}
-				}
-				input_keyboard_translation( kb_str, cursor_left_edge );
-				if ( ! input_keyboard_continue_flag ) input_keyboard_kb_str = kb_str;
-			}
-
-			if ( input_keyboard_continue_flag ) { // If Holding Key-pushing
-				input_keyboard_translation( input_keyboard_kb_str, cursor_left_edge );
-			}
-			_sleep( 20000 );
-		} else {
-			kb_str = _keyboard_get( 0, 1, ticket_hid );
-			if ( kb_str > 0 ) { // If Key Status Changed
-				for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
-					var_temp.u8 = _load_8( (obj)kb_str + i );
-					String temp_str = _uartint_emulate( true, var_temp.u8 );
-					heap32_mfree( (obj)temp_str );
-				}
-				heap32_mfree( (obj)kb_str );
-			}
-		}
-	}
-
-	return true;
-}
-
-
-bool input_keyboard_translation( String kb_str, bool cursor_left_edge ) {
-	flex32 var_temp;
-	// Erase Cursor
-	var_temp.u32 = _load_32( UART32_UARTINT_COUNT_ADDR );
-	if ( (uchar8)_load_8( (obj)UART32_UARTINT_HEAP + var_temp.u32 ) ) {
-		// If Other than Null Character (Assumes Real Character)
-		print32_string( UART32_UARTINT_HEAP + var_temp.u32, FB32_X_CARET, FB32_Y_CARET, 1 );
-	} else {
-		// If Null Character
-		print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 );
-	}
-
-	arm32_dsb();
-
-	for ( uint32 i = 0; i < str32_strlen( kb_str ); i++ ) {
-		var_temp.u8 = _load_8( (obj)kb_str + i );
-		String temp_str = _uartint_emulate( true, var_temp.u8 );
-		if ( temp_str ) { // If Not Error(0)
-			if ( str32_charsearch( temp_str, 1, 0x15 ) == -1 ) { // If Not NAK
-				if ( print32_set_caret( print32_string( temp_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( temp_str ) ) ) ) console_rollup();
-			}
-			heap32_mfree( (obj)temp_str );
-		}
-	}
-	if ( FB32_X_CARET || cursor_left_edge ) input_keyboard_set_cursor(); // If Not On Left Edge by Carriage Return or cursor_left_edge Is True
-
-	return true;
-}
-
-bool input_keyboard_set_cursor() {
-	uint32 count = _load_32( UART32_UARTINT_COUNT_ADDR );
-	print32_string( "\x1B[7m \x1B[0m\0", FB32_X_CARET, FB32_Y_CARET, 9 );
-	if ( count ) {
-		// If Count is Bigger than 0
-		if ( print32_set_caret( print32_string( "\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 3 ) ) ) console_rollup();
-		if ( print32_set_caret( print32_string( UART32_UARTINT_HEAP + count - 1, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
-	}
-	if ( count < UART32_UARTMALLOC_MAXROW - 1 ) { // If Count Reaches Maximum, Do Nothing
-		if ( print32_set_caret( print32_string( "\x1B[C\0", FB32_X_CARET, FB32_Y_CARET, 3 ) ) ) console_rollup();
-		if ( (uchar8)_load_8( (obj)UART32_UARTINT_HEAP + count + 1 ) ) {
-			// If Other than Null Character (Assumes Real Character)
-			if ( print32_set_caret( print32_string( UART32_UARTINT_HEAP + count + 1, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
-		} else {
-			// If Null Character
-			if ( print32_set_caret( print32_string( " \0", FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
-		}
-		if ( print32_set_caret( print32_string( "\x1B[D\x1B[D\0", FB32_X_CARET, FB32_Y_CARET, 6 ) ) ) console_rollup();
-	}
-
-	arm32_dsb();
-
-	return true;
 }
 
 
@@ -1876,14 +1751,14 @@ bool process_counter() {
 
 bool text_sender( String target_str ) {
 	uint32 length = str32_strlen( target_str );
-	if ( kb_enable ) {
+	if ( flag_display ) {
 		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
-	} else {
-		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
-		if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
-			FB32_X_CARET = 0;
-			FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
-		}
+	}
+	_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	/* Dry Print, Needed to Match Width of Console's Display with This Runtime's Definition (Defined on vector32.s) */
+	if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
+		FB32_X_CARET = 0;
+		FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
 	}
 
 	return true;
@@ -1891,10 +1766,14 @@ bool text_sender( String target_str ) {
 
 
 bool text_sender_length( String target_str, uint32 length ) {
-	if ( kb_enable ) {
+	if ( flag_display ) {
 		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
-	} else {
-		_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	}
+	_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	/* Dry Print, Needed to Match Width of Console's Display with This Runtime's Definition (Defined on vector32.s) */
+	if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
+		FB32_X_CARET = 0;
+		FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
 	}
 
 	return true;
@@ -2059,6 +1938,7 @@ bool command_label( uint32 start_line_number ) {
 	return true;
 }
 
+
 bool console_rollup() {
 	fb32_image(
 			FB32_ADDR,
@@ -2079,101 +1959,22 @@ bool console_rollup() {
 }
 
 
-bool init_usb_keyboard( uint32 usb_channel ) {
-
-	uint32 timeout;
-	uint32 result;
-
-	_sleep( 100000 ); // Wait for Root Hub Activation
-
-	if ( _otg_host_reset_bcm() ) return False;
-	arm32_dsb();
-
-	_sleep( 500000 ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
-
-	timeout = 20;
-	do {
-		_sleep( 500000 );
-		ticket_hub = _hub_activate( usb_channel, 0 );
-		if ( ticket_hub ) break; // Break Except Zero (No Detection)
-		timeout--;
-	} while ( timeout ); // Except Zero
-
-	arm32_dsb();
-
-	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Detection of Devices (on Inner Activation)
-
-//print32_debug( ticket_hub, 500, 230 );
-
-	if ( ticket_hub == -1 ) {
-		ticket_hid = 0; // Direct Connection
-		_sleep( 500000 ); // Further Wait
-	} else if ( ticket_hub > 0 ) {
-		timeout = 20;
-		do {
-			_sleep( 500000 );
-			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
-			if ( ticket_hid ) break; // Break Except Zero (No Detection)
-			timeout--;
-		} while ( timeout ); // Except Zero
-
-// Hubs on B type uses port no.1 for an ethernet adaptor. To get a HID, search another device again.
-#ifdef __B
-		arm32_dsb();
-		timeout = 20;
-		do {
-			_sleep( 500000 );
-			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
-			if ( ticket_hid ) break; // Break Except Zero (No Detection)
-			timeout--;
-		} while ( timeout ); // Except Zero
-#endif
-
-		if ( ticket_hid <= 0 ) return False; // Hub Exists But No Connection with Device or Communication Error
-
-	} else {
-		return False; // Communication Error on Activation of Hub
-	}
-	arm32_dsb();
-
-//print32_debug( ticket_hid, 500, 242 );
-
-	_sleep( 500000 ); // HID is Detected, So Wait for Activation of Devices (on Inner Resetting Procedure)
-
-	timeout = 20;
-	do {
-		_sleep( 500000 );
-		result = _hid_activate( usb_channel, 1, ticket_hid );
-		if ( result > 0 ) break; // Break Except Errors
-		timeout--;
-	} while ( timeout ); // Except Zero
-
-	ticket_hid = result;
-
-	if ( ticket_hid <= 0 ) return False; // Communication Error or No HID Device If Direct Connection
-
-	arm32_dsb();
-
-//print32_debug( ticket_hid, 500, 254 );
-
-	//_hid_setidle( usb_channel, 0, ticket_hid );
-
-	return True;
-}
-
-
 bool startup_executer() {
 	if ( startup_length >= 4 ) {
-		input_keyboard_translation( startup_command1, false );
+		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command1, 0, str32_strlen( startup_command1 ) );
+		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
 		startup_length--;
 	} else if ( startup_length >= 3 ) {
-		input_keyboard_translation( startup_command2, false );
+		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command2, 0, str32_strlen( startup_command2 ) );
+		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
 		startup_length--;
 	} else if ( startup_length >= 2 ) {
-		input_keyboard_translation( startup_command3, false );
+		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command3, 0, str32_strlen( startup_command3 ) );
+		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
 		startup_length--;
 	} else if ( startup_length >= 1 ) {
-		input_keyboard_translation( startup_command4, false );
+		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command4, 0, str32_strlen( startup_command4 ) );
+		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
 		startup_length--;
 	}
 
