@@ -16,32 +16,40 @@ HEAP32_NONCACHE_SIZE: .word SYSTEM32_HEAP_NONCACHE_END - SYSTEM32_HEAP_NONCACHE
 
 /**
  * function heap32_mpush
- * Push Data to Last
+ * Push Data to Last by FIFO Stack Style
+ * Length of Data in FIFO stack is stored on the first word of the memory space.
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space
  * r1: Data to Be Stored
- * r2: Current Length as Array (Per Data, Not Bytes)
- * r3: Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 2 = 4 Bytes, Indicating Each Data of Array
+ * r2: Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 2 = 4 Bytes, Indicating Each Data of Array
  *
- * Return: r0 (Length of Memory Space After This Function By Bytes, 0 as Error)
- * Error(0): Data Could Not Be Stored Because Size of Memory Space Is Already Full.
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Data Didn't Be Stored Because Size of Memory Space Is Already Full
  */
 .globl heap32_mpush
 heap32_mpush:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start    .req r0
 	data           .req r1
-	current_length .req r2
-	size_indicator .req r3
-	block_size     .req r4
-	next_length    .req r5
-	heap_start     .req r6
-	heap_size      .req r7
+	size_indicator .req r2
+	block_size     .req r3
+	next_length    .req r4
+	heap_start     .req r5
+	heap_size      .req r6
+	save_cpsr      .req r7
 
 	push {r4-r7,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+
+	/* For Atomic Procedure, Set FIQ and IRQ Disable to CPSR */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
+
+	cmp block_start, #0
+	beq heap32_mpush_error
 
 	ldr block_size, [block_start, #-4]          @ Maximam Size of Allocated Space (Bytes)
 	add block_size, block_start, block_size
@@ -59,119 +67,140 @@ heap32_mpush:
 	cmp size_indicator, #2
 	movhi size_indicator, #2
 
-	lsl current_length, current_length, size_indicator
-	add current_length, current_length, block_start
+	ldr next_length, [block_start]              @ The First Word of Buffer
 
-	mov next_length, #1
+	add next_length, next_length, #1
 	lsl next_length, next_length, size_indicator
-	add next_length, current_length, next_length
+	add next_length, next_length, block_start
 	cmp next_length, block_size
 	bhs heap32_mpush_error
 
 	cmp size_indicator, #2
-	strhs data, [current_length]
+	strhs data, [next_length]
 	bhs heap32_mpush_success
 
 	cmp size_indicator, #1
-	strhsh data, [current_length]
+	strhsh data, [next_length]
 	bhs heap32_mpush_success
 
 	cmp size_indicator, #0
-	strhsb data, [current_length]
+	strhsb data, [next_length]
 	bhs heap32_mpush_success
 
 	heap32_mpush_error:
-		mov r0, #0
+		mov r0, #1
 		b heap32_mpush_common
 
 	heap32_mpush_success:
 		sub next_length, next_length, block_start
-		lsr r0, next_length, size_indicator
+		lsr next_length, next_length, size_indicator
+		str next_length, [block_start]            @ The First Word of Buffer
+		mov r0, #0
 
 	heap32_mpush_common:
+		/* Return CPSR */
+		msr cpsr_c, save_cpsr
 		macro32_dsb ip                            @ Ensure Completion of Instructions Before
 		pop {r4-r7,pc}
 
 .unreq block_start
 .unreq data
-.unreq current_length
 .unreq size_indicator
 .unreq block_size
 .unreq next_length
 .unreq heap_start
 .unreq heap_size
+.unreq save_cpsr
 
 
 /**
- * function heap32_msquash
- * Squash Memory Space
+ * function heap32_mpop
+ * Pop Data From First by FIFO Stack Style
+ * Length of Data in FIFO stack is stored on the first word of the memory space.
  *
  * Parameters
  * r0: Pointer of Start Address of Memory Space
- * r1: Index of Data to Be Squashed (Per Data, Not Bytes)
- * r2: Current Length as Array (Per Data, Not Bytes)
- * r3: Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 2 = 4 Bytes, Indicating Each Data of Array
+ * r1: Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 2 = 4 Bytes, Indicating Each Data of Array
  *
- * Return: r0 (Length of Memory Space After This Function By Bytes, 0 as Error)
- * Error(0): Data Could Not Be Stored Because Size of Memory Space Is Already Full.
+ * Return: r0 (Data to Be Popped)
  */
-.globl heap32_msquash
-heap32_msquash:
+.globl heap32_mpop
+heap32_mpop:
 	/* Auto (Local) Variables, but just Aliases */
 	block_start    .req r0
-	index_data     .req r1
+	size_indicator .req r1
 	current_length .req r2
-	size_indicator .req r3
-	back_length    .req r4
-	offset         .req r5
+	offset         .req r3
+	data           .req r4
+	save_cpsr      .req r5
 
 	push {r4-r5,lr}
 
 	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
+	/* For Atomic Procedure, Set FIQ and IRQ Disable to CPSR */
+	mrs save_cpsr, cpsr
+	orr ip, save_cpsr, #equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, ip
+
 	cmp size_indicator, #2
 	movhi size_indicator, #2
 
-	lsl index_data, index_data, size_indicator
+	ldr current_length, [block_start]           @ The First Word of Buffer
+	subs current_length, current_length, #1
+	blt heap32_mpop_error
 	lsl current_length, current_length, size_indicator
 
-	mov offset, #1
-	lsl offset, offset, size_indicator
+	cmp size_indicator, #2
+	ldrhs data, [block_start, #4]
+	bhs heap32_mpop_copy
 
-	mov back_length, current_length
-	sub back_length, back_length, index_data
-	sub back_length, back_length, offset 
+	cmp size_indicator, #1
+	ldrhsh data, [block_start, #4]
+	bhs heap32_mpop_copy
 
-	push {r0-r3}
-	push {back_length}                          @ r4: Length of Bytes to Be Copied (Source)
-	mov r2, block_start                         @ Pointer of Start Address of Memory Space to Be Copied (Source)
-	add r3, index_data, offset                  @ Offset of Bytes to Be Copied (Source)
-	bl heap32_mcopy
-	add sp, sp, #4
-	mov back_length, r0
-	pop {r0-r3}
+	cmp size_indicator, #0
+	ldrhsb data, [block_start, #4]
 
-	cmp back_length, #0
-	bne heap32_msquash_success
+	heap32_mpop_copy:
+		/* Make Offset of Bytes to Be Copied (Source) */
+		mov offset, #1
+		lsl offset, offset, size_indicator
+		add offset, offset, #4
 
-	heap32_msquash_error:
+		push {r0-r3}
+		mov r1, #4
+		push {current_length}                   @ r4: Length of Bytes to Be Copied (Source)
+		mov r2, block_start                     @ Pointer of Start Address of Memory Space to Be Copied (Source)
+		bl heap32_mcopy
+		add sp, sp, #4
+		mov offset, r0
+		pop {r0-r3}
+
+		cmp offset, #0
+		bne heap32_mpop_success
+
+	heap32_mpop_error:
 		mov r0, #0
-		b heap32_msquash_common
+		b heap32_mpop_common
 
-	heap32_msquash_success:
-		sub r0, current_length, offset 
-		lsr r0, r0, size_indicator
+	heap32_mpop_success:
+		lsr current_length, current_length, size_indicator
+		str current_length, [block_start]           @ The First Word of Buffer
+		mov r0, #0
 
-	heap32_msquash_common:
+	heap32_mpop_common:
+		/* Return CPSR */
+		msr cpsr_c, save_cpsr
 		macro32_dsb ip                              @ Ensure Completion of Instructions Before
 		pop {r4-r5,pc}
 
 .unreq block_start
-.unreq index_data
-.unreq current_length
 .unreq size_indicator
-.unreq back_length
+.unreq current_length
 .unreq offset
+.unreq data
+.unreq save_cpsr
 
 
 /**

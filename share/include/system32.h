@@ -2692,15 +2692,12 @@ extern uint32 heap32_mpush
 (
 	obj heap,
 	uint32 data,
-	uint32 current_length,
 	uint32 size_indicator
 );
 
-extern uint32 heap32_msquash
+extern uint32 heap32_mpop
 (
 	obj heap,
-	uint32 index_data,
-	uint32 current_length,
 	uint32 size_indicator
 );
 
