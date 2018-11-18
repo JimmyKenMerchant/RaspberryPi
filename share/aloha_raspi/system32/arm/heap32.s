@@ -69,9 +69,9 @@ heap32_mpush:
 
 	ldr next_length, [block_start]              @ The First Word of Buffer
 
-	add next_length, next_length, #1
 	lsl next_length, next_length, size_indicator
 	add next_length, next_length, block_start
+	add next_length, next_length, #4            @ Offset for Length of Data
 	cmp next_length, block_size
 	bhs heap32_mpush_error
 
@@ -92,8 +92,10 @@ heap32_mpush:
 		b heap32_mpush_common
 
 	heap32_mpush_success:
+		sub next_length, next_length, #4
 		sub next_length, next_length, block_start
 		lsr next_length, next_length, size_indicator
+		add next_length, next_length, #1
 		str next_length, [block_start]            @ The First Word of Buffer
 		mov r0, #0
 
@@ -187,7 +189,7 @@ heap32_mpop:
 	heap32_mpop_success:
 		lsr current_length, current_length, size_indicator
 		str current_length, [block_start]           @ The First Word of Buffer
-		mov r0, #0
+		mov r0, data
 
 	heap32_mpop_common:
 		/* Return CPSR */

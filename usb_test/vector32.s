@@ -262,8 +262,6 @@ os_irq:
 	push {r0-r12,lr}
 
 	bl uart32_uartint_client
-	bl user32_print_on_receive
-	bl uart32_uartint_client_clear
 
 	pop {r0-r12,pc}
 
@@ -304,7 +302,15 @@ os_fiq:
 macro32_debug r0, 500, 254
 	*/
 
+	mov r0, #1
+	str r0, OS_FIQ_TIMER
+
 	pop {r0-r7,pc}
+
+.globl OS_FIQ_TIMER_ADDR
+.globl OS_FIQ_TIMER
+OS_FIQ_TIMER_ADDR: .word OS_FIQ_TIMER
+OS_FIQ_TIMER:      .word 0x00
 
 /**
  * Variables

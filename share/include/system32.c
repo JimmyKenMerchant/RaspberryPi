@@ -379,7 +379,7 @@ __attribute__((noinline)) uint32 _uartsetint( uint32 int_fifo, uint32 int_mask )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _uartint_client_clear()
+__attribute__((noinline)) uint32 _uartint( bool flag_mirror )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x37");

@@ -12,11 +12,15 @@
 
 bool init_usb_keyboard( uint32 usb_channel );
 bool console_rollup();
-void user32_print_on_receive();
+bool print_on_receive();
 uint32 usb_channel; // 0-15
 int32 ticket_hub;
 int32 ticket_hid;
 String kb_str;
+extern uint32 OS_FIQ_TIMER_ADDR;
+extern bool OS_FIQ_TIMER;
+
+char8 character_buffer[2];
 
 int32 _user_start() {
 
@@ -25,16 +29,19 @@ int32 _user_start() {
 	if ( ! init_usb_keyboard( usb_channel ) ) return EXIT_FAILURE;
 
 	while(True) {
-		kb_str = _keyboard_get( usb_channel, 1, ticket_hid );
-		arm32_dsb();
-		if ( kb_str ) {
+		if ( OS_FIQ_TIMER ) {
+			_store_8( OS_FIQ_TIMER_ADDR, false );
+			kb_str = _keyboard_get( usb_channel, 1, ticket_hid );
+			arm32_dsb();
+			if ( kb_str ) {
 #ifdef __DEBUG
-			print32_set_caret( print32_string( kb_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( kb_str ) ) );
+				print32_set_caret( print32_string( kb_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( kb_str ) ) );
 #endif
-			_uarttx( kb_str, str32_strlen( kb_str ) );
-			heap32_mfree( (obj)kb_str );
+				_uarttx( kb_str, str32_strlen( kb_str ) );
+				heap32_mfree( (obj)kb_str );
+			}
 		}
-		_sleep( 10000 );
+		print_on_receive();
 	}
 
 	return EXIT_SUCCESS;
@@ -132,10 +139,14 @@ print32_debug( ticket_hid, 500, 254 );
 }
 
 
-void user32_print_on_receive() {
-		if ( print32_set_caret( print32_string( UART32_UARTINT_CLIENT_BUFFER, FB32_X_CARET, FB32_Y_CARET, str32_strlen( UART32_UARTINT_CLIENT_BUFFER ) ) ) ) console_rollup();
+bool print_on_receive() {
+	while ( _load_32( UART32_UARTINT_CLIENT_FIFO ) ) { // If Any Character Is Received
+		character_buffer[0] = (char8)heap32_mpop( UART32_UARTINT_CLIENT_FIFO, 0 );
+		if ( print32_set_caret( print32_string( character_buffer, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
+		//print32_string( "\x1B[7m \x1B[0m\0", FB32_X_CARET, FB32_Y_CARET, 9 );
+	}
+	return True;
 }
-
 
 bool console_rollup() {
 	fb32_image(

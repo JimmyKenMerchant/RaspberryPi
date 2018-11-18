@@ -572,7 +572,8 @@ uart32_uartint:
 	bne uart32_uartint_error         @ If Overrun
 
 	/* Get Byte to Receive from Buffer */
-	ldrb byte, _uart32_uartint_buffer
+	ldr byte, uart32_uartint_buffer
+	ldrb byte, [byte]
 
 	/* Check CTRL Characters */
 	cmp byte, #0x20
@@ -1016,10 +1017,11 @@ _uart32_uartint_esc_clrline: .ascii "\x1B[K\0"         @ Esc(0x1B)[K (Esc(0x1B)[
 uart32_uartint_esc_homecs:   .word _uart32_uartint_esc_homecs
 _uart32_uartint_esc_homecs:  .ascii "\x1B[H\0"         @ Esc(0x1B)[H (Esc(0x1B)[1;1H): Set Cursor to Upper Left Corner
 .balign 4
-
 uart32_uartint_buffer:       .word _uart32_uartint_buffer
+
+.section	.data
 _uart32_uartint_buffer:      .word 0x00 
-.balign 4
+.section	.arm_system32
 
 
 /**
@@ -1167,33 +1169,26 @@ uart32_uartsetheap:
  * function uart32_uartint_client
  * UART Interrupt Handler (Client Side)
  *
- * Return: r0 (0 as success, 1 and 2 as error)
+ * Return: r0 (0 as success, 1, 2, and 3 as error)
  * Error(1): No Buffer to Receive, Overrun, or Busy
  * Error(2): Character Is Not Received
+ * Error(3): Data Didn't Be Stored Because Size of Memory Space Is Already Full
  */
 .globl uart32_uartint_client
 uart32_uartint_client:
 	/* Auto (Local) Variables, but just Aliases */
 	buffer        .req r0
-	count         .req r1
-	max_size      .req r2
-	temp          .req r3
+	temp          .req r1
 
 	push {lr}
 
-	ldr count, UART32_UARTINT_CLIENT_COUNT
-	ldr max_size, UART32_UARTINT_CLIENT_LENGTH
-	ldr buffer, UART32_UARTINT_CLIENT_BUFFER
+	ldr buffer, uart32_uartint_buffer
 
-	cmp buffer, #0
-	beq uart32_uartint_client_error1        @ If No Buffer
-
-	push {r0-r2}
-	add r0, buffer, count
+	push {r0}
 	mov r1, #1                              @ 1 Bytes
 	bl uart32_uartrx
 	mov temp, r0                            @ Whether Overrun or Not
-	pop {r0-r2}
+	pop {r0}
 
 	tst temp, #0x8                          @ Whether Overrun or Not
 	bne uart32_uartint_client_error1        @ If Overrun
@@ -1201,12 +1196,15 @@ uart32_uartint_client:
 	tst temp, #0x10                         @ Whether Not Received or So
 	bne uart32_uartint_client_error2        @ If Not Received
 
-	/* Slide Offset Count */
-	add count, count, #1
-	cmp count, max_size
-	subge count, max_size, #1               @ If Exceeds Maximum Size of Heap, Stay Count
-	str count, UART32_UARTINT_CLIENT_COUNT
-	blt uart32_uartint_client_success
+	/* Push to Buffer (FIFO Stack) */
+	ldrb r1, [buffer]
+	ldr r0, UART32_UARTINT_CLIENT_FIFO
+	mov r2, #0
+	bl heap32_mpush
+	cmp r0, #0
+	beq uart32_uartint_client_success
+
+	b uart32_uartint_client_error3
 
 	uart32_uartint_client_error1:
 		mov r0, #1
@@ -1214,6 +1212,10 @@ uart32_uartint_client:
 
 	uart32_uartint_client_error2:
 		mov r0, #2
+		b uart32_uartint_client_common
+
+	uart32_uartint_client_error3:
+		mov r0, #3
 		b uart32_uartint_client_common
 
 	uart32_uartint_client_success:
@@ -1224,42 +1226,10 @@ uart32_uartint_client:
 		pop {pc}
 
 .unreq buffer
-.unreq count
-.unreq max_size
 .unreq temp
 
-.globl UART32_UARTINT_CLIENT_COUNT
-.globl UART32_UARTINT_CLIENT_LENGTH
-.globl UART32_UARTINT_CLIENT_BUFFER
-UART32_UARTINT_CLIENT_COUNT:  .word 0x00
-UART32_UARTINT_CLIENT_LENGTH: .word 0x00
-UART32_UARTINT_CLIENT_BUFFER: .word 0x00
-
-
-/**
- * function uart32_uartint_client_clear
- * Clear Buffer and Reset Counter of Buffer for Client Mode of UART
- *
- * Return: r0 (0 as success)
- */
-.globl uart32_uartint_client_clear
-uart32_uartint_client_clear:
-	/* Auto (Local) Variables, but just Aliases */
-	temp .req r0
-
-	push {lr}
-
-	ldr temp, UART32_UARTINT_CLIENT_BUFFER
-	bl heap32_mfree
-	mov temp, #0
-	str temp, UART32_UARTINT_CLIENT_COUNT
-
-	uart32_uartint_client_clear_common:
-		macro32_dsb ip
-		mov r0, #0
-		pop {pc}
-
-.unreq temp
+.globl UART32_UARTINT_CLIENT_FIFO
+UART32_UARTINT_CLIENT_FIFO: .word 0x00
 
 
 /**
@@ -1276,24 +1246,15 @@ uart32_uartint_client_clear:
 uart32_uartmalloc_client:
 	/* Auto (Local) Variables, but just Aliases */
 	words_buffer .req r0
-	buffer       .req r1
 
 	push {lr}
 
-	push {r0}
 	bl heap32_malloc
-	mov buffer, r0
-	pop {r0}
 
-	cmp buffer, #0
+	cmp words_buffer, #0
 	beq uart32_uartmalloc_client_error
 
-	lsl words_buffer, words_buffer, #2             @ Multiply by 4
-	sub words_buffer, words_buffer, #1             @ Subtract One Byte for Null Character
-	str words_buffer, UART32_UARTINT_CLIENT_LENGTH
-	str buffer, UART32_UARTINT_CLIENT_BUFFER
-	mov words_buffer, #0
-	str words_buffer, UART32_UARTINT_CLIENT_COUNT
+	str words_buffer, UART32_UARTINT_CLIENT_FIFO
 
 	b uart32_uartmalloc_client_success
 
@@ -1309,7 +1270,6 @@ uart32_uartmalloc_client:
 		pop {pc}
 
 .unreq words_buffer
-.unreq buffer
 
 
 /**
