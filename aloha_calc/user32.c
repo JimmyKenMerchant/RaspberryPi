@@ -342,6 +342,9 @@ int32 _user_start() {
 	while ( true ) {
 		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
 			if ( flag_execute ) {
+
+//print32_debug_hexa( UART32_UARTINT_CLIENT_FIFO, 0, 500, 64 );
+
 				switch ( pipe_type ) {
 					case search_command:
 
@@ -1654,6 +1657,10 @@ int32 _user_start() {
 						_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 						_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 
+						/* Change UART Host Mode */
+						_uartclient( false );
+						heap32_mfill( UART32_UARTINT_CLIENT_FIFO, 0x00000000 ); // Clear FIFO
+
 						break;
 
 					default:
@@ -1663,6 +1670,10 @@ int32 _user_start() {
 			} else {
 				if ( str32_strmatch( UART32_UARTINT_HEAP, 3, "run\0", 3 ) ) {
 					/* If You Command "run", It Starts Execution */
+
+					/* Change UART Client Mode */
+					_uartclient( true );
+
 					/* Retrieve Previous Content in Line that is Wrote Meta Command */
 					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
 					line_clean( UART32_UARTINT_HEAP );

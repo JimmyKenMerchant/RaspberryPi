@@ -36,8 +36,14 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	/* Enable UART IRQ */
-	mov r1, #1<<25                                   @ UART IRQ #57
+	/**
+	 * Enable GPIO IRQ
+	 * INT[0] is for 0-27 Pins
+	 * INT[1] is for 28-45 Pins
+	 * INT[2] is for 46-53 Pins
+	 * INT[3] is for All Pins
+	 */
+	mov r1, #0b1111<<17                              @ GPIO INT[3:0]
 	str r1, [r0, #equ32_interrupt_enable_irqs2]
 
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
@@ -81,19 +87,32 @@ os_reset:
 
 	/* I/O Settings */
 
+	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK0
+	str r1, [r0, #equ32_gpio_gpfsel00]
+
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 14 ALT 0 as TXD0
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5       @ Set GPIO 15 ALT 0 as RXD0
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 14 ALT 0 as TXD0
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	str r1, [r0, #equ32_gpio_gpfsel10]
+
+	/* Set Status Detect */
+	ldr r1, [r0, #equ32_gpio_gpren0]
+	orr r1, r1, #equ32_gpio04                                      @ Set GPIO4 Rising Edge Detect
+	str r1, [r0, #equ32_gpio_gpren0]
+
+	macro32_dsb ip
 
 .ifdef __B
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
 .ifdef __RASPI3B
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2       @ Set GPIO 42 AlT0 (GPCLK1)
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 42 AlT0 (GPCLK1)
 .else
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4       @ Set GPIO 44 AlT0 (GPCLK1)
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 44 AlT0 (GPCLK1)
 .endif
 	str r1, [r0, #equ32_gpio_gpfsel40]
+
+	macro32_dsb ip
 
 	/**
 	 * Set GPCLK1 to 25.00Mhz
@@ -131,14 +150,14 @@ os_reset:
 	bl uart32_uartinit
 	pop {r0-r3}
 
-	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
-	/* But Now on Only Using Rx Timeout */
-	push {r0-r3}
-	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
-	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
-	bl uart32_uartsetint
-	pop {r0-r3}
+	/**
+	 * Clock Manager for GPCLK0. Make 12500Hz (80.00 Micro Seconds)
+	 */
+	mov r0, #equ32_cm_gp0
+	mov r1, #equ32_cm_ctl_mash_1
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #0x600<<equ32_cm_div_integer                           @ Decimal 1536
+	bl arm32_clockmanager
 
 	push {r0-r3}
 	mov r0, #128                                             @ 128 Words
@@ -260,6 +279,16 @@ macro32_debug r0 500 224
 
 os_irq:
 	push {r0-r12,lr}
+
+.ifdef __ARMV6
+	macro32_invalidate_instruction_all ip
+	macro32_dsb ip
+.endif
+
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+	ldr r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
+	str r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
 
 	bl uart32_uartint_client
 

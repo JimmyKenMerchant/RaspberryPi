@@ -6,6 +6,8 @@
 
 **Output/Input**
 
+* GPIO 4 as GPCLK0 for Second Timer
+
 * GPIO 14 as TXD0
 
 * GPIO 15 as RXD0

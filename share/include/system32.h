@@ -463,7 +463,7 @@ __attribute__((noinline)) uint32 _uartsetint
 	uint32 int_mask
 );
 
-__attribute__((noinline)) uint32 _uartint( bool flag_mirror );
+__attribute__((noinline)) uint32 _uartint_client();
 
 __attribute__((noinline)) uint32 _uartclrint();
 
