@@ -50,11 +50,11 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a 12hz Timer Interrupt (120000/10000).
+	 * Get a 20hz Timer Interrupt (120000/6000).
 	 */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 120K
+	mov r1, #0x1700                           @ High 1 Byte of decimal 5999 (6000 - 1), 16 bits counter on default
+	add r1, r1, #0x6F                         @ Low 1 Byte of decimal 5999, 16 bits counter on default
 	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
@@ -125,7 +125,7 @@ os_reset:
 .endif
 
 	/* Obtain Framebuffer from VideoCore IV */
-	mov r0, #32
+	mov r0, #16
 	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
 

@@ -19,6 +19,7 @@ int32 ticket_hid;
 String kb_str;
 extern uint32 OS_FIQ_TIMER_ADDR;
 extern bool OS_FIQ_TIMER;
+obj renderbuffer;
 
 char8 character_buffer[2];
 
@@ -27,6 +28,13 @@ int32 _user_start() {
 	usb_channel = 0;
 
 	if ( ! init_usb_keyboard( usb_channel ) ) return EXIT_FAILURE;
+
+	renderbuffer = (obj)heap32_malloc( draw32_renderbuffer );
+	draw32_renderbuffer_init( renderbuffer, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
+
+	_attach_buffer( renderbuffer );
+	print32_string( "\x1B[33m\x1B[44m\0", FB32_X_CARET, FB32_Y_CARET, 10 ); // Change Foreground/Background Color
+	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
 
 	while(True) {
 		if ( OS_FIQ_TIMER ) {
@@ -143,7 +151,27 @@ bool print_on_receive() {
 	while ( _load_32( UART32_UARTINT_CLIENT_FIFO ) ) { // If Any Character Is Received
 		character_buffer[0] = (char8)heap32_mpop( UART32_UARTINT_CLIENT_FIFO, 0 );
 		if ( print32_set_caret( print32_string( character_buffer, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
-		//print32_string( "\x1B[7m \x1B[0m\0", FB32_X_CARET, FB32_Y_CARET, 9 );
+
+		// Flush to Display When FIFO Becomes Empty
+		if ( _load_32( UART32_UARTINT_CLIENT_FIFO ) == 0 ) {
+			_attach_buffer( FB32_FRAMEBUFFER );
+			arm32_dsb();
+			fb32_image(
+					_load_32( renderbuffer + draw32_renderbuffer_addr ),
+					0,
+					0,
+					_load_32( renderbuffer + draw32_renderbuffer_width ),
+					_load_32( renderbuffer + draw32_renderbuffer_height ),
+					0,
+					0,
+					0,
+					0
+			);
+			fb32_block_color( PRINT32_FONT_COLOR, FB32_X_CARET, FB32_Y_CARET, PRINT32_FONT_WIDTH, PRINT32_FONT_HEIGHT ); // Append Text Cursor
+			arm32_dsb();
+			_attach_buffer( renderbuffer );
+			arm32_dsb();
+		}
 	}
 	return True;
 }

@@ -405,9 +405,9 @@ make type=zerow sound=i2s
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 
-1. Power on, then VideoCore runs the first boot code on a ROM embedded in RasPi like a microcontroller.
+1. Power on, then VideoCore runs the first boot codes in a ROM embedded on the SoC.
 
-2. VideoCore searches the boot media, then loads bootcode.bin to the special memory and runs it.
+2. VideoCore searches the boot media, then loads bootcode.bin to the special memory for booting and runs it. Undocumented SD0 (one of Secure Digital host controllers) seems to be used, therefore documented SD1 seems to be free on this time.
 
 3. VideoCore activates ARM Processor and other peripherals including Main Memory. On this time, VideCore loads start.elf to Main Memory for ARM Processor (VideoCore is accessible from ARM through Mailbox afterward).
 
