@@ -1397,10 +1397,16 @@ int32 _user_start() {
 								_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
 								_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 
+								/* Change UART Host Mode */
+								_uartclient( false );
+
 								while ( true ) {
 
 									if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) break;
 								}
+
+								/* Change UART Client Mode */
+								_uartclient( true );
 
 								/* Pass Spaces and Label */
 								temp_str = pass_space_label( dst_str );
@@ -1428,6 +1434,7 @@ int32 _user_start() {
 									status_nzcv |= 0x40000000;
 								}
 
+								length_temp = str32_strlen( temp_str_dup );
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
 								break;
@@ -1442,6 +1449,7 @@ int32 _user_start() {
 									status_nzcv |= 0x40000000;
 								}
 
+								length_temp = str32_strlen( temp_str_dup );
 								flag_pass = compare_signed( temp_str_dup, length_temp, status_nzcv );
 
 								if ( ! flag_pass ) {
@@ -1775,7 +1783,7 @@ bool text_sender( String target_str ) {
 	if ( flag_display ) {
 		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
 	}
-	_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	_uarttx( target_str, length );
 	/* Dry Print, Needed to Match Width of Console's Display with This Runtime's Definition (Defined on vector32.s) */
 	if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
 		FB32_X_CARET = 0;
@@ -1790,7 +1798,7 @@ bool text_sender_length( String target_str, uint32 length ) {
 	if ( flag_display ) {
 		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
 	}
-	_uarttx( target_str, length ); // Clear All Screen and Move Cursor to Upper Left
+	_uarttx( target_str, length );
 	/* Dry Print, Needed to Match Width of Console's Display with This Runtime's Definition (Defined on vector32.s) */
 	if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
 		FB32_X_CARET = 0;
