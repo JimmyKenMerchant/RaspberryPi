@@ -130,7 +130,8 @@ typedef enum _command_list {
 	neg,
 	iff, // IF statement, "iff @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
 	whilef, // WHILE loop, "whilef @S1 <Comparison Symbol> @S2": Compare S1 and S2 as floating point.
-	input, // Input to the line, "input @D".
+	input, // Input string to D, "input @D".
+	read, // Input one byte to D without flushing by sending carriage return, "read @D".
 	ifs, // IF statement, "ifs @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
 	whiles, // WHILE loop, "whiles @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
 	let, // Copy, "let @D @S1" or "let @D <Immediate Value>".
@@ -618,6 +619,10 @@ int32 _user_start() {
 								src_index = 0; // No Direction
 							} else if ( str32_strmatch( temp_str, 5, "input\0", 5 ) ) {
 								command_type = input;
+								length_arg = 1;
+								pipe_type = execute_command;
+							} else if ( str32_strmatch( temp_str, 4, "read\0", 4 ) ) {
+								command_type = read;
 								length_arg = 1;
 								pipe_type = execute_command;
 							} else if ( str32_strmatch( temp_str, 3, "ifs\0", 3 ) ) {
@@ -1405,6 +1410,11 @@ int32 _user_start() {
 								heap32_mcopy( (obj)dst_str, var_temp.u32, (obj)src_str, 0, var_temp2.u32 + 1 ); // Add Null Character
 								line_clean( dst_str );
 								heap32_mfill( (obj)UART32_UARTINT_HEAP, 0 ); // Clear Line to Be Used as Input Buffer
+
+								break;
+							case read:
+								direction.u32 = heap32_mpop( UART32_UARTINT_CLIENT_FIFO, HEAP32_FIFO_1BYTE );
+								str_direction = cvt32_int32_to_string_hexa( direction.u32, 1, 0, 1 );
 
 								break;
 							case ifs:

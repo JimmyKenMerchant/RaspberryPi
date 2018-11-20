@@ -2100,8 +2100,6 @@ extern uint32 geo32_polygon
 );
 
 
-
-
 /**
  * Draw 3D Wire
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable
@@ -2680,11 +2678,13 @@ extern uint64 bcd32_deci_rem64
  * system32/library/heap32.s
  ********************************/
 
-typedef struct _darray {
-	obj heap;
-	uint32 current_length; // Current Length as Array (Per Data, Not Bytes)
-	uint32 size_indicator; // Size Indicator 0 = 1 Byte, 1 = 2 Bytes, 3 = 4 Bytes, Indicating Each Data of Array
-} darray;
+/* Constants */
+
+#define HEAP32_FIFO_1BYTE 0
+#define HEAP32_FIFO_2BYTE 1
+#define HEAP32_FIFO_4BYTE 2
+
+/* Regular Functions */
 
 extern uint32 heap32_mpush
 (

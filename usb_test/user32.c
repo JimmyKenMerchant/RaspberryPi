@@ -149,7 +149,7 @@ print32_debug( ticket_hid, 500, 254 );
 
 bool print_on_receive() {
 	while ( _load_32( UART32_UARTINT_CLIENT_FIFO ) ) { // If Any Character Is Received
-		character_buffer[0] = (char8)heap32_mpop( UART32_UARTINT_CLIENT_FIFO, 0 );
+		character_buffer[0] = (char8)heap32_mpop( UART32_UARTINT_CLIENT_FIFO, HEAP32_FIFO_1BYTE );
 		if ( print32_set_caret( print32_string( character_buffer, FB32_X_CARET, FB32_Y_CARET, 1 ) ) ) console_rollup();
 
 		// Flush to Display When FIFO Becomes Empty
