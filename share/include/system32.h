@@ -877,21 +877,6 @@ extern uint64 print32_string
 
 
 /**
- * No Print String with 1 Byte Character, But Get Changes of X and Y coordinates
- *
- * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Number of Characters Which Were Not Drawn
- */
-extern uint64 print32_string_dummy
-(
-	String string,
-	int32 x_coord,
-	int32 y_coord,
-	uint32 length
-);
-
-
-/**
  * Print Hexadecimal System (Base 16) Numbers in 64-bit (16 Digits)
  *
  * Return: Lower 32 bits (0 as sucess, 1 and more as error), Upper 32 bits (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)

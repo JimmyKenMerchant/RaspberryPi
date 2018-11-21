@@ -531,7 +531,7 @@ uart32_uartclrrx:
  * r0: Mirror Data to Teletype (1) or Send ACK (0)
  *
  * Return: r0 (0 as success, 1 as error)
- * Error(1): No Heap, Overrun, or Busy
+ * Error(1): No Heap, UART Errors (Overrun, Break, Parity, Framing), or Busy
  */
 .globl uart32_uartint
 uart32_uartint:
@@ -545,8 +545,9 @@ uart32_uartint:
 	buffer        .req r6
 	byte          .req r7
 	temp2         .req r8
+	flag_max      .req r9
 
-	push {r4-r8,lr}
+	push {r4-r9,lr}
 
 	/*bl uart32_uartclrint*/         @ Clear All Flags of Interrupt: Don't Use It For Receiving All Data on RxFIFO
 
@@ -568,8 +569,11 @@ uart32_uartint:
 
 /*macro32_debug temp, 100, 100*/
 
-	tst temp, #0x8                   @ Whether Overrun or Not
-	bne uart32_uartint_error         @ If Overrun
+	tst temp, #0b1111
+	bne uart32_uartint_error         @ If UART Errors
+
+	tst temp, #0x10
+	bne uart32_uartint_success       @ If No Receive
 
 	/* Get Byte to Receive from Buffer */
 	ldr byte, uart32_uartint_buffer
@@ -628,8 +632,11 @@ uart32_uartint:
 		cmp byte, #0x0D                  @ Ascii Codes of Carriage Return (By Pressing Enter Key)
 		beq uart32_uartint_carriagereturn
 
+		/* Check Whether Offset Count Has Been Already Reached Maximum of Line */
 		cmp count, max_size
 		subge count, max_size, #1
+		movge flag_max, #1
+		movlt flag_max, #0
 
 		push {r0-r3}
 		mov r0, heap
@@ -646,15 +653,33 @@ uart32_uartint:
 
 		/* Slide Offset Count */
 		add count, count, #1
-		cmp count, max_size
-		subge count, max_size, #1       @ If Exceeds Maximum Size of Heap, Stay Count
 		str count, UART32_UARTINT_COUNT
-		blt uart32_uartint_success
+
+		cmp flag_max, #1
+		bne uart32_uartint_success
 
 		/* Cursor Left If Reaching Maximum Size of Line */
 		push {r0-r3}
 		ldr r0, uart32_uartint_esc_left
 		mov r1, #3
+		bl uart32_uarttx
+		pop {r0-r3}
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_esc_left
+		mov r1, #3
+		bl uart32_uarttx
+		pop {r0-r3}
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_esc_clrline
+		mov r1, #3
+		bl uart32_uarttx
+		pop {r0-r3}
+
+		push {r0-r3}
+		ldr r0, uart32_uartint_buffer
+		mov r1, #1                       @ 1 Bytes
 		bl uart32_uarttx
 		pop {r0-r3}
 
@@ -702,7 +727,7 @@ uart32_uartint:
 
 			add count, count, #1
 			cmp count, max_size
-			bge uart32_uartint_escseq_right_over @ If Exceeds Maximum Size of Heap, Stay Count
+			bgt uart32_uartint_escseq_right_over @ If Exceeds Maximum Size of Heap, Stay Count
 
 			push {r0-r3}
 			mov r0, heap
@@ -727,12 +752,13 @@ uart32_uartint:
 				b uart32_uartint_escseq_clear
 
 		uart32_uartint_escseq_left:
-			
+
 			sub count, count, #1
+
 			cmp count, #0
 			bge uart32_uartint_escseq_clear
 
-			/* Count Becomes Minus */
+			/* If Count Becomes Minus */
 
 			mov count, #0
 
@@ -788,6 +814,8 @@ uart32_uartint:
 			pop {r0-r3}
 
 			sub temp, temp, #1  @ Subtract One For Null Character for Use Later
+			cmp temp, #0
+			beq uart32_uartint_backspace_null
 
 			/* Send Esc[K (Clear From Cursor Right) */
 			push {r0-r3}
@@ -816,6 +844,28 @@ uart32_uartint:
 
 				sub temp, temp, #1
 				b uart32_uartint_backspace_jmp_loop
+
+			uart32_uartint_backspace_null:
+
+				/* On The Last of Line */
+
+				push {r0-r3}
+				ldr r0, uart32_uartint_esc_left
+				mov r1, #3
+				bl uart32_uarttx
+				pop {r0-r3}
+
+				push {r0-r3}
+				ldr r0, uart32_uartint_esc_clrline
+				mov r1, #3
+				bl uart32_uarttx
+				pop {r0-r3}
+
+				push {r0-r3}
+				ldr r0, uart32_uartint_esc_right
+				mov r1, #3
+				bl uart32_uarttx
+				pop {r0-r3}
 
 			uart32_uartint_backspace_jmp_common:
 				str count, UART32_UARTINT_COUNT
@@ -917,17 +967,7 @@ uart32_uartint:
 
 			/* Slide Offset Count */
 			add count, count, #1
-			cmp count, max_size
-			subge count, max_size, #1        @ If Exceeds Maximum Size of Heap, Stay Count
 			str count, UART32_UARTINT_COUNT
-			blt uart32_uartint_success
-
-			/* Cursor Left If Reaching Maximum Size of Line */
-			push {r0-r3}
-			ldr r0, uart32_uartint_esc_left
-			mov r1, #3
-			bl uart32_uarttx
-			pop {r0-r3}
 
 			b uart32_uartint_success
 
@@ -956,7 +996,7 @@ uart32_uartint:
 /*macro32_debug_hexa heap, 100, 112, 36*/
 /*macro32_debug flag_escape, 100, 124*/
 
-		pop {r4-r8,pc}
+		pop {r4-r9,pc}
 
 .unreq flag_mirror
 .unreq max_size
@@ -967,6 +1007,7 @@ uart32_uartint:
 .unreq buffer
 .unreq byte
 .unreq temp2
+.unreq flag_max
 
 .globl UART32_UARTINT_HEAP
 .globl UART32_UARTINT_COUNT_ADDR
@@ -1169,42 +1210,54 @@ uart32_uartsetheap:
  * function uart32_uartint_client
  * UART Interrupt Handler (Client Side)
  *
- * Return: r0 (0 as success, 1, 2, and 3 as error)
- * Error(1): No Buffer to Receive, Overrun, or Busy
- * Error(2): Character Is Not Received
- * Error(3): Data Didn't Be Stored Because Size of Memory Space Is Already Full
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): No Buffer to Receive, or UART Errors (Overrun, Break, Parity, Framing)
+ * Error(2): Data Didn't Be Stored Because Size of Memory Space of FIFO Is Already Full
  */
 .globl uart32_uartint_client
 uart32_uartint_client:
 	/* Auto (Local) Variables, but just Aliases */
 	buffer        .req r0
-	temp          .req r1
+	byte          .req r1
+	temp          .req r2
+	temp2         .req r3
 
 	push {lr}
 
-	ldr buffer, uart32_uartint_buffer
+	uart32_uartint_client_loop:
 
-	push {r0}
-	mov r1, #1                              @ 1 Bytes
-	bl uart32_uartrx
-	mov temp, r0                            @ Whether Overrun or Not
-	pop {r0}
+		ldr buffer, uart32_uartint_buffer
 
-	tst temp, #0x8                          @ Whether Overrun or Not
-	bne uart32_uartint_client_error1        @ If Overrun
+		push {r0}
+		mov r1, #1                              @ 1 Bytes
+		bl uart32_uartrx
+		mov temp, r0                            @ Whether Overrun or Not
+		pop {r0}
 
-	tst temp, #0x10                         @ Whether Not Received or So
-	bne uart32_uartint_client_error2        @ If Not Received
+		tst temp, #0b1111
+		bne uart32_uartint_client_error1        @ If UART Errors
 
-	/* Push to Buffer (FIFO Stack) */
-	ldrb r1, [buffer]
-	ldr r0, UART32_UARTINT_CLIENT_FIFO
-	mov r2, #0
-	bl heap32_mpush
-	cmp r0, #0
-	beq uart32_uartint_client_success
+		tst temp, #0x10                         @ Whether Not Received or So
+		bne uart32_uartint_client_success       @ If Not Received
 
-	b uart32_uartint_client_error3
+		ldrb byte, [buffer]
+
+		/* Check CTRL Characters */
+		cmp byte, #0x20
+		movlo temp, #1
+		lsllo temp, temp, byte
+		ldrlo temp2, UART32_UARTINT_CTRL
+		orrlo temp, temp, temp2
+		strlo temp, UART32_UARTINT_CTRL
+
+		/* Push to Buffer (FIFO Stack) */
+		ldr r0, UART32_UARTINT_CLIENT_FIFO
+		mov r2, #0
+		bl heap32_mpush
+		cmp r0, #0
+		beq uart32_uartint_client_loop
+
+		b uart32_uartint_client_error2
 
 	uart32_uartint_client_error1:
 		mov r0, #1
@@ -1212,10 +1265,6 @@ uart32_uartint_client:
 
 	uart32_uartint_client_error2:
 		mov r0, #2
-		b uart32_uartint_client_common
-
-	uart32_uartint_client_error3:
-		mov r0, #3
 		b uart32_uartint_client_common
 
 	uart32_uartint_client_success:
@@ -1226,7 +1275,9 @@ uart32_uartint_client:
 		pop {pc}
 
 .unreq buffer
+.unreq byte
 .unreq temp
+.unreq temp2
 
 .globl UART32_UARTINT_CLIENT_FIFO
 UART32_UARTINT_CLIENT_FIFO: .word 0x00

@@ -28,9 +28,9 @@ COLOR16_SAMPLE_IMAGE: .word _COLOR16_SAMPLE_IMAGE
 .globl COLOR16_LIGHTGRAY
 .globl COLOR16_DARKGREEN
 
-/* Order of R 5bits, G 6bits, R 5 Bits */
+/* Order of R 5bits, G 6bits, R 5 Bits. fb32_image recognizes 0x0000 as transparency on 16-bit */
 
-COLOR16_BLACK:       .hword 0x0000
+COLOR16_BLACK:       .hword 0x0841 @ 0x080808
 .balign 4 @ Need of 4 bytes alignment to avoid data abort in `ldr`, OR use `ldrh` which can not use PC though...
 COLOR16_RED:         .hword 0xF800 @ 0xFF0000
 .balign 4

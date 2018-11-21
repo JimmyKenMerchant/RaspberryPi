@@ -33,8 +33,8 @@
 PRINT32_FONT_BASE:          .word FONT_MONO_12PX_ASCII_NULL
 PRINT32_FONT_WIDTH:         .word 8
 PRINT32_FONT_HEIGHT:        .word 12
-PRINT32_FONT_COLOR:         .word equ32_print32_font_color
-PRINT32_FONT_BACKCOLOR:     .word equ32_print32_font_backcolor
+PRINT32_FONT_COLOR:         .word equ32_print32_font_color     @ White on 16-bit and 32-bit If Original
+PRINT32_FONT_BACKCOLOR:     .word equ32_print32_font_backcolor @ Transparency on 16-bit and Black on 32-bit If Original
 PRINT32_FONT_UNDERLINE:     .byte 0
 .balign 4
 PRINT32_FONT_BOLD:          .byte 0
@@ -296,28 +296,37 @@ print32_string:
 		ble print32_string_success
 
 		ldrb string_byte, [string_point]         @ Load Character Byte
+
+		/* CTRL Characters */
+
 		cmp string_byte, #0                      @ NULL Character (End of String) Checker
+		moveq esc_count, #0
 		beq print32_string_success               @ Break Loop if Null Character
 
-		cmp esc_count, #0x0
-		bne print32_string_loop_escape
-
 		cmp string_byte, #0x08
+		moveq esc_count, #0
 		beq print32_string_loop_backspace
 
 		cmp string_byte, #0x09
+		moveq esc_count, #0
 		moveq string_byte, #equ32_print32_string_tab_length
 		beq print32_string_loop_tab
 
 		cmp string_byte, #0x0A
+		moveq esc_count, #0
 		beq print32_string_loop_linefeed
 
 		cmp string_byte, #0x0D
+		moveq esc_count, #0
 		beq print32_string_loop_carriagereturn
 
 		cmp string_byte, #0x1B
 		moveq esc_count, #1                      @ esc_count Increases in Progress
 		beq print32_string_loop_common
+
+		/* Escape Sequence */
+		cmp esc_count, #0x0
+		bne print32_string_loop_escape
 
 		/* Clear the Block by Color */
 
@@ -426,6 +435,17 @@ print32_string:
 			strb string_byte, [string_point, esc_count]
 			add esc_count, esc_count, #1
 
+			/* If Second Byte after Escape Character (0x1B) is Less than 0x41 (0x00 - 0x40), It Means No Escape Sequence */
+			cmp string_byte, #0x40
+			cmpls esc_count, #1
+			movls esc_count, #0                    @ esc_count is 1
+			bls print32_string_loop_escape_common
+
+			/* If Character is 0x7F (DEL) and Over, It Means No Escape Sequence */
+			cmp string_byte, #0x7F
+			movhs esc_count, #0
+			bhs print32_string_loop_escape_common
+
 			/* Check Whether Character is A-Z and a-z */
 			cmp string_byte, #0x41                 @ Ascii Code of A (Start of Alphabetical Characters)
 			addlt esc_count, esc_count, #1
@@ -509,199 +529,6 @@ print32_string:
 .balign 4
 print32_string_esc_count: .word _print32_string_esc_count
 print32_string_buffer:    .word _print32_string_buffer
-
-
-/**
- * function print32_string_dummy
- * No Print String with 1 Byte Character, But Get Changes of X and Y coordinates
- *
- * Parameters
- * r0: Pointer of Array of String
- * r1: X Coordinate
- * r2: Y Coordinate
- * r3: Length of Characters, Left to Right
- *
- * Return: r0 (0 as sucess, 1 and more as error), r1 (Upper 16 bits: Last X Coordinate, Lower 16 bits: Last Y Coordinate)
- * Error: Number of Characters Which Were Not Drawn
- */
-.globl print32_string_dummy
-print32_string_dummy:
-	/* Auto (Local) Variables, but just Aliases */
-	string_point      .req r0
-	x_coord           .req r1
-	y_coord           .req r2
-	length            .req r3
-	char_width        .req r4
-	char_height       .req r5
-	string_byte       .req r6
-	width             .req r7
-	height            .req r8
-	esc_count         .req r9
-
-	push {r4-r9,lr} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-
-	ldr char_width, PRINT32_FONT_WIDTH_ADDR
-	ldr char_width, [char_width]
-	ldr char_height, PRINT32_FONT_HEIGHT_ADDR
-	ldr char_height, [char_height]
-
-	ldr width, PRINT32_FB32_WIDTH
-	ldr width, [width]
-	ldr height, PRINT32_FB32_HEIGHT
-	ldr height, [height]
-
-	ldr esc_count, print32_string_esc_count
-	ldr esc_count, [esc_count]
-
-	macro32_dsb ip
-
-	print32_string_dummy_loop:
-		cmp length, #0                           @ `for (; length > 0; length--)`
-		ble print32_string_dummy_success
-
-		ldrb string_byte, [string_point]         @ Load Character Byte
-		cmp string_byte, #0                      @ NULL Character (End of String) Checker
-		beq print32_string_dummy_success         @ Break Loop if Null Character
-
-		cmp esc_count, #0x0
-		bne print32_string_dummy_loop_escape
-
-		cmp string_byte, #0x08
-		beq print32_string_dummy_loop_backspace
-
-		cmp string_byte, #0x09
-		moveq string_byte, #equ32_print32_string_tab_length
-		beq print32_string_dummy_loop_tab
-
-		cmp string_byte, #0x0A
-		beq print32_string_dummy_loop_linefeed
-
-		cmp string_byte, #0x0D
-		beq print32_string_dummy_loop_carriagereturn
-
-		cmp string_byte, #0x1B
-		moveq esc_count, #1                      @ esc_count Increases in Progress
-		beq print32_string_dummy_loop_common
-
-		/* Check Error */
-		cmp y_coord, height
-		bge print32_string_dummy_error
-
-		print32_string_dummy_loop_setcoord:
-
-			add x_coord, x_coord, char_width
-			cmp x_coord, width
-			blt print32_string_dummy_loop_common
-
-		print32_string_dummy_loop_linefeed:
-			mov x_coord, #0
-			add y_coord, y_coord, char_height
-			b print32_string_dummy_loop_common
-
-		print32_string_dummy_loop_carriagereturn:
-			mov x_coord, #0
-			b print32_string_dummy_loop_common
-
-		print32_string_dummy_loop_tab:
-			cmp string_byte, #0                        @ `for ( uint32 string_byte = equ32_print32_string_dummy_tab_length; string_byte > 0; string_byte-- )`
-			ble print32_string_dummy_loop_common
-
-			add x_coord, x_coord, char_width
-
-			cmp x_coord, width
-			movge x_coord, #0
-			addge y_coord, y_coord, char_height
-
-			sub string_byte, string_byte, #1
-			b print32_string_dummy_loop_tab
-
-		print32_string_dummy_loop_backspace:
-			sub x_coord, x_coord, char_width
-			cmp x_coord, #0
-			movle x_coord, #0
-			b print32_string_dummy_loop_common
-
-		print32_string_dummy_loop_escape:
-
-			/* This Escape Sequence Detecter Assumes All of Sequences as with CSI (Control Sequence Introducer) */
-
-			push {string_point}
-			ldr string_point, print32_string_buffer
-			sub esc_count, esc_count, #1
-			strb string_byte, [string_point, esc_count]
-			add esc_count, esc_count, #1
-
-			/* Check Whether Character is A-Z and a-z */
-			cmp string_byte, #0x41                 @ Ascii Code of A (Start of Alphabetical Characters)
-			addlt esc_count, esc_count, #1
-			blt print32_string_dummy_loop_escape_common
-
-			cmp string_byte, #0x5B                 @ Ascii Code of [ (Next of Capital Z)
-			blt print32_string_dummy_loop_escape_sequence
-
-			cmp string_byte, #0x61                 @ Ascii Code of a (0x5B through 0x60 Are Special Symbols) 
-			addlt esc_count, esc_count, #1
-			blt print32_string_dummy_loop_escape_common
-
-			cmp string_byte, #0x7B                 @ Ascii Code of { (Next of Small z)
-			addge esc_count, esc_count, #1
-			bge print32_string_dummy_loop_escape_common
-
-			print32_string_dummy_loop_escape_sequence:
-
-				push {r0,r3}
-				mov r3, esc_count                      @ Length of String, Next of Escape Character through A-Z, a-z
-				mov r0, string_point
-				bl print32_esc_sequence
-				mov y_coord, r1
-				mov x_coord, r0
-				pop {r0,r3}
-
-				/* Reflects Changes of Attributes About Font  */
-				ldr char_width, PRINT32_FONT_WIDTH_ADDR
-				ldr char_width, [char_width]
-				ldr char_height, PRINT32_FONT_HEIGHT_ADDR
-				ldr char_height, [char_height]
-
-				mov esc_count, #0
-
-				macro32_dsb ip
-
-			print32_string_dummy_loop_escape_common:
-				cmp esc_count, #equ32_print32_string_buffer_size
-				movge esc_count, #equ32_print32_string_buffer_size
-				pop {string_point}
-
-		print32_string_dummy_loop_common:
-			add string_point, string_point, #1
-			sub length, length, #1
-			b print32_string_dummy_loop
-
-	print32_string_dummy_success:
-		mov r0, #0                                 @ Return with Success
-		b print32_string_dummy_common
-
-	print32_string_dummy_error:
-		mov r0, length                             @ Return with Number of Characters Which Were Not Drawn
-
-	print32_string_dummy_common:
-		ldr length, print32_string_esc_count
-		str esc_count, [length]
-		lsl x_coord, x_coord, #16
-		add r1, x_coord, y_coord
-		macro32_dsb ip
-		pop {r4-r9,pc} @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
-
-.unreq string_point
-.unreq x_coord
-.unreq y_coord
-.unreq length
-.unreq char_width
-.unreq char_height
-.unreq string_byte
-.unreq width
-.unreq height
-.unreq esc_count
 
 
 /**

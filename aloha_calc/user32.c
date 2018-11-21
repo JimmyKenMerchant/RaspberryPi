@@ -75,7 +75,7 @@ typedef enum _command_list {
 	 * Besides, the y coordinate stands the bottom of the last string.
 	 */
 	pict,
-	csr, // Set cursor, "csr @S1 @S2": Set row (Y Coordinate) in S1, and column (X Coordinate) in S2.
+	csr, // Set cursor, "csr @S1 @S2": Set row (Y Coordinate) in S1, and column (X Coordinate) in S2. Set offset of column on "pict".
 	/**
 	 * "fnt" sets configurations of font. "fnt @S1 @S2":
 	 * The font width in S1 (max is 8), the font height in S2 (max is 12).
@@ -242,7 +242,6 @@ bool line_clean( String target_str );
 bool command_print( String target_str ); 
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ); 
 bool command_label( uint32 start_line_number ); // Label Enumeration
-bool console_rollup();
 bool startup_executer();
 void sound_makesilence();
 bool compare_signed( String target_str, uint32 length, uint32 status_nzcv );
@@ -254,7 +253,7 @@ bool flag_execute;
 obj buffer_zero; // Zero Buffer
 bool flag_pass; // Use in IF Statements and FOR/WHILE Loops
 uint32 count_pass; // Use in IF Statements and FOR/WHILE Loops, Check Nested Statements and Loops
-bool flag_display;
+uint32 x_offset;
 
 /* Start Up */
 bool startup;
@@ -338,7 +337,7 @@ int32 _user_start() {
 	flag_execute = false;
 	flag_pass = false;
 	count_pass = 0;
-	flag_display = false;
+	x_offset = 0;
 	
 	while ( true ) {
 		if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) {
@@ -1023,6 +1022,7 @@ int32 _user_start() {
 								str_direction = (String)heap32_mfree( (obj)str_direction );
 
 								var_temp.u32 = _load_32( array_source + 4 );
+								x_offset = var_temp.u32;
 								str_direction = cvt32_int32_to_string_deci( var_temp.u32, 1, 0 );
 								text_sender( str_direction );
 								text_sender( "H\0" );
@@ -1408,6 +1408,9 @@ int32 _user_start() {
 								/* Change UART Client Mode */
 								_uartclient( true );
 
+								text_sender( "\x1B[K\0" ); // Clear Line
+								text_sender( src_str ); // Overwrite after Carriage Return
+
 								/* Pass Spaces and Label */
 								temp_str = pass_space_label( dst_str );
 								var_temp.u32 = temp_str - dst_str;
@@ -1666,10 +1669,7 @@ int32 _user_start() {
 						flag_pass = false;
 						count_pass = 0;
 						var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
-						if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
-							var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
-							text_sender( "\x1B[D\0" );
-						}
+
 						/* Save Content in Line to Buffer for Retrieve It When Meta Command Is Wrote in Line */
 						heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
 						_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
@@ -1729,10 +1729,6 @@ int32 _user_start() {
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
 					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
-					if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
-						var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
-						text_sender( "\x1B[D\0" );
-					}
 					_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
@@ -1743,10 +1739,6 @@ int32 _user_start() {
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
 					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
-					if ( var_temp.u32 >= UART32_UARTMALLOC_MAXROW ) {
-						var_temp.u32 = UART32_UARTMALLOC_MAXROW - 1;
-						text_sender( "\x1B[D\0" );
-					}
 					_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
@@ -1780,30 +1772,14 @@ bool process_counter() {
 
 bool text_sender( String target_str ) {
 	uint32 length = str32_strlen( target_str );
-	if ( flag_display ) {
-		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
-	}
 	_uarttx( target_str, length );
-	/* Dry Print, Needed to Match Width of Console's Display with This Runtime's Definition (Defined on vector32.s) */
-	if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
-		FB32_X_CARET = 0;
-		FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
-	}
 
 	return true;
 }
 
 
 bool text_sender_length( String target_str, uint32 length ) {
-	if ( flag_display ) {
-		if ( print32_set_caret( print32_string( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) console_rollup();
-	}
 	_uarttx( target_str, length );
-	/* Dry Print, Needed to Match Width of Console's Display with This Runtime's Definition (Defined on vector32.s) */
-	if ( print32_set_caret( print32_string_dummy( target_str, FB32_X_CARET, FB32_Y_CARET, length ) ) ) {
-		FB32_X_CARET = 0;
-		FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
-	}
 
 	return true;
 }
@@ -1860,6 +1836,7 @@ String pass_space_label( String target_str ) {
 bool line_clean( String target_str ) {
 	uint32 length_temp = str32_strlen( target_str ); // Ascii Code of Space
 	heap32_mcopy( (obj)target_str, length_temp, buffer_zero, 0, UART32_UARTMALLOC_MAXROW - length_temp ); // Add Null Character
+	_store_8( (obj)target_str + UART32_UARTMALLOC_MAXROW, 0x00 ); // Make Sure The Last Row Is Null, Several Commands May Have Overflow by heap32_mcopy
 
 	return true;
 }
@@ -1901,7 +1878,6 @@ bool command_print( String target_str ) {
 bool command_pict( String true_str, String false_str, obj array, uint32 size_indicator ) {
 	arm32_dsb();
 	int32 size_array = heap32_mcount( array );
-	uint32 x_offset = arm32_udiv( FB32_X_CARET, PRINT32_FONT_WIDTH );
 	if ( size_array == -1 ) return false;
 	if ( size_indicator > 2 ) size_indicator = 2;
 	uint32 count_array = size_array >> size_indicator;
@@ -1963,26 +1939,6 @@ bool command_label( uint32 start_line_number ) {
 			if ( label_list.length >= label_maxlength ) break;
 		}
 	}
-
-	return true;
-}
-
-
-bool console_rollup() {
-	fb32_image(
-			FB32_ADDR,
-			0,
-			-PRINT32_FONT_HEIGHT,
-			FB32_WIDTH,
-			FB32_HEIGHT,
-			0,
-			0,
-			0,
-			0
-	);
-	FB32_X_CARET = 0;
-	FB32_Y_CARET = FB32_HEIGHT - PRINT32_FONT_HEIGHT;
-	print32_string( "\x1B[2K", FB32_X_CARET, FB32_Y_CARET, 4 );
 
 	return true;
 }
