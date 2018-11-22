@@ -18,7 +18,7 @@
  */
 #define startup_load_length  "5"
 
-#define initial_line         1
+#define initial_line         1 // First Line Is Reserved
 #define argument_maxlength   8
 #define label_maxlength      64 // Maximum Limitation of Length of Labels
 #define gpio_output          0x0F800000 // GPIO23-27
@@ -152,7 +152,9 @@ typedef enum _command_list {
  * 4. Indirect Number, indicated by "[".
  * Caution that labels should not use characters, "&|^.:@[=!<>+-/%*", for their naming.
  * Strings without these prefixes are ignored. However, "let" and "append" commands allow immediate values as the second argument.
- * For example, "let @1 1234" stores 1234 to line No. 1. Also, "print" command allows immediate values as the first argument.
+ * For example, "let @1 1234" stores 1234 to line No. 1.
+ * Also, "print" and "sleep" commands allow immediate values as the first argument.
+ * However, ".:@[" are not used in the immediate values for "let", "append", "print", and "sleep".
  */
 
 /**
@@ -251,10 +253,10 @@ uint32 x_offset;
 
 /* Start Up */
 bool startup;
-String startup_command1 = "load @0 .a .b\r\0";
-String startup_command2 = ".a " startup_load_length "\r\0";
-String startup_command3 = ".b 0b00\r\0";
-String startup_command4 = "run\r\0";
+String startup_command1 = "load @0 .a .b\0"; // Initial Line Will Be Limited by The Constant, initial_line
+String startup_command2 = ".a " startup_load_length "\0";
+String startup_command3 = ".b 0b00\0";
+String startup_command4 = "run\0";
 uint32 startup_length = 4;
 
 int32 _user_start() {
@@ -883,10 +885,10 @@ int32 _user_start() {
 								break;
 							case print:
 								var_temp.u32 = _load_32( array_argpointer );
-								if ( var_temp.u32 ) { // If Not Null, That Is, Having Second Argument with Label
+								if ( var_temp.u32 ) { // If Not Null, That Is, Having First Argument with Label
 									if ( _uartsetheap( var_temp.u32 ) ) break;
 									command_print( UART32_UARTINT_HEAP );
-								} else { // If Null, That Is, Having Immediate or Nothing of Second Argument
+								} else { // If Null, That Is, Having Immediate or Nothing of First Argument
 									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
 									if ( length_temp == -1 ) break; // Reaching End of Script of Line
 									temp_str_dup += length_temp; // Beyond Command
@@ -896,7 +898,17 @@ int32 _user_start() {
 
 								break;
 							case sleep:
-								_sleep( _load_32( array_source ) );
+								var_temp.u32 = _load_32( array_argpointer );
+								if ( var_temp.u32 ) { // If Not Null, That Is, Having First Argument with Label
+									var_temp.u32 = _load_32( array_source );
+								} else { // If Null, That Is, Having Immediate or Nothing of First Argument
+									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									if ( length_temp == -1 ) break; // Reaching End of Script of Line
+									temp_str_dup += length_temp; // Beyond Command
+									temp_str_dup++; // Next of Space
+									var_temp.u32 = cvt32_string_to_int32( temp_str_dup, str32_strlen( temp_str_dup ) );
+								}
+								_sleep( var_temp.u32 );
 
 								break;
 							case stime:
@@ -1932,23 +1944,29 @@ bool command_label( uint32 start_line_number ) {
 
 
 bool startup_executer() {
+	String startup_str = null;
+	flex32 var_temp;
 	if ( startup_length >= 4 ) {
-		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command1, 0, str32_strlen( startup_command1 ) );
-		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
-		startup_length--;
+		startup_str = startup_command1;
 	} else if ( startup_length >= 3 ) {
-		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command2, 0, str32_strlen( startup_command2 ) );
-		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
-		startup_length--;
+		startup_str = startup_command2;
 	} else if ( startup_length >= 2 ) {
-		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command3, 0, str32_strlen( startup_command3 ) );
-		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
-		startup_length--;
+		startup_str = startup_command3;
 	} else if ( startup_length >= 1 ) {
-		heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, (obj)startup_command4, 0, str32_strlen( startup_command4 ) );
-		_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
-		startup_length--;
+		startup_str = startup_command4;
+	} else {
+		return false;
 	}
+
+	var_temp.u32 = str32_strlen( startup_str );
+	if ( var_temp.u32 > UART32_UARTMALLOC_MAXROW ) var_temp.u32 = UART32_UARTMALLOC_MAXROW;
+
+	for ( uint32 i = 0; i < var_temp.u32; i++ ) {
+		_store_8( (obj)UART32_UARTINT_HEAP + i, _load_8( (obj)startup_str + i ) );
+	}
+
+	_store_32( UART32_UARTINT_BUSY_ADDR, 1 );
+	startup_length--;
 
 	if ( startup_length <= 0 ) {
 		startup = false;
