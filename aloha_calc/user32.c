@@ -77,12 +77,6 @@ typedef enum _command_list {
 	pict,
 	csr, // Set cursor, "csr @S1 @S2": Set row (Y Coordinate) in S1, and column (X Coordinate) in S2. Set offset of column on "pict".
 	/**
-	 * "fnt" sets configurations of font. "fnt @S1 @S2":
-	 * The font width in S1 (max is 8), the font height in S2 (max is 12).
-	 * Caution that this command supports for the keyboard mode. On distance terminals, font configuration does not change.
-	 */
-	fnt,
-	/**
 	 * "gpio" does sequential outputting from GPIO. "gpio @S1 @S2":
 	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
 	 * Each bit of raw data represents status of GPIO pins, e.g., Bit[3] represents GPIO 3, 0 as low and 1 as high.
@@ -420,11 +414,6 @@ int32 _user_start() {
 								src_index = 2; // Only Last Two Is Needed to Translate to Integer
 							} else if ( str32_strmatch( temp_str, 3, "csr\0", 3 ) ) {
 								command_type = csr;
-								length_arg = 2;
-								pipe_type = enumurate_sources;
-								src_index = 0;
-							} else if ( str32_strmatch( temp_str, 3, "fnt\0", 3 ) ) {
-								command_type = fnt;
 								length_arg = 2;
 								pipe_type = enumurate_sources;
 								src_index = 0;
@@ -1029,13 +1018,6 @@ int32 _user_start() {
 								str_direction = (String)heap32_mfree( (obj)str_direction );
 
 								break;
-							case fnt:
-								PRINT32_FONT_WIDTH = _load_32( array_source );
-								PRINT32_FONT_HEIGHT = _load_32( array_source + 4 );
-								if ( PRINT32_FONT_WIDTH > 8 ) PRINT32_FONT_WIDTH = 8;
-								if ( PRINT32_FONT_HEIGHT > 12 ) PRINT32_FONT_WIDTH = 12;
-
-								break;
 							case gpio:
 								var_temp.u32 = _load_32( array_source );
 								if ( var_temp.u32 >=  rawdata_maxlength ) break;
@@ -1408,8 +1390,7 @@ int32 _user_start() {
 								/* Change UART Client Mode */
 								_uartclient( true );
 
-								text_sender( "\x1B[K\0" ); // Clear Line
-								text_sender( src_str ); // Overwrite after Carriage Return
+								text_sender( "\r\n\0" );
 
 								/* Pass Spaces and Label */
 								temp_str = pass_space_label( dst_str );
@@ -1880,11 +1861,20 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 	int32 size_array = heap32_mcount( array );
 	if ( size_array == -1 ) return false;
 	if ( size_indicator > 2 ) size_indicator = 2;
-	uint32 count_array = size_array >> size_indicator;
-	size_indicator = 1 << size_indicator;
+	uint32 count_array = size_array >> size_indicator; // Number of Size of Data
+	size_indicator = 1 << size_indicator; // 0, 1, 2 of size_indicator to 1, 2, 4
 	int32 length_data = 8 * size_indicator; // 1 Byte equals 8 Bits
+	text_sender( "\r\0" ); // Send Carriage Return to Cancel Current Offset
 	for ( uint32 i = 0; i < count_array; i++ ) {
+		// Make Offset
+		for ( uint32 j = 0; j < x_offset; j++ ) {
+			text_sender( "\x1B[C\0" );
+		}
+
+		// Obtain Data in Array
 		uint32 data = _load_32( array + size_indicator * i );
+
+		// Print in Accordance with Checking True/False of Bits
 		for ( int32 j = length_data - 1; j >= 0; j-- ) {
 			uint32 bit = data & true << j;
 			if ( bit ) {
@@ -1894,9 +1884,6 @@ bool command_pict( String true_str, String false_str, obj array, uint32 size_ind
 			}
 		}
 		text_sender( "\r\n\0" );
-		for ( uint32 j = 0; j < x_offset; j++ ) {
-			text_sender( "\x1B[C\0" );
-		}
 	}
 
 	return true;

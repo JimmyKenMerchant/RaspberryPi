@@ -717,12 +717,10 @@ print32_esc_sequence:
 		cmp number, #0x31                        @ Ascii Code of 1
 		beq print32_esc_sequence_k_begin         @ Clear Beginning of Line through Right Side of Cursor
 
-		/* If Zero or Default, Clear Left Side of Cursor through End of Line */
+		/* If Zero or Default, Clear from Cursor through End of Line */
 
 		push {r0-r3}                             @ Equals to stmfd (stack pointer full, decrement order)
-		ldr number, PRINT32_FONT_WIDTH_ADDR
-		ldr number, [number]
-		add r1, x_coord, number                  @ Left Side of Cursor
+		mov r1, x_coord                          @ At Point of Current Cursor
 		ldr r3, PRINT32_FB32_WIDTH
 		ldr r3, [r3]
 		sub r3, r3, r1                           @ Width of Area to Clear

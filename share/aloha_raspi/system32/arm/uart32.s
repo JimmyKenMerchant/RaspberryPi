@@ -814,10 +814,8 @@ uart32_uartint:
 			pop {r0-r3}
 
 			sub temp, temp, #1  @ Subtract One For Null Character for Use Later
-			cmp temp, #0
-			beq uart32_uartint_backspace_null
 
-			/* Send Esc[K (Clear From Cursor Right) */
+			/* Send Esc[K (Clear From Cursor) */
 			push {r0-r3}
 			ldr r0, uart32_uartint_esc_clrline
 			mov r1, #3
@@ -844,28 +842,6 @@ uart32_uartint:
 
 				sub temp, temp, #1
 				b uart32_uartint_backspace_jmp_loop
-
-			uart32_uartint_backspace_null:
-
-				/* On The Last of Line */
-
-				push {r0-r3}
-				ldr r0, uart32_uartint_esc_left
-				mov r1, #3
-				bl uart32_uarttx
-				pop {r0-r3}
-
-				push {r0-r3}
-				ldr r0, uart32_uartint_esc_clrline
-				mov r1, #3
-				bl uart32_uarttx
-				pop {r0-r3}
-
-				push {r0-r3}
-				ldr r0, uart32_uartint_esc_right
-				mov r1, #3
-				bl uart32_uarttx
-				pop {r0-r3}
 
 			uart32_uartint_backspace_jmp_common:
 				str count, UART32_UARTINT_COUNT
@@ -1224,40 +1200,38 @@ uart32_uartint_client:
 
 	push {lr}
 
-	uart32_uartint_client_loop:
+	ldr buffer, uart32_uartint_buffer
 
-		ldr buffer, uart32_uartint_buffer
+	push {r0}
+	mov r1, #1                              @ 1 Bytes
+	bl uart32_uartrx
+	mov temp, r0                            @ Whether Overrun or Not
+	pop {r0}
 
-		push {r0}
-		mov r1, #1                              @ 1 Bytes
-		bl uart32_uartrx
-		mov temp, r0                            @ Whether Overrun or Not
-		pop {r0}
+	tst temp, #0b1111
+	bne uart32_uartint_client_error1        @ If UART Errors
 
-		tst temp, #0b1111
-		bne uart32_uartint_client_error1        @ If UART Errors
+	tst temp, #0x10                         @ Whether Not Received or So
+	bne uart32_uartint_client_success       @ If Not Received
 
-		tst temp, #0x10                         @ Whether Not Received or So
-		bne uart32_uartint_client_success       @ If Not Received
+	ldrb byte, [buffer]
 
-		ldrb byte, [buffer]
+	/* Check CTRL Characters */
+	cmp byte, #0x20
+	movlo temp, #1
+	lsllo temp, temp, byte
+	ldrlo temp2, UART32_UARTINT_CTRL
+	orrlo temp, temp, temp2
+	strlo temp, UART32_UARTINT_CTRL
 
-		/* Check CTRL Characters */
-		cmp byte, #0x20
-		movlo temp, #1
-		lsllo temp, temp, byte
-		ldrlo temp2, UART32_UARTINT_CTRL
-		orrlo temp, temp, temp2
-		strlo temp, UART32_UARTINT_CTRL
+	/* Push to Buffer (FIFO Stack) */
+	ldr r0, UART32_UARTINT_CLIENT_FIFO
+	mov r2, #0
+	bl heap32_mpush
+	cmp r0, #0
+	beq uart32_uartint_client_success
 
-		/* Push to Buffer (FIFO Stack) */
-		ldr r0, UART32_UARTINT_CLIENT_FIFO
-		mov r2, #0
-		bl heap32_mpush
-		cmp r0, #0
-		beq uart32_uartint_client_loop
-
-		b uart32_uartint_client_error2
+	b uart32_uartint_client_error2
 
 	uart32_uartint_client_error1:
 		mov r0, #1
