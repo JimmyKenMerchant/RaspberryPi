@@ -18,6 +18,8 @@
 
 * [Sound](#sound)
 
+* [Electric Schematics](#electric-schematics)
+
 * [Draft](#draft)
 
 ## Purpose
@@ -159,6 +161,12 @@
 * The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on share/include/snd32/soundadjust.h.
 
 * MIDI IN has outputting priority. If MIDI IN makes note on, Music code stops.
+
+## Electric Schematics
+
+* [Sound System for PWM Output](sound_system_pwm.pdf)
+
+* [Low-pass Filter for PWM](lowpass_filter.pdf)
 
 ## Draft
 
