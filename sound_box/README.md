@@ -76,15 +76,19 @@
 
 **About PWM0/1 Output**
 
-* You would see this project can be a digitally controlled oscillator (digital VCO or DCO) of your modular synthesizer. Yes, it can be. But I recognized that the signal level of modular synthesizers are higher (in my research, +-5V, 10Vp-p on Eurorack) than the output of this project. To fit the signal level, I recommend that you use balanced PWM output. This allows you to cancel noise and obtain high voltage (max. 2.6928Vp-p) by connecting two outputs with an Op-amp (positive input to normal output and negative input to inverted output; usage of an Op-amp as a buffer. Use resisters on appropriate points). Plus, amplify the second output by another Op-amp.
+* You would see this project can be a digitally controlled oscillator (digital VCO or DCO) of your modular synthesizer. Yes, it can be. But I recognized that the signal level of modular synthesizers are higher (in my research, +-5V, 10Vp-p on Eurorack) than the output of this project (1.3464Vp-p).
+	* Check a electric schematic [Sound System for PWM Output](sound_system_pwm.pdf). U1B is just a voltage follower (gain 0). If U1B has more gain, the output voltage is amplified. However, in this schematic, the output is up to 5V, and direct current bias is not cut.
 
 * You may consider of possible making of triangle wave and changing duty ratio of square wave. These are possible by external filters. A high-pass filter makes square wave that is changed duty ratio, and a low-pass filter makes triangle wave from square wave (triangle wave is selectable on the latest version).
 
 * By disabling the video signal, the sound signal from the 3.5mm jack may be possible for stable use. Otherwise, the analogue video signal outputs from the 3.5mm jack (on Zero, TV pin) when any HDMI cable is not plugged in. This seems to make possible noise.
 
-* This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p and higher). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal is much higher than expected as a microphone. Besides, as line level, the voltage of the signal may be slight lower than expected. However, LR combinational monaural makes high level because typically an Op-amp voltage adder mixes L and R in a monaural receiver (e.g. Mono Aux In).
+* This Project aims its output as line level (appx. -10 dBV, 316mVrms, 894mVp-p and higher). The voltage of the signal from 3.5mm jack seems to be aimed usage as RCA because the 3.5mm jack can output video signal too. If you connect your RasPi with other devices as microphone level, the voltage of the signal is much higher than expected as a microphone. Besides, as line level, the voltage of the signal may be slight lower than expected. However, LR combinational monaural makes high level because typically an op-amp voltage adder mixes L and R in a monaural receiver (e.g. Mono Aux In).
 
 * You can hear noise, this derives from several causes. Audible clock jitter, steps of volume, steps of frequency on pitch bend and modulation, power source, resonance in the circuit caused by static electricity, magnetic energy in the circuit, external radio wave and unexpected antenna in the circuit, etc. Noise directions are normal mode and common mode. I recommend that you use analogue Low-pass filter (Cut off) to intermediate digital output and any input. Balanced PWM output reduces noise from common mode.
+	* There is two usage of balanced PWM output. One is reception as 31680Hz pulses, another is reception as audio signal.
+	* The first is just easy to make an electric circuit. Apply an op-amp (positive input to normal output and negative input to inverted output. However, the wave form of output depends on characteristics of the op-amp (e.g., unity gain frequency). Caution that, in this case, the voltage of output pulses from the op-amp is the same as the power supply voltage. The wave form as audio is made of output pulses from the op-amp.
+	* The second is difficult to make an electric circuit for reducing phase shift between normal and inverted output.
 
 **About PCM Output**
 
@@ -155,8 +159,8 @@
 * Music code is a set of unique macros (predefinitions) of sound types and music notes. These macros are stored in share/include/snd32/musiccode.h.
 
 * Low-frequency oscillator can be controlled not only in MIDI IN as modulation, but also in user32.c directly.
-	 * Value of `SND32_MODULATION_DELTA` sets changing speed (delta) of frequency. This value immediately affects the outgoing sound. This value varies between PWM mode and PCM mode. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
-	 * Value of `SND32_MODULATION_RANGE` sets range (interval) of highest-lowest frequency. This value affects the sound after changing note of Music code. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
+	* Value of `SND32_MODULATION_DELTA` sets changing speed (delta) of frequency. This value immediately affects the outgoing sound. This value varies between PWM mode and PCM mode. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
+	* Value of `SND32_MODULATION_RANGE` sets range (interval) of highest-lowest frequency. This value affects the sound after changing note of Music code. Use `delta_multiplier` to adjust value for the same changing speed between two modes.
 
 * The sampling rate is adjusted to 3.1680Khz in A4. This rate varies on each note, depending on share/include/snd32/soundadjust.h.
 
