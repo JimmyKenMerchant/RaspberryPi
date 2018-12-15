@@ -77,7 +77,7 @@
 **About PWM0/1 Output**
 
 * You would see this project can be a digitally controlled oscillator (digital VCO or DCO) of your modular synthesizer. Yes, it can be. But I recognized that the signal level of modular synthesizers are higher (in my research, +-5V, 10Vp-p on Eurorack) than the output of this project (1.3464Vp-p).
-	* Check a electric schematic [Sound System for PWM Output](sound_system_pwm.pdf). U1B is just a voltage follower (gain 0). If U1B has more gain, the output voltage is amplified. However, in this schematic, the output is up to 5V, and direct current bias is not cut.
+	* Check an electric schematic [Sound System for PWM Output](sound_system_pwm.pdf). U1B is just a voltage follower (gain 0). If U1B has more gain, the output voltage is amplified. However, in this schematic, the output is up to 5V, and direct current bias is not cut.
 
 * You may consider of possible making of triangle wave and changing duty ratio of square wave. These are possible by external filters. A high-pass filter makes square wave that is changed duty ratio, and a low-pass filter makes triangle wave from square wave (triangle wave is selectable on the latest version).
 
