@@ -43,4 +43,7 @@
 * Host works asynchronous with CPU, so you need to detect completion of a transaction (transferring and, if it exists, receiving). Polling Done bit (end of transferring) in CS register helps the detection. However, Host's RxFIFO has limitation to stack (16 words, seems 64 bytes). You needs to limit length of a transaction up to 16 words and have several transactions in a procedure.
 
 * CS's low means one procedure which consists one and more transactions. If CS highs from low, this means the end of a procedure.
- 
+
+**Electric Schematics**
+
+* [Audio Quantization System](../schematics/audio_quantization.pdf)

@@ -168,9 +168,9 @@
 
 ## Electric Schematics
 
-* [Sound System for PWM Output](sound_system_pwm.pdf)
+* [Sound System for PWM Output](../schematics/sound_system_pwm.pdf)
 
-* [Low-pass Filter for PWM](lowpass_filter.pdf)
+* [Low-pass Filter for PWM](../schematics/lowpass_filter.pdf)
 
 ## Draft
 
