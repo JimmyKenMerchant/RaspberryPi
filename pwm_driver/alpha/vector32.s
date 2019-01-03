@@ -131,15 +131,15 @@ os_reset:
 	mov r0, #equ32_cm_pwm
 	mov r1, #equ32_cm_ctl_mash_0
 	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #12 << equ32_cm_div_integer                            @ For 1600Khz
+	mov r2, #1920 << equ32_cm_div_integer                          @ For 10Khz
 	bl arm32_clockmanager
 
 	/**
-	 * PWM Initializer, 33 Steps (0 - 32)
+	 * PWM Initializer
 	 */
 	mov r0, #1                                                     @ Fixed Frequency
-	mov r1, #32                                                    @ Range of PWM0 for 50Khz
-	mov r2, #32                                                    @ Range of PWM1 for 50Khz
+	mov r1, #200
+	mov r2, #200                                                   @ For 50Hz
 	bl pwm32_pwminit
 
 	macro32_dsb ip

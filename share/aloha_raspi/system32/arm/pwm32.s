@@ -352,7 +352,7 @@ pwm32_pwmlen:
  * Parameters
  * r0: 0 as Variable Frequencies to Balance Pulses (Multiple Highs and Lows), 1 as Fixed Frequency (One High and Low) in A Duty Cycle
  * r1: Range of PWM0
- * r2: Range of PWM0
+ * r2: Range of PWM1
  *
  * Return: r0 (0 as Success)
  */
