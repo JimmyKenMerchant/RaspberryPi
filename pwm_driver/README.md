@@ -46,3 +46,4 @@
 
 * [DC Motor Driver with Buck (Step-down) Converter](../schematics/dc_motor_driver.pdf)
 
+* [DC Motor Driver with Buck (Step-down) Converter Type2](../schematics/dc_motor_driver2.pdf)
