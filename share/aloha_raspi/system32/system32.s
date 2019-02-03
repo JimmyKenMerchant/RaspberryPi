@@ -117,6 +117,8 @@ SYSTEM32_BUFFER_SIZE: .word SYSTEM32_BUFFER_END - SYSTEM32_BUFFER
 .balign 4
 .include "system32/library/stat32.s"
 .balign 4
+.include "system32/library/fft32.s"
+.balign 4
 .include "system32/library/cvt32.s"
 .balign 4
 .include "system32/library/bcd32.s"

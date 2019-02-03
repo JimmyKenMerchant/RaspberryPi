@@ -2240,6 +2240,19 @@ extern obj stat32_order( obj array, uint32 length, bool decreasing );
 
 
 /********************************
+ * system32/library/stat32.s
+ ********************************/
+
+extern uint32 fft32_fft( obj in_real, obj in_imaginary, uint32 lognumber, obj tables_sin, obj tables_cos );
+
+extern uint32 fft32_change_order( obj sample, uint32 length );
+
+extern obj fft32_make_table( uint32 number_divisor, uint32 length, bool flag_cos );
+
+extern obj fft32_make_table2d( uint32 max_number, bool flag_cos );
+
+
+/********************************
  * system32/library/cvt32.s
  ********************************/
 
