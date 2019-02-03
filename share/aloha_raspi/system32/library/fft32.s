@@ -16,7 +16,7 @@
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
  * r1: Array of Samples to Be Transformed (Imaginary Number)
- * r2: Logarithm to Base 2 of Length of Samples, Must Be Power of 2
+ * r2: Logarithm to Base 2 of Length of Samples, Length of Samples Must Be Power of 2
  * r3: Sine Tables, Maximum Length of Units in Table Needs to Be Same as Length of Samples
  * r4: Cosine Tables, Maximum Length of Units in Table Needs to Be Same as Length of Samples
  *
@@ -122,13 +122,17 @@ fft32_fft:
 				add offset, pre_offset, k
 
 				/* In of First Value */
-				vldr vfp_in1_real, [arr_sample_real, offset]
-				vldr vfp_in1_imag, [arr_sample_imag, offset]
+				add ip, arr_sample_real, offset
+				vldr vfp_in1_real, [ip]
+				add ip, arr_sample_imag, offset
+				vldr vfp_in1_imag, [ip]
 
 				/* In of Second Value */
 				add offset, offset, stride
-				vldr vfp_in2_real, [arr_sample_real, offset]
-				vldr vfp_in2_imag, [arr_sample_imag, offset]
+				add ip, arr_sample_real, offset
+				vldr vfp_in2_real, [ip]
+				add ip, arr_sample_imag, offset
+				vldr vfp_in2_imag, [ip]
 				sub offset, offset, stride
 
 				/* N=2 Crossing of Fourier Transform */
@@ -152,13 +156,15 @@ fft32_fft:
 				vmul.f32 vfp_cal3, vfp_cal1_real, vfp_one       @ cos(0)
 				vmul.f32 vfp_cal4, vfp_cal1_imag, vfp_zero      @ sin(0)
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				vstr vfp_cal3, [arr_sample_real, offset]
+				add ip, arr_sample_real, offset
+				vstr vfp_cal3, [ip]
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal1_imag, vfp_one       @ cos(0)
 				vmul.f32 vfp_cal4, vfp_cal1_real, vfp_zero      @ sin(0)
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				vstr vfp_cal3, [arr_sample_imag, offset]
+				add ip, arr_sample_imag, offset
+				vstr vfp_cal3, [ip]
 
 				/* Transform of Second Value, (W0/2, W1/2) */
 
@@ -166,17 +172,19 @@ fft32_fft:
 
 				lsl ip, stride, #1                              @ Multiply by 2
 				sub ip, ip, #1                                  @ Make Mask
-				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Number of Units in Cosine/Sine Table (stride * 2)
+				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Length of Units in Cosine/Sine Table (stride * 2)
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
 				ldr ip, [tables_cos, ip]                        @ Select One of Cosine Table
-				vldr vfp_cos, [ip, offset]                      @ Offset * 1
+				add ip, ip, offset
+				vldr vfp_cos, [ip]                              @ Offset * 1
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
 				ldr ip, [tables_sin, ip]                        @ Select One of Sine Table
-				vldr vfp_sin, [ip, offset]                      @ Offset * 1
+				add ip, ip, offset
+				vldr vfp_sin, [ip]                              @ Offset * 1
 
 				pop {offset}                                    @ Load Value from Stack
 
@@ -186,13 +194,15 @@ fft32_fft:
 				vmul.f32 vfp_cal3, vfp_cal2_real, vfp_cos
 				vmul.f32 vfp_cal4, vfp_cal2_imag, vfp_sin
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				vstr vfp_cal3, [arr_sample_real, offset]
+				add ip, arr_sample_real, offset
+				vstr vfp_cal3, [ip]
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal2_imag, vfp_cos
 				vmul.f32 vfp_cal4, vfp_cal2_real, vfp_sin
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				vstr vfp_cal3, [arr_sample_imag, offset]
+				add ip, arr_sample_imag, offset
+				vstr vfp_cal3, [ip]
 
 				add k, k, #1
 				b fft32_fft_loop_k

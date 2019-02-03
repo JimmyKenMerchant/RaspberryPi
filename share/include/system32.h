@@ -2243,13 +2243,13 @@ extern obj stat32_order( obj array, uint32 length, bool decreasing );
  * system32/library/stat32.s
  ********************************/
 
-extern uint32 fft32_fft( obj in_real, obj in_imaginary, uint32 lognumber, obj tables_sin, obj tables_cos );
+extern uint32 fft32_fft( float32* in_real, float32* in_imaginary, uint32 log2_length, float32** tables_sin, float32** tables_cos );
 
-extern uint32 fft32_change_order( obj sample, uint32 length );
+extern uint32 fft32_change_order( float32* units, uint32 length );
 
-extern obj fft32_make_table( uint32 number_divisor, uint32 length, bool flag_cos );
+extern float32* fft32_make_table( uint32 number_divisor, uint32 length, bool flag_cos );
 
-extern obj fft32_make_table2d( uint32 max_number, bool flag_cos );
+extern float32** fft32_make_table2d( uint32 max_number, bool flag_cos );
 
 
 /********************************
