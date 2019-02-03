@@ -262,11 +262,9 @@ fft32_change_order:
 
 	push {r4-r9,lr}
 
-	mov i, #31
+	mov i, #30
 	clz limit_j, length                   @ Count Leading Zeros to Know Place of Top Bit from MSB
 	sub limit_j, i, limit_j               @ Length of Effective Bits
-
-	lsr length, length, #1                @ Divide by 2
 
 	mov one, #1
 
@@ -277,6 +275,7 @@ fft32_change_order:
 
 		mov mask, #1
 		lsl mask, mask, limit_j
+
 		mov num_reverse, #0
 		mov j, #0
 		fft32_change_order_loop_reversebits:
@@ -284,17 +283,21 @@ fft32_change_order:
 			bhi fft32_change_order_swap
 
 			tst i, mask
-			andne num_reverse, one, lsl j
+			orrne num_reverse, one, lsl j
 
 			lsr mask, mask, #1
 			add j, j, #1
 			b fft32_change_order_loop_reversebits
 
 		fft32_change_order_swap:
-			ldr swap1, [arr_sample, i]
-			ldr swap2, [arr_sample, num_reverse]
-			str swap2, [arr_sample, i]
-			str swap1, [arr_sample, num_reverse]
+			cmp i, num_reverse
+			addhs i, i, #1
+			bhs fft32_change_order_loop
+
+			ldr swap1, [arr_sample, i, lsl #2]           @ Multiply by 4
+			ldr swap2, [arr_sample, num_reverse, lsl #2] @ Multiply by 4
+			str swap2, [arr_sample, i, lsl #2]           @ Multiply by 4
+			str swap1, [arr_sample, num_reverse, lsl #2] @ Multiply by 4
 			add i, i, #1
 			b fft32_change_order_loop
 

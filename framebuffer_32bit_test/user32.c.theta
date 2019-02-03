@@ -12,34 +12,52 @@
 
 int32 _user_start()
 {
-	float32* table1 = fft32_make_table( 16, 16, false );
-	String string_table1 = cvt32_farray_to_string( (obj)table1, 1, 8, 0 );
+
+	String string_table_pre0 =
+			"0.0,1.0,2.0,3.0,"\
+			"4.0,5.0,6.0,7.0,"\
+			"8.0,9.0,10.0,11.0,"\
+			"12.0,13.0,14.0,15.0\0";
+
+	obj table0 = cvt32_string_to_farray( string_table_pre0, str32_strlen( string_table_pre0 ) );
+	String string_table0 = cvt32_farray_to_string( table0, 1, 8, 0 );
+	print32_set_caret( print32_string( string_table0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table0 ) + 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	fft32_change_order( table0, 16 );
+
+	String string_table01 = cvt32_farray_to_string( table0, 1, 8, 0 );
+	print32_set_caret( print32_string( string_table01, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table01 ) + 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
+	obj table1 = fft32_make_table( 16, 16, false );
+	String string_table1 = cvt32_farray_to_string( table1, 1, 8, 0 );
 	print32_set_caret( print32_string( string_table1, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table1 ) + 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32* table2 = fft32_make_table( 16, 16, true );
-	String string_table2 = cvt32_farray_to_string( (obj)table2, 1, 8, 0 );
+	obj table2 = fft32_make_table( 16, 16, true );
+	String string_table2 = cvt32_farray_to_string( table2, 1, 8, 0 );
 	print32_set_caret( print32_string( string_table2, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table2 ) + 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	float32** table3 = fft32_make_table2d( 16, true );
+	ObjArray table3 = fft32_make_table2d( 16, true );
 
-	String string_table3 = cvt32_farray_to_string( (obj)table3[0], 1, 8, 0 );
+	String string_table3 = cvt32_farray_to_string( table3[0], 1, 8, 0 );
 	print32_set_caret( print32_string( string_table3, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table3 ) + 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-	String string_table4 = cvt32_farray_to_string( (obj)table3[1], 1, 8, 0 );
+	String string_table4 = cvt32_farray_to_string( table3[1], 1, 8, 0 );
 	print32_set_caret( print32_string( string_table4, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table4 ) + 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-	String string_table5 = cvt32_farray_to_string( (obj)table3[2], 1, 8, 0 );
+	String string_table5 = cvt32_farray_to_string( table3[2], 1, 8, 0 );
 	print32_set_caret( print32_string( string_table5, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table5 ) + 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-	String string_table6 = cvt32_farray_to_string( (obj)table3[3], 1, 8, 0 );
+	String string_table6 = cvt32_farray_to_string( table3[3], 1, 8, 0 );
 	print32_set_caret( print32_string( string_table6, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table6 ) + 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-
-
 
 	while(True) {
 
