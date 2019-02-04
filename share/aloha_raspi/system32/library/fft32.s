@@ -51,6 +51,11 @@ fft32_fft:
 	vfp_zero        .req s9
 
 	push {r4-r11,lr}
+
+	add sp, sp, #36         @ r4-r11 offset 32 bytes
+	pop {tables_cos}        @ Get Fifth Arguments
+	sub sp, sp, #40         @ Retrieve SP
+
 	vpush {s0-s9}
 
 	mov temp, #1
@@ -122,16 +127,20 @@ fft32_fft:
 				add offset, pre_offset, k
 
 				/* In of First Value */
-				add ip, arr_sample_real, offset
+				lsl ip, offset, #2                     @ Multiply by 4
+				add ip, arr_sample_real, ip
 				vldr vfp_in1_real, [ip]
-				add ip, arr_sample_imag, offset
+				lsl ip, offset, #2                     @ Multiply by 4
+				add ip, arr_sample_imag, ip
 				vldr vfp_in1_imag, [ip]
 
 				/* In of Second Value */
 				add offset, offset, stride
-				add ip, arr_sample_real, offset
+				lsl ip, offset, #2                     @ Multiply by 4
+				add ip, arr_sample_real, ip
 				vldr vfp_in2_real, [ip]
-				add ip, arr_sample_imag, offset
+				lsl ip, offset, #2                     @ Multiply by 4
+				add ip, arr_sample_imag, ip
 				vldr vfp_in2_imag, [ip]
 				sub offset, offset, stride
 
@@ -156,14 +165,16 @@ fft32_fft:
 				vmul.f32 vfp_cal3, vfp_cal1_real, vfp_one       @ cos(0)
 				vmul.f32 vfp_cal4, vfp_cal1_imag, vfp_zero      @ sin(0)
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				add ip, arr_sample_real, offset
+				lsl ip, offset, #2                              @ Multiply by 4
+				add ip, arr_sample_real, ip
 				vstr vfp_cal3, [ip]
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal1_imag, vfp_one       @ cos(0)
 				vmul.f32 vfp_cal4, vfp_cal1_real, vfp_zero      @ sin(0)
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				add ip, arr_sample_imag, offset
+				lsl ip, offset, #2                              @ Multiply by 4
+				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
 
 				/* Transform of Second Value, (W0/2, W1/2) */
@@ -173,10 +184,12 @@ fft32_fft:
 				lsl ip, stride, #1                              @ Multiply by 2
 				sub ip, ip, #1                                  @ Make Mask
 				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Length of Units in Cosine/Sine Table (stride * 2)
+				lsl offset, offset, #2                          @ Multiply by 4
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
 				ldr ip, [tables_cos, ip]                        @ Select One of Cosine Table
+
 				add ip, ip, offset
 				vldr vfp_cos, [ip]                              @ Offset * 1
 
@@ -186,7 +199,7 @@ fft32_fft:
 				add ip, ip, offset
 				vldr vfp_sin, [ip]                              @ Offset * 1
 
-				pop {offset}                                    @ Load Value from Stack
+				pop {offset}                                    @ Retrieve Value from Stack
 
 				add offset, offset, stride
 
@@ -194,14 +207,16 @@ fft32_fft:
 				vmul.f32 vfp_cal3, vfp_cal2_real, vfp_cos
 				vmul.f32 vfp_cal4, vfp_cal2_imag, vfp_sin
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				add ip, arr_sample_real, offset
+				lsl ip, offset, #2                              @ Multiply by 4
+				add ip, arr_sample_real, ip
 				vstr vfp_cal3, [ip]
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal2_imag, vfp_cos
 				vmul.f32 vfp_cal4, vfp_cal2_real, vfp_sin
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
-				add ip, arr_sample_imag, offset
+				lsl ip, offset, #2                              @ Multiply by 4
+				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
 
 				add k, k, #1
@@ -210,7 +225,7 @@ fft32_fft:
 	fft32_fft_common:
 		mov r0, #0
 		vpop {s0-s9}
-		pop {r4-r11,lr}
+		pop {r4-r11,pc}
 
 .unreq arr_sample_real
 .unreq arr_sample_imag
