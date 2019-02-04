@@ -10,8 +10,8 @@
 /**
  * function fft32_fft
  * Fast Fourier Transform, Real Numeber and Imaginary Number, No Changing order in Each Array with Reversing Bits
- * This function uses iteration of N=2 Fourier Transform.
- * The iteration uses "offset" as the start point of N=2 Fourier Transform, and "stride" to take the second value.
+ * This function uses iteration of N=2 Discrete Fourier Transform.
+ * The iteration uses "offset" as the start point of N=2 Discrete Fourier Transform, and "stride" to take the second value.
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
@@ -264,8 +264,8 @@ fft32_fft:
 /**
  * function fft32_ifft
  * Inverse Fast Fourier Transform, Real Numeber and Imaginary Number, No Changing order in Each Array with Reversing Bits
- * This function uses iteration of N=2 Fourier Transform.
- * The iteration uses "offset" as the start point of N=2 Fourier Transform, and "stride" to take the second value.
+ * This function uses iteration of N=2 Discrete Fourier Transform.
+ * The iteration uses "offset" as the start point of N=2 Discrete Fourier Transform, and "stride" to take the second value.
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
