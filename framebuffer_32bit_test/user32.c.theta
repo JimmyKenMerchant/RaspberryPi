@@ -19,8 +19,8 @@ int32 _user_start()
 			"8.0,9.0,10.0,11.0,"\
 			"12.0,13.0,14.0,15.0\0";
 
-	String string_table_pre1 = "1.0,0.0,1.0,1.0\0";
-	String string_table_pre2 = "0.0,0.0,0.0,0.0\0";
+	String string_table_pre1 = "0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0\0";
+	String string_table_pre2 = "0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0\0";
 
 	obj table0 = cvt32_string_to_farray( string_table_pre0, str32_strlen( string_table_pre0 ) );
 	String string_table0 = cvt32_farray_to_string( table0, 1, 8, 0 );
@@ -47,7 +47,7 @@ int32 _user_start()
 
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	ObjArray table3 = fft32_make_table2d( 4, true );
+	ObjArray table3 = fft32_make_table2d( 8, true );
 
 	String string_table3 = cvt32_farray_to_string( table3[0], 1, 8, 0 );
 	print32_set_caret( print32_string( string_table3, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table3 ) ) );
@@ -55,22 +55,22 @@ int32 _user_start()
 	String string_table4 = cvt32_farray_to_string( table3[1], 1, 8, 0 );
 	print32_set_caret( print32_string( string_table4, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table4 ) ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-	//String string_table5 = cvt32_farray_to_string( table3[2], 1, 8, 0 );
-	//print32_set_caret( print32_string( string_table5, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table5 ) ) );
-	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	String string_table5 = cvt32_farray_to_string( table3[2], 1, 8, 0 );
+	print32_set_caret( print32_string( string_table5, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table5 ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	// FFT Test
 	obj in_real = cvt32_string_to_farray( string_table_pre1, str32_strlen( string_table_pre1 ) );
 	obj in_imag = cvt32_string_to_farray( string_table_pre2, str32_strlen( string_table_pre2 ) );
-	ObjArray tables_sin = fft32_make_table2d( 4, false );
-	ObjArray tables_cos = fft32_make_table2d( 4, true );
+	ObjArray tables_sin = fft32_make_table2d( 8, false );
+	ObjArray tables_cos = fft32_make_table2d( 8, true );
 //print32_debug( (uint32)tables_sin, 500, 488 );
 //print32_debug( (uint32)tables_cos, 500, 500 );
-	fft32_fft( in_real, in_imag, 2, tables_sin, tables_cos );
-	fft32_change_order( in_real, 4 );
-	fft32_change_order( in_imag, 4 );
+	fft32_fft( in_real, in_imag, 3, tables_sin, tables_cos );
+	fft32_change_order( in_real, 8 );
+	fft32_change_order( in_imag, 8 );
 	String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	String string_in_imag = cvt32_farray_to_string( in_imag, 1, 8, 0 );
 	print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
@@ -79,9 +79,9 @@ int32 _user_start()
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	// IFFT, No Multiplication by Coefficient 1/N (1/4 in This Case)
-	fft32_ifft( in_real, in_imag, 2, tables_sin, tables_cos );
-	fft32_change_order( in_real, 4 );
-	fft32_change_order( in_imag, 4 );
+	fft32_ifft( in_real, in_imag, 3, tables_sin, tables_cos );
+	fft32_change_order( in_real, 8 );
+	fft32_change_order( in_imag, 8 );
 	String string_in_real_i = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	String string_in_imag_i = cvt32_farray_to_string( in_imag, 1, 8, 0 );
 	print32_set_caret( print32_string( string_in_real_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real_i ) ) );

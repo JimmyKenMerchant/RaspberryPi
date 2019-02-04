@@ -182,7 +182,7 @@ fft32_fft:
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal1_imag, vfp_one       @ cos(0)
 				vmul.f32 vfp_cal4, vfp_cal1_real, vfp_zero      @ sin(0)
-				vsub.f32 vfp_cal3, vfp_cal4, vfp_cal3
+				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
@@ -224,7 +224,7 @@ fft32_fft:
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal2_imag, vfp_cos
 				vmul.f32 vfp_cal4, vfp_cal2_real, vfp_sin
-				vsub.f32 vfp_cal3, vfp_cal4, vfp_cal3
+				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
@@ -435,7 +435,7 @@ fft32_ifft:
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal1_imag, vfp_one       @ cos(0)
 				vmul.f32 vfp_cal4, vfp_cal1_real, vfp_zero      @ sin(0)
-				vadd.f32 vfp_cal3, vfp_cal4, vfp_cal3
+				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
@@ -477,7 +477,7 @@ fft32_ifft:
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal2_imag, vfp_cos
 				vmul.f32 vfp_cal4, vfp_cal2_real, vfp_sin
-				vadd.f32 vfp_cal3, vfp_cal4, vfp_cal3
+				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
