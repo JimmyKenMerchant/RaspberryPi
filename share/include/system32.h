@@ -2245,6 +2245,8 @@ extern obj stat32_order( obj array, uint32 length, bool decreasing );
 
 extern uint32 fft32_fft( obj in_real, obj in_imaginary, uint32 log2_length, ObjArray tables_sin, ObjArray tables_cos );
 
+extern uint32 fft32_ifft( obj in_real, obj in_imaginary, uint32 log2_length, ObjArray tables_sin, ObjArray tables_cos );
+
 extern uint32 fft32_change_order( obj units, uint32 length );
 
 extern obj fft32_make_table( uint32 number_divisor, uint32 length, bool flag_cos );
