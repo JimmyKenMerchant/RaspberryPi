@@ -236,13 +236,13 @@ fft32_fft:
 				vstr vfp_cal3, [ip]
 
 				/**
-				 * For example, if N=4, the third value needs to pick cosine/sine value from ("offset" * 2) of each table.
+				 * For example, if N=4 DCT, the third value needs to pick cosine/sine value from ("offset" * 2) of each table.
 				 * and the fourth value needs to pick cosine/sine value from ("offset" * 3) of each table.
-				 * The length of tables to pick values is ("stride" * 2). Multiple of 2 is used because of N=2 DFT.
-				 * I.e., W("offset" * 0)/("stride" * 2), W("offset" * 1)/("stride" * 2), W("offset" * 2)/("stride" * 2), W("offset" * 3)/("stride" * 2).
-				 * The value of ("offset" * x) exceeds the value of ("stride" * 2) in several cases,
-				 * so we need to calculate ("offset" * x) mod ("stride" * 2).
-				 * These processes equal calculations of cosine/sine values of (2 * Pi * "offset" * x) / ("stride" * 2).
+				 * The length of tables to pick values is ("stride" * 4). Multiple of 4 is used because of N=4 DFT.
+				 * I.e., W("offset" * 0)/("stride" * 4), W("offset" * 1)/("stride" * 4), W("offset" * 2)/("stride" * 4), W("offset" * 3)/("stride" * 4).
+				 * The value of ("offset" * x) exceeds the value of ("stride" * 4) in several cases,
+				 * so we need to calculate ("offset" * x) mod ("stride" * 4).
+				 * These processes equal calculations of cosine/sine values of (2 * Pi * "offset" * x) / ("stride" * 4).
 				 */
 
 				add k, k, #1
@@ -615,7 +615,7 @@ fft32_change_order:
  * Multiply Coefficient 1/N to Each Unit in Sample
  *
  * Parameters
- * r0: Array of Samples to Be Multiplied
+ * r0: Array of Samples
  * r1: Length of Samples
  *
  * Return: r0 (0 as success)
@@ -660,6 +660,53 @@ fft32_coefficient:
 .unreq i
 .unreq vfp_dividend
 .unreq vfp_divisor
+
+
+/**
+ * function fft32_powerspectrum
+ * Make Power Spectrum from Frequency Spectrum (Real Number of FFT Output)
+ *
+ * Parameters
+ * r0: Array of Samples
+ * r1: Length of Samples
+ *
+ * Return: r0 (0 as success)
+ */
+.globl fft32_powerspectrum
+fft32_powerspectrum:
+	/* Auto (Local) Variables, but just Aliases */
+	arr_sample .req r0
+	length     .req r1
+	i          .req r2
+
+	/* VFP Registers */
+	vfp_value  .req s0
+
+	push {lr}
+	vpush {s0}
+
+	mov i, #0
+	fft32_powerspectrum_loop:
+		cmp i, length
+		bhs fft32_powerspectrum_common
+
+		vldr vfp_value, [arr_sample]
+		vmul.f32 vfp_value, vfp_value, vfp_value
+		vstr vfp_value, [arr_sample]
+
+		add arr_sample, arr_sample, #4
+		add i, i, #1
+		b fft32_powerspectrum_loop
+
+	fft32_powerspectrum_common:
+		mov r0, #0
+		vpop {s0}
+		pop {pc}
+
+.unreq arr_sample
+.unreq length
+.unreq i
+.unreq vfp_value
 
 
 /**

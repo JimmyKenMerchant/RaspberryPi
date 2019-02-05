@@ -2251,6 +2251,8 @@ extern uint32 fft32_change_order( obj units, uint32 length );
 
 extern uint32 fft32_coefficient( obj units, uint32 length );
 
+extern uint32 fft32_powerspectrum( obj units, uint32 length );
+
 extern uint32 fft32_window_hanning( obj units, uint32 length, obj table_cos );
 
 extern obj fft32_make_table( uint32 number_divisor, uint32 length, bool flag_cos );

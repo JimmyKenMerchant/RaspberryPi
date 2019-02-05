@@ -138,23 +138,24 @@ int32 _user_start()
 	fft32_fft( in_real, in_imag, 8, tables_sin, tables_cos );
 	fft32_change_order( in_real, 256 );
 	fft32_change_order( in_imag, 256 );
-	//String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
+	fft32_powerspectrum( in_real, 256 );
+	String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	//String string_in_imag = cvt32_farray_to_string( in_imag, 1, 8, 0 );
-	//print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
-	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	//print32_set_caret( print32_string( string_in_imag, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag ) ) );
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	// IFFT
-	fft32_ifft( in_real, in_imag, 8, tables_sin, tables_cos );
-	fft32_change_order( in_real, 256 );
-	fft32_change_order( in_imag, 256 );
-	fft32_coefficient( in_real, 256 );
-	fft32_coefficient( in_imag, 256 );
-	String string_in_real_i = cvt32_farray_to_string( in_real, 1, 8, 0 );
-	String string_in_imag_i = cvt32_farray_to_string( in_imag, 1, 8, 0 );
-	print32_set_caret( print32_string( string_in_real_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real_i ) ) );
-	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	//fft32_ifft( in_real, in_imag, 8, tables_sin, tables_cos );
+	//fft32_change_order( in_real, 256 );
+	//fft32_change_order( in_imag, 256 );
+	//fft32_coefficient( in_real, 256 );
+	//fft32_coefficient( in_imag, 256 );
+	//String string_in_real_i = cvt32_farray_to_string( in_real, 1, 8, 0 );
+	//String string_in_imag_i = cvt32_farray_to_string( in_imag, 1, 8, 0 );
+	//print32_set_caret( print32_string( string_in_real_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real_i ) ) );
+	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	//print32_set_caret( print32_string( string_in_imag_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag_i ) ) );
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
