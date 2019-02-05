@@ -20,8 +20,16 @@ int32 _user_start()
 			"12.0,13.0,14.0,15.0\0";
 
 	String string_table_pre1 =
-			"0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,"\
-			"8.0, 9.0,10.0,11.0,12.0,13.0,14.0,15.0,"\
+			" 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,"\
+			" 8.0, 9.0,10.0,11.0,12.0,13.0,14.0,15.0,"\
+			"16.0,17.0,18.0,19.0,20.0,21.0,22.0,23.0,"\
+			"24.0,25.0,26.0,27.0,28.0,29.0,30.0,31.0,"\
+			"31.0,30.0,29.0,28.0,27.0,26.0,25.0,24.0,"\
+			"23.0,22.0,21.0,20.0,19.0,18.0,17.0,16.0,"\
+			"15.0,14.0,13.0,12.0,11.0,10.0, 9.0, 8.0,"\
+			" 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0,"\
+			" 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,"\
+			" 8.0, 9.0,10.0,11.0,12.0,13.0,14.0,15.0,"\
 			"16.0,17.0,18.0,19.0,20.0,21.0,22.0,23.0,"\
 			"24.0,25.0,26.0,27.0,28.0,29.0,30.0,31.0,"\
 			"31.0,30.0,29.0,28.0,27.0,26.0,25.0,24.0,"\
@@ -37,8 +45,17 @@ int32 _user_start()
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0\0";
 
+	/*
 	obj table0 = cvt32_string_to_farray( string_table_pre0, str32_strlen( string_table_pre0 ) );
 	String string_table0 = cvt32_farray_to_string( table0, 1, 8, 0 );
 	print32_set_caret( print32_string( string_table0, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_table0 ) ) );
@@ -77,28 +94,29 @@ int32 _user_start()
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	*/
 
 	// FFT Test
 	obj in_real = cvt32_string_to_farray( string_table_pre1, str32_strlen( string_table_pre1 ) );
 	obj in_imag = cvt32_string_to_farray( string_table_pre2, str32_strlen( string_table_pre2 ) );
-	ObjArray tables_sin = fft32_make_table2d( 64, false );
-	ObjArray tables_cos = fft32_make_table2d( 64, true );
+	ObjArray tables_sin = fft32_make_table2d( 128, false );
+	ObjArray tables_cos = fft32_make_table2d( 128, true );
 //print32_debug( (uint32)tables_sin, 500, 488 );
 //print32_debug( (uint32)tables_cos, 500, 500 );
-	fft32_fft( in_real, in_imag, 6, tables_sin, tables_cos );
-	fft32_change_order( in_real, 64 );
-	fft32_change_order( in_imag, 64 );
-	String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
-	String string_in_imag = cvt32_farray_to_string( in_imag, 1, 8, 0 );
-	print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
-	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
-	print32_set_caret( print32_string( string_in_imag, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag ) ) );
-	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	fft32_fft( in_real, in_imag, 7, tables_sin, tables_cos );
+	fft32_change_order( in_real, 128 );
+	fft32_change_order( in_imag, 128 );
+	//String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
+	//String string_in_imag = cvt32_farray_to_string( in_imag, 1, 8, 0 );
+	//print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
+	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	//print32_set_caret( print32_string( string_in_imag, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag ) ) );
+	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	// IFFT, No Multiplication by Coefficient 1/N (1/4 in This Case)
-	fft32_ifft( in_real, in_imag, 6, tables_sin, tables_cos );
-	fft32_change_order( in_real, 64 );
-	fft32_change_order( in_imag, 64 );
+	fft32_ifft( in_real, in_imag, 7, tables_sin, tables_cos );
+	fft32_change_order( in_real, 128 );
+	fft32_change_order( in_imag, 128 );
 	String string_in_real_i = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	String string_in_imag_i = cvt32_farray_to_string( in_imag, 1, 8, 0 );
 	print32_set_caret( print32_string( string_in_real_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real_i ) ) );

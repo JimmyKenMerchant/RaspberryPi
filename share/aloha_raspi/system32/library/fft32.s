@@ -9,16 +9,22 @@
 
 /**
  * function fft32_fft
- * Fast Fourier Transform, Real Numeber and Imaginary Number, No Changing order in Each Array with Reversing Bits
- * This function uses iteration of N=2 Discrete Fourier Transform.
+ * Fast Fourier Transform, No Changing Order in Each Array with Reversing Bits, No Coefficient (1/N)
+ * This function uses iteration of N=2 discrete Fourier transform, it's one of Cooley-Turkey algorithm.
  * The iteration uses "offset" as the start point of N=2 Discrete Fourier Transform, and "stride" to take the second value.
+ * "stride" will be decreased through looping, e.g., if the length of Samples is 16, "stride" will be decreased like 8, 4, 2, 1.
+ * "offset" is used for calculating all pairs.
+ * Iteration of N=4 discrete Fourier transform is a modern method.
+ * However, N=2 is good for understanding of the algorithm, maintenance of codes, and flexible length of samples like 32, 128, 512, 2048, 8192.
+ * This function uses sine/cosine tables to pick values in the loop, these tables reduece the time for calculating sine/cosine values.
+ *
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
  * r1: Array of Samples to Be Transformed (Imaginary Number)
  * r2: Logarithm to Base 2 of Length of Samples, Length of Samples Must Be Power of 2
- * r3: Sine Tables, Maximum Length of Units in Table Needs to Be Same as Length of Samples
- * r4: Cosine Tables, Maximum Length of Units in Table Needs to Be Same as Length of Samples
+ * r3: 2D Array of Unit Circle Tables of Sine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
+ * r4: 2D Array of Unit Circle Tables of Cosine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
  *
  * Return: r0 (0 as success)
  */
@@ -70,7 +76,7 @@ fft32_fft:
 		cmp i, log_sample
 		bhi fft32_fft_common
 
-		/* Calculate Stride, 2^(log_sample - i) */
+		/* Calculate Stride, 2^(log_sample - i), Alogorithm Uses N=2 DFT */
 
 		subs temp, log_sample, i
 		moveq stride, #1              @ On 2^0
@@ -87,7 +93,7 @@ fft32_fft:
 		fft32_fft_loop_prej:
 			mov j, #0
 
-			/* Calculate Limit of j, 2^(i - 1) - 1 */
+			/* Calculate Limit of j, 2^(i - 1) - 1, Alogorithm Uses N=2 DFT */
 
 			subs temp, i, #1
 			moveq limit_j, #0         @ On 2^0 - 1
@@ -115,7 +121,7 @@ fft32_fft:
 
 			/* Make Pre-offset */
 			mul pre_offset, j, stride
-			lsl pre_offset, pre_offset, #1         @ Multiply by 2
+			lsl pre_offset, pre_offset, #1         @ Multiply by 2, Alogorithm Uses N=2 DFT
 
 			mov k, #0
 			fft32_fft_loop_k:
@@ -144,7 +150,7 @@ fft32_fft:
 				vldr vfp_in2_imag, [ip]
 				sub offset, offset, stride
 
-				/* N=2 Crossing of Fourier Transform */
+				/* Crossing for N=2 DFT */
 				vadd.f32 vfp_cal1_real, vfp_in1_real, vfp_in2_real
 				vadd.f32 vfp_cal1_imag, vfp_in1_imag, vfp_in2_imag
 				vsub.f32 vfp_cal2_real, vfp_in1_real, vfp_in2_real
@@ -191,21 +197,21 @@ fft32_fft:
 
 				push {offset}                                   @ Temporarily Save Value to Stack
 
-				lsl ip, stride, #1                              @ Multiply by 2
-				sub ip, ip, #1                                  @ Make Mask
+				lsl ip, stride, #1                              @ Length of Sin/Cosine Table, Multiply by 2, Alogorithm Uses N=2 DFT
+				sub ip, ip, #1                                  @ Make Mask from Length of Sine/Cosine Table
 				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Length of Units in Cosine/Sine Table (stride * 2)
 				lsl offset, offset, #2                          @ Multiply by 4
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
-				ldr ip, [tables_cos, ip]                        @ Select One of Cosine Table
+				ldr ip, [tables_cos, ip]                        @ Select One of Cosine Tables
 
 				add ip, ip, offset
 				vldr vfp_cos, [ip]                              @ Offset * 1
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
-				ldr ip, [tables_sin, ip]                        @ Select One of Sine Table
+				ldr ip, [tables_sin, ip]                        @ Select One of Sine Tables
 				add ip, ip, offset
 				vldr vfp_sin, [ip]                              @ Offset * 1
 
@@ -228,6 +234,15 @@ fft32_fft:
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
 				vstr vfp_cal3, [ip]
+
+				/**
+				 * For example, if N=4, the third value needs to pick cosine/sine value from ("offset" * 2) of each table.
+				 * and the fourth value needs to pick cosine/sine value from ("offset" * 3) of each table.
+				 * The length of tables to pick values is ("stride" * 2).
+				 * The value of ("offset" * x) exceeds the value of ("stride" * 2) in several cases,
+				 * so we need to calculate ("offset" * x) mod ("stride" * 2).
+				 * These processes equal calculations of cosine/sine values of (2 * Pi * "offset" * x) / ("stride" * 2).
+				 */
 
 				add k, k, #1
 				b fft32_fft_loop_k
@@ -263,16 +278,15 @@ fft32_fft:
 
 /**
  * function fft32_ifft
- * Inverse Fast Fourier Transform, Real Numeber and Imaginary Number, No Changing order in Each Array with Reversing Bits
- * This function uses iteration of N=2 Discrete Fourier Transform.
- * The iteration uses "offset" as the start point of N=2 Discrete Fourier Transform, and "stride" to take the second value.
+ * Inverse Fast Fourier Transform, No Changing Order in Each Array with Reversing Bits, No Coefficient (1/N)
+ * This function uses iteration of N=2 discrete Fourier transform, it's one of Cooley-Turkey algorithm.
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
  * r1: Array of Samples to Be Transformed (Imaginary Number)
  * r2: Logarithm to Base 2 of Length of Samples, Length of Samples Must Be Power of 2
- * r3: Sine Tables, Maximum Length of Units in Table Needs to Be Same as Length of Samples
- * r4: Cosine Tables, Maximum Length of Units in Table Needs to Be Same as Length of Samples
+ * r3: 2D Array of Unit Circle Tables of Sine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
+ * r4: 2D Array of Unit Circle Tables of Cosine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
  *
  * Return: r0 (0 as success)
  */
@@ -324,7 +338,7 @@ fft32_ifft:
 		cmp i, log_sample
 		bhi fft32_ifft_common
 
-		/* Calculate Stride, 2^(log_sample - i) */
+		/* Calculate Stride, 2^(log_sample - i), Alogorithm Uses N=2 DFT */
 
 		subs temp, log_sample, i
 		moveq stride, #1              @ On 2^0
@@ -341,7 +355,7 @@ fft32_ifft:
 		fft32_ifft_loop_prej:
 			mov j, #0
 
-			/* Calculate Limit of j, 2^(i - 1) - 1 */
+			/* Calculate Limit of j, 2^(i - 1) - 1, Alogorithm Uses N=2 DFT */
 
 			subs temp, i, #1
 			moveq limit_j, #0         @ On 2^0 - 1
@@ -369,7 +383,7 @@ fft32_ifft:
 
 			/* Make Pre-offset */
 			mul pre_offset, j, stride
-			lsl pre_offset, pre_offset, #1         @ Multiply by 2
+			lsl pre_offset, pre_offset, #1         @ Multiply by 2, Alogorithm Uses N=2 DFT
 
 			mov k, #0
 			fft32_ifft_loop_k:
@@ -398,7 +412,7 @@ fft32_ifft:
 				vldr vfp_in2_imag, [ip]
 				sub offset, offset, stride
 
-				/* N=2 Crossing of Fourier Transform */
+				/* Crossing for N=2 DFT */
 				vadd.f32 vfp_cal1_real, vfp_in1_real, vfp_in2_real
 				vadd.f32 vfp_cal1_imag, vfp_in1_imag, vfp_in2_imag
 				vsub.f32 vfp_cal2_real, vfp_in1_real, vfp_in2_real
@@ -444,21 +458,21 @@ fft32_ifft:
 
 				push {offset}                                   @ Temporarily Save Value to Stack
 
-				lsl ip, stride, #1                              @ Multiply by 2
-				sub ip, ip, #1                                  @ Make Mask
+				lsl ip, stride, #1                              @ Length of Sin/Cosine Table, Multiply by 2, Alogorithm Uses N=2 DFT
+				sub ip, ip, #1                                  @ Make Mask from Length of Sine/Cosine Table
 				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Length of Units in Cosine/Sine Table (stride * 2)
 				lsl offset, offset, #2                          @ Multiply by 4
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
-				ldr ip, [tables_cos, ip]                        @ Select One of Cosine Table
+				ldr ip, [tables_cos, ip]                        @ Select One of Cosine Tables
 
 				add ip, ip, offset
 				vldr vfp_cos, [ip]                              @ Offset * 1
 
 				sub ip, i, #1
 				lsl ip, ip, #2                                  @ Multiply by 4
-				ldr ip, [tables_sin, ip]                        @ Select One of Sine Table
+				ldr ip, [tables_sin, ip]                        @ Select One of Sine Tables
 				add ip, ip, offset
 				vldr vfp_sin, [ip]                              @ Offset * 1
 
@@ -597,11 +611,11 @@ fft32_change_order:
 
 /**
  * function fft32_make_table
- * Make A Table of Sine or Cosine
+ * Make A Unit Circle Table of Sine/Cosine Values
  *
  * Parameters
- * r0: Number of Divisor in Table
- * r1: Length of Units in Table
+ * r0: Number of Divisor in Unit Circle Table
+ * r1: Length of Units in Unit Circle Table
  * r2: 0 as Sine, 1 as Cosine
  *
  * Return: r0 (Array of Single Precision Float, If Zero Not Allocated Memory)
@@ -693,10 +707,12 @@ fft32_make_table:
 
 /**
  * function fft32_make_table2d
- * Make An Two Dimentional Array of Tables of Sine or Cosine, Number of Units in Table Is Power of 2 (Tables Are in Descending Order) 
+ * Make An Two Dimentional Array of Unit Circle Tables of Sine/Cosine Values
+ * Length of units in a Table is a power of 2. Minimum length is 2.
+ * Tables are in descending order on lengths.
  *
  * Parameters
- * r0: Maximum Length of Units in Table, Must Be Power of 2
+ * r0: Maximum Length of Units in Unit Circle Table, Must Be Power of 2
  * r1: 0 as Sine, 1 as Cosine
  *
  * Return: r0 (Array of Single Precision Float, If Zero Not Allocated Memory)
