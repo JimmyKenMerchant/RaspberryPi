@@ -133,6 +133,10 @@ int32 _user_start()
 	obj in_imag = cvt32_string_to_farray( string_table_pre2, str32_strlen( string_table_pre2 ) );
 	ObjArray tables_sin = fft32_make_table2d( 256, false );
 	ObjArray tables_cos = fft32_make_table2d( 256, true );
+	fft32_window_han( in_real, 256, tables_cos[0] );
+	fft32_window_han( in_imag, 256, tables_cos[0] );
+	//fft32_window_hamming( in_real, 256, tables_cos[0] );
+	//fft32_window_hamming( in_imag, 256, tables_cos[0] );
 //print32_debug( (uint32)tables_sin, 500, 488 );
 //print32_debug( (uint32)tables_cos, 500, 500 );
 	fft32_fft( in_real, in_imag, 8, tables_sin, tables_cos );
@@ -146,7 +150,7 @@ int32 _user_start()
 	//print32_set_caret( print32_string( string_in_imag, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag ) ) );
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	// IFFT
+	// IFFT (Power Spectrum's IFFT is Autocorrelation)
 	//fft32_ifft( in_real, in_imag, 8, tables_sin, tables_cos );
 	//fft32_change_order( in_real, 256 );
 	//fft32_change_order( in_imag, 256 );

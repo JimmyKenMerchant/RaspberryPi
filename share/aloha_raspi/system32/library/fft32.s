@@ -710,8 +710,8 @@ fft32_powerspectrum:
 
 
 /**
- * function fft32_window_hanning
- * Hanning Window
+ * function fft32_window_han
+ * Han (Hanning) Window
  *
  * Parameters
  * r0: Array of Samples
@@ -720,8 +720,8 @@ fft32_powerspectrum:
  *
  * Return: r0 (0 as success)
  */
-.globl fft32_window_hanning
-fft32_window_hanning:
+.globl fft32_window_han
+fft32_window_han:
 	/* Auto (Local) Variables, but just Aliases */
 	arr_sample .req r0
 	length     .req r1
@@ -741,9 +741,9 @@ fft32_window_hanning:
 	vmov vfp_half, i
 
 	mov i, #0
-	fft32_window_hanning_loop:
+	fft32_window_han_loop:
 		cmp i, length
-		bhs fft32_window_hanning_common
+		bhs fft32_window_han_common
 
 		/**
 		 * f(n) * (0.5 - (0.5 * (cos(2 * pi * n / N))))
@@ -760,9 +760,9 @@ fft32_window_hanning:
 		add arr_sample, arr_sample, #4
 		add table_cos, table_cos, #4
 		add i, i, #1
-		b fft32_window_hanning_loop
+		b fft32_window_han_loop
 
-	fft32_window_hanning_common:
+	fft32_window_han_common:
 		mov r0, #0
 		vpop {s0-s2}
 		pop {pc}
@@ -774,6 +774,82 @@ fft32_window_hanning:
 .unreq vfp_cos
 .unreq vfp_value
 .unreq vfp_half
+
+
+/**
+ * function fft32_window_hamming
+ * Hamming Window
+ *
+ * Parameters
+ * r0: Array of Samples
+ * r1: Length of Samples
+ * r2: Unit Circle Table of Cosine Values, Length Is Same as Length of Samples
+ *
+ * Return: r0 (0 as success)
+ */
+.globl fft32_window_hamming
+fft32_window_hamming:
+	/* Auto (Local) Variables, but just Aliases */
+	arr_sample .req r0
+	length     .req r1
+	table_cos  .req r2
+	i          .req r3
+
+	/* VFP Registers */
+	vfp_cos    .req s0
+	vfp_value  .req s1
+	vfp_a0     .req s2
+	vfp_a1     .req s3
+
+	push {lr}
+	vpush {s0-s3}
+
+	/* Hard Code of Single Precision Float 0.54 */
+	ldr i, fft32_window_hamming_a0
+	vmov vfp_a0, i
+
+	/* Hard Code of Single Precision Float 0.46 */
+	ldr i, fft32_window_hamming_a1
+	vmov vfp_a1, i
+
+	mov i, #0
+	fft32_window_hamming_loop:
+		cmp i, length
+		bhs fft32_window_hamming_common
+
+		/**
+		 * f(n) * (0.54 - (0.46 * (cos(2 * pi * n / N))))
+		 * 0 <= n <= N - 1
+		 */
+		vldr vfp_cos, [table_cos]
+		vmul.f32 vfp_cos, vfp_cos, vfp_a1
+		vsub.f32 vfp_cos, vfp_a0, vfp_cos
+
+		vldr vfp_value, [arr_sample]
+		vmul.f32 vfp_value, vfp_value, vfp_cos
+		vstr vfp_value, [arr_sample]
+
+		add arr_sample, arr_sample, #4
+		add table_cos, table_cos, #4
+		add i, i, #1
+		b fft32_window_hamming_loop
+
+	fft32_window_hamming_common:
+		mov r0, #0
+		vpop {s0-s3}
+		pop {pc}
+
+.unreq arr_sample
+.unreq length
+.unreq table_cos
+.unreq i
+.unreq vfp_cos
+.unreq vfp_value
+.unreq vfp_a0
+.unreq vfp_a1
+
+fft32_window_hamming_a0: .word 0x3F0A3D71 @ Float 0.54
+fft32_window_hamming_a1: .word 0x3EEB851F @ Float 0.46
 
 
 /**
