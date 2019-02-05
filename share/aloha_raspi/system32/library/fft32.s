@@ -9,15 +9,15 @@
 
 /**
  * function fft32_fft
- * Fast Fourier Transform, No Changing Order in Each Array with Reversing Bits, No Coefficient (1/N)
- * This function uses iteration of N=2 discrete Fourier transform, it's one of Cooley-Turkey algorithm.
- * The iteration uses "offset" as the start point of N=2 Discrete Fourier Transform, and "stride" to take the second value.
+ * Fast Fourier Transform (FFT), No Changing Order in Each Array with Reversing Bits, No Coefficient (1/N)
+ * This function uses iteration of N=2 discrete Fourier transform (DFT), it's one of Cooley-Turkey algorithm.
+ * The iteration uses "offset" as the start point of N=2 DFT, and "stride" to take the second value.
  * "stride" will be decreased through looping, e.g., if the length of Samples is 16, "stride" will be decreased like 8, 4, 2, 1.
  * "offset" is used for calculating all pairs.
- * Iteration of N=4 discrete Fourier transform is a modern method.
- * However, N=2 is good for understanding of the algorithm, maintenance of codes, and flexible length of samples like 32, 128, 512, 2048, 8192.
+ * Iteration of N=4 DFT is a modern method. In case, N=8 DFT may be implemented in a system.
+ * However, N=2 DFT is good for understanding of the algorithm, maintenance of codes, and flexible length of samples like 32, 128, 512, 2048, 8192.
+ * And RasPi has a CPU to execute codes with branch prediction and memory cache, which increase the performance of this algorithm.
  * This function uses sine/cosine tables to pick values in the loop, these tables reduece the time for calculating sine/cosine values.
- *
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
@@ -238,7 +238,8 @@ fft32_fft:
 				/**
 				 * For example, if N=4, the third value needs to pick cosine/sine value from ("offset" * 2) of each table.
 				 * and the fourth value needs to pick cosine/sine value from ("offset" * 3) of each table.
-				 * The length of tables to pick values is ("stride" * 2).
+				 * The length of tables to pick values is ("stride" * 2). Multiple of 2 is used because of N=2 DFT.
+				 * I.e., W("offset" * 0)/("stride" * 2), W("offset" * 1)/("stride" * 2), W("offset" * 2)/("stride" * 2), W("offset" * 3)/("stride" * 2).
 				 * The value of ("offset" * x) exceeds the value of ("stride" * 2) in several cases,
 				 * so we need to calculate ("offset" * x) mod ("stride" * 2).
 				 * These processes equal calculations of cosine/sine values of (2 * Pi * "offset" * x) / ("stride" * 2).
@@ -278,8 +279,8 @@ fft32_fft:
 
 /**
  * function fft32_ifft
- * Inverse Fast Fourier Transform, No Changing Order in Each Array with Reversing Bits, No Coefficient (1/N)
- * This function uses iteration of N=2 discrete Fourier transform, it's one of Cooley-Turkey algorithm.
+ * Inverse Fast Fourier Transform (IFFT), No Changing Order in Each Array with Reversing Bits, No Coefficient (1/N)
+ * This function uses iteration of N=2 discrete Fourier transform (DFT), it's one of Cooley-Turkey algorithm.
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)
@@ -563,7 +564,7 @@ fft32_change_order:
 	mov i, #1
 	fft32_change_order_loop:
 		cmp i, length
-		bge fft32_change_order_common
+		bhs fft32_change_order_common
 
 		mov mask, #1
 		lsl mask, mask, limit_j
@@ -607,6 +608,125 @@ fft32_change_order:
 .unreq swap1
 .unreq swap2
 .unreq one
+
+
+/**
+ * function fft32_coefficient
+ * Multiply Coefficient 1/N to Each Unit in Sample
+ *
+ * Parameters
+ * r0: Array of Samples to Be Multiplied
+ * r1: Length of Samples
+ *
+ * Return: r0 (0 as success)
+ */
+.globl fft32_coefficient
+fft32_coefficient:
+	/* Auto (Local) Variables, but just Aliases */
+	arr_sample   .req r0
+	length       .req r1
+	i            .req r2
+
+	/* VFP Registers */
+	vfp_dividend .req s0
+	vfp_divisor  .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	vmov vfp_divisor, length
+	vcvt.f32.u32 vfp_divisor, vfp_divisor
+
+	mov i, #0
+	fft32_coefficient_loop:
+		cmp i, length
+		bhs fft32_coefficient_common
+
+		vldr vfp_dividend, [arr_sample]
+		vdiv.f32 vfp_dividend, vfp_dividend, vfp_divisor
+		vstr vfp_dividend, [arr_sample]
+
+		add arr_sample, arr_sample, #4
+		add i, i, #1
+		b fft32_coefficient_loop
+
+	fft32_coefficient_common:
+		mov r0, #0
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq arr_sample
+.unreq length
+.unreq i
+.unreq vfp_dividend
+.unreq vfp_divisor
+
+
+/**
+ * function fft32_window_hanning
+ * Hanning Window
+ *
+ * Parameters
+ * r0: Array of Samples
+ * r1: Length of Samples
+ * r2: Unit Circle Table of Cosine Values, Length Is Same as Length of Samples
+ *
+ * Return: r0 (0 as success)
+ */
+.globl fft32_window_hanning
+fft32_window_hanning:
+	/* Auto (Local) Variables, but just Aliases */
+	arr_sample .req r0
+	length     .req r1
+	table_cos  .req r2
+	i          .req r3
+
+	/* VFP Registers */
+	vfp_cos    .req s0
+	vfp_value  .req s1
+	vfp_half   .req s2
+
+	push {lr}
+	vpush {s0-s2}
+
+	/* Hard Code of Single Precision Float 0.5 */
+	mov i, #0x3F000000
+	vmov vfp_half, i
+
+	mov i, #0
+	fft32_window_hanning_loop:
+		cmp i, length
+		bhs fft32_window_hanning_common
+
+		/**
+		 * f(n) * (0.5 - (0.5 * (cos(2 * pi * n / N))))
+		 * 0 <= n <= N - 1
+		 */
+		vldr vfp_cos, [table_cos]
+		vmul.f32 vfp_cos, vfp_cos, vfp_half
+		vsub.f32 vfp_cos, vfp_half, vfp_cos
+
+		vldr vfp_value, [arr_sample]
+		vmul.f32 vfp_value, vfp_value, vfp_cos
+		vstr vfp_value, [arr_sample]
+
+		add arr_sample, arr_sample, #4
+		add table_cos, table_cos, #4
+		add i, i, #1
+		b fft32_window_hanning_loop
+
+	fft32_window_hanning_common:
+		mov r0, #0
+		vpop {s0-s2}
+		pop {pc}
+
+.unreq arr_sample
+.unreq length
+.unreq table_cos
+.unreq i
+.unreq vfp_cos
+.unreq vfp_value
+.unreq vfp_half
 
 
 /**
