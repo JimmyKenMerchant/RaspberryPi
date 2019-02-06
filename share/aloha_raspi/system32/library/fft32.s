@@ -76,7 +76,7 @@ fft32_fft:
 		cmp i, log_sample
 		bhi fft32_fft_common
 
-		/* Calculate Stride, 2^(log_sample - i), Alogorithm Uses N=2 DFT */
+		/* Calculate Stride, 2^(log_sample - i), Algorithm Uses N=2 DFT */
 
 		subs temp, log_sample, i
 		moveq stride, #1              @ On 2^0
@@ -93,7 +93,7 @@ fft32_fft:
 		fft32_fft_loop_prej:
 			mov j, #0
 
-			/* Calculate Limit of j, 2^(i - 1) - 1, Alogorithm Uses N=2 DFT */
+			/* Calculate Limit of j, 2^(i - 1) - 1, Algorithm Uses N=2 DFT */
 
 			subs temp, i, #1
 			moveq limit_j, #0         @ On 2^0 - 1
@@ -121,7 +121,7 @@ fft32_fft:
 
 			/* Make Pre-offset */
 			mul pre_offset, j, stride
-			lsl pre_offset, pre_offset, #1         @ Multiply by 2, Alogorithm Uses N=2 DFT
+			lsl pre_offset, pre_offset, #1         @ Multiply by 2, Algorithm Uses N=2 DFT
 
 			mov k, #0
 			fft32_fft_loop_k:
@@ -132,7 +132,7 @@ fft32_fft:
 				/* Make Offset */
 				add offset, pre_offset, k
 
-				/* In of First Value */
+				/* In of First Value, n=1 for N=2 DCT */
 				lsl ip, offset, #2                     @ Multiply by 4
 				add ip, arr_sample_real, ip
 				vldr vfp_in1_real, [ip]
@@ -140,7 +140,7 @@ fft32_fft:
 				add ip, arr_sample_imag, ip
 				vldr vfp_in1_imag, [ip]
 
-				/* In of Second Value */
+				/* In of Second Value, n=2 for N=2 DCT */
 				add offset, offset, stride
 				lsl ip, offset, #2                     @ Multiply by 4
 				add ip, arr_sample_real, ip
@@ -197,7 +197,7 @@ fft32_fft:
 
 				push {offset}                                   @ Temporarily Save Value to Stack
 
-				lsl ip, stride, #1                              @ Length of Sin/Cosine Table, Multiply by 2, Alogorithm Uses N=2 DFT
+				lsl ip, stride, #1                              @ Length of Sin/Cosine Table, Multiply by 2, Algorithm Uses N=2 DFT
 				sub ip, ip, #1                                  @ Make Mask from Length of Sine/Cosine Table
 				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Length of Units in Cosine/Sine Table (stride * 2)
 				lsl offset, offset, #2                          @ Multiply by 4
@@ -339,7 +339,7 @@ fft32_ifft:
 		cmp i, log_sample
 		bhi fft32_ifft_common
 
-		/* Calculate Stride, 2^(log_sample - i), Alogorithm Uses N=2 DFT */
+		/* Calculate Stride, 2^(log_sample - i), Algorithm Uses N=2 DFT */
 
 		subs temp, log_sample, i
 		moveq stride, #1              @ On 2^0
@@ -356,7 +356,7 @@ fft32_ifft:
 		fft32_ifft_loop_prej:
 			mov j, #0
 
-			/* Calculate Limit of j, 2^(i - 1) - 1, Alogorithm Uses N=2 DFT */
+			/* Calculate Limit of j, 2^(i - 1) - 1, Algorithm Uses N=2 DFT */
 
 			subs temp, i, #1
 			moveq limit_j, #0         @ On 2^0 - 1
@@ -384,7 +384,7 @@ fft32_ifft:
 
 			/* Make Pre-offset */
 			mul pre_offset, j, stride
-			lsl pre_offset, pre_offset, #1         @ Multiply by 2, Alogorithm Uses N=2 DFT
+			lsl pre_offset, pre_offset, #1         @ Multiply by 2, Algorithm Uses N=2 DFT
 
 			mov k, #0
 			fft32_ifft_loop_k:
@@ -395,7 +395,7 @@ fft32_ifft:
 				/* Make Offset */
 				add offset, pre_offset, k
 
-				/* In of First Value */
+				/* In of First Value, n=1 of N=2 DCT */
 				lsl ip, offset, #2                     @ Multiply by 4
 				add ip, arr_sample_real, ip
 				vldr vfp_in1_real, [ip]
@@ -403,7 +403,7 @@ fft32_ifft:
 				add ip, arr_sample_imag, ip
 				vldr vfp_in1_imag, [ip]
 
-				/* In of Second Value */
+				/* In of Second Value, n=2 of N=2 DCT */
 				add offset, offset, stride
 				lsl ip, offset, #2                     @ Multiply by 4
 				add ip, arr_sample_real, ip
@@ -459,7 +459,7 @@ fft32_ifft:
 
 				push {offset}                                   @ Temporarily Save Value to Stack
 
-				lsl ip, stride, #1                              @ Length of Sin/Cosine Table, Multiply by 2, Alogorithm Uses N=2 DFT
+				lsl ip, stride, #1                              @ Length of Sin/Cosine Table, Multiply by 2, Algorithm Uses N=2 DFT
 				sub ip, ip, #1                                  @ Make Mask from Length of Sine/Cosine Table
 				and offset, offset, ip                          @ Mask to Know Modulo, Remainder of Offset by Length of Units in Cosine/Sine Table (stride * 2)
 				lsl offset, offset, #2                          @ Multiply by 4
@@ -711,6 +711,62 @@ fft32_powerspectrum:
 .unreq length
 .unreq i
 .unreq vfp_value
+
+
+/**
+ * function fft32_index_highest
+ * Get Index of Highest Value in Array
+ *
+ * Parameters
+ * r0: Array of Samples
+ * r1: Length of Samples
+ *
+ * Return: r0 (Index of Highest Value, Index is 0 to Length - 1)
+ */
+.globl fft32_index_highest
+fft32_index_highest:
+	/* Auto (Local) Variables, but just Aliases */
+	arr_sample  .req r0
+	length      .req r1
+	i           .req r2
+	i_highest   .req r3
+
+	/* VFP Registers */
+	vfp_value   .req s0
+	vfp_highest .req s1
+
+	push {lr}
+	vpush {s0-s1}
+
+	mov i_highest, #0
+	vmov vfp_highest, i_highest         @ Hard Code of Float 0.0
+
+	mov i, #0
+	fft32_index_highest_loop:
+		cmp i, length
+		bhs fft32_index_highest_common
+
+		vldr vfp_value, [arr_sample]
+		vcmp.f32 vfp_value, vfp_highest
+		vmrs apsr_nzcv, fpscr               @ Transfer FPSCR Flags to CPSR's NZCV Flags (APSR)
+		movgt i_highest, i
+		vmovgt vfp_highest, vfp_value
+
+		add arr_sample, arr_sample, #4
+		add i, i, #1
+		b fft32_index_highest_loop
+
+	fft32_index_highest_common:
+		mov r0, i_highest
+		vpop {s0-s1}
+		pop {pc}
+
+.unreq arr_sample
+.unreq length
+.unreq i
+.unreq i_highest
+.unreq vfp_value
+.unreq vfp_highest
 
 
 /**
