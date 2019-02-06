@@ -150,11 +150,11 @@ fft32_fft:
 				vldr vfp_in2_imag, [ip]
 				sub offset, offset, stride
 
-				/* Crossing for N=2 DFT */
-				vadd.f32 vfp_cal1_real, vfp_in1_real, vfp_in2_real
-				vadd.f32 vfp_cal1_imag, vfp_in1_imag, vfp_in2_imag
-				vsub.f32 vfp_cal2_real, vfp_in1_real, vfp_in2_real
-				vsub.f32 vfp_cal2_imag, vfp_in1_imag, vfp_in2_imag
+				/* Just N=2 DFT of First and Second Values to Get Coefficients in This Turn, Inner Product of {(W0/2, W0/2),(W0/2, W1/2)}{In1, In2} */
+				vadd.f32 vfp_cal1_real, vfp_in1_real, vfp_in2_real @ Real of c0
+				vadd.f32 vfp_cal1_imag, vfp_in1_imag, vfp_in2_imag @ Imaginary of c0
+				vsub.f32 vfp_cal2_real, vfp_in1_real, vfp_in2_real @ Real of c1
+				vsub.f32 vfp_cal2_imag, vfp_in1_imag, vfp_in2_imag @ Imaginary of c1
 
 				.unreq vfp_in1_real
 				.unreq vfp_in1_imag
@@ -166,16 +166,16 @@ fft32_fft:
 				vfp_cal4  .req s3
 
 				/**
-				 * f(x) * (e^-i*theta)
-				 * = f(x) * (cos(theta) - sin(theta)i)
-				 * Assign f(x) as a + bi.
+				 * c * (e^-i*theta), c is a complex number
+				 * = c * (cos(theta) - sin(theta)i)
+				 * Assign c as a + bi, i is an imaginary unit.
 				 * (a + bi) * (cos(theta) - sin(theta)i)
 				 * = (a * cos(theta) - b * -sin(theta)) + (a * -sin(theta) + b * cos(theta))i
 				 * = (a * cos(theta) + b * sin(theta)) + (b * cos(theta) - a * sin(theta))i
-				 * Where e is Euler's number, and i is the imaginary unit.
+				 * Where e is Euler's number.
 				 */
 
-				/* Transform of First Value, (W0/2, W0/2) */
+				/* c0 * (e^-i*theta), theta is 0 */
 
 				/* Real Number */
 				vmul.f32 vfp_cal3, vfp_cal1_real, vfp_one       @ cos(0)
@@ -183,7 +183,7 @@ fft32_fft:
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_real, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for First Value
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal1_imag, vfp_one       @ cos(0)
@@ -191,9 +191,9 @@ fft32_fft:
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for First Value
 
-				/* Transform of Second Value, (W0/2, W1/2) */
+				/* c1 * (e^-i*theta), theta is (2 * pi * offset)/(stride * 2) */
 
 				push {offset}                                   @ Temporarily Save Value to Stack
 
@@ -225,7 +225,7 @@ fft32_fft:
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_real, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for Second Value
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal2_imag, vfp_cos
@@ -233,7 +233,7 @@ fft32_fft:
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for Second Value
 
 				/**
 				 * For example, if N=4 DCT, the third value needs to pick cosine/sine value from ("offset" * 2) of each table.
@@ -413,11 +413,11 @@ fft32_ifft:
 				vldr vfp_in2_imag, [ip]
 				sub offset, offset, stride
 
-				/* Crossing for N=2 DFT */
-				vadd.f32 vfp_cal1_real, vfp_in1_real, vfp_in2_real
-				vadd.f32 vfp_cal1_imag, vfp_in1_imag, vfp_in2_imag
-				vsub.f32 vfp_cal2_real, vfp_in1_real, vfp_in2_real
-				vsub.f32 vfp_cal2_imag, vfp_in1_imag, vfp_in2_imag
+				/* Just N=2 DFT of First and Second Values to Get Coefficients in This Turn, Inner Product of {(W0/2, W0/2),(W0/2, W1/2)}{In1, In2} */
+				vadd.f32 vfp_cal1_real, vfp_in1_real, vfp_in2_real @ Real of c0
+				vadd.f32 vfp_cal1_imag, vfp_in1_imag, vfp_in2_imag @ Imaginary of c0
+				vsub.f32 vfp_cal2_real, vfp_in1_real, vfp_in2_real @ Real of c1
+				vsub.f32 vfp_cal2_imag, vfp_in1_imag, vfp_in2_imag @ Imaginary of c1
 
 				.unreq vfp_in1_real
 				.unreq vfp_in1_imag
@@ -429,15 +429,15 @@ fft32_ifft:
 				vfp_cal4  .req s3
 
 				/**
-				 * f(x) * (e^i*theta)
-				 * = f(x) * (cos(theta) + sin(theta)i)
-				 * Assign f(x) as a + bi.
+				 * c * (e^i*theta), c is a complex number
+				 * = c * (cos(theta) + sin(theta)i)
+				 * Assign c as a + bi, i is an imaginary unit.
 				 * (a + bi) * (cos(theta) + sin(theta)i)
 				 * = (a * cos(theta) - b * sin(theta)) + (a * sin(theta) + b * cos(theta))i
-				 * Where e is Euler's number, and i is the imaginary unit.
+				 * Where e is Euler's number.
 				 */
 
-				/* Transform of First Value, (W0/2, W0/2) */
+				/* c0 * (e^i*theta), theta is 0 */
 
 				/* Real Number */
 				vmul.f32 vfp_cal3, vfp_cal1_real, vfp_one       @ cos(0)
@@ -445,7 +445,7 @@ fft32_ifft:
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_real, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for First Value
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal1_imag, vfp_one       @ cos(0)
@@ -453,9 +453,9 @@ fft32_ifft:
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for First Value
 
-				/* Transform of Second Value, (W0/2, W1/2) */
+				/* c1 * (e^i*theta), theta is (2 * pi * offset)/(stride * 2) */
 
 				push {offset}                                   @ Temporarily Save Value to Stack
 
@@ -487,7 +487,7 @@ fft32_ifft:
 				vsub.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_real, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for Second Value
 
 				/* Imaginary Number */
 				vmul.f32 vfp_cal3, vfp_cal2_imag, vfp_cos
@@ -495,7 +495,7 @@ fft32_ifft:
 				vadd.f32 vfp_cal3, vfp_cal3, vfp_cal4
 				lsl ip, offset, #2                              @ Multiply by 4
 				add ip, arr_sample_imag, ip
-				vstr vfp_cal3, [ip]
+				vstr vfp_cal3, [ip]                             @ Put Back on Place for Second Value
 
 				add k, k, #1
 				b fft32_ifft_loop_k
@@ -689,6 +689,10 @@ fft32_powerspectrum:
 	fft32_powerspectrum_loop:
 		cmp i, length
 		bhs fft32_powerspectrum_common
+
+		/**
+		 * Power Spectrum |F(x)|^2 = F(x) * Conjugate of F(x)
+		 */
 
 		vldr vfp_value, [arr_sample]
 		vmul.f32 vfp_value, vfp_value, vfp_value
