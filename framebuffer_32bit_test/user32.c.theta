@@ -19,11 +19,9 @@ int32 _user_start()
 			"8.0,9.0,10.0,11.0,"\
 			"12.0,13.0,14.0,15.0\0";
 
+	// Triangle Wave, Frequency 4 Herts, So n=4 (N=0 to Length - 1) Should Be The Highest Amplitude
+	// In Autocorrection, Frequency is Length / n, So n=64 Should Be The Highest Amplitude 
 	String string_table_pre1 =
-			" 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,"\
-			" 8.0, 9.0,10.0,11.0,12.0,13.0,14.0,15.0,"\
-			"16.0,17.0,18.0,19.0,20.0,21.0,22.0,23.0,"\
-			"24.0,25.0,26.0,27.0,28.0,29.0,30.0,31.0,"\
 			"31.0,30.0,29.0,28.0,27.0,26.0,25.0,24.0,"\
 			"23.0,22.0,21.0,20.0,19.0,18.0,17.0,16.0,"\
 			"15.0,14.0,13.0,12.0,11.0,10.0, 9.0, 8.0,"\
@@ -51,9 +49,48 @@ int32 _user_start()
 			"31.0,30.0,29.0,28.0,27.0,26.0,25.0,24.0,"\
 			"23.0,22.0,21.0,20.0,19.0,18.0,17.0,16.0,"\
 			"15.0,14.0,13.0,12.0,11.0,10.0, 9.0, 8.0,"\
-			" 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0\0";
+			" 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0,"\
+			" 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,"\
+			" 8.0, 9.0,10.0,11.0,12.0,13.0,14.0,15.0,"\
+			"16.0,17.0,18.0,19.0,20.0,21.0,22.0,23.0,"\
+			"24.0,25.0,26.0,27.0,28.0,29.0,30.0,31.0\0";
 
 	String string_table_pre2 =
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
+			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0\0";
+
+	// For IFFT of Power Spectrum
+	String string_table_pre3 =
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
 			"0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"\
@@ -131,10 +168,11 @@ int32 _user_start()
 	// FFT Test
 	obj in_real = cvt32_string_to_farray( string_table_pre1, str32_strlen( string_table_pre1 ) );
 	obj in_imag = cvt32_string_to_farray( string_table_pre2, str32_strlen( string_table_pre2 ) );
+	obj in_imag_power = cvt32_string_to_farray( string_table_pre3, str32_strlen( string_table_pre3 ) );
 	ObjArray tables_sin = fft32_make_table2d( 256, false );
 	ObjArray tables_cos = fft32_make_table2d( 256, true );
-	fft32_window_han( in_real, 256, tables_cos[0] );
-	fft32_window_han( in_imag, 256, tables_cos[0] );
+	//fft32_window_han( in_real, 256, tables_cos[0] ); // Causes N=1's Higher Amplitude
+	//fft32_window_han( in_imag, 256, tables_cos[0] ); // Causes N=1's Higher Amplitude
 	//fft32_window_hamming( in_real, 256, tables_cos[0] );
 	//fft32_window_hamming( in_imag, 256, tables_cos[0] );
 //print32_debug( (uint32)tables_sin, 500, 488 );
@@ -142,6 +180,8 @@ int32 _user_start()
 	fft32_fft( in_real, in_imag, 8, tables_sin, tables_cos );
 	fft32_change_order( in_real, 256 );
 	fft32_change_order( in_imag, 256 );
+	fft32_coefficient( in_real, 256 );
+	fft32_coefficient( in_imag, 256 );
 	fft32_powerspectrum( in_real, 256 );
 	String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	//String string_in_imag = cvt32_farray_to_string( in_imag, 1, 8, 0 );
@@ -152,10 +192,9 @@ int32 _user_start()
 
 	// IFFT (Power Spectrum's IFFT is Autocorrelation)
 	//fft32_ifft( in_real, in_imag, 8, tables_sin, tables_cos );
+	//fft32_ifft( in_real, in_imag_power, 8, tables_sin, tables_cos );
 	//fft32_change_order( in_real, 256 );
 	//fft32_change_order( in_imag, 256 );
-	//fft32_coefficient( in_real, 256 );
-	//fft32_coefficient( in_imag, 256 );
 	//String string_in_real_i = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	//String string_in_imag_i = cvt32_farray_to_string( in_imag, 1, 8, 0 );
 	//print32_set_caret( print32_string( string_in_real_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real_i ) ) );
@@ -164,8 +203,10 @@ int32 _user_start()
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	// Highest Index
-	uint32 index = fft32_index_highest( in_real + 2 * 4, 256 - 2 );
-	print32_set_caret( print32_number( index - 2, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	// Sample Length Divided By 2 Because of Nyquist Rate
+	// N=0 is Omitted
+	uint32 index = fft32_index_highest( in_real + 1 * 4, 128 - 1 ); // Offset 4 Bytes to Omit N=0
+	print32_set_caret( print32_number( index + 1, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	while(True) {
