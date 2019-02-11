@@ -163,6 +163,11 @@ int32 _user_start()
 	//print32_set_caret( print32_string( string_in_imag_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag_i ) ) );
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
+	// Highest Index
+	uint32 index = fft32_index_highest( in_real + 2 * 4, 256 - 2 );
+	print32_set_caret( print32_number( index - 2, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+
 	while(True) {
 
 	}

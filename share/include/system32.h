@@ -2253,6 +2253,8 @@ extern uint32 fft32_coefficient( obj units, uint32 length );
 
 extern uint32 fft32_powerspectrum( obj units, uint32 length );
 
+extern uint32 fft32_index_highest( obj units, uint32 length );
+
 extern uint32 fft32_window_han( obj units, uint32 length, obj table_cos );
 
 extern uint32 fft32_window_hamming( obj units, uint32 length, obj table_cos );
