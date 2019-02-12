@@ -317,7 +317,7 @@ int32 _user_start()
 
 	// Highest Index for Power Spectrum and Autocorrelation
 	// Sample Length Divided By 2 Because of Nyquist Rate
-	// n=0 is Omitted
+	// n=0 is Omitted, n=0 Is Aperiodic (Non-periodic) in Fourier Transform
 	uint32 index = fft32_index_highest( in_real + 1 * 4, 256 - 1 ); // Offset 4 Bytes to Omit n=0
 	print32_set_caret( print32_number( index + 1, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
