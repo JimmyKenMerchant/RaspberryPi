@@ -38,12 +38,13 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a 25Khz Timer Interrupt (100000/4).
+	 * Get a 16384.48935hz Timer Interrupt (24000000/14648).
 	 */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16 @ Prescaler 1/16 to 100K
-	mov r1, #0x0000                           @ High 1 Byte of decimal 3 (4 - 1), 16 bits counter on default
-	add r1, r1, #0x03                         @ Low 1 Byte of decimal 3, 16 bits counter on default
-	mov r2, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
+	mov r1, #0x3900                           @ High 1 Byte of decimal 14647 (14648 - 1), 16 bits counter on default
+	orr r1, r1, #0x37                         @ Low 1 Byte of decimal 14647, 16 bits counter on default
+	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
 	/**
@@ -100,6 +101,16 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3}
 
+	/* FIFO Continers for Software UART, Allocate and Initialize */
+
+	mov r0, #16384
+	bl heap32_malloc
+	str r0, TUNER_FIQ_BUFFER
+
+	mov r0, #16384
+	bl heap32_malloc
+	str r0, tuner_fiq_buffer_back
+
 	push {r0-r3}
 	mov r0, #100                      @ 240Mhz/100, 2.4Mhz
 	bl spi32_spiclk
@@ -145,10 +156,18 @@ os_fiq:
  * Handler to Use in FIQ
  */
 tuner_fiqhandler:
-	current         .req r4
-	count           .req r6
+	/* Auto (Local) Variables, but just Aliases */
+	temp1      .req r0
+	temp2      .req r1
+	temp3      .req r2
+	count      .req r3
+	current    .req r4
 
-	push {r4-r6,lr}
+	/* VFP Registers */
+	vfp_value  .req s0
+
+	push {r4,lr}
+	vpush {s0}
 
 	/**
 	 * Get Data from MCP3002 AD Converter
@@ -164,20 +183,37 @@ tuner_fiqhandler:
 
 	lsr current, current, #16             @ Get Only Higher 16-bit
 	
-	ldr count, tuner_fiqhandler_count
+	ldr count, tuner_fiq_count
 
 	macro32_dsb ip
 
+	ldr temp1, TUNER_FIQ_BUFFER
+	add temp1, temp1, count, lsl #2       @ Rm is Multipied by 4
+
+	vmov vfp_value, current
+	vcvt.f32.u32 vfp_value, vfp_value
+	vstr vfp_value, [temp1]
+
 	add count, count, #1
-	cmp count, #2
-	blo tuner_fiqhandler_common @ If Not Reaches Value of X Division, Jump to Common
+	cmp count, #16384
+	blo tuner_fiqhandler_common           @ If Not Reaches Value of X Division, Jump to Common
 
 	mov count, #0
 
-macro32_debug current, 200, 200
+	ldr temp1, TUNER_FIQ_BUFFER
+	ldr temp2, tuner_fiq_buffer_back
+	str temp2, TUNER_FIQ_BUFFER
+	str temp1, tuner_fiq_buffer_back
+
+	ldr temp1, TUNER_FIQ_FLAG_BACK
+	eor temp1, temp1, #0x1
+	str temp1, TUNER_FIQ_FLAG_BACK
+
+/*macro32_debug current, 200, 200*/
+/*macro32_debug temp1, 200, 212*/
 
 	tuner_fiqhandler_common:
-		str count, tuner_fiqhandler_count
+		str count, tuner_fiq_count
 
 		/* CS Goes Low */
 		mov r0, #0b11<<equ32_spi0_cs_clear
@@ -188,12 +224,23 @@ macro32_debug current, 200, 200
 		mov r1, #2                    @ Dummy Byte Seems to Be Needed (1 Byte after Comannd, Total 12 Bits are Dummy)
 		bl spi32_spitx
 
-		pop {r4-r6,pc}
+		vpop {s0}
+		pop {r4,pc}
 
-.unreq current
+.unreq temp1
+.unreq temp2
+.unreq temp3
 .unreq count
+.unreq current
+.unreq vfp_value
 
-tuner_fiqhandler_count: .word 0x00
+tuner_fiq_count:        .word 0x00
+tuner_fiq_buffer_back:  .word 0x00
+
+.globl TUNER_FIQ_FLAG_BACK
+.globl TUNER_FIQ_BUFFER
+TUNER_FIQ_FLAG_BACK:    .word 0x00
+TUNER_FIQ_BUFFER:       .word 0x00
 
 
 /**
