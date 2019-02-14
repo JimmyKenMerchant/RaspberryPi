@@ -18,6 +18,8 @@
  * However, N=2 DFT is good for understanding of the algorithm, maintenance of codes, and flexible length of samples like 32, 128, 512, 2048, 8192.
  * And RasPi has a CPU to execute codes with branch prediction and memory cache, which increase the performance of this algorithm.
  * This function uses sine/cosine tables to pick values in the loop, these tables reduece the time for calculating sine/cosine values.
+ * Cooley-Turkey algorithm reduces the time for calculating DFT.
+ * The total number of turns becomes N * log2(N). Normal DFT needs N^2.
  *
  * Parameters
  * r0: Array of Samples to Be Transformed (Real Number)

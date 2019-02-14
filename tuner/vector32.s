@@ -101,15 +101,15 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3}
 
-	/* FIFO Continers for Software UART, Allocate and Initialize */
+	/* Buffer, Front and Back, For Zero Padding, Sample Length * 2 */
 
-	mov r0, #16384
+	mov r0, #32768
+	bl heap32_malloc
+	str r0, tuner_fiq_buffer_front
+
+	mov r0, #32768
 	bl heap32_malloc
 	str r0, TUNER_FIQ_BUFFER
-
-	mov r0, #16384
-	bl heap32_malloc
-	str r0, tuner_fiq_buffer_back
 
 	push {r0-r3}
 	mov r0, #100                      @ 240Mhz/100, 2.4Mhz
@@ -187,7 +187,7 @@ tuner_fiqhandler:
 
 	macro32_dsb ip
 
-	ldr temp1, TUNER_FIQ_BUFFER
+	ldr temp1, tuner_fiq_buffer_front
 	add temp1, temp1, count, lsl #2       @ Rm is Multipied by 4
 
 	vmov vfp_value, current
@@ -200,10 +200,10 @@ tuner_fiqhandler:
 
 	mov count, #0
 
-	ldr temp1, TUNER_FIQ_BUFFER
-	ldr temp2, tuner_fiq_buffer_back
-	str temp2, TUNER_FIQ_BUFFER
-	str temp1, tuner_fiq_buffer_back
+	ldr temp1, tuner_fiq_buffer_front
+	ldr temp2, TUNER_FIQ_BUFFER
+	str temp2, tuner_fiq_buffer_front
+	str temp1, TUNER_FIQ_BUFFER
 
 	ldr temp1, TUNER_FIQ_FLAG_BACK
 	eor temp1, temp1, #0x1
@@ -234,8 +234,8 @@ tuner_fiqhandler:
 .unreq current
 .unreq vfp_value
 
-tuner_fiq_count:        .word 0x00
-tuner_fiq_buffer_back:  .word 0x00
+tuner_fiq_count:         .word 0x00
+tuner_fiq_buffer_front:  .word 0x00
 
 .globl TUNER_FIQ_FLAG_BACK
 .globl TUNER_FIQ_BUFFER
