@@ -18,6 +18,8 @@
 
 * GPIO 11 as SPI0 SCLK
 
+* GPIO 22-27 as Output for LCD Module
+
 * GPIO 47 (ACT LED) as Output
 
 * HDMI as VIDEO Output
