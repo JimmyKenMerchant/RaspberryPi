@@ -79,6 +79,12 @@
 .equ equ32_snd32_range,                        0x400      @ Default Freq. Range on Modulation, +-(This Value * equ32_snd32_mul_*)
 .equ equ32_snd32_neutraldiv_pwm,               0xCA04     @ Neutral Clock Divisor on Pitch Bend on PWM Mode, Already Multiplied
 .equ equ32_snd32_neutraldiv_pcm,               0x12F06    @ Neutral Clock Divisor on Pitch Bend on PCM Mode, Already Multiplied
+.equ equ32_lcd32_time_clock,                   1          @ Wait Time for Command Clock in Microseconds
+.equ equ32_lcd32_time_reset1,                  0x9C00     @ Wait Time after Rise of VCC in Microseconds, 39936 in Decimal
+.equ equ32_lcd32_time_reset2,                  0x1300     @ Wait Time after First Function Set in Microseconds, 4864 in Decimal
+.equ equ32_lcd32_time_reset3,                  200        @ Wait Time after Second Function Set in Microseconds
+.equ equ32_lcd32_time_execution1,              40         @ Wait Time after Normal Execution in Microseconds
+.equ equ32_lcd32_time_execution2,              2000       @ Wait Time after Clear Display or Retrun Home in Microseconds
 
 /**
  * Standard Peripherals

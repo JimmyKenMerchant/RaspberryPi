@@ -83,6 +83,15 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1       @ Set GPIO 11 ALT 0
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2     @ Set GPIO 22 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3     @ Set GPIO 23 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4     @ Set GPIO 24 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5     @ Set GPIO 25 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6     @ Set GPIO 26 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7     @ Set GPIO 27 OUTPUT
+	str r1, [r0, #equ32_gpio_gpfsel20]
+
 	/* Obtain Framebuffer from VideoCore IV */
 
 	mov r0, #32
@@ -100,6 +109,17 @@ os_reset:
 	push {r0-r3}
 	bl bcm32_get_framebuffer
 	pop {r0-r3}
+
+	/* LCD */
+
+	mov r0, #22                       @ From GPIO 22
+	bl lcd32_lcdconfig
+
+	mov r0, #0                        @ 5 * 8 Dots Characters
+	mov r1, #1                        @ 2 Lines
+	mov r2, #0b11                     @ Line Cursor and Blinking
+	mov r3, #0b10                     @ Increment, No Display Shift
+	bl lcd32_lcdinit
 
 	/* Buffer, Front and Back, For Zero Padding, Sample Length * 2 */
 
