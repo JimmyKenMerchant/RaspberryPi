@@ -117,9 +117,19 @@ os_reset:
 
 	mov r0, #0                        @ 5 * 8 Dots Characters
 	mov r1, #1                        @ 2 Lines
-	mov r2, #0b11                     @ Line Cursor and Blinking
-	mov r3, #0b10                     @ Increment, No Display Shift
 	bl lcd32_lcdinit
+
+	mov r0, #0b111                    @ Display On, Line Cursor and Blinking
+	bl lcd32_lcddisplay
+
+	mov r0, #0b10                     @ Increment, No Display Shift
+	bl lcd32_lcdentry
+
+	ldr r0, string_hello
+	mov r1, #7
+	bl lcd32_lcdstring
+
+	bl lcd32_lcdhome
 
 	/* Buffer, Front and Back, For Zero Padding, Sample Length * 2 */
 

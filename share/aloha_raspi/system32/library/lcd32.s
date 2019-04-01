@@ -197,17 +197,11 @@ lcd32_lcdconfig:
 
 /**
  * function lcd32_lcdinit
- * Initialization for Functions in This Library, Only for Using 5 * 8 Dots Characters
+ * Initialization for Functions in This Library
  *
  * Parameters
  * r0: 0 as 5 * 8 Dots Characters (Possible Two Lines), 1 as 5 * 10 Dots Characters (Unpossible Two Lines)
  * r1: 0 as One Line, 1 as Two Lines in LCD
- * r2: Cursor Status
- *   r2 Bit[1]: 0 as Cursor Off, 1 as Cursor On
- *   r2 Bit[0]: 0 as Line Cursor, 1 as Blinking Cursor
- * r3: Entry Mode Status
- *   r3 Bit[1]: 0 as Decrement, 1 as Increment
- *   r3 Bit[0]: 0 as No Display Shift, 1 as Display Shift
  *
  * Return: r0 (0 as success)
  */
@@ -216,63 +210,61 @@ lcd32_lcdinit:
 	/* Auto (Local) Variables, but just Aliases */
 	flag_10dot    .req r0
 	flag_2line    .req r1
-	status_cursor .req r2
-	status_entry  .req r3
 
 	push {lr}
 
 	/* Wait after Rise of VCC in LCD Controller */
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_reset1
 	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	/* First Function Set for Initializing (8-bit Operation) */
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #0b00110000
 	mov r1, #0
 	mov r2, #0
 	bl lcd32_lcdput4
-	pop {r0-r3}
+	pop {r0-r1}
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_reset2
 	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	/* Second Function Set for Initializing (8-bit Operation) */
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #0b00110000
 	mov r1, #0
 	mov r2, #0
 	bl lcd32_lcdput4
-	pop {r0-r3}
+	pop {r0-r1}
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_reset3
 	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	/* Set 4-Bit Operation (Command is 8-bit Operation) */
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #0b00100000
 	mov r1, #0
 	mov r2, #0
 	bl lcd32_lcdput4
-	pop {r0-r3}
+	pop {r0-r1}
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_execution1
 	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	/* Set 4-Bit Operation Again and Number of Line */
 
-	push {r0-r3}
+	push {r0-r1}
 	cmp flag_10dot, #0
 	moveq r0, #0b00100000     @ 5 * 8 Dots
 	movne r0, #0b00100100     @ 5 * 10 Dots
@@ -281,111 +273,40 @@ lcd32_lcdinit:
 	mov r1, #0
 	mov r2, #1
 	bl lcd32_lcdput4
-	pop {r0-r3}
+	pop {r0-r1}
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_execution1
 	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	/* Display Off */
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #0b00001000
 	mov r1, #0
 	mov r2, #1
 	bl lcd32_lcdput4
-	pop {r0-r3}
+	pop {r0-r1}
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_execution1
 	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	/* Clear Display (All DDRAM Become 0x20, Spaces, Address Becomes 0) */
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #0b00000001
 	mov r1, #0
 	mov r2, #1
 	bl lcd32_lcdput4
-	pop {r0-r3}
+	pop {r0-r1}
 
-	push {r0-r3}
+	push {r0-r1}
 	mov r0, #equ32_lcd32_time_execution2
 	bl arm32_sleep
-	pop {r0-r3}
-
-	/* Display On and Set Cursor Status */
-
-	push {r0-r3}
-	mov r0, #0b00001100
-	and status_cursor, status_cursor, #0b11
-	orr r0, r0, status_cursor
-	mov r1, #0
-	mov r2, #1
-	bl lcd32_lcdput4
-	pop {r0-r3}
-
-	push {r0-r3}
-	mov r0, #equ32_lcd32_time_execution1
-	bl arm32_sleep
-	pop {r0-r3}
-
-	/* Set Entry Mode */
-
-	push {r0-r3}
-	mov r0, #0b00000100
-	and status_entry, status_entry, #0b11
-	orr r0, r0, status_entry
-	mov r1, #0
-	mov r2, #1
-	bl lcd32_lcdput4
-	pop {r0-r3}
-
-	push {r0-r3}
-	mov r0, #equ32_lcd32_time_execution1
-	bl arm32_sleep
-	pop {r0-r3}
-
-	/* Cursor Shift Right */
-	push {r0-r3}
-	mov r0, #0b00010100
-	mov r1, #0
-	mov r2, #1
-	bl lcd32_lcdput4
-	pop {r0-r3}
-
-	push {r0-r3}
-	mov r0, #equ32_lcd32_time_execution1
-	bl arm32_sleep
-	pop {r0-r3}
-
-	/* A */
-	push {r0-r3}
-	mov r0, #0x41
-	mov r1, #1
-	mov r2, #1
-	bl lcd32_lcdput4
-	pop {r0-r3}
-
-	push {r0-r3}
-	mov r0, #equ32_lcd32_time_execution1
-	bl arm32_sleep
-	pop {r0-r3}
-
-	/* C */
-	push {r0-r3}
-	mov r0, #0x43
-	mov r1, #1
-	mov r2, #1
-	bl lcd32_lcdput4
-	pop {r0-r3}
-
-	push {r0-r3}
-	mov r0, #equ32_lcd32_time_execution1
-	bl arm32_sleep
-	pop {r0-r3}
+	pop {r0-r1}
 
 	lcd32_lcdinit_common:
 		mov r0, #0
@@ -393,6 +314,223 @@ lcd32_lcdinit:
 
 .unreq flag_10dot
 .unreq flag_2line
-.unreq status_cursor
+
+
+/**
+ * function lcd32_lcddisplay
+ * Set Display Status
+ *
+ * Parameters
+ * r0: Cursor Status
+ *   r0 Bit[2]: 0 as Display Off, 1 as Display On
+ *   r0 Bit[1]: 0 as Cursor Off, 1 as Cursor On
+ *   r0 Bit[0]: 0 as Line Cursor, 1 as Blinking Cursor
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcddisplay
+lcd32_lcddisplay:
+	/* Auto (Local) Variables, but just Aliases */
+	status_display .req r0
+
+	push {lr}
+
+	/* Display On/Off and Set Cursor Status */
+
+	and status_display, status_display, #0b111
+	orr status_display, status_display, #0b00001000
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution1
+	bl arm32_sleep
+
+	lcd32_lcddisplay_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq status_display
+
+
+/**
+ * function lcd32_lcdentry
+ * Initialization for Functions in This Library, Only for Using 5 * 8 Dots Characters
+ *
+ * Parameters
+ * r0: Entry Mode Status
+ *   r0 Bit[1]: 0 as Decrement, 1 as Increment
+ *   r0 Bit[0]: 0 as No Display Shift, 1 as Display Shift
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdentry
+lcd32_lcdentry:
+	/* Auto (Local) Variables, but just Aliases */
+	status_entry  .req r0
+
+	push {lr}
+
+	/* Set Entry Mode */
+
+	and status_entry, status_entry, #0b11
+	orr status_entry, status_entry, #0b00000100
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution1
+	bl arm32_sleep
+
+	lcd32_lcdentry_common:
+		mov r0, #0
+		pop {pc}
+
 .unreq status_entry
+
+
+/**
+ * function lcd32_lcdshift
+ * Cursor or Display Shift
+ *
+ * Parameters
+ * r0: Shift Status
+ *   r0 Bit[1]: 0 as Cursor Shift, 1 as Display Shift
+ *   r0 Bit[0]: 0 as Shift to Left, 1 as Shift to Right
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdshift
+lcd32_lcdshift:
+	/* Auto (Local) Variables, but just Aliases */
+	status_shift  .req r0
+
+	push {lr}
+
+	/* Set Shift */
+
+	and status_shift, status_shift, #0b11
+	lsl status_shift, status_shift, #2
+	orr status_shift, status_shift, #0b00010000
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution1
+	bl arm32_sleep
+
+	lcd32_lcdshift_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq status_shift
+
+
+/**
+ * function lcd32_lcdposition
+ * Set Display Position
+ *
+ * Parameters
+ * r0: Display Position, i.e., Address for Data Display RAM
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdposition
+lcd32_lcdposition:
+	/* Auto (Local) Variables, but just Aliases */
+	position .req r0
+
+	push {lr}
+
+	/* Set Display Position */
+
+	and position, position, #0b01111111
+	orr position, position, #0b10000000
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution1
+	bl arm32_sleep
+
+	lcd32_lcdposition_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq position
+
+
+/**
+ * function lcd32_lcdhome
+ * Return to Home Position, Display Data Address Becomes 0
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdhome
+lcd32_lcdhome:
+	push {lr}
+
+	/* Return Home */
+
+	mov r0, #0b00000010
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution2
+	bl arm32_sleep
+
+	lcd32_lcdhome_common:
+		mov r0, #0
+		pop {pc}
+
+
+/**
+ * function lcd32_lcdstring
+ * Display String
+ *
+ * Parameters
+ * r0: Pointer of Array of String
+ * r1: Length of Array of String (Bytes)
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdstring
+lcd32_lcdstring:
+	/* Auto (Local) Variables, but just Aliases */
+	string_point  .req r0
+	string_length .req r1
+	i             .req r2
+
+	push {lr}
+
+	mov i, #0
+
+	lcd32_lcdstring_loop:
+		cmp i, string_length
+		bhs lcd32_lcdstring_common
+
+		push {r0-r2}
+		ldrb r0, [string_point, i]
+		mov r1, #1
+		mov r2, #1
+		bl lcd32_lcdput4
+		pop {r0-r2}
+
+		push {r0-r2}
+		mov r0, #equ32_lcd32_time_execution1
+		bl arm32_sleep
+		pop {r0-r2}
+
+		add i, i, #1
+
+		b lcd32_lcdstring_loop
+
+	lcd32_lcdstring_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq string_point
+.unreq string_length
+.unreq i
 
