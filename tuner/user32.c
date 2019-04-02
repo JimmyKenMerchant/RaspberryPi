@@ -20,6 +20,14 @@ int32 _user_start()
 	obj zeros = (obj)heap32_malloc( 32768 );
 	ObjArray tables_sin = fft32_make_table2d( 32768, false );
 	ObjArray tables_cos = fft32_make_table2d( 32768, true );
+
+	_lcdconfig( 22 );
+	_lcdinit( false, true );
+	_lcddisplay( LCD32_DISPLAY_ON|LCD32_DISPLAY_CURSOR_ON|LCD32_DISPLAY_BLINK_ON );
+	_lcdentry( LCD32_ENTRY_INCREMENT|LCD32_ENTRY_SHIFT_CURSOR );
+	_lcdposition( 0x40 );
+	_lcdstring( "ALOHA!", 6 );
+	_lcdhome();
 	
 	while(True) {
 		if ( TUNER_FIQ_FLAG_BACK == flag_flip ) {

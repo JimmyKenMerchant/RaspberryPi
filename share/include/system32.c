@@ -498,6 +498,69 @@ __attribute__((noinline)) uint32 _softuarttx( uint32 address_heap, uint32 size, 
 	return result;
 }
 
+__attribute__((noinline)) uint32 _lcdconfig( uchar8 number_gpio )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x48");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdinit( bool flag_10dot, bool flag_2line )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x49");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcddisplay( uchar8 status_display )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x4A");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdentry( uchar8 status_entry )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x4B");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdsearch( uchar8 status_search )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x4C");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdposition( uchar8 address_ddram )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x4D");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdhome()
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x4E");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdstring( String string, uint32 length_string )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x4F");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdchargenerator( uchar8 address_cgram )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x50");
+	return result;
+}
+
 
 /**
  * Unique Definitions

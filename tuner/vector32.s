@@ -110,27 +110,6 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3}
 
-	/* LCD */
-
-	mov r0, #22                       @ From GPIO 22
-	bl lcd32_lcdconfig
-
-	mov r0, #0                        @ 5 * 8 Dots Characters
-	mov r1, #1                        @ 2 Lines
-	bl lcd32_lcdinit
-
-	mov r0, #0b111                    @ Display On, Line Cursor and Blinking
-	bl lcd32_lcddisplay
-
-	mov r0, #0b10                     @ Increment, No Display Shift
-	bl lcd32_lcdentry
-
-	ldr r0, string_hello
-	mov r1, #7
-	bl lcd32_lcdstring
-
-	bl lcd32_lcdhome
-
 	/* Buffer, Front and Back, For Zero Padding, Sample Length * 2 */
 
 	mov r0, #32768

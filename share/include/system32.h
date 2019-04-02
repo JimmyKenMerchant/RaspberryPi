@@ -1460,6 +1460,61 @@ extern obj DMX32_BUFFER_FRONT;
 extern obj DMX32_BUFFER_BACK;
 extern uint32 DMX32_BUFFER_LENGTH;
 
+/********************************
+ * system32/library/dmx32.s
+ ********************************/
+
+#define LCD32_DISPLAY_ON          0b100 // @ _lcddisplay
+#define LCD32_DISPLAY_OFF         0b000 // @ _lcddisplay
+#define LCD32_DISPLAY_CURSOR_ON   0b010 // @ _lcddisplay
+#define LCD32_DISPLAY_CURSOR_OFF  0b000 // @ _lcddisplay
+#define LCD32_DISPLAY_BLINK_ON    0b001 // @ _lcddisplay
+#define LCD32_DISPLAY_BLINK_OFF   0b000 // @ _lcddisplay
+#define LCD32_ENTRY_INCREMENT     0b10  // @ _lcdentry
+#define LCD32_ENTRY_DECREMENT     0b00  // @ _lcdentry
+#define LCD32_ENTRY_SHIFT_DISPLAY 0b01  // @ _lcdentry
+#define LCD32_ENTRY_SHIFT_CURSOR  0b00  // @ _lcdentry
+#define LCD32_SEARCH_DISPLAY      0b10  // @ _lcdsearch
+#define LCD32_SEARCH_CURSOR       0b00  // @ _lcdsearch
+#define LCD32_SEARCH_RIGHT        0b01  // @ _lcdsearch
+#define LCD32_SEARCH_LEFT         0b00  // @ _lcdsearch
+
+__attribute__((noinline)) uint32 _lcdconfig(
+	uchar8 number_gpio
+);
+
+__attribute__((noinline)) uint32 _lcdinit(
+	bool flag_10dot,
+	bool flag_2line
+);
+
+__attribute__((noinline)) uint32 _lcddisplay(
+	uchar8 status_display
+);
+
+__attribute__((noinline)) uint32 _lcdentry(
+	uchar8 status_entry
+);
+
+__attribute__((noinline)) uint32 _lcdsearch(
+	uchar8 status_search
+);
+
+__attribute__((noinline)) uint32 _lcdposition(
+	uchar8 position
+);
+
+__attribute__((noinline)) uint32 _lcdhome();
+
+__attribute__((noinline)) uint32 _lcdstring(
+	String string,
+	uint32 length_string
+);
+
+__attribute__((noinline)) uint32 _lcdchargenerator(
+	uchar8 address_cgram
+);
+
 
 /********************************
  * system32/library/math32.s

@@ -321,7 +321,7 @@ lcd32_lcdinit:
  * Set Display Status
  *
  * Parameters
- * r0: Cursor Status
+ * r0: Display Status
  *   r0 Bit[2]: 0 as Display Off, 1 as Display On
  *   r0 Bit[1]: 0 as Cursor Off, 1 as Cursor On
  *   r0 Bit[0]: 0 as Line Cursor, 1 as Blinking Cursor
@@ -390,28 +390,28 @@ lcd32_lcdentry:
 
 
 /**
- * function lcd32_lcdshift
- * Cursor or Display Shift
+ * function lcd32_lcdsearch
+ * Search Characters through Shifting Cursor or Display
  *
  * Parameters
- * r0: Shift Status
+ * r0: Search Status
  *   r0 Bit[1]: 0 as Cursor Shift, 1 as Display Shift
  *   r0 Bit[0]: 0 as Shift to Left, 1 as Shift to Right
  *
  * Return: r0 (0 as success)
  */
-.globl lcd32_lcdshift
-lcd32_lcdshift:
+.globl lcd32_lcdsearch
+lcd32_lcdsearch:
 	/* Auto (Local) Variables, but just Aliases */
-	status_shift  .req r0
+	status_search .req r0
 
 	push {lr}
 
 	/* Set Shift */
 
-	and status_shift, status_shift, #0b11
-	lsl status_shift, status_shift, #2
-	orr status_shift, status_shift, #0b00010000
+	and status_search, status_search, #0b11
+	lsl status_search, status_search, #2
+	orr status_search, status_search, #0b00010000
 	mov r1, #0
 	mov r2, #1
 	bl lcd32_lcdput4
@@ -419,11 +419,11 @@ lcd32_lcdshift:
 	mov r0, #equ32_lcd32_time_execution1
 	bl arm32_sleep
 
-	lcd32_lcdshift_common:
+	lcd32_lcdsearch_common:
 		mov r0, #0
 		pop {pc}
 
-.unreq status_shift
+.unreq status_search
 
 
 /**
@@ -533,4 +533,39 @@ lcd32_lcdstring:
 .unreq string_point
 .unreq string_length
 .unreq i
+
+
+/**
+ * function lcd32_lcdchargenerator
+ * Set Address for Character Generator RAM (Switch to Character Generator)
+ * If you want to go back for writing display, use lcd32_lcdposition once.
+ *
+ * Parameters
+ * r0: Address for Character Generator RAM
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdchargenerator
+lcd32_lcdchargenerator:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_cgram .req r0
+
+	push {lr}
+
+	/* Set Display addr_cgram */
+
+	and addr_cgram, addr_cgram, #0b00111111
+	orr addr_cgram, addr_cgram, #0b01000000
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution1
+	bl arm32_sleep
+
+	lcd32_lcdchargenerator_common:
+		mov r0, #0
+		pop {pc}
+
+.unreq addr_cgram
 

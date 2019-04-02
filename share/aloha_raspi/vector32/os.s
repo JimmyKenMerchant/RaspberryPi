@@ -295,7 +295,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x47                            @ Prevent Overflow SVC Table
+	cmp ip, #0x50                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -590,6 +590,42 @@ _os_svc:
 
 	_os_svc_0x47:
 		bl softuart32_softuarttx
+		b _os_svc_common
+
+	_os_svc_0x48:
+		bl lcd32_lcdconfig
+		b _os_svc_common
+
+	_os_svc_0x49:
+		bl lcd32_lcdinit
+		b _os_svc_common
+
+	_os_svc_0x4A:
+		bl lcd32_lcddisplay
+		b _os_svc_common
+
+	_os_svc_0x4B:
+		bl lcd32_lcdentry
+		b _os_svc_common
+
+	_os_svc_0x4C:
+		bl lcd32_lcdsearch
+		b _os_svc_common
+
+	_os_svc_0x4D:
+		bl lcd32_lcdposition
+		b _os_svc_common
+
+	_os_svc_0x4E:
+		bl lcd32_lcdhome
+		b _os_svc_common
+
+	_os_svc_0x4F:
+		bl lcd32_lcdstring
+		b _os_svc_common
+
+	_os_svc_0x50:
+		bl lcd32_lcdchargenerator
 		b _os_svc_common
 
 	_os_svc_common:
