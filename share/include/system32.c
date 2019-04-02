@@ -540,24 +540,31 @@ __attribute__((noinline)) uint32 _lcdposition( uchar8 address_ddram )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _lcdhome()
+__attribute__((noinline)) uint32 _lcdclear()
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x4E");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _lcdstring( String string, uint32 length_string )
+__attribute__((noinline)) uint32 _lcdhome()
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x4F");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _lcdchargenerator( uchar8 address_cgram )
+__attribute__((noinline)) uint32 _lcdstring( String string, uint32 length_string )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x50");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _lcdchargenerator( uchar8 address_cgram )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x51");
 	return result;
 }
 

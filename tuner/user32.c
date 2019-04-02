@@ -13,6 +13,18 @@
 extern bool TUNER_FIQ_FLAG_BACK;
 extern obj TUNER_FIQ_BUFFER;
 
+char8 special_character_0 [] =
+{
+	0b00000000,
+	0b00000100,
+	0b00001110,
+	0b00011111,
+	0b00000100,
+	0b00001110,
+	0b00011111,
+	0b00000000 // Cursor Position
+};
+
 int32 _user_start()
 {
 	bool flag_flip = true;
@@ -28,6 +40,10 @@ int32 _user_start()
 	_lcdposition( 0x40 );
 	_lcdstring( "ALOHA!", 6 );
 	_lcdhome();
+	_lcdchargenerator( 0x08 ); // CGRAM2
+	_lcdstring( special_character_0, 8 );
+	_lcdposition( 0x04 );
+	_lcdstring( "\x1", 1 );
 	
 	while(True) {
 		if ( TUNER_FIQ_FLAG_BACK == flag_flip ) {

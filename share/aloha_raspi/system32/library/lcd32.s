@@ -294,7 +294,7 @@ lcd32_lcdinit:
 	bl arm32_sleep
 	pop {r0-r1}
 
-	/* Clear Display (All DDRAM Become 0x20, Spaces, Address Becomes 0) */
+	/* Clear Display (All in DDRAM Become 0x20, Spaces, Address Becomes 0) */
 
 	push {r0-r1}
 	mov r0, #0b00000001
@@ -458,6 +458,31 @@ lcd32_lcdposition:
 		pop {pc}
 
 .unreq position
+
+
+/**
+ * function lcd32_lcdclear
+ * Clear Display, All in DDRAM Become 0x20, Spaces, Address Becomes 0
+ *
+ * Return: r0 (0 as success)
+ */
+.globl lcd32_lcdclear
+lcd32_lcdclear:
+	push {lr}
+
+	/* Clear Display */
+
+	mov r0, #0b00000001
+	mov r1, #0
+	mov r2, #1
+	bl lcd32_lcdput4
+
+	mov r0, #equ32_lcd32_time_execution2
+	bl arm32_sleep
+
+	lcd32_lcdclear_common:
+		mov r0, #0
+		pop {pc}
 
 
 /**

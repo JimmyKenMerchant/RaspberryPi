@@ -1504,6 +1504,8 @@ __attribute__((noinline)) uint32 _lcdposition(
 	uchar8 position
 );
 
+__attribute__((noinline)) uint32 _lcdclear();
+
 __attribute__((noinline)) uint32 _lcdhome();
 
 __attribute__((noinline)) uint32 _lcdstring(
