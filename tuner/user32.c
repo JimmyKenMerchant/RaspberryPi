@@ -105,7 +105,15 @@ print32_debug( index + 1, 100, 100 );
 			keynumber = vfp32_fdiv( keynumber, coefficient_ln );
 			keynumber = vfp32_fadd( keynumber, 49.0 );
 			int32 keynumber_int = vfp32_f32tos32( keynumber );
+
+			// Get Cent
+			float32 cent = vfp32_s32tof32( keynumber_int );
+			cent = vfp32_fsub( keynumber, cent );
+			cent = vfp32_fmul( cent, 100.0 );
+			int32 cent_int = vfp32_f32tos32( cent );
+
 print32_debug( keynumber_int, 100, 112 );
+print32_debug( cent_int, 100, 124 );
 
 			heap32_mfill( TUNER_FIQ_BUFFER, 0 );
 			heap32_mfill( zeros, 0 );
