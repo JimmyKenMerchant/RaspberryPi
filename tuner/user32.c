@@ -13,6 +13,29 @@
 extern bool TUNER_FIQ_FLAG_BACK;
 extern obj TUNER_FIQ_BUFFER;
 
+const char8 scale88_chromatic [] =
+	"A 0\0A#0\0B 0\0C 1\0C#1\0D 1\0D#1\0E 1\0F 1\0F#1\0G 1\0G#1\0"\
+	"A 1\0A#1\0B 1\0C 2\0C#2\0D 2\0D#2\0E 2\0F 2\0F#2\0G 2\0G#2\0"\
+	"A 2\0A#2\0B 2\0C 3\0C#3\0D 3\0D#3\0E 3\0F 3\0F#3\0G 3\0G#3\0"\
+	"A 3\0A#3\0B 3\0C 4\0C#4\0D 4\0D#1\0E 4\0F 4\0F#4\0G 4\0G#4\0"\
+	"A 4\0A#4\0B 4\0C 5\0C#5\0D 5\0D#1\0E 5\0F 5\0F#5\0G 5\0G#5\0"\
+	"A 5\0A#5\0B 5\0C 6\0C#6\0D 6\0D#1\0E 6\0F 6\0F#6\0G 6\0G#6\0"\
+	"A 6\0A#6\0B 6\0C 7\0C#7\0D 7\0D#1\0E 7\0F 7\0F#7\0G 7\0G#7\0"\
+	"A 7\0A#7\0B 7\0C 8\0";
+
+/**
+ * Relationship between frequencies and piano keys are defined as the formula:
+ * f(n) = (2^(1/12))^(n-49) * 440
+ * Where f is the frequency (hz), n is the key number of a 88-scale piano,
+ * and 440 is the frequency of the 49th key.
+ * This formula can be transfered as follows:
+ * log2^(1/12)(f(n)/440) = n - 49
+ * ln(f(n)/440) / ln(2^(1/12)) + 49 = n
+ */
+
+const float32 coefficient_ln = 0.05776227; // ln(2^(1/12))
+const float32 coefficient_49th = 440.0;
+
 char8 special_character_0 [] =
 {
 	0b00000000,
@@ -71,6 +94,19 @@ int32 _user_start()
 
 			uint32 index = fft32_index_highest( TUNER_FIQ_BUFFER + 1 * 4, 16384 - 1 ); // Offset 4 Bytes to Omit n=0
 print32_debug( index + 1, 100, 100 );
+
+			// Calculate Frequency
+			float32 frequency = vfp32_u32tof32( index + 1 );
+			frequency = vfp32_fdiv( frequency, 2.0 );
+
+			// Calculate Key Number
+			float32 keynumber = vfp32_fdiv( frequency, coefficient_49th );
+			keynumber = math32_ln( keynumber );
+			keynumber = vfp32_fdiv( keynumber, coefficient_ln );
+			keynumber = vfp32_fadd( keynumber, 49.0 );
+			int32 keynumber_int = vfp32_f32tos32( keynumber );
+print32_debug( keynumber_int, 100, 112 );
+
 			heap32_mfill( TUNER_FIQ_BUFFER, 0 );
 			heap32_mfill( zeros, 0 );
 
