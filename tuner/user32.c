@@ -142,6 +142,12 @@ print32_debug( cent_int, 100, 124 );
 print32_string( scale88_chromatic + ( ( keynumber_int - 1 ) << 2 ), 100, 136, 3 );
 print32_string( scale101_cent + ( ( cent_int + 50 ) << 2 ), 100, 148, 3 );
 
+			// LCD Display
+			_lcdhome();
+			_lcdstring( scale88_chromatic + ( ( keynumber_int - 1 ) << 2 ), 3 );
+			_lcdstring( " ", 1 );
+			_lcdstring( scale101_cent + ( ( cent_int + 50 ) << 2 ), 3 );
+
 			heap32_mfill( TUNER_FIQ_BUFFER, 0 );
 			heap32_mfill( zeros, 0 );
 
