@@ -12,6 +12,7 @@
 
 void binary_random( uchar8* array, uint32 array_size );
 void print_life( uchar8* life, uint32 life_height, uint32 life_width );
+uint32 check_index( int32 life_index, uint32 life_size );
 
 uint32 life_height = 32; // Multiply of 4
 uint32 life_width = 32;
@@ -21,12 +22,11 @@ bool life_switch = true;
 int32 _user_start()
 {
 
-	life_size = arm32_mul( life_height,life_width );
-	uchar8* life1 = (uchar8*)heap32_malloc( life_size >> 2 ); // One Unit of This Malloc is One Word (4 Bytes)
-	uchar8* life2 = (uchar8*)heap32_malloc( life_size >> 2 ); // One Unit of This Malloc is One Word (4 Bytes)
+	life_size = life_height * life_width;
+	uchar8* life1 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
+	uchar8* life2 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
 
 	binary_random( life1, life_size );
-	binary_random( life2, life_size );
 
 //print32_debug_hexa( (uint32)life1, 0, 0, life_size );
 //print32_debug_hexa( (uint32)life2, 0, 300, life_size );
@@ -34,13 +34,38 @@ int32 _user_start()
 	print_life( life1, life_height, life_width );
 
 	while(1) {
+		uchar8* life_front;
+		uchar8* life_back;
 		if ( life_switch ) {
-			print_life( life1, life_height, life_width );
+			life_front = life1;
+			life_back = life2;
 			life_switch = false;
 		} else {
-			print_life( life2, life_height, life_width );
+			life_front = life2;
+			life_back = life1;
 			life_switch = true;
 		}
+		print_life( life_front, life_height, life_width );
+
+		for ( uint32 i = 0; i < life_size; i++ ) {
+			uchar8 number_neighbor = 0;
+			if ( life_front[check_index( i - life_width - 1, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i - life_width, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i - life_width + 1, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i - 1, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i + 1, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i + life_width - 1, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i + life_width, life_size )] ) number_neighbor++;
+			if ( life_front[check_index( i + life_width + 1, life_size )] ) number_neighbor++;
+			if ( number_neighbor < 2 || number_neighbor > 3 ) {
+				life_back[i] = 0x00;
+			} else if ( number_neighbor == 3 ) { // 2 Stays Status
+				life_back[i] = 0xFF;
+			}
+			arm32_dsb();
+			arm32_isb();
+		}
+
 		_sleep( 500000 );
 	}
 
@@ -76,3 +101,13 @@ void print_life( uchar8* life, uint32 life_height, uint32 life_width ) {
 	}
 
 }
+
+uint32 check_index( int32 life_index, uint32 life_size ) {
+	if ( life_index < 0 ) {
+		life_index += life_size;
+	} else if ( life_index >= life_size ) {
+		life_index -= life_size;
+	}
+	return life_index;
+}
+
