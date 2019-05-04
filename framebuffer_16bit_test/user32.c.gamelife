@@ -12,8 +12,11 @@
 
 void binary_random( uchar8* array, uint32 array_size );
 void print_life( uchar8* life, uint32 life_height, uint32 life_width );
-uint32 check_index( int32 life_index, uint32 life_size );
 
+uchar8* life1;
+uchar8* life2;
+uchar8* life_front;
+uchar8* life_back;
 uint32 life_height = 32; // Multiply of 4
 uint32 life_width = 32;
 uint32 life_size;
@@ -21,10 +24,14 @@ bool life_switch = true;
 
 int32 _user_start()
 {
+	uchar8 number_neighbor;
+	uint32 offset_vertical;
+	int32 neighbor_vertical;
+	int32 neighbor_horizontal;
 
 	life_size = life_height * life_width;
-	uchar8* life1 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
-	uchar8* life2 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
+	life1 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
+	life2 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
 
 	binary_random( life1, life_size );
 
@@ -34,8 +41,6 @@ int32 _user_start()
 	print_life( life1, life_height, life_width );
 
 	while(1) {
-		uchar8* life_front;
-		uchar8* life_back;
 		if ( life_switch ) {
 			life_front = life1;
 			life_back = life2;
@@ -47,23 +52,52 @@ int32 _user_start()
 		}
 		print_life( life_front, life_height, life_width );
 
-		for ( uint32 i = 0; i < life_size; i++ ) {
-			uchar8 number_neighbor = 0;
-			if ( life_front[check_index( i - life_width - 1, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i - life_width, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i - life_width + 1, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i - 1, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i + 1, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i + life_width - 1, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i + life_width, life_size )] ) number_neighbor++;
-			if ( life_front[check_index( i + life_width + 1, life_size )] ) number_neighbor++;
-			if ( number_neighbor < 2 || number_neighbor > 3 ) {
-				life_back[i] = 0x00;
-			} else if ( number_neighbor == 3 ) { // 2 Stays Status
-				life_back[i] = 0xFF;
+		for ( uint32 i = 0; i < life_height; i++ ) {
+			offset_vertical = i * life_width;
+			for ( uint32 j = 0; j < life_width; j++ ) {
+				number_neighbor = 0;
+
+				// Vertical Shift to Upper Neighbors
+				neighbor_vertical = i - 1;
+				if ( neighbor_vertical < 0 ) neighbor_vertical = life_height - 1;
+				neighbor_horizontal = j - 1;
+				if ( neighbor_horizontal < 0 ) neighbor_horizontal = life_width - 1;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+				neighbor_horizontal = j;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+				neighbor_horizontal = j + 1;
+				if ( neighbor_horizontal >= life_width ) neighbor_horizontal = 0;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+
+				// Vertical Shift to Horizontal Neighbors
+				neighbor_vertical = i;
+				neighbor_horizontal = j - 1;
+				if ( neighbor_horizontal < 0 ) neighbor_horizontal = life_width - 1;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+				neighbor_horizontal = j + 1;
+				if ( neighbor_horizontal >= life_width ) neighbor_horizontal = 0;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+
+				// Vertical Shift to Lower Neighbors
+				neighbor_vertical = i + 1;
+				if ( neighbor_vertical >= life_height ) neighbor_vertical = 0;
+				neighbor_horizontal = j - 1;
+				if ( neighbor_horizontal < 0 ) neighbor_horizontal = life_width - 1;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+				neighbor_horizontal = j;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+				neighbor_horizontal = j + 1;
+				if ( neighbor_horizontal >= life_width ) neighbor_horizontal = 0;
+				if ( life_front[neighbor_vertical*life_width+neighbor_horizontal] ) number_neighbor++;
+
+				if ( number_neighbor < 2 || number_neighbor > 3 ) {
+					life_back[offset_vertical+j] = 0x00;
+				} else if ( number_neighbor == 3 ) { // 2 Stays Status
+					life_back[offset_vertical+j] = 0xFF;
+				}
+				arm32_dsb();
+				arm32_isb();
 			}
-			arm32_dsb();
-			arm32_isb();
 		}
 
 		_sleep( 500000 );
@@ -100,14 +134,5 @@ void print_life( uchar8* life, uint32 life_height, uint32 life_width ) {
 		offset_vertical += life_width;
 	}
 
-}
-
-uint32 check_index( int32 life_index, uint32 life_size ) {
-	if ( life_index < 0 ) {
-		life_index += life_size;
-	} else if ( life_index >= life_size ) {
-		life_index -= life_size;
-	}
-	return life_index;
 }
 
