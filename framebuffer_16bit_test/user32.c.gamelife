@@ -10,15 +10,52 @@
 #include "system32.h"
 #include "system32.c"
 
+#define LIFE_HEIGHT 32
+#define LIFE_WIDTH 32
+
 void binary_random( uchar8* array, uint32 array_size );
 void print_life( uchar8* life, uint32 life_height, uint32 life_width );
 
-uchar8* life1;
+uchar8 life1[LIFE_HEIGHT*LIFE_WIDTH] =
+{
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,1,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+};
+
 uchar8* life2;
 uchar8* life_front;
 uchar8* life_back;
-uint32 life_height = 32; // Multiply of 4
-uint32 life_width = 32;
+uint32 life_height = LIFE_HEIGHT; // Multiply of 4
+uint32 life_width = LIFE_WIDTH;
 uint32 life_size;
 bool life_switch = true;
 
@@ -30,10 +67,10 @@ int32 _user_start()
 	int32 neighbor_horizontal;
 
 	life_size = life_height * life_width;
-	life1 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
+	//life1 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
 	life2 = (uchar8*)heap32_malloc( life_size / 4 ); // One Unit of This Malloc is One Word (4 Bytes)
 
-	binary_random( life1, life_size );
+	//binary_random( life1, life_size );
 
 //print32_debug_hexa( (uint32)life1, 0, 0, life_size );
 //print32_debug_hexa( (uint32)life2, 0, 300, life_size );
@@ -92,11 +129,12 @@ int32 _user_start()
 
 				if ( number_neighbor < 2 || number_neighbor > 3 ) {
 					life_back[offset_vertical+j] = 0x00;
-				} else if ( number_neighbor == 3 ) { // 2 Stays Status
-					life_back[offset_vertical+j] = 0xFF;
+				} else if ( number_neighbor == 3 ) {
+					life_back[offset_vertical+j] = 0x01;
+				} else { // 2 Stays Status
+					life_back[offset_vertical+j] = life_front[offset_vertical+j];
 				}
 				arm32_dsb();
-				arm32_isb();
 			}
 		}
 
@@ -111,13 +149,12 @@ void binary_random( uchar8* array, uint32 array_size ) {
 //print32_debug( (uint32)array_size, 0, 112 );
 	for ( uint32 i = 0; i < array_size; i++ ) {
 		if ( _random( 255 ) > 127) {
-			array[i] = 0xFF;
+			array[i] = 0x01;
 		} else {
 			array[i] = 0x00;
 		}
 //print32_debug( i, 0, 124 );
 		arm32_dsb();
-		arm32_isb();
 	}
 }
 
@@ -126,9 +163,8 @@ void print_life( uchar8* life, uint32 life_height, uint32 life_width ) {
 	print32_set_caret( print32_string( "\x1B[H\0", FB32_X_CARET, FB32_Y_CARET, 3 ) ); // Cursor to Upper Left Corner
 	for ( uint32 i = 0; i < life_height; i++ ) {
 		for ( uint32 j = 0; j < life_width; j++ ) {
-			print32_set_caret( print32_number( (uint32)(life[offset_vertical+j]<<24), FB32_X_CARET, FB32_Y_CARET, 2 ) );
+			print32_set_caret( print32_number( (uint32)(life[offset_vertical+j]<<28), FB32_X_CARET, FB32_Y_CARET, 1 ) );
 			arm32_dsb();
-			arm32_isb();
 		}
 		print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 		offset_vertical += life_width;
