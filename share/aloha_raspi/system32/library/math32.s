@@ -1021,7 +1021,7 @@ MATH32_LN10:                   .word 0x40135d8e @ (.float 2.30258509299)
  * Parameters
  * r0: Value, Must Be Type of Single Precision Float
  *
- * Return: r0 (Value by Single Precision Float and Signed Plus)
+ * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_ln
 math32_ln:
@@ -1154,7 +1154,7 @@ math32_ln:
  * Parameters
  * r0: Value, Must Be Type of Single Precision Float
  *
- * Return: r0 (Value by Single Precision Float and Signed Plus)
+ * Return: r0 (Value by Single Precision Float)
  */
 .globl math32_log
 math32_log:

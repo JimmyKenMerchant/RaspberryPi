@@ -262,7 +262,8 @@ fb32_image:
 	pop {char_height}                                @ Get Fifth and Sixth Arguments
 	sub sp, sp, #36                                  @ Retrieve SP
 
-	vpush {s0-s16}                                   @ 4 Bytes x 17, 68 Bytes Slide of SP, Know for ip and Stack Usage
+	/*vpush {s0-s16}*/                                   @ 4 Bytes x 17, 68 Bytes Slide of SP, Know for ip and Stack Usage
+	vstmdb sp!, {s0-s16}                             @ To Fit with Assembler 2.28, Synonym of vpush
 
 	ldr f_buffer, FB32_ADDR
 	cmp f_buffer, #0
@@ -584,7 +585,8 @@ fb32_image:
 		mov r0, #0                                   @ Return with Success
 
 	fb32_image_common:
-		vpop {s0-s16}
+		/*vpop {s0-s16}*/
+		vldm sp!, {s0-s16}                           @ To Fit with Assembler 2.28, Synonym of vpop
 		pop {r4-r11}    @ Callee-saved Registers (r4-r11<fp>), r12 is Intra-procedure Call Scratch Register (ip)
 			            @ similar to `LDMIA r13! {r4-r11}` Increment After, r13 (SP) Saves Incremented Number
 		mov pc, lr

@@ -941,7 +941,8 @@ draw32_bezier:
 	pop {y_point1, x_point2, y_point2, x_point3, y_point3, char_width, char_height} @ Get Fifth to Eleventh Arguments
 	sub sp, sp, #56                                   @ Retrieve SP
 
-	vpush {s0-s24}
+	/*vpush {s0-s24}*/
+	vstmdb sp!, {s0-s24}                              @ To Fit with Assembler 2.28, Synonym of vpush
 
 	vmov vfp_point0, x_point0, y_point0
 	vcvt.f32.s32 vfp_point0_x, vfp_point0_x
@@ -1081,7 +1082,8 @@ draw32_bezier:
 		mov r0, #0
 
 	draw32_bezier_common:
-		vpop {s0-s24}
+		/*vpop {s0-s24}*/
+		vldm sp!, {s0-s24}                                  @ To Fit with Assembler 2.28, Synonym of vpop
 		lsl x_current, x_current, #16
 		add r1, x_current, y_current
 		pop {r4-r10}
