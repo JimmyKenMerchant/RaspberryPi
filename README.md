@@ -53,7 +53,7 @@ This project is aiming to obtain a conclusion of the software system. Purposes o
 
 3. Structure of System.
 
-* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. There are two essences, "indents by tabs" and "labels like postal addresses". Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system. Before discovering ACR, visit [ARM Information Center](http://infocenter.arm.com/help) and enter ARM Architecture Reference Manuals. Instruction set quick reference cards are good to know what is going on with ACR. This system is premised on assembling and compiling with gcc-arm-none-eabi, one of ARM cross compilers.
+* This system is using, so called, Assembler Cascaded Rule (ACR). To code with Asm, for readability, I use a rule as described below. There are two essences, "indents by tabs" and "labels like postal addresses". Note that ACR is not my invention, and it has been used by wise developers. One advantage is ACR is close to the flowchart on paper to write the system. Before discovering ACR, visit [ARM Information Center](http://infocenter.arm.com/help) and enter ARM Architecture Reference Manuals. Instruction set quick reference cards are good to know what is going on with ACR.
 
 ```assembly
 /**
@@ -333,16 +333,20 @@ int32 _user_start()
 
 ## Installation
 
+* Codes of this system will be compiled and assembled in Linux, and allowed to be cross-compiled by other CPUs. This system is premised on compiling with arm-none-eabi-gcc, and on assembling with arm-none-eabi-as. Note that arm-none-eabi-as is contained in binutils-arm-none-eabi (package names may differ in Linux distros). These tools are updated by GNU community. Please access [GNU Compiler Collection](https://gcc.gnu.org/) and [GNU Binutils](https://www.gnu.org/software/binutils/).
+
 **Guide for Installation On Raspbian command line (Linux Bash)**
 
 * In advance, prepare FAT32 formatted SD card as a boot media. Several ways are introduced to format FAT32 SD card online, even by video. If you haven't installed Git, a open source version control system, install Git to your operating system.
 
 ```bash
-# Do as Superuser, Install Git
+# Do as Superuser, Install Git and Make
 sudo apt-get update
 sudo apt-get install git
+sudo apt-get install make
 # Install Cross Compiler Tool for ARM Microprocessors, "none" Means No OS, "eabi" Means Embedded Application Binary Interface (ABI)
 sudo apt-get install gcc-arm-none-eabi
+# binutils-arm-none-eabi is also installed with gcc-arm-none-eabi automatically.
 ```
 
 * Clone this project using Git.
@@ -447,6 +451,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Copyright © 2017-2018 Kenta Ishii. All Rights Reserved.
 
 Texts in READMEs, images, designs of symbols ("BugUFO", "Moon Symbol", etc.), melodies of musics, and other properties except codes are retained these intellectual property rights by Kenta Ishii. For example, texts in READMEs are restricted your commercial usage except fair use which is described in copyright cases of United States Courts.
+
+**PUBLICLY AVAILABLE TECHNOLOGY AND SOFTWARE**
+
+The software is made of publicly available technology, is not including any proprietary technology, is not any encryption software, and is not any malicious software.
 
 ## Vocabulary
 
