@@ -335,7 +335,7 @@ int32 _user_start()
 
 * Codes of this system will be compiled and assembled in Linux, and allowed to be cross-compiled by other CPUs. This system is premised on compiling with arm-none-eabi-gcc, and on assembling with arm-none-eabi-as. Note that arm-none-eabi-as is contained in binutils-arm-none-eabi (package names may differ in Linux distros). These tools are updated by GNU community. Please access [GNU Compiler Collection](https://gcc.gnu.org/) and [GNU Binutils](https://www.gnu.org/software/binutils/).
 
-**Guide for Installation On Raspbian command line (Linux Bash)**
+**Guide for Installation on Raspbian command line (Linux Bash)**
 
 * In advance, prepare FAT32 formatted SD card as a boot media. Several ways are introduced to format FAT32 SD card online, even by video. If you haven't installed Git, a open source version control system, install Git to your operating system.
 
@@ -407,6 +407,19 @@ make type=zerow sound=i2s
 * `sound=i2sb`: Balanced I2S Output, use only in Sound Box.
 
 * `sound=jackb`: Balanced Audio Jack Output, use only in Sound Box.
+
+**Preparation on Arch Linux**
+
+* I recommend that you use the latest version of Raspbian to compile and assemble. However, another Linux distro, Arch Linux can do the same. Arch Linux also gives you to install the newer gcc and binutils than other Linux distros. The preparation in Arch Linux is described below. Note that these tools are able to cross-compile, so you can use machines Arch Linux supports.
+
+```bash
+# Update and Install
+sudo pacman -Syy
+sudo pacman -S git
+sudo pacman -S make
+sudo pacman -S arm-none-eabi-gcc
+# arm-none-eabi-binutils is also installed with arm-none-eabi-gcc automatically.
+```
 
 **Boot Process of Raspberry Pi (Including My Hypothesis)**
 
