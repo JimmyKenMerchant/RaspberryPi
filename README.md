@@ -496,6 +496,8 @@ The software is made of publicly available technology, is not including any prop
 
 * [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware)
 
+* [Rasberry Pi Firmware Wiki](https://github.com/raspberrypi/firmware/wiki)
+
 * [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
 
 **About Primaries**

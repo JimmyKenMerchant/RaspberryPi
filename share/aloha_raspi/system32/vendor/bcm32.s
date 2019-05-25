@@ -68,6 +68,47 @@ BCM32_SIZE:
 bcm32_mail_framebuffer_end:
 
 .balign 16
+bcm32_mail_unframebuffer:   @ Release Framebuffer
+	.word bcm32_mail_unframebuffer_end - bcm32_mail_unframebuffer @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00048001        @ Tag Identifier, Release Framebuffer
+	.word 0x00000000        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_unframebuffer_end:
+
+.balign 16
+.globl BCM32_CELCIUS
+bcm32_mail_getcelcius:      @ Get Temperature in Celcius
+	.word bcm32_mail_getcelcius_end - bcm32_mail_getcelcius @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00030006        @ Tag Identifier, Get Temperature
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ Temperture ID (Always 0)
+BCM32_CELCIUS:
+	.word 0x00000000        @ Temperture in Celcius
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getcelcius_end:
+
+.balign 16
+.globl BCM32_MAXCELCIUS
+bcm32_mail_getmaxcelcius:  @ Get Max Temperature in Celcius
+	.word bcm32_mail_getmaxcelcius_end - bcm32_mail_getmaxcelcius @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x0003000A        @ Tag Identifier, Get Maximum Temperature
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000000        @ Temperture ID (Always 0)
+BCM32_MAXCELCIUS:
+	.word 0x00000000        @ Temperture in Celcius
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getmaxcelcius_end:
+
+.balign 16
 bcm32_mail_blank:
 	.word bcm32_mail_blank_end - bcm32_mail_blank @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
@@ -144,6 +185,12 @@ bcm32_mail_getvcmemory_end:
 .balign 4
 bcm32_mail_framebuffer_addr:
 	.word bcm32_mail_framebuffer   @ Address of bcm32_mail_framebuffer
+bcm32_mail_unframebuffer_addr:
+	.word bcm32_mail_unframebuffer @ Address of bcm32_mail_unframebuffer
+bcm32_mail_getcelcius_addr:
+	.word bcm32_mail_getcelcius    @ Address of bcm32_mail_getcelcius
+bcm32_mail_getmaxcelcius_addr:
+	.word bcm32_mail_getmaxcelcius @ Address of bcm32_mail_getmaxcelcius
 bcm32_mail_blank_addr:
 	.word bcm32_mail_blank         @ Address of bcm32_mail_blank
 bcm32_mail_getedid_addr:
@@ -222,7 +269,7 @@ bcm32_get_framebuffer:
 
 	macro32_dsb ip
 
- 	ldr memorymap_base, bcm32_mail_framebuffer_addr
+	ldr memorymap_base, bcm32_mail_framebuffer_addr
 	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
 	cmp temp, #0x80000000
 	bne bcm32_get_framebuffer_error
@@ -269,6 +316,147 @@ bcm32_get_framebuffer:
 
 .unreq memorymap_base
 .unreq temp
+
+
+/**
+ * function bcm32_onemail
+ * Send and Read One Tag Mail to Get Parameters, etc.
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Tag Address
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
+ */
+.globl bcm32_onemail
+bcm32_onemail:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag     .req r0
+	addr_tag_dup .req r1
+	temp         .req r2
+
+	push {lr}
+
+	mov addr_tag_dup, addr_tag
+	mov temp, #0
+	str temp, [addr_tag_dup, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [addr_tag_dup, #16]                       @ Reset Tag
+	ldr temp, [addr_tag_dup]                            @ Get Size
+	add temp, addr_tag_dup, temp
+
+	macro32_dsb ip
+
+	bcm32_onemail_loop1:
+		macro32_clean_cache addr_tag_dup, ip
+		add addr_tag_dup, addr_tag_dup, #4
+		cmp addr_tag_dup, temp
+		blo bcm32_onemail_loop1
+
+	macro32_dsb ip
+
+	push {r0-r2}
+	mov r0, addr_tag
+	orr r0, r0, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+	pop {r0-r2}
+
+	macro32_dsb ip
+
+	mov addr_tag_dup, addr_tag
+	ldr temp, [addr_tag_dup]                            @ Get Size
+	add temp, addr_tag_dup, temp
+
+	macro32_dsb ip
+
+	bcm32_onemail_loop2:
+		macro32_invalidate_cache addr_tag_dup, ip
+		add addr_tag_dup, addr_tag_dup, #4
+		cmp addr_tag_dup, temp
+		blo bcm32_onemail_loop2
+
+	macro32_dsb ip
+
+	ldr temp, [addr_tag, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_onemail_error
+
+	mov r0, #0
+
+	b bcm32_onemail_common
+
+	bcm32_onemail_error:
+		mov r0, #1                           @ Return with Error
+
+	bcm32_onemail_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
+.unreq addr_tag_dup
+.unreq temp
+
+
+/**
+ * function bcm32_release_framebuffer
+ * Release Framebuffer from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
+ */
+.globl release_framebuffer
+release_framebuffer:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag .req r0
+
+	push {lr}
+
+	ldr addr_tag, bcm32_mail_unframebuffer_addr
+
+	macro32_dsb ip
+
+	bl bcm32_onemail
+
+	release_framebuffer_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
+
+
+/**
+ * function bcm32_get_celcius
+ * Release Framebuffer from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: 0 as Current Temperature, 1 as Maximum Temperature
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
+ */
+.globl get_celcius
+get_celcius:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag .req r0
+
+	push {lr}
+
+	cmp addr_tag, #0
+	ldreq addr_tag, bcm32_mail_getcelcius_addr
+	ldrne addr_tag, bcm32_mail_getmaxcelcius_addr
+
+	macro32_dsb ip
+
+	bl bcm32_onemail
+
+	get_celcius_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
 
 
 /**
