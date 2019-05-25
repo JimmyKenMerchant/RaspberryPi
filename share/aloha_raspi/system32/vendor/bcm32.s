@@ -467,69 +467,35 @@ bcm32_get_celcius:
  * r0: DeviceID, 0x0:SDCard,0x1:UART0,0x2:UART1,0x3:USBHCD,0x4:I2C0,0x5:I2C1,0x6:I2C2,0x7:SPI,0x8:CCP2TX
  * r1: State, Bit[0]: 0 off, 1 on; Bit[1]: 0 No Wait, 1 Wait
  *
- * Usage: r0-r1
  * Return: r0 (Bit[0]: 0 off, 1 on; Bit[1] 0 Device Exists, 1 Device No Exists)
  * Error(0xFFFFFFFF): Invalid of Mailing
  */
 .globl bcm32_set_powerstate
 bcm32_set_powerstate:
 	/* Auto (Local) Variables, but just Aliases */
-	deviceid          .req r0
-	state             .req r1
-	memorymap_base    .req r2
-	temp              .req r3
+	deviceid    .req r0
+	state       .req r1
+	addr_tag    .req r2
+	temp        .req r3
 
-	ldr memorymap_base, bcm32_mail_setpowerstate_addr
-	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]                       @ Reset Tag
-	ldr temp, bcm32_mail_setpowerstate                    @ Get Size
-	add temp, temp, memorymap_base
+	push {lr}
 
-	str deviceid, [memorymap_base, #20]	
-	str state, [memorymap_base, #24]
+	ldr addr_tag, bcm32_mail_setpowerstate_addr
+	str deviceid, [addr_tag, #20]
+	str state, [addr_tag, #24]
 
 	macro32_dsb ip
 
-	bcm32_set_powerstate_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_set_powerstate_loop1
+	push {r0-r2}
+	mov r0, addr_tag
+	bl bcm32_onemail
+	mov temp, r0
+	pop {r0-r2}
 
-	macro32_dsb ip
-	
-	ldr temp, bcm32_mail_setpowerstate_addr
-	add temp, temp, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-
-	push {r0-r3,lr}
-	mov r0, temp
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-	pop {r0-r3,lr}
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_setpowerstate_addr
-	ldr temp, bcm32_mail_setpowerstate                    @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_set_powerstate_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_set_powerstate_loop2
-
-	macro32_dsb ip
-
- 	ldr memorymap_base, bcm32_mail_setpowerstate_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
+	cmp temp, #0
 	bne bcm32_set_powerstate_error
 
-	ldr r0, [memorymap_base, #24]
+	ldr r0, [addr_tag, #24]
 
 	b bcm32_set_powerstate_common
 
@@ -538,11 +504,11 @@ bcm32_set_powerstate:
 
 	bcm32_set_powerstate_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		mov pc, lr
+		pop {pc}
 
 .unreq deviceid
 .unreq state
-.unreq memorymap_base
+.unreq addr_tag
 .unreq temp
 
 
@@ -598,67 +564,25 @@ bcm32_poweron_usb:
 .globl bcm32_display_off
 bcm32_display_off:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	temp              .req r1
+	addr_tag    .req r0
+	temp        .req r1
 
 	push {lr}
 
-	mov temp, r0                                          @ Parameter
+	mov temp, r0                                 @ Parameter
 	
-	ldr memorymap_base, bcm32_mail_blank_addr
-	str temp, [memorymap_base, #20]                       @ Set Value
-	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]                       @ Reset Tag
-	ldr temp, bcm32_mail_blank                         @ Get Size
-	add temp, temp, memorymap_base
+	ldr addr_tag, bcm32_mail_blank_addr
+	str temp, [addr_tag, #20]                    @ Set Value
 
 	macro32_dsb ip
 
-	bcm32_display_off_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_display_off_loop1
-
-	ldr memorymap_base, bcm32_mail_blank_addr
-	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-
-	ldr memorymap_base, bcm32_mail_blank_addr
-	ldr temp, bcm32_mail_blank                         @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_display_off_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_display_off_loop2
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_blank_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
-	bne bcm32_display_off_error
-
-	b bcm32_display_off_success
-
-	bcm32_display_off_error:
-		mov r0, #1                               @ Return with Error
-		b bcm32_display_off_common
-
-	bcm32_display_off_success:
-		mov r0, #0                               @ Return with Success
+	bl bcm32_onemail
 
 	bcm32_display_off_common:
 		macro32_dsb ip                           @ Ensure Completion of Instructions Before
 		pop {pc}
 
-.unreq memorymap_base
+.unreq addr_tag
 .unreq temp
 
 
@@ -673,68 +597,21 @@ bcm32_display_off:
 .globl bcm32_get_armmemory
 bcm32_get_armmemory:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	temp              .req r1
+	addr_tag .req r0
 
 	push {lr}
 
-	ldr memorymap_base, bcm32_mail_getarmmemory_addr
-	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]
-	str temp, [memorymap_base, #20]
-	str temp, [memorymap_base, #24]
-	ldr temp, bcm32_mail_getarmmemory                     @ Get Size
-	add temp, temp, memorymap_base
+	ldr addr_tag, bcm32_mail_getarmmemory_addr
 
 	macro32_dsb ip
 
-	bcm32_get_armmemory_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_armmemory_loop1
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_getarmmemory_addr
-	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-
-	ldr memorymap_base, bcm32_mail_getarmmemory_addr
-	ldr temp, bcm32_mail_getarmmemory                     @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_get_armmemory_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_armmemory_loop2
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_getarmmemory_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
-	bne bcm32_get_armmemory_error
-
-	mov r0, #0                                            @ Return with Success
-
-	b bcm32_get_armmemory_common
-
-	bcm32_get_armmemory_error:
-		mov r0, #1                                            @ Return with Error
+	bl bcm32_onemail
 
 	bcm32_get_armmemory_common:
 		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
 		pop {pc}
 
-.unreq memorymap_base
-.unreq temp
+.unreq addr_tag
 
 
 /**
@@ -748,68 +625,21 @@ bcm32_get_armmemory:
 .globl bcm32_get_vcmemory
 bcm32_get_vcmemory:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	temp              .req r1
+	addr_tag .req r0
 
 	push {lr}
 
-	ldr memorymap_base, bcm32_mail_getvcmemory_addr
-	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]
-	str temp, [memorymap_base, #20]
-	str temp, [memorymap_base, #24]
-	ldr temp, bcm32_mail_getvcmemory                      @ Get Size
-	add temp, temp, memorymap_base
+	ldr addr_tag, bcm32_mail_getvcmemory_addr
 
 	macro32_dsb ip
 
-	bcm32_get_vcmemory_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_vcmemory_loop1
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_getvcmemory_addr
-	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-
-	ldr memorymap_base, bcm32_mail_getvcmemory_addr
-	ldr temp, bcm32_mail_getvcmemory                     @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_get_vcmemory_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_vcmemory_loop2
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_getvcmemory_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
-	bne bcm32_get_vcmemory_error
-
-	mov r0, #0                                            @ Return with Success
-
-	b bcm32_get_vcmemory_common
-
-	bcm32_get_vcmemory_error:
-		mov r0, #1                                            @ Return with Error
+	bl bcm32_onemail
 
 	bcm32_get_vcmemory_common:
 		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
 		pop {pc}
 
-.unreq memorymap_base
-.unreq temp
+.unreq addr_tag
 
 
 /**
@@ -826,70 +656,28 @@ bcm32_get_vcmemory:
 .globl bcm32_get_edid
 bcm32_get_edid:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	temp              .req r1
-	block             .req r2
+	addr_tag    .req r0
+	temp        .req r1
+	block       .req r2
 
 	push {lr}
 
-	mov block, memorymap_base
+	mov block, addr_tag
 
-	ldr memorymap_base, bcm32_mail_getedid_addr
+	ldr addr_tag, bcm32_mail_getedid_addr
+	str block, [addr_tag, #20]                  @ Block Number
 	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]
-	str block, [memorymap_base, #20]                  @ Block Number
-	str temp, [memorymap_base, #24]                   @ Status
-	ldr temp, bcm32_mail_getedid                      @ Get Size
-	add temp, temp, memorymap_base
+	str temp, [addr_tag, #24]                   @ Status
 
 	macro32_dsb ip
 
-	bcm32_get_edid_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_edid_loop1
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_getedid_addr
-	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-
-	ldr memorymap_base, bcm32_mail_getedid_addr
-	ldr temp, bcm32_mail_getedid                     @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_get_edid_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_edid_loop2
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_getedid_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
-	bne bcm32_get_edid_error
-
-	mov r0, #0                                            @ Return with Success
-
-	b bcm32_get_edid_common
-
-	bcm32_get_edid_error:
-		mov r0, #1                                            @ Return with Error
+	bl bcm32_onemail
 
 	bcm32_get_edid_common:
 		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
 		pop {pc}
 
-.unreq memorymap_base
+.unreq addr_tag
 .unreq temp
 .unreq block
 
