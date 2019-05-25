@@ -22,6 +22,7 @@
 .include "vector32/os.s"
 
 os_reset:
+	push {lr}
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
@@ -76,11 +77,12 @@ os_reset:
 
 	macro32_clean_cache r1, ip
 
-	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
-	pop {r0-r3,lr}
 
-	mov pc, lr
+	mov r0, #1
+	bl bcm32_get_celcius
+
+	pop {pc}
 
 os_irq:
 	push {r0-r12}
@@ -88,7 +90,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r7,lr}
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -158,14 +160,14 @@ os_fiq:
 	macro32_dsb ip
 	*/
 
-	push {lr}
         bl framebuffer_test_fiqhandler
-	pop {lr}
+
+	mov r0, #0
+	bl bcm32_get_celcius
 
 	macro32_dsb ip
 
-	pop {r0-r7}
-	mov pc, lr
+	pop {r0-r7,pc}
 
 /**
  * Handler to Use in FIQ

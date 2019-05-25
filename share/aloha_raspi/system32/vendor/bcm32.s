@@ -356,7 +356,6 @@ bcm32_onemail:
 	macro32_dsb ip
 
 	push {r0-r2}
-	mov r0, addr_tag
 	orr r0, r0, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
 	bl bcm32_mailbox_send
 	bl bcm32_mailbox_read
@@ -406,8 +405,8 @@ bcm32_onemail:
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Error in Response
  */
-.globl release_framebuffer
-release_framebuffer:
+.globl bcm32_release_framebuffer
+bcm32_release_framebuffer:
 	/* Auto (Local) Variables, but just Aliases */
 	addr_tag .req r0
 
@@ -419,7 +418,7 @@ release_framebuffer:
 
 	bl bcm32_onemail
 
-	release_framebuffer_common:
+	bcm32_release_framebuffer_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {pc}
 
@@ -437,8 +436,8 @@ release_framebuffer:
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Error in Response
  */
-.globl get_celcius
-get_celcius:
+.globl bcm32_get_celcius
+bcm32_get_celcius:
 	/* Auto (Local) Variables, but just Aliases */
 	addr_tag .req r0
 
@@ -452,7 +451,7 @@ get_celcius:
 
 	bl bcm32_onemail
 
-	get_celcius_common:
+	bcm32_get_celcius_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {pc}
 
