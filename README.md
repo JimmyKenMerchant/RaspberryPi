@@ -427,11 +427,11 @@ sudo pacman -S arm-none-eabi-gcc
 
 1. Power on, then VideoCore runs the first boot codes in a ROM embedded on the SoC.
 
-2. VideoCore searches the boot media, then loads bootcode.bin to the special memory for booting and runs it. Undocumented SD0 (one of Secure Digital host controllers) seems to be used, therefore documented SD1 seems to be free on this time.
+2. VideoCore searches the boot media, then loads bootcode.bin to the special memory for booting and runs it. Undocumented first mass media controller seems to be used, therefore documented second mass media controller (stated as SD1_* in the table of alternative function assignments) seems to be free on this time.
 
 3. VideoCore activates ARM Processor and other peripherals including Main Memory. On this time, VideCore loads start.elf to Main Memory for ARM Processor (VideoCore is accessible from ARM through Mailbox afterward).
 
-4. ARM Processor runs start.elf to initialize itself, and check config.txt.
+4. ARM Processor runs start.elf to initialize itself, and check config.txt. If cmdline.txt exists, it is also checked.
 
 5. start.elf sets several configurations from config.txt. In default, several configurations, like the framebuffer and the physical memory, are recorded on ATAGs from Address 0x100.
 

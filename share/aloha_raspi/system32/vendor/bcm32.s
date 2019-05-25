@@ -88,7 +88,7 @@ bcm32_mail_getcelcius:      @ Get Temperature in Celcius
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 	.word 0x00000000        @ Temperture ID (Always 0)
 BCM32_CELCIUS:
-	.word 0x00000000        @ Temperture in Celcius
+	.word 0x00000000        @ Temperture in Millidegree Celcius
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_getcelcius_end:
@@ -103,7 +103,7 @@ bcm32_mail_getmaxcelcius:  @ Get Max Temperature in Celcius
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 	.word 0x00000000        @ Temperture ID (Always 0)
 BCM32_MAXCELCIUS:
-	.word 0x00000000        @ Temperture in Celcius
+	.word 0x00000000        @ Temperture in Millidegree Celcius
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_getmaxcelcius_end:
@@ -215,90 +215,57 @@ BCM32_EDID_ADDR:
  * Get Framebuffer from VideoCore IV
  * This function is using a vendor-implemented process.
  *
- * Usage: r0-r1
  * Return: r0 (0 as success, 1 as error)
  * Error(1): When Framebuffer is not Defined
  */
 .globl bcm32_get_framebuffer
 bcm32_get_framebuffer:
 	/* Auto (Local) Variables, but just Aliases */
-	memorymap_base    .req r0
-	temp              .req r1
+	address .req r0
+	temp    .req r1
 
 	push {lr}
 
-	ldr memorymap_base, bcm32_mail_framebuffer_addr
+	ldr address, bcm32_mail_framebuffer_addr
 	mov temp, #0
-	str temp, [memorymap_base, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [memorymap_base, #16]                       @ Reset Tag
-	str temp, [memorymap_base, #36]                       @ Reset Tag
-	str temp, [memorymap_base, #56]                       @ Reset Tag
-	str temp, [memorymap_base, #72]                       @ Reset Tag
-	str temp, [memorymap_base, #88]                       @ Reset Tag
-	str temp, [memorymap_base, #104]                      @ Reset Tag
-	ldr temp, bcm32_mail_framebuffer                      @ Get Size
-	add temp, temp, memorymap_base
+	str temp, [address, #36]                       @ Reset Additional Tag
+	str temp, [address, #56]                       @ Reset Additional Tag
+	str temp, [address, #72]                       @ Reset Additional Tag
+	str temp, [address, #88]                       @ Reset Additional Tag
+	str temp, [address, #104]                      @ Reset Additional Tag
 
 	macro32_dsb ip
 
-	bcm32_get_framebuffer_loop1:
-		macro32_clean_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_framebuffer_loop1
+	bl bcm32_onemail
 
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_framebuffer_addr
-	add memorymap_base, memorymap_base, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-
-	ldr memorymap_base, bcm32_mail_framebuffer_addr
-	ldr temp, bcm32_mail_framebuffer                                @ Get Size
-	add temp, temp, memorymap_base
-
-	macro32_dsb ip
-
-	bcm32_get_framebuffer_loop2:
-		macro32_invalidate_cache memorymap_base, ip
-		add memorymap_base, memorymap_base, #4
-		cmp memorymap_base, temp
-		blo bcm32_get_framebuffer_loop2
-
-	macro32_dsb ip
-
-	ldr memorymap_base, bcm32_mail_framebuffer_addr
-	ldr temp, [memorymap_base, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
+	cmp address, #0
 	bne bcm32_get_framebuffer_error
 
-	ldr memorymap_base, BCM32_ADDRESS
-	cmp memorymap_base, #0
+	ldr temp, BCM32_ADDRESS
+	cmp temp, #0
 	beq bcm32_get_framebuffer_error
 
-	ldr temp, bcm32_FB32_FRAMEBUFFER_addr
-	ldr temp, [temp]
+	ldr address, bcm32_FB32_FRAMEBUFFER_addr
+	ldr address, [address]
 
-	and memorymap_base, memorymap_base, #bcm32_mailbox_armmask      @ Change BCM32_ADDRESS VideoCore's to ARM's
-	str memorymap_base, [temp]
+	and temp, temp, #bcm32_mailbox_armmask      @ Change BCM32_ADDRESS VideoCore's to ARM's
+	str temp, [address]
 
-	ldr memorymap_base, BCM32_WIDTH
-	str memorymap_base, [temp, #4]
+	ldr temp, BCM32_WIDTH
+	str temp, [address, #4]
 
-	ldr memorymap_base, BCM32_HEIGHT
-	str memorymap_base, [temp, #8]
+	ldr temp, BCM32_HEIGHT
+	str temp, [address, #8]
 
-	ldr memorymap_base, BCM32_SIZE
-	str memorymap_base, [temp, #12]
+	ldr temp, BCM32_SIZE
+	str temp, [address, #12]
 
-	ldr memorymap_base, BCM32_DEPTH
-	str memorymap_base, [temp, #16]
+	ldr temp, BCM32_DEPTH
+	str temp, [address, #16]
 
 	macro32_dsb ip
 
-	mov r0, temp
+	mov r0, address
 	bl fb32_attach_buffer
 	cmp r0, #0
 	bne bcm32_get_framebuffer_error
@@ -314,86 +281,7 @@ bcm32_get_framebuffer:
 		macro32_dsb ip                                     @ Ensure Completion of Instructions Before
 		pop {pc}
 
-.unreq memorymap_base
-.unreq temp
-
-
-/**
- * function bcm32_onemail
- * Send and Read One Tag Mail to Get Parameters, etc.
- * This function is using a vendor-implemented process.
- *
- * Parameters
- * r0: Tag Address
- *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Error in Response
- */
-.globl bcm32_onemail
-bcm32_onemail:
-	/* Auto (Local) Variables, but just Aliases */
-	addr_tag     .req r0
-	addr_tag_dup .req r1
-	temp         .req r2
-
-	push {lr}
-
-	mov addr_tag_dup, addr_tag
-	mov temp, #0
-	str temp, [addr_tag_dup, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [addr_tag_dup, #16]                       @ Reset Tag
-	ldr temp, [addr_tag_dup]                            @ Get Size
-	add temp, addr_tag_dup, temp
-
-	macro32_dsb ip
-
-	bcm32_onemail_loop1:
-		macro32_clean_cache addr_tag_dup, ip
-		add addr_tag_dup, addr_tag_dup, #4
-		cmp addr_tag_dup, temp
-		blo bcm32_onemail_loop1
-
-	macro32_dsb ip
-
-	push {r0-r2}
-	orr r0, r0, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
-	bl bcm32_mailbox_send
-	bl bcm32_mailbox_read
-	pop {r0-r2}
-
-	macro32_dsb ip
-
-	mov addr_tag_dup, addr_tag
-	ldr temp, [addr_tag_dup]                            @ Get Size
-	add temp, addr_tag_dup, temp
-
-	macro32_dsb ip
-
-	bcm32_onemail_loop2:
-		macro32_invalidate_cache addr_tag_dup, ip
-		add addr_tag_dup, addr_tag_dup, #4
-		cmp addr_tag_dup, temp
-		blo bcm32_onemail_loop2
-
-	macro32_dsb ip
-
-	ldr temp, [addr_tag, #bcm32_mailbox_gpuconfirm]
-	cmp temp, #0x80000000
-	bne bcm32_onemail_error
-
-	mov r0, #0
-
-	b bcm32_onemail_common
-
-	bcm32_onemail_error:
-		mov r0, #1                           @ Return with Error
-
-	bcm32_onemail_common:
-		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		pop {pc}
-
-.unreq addr_tag
-.unreq addr_tag_dup
+.unreq address
 .unreq temp
 
 
@@ -683,6 +571,85 @@ bcm32_get_edid:
 
 
 /**
+ * function bcm32_onemail
+ * Send and Read One Tag Mail to Get Parameters, etc.
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Tag Address
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
+ */
+.globl bcm32_onemail
+bcm32_onemail:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag     .req r0
+	addr_tag_dup .req r1
+	temp         .req r2
+
+	push {lr}
+
+	mov addr_tag_dup, addr_tag
+	mov temp, #0
+	str temp, [addr_tag_dup, #bcm32_mailbox_gpuconfirm] @ Reset Request
+	str temp, [addr_tag_dup, #16]                       @ Reset Tag
+	ldr temp, [addr_tag_dup]                            @ Get Size
+	add temp, addr_tag_dup, temp
+
+	macro32_dsb ip
+
+	bcm32_onemail_loop1:
+		macro32_clean_cache addr_tag_dup, ip
+		add addr_tag_dup, addr_tag_dup, #4
+		cmp addr_tag_dup, temp
+		blo bcm32_onemail_loop1
+
+	macro32_dsb ip
+
+	push {r0-r2}
+	orr r0, r0, #bcm32_mailbox_gpuoffset|bcm32_mailbox_channel8
+	bl bcm32_mailbox_send
+	bl bcm32_mailbox_read
+	pop {r0-r2}
+
+	macro32_dsb ip
+
+	mov addr_tag_dup, addr_tag
+	ldr temp, [addr_tag_dup]                            @ Get Size
+	add temp, addr_tag_dup, temp
+
+	macro32_dsb ip
+
+	bcm32_onemail_loop2:
+		macro32_invalidate_cache addr_tag_dup, ip
+		add addr_tag_dup, addr_tag_dup, #4
+		cmp addr_tag_dup, temp
+		blo bcm32_onemail_loop2
+
+	macro32_dsb ip
+
+	ldr temp, [addr_tag, #bcm32_mailbox_gpuconfirm]
+	cmp temp, #0x80000000
+	bne bcm32_onemail_error
+
+	mov r0, #0
+
+	b bcm32_onemail_common
+
+	bcm32_onemail_error:
+		mov r0, #1                           @ Return with Error
+
+	bcm32_onemail_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
+.unreq addr_tag_dup
+.unreq temp
+
+
+/**
  * function bcm32_mailbox_read
  * Wait and Read Mail from VideoCore IV (Mailbox0 on Old System Only)
  * This function is using a vendor-implemented process.
@@ -791,6 +758,7 @@ bcm32_mailbox_send:
 .unreq status
 .unreq write
 
+
 .equ bcm32_mailbox_base,          0x0000B800
 .equ bcm32_mailbox_channel0,      0x00
 .equ bcm32_mailbox_channel1,      0x01
@@ -840,3 +808,4 @@ bcm32_mailbox_send:
 .equ bcm32_core1_fiq_source,   0x74
 .equ bcm32_core2_fiq_source,   0x78
 .equ bcm32_core3_fiq_source,   0x7C
+
