@@ -86,9 +86,9 @@ bcm32_mail_getcelcius:      @ Get Temperature in Celcius
 	.word 0x00030006        @ Tag Identifier, Get Temperature
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000        @ Temperture ID (Always 0)
+	.word 0x00000000        @ Temperature ID (Always 0)
 BCM32_CELCIUS:
-	.word 0x00000000        @ Temperture in Millidegree Celcius
+	.word 0x00000000        @ Temperature in Millidegree Celcius
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_getcelcius_end:
@@ -101,12 +101,27 @@ bcm32_mail_getmaxcelcius:  @ Get Max Temperature in Celcius
 	.word 0x0003000A        @ Tag Identifier, Get Maximum Temperature
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-	.word 0x00000000        @ Temperture ID (Always 0)
+	.word 0x00000000        @ Temperature ID (Always 0)
 BCM32_MAXCELCIUS:
-	.word 0x00000000        @ Temperture in Millidegree Celcius
+	.word 0x00000000        @ Temperature in Millidegree Celcius
 .balign 4
 	.word 0x00000000        @ End Tag
 bcm32_mail_getmaxcelcius_end:
+
+.balign 16
+.globl BCM32_VOLTAGE
+bcm32_mail_getvoltage: @ Get Voltage
+	.word bcm32_mail_getvoltage_end - bcm32_mail_getvoltage @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00030003        @ Tag Identifier, Get Voltage (0x00030005 is Maximum, 0x00030008 is Minimum, 0x00038003 is Set)
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000001        @ Voltage ID (1 Core, 2 SDRAM_C[Controller], 3 SDRAM_P[Physical], 4 SDRAM_I[I/O])
+BCM32_VOLTAGE:
+	.word 0x00000000        @ Voltage in Microvolt
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getvoltage_end:
 
 .balign 16
 bcm32_mail_blank:
@@ -191,6 +206,8 @@ bcm32_mail_getcelcius_addr:
 	.word bcm32_mail_getcelcius    @ Address of bcm32_mail_getcelcius
 bcm32_mail_getmaxcelcius_addr:
 	.word bcm32_mail_getmaxcelcius @ Address of bcm32_mail_getmaxcelcius
+bcm32_mail_getvoltage_addr:
+	.word bcm32_mail_getvoltage    @ Address of bcm32_mail_getvoltage
 bcm32_mail_blank_addr:
 	.word bcm32_mail_blank         @ Address of bcm32_mail_blank
 bcm32_mail_getedid_addr:
@@ -315,7 +332,7 @@ bcm32_release_framebuffer:
 
 /**
  * function bcm32_get_celcius
- * Release Framebuffer from VideoCore IV
+ * Get SoC Temperature in Millidegree Celcius from VideoCore IV
  * This function is using a vendor-implemented process.
  *
  * Parameters
@@ -344,6 +361,42 @@ bcm32_get_celcius:
 		pop {pc}
 
 .unreq addr_tag
+
+
+/**
+ * function bcm32_get_voltage
+ * Get SoC Voltage in Microvolt from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Voltage ID, 1 as Core, 2 as SDRAM_C[Controller], 3 as SDRAM_P[Physical], 4 as SDRAM_I[I/O]
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
+ */
+.globl bcm32_get_voltage
+bcm32_get_voltage:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag .req r0
+	temp     .req r1
+
+	push {lr}
+
+	mov temp, addr_tag
+
+	ldr addr_tag, bcm32_mail_getvoltage_addr
+	str temp, [addr_tag, #20]
+
+	macro32_dsb ip
+
+	bl bcm32_onemail
+
+	bcm32_get_voltage_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
+.unreq temp
 
 
 /**
