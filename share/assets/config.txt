@@ -45,7 +45,7 @@ disable_splash=1
 #Black Border (0) or Not (1)
 disable_overscan=1
 
-#0.025V Steps, 2 means app. 1.2 to 1.3125V + 0.05V (RasPi2), 0.8V to 1.4V [-16 to 8]
+#0.025V Steps, 2 means app. 1.2 + 0.05V, 0.8V to 1.4V [-16 to 8]
 #CPU 1000Mhz, GPU 500Mhz, SDRAM 500Mhz Need 2 (Raspi2)
 #CPU 900Mhz, GPU 250Mhz, SDRAM 450Mhz Need 0 (Raspi2)
 #over_voltage=2
