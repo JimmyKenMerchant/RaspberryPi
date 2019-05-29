@@ -1352,9 +1352,9 @@ extern float32 STS32_DIGITALMOD_MEDIUM;
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _synthewave_pwm( float32 bend_rate, uint32 number_voices );
+__attribute__((noinline)) uint32 _synthewave_pwm( float32 bend_rate, float32 tone_rate, uint32 number_voices );
 
-__attribute__((noinline)) uint32 _synthewave_i2s( float32 bend_rate, uint32 number_voices );
+__attribute__((noinline)) uint32 _synthewave_i2s( float32 bend_rate, float32 tone_rate, uint32 number_voices );
 
 __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length, uint32 count, int32 repeat );
 

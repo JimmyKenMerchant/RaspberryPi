@@ -54,7 +54,8 @@
  *
  * Parameters
  * r0: Pitch Bend Rate, Must Be Single Precision Float
- * r1: Number of Voices, A Multiple of 2
+ * r1: Tone (Low-pass Filter) Rate, Must Be Single Precision Float
+ * r2: Number of Voices, A Multiple of 2
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error(1): PWM FIFO is Already Full
@@ -63,10 +64,10 @@
 sts32_synthewave_pwm:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base .req r0
-	time           .req r1
-	temp           .req r2
+	temp           .req r1
+	num_voices     .req r2
 	flag_rl        .req r3
-	num_voices     .req r4
+	time           .req r4
 	status_voices  .req r5
 	voices         .req r6
 	addr_param     .req r7
@@ -84,12 +85,13 @@ sts32_synthewave_pwm:
 	vfp_divisor    .req s8
 	vfp_bend       .req s9
 	vfp_sum        .req s10
+	vfp_tone       .req s11
 
 	push {r4-r8,lr}
-	vpush {s0-s10}
+	vpush {s0-s11}
 
 	vmov vfp_bend, memorymap_base
-	mov num_voices, time
+	vmov vfp_tone, temp
 	cmp num_voices, #equ32_sts32_voice_max
 	movhi num_voices, #equ32_sts32_voice_max
 	lsr num_voices, num_voices, #1                             @ Divide by 2
@@ -235,6 +237,19 @@ sts32_synthewave_pwm:
 			b sts32_synthewave_pwm_loop_r
 
 		sts32_synthewave_pwm_loop_r_common:
+
+			/* Tone */
+			ldr temp, STS32_SYNTHEWAVE_TONE_R
+			vmov vfp_freq_a, temp
+			mov temp, #0x3F800000                       @ Hard Code of 1.0 Float
+			vmov vfp_temp, temp
+			vsub.f32 vfp_temp, vfp_temp, vfp_tone
+			vmul.f32 vfp_sum, vfp_sum, vfp_temp
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_tone
+			vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
+			vmov temp, vfp_sum
+			str temp, STS32_SYNTHEWAVE_TONE_R
+
 			vdiv.f32 vfp_sum, vfp_sum, vfp_divisor
 			vcvtr.s32.f32 vfp_sum, vfp_sum
 			vmov temp, vfp_sum
@@ -341,6 +356,19 @@ sts32_synthewave_pwm:
 				b sts32_synthewave_pwm_loop_l
 
 			sts32_synthewave_pwm_loop_l_common:
+
+				/* Tone */
+				ldr temp, STS32_SYNTHEWAVE_TONE_L
+				vmov vfp_freq_a, temp
+				mov temp, #0x3F800000                       @ Hard Code of 1.0 Float
+				vmov vfp_temp, temp
+				vsub.f32 vfp_temp, vfp_temp, vfp_tone
+				vmul.f32 vfp_sum, vfp_sum, vfp_temp
+				vmul.f32 vfp_freq_a, vfp_freq_a, vfp_tone
+				vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
+				vmov temp, vfp_sum
+				str temp, STS32_SYNTHEWAVE_TONE_L
+
 				vdiv.f32 vfp_sum, vfp_sum, vfp_divisor
 				vcvtr.s32.f32 vfp_sum, vfp_sum
 				vmov temp, vfp_sum
@@ -372,14 +400,14 @@ sts32_synthewave_pwm:
 		mov r0, #0
 
 	sts32_synthewave_pwm_common:
-		vpop {s0-s10}
+		vpop {s0-s11}
 		pop {r4-r8,pc}
 
 .unreq memorymap_base
-.unreq time
 .unreq temp
-.unreq flag_rl
 .unreq num_voices
+.unreq flag_rl
+.unreq time
 .unreq status_voices
 .unreq voices
 .unreq addr_param
@@ -395,6 +423,7 @@ sts32_synthewave_pwm:
 .unreq vfp_divisor
 .unreq vfp_bend
 .unreq vfp_sum
+.unreq vfp_tone
 
 sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
 
@@ -405,7 +434,8 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
  *
  * Parameters
  * r0: Pitch Bend Rate, Must Be Single Precision Float
- * r1: Number of Voices, A Multiple of 2
+ * r1: Tone (Low-pass Filter) Rate, Must Be Single Precision Float
+ * r2: Number of Voices, A Multiple of 2
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error(1): PCM FIFO is Full
@@ -414,10 +444,10 @@ sts32_synthewave_pwm_divisor: .float 8.0 @ 6 dB Gain (Twice)
 sts32_synthewave_i2s:
 	/* Auto (Local) Variables, but just Aliases */
 	memorymap_base .req r0
-	time           .req r1
-	temp           .req r2
+	temp           .req r1
+	num_voices     .req r2
 	value          .req r3
-	num_voices     .req r4
+	time           .req r4
 	status_voices  .req r5
 	voices         .req r6
 	addr_param     .req r7
@@ -434,12 +464,13 @@ sts32_synthewave_i2s:
 	vfp_time       .req s7
 	vfp_bend       .req s8
 	vfp_sum        .req s9
+	vfp_tone       .req s10
 
 	push {r4-r8,lr}
-	vpush {s0-s9}
+	vpush {s0-s10}
 
 	vmov vfp_bend, memorymap_base
-	mov num_voices, time
+	vmov vfp_tone, temp
 	cmp num_voices, #equ32_sts32_voice_max
 	movhi num_voices, #equ32_sts32_voice_max
 	lsr num_voices, num_voices, #1                             @ Divide by 2
@@ -577,6 +608,19 @@ sts32_synthewave_i2s:
 			b sts32_synthewave_i2s_loop_r
 
 		sts32_synthewave_i2s_loop_r_common:
+
+			/* Tone */
+			ldr temp, STS32_SYNTHEWAVE_TONE_R
+			vmov vfp_freq_a, temp
+			mov temp, #0x3F800000                       @ Hard Code of 1.0 Float
+			vmov vfp_temp, temp
+			vsub.f32 vfp_temp, vfp_temp, vfp_tone
+			vmul.f32 vfp_sum, vfp_sum, vfp_temp
+			vmul.f32 vfp_freq_a, vfp_freq_a, vfp_tone
+			vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
+			vmov temp, vfp_sum
+			str temp, STS32_SYNTHEWAVE_TONE_R
+
 			vcvtr.s32.f32 vfp_sum, vfp_sum
 			vmov value, vfp_sum
 
@@ -674,6 +718,19 @@ sts32_synthewave_i2s:
 				b sts32_synthewave_i2s_loop_l
 
 			sts32_synthewave_i2s_loop_l_common:
+
+				/* Tone */
+				ldr temp, STS32_SYNTHEWAVE_TONE_L
+				vmov vfp_freq_a, temp
+				mov temp, #0x3F800000                       @ Hard Code of 1.0 Float
+				vmov vfp_temp, temp
+				vsub.f32 vfp_temp, vfp_temp, vfp_tone
+				vmul.f32 vfp_sum, vfp_sum, vfp_temp
+				vmul.f32 vfp_freq_a, vfp_freq_a, vfp_tone
+				vadd.f32 vfp_sum, vfp_sum, vfp_freq_a
+				vmov temp, vfp_sum
+				str temp, STS32_SYNTHEWAVE_TONE_L
+
 				vcvtr.s32.f32 vfp_sum, vfp_sum
 				vmov temp, vfp_sum
 
@@ -707,14 +764,14 @@ sts32_synthewave_i2s:
 		mov r0, #0
 
 	sts32_synthewave_i2s_common:
-		vpop {s0-s9}
+		vpop {s0-s10}
 		pop {r4-r8,pc}
 
 .unreq memorymap_base
-.unreq time
 .unreq temp
-.unreq value
 .unreq num_voices
+.unreq value
+.unreq time
 .unreq status_voices
 .unreq voices
 .unreq addr_param
@@ -729,12 +786,15 @@ sts32_synthewave_i2s:
 .unreq vfp_time
 .unreq vfp_bend
 .unreq vfp_sum
+.unreq vfp_tone
 
 sts32_synthewave_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
 
-STS32_SYNTHEWAVE_TIME:    .word 0x00 @ One Equals 1/sampling-rate Seconds
-STS32_SYNTHEWAVE_RL:      .word 0x00 @ 0 as R, 1 as L, Only on PWM
-STS32_SYNTHEWAVE_PARAM:   .word STS32_SYNTHEWAVE_FREQA_L
+STS32_SYNTHEWAVE_TIME:   .word 0x00 @ One Equals 1/sampling-rate Seconds
+STS32_SYNTHEWAVE_RL:     .word 0x00 @ 0 as R, 1 as L, Only on PWM
+STS32_SYNTHEWAVE_PARAM:  .word STS32_SYNTHEWAVE_FREQA_L
+STS32_SYNTHEWAVE_TONE_R: .float 0.0
+STS32_SYNTHEWAVE_TONE_L: .float 0.0
 
 
 /* If End or Step Up, Automatically Cleared */
