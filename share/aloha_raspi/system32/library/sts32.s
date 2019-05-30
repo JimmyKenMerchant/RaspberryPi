@@ -1855,10 +1855,12 @@ sts32_synthemidi:
 		beq sts32_synthemidi_control_modulation
 		cmp data1, #7
 		beq sts32_synthemidi_control_volume
+		cmp data1, #9
+		beq sts32_synthemidi_control_tone                  @ Undefined in Default
 		cmp data1, #12
-		beq sts32_synthemidi_control_dmoddelta
+		beq sts32_synthemidi_control_dmoddelta             @ Effect Control 1 in Default
 		cmp data1, #13
-		beq sts32_synthemidi_control_dmodrange
+		beq sts32_synthemidi_control_dmodrange             @ Effect Control 2 in Default
 		cmp data1, #16
 		beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
 		cmp data1, #17
@@ -1892,10 +1894,12 @@ sts32_synthemidi:
 			beq sts32_synthemidi_control_modulation
 			cmp data1, #7
 			beq sts32_synthemidi_control_volume
+			cmp data1, #9
+			beq sts32_synthemidi_control_tone                  @ Undefined in Default
 			cmp data1, #12
-			beq sts32_synthemidi_control_dmoddelta
+			beq sts32_synthemidi_control_dmoddelta             @ Effect Control 1 in Default
 			cmp data1, #13
-			beq sts32_synthemidi_control_dmodrange
+			beq sts32_synthemidi_control_dmodrange             @ Effect Control 2 in Default
 			cmp data1, #16
 			beq sts32_synthemidi_control_gp1                   @ Frequency Range (Interval) of Modulation
 			cmp data1, #17
@@ -1930,6 +1934,28 @@ sts32_synthemidi:
 			vcvt.u32.f32 vfp_volume, vfp_volume
 			vmov temp, vfp_volume
 			str temp, STS32_SYNTHEMIDI_VOLUME
+
+			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_tone:
+			/* Maximum Value 16000, Divisor */
+			mov temp, #0x3E00                                  @ Decimal 16000
+			orr temp, temp, #0x0080                            @ Decimal 16000
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+
+			/* If 16001 - 16383, Saturate to 16000, (Range 0 - 16383, Bit[13:0]) */
+			cmp data2, temp
+			movhi data2, temp
+
+			vmov vfp_volume, data2
+			vcvt.f32.u32 vfp_volume, vfp_volume
+
+			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
+
+			vmov data2, vfp_volume
+			ldr temp, STS32_TONE_ADDR
+			str data2, [temp]
 
 			b sts32_synthemidi_success
 
@@ -2334,6 +2360,9 @@ STS32_DIGITALMOD_MAX_ADDR:       .word STS32_DIGITALMOD_MAX
 STS32_DIGITALMOD_MIN_ADDR:       .word STS32_DIGITALMOD_MIN
 STS32_DIGITALMOD_MEDIUM_ADDR:    .word STS32_DIGITALMOD_MEDIUM
 
+STS32_TONE_ADDR:                 .word STS32_TONE
+
+/* To Store and Load Data in User Mode, Actual Data Is Placed in ".data" Section */
 .section	.data
 _STS32_SYNTHEMIDI_BYTEBUFFER:    .word 0x00 @ First Buffer to Receive A Byte from UART
 _STS32_SYNTHEMIDI_CURRENTNOTE:   .space 8, 0x00
@@ -2375,6 +2404,8 @@ STS32_DIGITALMOD_MAX:            .float 1.2
 STS32_DIGITALMOD_MIN:            .float 0.8
 .globl STS32_DIGITALMOD_MEDIUM
 STS32_DIGITALMOD_MEDIUM:         .float 1.0
+.globl STS32_TONE
+STS32_TONE:                      .float 0.0
 .section	.library_system32
 
 

@@ -130,6 +130,8 @@
 
 * Volume is changeable thorough CC#7.
 
+* Tone (Low-pass Filter) is CC#9.
+
 ## Synthesizer Pre-code
 
 * Other than MIDI IN, there is unique programmable codes, called "Synthesizer Code". To decode this, "Synthesizer Pre-code" helps you.

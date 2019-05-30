@@ -1349,6 +1349,7 @@ extern float32 STS32_DIGITALMOD_DELTA;
 extern float32 STS32_DIGITALMOD_MAX;
 extern float32 STS32_DIGITALMOD_MIN;
 extern float32 STS32_DIGITALMOD_MEDIUM;
+extern float32 STS32_TONE;
 
 /* Relative System Calls  */
 

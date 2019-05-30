@@ -611,15 +611,15 @@ int32 _user_start() {
 	while ( true ) {
 		// Time of _synthewave_i2s and synthemidi Is Up to Appx. 55us with Zero W in My Experience
 #ifdef __SOUND_I2S
-		_synthewave_i2s( STS32_DIGITALMOD_MEDIUM, 0.0, 8 );
+		_synthewave_i2s( STS32_DIGITALMOD_MEDIUM, STS32_TONE, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_I2S, 8 );
 #endif
 #ifdef __SOUND_PWM
-		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, 0.0, 8 );
+		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, STS32_TONE, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 #ifdef __SOUND_JACK
-		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, 0.0, 8 );
+		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, STS32_TONE, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
 		if ( _gpio_detect( 5 ) ) {
