@@ -1953,9 +1953,8 @@ sts32_synthemidi:
 
 			vdiv.f32 vfp_volume, vfp_volume, vfp_temp          @ Range 0 - 16000 to 0 - 1.0
 
-			vmov data2, vfp_volume
 			ldr temp, STS32_TONE_ADDR
-			str data2, [temp]
+			vstr vfp_volume, [temp]
 
 			b sts32_synthemidi_success
 
