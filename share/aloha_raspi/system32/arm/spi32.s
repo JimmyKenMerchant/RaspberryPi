@@ -144,6 +144,49 @@ spi32_spidone:
 
 
 /**
+ * function spi32_spiwaitdone
+ * Wait Untill Done
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): TA (Transfer Active) Bit is Not Active
+ */
+.globl spi32_spiwaitdone
+spi32_spiwaitdone:
+	/* Auto (Local) Variables, but just Aliases */
+	cs           .req r0
+	addr_spi     .req r1
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	ldr cs, [addr_spi, #equ32_spi0_cs]
+	macro32_dsb ip
+	tst cs, #equ32_spi0_cs_ta
+	beq spi32_spiwaitdone_error
+
+	spi32_spiwaitdone_loop:
+		ldr cs, [addr_spi, #equ32_spi0_cs]
+		macro32_dsb ip
+		tst cs, #equ32_spi0_cs_done             @ Check If Done, End of Transer
+		bne spi32_spiwaitdone_success
+		b spi32_spiwaitdone_loop
+
+	spi32_spiwaitdone_error:
+		mov r0, #1
+		b spi32_spiwaitdone_common
+
+	spi32_spiwaitdone_success:
+		mov r0, #0
+
+	spi32_spiwaitdone_common:
+		mov pc, lr
+
+.unreq cs
+.unreq addr_spi
+
+
+/**
  * function spi32_spitx
  * SPI Transfer with Little Endian (Most Significant Byte is Sent First)
  *
