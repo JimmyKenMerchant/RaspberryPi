@@ -107,7 +107,7 @@ os_reset:
 
 	macro32_dsb ip
 
-	mov r0, #1000                     @ 240Mhz/100, 2.4Mhz
+	mov r0, #25                       @ 240Mhz/25, 9.6Mhz
 	bl spi32_spiclk
 
 	macro32_dsb ip
@@ -398,14 +398,9 @@ os_debug:
 	mov r1, #0x37
 	bl os_debug_write
 
-	mov r0, #0xFF
-	orr r0, r0, #0xFF00
-	mov r1, #0x10
-	bl os_debug_gram
-
-	mov r0, #0xFF
-	orr r0, r0, #0xFF00
-	mov r1, #0x10
+	mov r0, #0x1F
+	orr r0, r0, #0x0000
+	mov r1, #0x5000
 	bl os_debug_gram
 
 	pop {pc}
@@ -441,10 +436,12 @@ os_debug_write:
 	macro32_dsb ip
 
 	/* Wait Between CS High and Low */
+	/*
 	push {r0-r1}
 	mov r0, #1000
 	bl arm32_sleep
 	pop {r0-r1}
+	*/
 
 	/* CS Goes Low */
 	push {r0-r1}
@@ -503,10 +500,12 @@ os_debug_gram:
 	macro32_dsb ip
 
 	/* Wait Between CS High and Low */
+	/*
 	push {r0-r1}
 	mov r0, #1000
 	bl arm32_sleep
 	pop {r0-r1}
+	*/
 
 	/* CS Goes Low */
 	push {r0-r1}
@@ -531,6 +530,12 @@ os_debug_gram:
 		mov r1, #2
 		bl spi32_spitx
 		bl spi32_spiwaitdone
+		pop {r0-r1}
+
+		/* Read Dummy Bytes Stacked in RxFIFO through Transmission */
+		push {r0-r1}
+		mov r0, #2
+		bl spi32_spirx
 		pop {r0-r1}
 
 		macro32_dsb ip
