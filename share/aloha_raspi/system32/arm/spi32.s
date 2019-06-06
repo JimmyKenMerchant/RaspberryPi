@@ -187,6 +187,44 @@ spi32_spiwaitdone:
 
 
 /**
+ * function spi32_spiclear
+ * Clear TxFIFO and/or RxFIFO
+ *
+ * Parameters
+ * r0: 0 as No Action, 1 (0b01) as Clear TxFIFO, 2 (0b10) as Clear RxFIFO, 3 (0b11) as Clear Both FIFOs
+ *
+ * Return: r0 (0 as Success)
+ */
+.globl spi32_spiclear
+spi32_spiclear:
+	/* Auto (Local) Variables, but just Aliases */
+	clear    .req r0
+	addr_spi .req r1
+	cs       .req r2
+
+	mov addr_spi, #equ32_peripherals_base
+	add addr_spi, addr_spi, #equ32_spi0_base_upper
+	add addr_spi, addr_spi, #equ32_spi0_base_lower
+
+	and clear, clear, #0b11
+	lsl clear, clear, #equ32_spi0_cs_clear
+
+	ldr cs, [addr_spi, #equ32_spi0_cs]
+	macro32_dsb ip
+	orr cs, cs, clear
+	str cs, [addr_spi, #equ32_spi0_cs]
+	macro32_dsb ip
+
+	spi32_spiclear_common:
+		mov r0, #0
+		mov pc, lr
+
+.unreq clear
+.unreq addr_spi
+.unreq cs
+
+
+/**
  * function spi32_spitx
  * SPI Transfer with Little Endian (Most Significant Byte is Sent First)
  *

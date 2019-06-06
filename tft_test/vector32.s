@@ -398,8 +398,8 @@ os_debug:
 	mov r1, #0x37
 	bl os_debug_write
 
-	mov r0, #0x1F
-	orr r0, r0, #0x0000
+	mov r0, #0xE0
+	orr r0, r0, #0xFF00
 	mov r1, #0x5000
 	bl os_debug_gram
 
@@ -420,12 +420,14 @@ os_debug_write:
 
 	push {r0-r1}
 	mov temp, #0x70<<24               @ Index[1], Write Bit[0]
-	orr r0, temp, index, lsl #8       @ Index 0
+	orr r0, temp, index, lsl #8       @ Any Index
 /*macro32_debug r0, 100, 72*/
 	mov r1, #3
 	bl spi32_spitx
 	bl spi32_spiwaitdone
 /*macro32_debug r0, 100, 84*/
+	mov r0, #0b10                     @ Clear RxFIFO, Dummy Bytes Are Stacked through Transmission
+	bl spi32_spiclear
 	pop {r0-r1}
 
 	/* CS Goes High */
@@ -434,14 +436,6 @@ os_debug_write:
 	pop {r0-r1}
 
 	macro32_dsb ip
-
-	/* Wait Between CS High and Low */
-	/*
-	push {r0-r1}
-	mov r0, #1000
-	bl arm32_sleep
-	pop {r0-r1}
-	*/
 
 	/* CS Goes Low */
 	push {r0-r1}
@@ -457,6 +451,8 @@ os_debug_write:
 	bl spi32_spitx
 	bl spi32_spiwaitdone
 /*macro32_debug r0, 100, 108*/
+	mov r0, #0b10                     @ Clear RxFIFO, Dummy Bytes Are Stacked through Transmission
+	bl spi32_spiclear
 	pop {r0-r1}
 
 	/* CS Goes High */
@@ -486,10 +482,12 @@ os_debug_gram:
 
 	push {r0-r1}
 	mov r0, #0x70<<24               @ Index[1], Write Bit[0]
-	orr r0, r0, #0x22<<8
+	orr r0, r0, #0x22<<8            @ Index 0x22
 	mov r1, #3
 	bl spi32_spitx
 	bl spi32_spiwaitdone
+	mov r0, #0b10                   @ Clear RxFIFO, Dummy Bytes Are Stacked through Transmission
+	bl spi32_spiclear
 	pop {r0-r1}
 
 	/* CS Goes High */
@@ -498,14 +496,6 @@ os_debug_gram:
 	pop {r0-r1}
 
 	macro32_dsb ip
-
-	/* Wait Between CS High and Low */
-	/*
-	push {r0-r1}
-	mov r0, #1000
-	bl arm32_sleep
-	pop {r0-r1}
-	*/
 
 	/* CS Goes Low */
 	push {r0-r1}
@@ -518,6 +508,8 @@ os_debug_gram:
 	mov r1, #1
 	bl spi32_spitx
 	bl spi32_spiwaitdone
+	mov r0, #0b10                   @ Clear RxFIFO, Dummy Bytes Are Stacked through Transmission
+	bl spi32_spiclear
 	pop {r0-r1}
 
 	os_debug_gram_loop:
@@ -530,12 +522,8 @@ os_debug_gram:
 		mov r1, #2
 		bl spi32_spitx
 		bl spi32_spiwaitdone
-		pop {r0-r1}
-
-		/* Read Dummy Bytes Stacked in RxFIFO through Transmission */
-		push {r0-r1}
-		mov r0, #2
-		bl spi32_spirx
+		mov r0, #0b10                   @ Clear RxFIFO, Dummy Bytes Are Stacked through Transmission
+		bl spi32_spiclear
 		pop {r0-r1}
 
 		macro32_dsb ip
@@ -543,8 +531,6 @@ os_debug_gram:
 		b os_debug_gram_loop
 
 	os_debug_gram_jump:
-
-		bl spi32_spiwaitdone
 
 		/* CS Goes High */
 		bl spi32_spistop
