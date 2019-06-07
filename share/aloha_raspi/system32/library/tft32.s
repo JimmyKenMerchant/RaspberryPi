@@ -1,5 +1,5 @@
 /**
- * s6d0151.s
+ * tft32.s
  *
  * Author: Kenta Ishii
  * License: MIT
@@ -7,11 +7,29 @@
  *
  */
 
-/* These Functions are used for the TFT LCD driver, S6D0151. */
+/**
+ * These functions are used for communication with TFT LCD drivers through SPI Interface.
+ * TFT LCD drivers have various products. I set these types to make generic functions.
+ * LoSSI is Low Speed Serial Interface, a sort of 3-wire SPI. It distinguishes between a command and a data by an additional bit.
+ * Type 1 and 3 needs to transmit the start byte to distinguish between a command and a data through a Register Set bit.
+ * The start byte also includes a Write/Read bit.
+ *
+ * Type 1: Index, Standard 4-wire SPI, 16-bit Registers
+ *  Tested: S6D0151
+ *  Logically Compatible: ILI9320, ILI9325, ILI9328
+ * 
+ * Type 2: Command, LoSSI, Sequential 8-bit Registers (Data/Command Bit is Added to Every 8-bit Register)
+ *  Tested: Not Yet
+ *  Logically Compatible: ILI9341, ILI9341V, ST7735S
+ *
+ * Type 3: Index, Bidirectional 3-wire SPI, 8-bit Registers
+ *  Tested: Not Yet
+ *  Logically Compatible: HX8347-D
+ */
 
 
 /**
- * function s6d0151_write
+ * function tft32_write_type1
  * Write to S6D0151 through SPI Interface
  *
  * Parameters
@@ -20,8 +38,8 @@
  *
  * Return: r0 (0 as success)
  */
-.globl s6d0151_write
-s6d0151_write:
+.globl tft32_write_type1
+tft32_write_type1:
 	/* Auto (Local) Variables, but just Aliases */
 	index .req r0
 	data  .req r1
@@ -75,7 +93,7 @@ s6d0151_write:
 	/* CS Goes High */
 	bl spi32_spistop
 
-	s6d0151_write_common:
+	tft32_write_type1_common:
 		mov r0, #0
 		pop {pc}
 
@@ -85,7 +103,7 @@ s6d0151_write:
 
 
 /**
- * function s6d0151_fillcolor
+ * function tft32_fillcolor_type1
  * Fill One Color to GRAM
  *
  * Parameters
@@ -94,8 +112,8 @@ s6d0151_write:
  *
  * Return: r0 (0 as success)
  */
-.globl s6d0151_fillcolor
-s6d0151_fillcolor:
+.globl tft32_fillcolor_type1
+tft32_fillcolor_type1:
 	/* Auto (Local) Variables, but just Aliases */
 	data  .req r0
 	size  .req r1
@@ -141,10 +159,10 @@ s6d0151_fillcolor:
 	bl spi32_spiclear
 	pop {r0-r1}
 
-	s6d0151_fillcolor_loop:
+	tft32_fillcolor_type1_loop:
 		sub size, size, #1
 		cmp size, #0
-		blt s6d0151_fillcolor_jump
+		blt tft32_fillcolor_type1_jump
 
 		push {r0-r1}
 		lsl r0, r0, #16
@@ -157,14 +175,14 @@ s6d0151_fillcolor:
 
 		macro32_dsb ip
 
-		b s6d0151_fillcolor_loop
+		b tft32_fillcolor_type1_loop
 
-	s6d0151_fillcolor_jump:
+	tft32_fillcolor_type1_jump:
 
 		/* CS Goes High */
 		bl spi32_spistop
 
-	s6d0151_fillcolor_common:
+	tft32_fillcolor_type1_common:
 		mov r0, #0
 		pop {pc}
 

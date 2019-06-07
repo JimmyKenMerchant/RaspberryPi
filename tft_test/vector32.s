@@ -170,7 +170,6 @@ string_hello:
 
 /* Additional Libraries Here */
 .section	.text
-.include "library/s6d0151.s"
 .include "library/tft2p0327e.s"
 
 /* End of Line is Needed */
