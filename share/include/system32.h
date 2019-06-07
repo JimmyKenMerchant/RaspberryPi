@@ -1464,8 +1464,9 @@ extern obj DMX32_BUFFER_FRONT;
 extern obj DMX32_BUFFER_BACK;
 extern uint32 DMX32_BUFFER_LENGTH;
 
+
 /********************************
- * system32/library/dmx32.s
+ * system32/library/lcd32.s
  ********************************/
 
 #define LCD32_DISPLAY_ON          0b100 // @ _lcddisplay
@@ -1519,6 +1520,26 @@ __attribute__((noinline)) uint32 _lcdstring(
 
 __attribute__((noinline)) uint32 _lcdchargenerator(
 	uchar8 address_cgram
+);
+
+
+/********************************
+ * system32/library/tft32.s
+ ********************************/
+
+__attribute__((noinline)) uint32 _tftwrite_type1(
+	uint16 index,
+	uint16 data
+);
+
+__attribute__((noinline)) uint32 _tftfillcolor_type1(
+	uint16 color,
+	uint32 size
+);
+
+__attribute__((noinline)) uint32 _tftimage_type1(
+	obj address_image,
+	uint32 size
 );
 
 

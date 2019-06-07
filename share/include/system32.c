@@ -568,6 +568,27 @@ __attribute__((noinline)) uint32 _lcdchargenerator( uchar8 address_cgram )
 	return result;
 }
 
+__attribute__((noinline)) uint32 _tftwrite_type1( uint16 index, uint16 data )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x52");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _tftfillcolor_type1( uint16 color, uint32 size )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x53");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _tftimage_type1( obj address_image, uint32 size )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x54");
+	return result;
+}
+
 
 /**
  * Unique Definitions
