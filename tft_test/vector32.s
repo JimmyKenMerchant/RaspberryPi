@@ -107,11 +107,6 @@ os_reset:
 
 	macro32_dsb ip
 
-	mov r0, #25                       @ 240Mhz/25, 9.6Mhz
-	bl spi32_spiclk
-
-	macro32_dsb ip
-
 	bl tft2p0327e_init
 
 	pop {pc}

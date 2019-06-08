@@ -85,6 +85,8 @@
 .equ equ32_lcd32_time_reset3,                  200        @ Wait Time after Second Function Set in Microseconds
 .equ equ32_lcd32_time_execution1,              40         @ Wait Time after Normal Execution in Microseconds
 .equ equ32_lcd32_time_execution2,              2000       @ Wait Time after Clear Display or Retrun Home in Microseconds
+.equ equ32_tft32_cs,                           0          @ Chip Select Number of SPI Interface
+.equ equ32_tft32_deviceid,                     0          @ Device ID (0 or 1) Set by IM[0], An External Pin on Type 1
 
 /**
  * Standard Peripherals

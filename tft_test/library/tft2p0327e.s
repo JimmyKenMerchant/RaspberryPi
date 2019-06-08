@@ -20,6 +20,7 @@
 /**
  * function tft2p0327e_init
  * Activation of TFT2P0327-E
+ * This function needs to be placed in vector32.s
  *
  * Return: r0 (0 as success)
  */
@@ -27,6 +28,13 @@
 tft2p0327e_init:
 
 	push {lr}
+
+	/* Clock Set */
+
+	mov r0, #25                       @ 240Mhz/25, 9.6Mhz
+	bl spi32_spiclk
+
+	macro32_dsb ip
 
 	/* Power Up Procedure */
 
@@ -275,9 +283,8 @@ tft2p0327e_init:
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 
-	/* Clear by One Color before Display On */
-	mov r0, #0xE0
-	orr r0, r0, #0x0700
+	/* Clear by Black Color before Display On */
+	mov r0, #0x0000
 	mov r1, #0x5000
 	bl tft32_tftfillcolor_type1
 
