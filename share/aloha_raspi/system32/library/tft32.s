@@ -8,29 +8,33 @@
  */
 
 /**
- * These functions are used for communication with TFT LCD drivers through SPI interface.
+ * These functions are used for communication with TFT LCD drivers through Serial Peripheral Interface (SPI).
  * Many TFT LCD drivers can use parallel interfaces, 6800-series CPU bus and 8080-series CPU bus.
- * Several TFT LCD drivers also can use SPI Interface, one of serial interfaces.
+ * Several TFT LCD drivers also can use SPI, one of serial interfaces.
  * The serial interface is slower than parallels, however it gives us easy implementation through the SPI controller in your SoC.
- * Several OLED drivers are similar to TFT LCD drivers in view of SPI Interface,
+ * Several OLED drivers are similar to TFT LCD drivers in view of SPI,
  * so I think these functions are valuable as general purpose ones.
- * In my research, maximum clock speed for SPI interfaces is 10 Mhz to 20 Mhz. However it depends on each driver.
+ * In my research, drivers' maximum clocks for SPI are 10 Mhz to 20 Mhz. However, clocks depend on each driver.
  *
- * TFT LCD drivers have various products. I set these types to make generic functions.
- * LoSSI is Low Speed Serial Interface, a sort of 3-wire SPI. It distinguishes between a command and a data by an additional bit.
- * Type 1 and 3 needs to transmit the start byte to distinguish between a command and a data
- * through an inverted Index Register Set bit.
- * The start byte also includes an inverted Read/Write bit.
+ * TFT LCD drivers have various products. I set two types to make generic functions.
  *
  * Type 1: Index, Standard 4-wire SPI, 16-bit Registers, GRAM Write 0x22
  *  Tested: S6D0151
  *  Logically Compatible: ILI9320, ILI9325, ILI9328, S6D0128
  *  Related: HX8347-D [Bidirectional 3-wire SPI, 8-bit Registers]
+ *  Description:
+ *   Type 1 needs to transmit the start byte to distinguish between a command and a data
+ *   through an inverted Index Register Set Bit[1].
+ *   The start byte also includes a Read(1)/Write(0) Bit[0].
+ *   Device ID Bit[2] also can be set.
  *
  * Type 2: Command, LoSSI, Sequential 8-bit Registers (Data/Command Bit is Added to Every 8-bit Register), GRAM Write 0x2C
  *  Tested: Not Yet
  *  Logically Compatible: ILI9341, ILI9341V, ST7735S, SSD1355 (OLED Driver)
  *  Related: SSD1351 (OLED Driver) [GRAM Write 0x5C]
+ *  Description:
+ *   LoSSI is Low Speed Serial Interface, a sort of 3-wire SPI.
+ *   It distinguishes between a command and a data by an additional bit.
  *
  * These functions use 16-bit 65k color (R:G:B = 5:6:5), so one pixel equals a 16-bit half word.
  */

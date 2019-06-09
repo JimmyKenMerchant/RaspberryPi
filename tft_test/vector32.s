@@ -107,7 +107,27 @@ os_reset:
 
 	macro32_dsb ip
 
+	/**
+	 * Clock Set
+	 */
+
+	mov r0, #25                               @ 240Mhz/25, 9.6Mhz
+	bl spi32_spiclk
+
+	mov r0, #25                               @ GPIO Number of Output for RESET Pin
+	mov r1, #0x0000                           @ Color to Dipslay after Initializing
 	bl tft2p0327e_init
+	bl tft2p0327e_displayon
+
+	mov r0, #0x200000
+	bl arm32_sleep
+
+	bl tft2p0327e_displayoff
+
+	mov r0, #0x200000
+	bl arm32_sleep
+
+	bl tft2p0327e_displayon
 
 	pop {pc}
 
