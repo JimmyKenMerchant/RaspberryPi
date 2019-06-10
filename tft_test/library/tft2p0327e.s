@@ -490,7 +490,7 @@ tft2p0327e_displayoff:
 	bl arm32_sleep
 
 	mov r0, #0x07
-	mov r1, #0x00
+	mov r1, #0x20
 	bl tft32_tftwrite_type1
 
 	tft2p0327e_displayoff_common:

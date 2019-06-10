@@ -16,9 +16,9 @@
  * so I think these functions are valuable as general purpose ones.
  * In my research, drivers' maximum clocks for SPI are 10 Mhz to 20 Mhz. However, clocks depend on each driver.
  *
- * TFT LCD drivers have various products. I set two types to make generic functions.
+ * TFT LCD drivers have various products. I set two driver types to make generic functions.
  *
- * Type 1: Index, Standard 4-wire SPI, 16-bit Registers, GRAM Write 0x22
+ * Driver Type 1: Index, Standard 4-wire SPI, 16-bit Registers, GRAM Write 0x22
  *  Tested: S6D0151
  *  Logically Compatible: ILI9320, ILI9325, ILI9328, S6D0128
  *  Related: HX8347-D [Bidirectional 3-wire SPI, 8-bit Registers]
@@ -28,15 +28,28 @@
  *   The start byte also includes a Read(1)/Write(0) Bit[0].
  *   Device ID Bit[2] also can be set.
  *
- * Type 2: Command, LoSSI, Sequential 8-bit Registers (Data/Command Bit is Added to Every 8-bit Register), GRAM Write 0x2C
+ * Driver Type 2: Command, LoSSI, Sequential 8-bit Registers (Data/Command Bit is Added to Every 8-bit Register), GRAM Write 0x2C
  *  Tested: Not Yet
- *  Logically Compatible: ILI9341, ILI9341V, ST7735S, SSD1355 (OLED Driver)
+ *  Logically Compatible: ILI9327, ILI9341, ILI9341V, ST7735S, SSD1355 (OLED Driver)
  *  Related: SSD1351 (OLED Driver) [GRAM Write 0x5C]
  *  Description:
  *   LoSSI is Low Speed Serial Interface, a sort of 3-wire SPI.
  *   It distinguishes between a command and a data by an additional bit.
  *
  * These functions use 16-bit 65k color (R:G:B = 5:6:5), so one pixel equals a 16-bit half word.
+ *
+ * Reference:
+ *  MIPI Alliance regulates interface specifications in view of mobile sector, including display interfaces.
+ *  MIPI Alliance published the specification, Display Bus Interface (DBI). Caution that it's not Display Serial Interface (DSI).
+ *  6800-series CPU bus (8-bit or 16-bit) is stated as MIPI DBI Type A.
+ *  8080-series CPU bus (8-bit or 16-bit) is stated as MIPI DBI Type B.
+ *  LoSSI is stated as Option 1 of MIPI Display Bus Interface (DBI) Type C.
+ *  Option 2 and 3 of MIPI DBI Type C includes Standard 4-wire SPI (only DOUT).
+ *  However, it's different from Driver Type 1 about the start byte (Option 2) or additional Data/Command Pin (Option 3).
+ *  Option 2 and 3 also state about bidirectional 3-wire SPI.
+ *
+ *  MIPI Alliance also published Display Command Set (DCS). Driver Type 2 seems to use this command set.
+ *  Note that DCS is mainly used for DSI.
  */
 
 

@@ -10,6 +10,8 @@
 
 Raspberry Pi has several video outputs; HDMI, MIPI Display Serial Interface (MIPI DSI), and Composite Video. HDMI and MIPI DSI are digital outputs which are regulated by each organization. These regulations include physical layer to application layer. Composite Video is an analog output which are connected by a RCA cable. These give us a big screen. In this project, I'm testing small screens, connecting through Serial Peripheral Interface (SPI). The goal is displaying a small screen with 10 to 15 fps, and the image processing, including processing of several inputs, is enough to run by CPU.
 
+You can find many sorts of LCD/OLED modules in the online catalog. These are our frontier, and may be surpluses from manufactures or not. Anyway, we need to pursue different specifications of modules. Each LCD/OLED display has unique size and gamma characteristic. Plus, display drivers in modules are different products. Unique settings for each module are written in "library" folder of this project. And I noted the difference among display drivers in [tft32.s](../share/aloha_raspi/system32/library/tft32.s).
+
 **Output/Input**
 
 * GPIO 7 as SPI0 CE1 (Chip Enable 1)
