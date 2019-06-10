@@ -39,7 +39,7 @@ tft2p0327e_init:
 	macro32_dsb ip
 
 	/**
-	 * Power Up Procedure
+	 * Power On Procedure
 	 */
 
 	/* Wait 1 millisecond */
@@ -91,56 +91,100 @@ tft2p0327e_init:
 	pop {r0-r1}
 
 	/**
-	 * Power Controls
+	 * Display Reset
 	 */
 
 	push {r0-r1}
-	mov r0, #0x07
-	mov r1, #0x20
+	mov r0, #0x07    @ Display Control
+	mov r1, #0x20    @ Set GON Bit[5]
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	/* Wait 10 milliseconds */
+	push {r0-r1}
+	mov r0, #0x2740  @ 10048
+	bl arm32_sleep
+	pop {r0-r1}
+
+	/**
+	 * Power Sequence 1
+	 */
+
+	push {r0-r1}
+	mov r0, #0xB4    @ MTP Control
+	mov r1, #0x10    @ MTP Write Disable
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0xB6
+	mov r0, #0x73    @ Test_key
+	mov r1, #0x00    @ Different Value from Test Key Not to Write MTP
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0xBD    @ MTP Data Read
+	mov r1, #0x00
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0xB6    @ Module Vendor
 	mov r1, #0x3F
 	orr r1, r1, #0x0100
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0xB4
-	mov r1, #0x10
+	mov r0, #0xBE    @ Interface Mode Selection
+	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x12
+	mov r0, #0xB3    @ Pumping Clock Source Selection
+	mov r1, #0x00
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x12    @ Power Control 2/3
 	mov r1, #0xB1
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x13
+	mov r0, #0x13    @ Power Control 3
 	mov r1, #0x0E
 	orr r1, r1, #0x0800
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x14
+	mov r0, #0x14    @ Power Control 4
 	mov r1, #0xCA
 	orr r1, r1, #0x5B00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
+	/**
+	 * Power Sequence 2
+	 */
+
 	push {r0-r1}
-	mov r0, #0x61
+	mov r0, #0x0B    @ Frame Cycle Control
+	mov r1, #0x00
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x61    @ Oscillator Control
 	mov r1, #0x18
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x10
+	mov r0, #0x10    @ Power Control 1
 	mov r1, #0x0C
 	orr r1, r1, #0x1900
 	bl tft32_tftwrite_type1
@@ -152,9 +196,14 @@ tft2p0327e_init:
 	bl arm32_sleep
 	pop {r0-r1}
 
+	/**
+	 * Power Sequence 3, Actual Power Circuit On
+	 */
+
+	/* Power Circuit On */
 	push {r0-r1}
-	mov r0, #0x13
-	mov r1, #0x1E
+	mov r0, #0x13    @ Power Control 3
+	mov r1, #0x1E    @ PON Bit[4]
 	orr r1, r1, #0x0800
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
@@ -166,75 +215,63 @@ tft2p0327e_init:
 	pop {r0-r1}
 
 	/**
-	 * Output Controls, Display Size, etc.
+	 * Other Mode Settings
 	 */
 
+	/* Change Settings in Power Sequence 2 (RTN, DIV, DC, RADJ) If You Want Here */
+
 	push {r0-r1}
-	mov r0, #0x01
-	mov r1, #0x14
-	orr r1, r1, #0x0000           @ 0x0314 If Change Top and Bottom
+	mov r0, #0x69    @ DC/DC Convert Low Power Mode
+	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x02
+	mov r0, #0x70    @ Source Driver Pre-driving Period Setting
+	mov r1, #0x00
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x71    @ Gate Output Period Control
+	mov r1, #0x00
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	/**
+	 * Output Controls, Display Size, etc.
+	 */
+
+	push {r0-r1}
+	mov r0, #0x01    @ Driver Output Control
+	mov r1, #0x14    @ 0x0314 If Change Top and Bottom
+	orr r1, r1, #0x0000
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x02    @ LCD Inversion Control
 	mov r1, #0x00
 	orr r1, r1, #0x0100
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x03
-	mov r1, #0x30
+	mov r0, #0x03    @ Entry Mode
+	mov r1, #0x30    @ Horizontal and Vertical Incremental
 	orr r1, r1, #0x0000
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x08
+	mov r0, #0x08    @ Blank Period Control 1
 	mov r1, #0x02
 	orr r1, r1, #0x0200
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x0B
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x0C
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x61
-	mov r1, #0x18
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x69
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x70
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x71
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x11
+	mov r0, #0x0C    @ External Display Interface Control
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
@@ -244,61 +281,67 @@ tft2p0327e_init:
 	 */
 
 	push {r0-r1}
-	mov r0, #0x30
-	mov r1, #0x03
-	orr r1, r1, #0x0300
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x31
-	mov r1, #0x03
-	orr r1, r1, #0x0300
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x32
-	mov r1, #0x03
-	orr r1, r1, #0x0300
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x33
+	mov r0, #0x11    @ Gamma Control 1
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x34
-	mov r1, #0x04
-	orr r1, r1, #0x0400
+	mov r0, #0x30    @ Gamma Control 2
+	mov r1, #0x03
+	orr r1, r1, #0x0300
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x35
-	mov r1, #0x04
-	orr r1, r1, #0x0400
+	mov r0, #0x31    @ Gamma Control 2
+	mov r1, #0x03
+	orr r1, r1, #0x0300
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x36
-	mov r1, #0x04
-	orr r1, r1, #0x0400
+	mov r0, #0x32    @ Gamma Control 2
+	mov r1, #0x03
+	orr r1, r1, #0x0300
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x37
+	mov r0, #0x33    @ Gamma Control 2
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x38
+	mov r0, #0x34    @ Gamma Control 2
+	mov r1, #0x04
+	orr r1, r1, #0x0400
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x35    @ Gamma Control 2
+	mov r1, #0x04
+	orr r1, r1, #0x0400
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x36    @ Gamma Control 2
+	mov r1, #0x04
+	orr r1, r1, #0x0400
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x37    @ Gamma Control 2
+	mov r1, #0x00
+	bl tft32_tftwrite_type1
+	pop {r0-r1}
+
+	push {r0-r1}
+	mov r0, #0x38    @ Gamma Control 3
 	mov r1, #0x07
 	orr r1, r1, #0x0700
 	bl tft32_tftwrite_type1
@@ -309,77 +352,35 @@ tft2p0327e_init:
 	 */
 
 	push {r0-r1}
-	mov r0, #0x40
+	mov r0, #0x40    @ Gate Scan Position
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x42
-	mov r1, #0x00
+	mov r0, #0x42    @ 1st Screen Driving Position
+	mov r1, #0x00    @ Start Line (from 0) to End Line
 	orr r1, r1, #0x9F00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x43
-	mov r1, #0x00
+	mov r0, #0x43    @ 2nd Screen Driving Position
+	mov r1, #0x00    @ Start Line (from 0) to End Line
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x44
-	mov r1, #0x00
+	mov r0, #0x44    @ Horizontal RAM Address Position
+	mov r1, #0x00    @ Start Address to End Address
 	orr r1, r1, #0x7F00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
 	push {r0-r1}
-	mov r0, #0x45
-	mov r1, #0x00
+	mov r0, #0x45    @ Vertical RAM Address Position
+	mov r1, #0x00    @ Start Address to End Address
 	orr r1, r1, #0x9F00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x69
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x70
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x71
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0x73
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0xB3
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0xBD
-	mov r1, #0x00
-	bl tft32_tftwrite_type1
-	pop {r0-r1}
-
-	push {r0-r1}
-	mov r0, #0xBE
-	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
 
@@ -388,7 +389,7 @@ tft2p0327e_init:
 	 */
 
 	push {r0-r1}
-	mov r0, #0x21                 @ Index 0x21 Start Address
+	mov r0, #0x21    @ GRAM Address Set
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0-r1}
@@ -396,7 +397,7 @@ tft2p0327e_init:
 	/* Clear by One Color before Display On */
 	push {r0-r1}
 	mov r0, color
-	mov r1, #0x5000               @ 138 x 160
+	mov r1, #0x5000  @ 138 x 160
 	bl tft32_tftfillcolor_type1
 	pop {r0-r1}
 
@@ -429,7 +430,7 @@ tft2p0327e_displayon:
 	 * Display ON
 	 */
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x20
 	bl tft32_tftwrite_type1
 
@@ -437,11 +438,11 @@ tft2p0327e_displayon:
 	mov r0, #0x1400  @ 5120
 	bl arm32_sleep
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x21
 	bl tft32_tftwrite_type1
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x27
 	bl tft32_tftwrite_type1
 
@@ -449,7 +450,7 @@ tft2p0327e_displayon:
 	mov r0, #0xC400  @ 50176
 	bl arm32_sleep
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x37
 	bl tft32_tftwrite_type1
 
@@ -473,7 +474,7 @@ tft2p0327e_displayoff:
 	 * Display Off
 	 */
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x36
 	bl tft32_tftwrite_type1
 
@@ -481,7 +482,7 @@ tft2p0327e_displayoff:
 	mov r0, #0xC400  @ 50176
 	bl arm32_sleep
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x26
 	bl tft32_tftwrite_type1
 
@@ -489,7 +490,7 @@ tft2p0327e_displayoff:
 	mov r0, #0x1400  @ 5120
 	bl arm32_sleep
 
-	mov r0, #0x07
+	mov r0, #0x07    @ Display Control
 	mov r1, #0x20
 	bl tft32_tftwrite_type1
 
@@ -527,13 +528,13 @@ tft2p0327e_poweroff:
 	 */
 
 	push {r0}
-	mov r0, #0x10
+	mov r0, #0x10    @ Power Control 1
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0}
 
 	push {r0}
-	mov r0, #0x13
+	mov r0, #0x13    @ Power Control 3
 	mov r1, #0x00
 	bl tft32_tftwrite_type1
 	pop {r0}

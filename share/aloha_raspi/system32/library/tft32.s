@@ -55,7 +55,7 @@
 
 /**
  * function tft32_tftwrite_type1
- * Write to S6D0151 through SPI Interface
+ * Set Index Register and Write Data through SPI Interface
  * Device ID (set by an external pin) assumes as 0 in default. Device ID is the third bit of the start byte, from LSB.
  * CS of SPI assumes as No. 0 in default.
  *
