@@ -214,6 +214,7 @@ extern uint32 BCM32_EDID_ADDR; // First 8 Bytes Are Prefix, Block Number and Sta
 extern uint32 BCM32_CELCIUS;
 extern uint32 BCM32_MAXCELCIUS;
 extern uint32 BCM32_VOLTAGE;
+extern uint32 BCM32_CLOCKRATE;
 extern uint32 BCM32_ARMMEMORY_BASE;
 extern uint32 BCM32_ARMMEMORY_SIZE;
 extern uint32 BCM32_VCMEMORY_BASE;

@@ -15,11 +15,20 @@ int32 _user_start() {
 		fb32_clear_color( COLOR16_BLACK );
 		String num_string1 = cvt32_int32_to_string_deci( BCM32_MAXCELCIUS, 0, 0 );
 		print32_string( num_string1, 0, 0, str32_strlen( num_string1 ) );
+
 		String num_string2 = cvt32_int32_to_string_deci( BCM32_CELCIUS, 0, 0 );
 		print32_string( num_string2, 0, 12, str32_strlen( num_string2 ) );
 
+		String num_string3 = cvt32_int32_to_string_deci( BCM32_VOLTAGE, 0, 0 );
+		print32_string( num_string3, 0, 36, str32_strlen( num_string3 ) );
+
+		String num_string4 = cvt32_int32_to_string_deci( BCM32_CLOCKRATE, 0, 0 );
+		print32_string( num_string4, 0, 48, str32_strlen( num_string4 ) );
+
 		heap32_mfree( (obj)num_string1 );
 		heap32_mfree( (obj)num_string2 );
+		heap32_mfree( (obj)num_string3 );
+		heap32_mfree( (obj)num_string4 );
 		_sleep( 250000 );
 	}
 

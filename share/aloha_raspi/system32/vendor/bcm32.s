@@ -95,7 +95,7 @@ bcm32_mail_getcelcius_end:
 
 .balign 16
 .globl BCM32_MAXCELCIUS
-bcm32_mail_getmaxcelcius:  @ Get Max Temperature in Celcius
+bcm32_mail_getmaxcelcius:   @ Get Max Temperature in Celcius
 	.word bcm32_mail_getmaxcelcius_end - bcm32_mail_getmaxcelcius @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x0003000A        @ Tag Identifier, Get Maximum Temperature
@@ -110,7 +110,7 @@ bcm32_mail_getmaxcelcius_end:
 
 .balign 16
 .globl BCM32_VOLTAGE
-bcm32_mail_getvoltage: @ Get Voltage
+bcm32_mail_getvoltage:      @ Get Voltage
 	.word bcm32_mail_getvoltage_end - bcm32_mail_getvoltage @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00030003        @ Tag Identifier, Get Voltage (0x00030005 is Maximum, 0x00030008 is Minimum, 0x00038003 is Set)
@@ -124,7 +124,22 @@ BCM32_VOLTAGE:
 bcm32_mail_getvoltage_end:
 
 .balign 16
-bcm32_mail_blank:
+.globl BCM32_CLOCKRATE
+bcm32_mail_getclockrate:    @ Get Clock Rate
+	.word bcm32_mail_getclockrate_end - bcm32_mail_getclockrate @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00030002        @ Tag Identifier, Get Clock Rate (0x00030004 is Get Maximum)
+	.word 0x00000008        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+	.word 0x00000001        @ Clock ID (1 EMMC, 2 UART, 3 ARM, 4 Core, 5 V3D, 6 H264, 7 ISP, 8 SDRAM, 9 PIXEL, A PWM)
+BCM32_CLOCKRATE:
+	.word 0x00000000        @ Clock Rate in Herts
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getclockrate_end:
+
+.balign 16
+bcm32_mail_blank:           @ Blank Screen
 	.word bcm32_mail_blank_end - bcm32_mail_blank @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00040002        @ Tag Identifier, Blank Screen
@@ -208,6 +223,8 @@ bcm32_mail_getmaxcelcius_addr:
 	.word bcm32_mail_getmaxcelcius @ Address of bcm32_mail_getmaxcelcius
 bcm32_mail_getvoltage_addr:
 	.word bcm32_mail_getvoltage    @ Address of bcm32_mail_getvoltage
+bcm32_mail_getclockrate_addr:
+	.word bcm32_mail_getclockrate  @ Address of bcm32_mail_getclockrate
 bcm32_mail_blank_addr:
 	.word bcm32_mail_blank         @ Address of bcm32_mail_blank
 bcm32_mail_getedid_addr:
@@ -392,6 +409,42 @@ bcm32_get_voltage:
 	bl bcm32_onemail
 
 	bcm32_get_voltage_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
+.unreq temp
+
+
+/**
+ * function bcm32_get_clockrate
+ * Get Clock Rate in Herts from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Clock ID, 0x2 as UART, 0x3 as ARM, 0x4 as Core, 0x5 as V3D, 0x8 as SDRAM, 0xA as PWM
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
+ */
+.globl bcm32_get_clockrate
+bcm32_get_clockrate:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag .req r0
+	temp     .req r1
+
+	push {lr}
+
+	mov temp, addr_tag
+
+	ldr addr_tag, bcm32_mail_getclockrate_addr
+	str temp, [addr_tag, #20]
+
+	macro32_dsb ip
+
+	bl bcm32_onemail
+
+	bcm32_get_clockrate_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {pc}
 

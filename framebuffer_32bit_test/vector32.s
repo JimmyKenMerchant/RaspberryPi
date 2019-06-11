@@ -88,6 +88,12 @@ os_reset:
 	mov r0, #1
 	bl bcm32_get_celcius
 
+	mov r0, #1
+	bl bcm32_get_voltage
+
+	mov r0, #4
+	bl bcm32_get_clockrate
+
 	pop {pc}
 
 os_irq:
