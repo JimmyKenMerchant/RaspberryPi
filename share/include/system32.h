@@ -1271,6 +1271,25 @@ extern uint64 draw32_line
 );
 
 
+/**
+ * Draw Enlarged Image
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error: Drawing Is Not Completed
+ */
+extern uint32 draw32_enlarge
+(
+	uint32 address_image,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 image_width,
+	uint32 image_height,
+	uint32 power_width,
+	uint32 Power_height,
+	uchar8 depth
+);
+
+
 /********************************
  * system32/library/snd32.s
  ********************************/

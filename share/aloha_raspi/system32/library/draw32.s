@@ -1705,3 +1705,98 @@ draw32_line:
 .unreq vfp_i
 .unreq vfp_one
 
+
+/**
+ * function draw32_enlarge
+ * Draw Enlarged Image
+ *
+ * Parameters
+ * r0: Pointer of Image
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Image Width in Pixels
+ * r4: Image Height in Pixels
+ * r5: Power of Width
+ * r6: Power of Height
+ * r7: Depth of Image, 16 or 32
+ *
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error: Drawing Is Not Completed
+ */
+.globl draw32_enlarge
+draw32_enlarge:
+	/* Auto (Local) Variables, but just Aliases */
+	image_point  .req r0
+	x_coord      .req r1
+	y_coord      .req r2
+	image_width  .req r3
+	image_height .req r4
+	power_width  .req r5
+	power_height .req r6
+	depth        .req r7
+	color        .req r8
+	j            .req r9
+	dup_x_coord  .req r10
+
+	push {r4-r10,lr}
+
+	add sp, sp, #32                                   @ r4-r10 and lr offset 32 bytes
+	pop {image_height,power_width,power_height,depth} @ Get Fifth to Eighth Arguments
+	sub sp, sp, #48                                   @ Retrieve SP
+
+	mov dup_x_coord, x_coord
+
+	draw32_enlarge_loop:
+		subs image_height, image_height, #1           @ Vertical Counter `(; image_height > 0; image_height--)`
+		blo draw32_enlarge_success
+
+		mov j, image_width                            @ Horizontal Counter `(int j = image_width; j >= 0; --j)`
+
+		draw32_enlarge_loop_horizontal:
+			subs j, j, #1                             @ Horizontal Counter, Check
+			movlo x_coord, dup_x_coord
+			addlo y_coord, y_coord, power_height
+			blo draw32_enlarge_loop
+
+			cmp depth, #32
+			ldreq color, [image_point]
+			addeq image_point, image_point, #4
+			ldrneh color, [image_point]
+			addne image_point, image_point, #2
+
+			push {r0-r3}                              @ Equals to stmfd (stack pointer full, decrement order)
+			mov r0, color
+			mov r3, power_width
+			push {power_height}
+			bl fb32_block_color
+			add sp, sp, #4
+			cmp r0, #0                                @ Compare Return 0
+			pop {r0-r3}                               @ Retrieve Registers Before Error Check, POP does not flags-update
+			bne draw32_enlarge_error
+
+			add x_coord, x_coord, power_width
+
+			b draw32_enlarge_loop_horizontal
+
+	draw32_enlarge_error:
+		mov r0, #1                                   @ Return with Error 1
+		b draw32_enlarge_common
+
+	draw32_enlarge_success:
+		mov r0, #0                                   @ Return with Success
+
+	draw32_enlarge_common:
+		pop {r4-r10,pc}
+
+.unreq image_point
+.unreq x_coord
+.unreq y_coord
+.unreq image_width
+.unreq image_height
+.unreq power_width
+.unreq power_height
+.unreq depth
+.unreq color
+.unreq j
+.unreq dup_x_coord
+
