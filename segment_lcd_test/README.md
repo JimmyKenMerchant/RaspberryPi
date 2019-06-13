@@ -10,7 +10,7 @@
 
 Typically, a segment LCD is on your clock. If you want clear visibility, a segment LCD is still chosen.
 
-The driver for segment LCD should be brief in view of readability, so I write such codes by C language.
+The driver for segment LCDs should be brief in view of readability to modify codes, because segment patterns of LCDs, on each module, are different. To fit this condition, I wrote such codes by C language.
 
 **Output/Input**
 
@@ -36,6 +36,8 @@ Under Debugging
 
 **Hardware**
 
-It may be your segment LCD. The LCD controller is HT1621. Unlike general purpose LCDs controlled by HD44780, any popular module doesn't exist, because patterns of segment LCDs are various to be applied. However, you can search your one in the online catalog.
+It may be your segment LCD module. The LCD controller is HT1621. Unlike general purpose LCDs controlled by HD44780, any popular module doesn't exist, because segment patterns of LCDs are various to be applied. However, you can search your one in the online catalog. HT1621 is used on segment LCD modules whose sizes are fit with portable monitor.
 
-Caution that modules may be used with 5 volts. Besides, your RasPi outputs 3.3 volts. If so, a level shifter (logic level converter) is needed to convert 3.3 volts to 5 volts.
+Caution that, typically, segment LCD modules are used with 5 volts. Besides, your RasPi outputs 3.3 volts. If so, a level shifter (logic level converter) is needed to convert 3.3 volts to 5 volts. Several LCDs don't show segments with 3.3 volts, because of avoiding errors on displaying by static electricity.
+
+I tested CS, WR, and DATA without pull-ups; then it works. My module is driven with 5V, so a logic level converter (FXMA108) is applied. No external pull-ups are needed for CS, RD, WR, and Data.

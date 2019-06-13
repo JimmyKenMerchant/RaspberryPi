@@ -18,7 +18,6 @@ void segment_lcd_init( uchar8 gpio_cs, uchar8 gpio_rd, uchar8 gpio_wr, uchar8 gp
 	_gpiomode( segment_lcd_gpio_rd, _GPIOMODE_OUT );
 	_gpiomode( segment_lcd_gpio_wr, _GPIOMODE_OUT );
 	_gpiomode( segment_lcd_gpio_data, _GPIOMODE_OUT );
-	arm32_dsb();
 
 	segment_lcd_reset();
 	
@@ -32,7 +31,6 @@ void segment_lcd_reset() {
 	_gpiotoggle( segment_lcd_gpio_rd, _GPIOTOGGLE_HIGH );
 	_gpiotoggle( segment_lcd_gpio_wr, _GPIOTOGGLE_HIGH );
 	_gpiotoggle( segment_lcd_gpio_data, _GPIOTOGGLE_HIGH );
-	arm32_dsb();
 	
 	/* Wait for Next CS Low */
 	_sleep( SEGMENT_LCD_PULSE_WIDTH );
@@ -49,11 +47,10 @@ void segment_lcd_write( uchar8 data, uchar8 length_bits ) {
 		} else {
 			_gpiotoggle( segment_lcd_gpio_data, _GPIOTOGGLE_LOW );
 		}
-		arm32_dsb();
 		_sleep( SEGMENT_LCD_PULSE_WIDTH );
 		_gpiotoggle( segment_lcd_gpio_wr, _GPIOTOGGLE_HIGH );
-		arm32_dsb();
 		_sleep( SEGMENT_LCD_PULSE_WIDTH );
+		arm32_dsb();
 	}
 }
 
@@ -109,6 +106,7 @@ void segment_lcd_data( uchar8 address, uchar8 data ) {
 void segment_lcd_char( uchar8 digit, uchar8 number_char ) {
 	if ( number_char >= SEGMENT_LCD_CHARS_MAX ) number_char = SEGMENT_LCD_CHARS_MAX - 1;
 	uchar8 data_number = segment_lcd_chars[number_char];
-	segment_lcd_data( digit * 2, (data_number >> 4) & 0xF );
+	data_number = (uchar8)bit32_reflect_bit( data_number, 8 ); // Reflect 8 Bits
 	segment_lcd_data( (digit * 2) + 1, data_number & 0xF );
+	segment_lcd_data( digit * 2, (data_number >> 4) & 0xF );
 }

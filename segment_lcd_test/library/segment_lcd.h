@@ -6,6 +6,10 @@
  * License URL: https://opensource.org/licenses/MIT
  *
  */
+ 
+ /**
+  * This library is intended to be used with HT1621, a segment LCD driver.
+  */
 
 #define SEGMENT_LCD_PULSE_WIDTH    20  // RD/WR Clock, Microseconds
 #define SEGMENT_LCD_CHARS_MAX      16 // Limiter
@@ -14,6 +18,9 @@
 #define SEGMENT_LCD_ADDRESS_LENGTH 6  // Bits
 #define SEGMENT_LCD_DATA_LENGTH    4  // Bits
 
+/**
+ * It varies on each module, typical ones are shown, LSB for First Address, MSB for Second Address
+ */
 const uchar8 segment_lcd_chars[] = {
 	0b01111101, // 0
 	0b01100000, // 1

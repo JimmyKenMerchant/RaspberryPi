@@ -23,7 +23,7 @@ int32 _user_start()
 	segment_lcd_command( 0x03 ); // LCD ON
 	segment_lcd_data( 0, 0xF );
 	segment_lcd_data( 1, 0xF );
-	//segment_lcd_reset();
+	segment_lcd_char( 2, 3 ); // Display 3 on Second Digits from Left
 
 	while( True ) {
 		// If GPIO 20 Detects Voltage, GPIO 21 Keeps Lighting
