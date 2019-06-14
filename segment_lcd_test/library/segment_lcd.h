@@ -9,14 +9,16 @@
  
  /**
   * This library is intended to be used with HT1621, a segment LCD driver.
+  * If RD pin exists in your module, you need to externally pull-up this pin, i.e, connect VDD with RD through a resistor.
   */
 
-#define SEGMENT_LCD_PULSE_WIDTH    20  // RD/WR Clock, Microseconds
+#define SEGMENT_LCD_PULSE_WIDTH    20 // WR Clock, Microseconds
 #define SEGMENT_LCD_CHARS_MAX      16 // Limiter
 #define SEGMENT_LCD_START_LENGTH   3  // Bits
 #define SEGMENT_LCD_COMMAND_LENGTH 8  // Bits
-#define SEGMENT_LCD_ADDRESS_LENGTH 6  // Bits
+#define SEGMENT_LCD_ADDRESS_LENGTH 6  // GRAM Address, Bits
 #define SEGMENT_LCD_DATA_LENGTH    4  // Bits
+#define SEGMENT_LCD_GRAM_SIZE      32 // Available Spaces in GRAM
 
 /**
  * It varies on each module, typical ones are shown, LSB for First Address, MSB for Second Address
@@ -41,13 +43,14 @@ const uchar8 segment_lcd_chars[] = {
 };
 
 uchar8 segment_lcd_gpio_cs;   // Inverted
-uchar8 segment_lcd_gpio_rd;   // Inverted
 uchar8 segment_lcd_gpio_wr;   // Inverted
 uchar8 segment_lcd_gpio_data;
 
-void segment_lcd_init( uchar8 gpio_cs, uchar8 gpio_rd, uchar8 gpio_wr, uchar8 gpio_data );
-void segment_lcd_reset();
-void segment_lcd_write( uchar8 data, uchar8 length_bits );
-void segment_lcd_command( uchar8 command );
-void segment_lcd_data( uchar8 address, uchar8 data );
-void segment_lcd_char( uchar8 digit, uchar8 number_char );
+void segment_lcd_init( uchar8 gpio_cs, uchar8 gpio_wr, uchar8 gpio_data ); // Initialization
+void segment_lcd_reset();                                                  // All Pins Go to High
+void segment_lcd_write( uchar8 bits, uchar8 length_bits );                 // Write Bits in Sending Procedure
+void segment_lcd_command( uchar8 command );                                // Send Command
+void segment_lcd_data( uchar8 address, uchar8 data );                      // Send Data to GRAM
+void segment_lcd_char( uchar8 digit, uchar8 number_char );                 // Show Character Used Two Spaces in GRAM
+void segment_lcd_clear( uchar8 data );                                     // Clear All Spaces in GRAM
+

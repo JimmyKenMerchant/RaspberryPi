@@ -17,13 +17,14 @@ int32 _user_start()
 	_gpiomode( 20, _GPIOMODE_IN );
 	//_gpiomode( 21, _GPIOMODE_OUT ); // Already Set in vector32.s
 
-	segment_lcd_init( 6, 13, 19, 26 );
+	segment_lcd_init( 13, 19, 26 ); // CS GPIO 13, WR GPIO 19, DATA GPIO 26
 	segment_lcd_command( 0x01 ); // Oscillator ON
 	segment_lcd_command( 0x29 ); // Bias and Common Setting, Bias 1/3, Duty 1/4
 	segment_lcd_command( 0x03 ); // LCD ON
+	segment_lcd_clear( 0x0 );
 	segment_lcd_data( 0, 0xF );
 	segment_lcd_data( 1, 0xF );
-	segment_lcd_char( 2, 3 ); // Display 3 on Second Digits from Left
+	segment_lcd_char( 2, 5 ); // Display 5 on Second Digits from Left
 
 	while( True ) {
 		// If GPIO 20 Detects Voltage, GPIO 21 Keeps Lighting

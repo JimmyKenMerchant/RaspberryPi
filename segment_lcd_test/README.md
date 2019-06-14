@@ -20,9 +20,7 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 * GPIO 47 as Output of Embedded LED (1Hz Blinker): Except Pi 3B
 
-* GPIO 6 as CS of Segment LCD Module
-
-* GPIO 13 as RD of Segment LCD Module
+* GPIO 13 as CS of Segment LCD Module
 
 * GPIO 19 as WR of Segment LCD Module
 
@@ -40,4 +38,4 @@ It may be your segment LCD module. The LCD controller is HT1621. Unlike general 
 
 Caution that, typically, segment LCD modules are used with 5 volts. Besides, your RasPi outputs 3.3 volts. If so, a level shifter (logic level converter) is needed to convert 3.3 volts to 5 volts. Several LCDs don't show segments with 3.3 volts, because of avoiding errors on displaying by static electricity.
 
-I tested CS, WR, and DATA without pull-ups; then it works. My module is driven with 5V, so a logic level converter (FXMA108) is applied. No external pull-ups are needed for CS, RD, WR, and Data.
+My module is driven with 5 volts, so a logic level converter (FXMA108) is applied. No external pull-ups are needed for CS, WR, and Data. RD is not used. However, in case, you need to externally pull-up RD pin if it exists, i.e, connect VDD (5 volts) with RD through a 20K ohms resistor.
