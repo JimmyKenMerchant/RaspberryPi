@@ -9,19 +9,21 @@
  
  /**
   * This library is intended to be used with HT1621, a segment LCD driver.
+  * HT1621 has 32 segments and 4 commons. I consider this library for the usage with other series of HT162x and HT163x (LCD Driver).
   * If RD pin exists in your module, you need to externally pull-up this pin, i.e, connect VDD with RD through a resistor.
   */
 
-#define SEGMENT_LCD_PULSE_WIDTH    20 // WR Clock, Microseconds
+#define SEGMENT_LCD_PULSE_WIDTH    10 // WR Clock, Microseconds
 #define SEGMENT_LCD_CHARS_MAX      16 // Limiter
 #define SEGMENT_LCD_START_LENGTH   3  // Bits
 #define SEGMENT_LCD_COMMAND_LENGTH 8  // Bits
 #define SEGMENT_LCD_ADDRESS_LENGTH 6  // GRAM Address, Bits
-#define SEGMENT_LCD_DATA_LENGTH    4  // Bits
-#define SEGMENT_LCD_GRAM_SIZE      32 // Available Spaces in GRAM
+#define SEGMENT_LCD_DATA_LENGTH    4  // Bits, Same as Number of Commons
+#define SEGMENT_LCD_GRAM_SIZE      32 // Available Spaces in GRAM, Same as Number of Segments
 
 /**
- * It varies on each module, typical ones are shown, LSB for First Address, MSB for Second Address
+ * It varies on each module, typical ones are shown.
+ * Least significant 4 bits are for the first space, most significant 4 bits are for the second space.
  */
 const uchar8 segment_lcd_chars[] = {
 	0b01111101, // 0
@@ -34,12 +36,12 @@ const uchar8 segment_lcd_chars[] = {
 	0b01110000, // 7
 	0b01111111, // 8
 	0b01110011, // 9
-	0b11111111, // A
-	0b11111111, // B
-	0b11111111, // C
-	0b11111111, // D
-	0b11111111, // E
-	0b11111111  // F
+	0b01110111, // A
+	0b01001111, // B
+	0b00001110, // C
+	0b01101110, // D
+	0b00011111, // E
+	0b00010111  // F
 };
 
 uchar8 segment_lcd_gpio_cs;   // Inverted

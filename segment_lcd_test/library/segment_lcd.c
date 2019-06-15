@@ -69,7 +69,7 @@ void segment_lcd_command( uchar8 command ) {
 	/* Command */
 	segment_lcd_write( command, SEGMENT_LCD_COMMAND_LENGTH );
 
-	/* Last WR Clock */
+	/* Dummy WR Clock at Last */
 	_gpiotoggle( segment_lcd_gpio_wr, _GPIOTOGGLE_LOW );
 	_sleep( SEGMENT_LCD_PULSE_WIDTH );
 	_gpiotoggle( segment_lcd_gpio_wr, _GPIOTOGGLE_HIGH );
@@ -93,9 +93,10 @@ void segment_lcd_data( uchar8 address, uchar8 data ) {
 	segment_lcd_write( address, SEGMENT_LCD_ADDRESS_LENGTH );
 
 	/* Data */
-	segment_lcd_write( data, SEGMENT_LCD_DATA_LENGTH );
+	data = (uchar8)bit32_reflect_bit( data, SEGMENT_LCD_DATA_LENGTH ); // Reflect Bits
+	segment_lcd_write( data, SEGMENT_LCD_DATA_LENGTH ); // Data is Send from LSB to MSB
 
-	/* Last WR Clock */
+	/* Dummy WR Clock at Last */
 	_gpiotoggle( segment_lcd_gpio_wr, _GPIOTOGGLE_LOW );
 	_sleep( SEGMENT_LCD_PULSE_WIDTH );
 	_gpiotoggle( segment_lcd_gpio_wr, _GPIOTOGGLE_HIGH );
@@ -108,7 +109,6 @@ void segment_lcd_data( uchar8 address, uchar8 data ) {
 void segment_lcd_char( uchar8 digit, uchar8 number_char ) {
 	if ( number_char >= SEGMENT_LCD_CHARS_MAX ) number_char = SEGMENT_LCD_CHARS_MAX - 1;
 	uchar8 data_number = segment_lcd_chars[number_char];
-	data_number = (uchar8)bit32_reflect_bit( data_number, 8 ); // Reflect 8 Bits
 	segment_lcd_data( digit * 2, (data_number >> 4) & 0xF );
 	segment_lcd_data( (digit * 2) + 1, data_number & 0xF );
 }
