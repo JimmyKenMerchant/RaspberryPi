@@ -22,15 +22,31 @@ int32 _user_start()
 	segment_lcd_command( 0x29 ); // Bias and Common Setting, Bias 1/3, Duty 1/4
 	segment_lcd_command( 0x03 ); // LCD ON
 	segment_lcd_clear( 0x0 );
-	segment_lcd_data( 0, 0xF );
-	segment_lcd_data( 1, 0xF );
-	segment_lcd_char( 2, 0xA ); // Display A on Third Digits from Left
+
+	_calender_init( 2018, 1, 1 );
+	_clock_init( 23, 59, 30, 0 );
+	_correct_utc( -9 );
+	_correct_utc( 0 );
 
 	while( True ) {
+		_get_time();
+
+		uint64 hour_deci = cvt32_hexa_to_deci( CLK32_HOUR );
+		segment_lcd_char( 0, (hour_deci >> 4) & 0xF );
+		segment_lcd_char( 1, hour_deci & 0xF );
+
+		uint64 minute_deci = cvt32_hexa_to_deci( CLK32_MINUTE );
+		segment_lcd_char( 2, (minute_deci >> 4) & 0xF );
+		segment_lcd_char( 3, minute_deci & 0xF );
+
+		uint64 second_deci = cvt32_hexa_to_deci( CLK32_SECOND );
+		segment_lcd_char( 4, (second_deci >> 4) & 0xF );
+		segment_lcd_char( 5, second_deci & 0xF );
+
 		// If GPIO 20 Detects Voltage, GPIO 21 Keeps Lighting
 		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_HIGH );
 
-		_sleep( 1000 ); // Wait for 1000 Microseconds
+		_sleep( 1000000 ); // Wait for 1000 Microseconds
 	}
 
 	return EXIT_SUCCESS;

@@ -109,8 +109,8 @@ void segment_lcd_data( uchar8 address, uchar8 data ) {
 void segment_lcd_char( uchar8 digit, uchar8 number_char ) {
 	if ( number_char >= SEGMENT_LCD_CHARS_MAX ) number_char = SEGMENT_LCD_CHARS_MAX - 1;
 	uchar8 data_number = segment_lcd_chars[number_char];
-	segment_lcd_data( digit * 2, (data_number >> 4) & 0xF );
-	segment_lcd_data( (digit * 2) + 1, data_number & 0xF );
+	segment_lcd_data( digit * 2, data_number & 0xF );
+	segment_lcd_data( (digit * 2) + 1, (data_number >> 4) & 0xF );
 }
 
 void segment_lcd_clear( uchar8 data ) {
