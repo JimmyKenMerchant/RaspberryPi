@@ -106,9 +106,10 @@ void segment_lcd_data( uchar8 address, uchar8 data ) {
 	segment_lcd_reset();
 }
 
-void segment_lcd_printn( uchar8 digit, uchar8 number ) {
+void segment_lcd_printn( uchar8 digit, uchar8 number, uchar8 mask ) {
 	if ( number >= SEGMENT_LCD_NUMBER_MAX ) number = SEGMENT_LCD_NUMBER_MAX - 1;
 	uchar8 data_number = segment_lcd_array_numbers[number];
+	data_number |= mask; // Add Bits in mask
 	segment_lcd_data( digit * 2, data_number & 0xF );
 	segment_lcd_data( (digit * 2) + 1, (data_number >> 4) & 0xF );
 }

@@ -40,12 +40,11 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a 1hz Timer Interrupt (100000/100000).
+	 * Get a 10hz Timer Interrupt (100000/10000).
 	 */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x10000
-	add r1, r1, #0x8600
-	add r1, r1, #0x9F                         @ Decimal 99999 (100000 - 1), 23 bits counter
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16 @ Prescaler 1/16 to 100K
+	mov r1, #0x2700
+	orr r1, r1, #0x0F                         @ Decimal 9999 (10000 - 1)
 	mov r2, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
@@ -62,7 +61,7 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_1  @ Set GPIO 21 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0  @ Set GPIO 20 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	macro32_dsb ip
@@ -94,10 +93,23 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-	mov r0, #21
-	mov r1, #2
-	bl gpio32_gpiotoggle
+	/* Increment of Count to Acknowledge One Second */
+	ldr r0, OS_FIQ_COUNT
+	add r0, r0, #1
+	cmp r0, #10
+	movhs r0, #0                              @ Reset If Count Reaches 10
+	str r0, OS_FIQ_COUNT
+	movhs r0, #1                              @ Set Flag If Count Reaches 10
+	strhs r0, OS_FIQ_ONESECOND
 
+	/* Check Button 1 (GPIO 20) */
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+	ldr r0, [r0, #equ32_gpio_gplev0]
+	tst r0, #1<<20
+	movne r0, #1
+	strne r0, OS_FIQ_BUTTON1
+	
 .ifndef __RASPI3B
 	mov r0, #47
 	mov r1, #2
@@ -107,6 +119,14 @@ os_fiq:
 	macro32_dsb ip
 
 	pop {r0-r4,pc}
+
+.globl OS_FIQ_ONESECOND_ADDR
+.globl OS_FIQ_BUTTON1_ADDR
+OS_FIQ_ONESECOND_ADDR: .word OS_FIQ_ONESECOND
+OS_FIQ_BUTTON1_ADDR:   .word OS_FIQ_BUTTON1
+OS_FIQ_ONESECOND:      .word 0x00
+OS_FIQ_BUTTON1:        .word 0x00
+OS_FIQ_COUNT:          .word 0x00
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4

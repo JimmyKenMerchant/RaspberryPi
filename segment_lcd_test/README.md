@@ -14,9 +14,7 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 **Output/Input**
 
-* GPIO 20 as Input. If you set voltage high (UP TO 3.3V! DON'T USE VOLTAGE OVER 3.3V!), GPIO 21 keeps lighting.
-
-* GPIO 21 as Output (1Hz Blinker), make sure to attach the appropriate resister to your LED Circuit, otherwise, the LED may be burn out.
+* GPIO 20 as Input
 
 * GPIO 47 as Output of Embedded LED (1Hz Blinker): Except Pi 3B
 

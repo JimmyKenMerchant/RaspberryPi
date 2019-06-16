@@ -54,6 +54,6 @@ void segment_lcd_reset();                                                  // Al
 void segment_lcd_write( uchar8 bits, uchar8 length_bits );                 // Write Bits in Sending Procedure
 void segment_lcd_command( uchar8 command );                                // Send Command
 void segment_lcd_data( uchar8 address, uchar8 data );                      // Send Data to GRAM
-void segment_lcd_printn( uchar8 digit, uchar8 number );                    // Print Number (Hexadecimal) Using Two Spaces in GRAM
+void segment_lcd_printn( uchar8 digit, uchar8 number, uchar8 mask );       // Print Number (Hexadecimal) Using Two Spaces in GRAM
 void segment_lcd_clear( uchar8 data );                                     // Clear All Spaces in GRAM
 
