@@ -22,8 +22,8 @@ void segment_lcd_init( uchar8 gpio_cs, uchar8 gpio_wr, uchar8 gpio_data ) {
 
 	segment_lcd_reset();
 
-	/* Wait Time 10 Milliseconds After Power On */
-	_sleep( 10000 );
+	/* Delay Time After Power On */
+	_sleep( SEGMENT_LCD_DELAY_WIDTH );
 	arm32_dsb();
 }
 
@@ -106,9 +106,9 @@ void segment_lcd_data( uchar8 address, uchar8 data ) {
 	segment_lcd_reset();
 }
 
-void segment_lcd_char( uchar8 digit, uchar8 number_char ) {
-	if ( number_char >= SEGMENT_LCD_CHARS_MAX ) number_char = SEGMENT_LCD_CHARS_MAX - 1;
-	uchar8 data_number = segment_lcd_chars[number_char];
+void segment_lcd_printn( uchar8 digit, uchar8 number ) {
+	if ( number >= SEGMENT_LCD_NUMBER_MAX ) number = SEGMENT_LCD_NUMBER_MAX - 1;
+	uchar8 data_number = segment_lcd_array_numbers[number];
 	segment_lcd_data( digit * 2, data_number & 0xF );
 	segment_lcd_data( (digit * 2) + 1, (data_number >> 4) & 0xF );
 }

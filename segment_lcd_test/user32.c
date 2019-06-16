@@ -24,7 +24,7 @@ int32 _user_start()
 	segment_lcd_clear( 0x0 );
 
 	_calender_init( 2018, 1, 1 );
-	_clock_init( 23, 59, 30, 0 );
+	_clock_init( 22, 59, 30, 0 );
 	_correct_utc( -9 );
 	_correct_utc( 0 );
 
@@ -32,16 +32,16 @@ int32 _user_start()
 		_get_time();
 
 		uint64 hour_deci = cvt32_hexa_to_deci( CLK32_HOUR );
-		segment_lcd_char( 0, (hour_deci >> 4) & 0xF );
-		segment_lcd_char( 1, hour_deci & 0xF );
+		segment_lcd_printn( 0, (hour_deci >> 4) & 0xF );
+		segment_lcd_printn( 1, hour_deci & 0xF );
 
 		uint64 minute_deci = cvt32_hexa_to_deci( CLK32_MINUTE );
-		segment_lcd_char( 2, (minute_deci >> 4) & 0xF );
-		segment_lcd_char( 3, minute_deci & 0xF );
+		segment_lcd_printn( 2, (minute_deci >> 4) & 0xF );
+		segment_lcd_printn( 3, minute_deci & 0xF );
 
 		uint64 second_deci = cvt32_hexa_to_deci( CLK32_SECOND );
-		segment_lcd_char( 4, (second_deci >> 4) & 0xF );
-		segment_lcd_char( 5, second_deci & 0xF );
+		segment_lcd_printn( 4, (second_deci >> 4) & 0xF );
+		segment_lcd_printn( 5, second_deci & 0xF );
 
 		// If GPIO 20 Detects Voltage, GPIO 21 Keeps Lighting
 		if ( _gpio_in( 20 ) ) _gpiotoggle( 21, _GPIOTOGGLE_HIGH );

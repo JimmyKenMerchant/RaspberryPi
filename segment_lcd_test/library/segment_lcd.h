@@ -13,8 +13,9 @@
   * If RD pin exists in your module, you need to externally pull-up this pin, i.e, connect VDD with RD through a resistor.
   */
 
+#define SEGMENT_LCD_DELAY_WIDTH    10000 // Delay Time After Power On, Microseconds
 #define SEGMENT_LCD_PULSE_WIDTH    10 // WR Clock, Microseconds
-#define SEGMENT_LCD_CHARS_MAX      16 // Limiter
+#define SEGMENT_LCD_NUMBER_MAX     16 // Limiter
 #define SEGMENT_LCD_START_LENGTH   3  // Bits
 #define SEGMENT_LCD_COMMAND_LENGTH 8  // Bits
 #define SEGMENT_LCD_ADDRESS_LENGTH 6  // GRAM Address, Bits
@@ -25,7 +26,7 @@
  * It varies on each module, typical ones are shown.
  * Least significant 4 bits are for the first space, most significant 4 bits are for the second space.
  */
-const uchar8 segment_lcd_chars[] = {
+const uchar8 segment_lcd_array_numbers[] = {
 	0b01111101, // 0
 	0b01100000, // 1
 	0b00111110, // 2
@@ -53,6 +54,6 @@ void segment_lcd_reset();                                                  // Al
 void segment_lcd_write( uchar8 bits, uchar8 length_bits );                 // Write Bits in Sending Procedure
 void segment_lcd_command( uchar8 command );                                // Send Command
 void segment_lcd_data( uchar8 address, uchar8 data );                      // Send Data to GRAM
-void segment_lcd_char( uchar8 digit, uchar8 number_char );                 // Show Character Used Two Spaces in GRAM
+void segment_lcd_printn( uchar8 digit, uchar8 number );                    // Print Number (Hexadecimal) Using Two Spaces in GRAM
 void segment_lcd_clear( uchar8 data );                                     // Clear All Spaces in GRAM
 
