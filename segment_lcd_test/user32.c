@@ -12,8 +12,10 @@
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
-extern uint32 OS_FIQ_ONESECOND_ADDR;
-extern uint32 OS_FIQ_BUTTON1_ADDR;
+extern uint32 OS_FIQ_ONESECOND;
+extern uint32 OS_FIQ_BUTTON1;
+
+void print_time();
 
 int32 _user_start()
 {
@@ -30,30 +32,34 @@ int32 _user_start()
 	_correct_utc( 0 );
 
 	while( True ) {
-		if ( _load_32( OS_FIQ_ONESECOND_ADDR ) ) {
-			_get_time();
-
-			uint64 hour_deci = cvt32_hexa_to_deci( CLK32_HOUR );
-			segment_lcd_printn( 0, (hour_deci >> 4) & 0xF, 0x00 );
-			segment_lcd_printn( 1, hour_deci & 0xF, 0x00 );
-
-			uint64 minute_deci = cvt32_hexa_to_deci( CLK32_MINUTE );
-			segment_lcd_printn( 2, (minute_deci >> 4) & 0xF, 0x00 );
-			segment_lcd_printn( 3, minute_deci & 0xF, 0x00 );
-
-			uint64 second_deci = cvt32_hexa_to_deci( CLK32_SECOND );
-			segment_lcd_printn( 4, (second_deci >> 4) & 0xF, 0x00 );
-			segment_lcd_printn( 5, second_deci & 0xF, 0x00 );
-
-			_store_32( OS_FIQ_ONESECOND_ADDR, 0x00 );
+		if ( OS_FIQ_ONESECOND ) {
+			print_time();
+			OS_FIQ_ONESECOND = 0x00; // Clear Flag
 			arm32_dsb();
 		}
-		if ( _load_32( OS_FIQ_BUTTON1_ADDR ) ) {
-			_clock_init( 0, 0, 0, 0 );
-			_store_32( OS_FIQ_BUTTON1_ADDR, 0x00 );
+		if ( OS_FIQ_BUTTON1 ) {
+			_clock_init( CLK32_HOUR, CLK32_MINUTE + 1, CLK32_SECOND, 0 );
+			print_time();
+			OS_FIQ_BUTTON1 = 0x00; // Clear Flag
 			arm32_dsb();
 		}
 	}
 
 	return EXIT_SUCCESS;
+}
+
+void print_time() {
+	_get_time();
+
+	uint64 hour_deci = cvt32_hexa_to_deci( CLK32_HOUR );
+	segment_lcd_printn( 0, (hour_deci >> 4) & 0xF, 0x00 );
+	segment_lcd_printn( 1, hour_deci & 0xF, 0x00 );
+
+	uint64 minute_deci = cvt32_hexa_to_deci( CLK32_MINUTE );
+	segment_lcd_printn( 2, (minute_deci >> 4) & 0xF, 0x00 );
+	segment_lcd_printn( 3, minute_deci & 0xF, 0x00 );
+
+	uint64 second_deci = cvt32_hexa_to_deci( CLK32_SECOND );
+	segment_lcd_printn( 4, (second_deci >> 4) & 0xF, 0x00 );
+	segment_lcd_printn( 5, second_deci & 0xF, 0x00 );
 }
