@@ -12,10 +12,15 @@
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
-extern uint32 OS_FIQ_ONESECOND;
-extern uint32 OS_FIQ_BUTTON1;
+#define COUNT_BUTTONS 8
+#define BUTTON1       20 // GPIO Number
 
 void print_time();
+
+extern bool OS_FIQ_ONESECOND;
+extern bool OS_FIQ_ONEFRAME;
+
+int32 count_button1 = COUNT_BUTTONS;
 
 int32 _user_start()
 {
@@ -34,15 +39,26 @@ int32 _user_start()
 	while( True ) {
 		if ( OS_FIQ_ONESECOND ) {
 			print_time();
-			OS_FIQ_ONESECOND = 0x00; // Clear Flag
-			arm32_dsb();
+			OS_FIQ_ONESECOND = false; // Clear Flag
 		}
-		if ( OS_FIQ_BUTTON1 ) {
-			_clock_init( CLK32_HOUR, CLK32_MINUTE + 1, CLK32_SECOND, 0 );
-			print_time();
-			OS_FIQ_BUTTON1 = 0x00; // Clear Flag
-			arm32_dsb();
+		if ( OS_FIQ_ONEFRAME ) {
+			/**
+			 * Push a button takes increment of a value.
+			 * Holding a button counts the constant value to zero.
+			 * If the count reaches zero, continuous increment will start.
+			 */
+			if ( _gpio_in( BUTTON1 ) ) {
+				if ( count_button1 == COUNT_BUTTONS || count_button1 == 0 ) {
+					_clock_init( CLK32_HOUR, CLK32_MINUTE + 1, CLK32_SECOND, 0 );
+					print_time();
+				}
+				if ( --count_button1 < 0 ) count_button1 = 0; // Decrement Count Before, Then Compare with 0
+			} else {
+				count_button1 = COUNT_BUTTONS;
+			}
+			OS_FIQ_ONEFRAME = false;
 		}
+		arm32_dsb();
 	}
 
 	return EXIT_SUCCESS;

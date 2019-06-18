@@ -116,16 +116,12 @@ os_fiq:
 	str r0, os_fiq_count
 	movhs r0, #1                              @ Set Flag If Count Reaches 8
 	ldrhs r1, OS_FIQ_ONESECOND_ADDR
-	strhs r0, [r1]
+	strhsb r0, [r1]
 
-	/* Check Button 1 (GPIO 20) */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
-	ldr r0, [r0, #equ32_gpio_gplev0]
-	tst r0, #1<<20
-	movne r0, #1
-	ldrne r1, OS_FIQ_BUTTON1_ADDR
-	strne r0, [r1]
+	/* Acknowledge One Frame */
+	mov r0, #1
+	ldr r1, OS_FIQ_ONEFRAME_ADDR
+	strb r0, [r1]
 
 .ifndef __RASPI3B
 	mov r0, #47
@@ -147,7 +143,7 @@ os_fiq_count:          .word 0x00
 string_hello:
 	.word _string_hello
 OS_FIQ_ONESECOND_ADDR: .word OS_FIQ_ONESECOND
-OS_FIQ_BUTTON1_ADDR:   .word OS_FIQ_BUTTON1
+OS_FIQ_ONEFRAME_ADDR:  .word OS_FIQ_ONEFRAME
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 
@@ -156,9 +152,10 @@ _string_hello:
 	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
 .globl OS_FIQ_ONESECOND
-.globl OS_FIQ_BUTTON1
-OS_FIQ_ONESECOND:      .word 0x00
-OS_FIQ_BUTTON1:        .word 0x00
+.globl OS_FIQ_ONEFRAME
+OS_FIQ_ONESECOND:      .byte 0x00
+OS_FIQ_ONEFRAME:       .byte 0x00
+.balign 4
 
 /* Additional Libraries Here */
 .section	.text
