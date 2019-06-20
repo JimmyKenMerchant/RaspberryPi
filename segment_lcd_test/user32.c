@@ -12,15 +12,16 @@
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
-#define COUNT_BUTTONS 8
-#define BUTTON1       20 // GPIO Number
+#define MAXCOUNT_UPDATE 12 // 1Hz
+#define MAXCOUNT_BUTTON 12
+#define GPIO_BUTTON1    20 // GPIO Number
 
 void print_time();
 
-extern bool OS_FIQ_ONESECOND;
 extern bool OS_FIQ_ONEFRAME;
 
-int32 count_button1 = COUNT_BUTTONS;
+uint32 count_update = 0;
+uint32 count_button1 = 0;
 
 int32 _user_start()
 {
@@ -37,24 +38,27 @@ int32 _user_start()
 	_correct_utc( 0 );
 
 	while( True ) {
-		if ( OS_FIQ_ONESECOND ) {
-			print_time();
-			OS_FIQ_ONESECOND = false; // Clear Flag
-		}
 		if ( OS_FIQ_ONEFRAME ) {
 			/**
-			 * Push a button takes increment of a value.
+			 * If the count reaches the number, update the display.
+			 */
+			if ( ++count_update >= MAXCOUNT_UPDATE ) { // Increment Count Before, Then Compare with Number
+				print_time();
+				count_update = 0;
+			}
+			/**
+			 * Pushing a button takes increment of a value.
 			 * Holding a button counts the constant value to zero.
 			 * If the count reaches zero, continuous increment will start.
 			 */
-			if ( _gpio_in( BUTTON1 ) ) {
-				if ( count_button1 == COUNT_BUTTONS || count_button1 == 0 ) {
+			if ( _gpio_in( GPIO_BUTTON1 ) ) {
+				if ( count_button1 == MAXCOUNT_BUTTON || count_button1 == 0 ) {
 					_clock_init( CLK32_HOUR, CLK32_MINUTE + 1, CLK32_SECOND, 0 );
 					print_time();
 				}
-				if ( --count_button1 < 0 ) count_button1 = 0; // Decrement Count Before, Then Compare with 0
+				if ( count_button1 != 0 ) count_button1--;
 			} else {
-				count_button1 = COUNT_BUTTONS;
+				count_button1 = MAXCOUNT_BUTTON;
 			}
 			OS_FIQ_ONEFRAME = false;
 		}

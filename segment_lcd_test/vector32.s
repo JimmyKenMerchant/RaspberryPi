@@ -58,10 +58,10 @@ os_reset:
 	 * Timer
 	 */
 
-	/* Get a 8hz Timer Interrupt (120000/15000) */
+	/* Get a 12hz Timer Interrupt (120000/10000) */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x3A00                           @ High 1 Byte of decimal 14999 (15000 - 1), 16 bits counter on default
-	add r1, r1, #0x97                         @ Low 1 Byte of decimal 14999, 16 bits counter on default
+	mov r1, #0x2700                           @ High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
+	add r1, r1, #0x0F                         @ Low 1 Byte of decimal 9999, 16 bits counter on default
 	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
@@ -108,16 +108,6 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-	/* Increment of Count to Acknowledge One Second */
-	ldr r0, os_fiq_count
-	add r0, r0, #1
-	cmp r0, #8
-	movhs r0, #0                              @ Reset If Count Reaches 8
-	str r0, os_fiq_count
-	movhs r0, #1                              @ Set Flag If Count Reaches 8
-	ldrhs r1, OS_FIQ_ONESECOND_ADDR
-	strhsb r0, [r1]
-
 	/* Acknowledge One Frame */
 	mov r0, #1
 	ldr r1, OS_FIQ_ONEFRAME_ADDR
@@ -142,7 +132,6 @@ os_fiq_count:          .word 0x00
 
 string_hello:
 	.word _string_hello
-OS_FIQ_ONESECOND_ADDR: .word OS_FIQ_ONESECOND
 OS_FIQ_ONEFRAME_ADDR:  .word OS_FIQ_ONEFRAME
 
 .include "addr32.s" @ If you want binary, use `.incbin`
@@ -151,9 +140,7 @@ OS_FIQ_ONEFRAME_ADDR:  .word OS_FIQ_ONEFRAME
 _string_hello:
 	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
 .balign 4
-.globl OS_FIQ_ONESECOND
 .globl OS_FIQ_ONEFRAME
-OS_FIQ_ONESECOND:      .byte 0x00
 OS_FIQ_ONEFRAME:       .byte 0x00
 .balign 4
 
