@@ -15,6 +15,9 @@
 #define MAXCOUNT_UPDATE 12 // 1Hz
 #define MAXCOUNT_BUTTON 12
 #define GPIO_BUTTON1    20 // GPIO Number
+#define GPIO_BUTTON2    21 // GPIO Number
+#define GPIO_BUTTON3    26 // GPIO Number
+#define GPIO_SWITCH1    22 // GPIO Number
 
 void print_time();
 
@@ -22,9 +25,23 @@ extern bool OS_FIQ_ONEFRAME;
 
 uint32 count_update = 0;
 uint32 count_button1 = 0;
+uint32 count_button2 = 0;
 
 int32 _user_start()
 {
+
+	/**
+	 * I/O Settings
+	 */
+
+	_gpiomode( GPIO_BUTTON1, _GPIOMODE_IN );
+	_gpiomode( GPIO_BUTTON2, _GPIOMODE_IN );
+	_gpiomode( GPIO_BUTTON3, _GPIOMODE_IN );
+	_gpiomode( GPIO_SWITCH1, _GPIOMODE_IN );
+
+	/**
+	 * Initialize Segment LCD
+	 */
 
 	segment_lcd_init( 13, 19, 26 ); // CS GPIO 13, WR GPIO 19, DATA GPIO 26
 	segment_lcd_command( 0x01 ); // Oscillator ON
@@ -32,6 +49,9 @@ int32 _user_start()
 	segment_lcd_command( 0x03 ); // LCD ON
 	segment_lcd_clear( 0x0 );
 
+	/**
+	 * Initialize Clock
+	 */
 	_calender_init( 2018, 1, 1 );
 	_clock_init( 21, 59, 30, 0 );
 	_correct_utc( -9 );
@@ -53,12 +73,21 @@ int32 _user_start()
 			 */
 			if ( _gpio_in( GPIO_BUTTON1 ) ) {
 				if ( count_button1 == MAXCOUNT_BUTTON || count_button1 == 0 ) {
-					_clock_init( CLK32_HOUR, CLK32_MINUTE + 1, CLK32_SECOND, 0 );
+					_clock_init( CLK32_HOUR, CLK32_MINUTE + 1, 0, 0 );
 					print_time();
 				}
 				if ( count_button1 != 0 ) count_button1--;
 			} else {
 				count_button1 = MAXCOUNT_BUTTON;
+			}
+			if ( _gpio_in( GPIO_BUTTON2 ) ) {
+				if ( count_button2 == MAXCOUNT_BUTTON || count_button2 == 0 ) {
+					_clock_init( CLK32_HOUR + 1, CLK32_MINUTE, 0, 0 );
+					print_time();
+				}
+				if ( count_button2 != 0 ) count_button2--;
+			} else {
+				count_button2 = MAXCOUNT_BUTTON;
 			}
 			OS_FIQ_ONEFRAME = false;
 		}

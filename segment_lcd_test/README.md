@@ -14,7 +14,13 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 **Output/Input**
 
-* GPIO 20 as Input
+* GPIO 20 as Input, Increment of Minute
+
+* GPIO 21 as Input, Increment of Hour
+
+* GPIO 21 as Input, Alarm On (High) or Off (Low)
+
+* GPIO 26 as Input, Change Display
 
 * GPIO 47 as Output of Embedded LED (1Hz Blinker): Except Pi 3B
 
