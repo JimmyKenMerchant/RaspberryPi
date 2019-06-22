@@ -58,10 +58,10 @@ os_reset:
 	 * Timer
 	 */
 
-	/* Get a 12hz Timer Interrupt (120000/10000) */
+	/* Get a 48hz Timer Interrupt (120000/2500) */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x2700                           @ High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r1, #0x0900                           @ High 1 Byte of decimal 2499 (2500 - 1), 16 bits counter on default
+	add r1, r1, #0xC3                         @ Low 1 Byte of decimal 2499, 16 bits counter on default
 	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
@@ -101,15 +101,24 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-	/* Acknowledge One Frame */
-	mov r0, #1
-	ldr r1, OS_FIQ_ONEFRAME_ADDR
-	strb r0, [r1]
+	/* Increment of Count to Acknowledge One Frame 12hz */
+	ldr r0, os_fiq_count
+	add r0, r0, #1
+	cmp r0, #4
+	movhs r0, #0                              @ Reset If Count Reaches 4
+	str r0, os_fiq_count
+	movhs r0, #1                              @ Set Flag If Count Reaches 4
+	ldrhs r1, OS_FIQ_ONEFRAME_ADDR
+	strhsb r0, [r1]
 
+.ifdef __DEBUG
 .ifndef __RASPI3B
+	/* ACT Blinker */
 	mov r0, #47
 	mov r1, #2
 	bl gpio32_gpiotoggle
+	macro32_dsb ip
+.endif
 .endif
 
 	macro32_dsb ip
