@@ -14,13 +14,15 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 **Output/Input**
 
-* GPIO 20 as Input, Increment of Minute
+* GPIO 5 as Input, Increment
 
-* GPIO 21 as Input, Increment of Hour
+* GPIO 6 as Input, Decrement
 
-* GPIO 21 as Input, Alarm On (High) or Off (Low)
+* GPIO 20 as Input, Toggle Display Mode
 
-* GPIO 16 as Input, Change Display
+* GPIO 21 as Input, Change Subject to Be Incremented or Decremented
+
+* GPIO 22 as Input, Alarm On (High) or Off (Low)
 
 * GPIO 47 as Output of Embedded LED (1Hz Blinker): Except Pi 3B
 
@@ -49,3 +51,5 @@ It may be your segment LCD module. The LCD controller is HT1621. Unlike general 
 Caution that, typically, segment LCD modules are used with 5 volts. Besides, your RasPi outputs 3.3 volts. If so, a level shifter (logic level converter) is needed to convert 3.3 volts to 5 volts. Several LCDs don't show segments with 3.3 volts, because of avoiding errors on displaying by static electricity.
 
 My module is driven with 5 volts, so a logic level converter (FXMA108) is applied. No external pull-ups are needed for CS, WR, and Data. RD is not used. However, in case, you need to externally pull-up RD pin if it exists, i.e, connect VDD (5 volts) with RD through a 20K ohms resistor.
+
+So, this project is experimental, so far, because of its power consumption. Table clocks lined up in shops can drive at least ONE YEAR without replacing batteries. Don't forget it relies on chips with low power consumption and technologies that strictly pursued the goal. Table clocks with segment LCDs are the answer. To replace the golden rule to new one, we need to take a huge effort to do so.

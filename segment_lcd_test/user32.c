@@ -12,32 +12,45 @@
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
-/* Global Variables from Included Libraries */
+/* Declare Global Variables Exported from vector32.s */
 extern bool OS_FIQ_ONEFRAME;
 
-/* Unique Definitions */
-#define MAXCOUNT_UPDATE 12 // 1Hz
+/* Declare Unique Definitions */
+#define MAXCOUNT_UPDATE 6  // 2Hz
 #define MAXCOUNT_BUTTON 12
-#define GPIO_BUTTON1    20 // GPIO Number
-#define GPIO_BUTTON2    21 // GPIO Number
-#define GPIO_BUTTON3    16 // GPIO Number
+#define GPIO_BUTTON1    5  // GPIO Number
+#define GPIO_BUTTON2    6  // GPIO Number
+#define GPIO_BUTTON3    20 // GPIO Number
+#define GPIO_BUTTON4    21 // GPIO Number
 #define GPIO_SWITCH1    22 // GPIO Number
 #define GPIO_CS         13 // GPIO Number
 #define GPIO_WR         19 // GPIO Number
 #define GPIO_DATA       26 // GPIO Number
 
-/* Unique Functions */
+/* Declare Unique Functions */
 void print_time();
 void print_alarm();
+void clear_digit( uint32 digit );
 
-/* Unique Global Variables, Zero Can't Be Stored on Declaration */
+/* Declare Unique Global Variables, Zero Can't Be Stored If You Want to Define with Declaration */
 uint32 count_update;
 uint32 count_button1;
 uint32 count_button2;
 uint32 count_button3;
+uint32 count_button4;
 uint32 alarm_hour;
 uint32 alarm_minute;
-bool mode_time;
+bool display_blinkon;
+
+typedef enum _mode_list {
+	display_time,
+	change_time_hour,
+	change_time_minute,
+	display_alarm,
+	change_alarm_hour,
+	change_alarm_minute
+} mode_list;
+mode_list current_mode;
 
 int32 _user_start()
 {
@@ -48,9 +61,11 @@ int32 _user_start()
 	count_button1 = 0;
 	count_button2 = 0;
 	count_button3 = 0;
+	count_button4 = 0;
 	alarm_hour = 0;
 	alarm_minute = 0;
-	mode_time = true;
+	display_blinkon = true;
+	current_mode = display_time;
 
 	/**
 	 * I/O Settings
@@ -86,47 +101,64 @@ int32 _user_start()
 			 * If the count reaches the number, update the display.
 			 */
 			if ( ++count_update >= MAXCOUNT_UPDATE ) { // Increment Count Before, Then Compare with Number
-				if ( mode_time ) { 
+				if ( current_mode <= change_time_minute ) {
 					print_time();
 				} else {
 					print_alarm();
 				}
+				if ( display_blinkon ) {
+					if ( current_mode == change_time_hour || current_mode == change_alarm_hour ) {
+						clear_digit( 0 );
+						clear_digit( 1 );
+					} else if ( current_mode == change_time_minute || current_mode == change_alarm_minute ) {
+						clear_digit( 2 );
+						clear_digit( 3 );
+					}
+					display_blinkon = false;
+				} else {
+					display_blinkon = true;
+				}
 				count_update = 0;
 			}
 			/**
-			 * Button No.1 (Minute) and Button No.2 (Hour):
+			 * Button No.1:
 			 * Pushing a button takes increment of a value.
 			 * Holding a button counts the constant value to zero.
 			 * If the count reaches zero, continuous increment will start.
 			 */
 			if ( _gpio_in( GPIO_BUTTON1 ) ) {
 				if ( count_button1 == MAXCOUNT_BUTTON || count_button1 == 0 ) {
-					if ( mode_time ) {
+					if ( current_mode == change_time_hour ) {
+						uint32 increment = CLK32_HOUR + 1;
+						if ( increment >= 24 ) increment = 0; // Not to Increase Days
+						_clock_init( increment, CLK32_MINUTE, 0, 0 );
+						print_time();
+					} else if ( current_mode == change_time_minute ) {
 						uint32 increment = CLK32_MINUTE + 1;
 						if ( increment >= 60 ) increment = 0; // Not to Increase Hours
 						_clock_init( CLK32_HOUR, increment, 0, 0 );
 						print_time();
-					} else {
+					} else if ( current_mode == change_alarm_hour ) {
+						if ( ++alarm_hour >= 24 ) alarm_hour = 0;
+						print_alarm();
+					} else if ( current_mode == change_alarm_minute ) {
 						if ( ++alarm_minute >= 60 ) alarm_minute = 0;
 						print_alarm();
 					}
-
 				}
 				if ( count_button1 != 0 ) count_button1--;
 			} else {
 				count_button1 = MAXCOUNT_BUTTON;
 			}
+			/**
+			 * Button No.2:
+			 * Pushing a button takes decrement of a value.
+			 * Holding a button counts the constant value to zero.
+			 * If the count reaches zero, continuous decrement will start.
+			 */
 			if ( _gpio_in( GPIO_BUTTON2 ) ) {
 				if ( count_button2 == MAXCOUNT_BUTTON || count_button2 == 0 ) {
-					if ( mode_time ) {
-						uint32 increment = CLK32_HOUR + 1;
-						if ( increment >= 24 ) increment = 0; // Not to Increase Days
-						_clock_init( increment, CLK32_MINUTE, 0, 0 );
-						print_time();
-					} else {
-						if ( ++alarm_hour >= 24 ) alarm_hour = 0;
-						print_alarm();
-					}
+
 				}
 				if ( count_button2 != 0 ) count_button2--;
 			} else {
@@ -138,17 +170,41 @@ int32 _user_start()
 			 */
 			if ( _gpio_in( GPIO_BUTTON3 ) ) {
 				if ( count_button3 == MAXCOUNT_BUTTON ) {
-					if ( mode_time ) {
-						mode_time = false;
+					if ( current_mode == display_time ) {
+						current_mode = display_alarm;
 						print_alarm();
 					} else {
-						mode_time = true;
+						current_mode = display_time;
 						print_time();
 					}
 				}
 				if ( count_button3 != 0 ) count_button3--;
 			} else {
 				count_button3 = MAXCOUNT_BUTTON;
+			}
+			/**
+			 * Button No.4:
+			 * Change Subject to Be Incremented or Decremented
+			 */
+			if ( _gpio_in( GPIO_BUTTON4 ) ) {
+				if ( count_button4 == MAXCOUNT_BUTTON ) {
+					if ( current_mode == display_time ) { // Time
+						current_mode = change_time_hour;
+					} else if ( current_mode == change_time_hour ) {
+						current_mode = change_time_minute;
+					} else if ( current_mode == change_time_minute ) {
+						current_mode = display_time;
+					} else if ( current_mode == display_alarm ) { // Alarm
+						current_mode = change_alarm_hour;
+					} else if ( current_mode == change_alarm_hour ) {
+						current_mode = change_alarm_minute;
+					} else if ( current_mode == change_alarm_minute ) {
+						current_mode = display_alarm;
+					}
+				}
+				if ( count_button4 != 0 ) count_button4--;
+			} else {
+				count_button4 = MAXCOUNT_BUTTON;
 			}
 			OS_FIQ_ONEFRAME = false;
 		}
@@ -184,8 +240,13 @@ void print_alarm() {
 	segment_lcd_printn( 2, (minute_deci >> 4) & 0xF, 0x00 );
 	segment_lcd_printn( 3, minute_deci & 0xF, 0x00 );
 	/* Clear Digit for Second */
-	segment_lcd_data( 8, 0x0 );
-	segment_lcd_data( 9, 0x0 );
-	segment_lcd_data( 10, 0x0 );
-	segment_lcd_data( 11, 0x0 );
+	clear_digit( 4 );
+	clear_digit( 5 );
 }
+
+void clear_digit( uint32 digit ) {
+	digit *= 2;
+	segment_lcd_data( digit, 0x0 );
+	segment_lcd_data( digit + 1, 0x0 );
+}
+
