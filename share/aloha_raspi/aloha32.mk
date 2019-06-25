@@ -3,6 +3,7 @@
 # Author: Kenta Ishii
 # License: MIT
 # License URL: https://opensource.org/licenses/MIT
+# Working In: GNU Make 4.1
 ##
 
 # This Makefile is tested by GNU Make in Raspbian Jessie
@@ -111,6 +112,10 @@ ifeq ($(secure), no)
 	endif
 endif
 
+#Default Value for Optimization of Compiler
+optimize ?= O2
+OPTIMIZE := -$(optimize)
+
 #Default Value for Debug Mode
 debug ?= no
 
@@ -159,7 +164,7 @@ inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
 $(OBJ3).o: $(OBJ3).c $(CCHEADER)
-	$(CC) $< -I $(CCINC)/ $(CCDEF) -o $@ -c -O2 -Wall -nostdlib -ffreestanding $(TARGET)
+	$(CC) $< -I $(CCINC)/ $(CCDEF) -o $@ -c $(OPTIMIZE) -Wall -nostdlib -ffreestanding $(TARGET)
 
 $(OBJ2).o: $(ASINC)/$(OBJ2)/$(OBJ2).s
 	$(AS) $< -I $(ASINC)/ $(ASDEF) -o $@ $(TARGET)
