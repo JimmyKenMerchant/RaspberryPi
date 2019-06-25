@@ -48,11 +48,12 @@ The option of arm-none-eabi-gcc, -O2 (Normal Optimization) seems not to ensure t
 
 * June 25, 2019:
 Make: GNU Make 4.1
-Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
+Assembler: arm-none-eabi-as = GNU assembler (2.28-5+9+b3) 2.28
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
-Linux Distro: Raspbian GNU/Linux 9 (stretch)
+Linux Distro: Debian GNU/Linux 9.9 (stretch)
+Machine: x86_64
 Description:
-Having partly testing with forward versions of make, assembler, and compiler.
+Having partly testing with forward versions of make, assembler, and compiler as described above.
  1. GNU assembler 2.28 has an odd on vpop/vpush.
     The assembler issues errors if vpop/vpush is with single precision floating point over 16 registers.
     vpop/vpush can handle single precision values over 16 registers in the architecture.
