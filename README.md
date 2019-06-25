@@ -319,7 +319,7 @@ int32 _user_start()
 
 * Lines written above are all codes of simple_test/user32.c. `_sleep( 1000 )` is definitely used!
 
-* This system uses `-O2` option (Optimize even more) to compile C codes in share/aloha_raspi/aloha32.mk (at the line No. 162 on this version). `-O2` option can reduce machine codes after compiling. To learn optimization in gcc, visit [Using the GNU Compiler Collection (GCC): Optimize Options](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html). If you have no need of optimization and debugging after compiling, remove this option. In my experience, `-O2` seems not to ensure to store r0 - r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919). To hide this issue, you need to change several local variables to global variables. Global variables are ensured to store values to memory spaces; and are declared outside of functions, or prefix `static` to variables inside functions on declaring. If you are a C++ learner, you might feel like a mess for it. C++ can use `new` syntax, which ensures to store values to memory spaces. However, `new` syntax depends on prebuild systems.
+* This system uses `-O2` option (Optimize even more) to compile C codes in share/aloha_raspi/aloha32.mk in default. `-O2` option can reduce machine codes after compiling. To learn optimization in gcc, visit [Using the GNU Compiler Collection (GCC): Optimize Options](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html). If you have no need of optimization and debugging after compiling, use `optimize=O0` on making. In my experience, `-O2` seems not to ensure to store r0 - r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919). To hide this issue, you need to change several local variables to global variables. Global variables are ensured to store values to memory spaces; and are declared outside of functions, or prefix `static` to variables inside functions on declaring. If you are a C++ learner, you might feel like a mess for it. C++ can use `new` syntax, which ensures to store values to memory spaces. However, `new` syntax depends on prebuild systems.
 
 4. Security of System.
 	* Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally. So, in this system, I'm trying to mock-up Harvard architecture even in Von Neumann architecture. Besides, multi-core made us attention to the security much better, because multi-core is a new architecture. Researchers has not yet gotten the conclusion for secure treating of multi-core. If we handle multi-core, we should consider of the security in a very cautious manner.
@@ -335,7 +335,7 @@ int32 _user_start()
 
 * Codes of this system will be compiled and assembled in Linux, and allowed to be cross-compiled by other CPUs. This system is premised on compiling with arm-none-eabi-gcc, and on assembling with arm-none-eabi-as. Note that arm-none-eabi-as is contained in binutils-arm-none-eabi (package names may differ in Linux distros). These tools are updated by GNU community. Please access [GNU Compiler Collection](https://gcc.gnu.org/) and [GNU Binutils](https://www.gnu.org/software/binutils/).
 
-**Guide for Installation on [Raspbian](https://raspbian.org/) command line (Linux Bash)**
+**Guide for Installation on [Debian](https://www.debian.org/) and [Raspbian](https://raspbian.org/) command line (Linux Bash)**
 
 * In advance, prepare FAT32 formatted SD card as a boot media. Several ways are introduced to format FAT32 SD card online, even by video. If you haven't installed Git, a open source version control system, install Git to your operating system.
 
@@ -408,9 +408,13 @@ make type=zerow sound=i2s
 
 * `sound=jackb`: Balanced Audio Jack Output, use only in Sound Box.
 
+* `optimize=O1`: Change Optimization to -O1 (Optimize) in GCC
+
+* `optimize=O0`: Change Optimization to -O0 (Disable Optimization) in GCC
+
 **Preparation on [Arch Linux](https://www.archlinux.org/)**
 
-* I recommend that you use the latest version of Raspbian to compile and assemble. However, another Linux distro, Arch Linux can do the same. Arch Linux also gives you to install the newer gcc and binutils than other Linux distros. The preparation in Arch Linux is described below. Note that these tools are able to cross-compile, so you can use machines Arch Linux supports.
+* I recommend that you use the stable version of Debian and Raspbian to compile and assemble. However, another Linux distro, Arch Linux can do the same. Arch Linux also gives you to install the newer gcc and binutils than other Linux distros. The preparation in Arch Linux is described below. Note that these tools are able to cross-compile, so you can use machines Arch Linux supports. Note that new versions of packages have often been ambitious. The algorithm of optimization in GCC will be changed. You may use `optimize=O1` to make the level down of the optimization, or use `optimize=O0` to disable optimization.
 
 ```bash
 # Update and Install
