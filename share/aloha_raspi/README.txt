@@ -16,6 +16,19 @@
 
 **Version Information**
 
+* Notice: Versions of Linker (GNU ld), Copier (GNU objcopy), and Dumper (GNU objdump) are the same as Assembler because these are included in a package, binutils-arm-none-eabi.
+
+* 1.1.1 on June 27, 2019:
+Git: git version 2.11.0
+Make: GNU Make 4.1 Built for arm-unknown-linux-gnueabihf
+Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
+Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
+Linux Distro `cat /etc/os-release`: Raspbian GNU/Linux 9 (stretch)
+Machine: Raspberry Pi 3 Model B V1.2
+Description:
+Commits up to this version depend on the versions of tools as described above.
+To fit with renewals of tools, future commits will depend on new versions of tools. Check the technical note on June 27, 2019.
+
 * 1.1.0 on November 6, 2018:
 Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
@@ -40,11 +53,22 @@ Added Several Files and Modified Functions.
 Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
 
-The option of arm-none-eabi-gcc, -O2 (Normal Optimization) seems not to ensure to store r0-r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919).
+The option of arm-none-eabi-gcc, -O2 (Optimize even more) seems not to ensure to store r0-r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919).
 
 * 0.9 Beta on September 27, 2017
 
 **Technical Notes**
+
+* June 27, 2019:
+Git: git version 2.20.1
+Make: GNU Make 4.2.1 Built for arm-unknown-linux-gnueabihf
+Assembler: arm-none-eabi-as = GNU assembler (2.31.1-11+rpi1+11) 2.31.1
+Compiler: arm-none-eabi-gcc (15:7-2018-q2-6) 7.3.1 20180622 (release) [ARM/embedded-7-branch revision 261907]
+Linux Distro `cat /etc/os-release`: Raspbian GNU/Linux 10 (buster)
+Machine: Raspberry Pi 3 Model B V1.2
+Description:
+Having partly testing with forward versions of make, assembler, and compiler as described above.
+I'm going to update this project to 1.2.0 using these tools as long as further renewals will not occur in this process. The setting of default optimization (-O2) will be possibly changed to -O1 or -O0.
 
 * June 25, 2019:
 Make: GNU Make 4.1
