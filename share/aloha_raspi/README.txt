@@ -23,7 +23,7 @@ Git: git version 2.11.0
 Make: GNU Make 4.1 Built for arm-unknown-linux-gnueabihf
 Assembler: arm-none-eabi-as = GNU assembler (2.27-9+9) 2.27
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
-Linux Distro `cat /etc/os-release`: Raspbian GNU/Linux 9 (stretch)
+Linux Distro `lsb_release -a`: Raspbian GNU/Linux 9.9 (stretch)
 Machine: Raspberry Pi 3 Model B V1.2
 Description:
 Commits up to this version depend on the versions of tools as described above.
@@ -64,18 +64,18 @@ Git: git version 2.20.1
 Make: GNU Make 4.2.1 Built for arm-unknown-linux-gnueabihf
 Assembler: arm-none-eabi-as = GNU assembler (2.31.1-11+rpi1+11) 2.31.1
 Compiler: arm-none-eabi-gcc (15:7-2018-q2-6) 7.3.1 20180622 (release) [ARM/embedded-7-branch revision 261907]
-Linux Distro `cat /etc/os-release`: Raspbian GNU/Linux 10 (buster)
+Linux Distro `lsb_release -a`: Raspbian GNU/Linux 10 (buster)
 Machine: Raspberry Pi 3 Model B V1.2
 Description:
 Having partly testing with forward versions of make, assembler, and compiler as described above.
 I'm going to update this project to 1.2.0 using these tools as long as further renewals will not occur in this process. The setting of default optimization (-O2) will be possibly changed to -O1 or -O0.
 
 * June 25, 2019:
-Make: GNU Make 4.1
+Make: GNU Make 4.1 Built for x86_64-pc-linux-gnu
 Assembler: arm-none-eabi-as = GNU assembler (2.28-5+9+b3) 2.28
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919
-Linux Distro: Debian GNU/Linux 9.9 (stretch)
-Machine: x86_64
+Linux Distro `lsb_release -a`: Debian GNU/Linux 9.9 (stretch)
+Machine: x86_64 with WSL
 Description:
 Having partly testing with forward versions of make, assembler, and compiler as described above.
  1. GNU assembler 2.28 has an odd on vpop/vpush.
