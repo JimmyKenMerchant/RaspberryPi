@@ -59,6 +59,12 @@ The option of arm-none-eabi-gcc, -O2 (Optimize even more) seems not to ensure to
 
 **Technical Notes**
 
+* June 28, 2019:
+Description:
+Having partly testing with forward versions of make, assembler, and compiler as described on June 27, 2019.
+I decided to change the default optimization of GCC in this project from -O2 to -O1.
+I checked several "inter.list" files made of old and new tools to check binaries. Binaries of -O2 is changed between new tools and old tools. Newer versions of GCC seems to be trying to make optimization more effective than older ones. So, -O2 is progressed to optimize in the new one. I assess the old -O2 is similar to the new -O1.
+
 * June 27, 2019:
 Git: git version 2.20.1
 Make: GNU Make 4.2.1 Built for arm-unknown-linux-gnueabihf
@@ -71,6 +77,7 @@ Having partly testing with forward versions of make, assembler, and compiler as 
 I'm going to update this project to 1.2.0 using these tools as long as further renewals will not occur in this process. The setting of default optimization (-O2) will be possibly changed to -O1 or -O0.
 
 * June 25, 2019:
+Git: git version 2.11.0
 Make: GNU Make 4.1 Built for x86_64-pc-linux-gnu
 Assembler: arm-none-eabi-as = GNU assembler (2.28-5+9+b3) 2.28
 Compiler: arm-none-eabi-gcc (15:5.4.1+svn241155-1) 5.4.1 20160919

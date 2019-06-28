@@ -113,7 +113,7 @@ ifeq ($(secure), no)
 endif
 
 #Default Value for Optimization of Compiler
-optimize ?= O2
+optimize ?= O1
 OPTIMIZE := -$(optimize)
 
 #Default Value for Debug Mode

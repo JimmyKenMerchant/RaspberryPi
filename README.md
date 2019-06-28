@@ -319,7 +319,7 @@ int32 _user_start()
 
 * Lines written above are all codes of simple_test/user32.c. `_sleep( 1000 )` is definitely used!
 
-* This system uses `-O2` option (Optimize even more) to compile C codes in share/aloha_raspi/aloha32.mk in default. `-O2` option can reduce machine codes after compiling. To learn optimization in gcc, visit [Using the GNU Compiler Collection (GCC): Optimize Options](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html). If you have no need of optimization and debugging after compiling, use `optimize=O0` on making. In my experience, `-O2` seems not to ensure to store r0 - r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919). To hide this issue, you need to change several local variables to global variables. Global variables are ensured to store values to memory spaces; and are declared outside of functions, or prefix `static` to variables inside functions on declaring. If you are a C++ learner, you might feel like a mess for it. C++ can use `new` syntax, which ensures to store values to memory spaces. However, `new` syntax depends on prebuild systems.
+* This system uses `-O1` option (Optimize) to compile C codes in share/aloha_raspi/aloha32.mk in default. `-O1` option can reduce machine codes after compiling. To learn optimization in gcc, visit [Using the GNU Compiler Collection (GCC): Optimize Options](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html). If you have no need of optimization and don't want to check assembly codes after compiling, use `optimize=O0` on making. You may use `optimize=O2` to optimize even more. In my experience, `-O2` seems not to ensure to store r0 - r3 registers to the stack, before calling a function that doesn't have four arguments (@ Ver. 5.4.1 20160919). To hide this issue, you need to change several local variables to global variables. Global variables are ensured to store values to memory spaces; and are declared outside of functions, or prefix `static` to variables inside functions on declaring. If you are a C++ learner, you might feel like a mess for it. C++ can use `new` syntax, which ensures to store values to memory spaces. However, `new` syntax depends on prebuild systems.
 
 4. Security of System.
 	* Security of computer system will be in danger in several situations. First, any main memory rewriting is occurred by any input/output transaction, such as something from a keyboard or a Internet connection. Intentional memory overflow is a renowned technique among invaders. Second, instructions rewrote by invaders are executed. Then finally, your computer system is manipulated in bad manner. In this system, I am trying to make limited space for input/output transaction, called HEAP, which should never be executed. Framebuffer is assigned by VideoCoreIV, and this space should never be executed too. Plus, I treated memory overflow not to be done intentionally. So, in this system, I'm trying to mock-up Harvard architecture even in Von Neumann architecture. Besides, multi-core made us attention to the security much better, because multi-core is a new architecture. Researchers has not yet gotten the conclusion for secure treating of multi-core. If we handle multi-core, we should consider of the security in a very cautious manner.
@@ -408,9 +408,9 @@ make type=zerow sound=i2s
 
 * `sound=jackb`: Balanced Audio Jack Output, use only in Sound Box.
 
-* `optimize=O1`: Change Optimization to -O1 (Optimize) in GCC
+* `optimize=O2`: Change Option for Optimization to -O2 (Optimize even more) in GCC
 
-* `optimize=O0`: Change Optimization to -O0 (Disable Optimization) in GCC
+* `optimize=O0`: Change Option for Optimization to -O0 (Disable Optimization) in GCC
 
 **Preparation on [Arch Linux](https://www.archlinux.org/)**
 
