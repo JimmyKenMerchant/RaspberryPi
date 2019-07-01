@@ -453,11 +453,11 @@ sudo pacman -S arm-none-eabi-gcc
 
 * About USB current source, there are experiences online. 600mA/1200mA switchable (RasPi3B is 1200mA in default) seems to be an answer. But, [there is no official document about the USB maximum ratings](https://www.raspberrypi.org/documentation/hardware/raspberrypi/usb/README.md), and [the official document restricts the total usage of the current on a RasPi for peripherals including USB devices up to 1A](https://www.raspberrypi.org/documentation/hardware/raspberrypi/power/README.md).
 
-**Wireless Module**
+**Wireless (WiFi and Bluetooth) Chip**
 
-* In this project, embedded wireless modules (CYW43438 for RasPi3B and RasPiZeroW, CYW43455 for RasPi3A+ and RasPi3B+) never be used and never emit radio frequency (RF). These chips have receivers for signals, WL_REG_ON and BT_REG_ON. These signals stop power supply for each circuit if these are low state. WL_REG_ON and BT_REG_ON signal from GPIOs or extend GPIOs (from RasPis with BCM2837), which are low state in default by the firmware, start.elf, on the booting process.
+* In this project, the embedded wireless chip (CYW43438 for RasPi3B and RasPiZeroW, CYW43455 for RasPi3A+ and RasPi3B+) never be used, and any RasPi never emit radio frequency (RF). The chip has receivers for signals, WL_REG_ON and BT_REG_ON. These signals stop power supply for each circuit if these are low state. WL_REG_ON and BT_REG_ON are from GPIOs or extend GPIOs (since RasPis with BCM2837), which are low state in default by the firmware, start.elf, on the booting process.
 
-* In my opinion, these modules are good enough to apply with gadgets in this IoT age. However, these command sets are not open-sourced so far. Plus, regulations to RF emittance differ among various countries. E.g., in Japan, because of its narrow land, the regulation are strict. It's not duty of best efforts, but mandatory. This regulation spans to softwares of products. Products which are not permitted to be used in Japan by the regulator can't emit radio frequencies. Other countries may have or become stricter than Japan. I think, to fit with regulations, IoT projects need to have another wireless module which are separately permitted by regulators.
+* In my opinion, the chip is good enough to apply with gadgets in this IoT age. However, these command sets are not open-sourced so far. Plus, regulations to RF emittance differ among various countries. E.g., in Japan, because of its narrow land, the regulation are strict. It's not duty of best efforts, but mandatory. This regulation spans to softwares of products. Products which are not permitted to be used in Japan by the regulator can't emit radio frequencies. Other countries may have or become stricter than Japan. I think, to fit with regulations, IoT projects need to have any wireless module which is separately permitted by regulators and opens its command sets.
 
 ## Licenses
 
