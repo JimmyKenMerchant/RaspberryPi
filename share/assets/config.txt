@@ -19,14 +19,19 @@ kernel_address=0
 #GPU(APB) Clock MHz, you may need to voltage up for overclock
 #In RasPi2(BCM2836), Maximum Clock of Arm Peripheral Bus (APB) seems to be 250Mhz, even setting 500Mhz on Core
 #gpu_freq means the unified setting of core_freq (Memory Bus, etc.), h264_freq, isp_freq, and v3d_freq (3D Block).
+#Frequencies may become variable in default. Combination of *_freq_min and *_freq set the range of the frequency.
 [pi0]
 gpu_freq=240
+gpu_freq_min=240
 [pi1]
 gpu_freq=240
+gpu_freq_min=240
 [pi2]
 gpu_freq=240
+gpu_freq_min=240
 [pi3]
 gpu_freq=240
+gpu_freq_min=240
 [all]
 
 #SDRAM Clock Mhz, you may need to voltage up for overclock

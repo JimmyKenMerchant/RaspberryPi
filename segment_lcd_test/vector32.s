@@ -76,6 +76,13 @@ os_reset:
 
 	macro32_dsb ip
 
+	/**
+	 * Sound
+	 */
+
+	mov r0, #0
+	bl snd32_soundinit_pwm
+
 	pop {pc}	
 
 os_debug:
@@ -111,6 +118,8 @@ os_fiq:
 	ldrhs r1, OS_FIQ_ONEFRAME_ADDR
 	strhsb r0, [r1]
 
+	macro32_dsb ip
+
 .ifdef __DEBUG
 .ifndef __RASPI3B
 	/* ACT Blinker */
@@ -120,6 +129,9 @@ os_fiq:
 	macro32_dsb ip
 .endif
 .endif
+
+	mov r0, #0
+	bl snd32_soundplay
 
 	macro32_dsb ip
 

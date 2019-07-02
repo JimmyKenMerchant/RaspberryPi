@@ -14,6 +14,10 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 **Output/Input**
 
+* GPIO 12 as Output of PWM0
+
+* GPIO 13 as Output of PWM1
+
 * GPIO 5 as Input, Increment
 
 * GPIO 6 as Input, Decrement
@@ -26,11 +30,11 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 * GPIO 47 as Output of Embedded LED (1Hz Blinker): Except Pi 3B
 
-* GPIO 13 as CS of Segment LCD Module
+* GPIO 10 as CS of Segment LCD Module
 
-* GPIO 19 as WR of Segment LCD Module
+* GPIO 9 as WR of Segment LCD Module
 
-* GPIO 26 as DATA of Segment LCD Module
+* GPIO 11 as DATA of Segment LCD Module
 
 * For more information about GPIO of Raspberry Pi, visit [GPIO](https://www.raspberrypi.org/documentation/usage/gpio/).
 

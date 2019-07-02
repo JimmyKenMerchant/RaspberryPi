@@ -9,6 +9,9 @@
 
 #include "system32.h"
 #include "system32.c"
+#include "snd32/soundindex.h"
+#include "snd32/soundadjust.h"
+#include "snd32/musiccode.h"
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
@@ -23,9 +26,9 @@ extern bool OS_FIQ_ONEFRAME;
 #define GPIO_BUTTON3    20 // GPIO Number
 #define GPIO_BUTTON4    21 // GPIO Number
 #define GPIO_SWITCH1    22 // GPIO Number
-#define GPIO_CS         13 // GPIO Number
-#define GPIO_WR         19 // GPIO Number
-#define GPIO_DATA       26 // GPIO Number
+#define GPIO_CS         10 // GPIO Number
+#define GPIO_WR         9  // GPIO Number
+#define GPIO_DATA       11 // GPIO Number
 
 /* Declare Unique Functions */
 void print_time();
@@ -41,6 +44,7 @@ uint32 count_button4;
 uint32 alarm_hour;
 uint32 alarm_minute;
 bool display_blinkon;
+bool alarm_musicon;
 
 typedef enum _mode_list {
 	display_time,
@@ -51,6 +55,35 @@ typedef enum _mode_list {
 	change_alarm_minute
 } mode_list;
 mode_list current_mode;
+
+/**
+ * "Auld Lang Syne", Scottish Folk Song
+ * Melody With Arpeggio
+ */
+music_code music1[] =
+{
+	_24_DEC(_C4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT)
+	_24_DEC(_A4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
+	_24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
+	_24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_D5_SINL) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT)
+
+	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
+	_24_DEC(_F4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
+	_24_DEC(_A4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_MAJ_ARP(_AS4_SINT) _12_DEC(_D4_SINL) _12(_SILENCE) _24_DEC(_D4_SINL) _24_MAJ_ARP(_AS4_SINT)
+	_24_DEC(_C4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT)
+
+	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
+	_24_DEC(_F4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
+	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
+	_24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_D5_SINL) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT)
+
+	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
+	_24_DEC(_F4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
+	_24_DEC(_A4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_MAJ_ARP(_AS4_SINT) _12_DEC(_D4_SINL) _12(_SILENCE) _24_DEC(_D4_SINL) _24_MAJ_ARP(_AS4_SINT)
+	_24_DEC(_C4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT)
+
+	_END
+};
 
 int32 _user_start()
 {
@@ -64,7 +97,8 @@ int32 _user_start()
 	count_button4 = 0;
 	alarm_hour = 0;
 	alarm_minute = 0;
-	display_blinkon = true;
+	display_blinkon = True;
+	alarm_musicon = False;
 	current_mode = display_time;
 
 	/**
@@ -91,6 +125,18 @@ int32 _user_start()
 	_clock_init( 21, 59, 30, 0 );
 	_correct_utc( -9 );
 	_correct_utc( 0 );
+	/* Reflects Times to Global Variables about Clock */
+	_get_time();
+
+	/**
+	 * Initialize Sound
+	 */	
+	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
+	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
+	_soundclear( False );
+
+	// To Get Proper Latency, Get Lengths in Advance
+	uint32 musiclen1 = snd32_musiclen( music1 );
 
 	/**
 	 * Main Loop
@@ -114,9 +160,9 @@ int32 _user_start()
 						clear_digit( 2 );
 						clear_digit( 3 );
 					}
-					display_blinkon = false;
+					display_blinkon = False;
 				} else {
-					display_blinkon = true;
+					display_blinkon = True;
 				}
 				count_update = 0;
 			}
@@ -206,7 +252,24 @@ int32 _user_start()
 			} else {
 				count_button4 = MAXCOUNT_BUTTON;
 			}
-			OS_FIQ_ONEFRAME = false;
+			/**
+			 * Switch No.1:
+			 * If switch is on, the alarm sounds when you set.
+			 */
+			if ( _gpio_in( GPIO_SWITCH1 ) ) {
+				if ( ! alarm_musicon ) {
+					if ( CLK32_HOUR == alarm_hour && CLK32_MINUTE == alarm_minute ) {
+						_soundset( music1, musiclen1, 0, -1 );
+						alarm_musicon = True;
+					}
+				}
+			} else {
+				if ( alarm_musicon ) {
+					_soundclear( False );
+					alarm_musicon = False;
+				}
+			}
+			OS_FIQ_ONEFRAME = False;
 		}
 		arm32_dsb();
 	}
