@@ -316,7 +316,7 @@ __attribute__((noinline)) uint32 _gpiopull( uint32 number_gpio, uchar8 control )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _pwmplay()
+__attribute__((noinline)) uint32 _pwmplay( bool flag_stay, bool flag_wide )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x2E");
@@ -330,7 +330,7 @@ __attribute__((noinline)) uint32 _pwmset( pwm_sequence* pwm, uint32 length, uint
 	return result;
 }
 
-__attribute__((noinline)) uint32 _pwmclear( bool stay )
+__attribute__((noinline)) uint32 _pwmclear( bool flag_stay )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x30");

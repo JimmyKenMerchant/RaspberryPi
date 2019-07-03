@@ -617,11 +617,11 @@ bool _gpio_in( uchar8 gpio_number ); // Actual Pin Level Status
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _pwmplay();
+__attribute__((noinline)) uint32 _pwmplay( bool flag_stay, bool flag_wide );
 
 __attribute__((noinline)) uint32 _pwmset( pwm_sequence* pwm, uint32 length, uint32 count, int32 repeat );
 
-__attribute__((noinline)) uint32 _pwmclear( bool stay ); // Clear All (false) or Stay GPIO Status (true)
+__attribute__((noinline)) uint32 _pwmclear( bool flag_stay ); // Clear All (false) or Stay GPIO Status (true)
 
 __attribute__((noinline)) uint32 _pwmselect( uint32 channel );
 
