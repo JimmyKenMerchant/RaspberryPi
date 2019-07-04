@@ -249,11 +249,23 @@ pwm32_pwmset:
 
 	ldr temp, [memorymap_base, #equ32_pwm_ctl]
 	cmp number_pwm, #0
+	bne pwm32_pwmset_channel1
+
+	/* Channel 0 */
+	tst temp, #equ32_pwm_ctl_pwen1
 	orreq temp, #equ32_pwm_ctl_pwen1
-	orrne temp, #equ32_pwm_ctl_pwen2
-	str temp, [memorymap_base, #equ32_pwm_ctl]
+	streq temp, [memorymap_base, #equ32_pwm_ctl]
 
 	b pwm32_pwmset_success
+
+	pwm32_pwmset_channel1:
+
+		/* Channel 1 */
+		tst temp, #equ32_pwm_ctl_pwen2
+		orreq temp, #equ32_pwm_ctl_pwen2
+		streq temp, [memorymap_base, #equ32_pwm_ctl]
+
+		b pwm32_pwmset_success
 
 	pwm32_pwmset_error:
 		mov r0, #1
@@ -309,8 +321,6 @@ pwm32_pwmclear:
 	str temp, [memorymap_base, #8]  @ Incremental Count
 	str temp, [memorymap_base, #12] @ -1 is Infinite Loop
 
-	macro32_dsb ip
-
 	cmp flag_stay, #0
 	bhi pwm32_pwmclear_success
 
@@ -329,13 +339,24 @@ pwm32_pwmclear:
 
 	ldr temp, [memorymap_base, #equ32_pwm_ctl]
 	cmp number_pwm, #0
-	biceq temp, #equ32_pwm_ctl_pwen1
-	bicne temp, #equ32_pwm_ctl_pwen2
-	str temp, [memorymap_base, #equ32_pwm_ctl]
+	bne pwm32_pwmclear_channel1
 
-	macro32_dsb ip
+	/* Channel 0 */
+	tst temp, #equ32_pwm_ctl_pwen1
+	bicne temp, #equ32_pwm_ctl_pwen1
+	strne temp, [memorymap_base, #equ32_pwm_ctl]
+
+	b pwm32_pwmclear_success
+
+	pwm32_pwmclear_channel1:
+
+		/* Channel 1 */
+		tst temp, #equ32_pwm_ctl_pwen2
+		bicne temp, #equ32_pwm_ctl_pwen2
+		strne temp, [memorymap_base, #equ32_pwm_ctl]
 
 	pwm32_pwmclear_success:
+		macro32_dsb ip
 		mov r0, #0                                 @ Return with Success
 
 	pwm32_pwmclear_common:
@@ -413,6 +434,7 @@ pwm32_pwmlen:
 /**
  * function pwm32_pwminit
  * PWM Initializer
+ * Caution that even if you enable PWM0 or PWM1, the circuit will not turn on when the value of each range is zero.
  *
  * Parameters
  * r0: 0 as Variable Frequencies to Balance Pulses (Multiple Highs and Lows), 1 as Fixed Frequency (One High and Low) in A Duty Cycle

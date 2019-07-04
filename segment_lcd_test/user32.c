@@ -9,9 +9,6 @@
 
 #include "system32.h"
 #include "system32.c"
-#include "snd32/soundindex.h"
-#include "snd32/soundadjust.h"
-#include "snd32/musiccode.h"
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
@@ -19,8 +16,9 @@
 extern bool OS_FIQ_ONEFRAME;
 
 /* Declare Unique Definitions */
-#define MAXCOUNT_UPDATE 6  // 2Hz
-#define MAXCOUNT_BUTTON 12
+#define MAXCOUNT_UPDATE 24 // 2Hz
+#define MAXCOUNT_BUTTON 48
+#define INTERVAL_BUTTON 4
 #define GPIO_BUTTON1    5  // GPIO Number
 #define GPIO_BUTTON2    6  // GPIO Number
 #define GPIO_BUTTON3    20 // GPIO Number
@@ -56,33 +54,13 @@ typedef enum _mode_list {
 } mode_list;
 mode_list current_mode;
 
-/**
- * "Auld Lang Syne", Scottish Folk Song
- * Melody With Arpeggio
- */
-music_code music1[] =
+pwm_sequence music1[] =
 {
-	_24_DEC(_C4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT)
-	_24_DEC(_A4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
-	_24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
-	_24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_D5_SINL) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT)
-
-	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
-	_24_DEC(_F4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
-	_24_DEC(_A4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_MAJ_ARP(_AS4_SINT) _12_DEC(_D4_SINL) _12(_SILENCE) _24_DEC(_D4_SINL) _24_MAJ_ARP(_AS4_SINT)
-	_24_DEC(_C4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT)
-
-	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
-	_24_DEC(_F4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
-	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
-	_24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_D5_SINL) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT) _24(_D5_SINT) _24_MAJ_ARP(_AS4_SINT)
-
-	_24_DEC(_D5_SINL) _24_MAJ_ARP(_F4_SINT) _24_DEC(_C5_SINL) _24_MAJ_ARP(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _12_DEC(_A4_SINL) _12(_SILENCE) _24_DEC(_A4_SINL) _24_MAJ_ARP(_F4_SINT)
-	_24_DEC(_F4_SINL) _24_MAJ_ARP(_C4_SINT) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT) _24_MAJ_ARP(_C4_SINT) _12_DEC(_F4_SINL) _12(_SILENCE) _24_DEC(_G4_SINL) _24_MAJ_ARP(_C4_SINT)
-	_24_DEC(_A4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_MAJ_ARP(_AS4_SINT) _12_DEC(_D4_SINL) _12(_SILENCE) _24_DEC(_D4_SINL) _24_MAJ_ARP(_AS4_SINT)
-	_24_DEC(_C4_SINL) _24_MAJ_ARP(_AS4_SINT) _24_DEC(_F4_SINL) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT) _24(_F4_SINT) _24_MAJ_ARP(_F4_SINT)
-
-	_END
+	_24(_RAP(1<<31|10909,1<<31|21818))
+	_24(_RAP(1<<31|0,1<<31|21818))
+	_24(_RAP(1<<31|5454,1<<31|10909))
+	_24(_RAP(1<<31|0,1<<31|21818))
+	PWM32_END
 };
 
 int32 _user_start()
@@ -131,12 +109,8 @@ int32 _user_start()
 	/**
 	 * Initialize Sound
 	 */	
-	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
-	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
-	_soundclear( False );
-
 	// To Get Proper Latency, Get Lengths in Advance
-	uint32 musiclen1 = snd32_musiclen( music1 );
+	uint32 musiclen1 = pwm32_pwmlen( music1 ) / 2;
 
 	/**
 	 * Main Loop
@@ -192,7 +166,11 @@ int32 _user_start()
 						print_alarm();
 					}
 				}
-				if ( count_button1 != 0 ) count_button1--;
+				if ( count_button1 != 0 ) {
+					count_button1--;
+				} else {
+					count_button1 = INTERVAL_BUTTON;
+				}
 			} else {
 				count_button1 = MAXCOUNT_BUTTON;
 			}
@@ -206,7 +184,11 @@ int32 _user_start()
 				if ( count_button2 == MAXCOUNT_BUTTON || count_button2 == 0 ) {
 
 				}
-				if ( count_button2 != 0 ) count_button2--;
+				if ( count_button2 != 0 ) {
+					count_button2--;
+				} else {
+					count_button2 = INTERVAL_BUTTON;
+				}
 			} else {
 				count_button2 = MAXCOUNT_BUTTON;
 			}
@@ -254,22 +236,27 @@ int32 _user_start()
 			}
 			/**
 			 * Switch No.1:
-			 * If switch is on, the alarm sounds when you set.
+			 * If switch is on, the alarming music sounds when you set.
 			 */
 			if ( _gpio_in( GPIO_SWITCH1 ) ) {
 				if ( ! alarm_musicon ) {
 					if ( CLK32_HOUR == alarm_hour && CLK32_MINUTE == alarm_minute ) {
-						_soundset( music1, musiclen1, 0, -1 );
+						_pwmset( music1, musiclen1, 0, -1 );
 						alarm_musicon = True;
 					}
 				}
 			} else {
 				if ( alarm_musicon ) {
-					_soundclear( False );
+					_pwmclear( False );
 					alarm_musicon = False;
 				}
 			}
 			OS_FIQ_ONEFRAME = False;
+			/**
+			 * PWM Play
+			 */
+			//_pwmselect( 0 );
+			_pwmplay( False, True ); // Wide PWM Sequence
 		}
 		arm32_dsb();
 	}

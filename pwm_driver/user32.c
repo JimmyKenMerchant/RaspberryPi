@@ -396,7 +396,7 @@ int32 _user_start()
 			}
 
 			_pwmselect( 0 );
-			result = _pwmplay();
+			result = _pwmplay( False, False );
 			if ( result == 0 ) { // Playing
 				playing_signal = _GPIOTOGGLE_HIGH;
 			} else { // Not Playing
@@ -405,7 +405,7 @@ int32 _user_start()
 			_gpiotoggle( 16, playing_signal );
 
 			_pwmselect( 1 );
-			result =_pwmplay();
+			result =_pwmplay( False, False );
 			if ( result == 0 ) { // Playing
 				playing_signal = _GPIOTOGGLE_HIGH;
 			} else { // Not Playing

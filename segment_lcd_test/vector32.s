@@ -80,8 +80,24 @@ os_reset:
 	 * Sound
 	 */
 
-	mov r0, #0
-	bl snd32_soundinit_pwm
+	/**
+	 * Clock Manager for PWM.
+	 */
+	mov r0, #equ32_cm_pwm
+	mov r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc           @ 19.2Mhz
+	mov r2, #2 << equ32_cm_div_integer                            @ For 9.6Mhz
+	bl arm32_clockmanager
+
+	/**
+	 * PWM Initializer, Settings for Wide PWM Sequence (Variable Range)
+	 */
+	mov r0, #1                                                     @ Fixed Frequency
+	mov r1, #0xFF                                                  @ Dummy Range of PWM0 for Enabling Circuit
+	mov r2, #0XFF                                                  @ Dummy Range of PWM1 for Enabling Circuit
+	bl pwm32_pwminit
+
+	macro32_dsb ip
 
 	pop {pc}	
 
@@ -108,15 +124,10 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-	/* Increment of Count to Acknowledge One Frame 12hz */
-	ldr r0, os_fiq_count
-	add r0, r0, #1
-	cmp r0, #4
-	movhs r0, #0                              @ Reset If Count Reaches 4
-	str r0, os_fiq_count
-	movhs r0, #1                              @ Set Flag If Count Reaches 4
-	ldrhs r1, OS_FIQ_ONEFRAME_ADDR
-	strhsb r0, [r1]
+	/* Acknowledge One Frame */
+	mov r0, #1
+	ldr r1, OS_FIQ_ONEFRAME_ADDR
+	strb r0, [r1]
 
 	macro32_dsb ip
 
@@ -130,14 +141,7 @@ os_fiq:
 .endif
 .endif
 
-	mov r0, #0
-	bl snd32_soundplay
-
-	macro32_dsb ip
-
 	pop {r0-r4,pc}
-
-os_fiq_count:          .word 0x00
 
 /**
  * Variables
