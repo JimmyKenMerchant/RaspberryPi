@@ -126,6 +126,7 @@
 .endif
 
 .equ equ32_bus_peripherals_base,   0x7E000000 @ For DMA and VideoCore Address
+.equ equ32_bus_noncache_base,      0xC0000000 @ For DMA and VideoCore Address
 
 .equ equ32_systemtimer_base,   0x00003000
 .equ equ32_interrupt_base,     0x0000B200

@@ -348,7 +348,7 @@ snd32_sounddecode:
 				orr r1, r1, #0<<equ32_dma_ti_burst_length
 				orr r1, r1, #equ32_dma_ti_src_inc|equ32_dma_ti_dst_dreq @ Transfer Information
 				orr r1, r1, #equ32_dma_ti_wait_resp
-				mov r2, mem_alloc                                       @ Source Address
+				add r2, mem_alloc, #equ32_bus_noncache_base             @ Source Address
 				lsl r4, wave_length, #2	                                @ Transfer Length
 				mov r5, #0                                              @ 2D Stride
 				mov r6, cb                                              @ Next CB Number
