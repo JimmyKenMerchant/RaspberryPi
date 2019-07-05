@@ -57,10 +57,27 @@ mode_list current_mode;
 
 pwm_sequence music1[] =
 {
-	_24(_RAP(1<<31|(_C4_LE/2),1<<31|_C4_LE))
-	_24(_RAP(1<<31|0,1<<31|1))
-	_24(_RAP(1<<31|(_C5_LE/2),1<<31|_C5_LE))
-	_24(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_C4_LE/2),1<<31|_C4_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_E4_LE/2),1<<31|_E4_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_G4_LE/2),1<<31|_G4_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_C5_LE/2),1<<31|_C5_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	PWM32_END
+};
+
+pwm_sequence music2[] =
+{
+	_12(_RAP(1<<31|(_E4_LE/2),1<<31|_E4_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_G4_LE/2),1<<31|_G4_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_C5_LE/2),1<<31|_C5_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
+	_12(_RAP(1<<31|(_E5_LE/2),1<<31|_E5_LE))
+	_12(_RAP(1<<31|0,1<<31|1))
 	PWM32_END
 };
 
@@ -112,6 +129,7 @@ int32 _user_start()
 	 */	
 	// To Get Proper Latency, Get Lengths in Advance
 	uint32 musiclen1 = pwm32_pwmlen( music1 ) / 2;
+	uint32 musiclen2 = pwm32_pwmlen( music2 ) / 2;
 
 	/**
 	 * Main Loop
@@ -241,13 +259,19 @@ int32 _user_start()
 			 */
 			if ( _gpio_in( GPIO_SWITCH1 ) ) {
 				if ( ! alarm_musicon ) {
-					//if ( CLK32_HOUR == alarm_hour && CLK32_MINUTE == alarm_minute ) {
+					if ( CLK32_HOUR == alarm_hour && CLK32_MINUTE == alarm_minute ) {
+						_pwmselect( 0 );
 						_pwmset( music1, musiclen1, 0, -1 );
+						_pwmselect( 1 );
+						_pwmset( music2, musiclen2, 0, -1 );
 						alarm_musicon = True;
-					//}
+					}
 				}
 			} else {
 				if ( alarm_musicon ) {
+					_pwmselect( 0 );
+					_pwmclear( False );
+					_pwmselect( 1 );
 					_pwmclear( False );
 					alarm_musicon = False;
 				}
@@ -256,7 +280,9 @@ int32 _user_start()
 			/**
 			 * PWM Play
 			 */
-			//_pwmselect( 0 );
+			_pwmselect( 0 );
+			_pwmplay( False, True ); // Wide PWM Sequence
+			_pwmselect( 1 );
 			_pwmplay( False, True ); // Wide PWM Sequence
 		}
 		arm32_dsb();
