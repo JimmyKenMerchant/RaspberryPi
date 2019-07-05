@@ -9,6 +9,7 @@
 
 #include "system32.h"
 #include "system32.c"
+#include "pwm32/notes_le.h"
 #include "library/segment_lcd.h"
 #include "library/segment_lcd.c"
 
@@ -56,10 +57,10 @@ mode_list current_mode;
 
 pwm_sequence music1[] =
 {
-	_24(_RAP(1<<31|10909,1<<31|21818))
-	_24(_RAP(1<<31|0,1<<31|21818))
-	_24(_RAP(1<<31|5454,1<<31|10909))
-	_24(_RAP(1<<31|0,1<<31|21818))
+	_24(_RAP(1<<31|(_C4_LE/2),1<<31|_C4_LE))
+	_24(_RAP(1<<31|0,1<<31|1))
+	_24(_RAP(1<<31|(_C5_LE/2),1<<31|_C5_LE))
+	_24(_RAP(1<<31|0,1<<31|1))
 	PWM32_END
 };
 
@@ -240,10 +241,10 @@ int32 _user_start()
 			 */
 			if ( _gpio_in( GPIO_SWITCH1 ) ) {
 				if ( ! alarm_musicon ) {
-					if ( CLK32_HOUR == alarm_hour && CLK32_MINUTE == alarm_minute ) {
+					//if ( CLK32_HOUR == alarm_hour && CLK32_MINUTE == alarm_minute ) {
 						_pwmset( music1, musiclen1, 0, -1 );
 						alarm_musicon = True;
-					}
+					//}
 				}
 			} else {
 				if ( alarm_musicon ) {
