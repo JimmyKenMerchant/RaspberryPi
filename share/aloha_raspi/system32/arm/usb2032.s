@@ -50,9 +50,12 @@
  *
  *10. July 6, 2019. Reviewed device I/O coherency with DMA of USB HCD of BCM2835, BCM2836, and BCM2837.
  *    Using the bus address on the point of (system) coherency (PoC), L2 cache,
- *    gurantees I/O coherency among ARM, GPU, DMA, and peripherals.
- *    In Page 7 of the BCM2835 manual, the need of accessing the uncached alias (from 0xC0000000) by periphrals is described.
+ *    guarantees I/O coherency among ARM, GPU, DMA, and peripherals.
+ *    In page 7 of the BCM2835 manual, the need of accessing the uncached alias (from 0xC0000000) by peripherals is described.
  *    Besides, L2 cache is turned on in default, so PoC is expected to be on L2 cache alias.
+ *    So far, I think of 0x40000000 for BCM2835, and 0x80000000 for BCM2836 and later as PoC in view of GPU, DMA, and peripherals.
+ *    Note that, from ARM, PoC is managed with coprocessors.
+ *    DMA alignment seems to be 32-bytes even if the SoC is BCM2835, which is booted with `fixup.dat` to expand SDRAM 256MB to 512MB.
  */
 
 /**
