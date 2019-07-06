@@ -95,17 +95,15 @@
  */
 .ifdef __BCM2835
 	.equ equ32_peripherals_base,                   0x20000000 @ For ARM Physical Address
-	.equ equ32_usb2032_get_buffer_out_array_limit, 1
 	.equ equ32_usb2032_timeout,                    0x00000FF0
 	.equ equ32_usb2032_timeout_nyet,               0x00000FF0
-	.equ equ32_bus_noncache_base,                  0x40000000 @ For DMA and Peripherals
+	.equ equ32_bus_coherence_base,                 0x40000000 @ For DMA and Peripherals
 .else
 	/* BCM2836 and BCM2837 Peripheral Base */
 	.equ equ32_peripherals_base,                   0x3F000000 @ For ARM Physical Address
-	.equ equ32_usb2032_get_buffer_out_array_limit, 1
 	.equ equ32_usb2032_timeout,                    0x00002F00
 	.equ equ32_usb2032_timeout_nyet,               0x00002F00
-	.equ equ32_bus_noncache_base,                  0xC0000000 @ For DMA and Peripherals
+	.equ equ32_bus_coherence_base,                 0x80000000 @ For DMA and Peripherals
 .endif
 
 .ifdef __256M

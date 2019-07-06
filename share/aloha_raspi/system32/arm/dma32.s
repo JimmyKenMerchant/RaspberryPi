@@ -49,8 +49,8 @@ dma32_set_channel:
 	mov temp, #32                                  @ 256-bit Align
 	mul number_cb, temp, number_cb                 @ Offset of Targeted CB
 	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB (ARM Side)
-	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
-	add addr_cb, addr_cb, #equ32_bus_noncache_base
+	/* Transform to Bus Address (GPU, DMA, and Peripherals Recognize This Address Space as Point of Coherency with ARM) */
+	add addr_cb, addr_cb, #equ32_bus_coherence_base
 
 	mov addr_dma, #equ32_peripherals_base
 	add addr_dma, addr_dma, #equ32_dma_base
@@ -238,8 +238,8 @@ dma32_change_nextcb:
 	mov temp, #32                                     @ 256-bit Align
 	mul temp, nextconbk, temp                         @ Offset of Next CB
 	add addr_nextcb, addr_nextcb, temp                @ Address of Next CB (ARM Side)
-	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
-	add addr_nextcb, addr_nextcb, #equ32_bus_noncache_base
+	/* Transform to Bus Address (GPU, DMA, and Peripherals Recognize This Address Space as Point of Coherency with ARM) */
+	add addr_nextcb, addr_nextcb, #equ32_bus_coherence_base
 
 	/* Stop Current Control Block */
 
@@ -335,8 +335,8 @@ dma32_set_cb:
 	mul nextconbk, mul_number, nextconbk           @ Offset of Next CB
 	mul number_cb, mul_number, number_cb           @ Offset of Targeted CB
 	add nextconbk, addr_cb, nextconbk              @ Address of Next CB (ARM Side)
-	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
-	add nextconbk, nextconbk, #equ32_bus_noncache_base
+	/* Transform to Bus Address (GPU, DMA, and Peripherals Recognize This Address Space as Point of Coherency with ARM) */
+	add nextconbk, nextconbk, #equ32_bus_coherence_base
 	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB (ARM Side)
 
 	str ti, [addr_cb, #dma32_ti]                   @ Transfer Information

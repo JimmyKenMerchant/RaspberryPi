@@ -93,8 +93,17 @@ hid32_hid_activate:
 	hid32_hid_activate_getbuffer:
 
 		push {r0-r3}
+		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
+		bl usb2032_get_buffer
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		beq hid32_hid_activate_error3
+		mov buffer_rq, temp
+
+		push {r0-r3}
 		mov r0, #16                                                  @ 4 Bytes by 16 Words Equals 64 Bytes
-		bl usb2032_get_buffer_in
+		bl usb2032_get_buffer
 		mov buffer_rx, r0
 		pop {r0-r3}
 		cmp buffer_rx, #0
@@ -106,15 +115,6 @@ hid32_hid_activate:
 		 * Overall, on each low speed device, the method for accurate collection of descriptors varies.
 		 * e.g., if you get the device descriptor overing 8 maximum packets, you'll get the latter half of this. 
 		 */
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
 		orr temp, temp, #equ32_usb20_req_get_descriptor<<8           @ bRequest
@@ -186,15 +186,6 @@ macro32_debug_hexa buffer_rx, 0, 124, 64
 
 		/* Set Configuration  */
 
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
-
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 		orr temp, temp, #equ32_usb20_req_set_configuration<<8        @ bRequest
 		orr temp, temp, num_config, lsl #16                          @ wValue, Descriptor Index
@@ -225,15 +216,6 @@ macro32_debug_hexa buffer_rx, 0, 124, 64
 		bne hid32_hid_activate_error2                  @ Failure of Communication
 
 		/* Get Configuration, Interface, Endpoint Descriptors  */
-
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
 
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_device_to_host @ bmRequest Type
 		orr temp, temp, #equ32_usb20_req_get_descriptor<<8            @ bRequest
@@ -307,17 +289,6 @@ macro32_debug response, 0, 196
 		str addr_device, [temp]
 		orr ticket, ticket, addr_device
 
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
-
-		mov addr_device, #1
-
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 		orr temp, temp, #equ32_usb20_req_set_address<<8              @ bRequest
 		orr temp, temp, addr_device, lsl #16                         @ wValue, address
@@ -351,19 +322,13 @@ macro32_debug response, 0, 196
 
 		/* Remote Wakeup  */
 
-		push {r0-r3}
-		mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-		bl usb2032_get_buffer_out
-		mov temp, r0
-		pop {r0-r3}
-		cmp temp, #0
-		beq hid32_hid_activate_error3
-		mov buffer_rq, temp
-
 		mov temp, #equ32_usb20_reqt_recipient_device|equ32_usb20_reqt_type_standard|equ32_usb20_reqt_host_to_device @ bmRequest Type
 		orr temp, temp, #equ32_usb20_req_set_feature<<8              @ bRequest
 		orr temp, temp, #equ32_usb20_val_device_remote_wakeup<<16    @ wValue
 		str temp, [buffer_rq]
+
+		mov temp, #0
+		str temp, [buffer_rq, #4]
 
 		mov character, packet_max                      @ Maximam Packet Size
 		orr character, character, #0<<11               @ Endpoint Number
@@ -409,9 +374,14 @@ macro32_debug response, 0, 196
 
 	hid32_hid_activate_common:
 		push {r0-r3}
+		mov r0, buffer_rq
+		cmp r0, #0                        @ If Not Allocated
+		blne usb2032_clear_buffer
+		pop {r0-r3}
+		push {r0-r3}
 		mov r0, buffer_rx
 		cmp r0, #0                        @ If Not Allocated
-		blne usb2032_clear_buffer_in
+		blne usb2032_clear_buffer
 		pop {r0-r3}
 
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
@@ -485,7 +455,7 @@ hid32_hid_setidle:
 
 	push {r0-r3}
 	mov r0, #2                                                   @ 4 Bytes by 2 Words Equals 8 Bytes
-	bl usb2032_get_buffer_out
+	bl usb2032_get_buffer
 	mov temp, r0
 	pop {r0-r3}
 	cmp temp, #0
@@ -539,6 +509,12 @@ macro32_debug temp, 0, 160
 		mov r0, #0
 
 	hid32_hid_setidle_common:
+		push {r0-r3}
+		mov r0, buffer_rq
+		cmp r0, #0                        @ If Not Allocated
+		blne usb2032_clear_buffer
+		pop {r0-r3}
+
 		macro32_dsb ip                    @ Ensure Completion of Instructions Before
 		pop {r4-r10,pc}
 
@@ -671,7 +647,7 @@ hid32_keyboard_get:
 
 	push {r0-r2}
 	mov r0, #2                             @ 4 Bytes by 2 Words Equals 8 Bytes
-	bl usb2032_get_buffer_in
+	bl usb2032_get_buffer
 	mov buffer, r0
 	pop {r0-r2}
 
@@ -699,7 +675,7 @@ macro32_debug data_upper, 320, 36
 
 	push {r0-r3}
 	mov r0, buffer
-	bl usb2032_clear_buffer_in
+	bl usb2032_clear_buffer
 	pop {r0-r3}
 
 	tst response, #0x4                     @ ACK
