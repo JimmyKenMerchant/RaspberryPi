@@ -32,9 +32,11 @@ int32 _user_start() {
 	renderbuffer = (obj)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 
+#ifndef __DEBUG
 	_attach_buffer( renderbuffer );
 	print32_string( "\x1B[33m\x1B[44m\0", FB32_X_CARET, FB32_Y_CARET, 10 ); // Change Foreground/Background Color
 	fb32_clear_color( PRINT32_FONT_BACKCOLOR );
+#endif
 
 	while(True) {
 		if ( OS_FIQ_TIMER ) {

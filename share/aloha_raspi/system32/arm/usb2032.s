@@ -1927,6 +1927,8 @@ usb2032_otg_host_setter:
 
 	str transfer_size, [memorymap_base, #equ32_usb20_otg_hctsizn]
 
+	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
+	add buffer, buffer, #equ32_bus_noncache_base
 	str buffer, [memorymap_base, #equ32_usb20_otg_hcdman]
 
 	bic split_ctl, split_ctl, #0x7F000000

@@ -178,20 +178,19 @@ os_reset:
 
 	pop {pc}
 
-os_debug_:
+os_debug:
 	push {r0-r8,lr}
-	
+/*
 	ldr r0, ADDR32_COLOR32_NAVYBLUE
 	ldr r0, [r0]
 	bl fb32_clear_color
 
 	bl bcm32_poweron_usb
 
-/*macro32_debug r0 500 90*/
+macro32_debug r0 500 90
 
 	bl usb2032_otg_host_reset_bcm
 
-/*
 macro32_debug r0 500 102
 
 	mov r1, #equ32_peripherals_base
@@ -225,7 +224,6 @@ macro32_debug r0 500 150
 	ldr r0, [r1, #equ32_usb20_otg_hptxfsiz]
 
 macro32_debug r0 500 162
-*/
 
 	mov r0, #2
 	mov r1, #0
@@ -244,11 +242,13 @@ macro32_debug r0 500 200
 	bl usb2032_hub_search_device
 	mov r3, r0
 	pop {r0-r1}
+*/
 
 /**
  * Type B has an ethernet interface on the port #0.
  * So if you serach another device, you need to search these again.
  */
+/*
 .ifdef __B
 	push {r0-r1}
 	mov r1, r0
@@ -274,6 +274,7 @@ macro32_debug r3 500 212
 		streq r0, os_fiq_usbticket
 
 macro32_debug r0 500 224
+*/
 
 		pop {r0-r8,pc}
 

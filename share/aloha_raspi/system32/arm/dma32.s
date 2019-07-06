@@ -7,7 +7,7 @@
  *
  */
 
-.equ dma32_offset,                0x00000020 @ Offset of Each CB (32 Bytes)
+.equ dma32_offset,                0x00000020 @ Offset of Each CB (32 Bytes = 256 Bits)
 .equ dma32_ti,                    0x00000000 @ Transfer Information
 .equ dma32_source_ad,             0x00000004 @ Source Address
 .equ dma32_dest_ad,               0x00000008 @ Destination Address
@@ -46,9 +46,11 @@ dma32_set_channel:
 	bhi dma32_set_channel_error
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
-	mov temp, #32                                  @ 32-bit Align
+	mov temp, #32                                  @ 256-bit Align
 	mul number_cb, temp, number_cb                 @ Offset of Targeted CB
-	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB
+	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB (ARM Side)
+	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
+	add addr_cb, addr_cb, #equ32_bus_noncache_base
 
 	mov addr_dma, #equ32_peripherals_base
 	add addr_dma, addr_dma, #equ32_dma_base
@@ -109,7 +111,7 @@ dma32_set_channel:
 
 /**
  * function dma32_clear_channel
- * Set DMA Channel
+ * Clear DMA Channel
  *
  * Parameters
  * r0: Channel of DMA
@@ -200,7 +202,7 @@ dma32_clear_channel:
 
 /**
  * function dma32_change_nextcb
- * Set Control Block
+ * Change Next Control Block
  *
  * Parameters
  * r0: Channel of DMA
@@ -233,9 +235,11 @@ dma32_change_nextcb:
 	add addr_dma, addr_dma, temp
 
 	ldr addr_nextcb, DMA32_CB                         @ Base Address of CBs
-	mov temp, #32                                     @ 32-bit Align
+	mov temp, #32                                     @ 256-bit Align
 	mul temp, nextconbk, temp                         @ Offset of Next CB
-	add addr_nextcb, addr_nextcb, temp                @ Address of Next CB
+	add addr_nextcb, addr_nextcb, temp                @ Address of Next CB (ARM Side)
+	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
+	add addr_nextcb, addr_nextcb, #equ32_bus_noncache_base
 
 	/* Stop Current Control Block */
 
@@ -272,11 +276,11 @@ macro32_debug temp, 200, 360
 	b dma32_change_nextcb_success
 
 	dma32_change_nextcb_error:
-		mvn r0, #0                             @ -1
+		mov r0, #1
 		b dma32_change_nextcb_common
 
 	dma32_change_nextcb_success:
-		mov r0, addr_nextcb
+		mov r0, #0
 
 	dma32_change_nextcb_common:
 		pop {r4}
@@ -327,11 +331,13 @@ dma32_set_cb:
 	bhi dma32_set_cb_error
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
-	mov mul_number, #32                            @ 32-bit Align
+	mov mul_number, #32                            @ 256-bit Align
 	mul nextconbk, mul_number, nextconbk           @ Offset of Next CB
 	mul number_cb, mul_number, number_cb           @ Offset of Targeted CB
-	add nextconbk, addr_cb, nextconbk              @ Address of Next CB
-	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB
+	add nextconbk, addr_cb, nextconbk              @ Address of Next CB (ARM Side)
+	/* Transform to Bus Address (Peripheral Checks This as Non-cache Physical) */
+	add nextconbk, nextconbk, #equ32_bus_noncache_base
+	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB (ARM Side)
 
 	str ti, [addr_cb, #dma32_ti]                   @ Transfer Information
 	str source_ad, [addr_cb, #dma32_source_ad]     @ Source Address
