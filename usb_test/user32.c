@@ -46,12 +46,16 @@ int32 _user_start() {
 			if ( kb_str ) {
 #ifdef __DEBUG
 				print32_set_caret( print32_string( kb_str, FB32_X_CARET, FB32_Y_CARET, str32_strlen( kb_str ) ) );
-#endif
+#else
 				_uarttx( kb_str, str32_strlen( kb_str ) );
+#endif
 				heap32_mfree( (obj)kb_str );
 			}
 		}
+#ifndef __DEBUG
 		print_on_receive();
+#endif
+		arm32_dsb();
 	}
 
 	return EXIT_SUCCESS;

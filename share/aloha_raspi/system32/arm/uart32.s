@@ -195,9 +195,9 @@ uart32_uarttestwrite:
 	uart32_uarttestwrite_fifo:
 		ldr temp, [addr_uart, #equ32_uart0_fr]
 
-
+/*
 macro32_debug temp, 0, 100
-
+*/
 
 		tst temp, #equ32_uart0_fr_rxff           @ RxFIFO is Full
 		ldreqb byte, [heap]                      @ If Having Space on RxFIFO

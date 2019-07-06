@@ -49,8 +49,10 @@
  *    Application Note 228 "Implementing DMA on ARM SMP Systems" of ARM is the reference.
  *
  *10. July 6, 2019. Reviewed device I/O coherency with DMA of USB HCD of BCM2835, BCM2836, and BCM2837.
- *    Using the bus address on the point of (system) coherency (PoC), L2 or Physical,
+ *    Using the bus address on the point of (system) coherency (PoC), L2 cache,
  *    gurantees I/O coherency among ARM, GPU, DMA, and peripherals.
+ *    In Page 7 of the BCM2835 manual, the need of accessing the uncached alias (from 0xC0000000) by periphrals is described.
+ *    Besides, L2 cache is turned on in default, so PoC is expected to be on L2 cache alias.
  */
 
 /**
