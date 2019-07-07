@@ -10,6 +10,9 @@
 #include "system32.h"
 #include "system32.c"
 
+#define ACT_TIME_ROOTHUB 200000
+#define ACT_TIME_DEVICE  700000
+
 bool init_usb_keyboard( uint32 usb_channel );
 bool console_rollup();
 bool print_on_receive();
@@ -75,16 +78,16 @@ bool init_usb_keyboard( uint32 usb_channel ) {
 	uint32 timeout;
 	uint32 result;
 
-	_sleep( 100000 ); // Wait for Root Hub Activation
+	_sleep( ACT_TIME_ROOTHUB ); // Wait for Root Hub Activation
 
 	if ( _otg_host_reset_bcm() ) return False;
 	arm32_dsb();
 
-	_sleep( 500000 ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
+	_sleep( ACT_TIME_DEVICE ); // Root Hub Port is Powerd On, So Wait for Detection of Other Hubs or Devices (on Inner Activation)
 
 	timeout = 20;
 	do {
-		_sleep( 500000 );
+		_sleep( ACT_TIME_DEVICE );
 		ticket_hub = _hub_activate( usb_channel, 0 );
 		if ( ticket_hub ) break; // Break Except Zero (No Detection)
 		timeout--;
@@ -92,17 +95,17 @@ bool init_usb_keyboard( uint32 usb_channel ) {
 
 	arm32_dsb();
 
-	_sleep( 500000 ); // Hub Port is Powerd On, So Wait for Detection of Devices (on Inner Activation)
+	_sleep( ACT_TIME_DEVICE ); // Hub Port is Powerd On, So Wait for Detection of Devices (on Inner Activation)
 
 print32_debug( ticket_hub, 500, 230 );
 
 	if ( ticket_hub == -1 ) {
 		ticket_hid = 0; // Direct Connection
-		_sleep( 500000 ); // Further Wait
+		_sleep( ACT_TIME_DEVICE ); // Further Wait
 	} else if ( ticket_hub > 0 ) {
 		timeout = 20;
 		do {
-			_sleep( 500000 );
+			_sleep( ACT_TIME_DEVICE );
 			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
 			if ( ticket_hid ) break; // Break Except Zero (No Detection)
 			timeout--;
@@ -113,7 +116,7 @@ print32_debug( ticket_hub, 500, 230 );
 		arm32_dsb();
 		timeout = 20;
 		do {
-			_sleep( 500000 );
+			_sleep( ACT_TIME_DEVICE );
 			ticket_hid = _hub_search_device( usb_channel, ticket_hub );
 			if ( ticket_hid ) break; // Break Except Zero (No Detection)
 			timeout--;
@@ -129,11 +132,11 @@ print32_debug( ticket_hub, 500, 230 );
 
 print32_debug( ticket_hid, 500, 242 );
 
-	_sleep( 500000 ); // HID is Detected, So Wait for Activation of Devices (on Inner Resetting Procedure)
+	_sleep( ACT_TIME_DEVICE ); // HID is Detected, So Wait for Activation of Devices (on Inner Resetting Procedure)
 
 	timeout = 20;
 	do {
-		_sleep( 500000 );
+		_sleep( ACT_TIME_DEVICE );
 		result = _hid_activate( usb_channel, 1, ticket_hid );
 		if ( result > 0 ) break; // Break Except Errors
 		timeout--;

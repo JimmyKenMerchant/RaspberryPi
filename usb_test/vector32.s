@@ -37,6 +37,10 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
 	/**
+	 * In this project, using UART IRQ #57 will have missing characters because of no handshake ("copy that") between devices.
+	 */
+
+	/**
 	 * Enable GPIO IRQ
 	 * INT[0] is for 0-27 Pins
 	 * INT[1] is for 28-45 Pins

@@ -1,23 +1,24 @@
-# For more options and information see
+# For more options and information see:
 # http://rpf.io/configtxtreadme
-# Some settings may impact device functionality. See link above for details
+# Some settings may impact device functionality. See link above for details.
+# VideoCore (GPU) reads these settings on the booting process.
 
-#Starts from SVC Mode, not HYP Mode that have original IVT address
-#If uncomment, '0' starts from 0x0000_8000, 1 starts from 0x0000_0000
+#Starts from SVC Mode, not HYP Mode that have original IVT address.
+#If uncomment, '0' starts from 0x0000_8000, 1 starts from 0x0000_0000.
 kernel_old=1
 
-#If uncomment, ATAGS at address 0x100 is disabled
+#If uncomment, ATAGS at address 0x100 is disabled.
 disable_commandline_tags=1
 
 #0x8000
 #kernel_address=32768
 kernel_address=0
 
-#CPU Clock Mhz, you may need to voltage up for overclock
+#CPU Clock Mhz, you may need to voltage up for overclock.
 #arm_freq=900
 
-#GPU(APB) Clock MHz, you may need to voltage up for overclock
-#In RasPi2(BCM2836), Maximum Clock of Arm Peripheral Bus (APB) seems to be 250Mhz, even setting 500Mhz on Core
+#GPU (APB) Clock MHz, you may need to voltage up for overclock.
+#In RasPi2 (BCM2836), Maximum Clock of Arm Peripheral Bus (APB) seems to be 250Mhz, even setting 500Mhz on Core.
 #gpu_freq means the unified setting of core_freq (Memory Bus, etc.), h264_freq, isp_freq, and v3d_freq (3D Block).
 #Frequencies may become variable in default. Combination of *_freq_min and *_freq set the range of the frequency.
 [pi0]
@@ -34,7 +35,7 @@ gpu_freq=240
 gpu_freq_min=240
 [all]
 
-#SDRAM Clock Mhz, you may need to voltage up for overclock
+#SDRAM Clock Mhz, you may need to voltage up for overclock.
 sdram_freq=250
 
 #GPU Memory Mbytes, fixup*.dat makes partition.
@@ -50,15 +51,16 @@ disable_splash=1
 #Black Border (0) or Not (1)
 disable_overscan=1
 
-#0.025V Steps, 2 means app. 1.2 + 0.05V, 0.8V to 1.4V [-16 to 8]
+#CPU and GPU, 0.025V Steps, 2 means app. 1.2 + 0.05V, 0.8V to 1.4V [-16 to 8].
 #CPU 1000Mhz, GPU 500Mhz, SDRAM 500Mhz Need 2 (Raspi2)
 #CPU 900Mhz, GPU 250Mhz, SDRAM 450Mhz Need 0 (Raspi2)
 #over_voltage=2
+#over_voltage_min=2
 
-#0 means Auto Detect from EDID, 1 means CEA Table, 2 means DMT Table
+#0 means Auto Detect from EDID, 1 means CEA Table, 2 means DMT Table.
 hdmi_group=0
 
-#Number depends on CEA or DMT Table
+#Number depends on CEA or DMT Table.
 #hdmi_mode=1
 
 #Force HDMI Output with Sound
@@ -67,11 +69,9 @@ hdmi_group=0
 #Prevent Composite Video Output When HDMI Is Not Plugged
 #hdmi_force_hotplug=1
 
-#PL011, UART0 Reference Clock. Besides, UART1 Reference Clock is core_freq
+#PL011, UART0 Reference Clock. Besides, UART1 Reference Clock is core_freq.
 init_uart_clock=18000000
 
-#Signal IRQ for Interrupt Service Routine (ISR) from VideoCoreIV for Vertical Sync
-#Seems It's just FAKE, but in case of Strict Coding in Video, you may need of ISR.
-#I mean, VideoCoreIV has other strategies for Vertical Sync,
-#probably, there's an access restriction to Framebuffer from VideoCoreIV using MMU and Interrupt Controller.
+#Utilize IRQ No.48 (smi) from GPU to Acknowledge Vertical Sync
+#GPU seems to have other strategies for Vertical Sync though.
 #fake_vsync_isr=1
