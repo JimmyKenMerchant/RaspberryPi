@@ -18,7 +18,17 @@
 
 * GPIO 11 as SPI0 SCLK
 
-* GPIO 22-27 as Output for LCD Module
+* GPIO 22 as Output for BD4 in Module
+
+* GPIO 23 as Output for BD5 in Module
+
+* GPIO 24 as Output for BD6 in Module
+
+* GPIO 25 as Output for BD7 in Module
+
+* GPIO 26 as Output for EN in Module
+
+* GPIO 27 as Output for RS in Module
 
 * GPIO 47 (ACT LED) as Output
 
@@ -28,7 +38,9 @@
 
 **Compatibility**
 
-* Under Construction
+* Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
+
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
 
 **Electric Schematics**
 
