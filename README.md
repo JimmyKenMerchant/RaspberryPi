@@ -427,19 +427,21 @@ sudo pacman -S arm-none-eabi-gcc
 
 * So you may wonder how to enable any Linux distro in your machine, but not your RasPi. Truly, a lot of ways exists. Comparing with past days, it becomes easy to do so, Linux on major OS. However, knowledge of system, security, and hardware is needed for using Linux. Linux is still an industrial OS to make networks. Besides, major OSs are tempered by consumers. I think, in terms of adaption to many environments, Linux is still wanted to be tempered by them.
 
-**Boot Process of Raspberry Pi (Including My Hypothesis)**
+**Boot Process of Raspberry Pi (My Hypothesis)**
 
-1. Power on, then VideoCore runs the first boot codes in a ROM embedded on the SoC.
+1. Power on, then VideoCore (the multimedia processor, GPU) runs the first boot codes in a ROM embedded on the SoC.
 
 2. VideoCore searches the boot media, then loads bootcode.bin to the special memory for booting and runs it. Undocumented first mass media controller seems to be used, therefore documented second mass media controller (stated as SD1_* in the table of alternative function assignments) seems to be free on this time.
 
-3. VideoCore activates ARM Processor and other peripherals including Main Memory. On this time, VideCore loads start.elf to Main Memory for ARM Processor (VideoCore is accessible from ARM through Mailbox afterward).
+3. VideoCore activates ARM (CPU), the main memory (SDRAM), and other peripherals.
 
-4. ARM Processor runs start.elf to initialize itself, and check config.txt. If cmdline.txt exists, it is also checked.
+4. VideoCore runs start.elf and fixup.dat to initialize its system like BIOS, but more enhanced for hardware acceleration. It also checks config.txt and cmdline.txt. VideoCore is accessible from ARM through Mailbox afterward.
 
-5. start.elf sets several configurations from config.txt. In default, several configurations, like the framebuffer and the physical memory, are recorded on ATAGs from Address 0x100.
+5. VideoCore sets several configurations from config.txt. In default, several configurations for the framebuffer, the main memory, etc. are recorded on ATAGs from Address 0x100.
 
-6. start.elf starts kernel.img.
+6. VideoCore lets ARM start kernel.img.
+
+* VideoCore has several units, including its own main processor (seems to be `core` in config.txt). The processor runs the system after the boot process to communicate with ARM, output video signal, etc. Broadcom is updating the system, seemed to be in start.elf. If we define the term, "firmware" of Raspberry Pi. It might be the system. Note that publicly documented QPU (seems to be `v3d`) is just one of units for hardware acceleration, and programmable with unique binaries (i.e. shader), but not the main processor of VideoCore.
 
 **GPIO Maximum Current Source and USB Current Source**
 
