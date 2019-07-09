@@ -45,3 +45,5 @@
 **Electric Schematics**
 
 * [Audio Quantization System](../schematics/audio_quantization.pdf)
+
+* [Character LCD with Level Shifter](../schematics/lcd_levelshifter.pdf)
