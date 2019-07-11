@@ -88,6 +88,12 @@ os_reset:
 	mov r0, #4
 	bl bcm32_get_clockrate
 
+	/* Get DMA Channels (Know Available Channel with ARM) */
+	mov r0, #0x00060000
+	orr r0, r0, #0x00000001
+	mov r1, #4
+	bl bcm32_get_response
+
 	pop {pc}
 
 os_irq:

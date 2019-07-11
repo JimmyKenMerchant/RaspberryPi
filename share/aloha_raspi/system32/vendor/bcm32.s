@@ -211,6 +211,23 @@ BCM32_VCMEMORY_SIZE:
 	.word 0x00000000        @ End Tag
 bcm32_mail_getvcmemory_end:
 
+.balign 16
+.globl BCM32_RESPONSE_1
+.globl BCM32_RESPONSE_2
+bcm32_mail_getresponse:    @ For Getting Up to 8 Bytes Response
+	.word bcm32_mail_getresponse_end - bcm32_mail_getresponse @ Size of this Mail
+	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
+	.word 0x00000000        @ Any Tag Identifier
+	.word 0x00000000        @ Value Buffer Size in Bytes
+	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
+BCM32_RESPONSE_1:
+	.word 0x00000000        @ First 4 Bytes Response
+BCM32_RESPONSE_2:
+	.word 0x00000000        @ Second 4 Bytes Response
+.balign 4
+	.word 0x00000000        @ End Tag
+bcm32_mail_getresponse_end:
+
 /* Pointers */
 .balign 4
 bcm32_mail_framebuffer_addr:
@@ -235,6 +252,8 @@ bcm32_mail_getarmmemory_addr:
 	.word bcm32_mail_getarmmemory  @ Address of bcm32_mail_getarmmemory
 bcm32_mail_getvcmemory_addr:
 	.word bcm32_mail_getvcmemory   @ Address of bcm32_mail_getvcmemory
+bcm32_mail_getresponse_addr:
+	.word bcm32_mail_getresponse   @ Address of bcm32_mail_getresponse
 
 bcm32_FB32_FRAMEBUFFER_addr:
 	.word FB32_FRAMEBUFFER
@@ -677,6 +696,49 @@ bcm32_get_edid:
 
 
 /**
+ * function bcm32_get_response
+ * Get Up to 8 Bytes Response from VideoCore IV
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Tag Identifier to Be Recieve Up to 8 Bytes Response
+ * r1: Response Size in Bytes
+ *
+ * Return: r0 (0 as success, 1 as error)
+ */
+.globl bcm32_get_response
+bcm32_get_response:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_tag .req r0
+	size     .req r1
+	temp     .req r2
+
+	push {lr}
+
+	mov temp, addr_tag
+
+	ldr addr_tag, bcm32_mail_getresponse_addr
+	str temp, [addr_tag, #8]
+	str size, [addr_tag, #12]
+
+	mov temp, #0
+	str temp, [addr_tag, #20]
+	str temp, [addr_tag, #24]
+
+	macro32_dsb ip
+
+	bl bcm32_onemail
+
+	bcm32_get_response_common:
+		macro32_dsb ip                       @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq addr_tag
+.unreq size
+.unreq temp
+
+
+/**
  * function bcm32_onemail
  * Send and Read One Tag Mail to Get Parameters, etc.
  * This function is using a vendor-implemented process.
@@ -897,7 +959,7 @@ bcm32_mailbox_send:
 .equ bcm32_cores_mailbox1_writeset,     0x84
 .equ bcm32_cores_mailbox2_writeset,     0x88
 .equ bcm32_cores_mailbox3_writeset,     0x8C @ Use for Inter-core Communication in RasPi's start.elf
-.equ bcm32_cores_mailbox0_readclear,    0xC0 @ Write Hight to Clear
+.equ bcm32_cores_mailbox0_readclear,    0xC0 @ Write High to Clear
 .equ bcm32_cores_mailbox1_readclear,    0xC4
 .equ bcm32_cores_mailbox2_readclear,    0xC8
 .equ bcm32_cores_mailbox3_readclear,    0xCC
