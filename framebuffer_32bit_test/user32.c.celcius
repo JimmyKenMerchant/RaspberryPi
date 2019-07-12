@@ -25,10 +25,10 @@ int32 _user_start() {
 		String num_string4 = cvt32_int32_to_string_deci( BCM32_CLOCKRATE, 0, 0 );
 		print32_string( num_string4, 0, 48, str32_strlen( num_string4 ) );
 
-		String num_string5 = cvt32_int32_to_string_hexa( BCM32_RESPONSE_1, 8, 0, 1 );
+		String num_string5 = cvt32_int32_to_string_hexa( BCM32_GENERIC0, 8, 0, 1 );
 		print32_string( num_string5, 0, 72, str32_strlen( num_string5 ) );
 
-		String num_string6 = cvt32_int32_to_string_hexa( BCM32_RESPONSE_2, 8, 0, 1 );
+		String num_string6 = cvt32_int32_to_string_hexa( BCM32_GENERIC1, 8, 0, 1 );
 		print32_string( num_string6, 0, 84, str32_strlen( num_string6 ) );
 
 		heap32_mfree( (obj)num_string1 );
@@ -42,3 +42,4 @@ int32 _user_start() {
 
 	return EXIT_SUCCESS;
 }
+

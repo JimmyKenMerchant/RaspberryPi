@@ -98,7 +98,7 @@ os_reset:
 	mov r0, #0x00060000
 	orr r0, r0, #0x00000001
 	mov r1, #4
-	bl bcm32_get_response
+	bl bcm32_genericmail
 
 	pop {pc}
 

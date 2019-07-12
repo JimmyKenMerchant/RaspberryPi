@@ -7,6 +7,8 @@
  *
  */
 
+.section	.data
+
 /* Frame Buffer Physical */
 
 .balign 16                      @ Need of 16 bytes align, otherwise, you can't get Framebuffer from VideoCoreIV
@@ -212,21 +214,35 @@ BCM32_VCMEMORY_SIZE:
 bcm32_mail_getvcmemory_end:
 
 .balign 16
-.globl BCM32_RESPONSE_1
-.globl BCM32_RESPONSE_2
-bcm32_mail_getresponse:    @ For Getting Up to 8 Bytes Response
-	.word bcm32_mail_getresponse_end - bcm32_mail_getresponse @ Size of this Mail
+.globl BCM32_GENERIC0
+.globl BCM32_GENERIC1
+.globl BCM32_GENERIC2
+.globl BCM32_GENERIC3
+.globl BCM32_GENERIC4
+.globl BCM32_GENERIC5
+bcm32_mail_generic:    @ For Getting Up to 8 Bytes Response
+	.word bcm32_mail_generic_end - bcm32_mail_generic @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
 	.word 0x00000000        @ Any Tag Identifier
 	.word 0x00000000        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
-BCM32_RESPONSE_1:
+BCM32_GENERIC0:
 	.word 0x00000000        @ First 4 Bytes Response
-BCM32_RESPONSE_2:
+BCM32_GENERIC1:
 	.word 0x00000000        @ Second 4 Bytes Response
+BCM32_GENERIC2:
+	.word 0x00000000        @ Third 4 Bytes Response
+BCM32_GENERIC3:
+	.word 0x00000000        @ Fourth 4 Bytes Response
+BCM32_GENERIC4:
+	.word 0x00000000        @ Fifth 4 Bytes Response
+BCM32_GENERIC5:
+	.word 0x00000000        @ Sixth 4 Bytes Response
 .balign 4
 	.word 0x00000000        @ End Tag
-bcm32_mail_getresponse_end:
+bcm32_mail_generic_end:
+
+.section 	.vendor_system32
 
 /* Pointers */
 .balign 4
@@ -252,8 +268,8 @@ bcm32_mail_getarmmemory_addr:
 	.word bcm32_mail_getarmmemory  @ Address of bcm32_mail_getarmmemory
 bcm32_mail_getvcmemory_addr:
 	.word bcm32_mail_getvcmemory   @ Address of bcm32_mail_getvcmemory
-bcm32_mail_getresponse_addr:
-	.word bcm32_mail_getresponse   @ Address of bcm32_mail_getresponse
+bcm32_mail_generic_addr:
+	.word bcm32_mail_generic       @ Address of bcm32_mail_generic
 
 bcm32_FB32_FRAMEBUFFER_addr:
 	.word FB32_FRAMEBUFFER
@@ -274,67 +290,71 @@ BCM32_EDID_ADDR:
 .globl bcm32_get_framebuffer
 bcm32_get_framebuffer:
 	/* Auto (Local) Variables, but just Aliases */
-	address .req r0
-	temp    .req r1
+	mail_address .req r0
+	fb_address   .req r1
+	temp         .req r2
 
 	push {lr}
 
-	ldr address, bcm32_mail_framebuffer_addr
+	ldr mail_address, bcm32_mail_framebuffer_addr
 	mov temp, #0
-	str temp, [address, #36]                       @ Reset Additional Tag
-	str temp, [address, #56]                       @ Reset Additional Tag
-	str temp, [address, #72]                       @ Reset Additional Tag
-	str temp, [address, #88]                       @ Reset Additional Tag
-	str temp, [address, #104]                      @ Reset Additional Tag
+	str temp, [mail_address, #36]                  @ Reset Additional Tag
+	str temp, [mail_address, #56]                  @ Reset Additional Tag
+	str temp, [mail_address, #72]                  @ Reset Additional Tag
+	str temp, [mail_address, #88]                  @ Reset Additional Tag
+	str temp, [mail_address, #104]                 @ Reset Additional Tag
 
 	macro32_dsb ip
 
+	push {r0-r2}
 	bl bcm32_onemail
+	cmp r0, #0
+	pop {r0-r2}
 
-	cmp address, #0
 	bne bcm32_get_framebuffer_error
 
-	ldr temp, BCM32_ADDRESS
+	ldr temp, [mail_address, #108]                 @ BCM32_ADDRESS
 	cmp temp, #0
 	beq bcm32_get_framebuffer_error
 
-	ldr address, bcm32_FB32_FRAMEBUFFER_addr
-	ldr address, [address]
+	ldr fb_address, bcm32_FB32_FRAMEBUFFER_addr
+	ldr fb_address, [fb_address]
 
-	and temp, temp, #bcm32_mailbox_armmask      @ Change BCM32_ADDRESS VideoCore's to ARM's
-	str temp, [address]
+	and temp, temp, #bcm32_mailbox_armmask         @ Change BCM32_ADDRESS VideoCore's to ARM's
+	str temp, [fb_address]
 
-	ldr temp, BCM32_WIDTH
-	str temp, [address, #4]
+	ldr temp, [mail_address, #40]                  @ BCM32_WIDTH
+	str temp, [fb_address, #4]
 
-	ldr temp, BCM32_HEIGHT
-	str temp, [address, #8]
+	ldr temp, [mail_address, #44]                  @ BCM32_HEIGHT
+	str temp, [fb_address, #8]
 
-	ldr temp, BCM32_SIZE
-	str temp, [address, #12]
+	ldr temp, [mail_address, #112]                 @ BCM32_SIZE
+	str temp, [fb_address, #12]
 
-	ldr temp, BCM32_DEPTH
-	str temp, [address, #16]
+	ldr temp, [mail_address, #60]                  @ BCM32_DEPTH
+	str temp, [fb_address, #16]
 
 	macro32_dsb ip
 
-	mov r0, address
+	mov r0, fb_address
 	bl fb32_attach_buffer
 	cmp r0, #0
 	bne bcm32_get_framebuffer_error
 
-	mov r0, #0                               @ Return with Success
+	mov r0, #0                                     @ Return with Success
 
 	b bcm32_get_framebuffer_common
 
 	bcm32_get_framebuffer_error:
-		mov r0, #1                           @ Return with Error
+		mov r0, #1                             @ Return with Error
 
 	bcm32_get_framebuffer_common:
-		macro32_dsb ip                                     @ Ensure Completion of Instructions Before
+		macro32_dsb ip                             @ Ensure Completion of Instructions Before
 		pop {pc}
 
-.unreq address
+.unreq mail_address
+.unreq fb_address
 .unreq temp
 
 
@@ -696,18 +716,18 @@ bcm32_get_edid:
 
 
 /**
- * function bcm32_get_response
- * Get Up to 8 Bytes Response from VideoCore IV
+ * function bcm32_genericmail
+ * Send and Receive Generic Mail Up to 24 Bytes from VideoCore IV
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Tag Identifier to Be Recieve Up to 8 Bytes Response
- * r1: Response Size in Bytes
+ * r0: Tag Identifier
+ * r1: Value Buffer Size in Bytes, Up to 24 Bytes
  *
  * Return: r0 (0 as success, 1 as error)
  */
-.globl bcm32_get_response
-bcm32_get_response:
+.globl bcm32_genericmail
+bcm32_genericmail:
 	/* Auto (Local) Variables, but just Aliases */
 	addr_tag .req r0
 	size     .req r1
@@ -717,19 +737,15 @@ bcm32_get_response:
 
 	mov temp, addr_tag
 
-	ldr addr_tag, bcm32_mail_getresponse_addr
+	ldr addr_tag, bcm32_mail_generic_addr
 	str temp, [addr_tag, #8]
 	str size, [addr_tag, #12]
-
-	mov temp, #0
-	str temp, [addr_tag, #20]
-	str temp, [addr_tag, #24]
 
 	macro32_dsb ip
 
 	bl bcm32_onemail
 
-	bcm32_get_response_common:
+	bcm32_genericmail_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
 		pop {pc}
 

@@ -219,8 +219,12 @@ extern uint32 BCM32_ARMMEMORY_BASE;
 extern uint32 BCM32_ARMMEMORY_SIZE;
 extern uint32 BCM32_VCMEMORY_BASE;
 extern uint32 BCM32_VCMEMORY_SIZE;
-extern uint32 BCM32_RESPONSE_1;
-extern uint32 BCM32_RESPONSE_2;
+extern uint32 BCM32_GENERIC0;
+extern uint32 BCM32_GENERIC1;
+extern uint32 BCM32_GENERIC2;
+extern uint32 BCM32_GENERIC3;
+extern uint32 BCM32_GENERIC4;
+extern uint32 BCM32_GENERIC5;
 
 /* Relative System Calls  */
 
