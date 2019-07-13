@@ -884,7 +884,7 @@ fb32_flush_doublebuffer:
 	r_buffer          .req r6
 	color             .req r7
 
-	push {r4-r7}
+	push {r4-r7,lr}
 
 	ldr buffer_front, FB32_DOUBLEBUFFER_FRONT 
 	cmp buffer_front, #0
@@ -906,9 +906,50 @@ fb32_flush_doublebuffer:
 	cmp depth, #0
 	beq fb32_flush_doublebuffer_error
 
-	add size, f_buffer, size
-
 	ldr r_buffer, [buffer_back]
+
+	/**
+	 * DMA Process
+	 */
+
+	push {r0-r3}
+	mov r0, r_buffer
+	mov r1, #1                                              @ Clean
+	bl arm32_cache_operation_heap
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, #equ32_dma32_channel_fb32
+	bl dma32_clear_channel
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, #equ32_dma32_cb_fb32
+	mov r1, #0<<equ32_dma_ti_permap                         @ DREQ Map for No DREQ
+	bic r1, r1, #equ32_dma_ti_no_wide_bursts
+	orr r1, r1, #0<<equ32_dma_ti_waits
+	orr r1, r1, #0<<equ32_dma_ti_burst_length
+	orr r1, r1, #equ32_dma_ti_src_inc                       @ Transfer Information Source
+	orr r1, r1, #equ32_dma_ti_dst_inc                       @ Transfer Information Destination
+	orr r1, r1, #equ32_dma_ti_wait_resp
+	add r2, r_buffer, #equ32_bus_coherence_base             @ Source Address
+	add r3, f_buffer, #equ32_bus_coherence_base             @ Destination Address
+	mov r4, size                                            @ Transfer Size
+	mov r5, #0                                              @ 2D Stride
+	mov r6, #-1                                             @ Next CB Number
+	push {r4-r6}
+	bl dma32_set_cb
+	add sp, sp, #12
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, #equ32_dma32_channel_fb32
+	mov r1, #equ32_dma32_cb_fb32
+	bl dma32_set_channel
+	pop {r0-r3}
+
+	/*
+	add size, f_buffer, size
 
 	fb32_flush_doublebuffer_loop:
 		cmp depth, #16
@@ -923,11 +964,12 @@ fb32_flush_doublebuffer:
 		addeq f_buffer, f_buffer, #4
 		cmp f_buffer, size
 		blo fb32_flush_doublebuffer_loop
+	*/
 
-	push {r0-r3,lr}
+	push {r0-r3}
 	mov r0, buffer_front
 	bl fb32_attach_buffer
-	pop {r0-r3,lr}
+	pop {r0-r3}
 
 	b fb32_flush_doublebuffer_success
 
@@ -940,8 +982,7 @@ fb32_flush_doublebuffer:
 
 	fb32_flush_doublebuffer_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		pop {r4-r7}
-		mov pc, lr
+		pop {r4-r7,pc}
 
 .unreq buffer_front
 .unreq buffer_back
@@ -971,6 +1012,8 @@ fb32_set_doublebuffer:
 	buffer_back       .req r1
 	doublebuffer_base .req r2
 
+	push {lr}
+
 	cmp buffer_front, #0
 	beq fb32_set_doublebuffer_error
 	cmp buffer_back, #0
@@ -979,10 +1022,8 @@ fb32_set_doublebuffer:
 	str buffer_back, FB32_DOUBLEBUFFER_BACK
 	str buffer_front, FB32_DOUBLEBUFFER_FRONT
 
-	push {r0-r3,lr}
 	mov r0, buffer_back
 	bl fb32_attach_buffer
-	pop {r0-r3,lr}
 
 	b fb32_set_doublebuffer_success
 
@@ -995,7 +1036,7 @@ fb32_set_doublebuffer:
 
 	fb32_set_doublebuffer_common:
 		macro32_dsb ip                       @ Ensure Completion of Instructions Before
-		mov pc, lr
+		pop {pc}
 
 .unreq buffer_front
 .unreq buffer_back 

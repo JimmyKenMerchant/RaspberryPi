@@ -28,7 +28,9 @@
 .equ equ32_dma32_cb_max,                       0x1400     @ Decimal 5120
 .equ equ32_dma32_cb_snd32_start,               0
 .equ equ32_dma32_cb_snd32_size,                0x1000     @ Decimal 4096
-.equ equ32_snd32_dma_channel,                  0
+.equ equ32_dma32_cb_fb32,                      0x1000
+.equ equ32_dma32_channel_snd32,                0          @ 0-14 (7-14 16-bit length), VideoCore Resereves Channels, Check by Mail
+.equ equ32_dma32_channel_fb32,                 2          @ 0-14 (7-14 16-bit length), VideoCore Resereves Channels, Check by Mail
 .equ equ32_gpio32_gpiomask,                    0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 .equ equ32_pwm32_maxchannel,                   2          @ Number of Available PWM Channels
 .equ equ32_cvt32_int32_to_string_bin_false,    0x30
@@ -89,6 +91,18 @@
 .equ equ32_tft32_cs,                           0          @ Chip Select Number (0 or 1) of SPI
 .equ equ32_tft32_deviceid,                     0          @ Device ID (0 or 1) Set by IM[0], An External Pin on Type 1
 
+.equ equ32_bus_peripherals_base,               0x7E000000 @ Peripheral Address in View of Peripheral, DMA, and VideoCore (Bus Address)
+.equ equ32_bus_l2allocate_base,                0x40000000 @ L2 Allocate in View of Bus Address
+.equ equ32_bus_l2nonallocate_base,             0x80000000 @ L2 Non Allocate in View of Bus Address
+.equ equ32_bus_physical_base,                  0xC0000000 @ Physycal, Non Cache in View of Bus Address
+
+/* Point of Coherency (PoC) in View of Bus Address */
+.ifdef __BCM2835
+	.equ equ32_bus_coherence_base,         equ32_bus_l2allocate_base    @ No `disable_l2cache=1` in config.txt
+.else
+	.equ equ32_bus_coherence_base,         equ32_bus_l2nonallocate_base @ No `disable_l2cache=1` in config.txt
+.endif
+
 /**
  * Standard Peripherals
  * In ARM Instructions: On `MOVW`, You Can Use the 16-bit Immediate with No-rotated.
@@ -97,13 +111,11 @@
 	.equ equ32_peripherals_base,                   0x20000000 @ For ARM Physical Address
 	.equ equ32_usb2032_timeout,                    0x00000FF0
 	.equ equ32_usb2032_timeout_nyet,               0x00000FF0
-	.equ equ32_bus_coherence_base,                 0x40000000 @ For DMA and Peripherals
 .else
 	/* BCM2836 and BCM2837 Peripheral Base */
 	.equ equ32_peripherals_base,                   0x3F000000 @ For ARM Physical Address
 	.equ equ32_usb2032_timeout,                    0x00002F00
 	.equ equ32_usb2032_timeout_nyet,               0x00002F00
-	.equ equ32_bus_coherence_base,                 0x80000000 @ For DMA and Peripherals
 .endif
 
 .ifdef __256M
@@ -124,8 +136,6 @@
 	 */
 	.equ equ32_vcmemory_size,                      0x03000000
 .endif
-
-.equ equ32_bus_peripherals_base,   0x7E000000 @ For DMA and VideoCore Address
 
 .equ equ32_systemtimer_base,   0x00003000
 .equ equ32_interrupt_base,     0x0000B200

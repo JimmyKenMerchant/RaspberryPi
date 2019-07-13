@@ -304,7 +304,7 @@ macro32_debug temp, 200, 360
  * r3: Destination Address
  * r4: Transfer Length
  * r5: 2D Stride
- * r6: Number of Next CB
+ * r6: Number of Next CB, -1 as Nothing of Next CB
  *
  * Return: r0 (Pointer of Control Block, If -1, Number of CB is Overflow)
  */
@@ -332,13 +332,16 @@ dma32_set_cb:
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
 	mov mul_number, #32                            @ 256-bit Align
-	mul nextconbk, mul_number, nextconbk           @ Offset of Next CB
-	mul number_cb, mul_number, number_cb           @ Offset of Targeted CB
-	add nextconbk, addr_cb, nextconbk              @ Address of Next CB (ARM Side)
-	/* Transform to Bus Address (GPU, DMA, and Peripherals Recognize This Address Space as Point of Coherency with ARM) */
-	add nextconbk, nextconbk, #equ32_bus_coherence_base
-	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB (ARM Side)
 
+	cmp nextconbk, #-1
+	moveq nextconbk, #0
+	mulne nextconbk, mul_number, nextconbk         @ Offset of Next CB
+	addne nextconbk, addr_cb, nextconbk            @ Address of Next CB (ARM Side)
+	/* Transform to Bus Address (GPU, DMA, and Peripherals Recognize This Address Space as Point of Coherency with ARM) */
+	addne nextconbk, nextconbk, #equ32_bus_coherence_base
+
+	mul number_cb, mul_number, number_cb           @ Offset of Targeted CB
+	add addr_cb, addr_cb, number_cb                @ Address of Targeted CB (ARM Side)
 	str ti, [addr_cb, #dma32_ti]                   @ Transfer Information
 	str source_ad, [addr_cb, #dma32_source_ad]     @ Source Address
 	str dest_ad, [addr_cb, #dma32_dest_ad]         @ Destination Address

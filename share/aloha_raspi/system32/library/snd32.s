@@ -480,12 +480,12 @@ snd32_soundclear:
 	/* First on PWM Mode */
 
 	push {r0-r3}
-	mov r0, #equ32_snd32_dma_channel
+	mov r0, #equ32_dma32_channel_snd32
 	bl dma32_clear_channel
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, #equ32_snd32_dma_channel
+	mov r0, #equ32_dma32_channel_snd32
 	mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
 	bl dma32_set_channel
 	pop {r0-r3}
@@ -497,7 +497,7 @@ snd32_soundclear:
 	snd32_soundclear_pwmcontinue:
 		/* Continue on PWM Mode */
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
 		bl dma32_change_nextcb
 		pop {r0-r3}
@@ -507,7 +507,7 @@ snd32_soundclear:
 	snd32_soundclear_pcm:
 		/* PCM Mode */
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		bl dma32_clear_channel
 		pop {r0-r3}
 
@@ -626,12 +626,12 @@ snd32_soundplay:
 	snd32_soundplay_first:
 
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		bl dma32_clear_channel
 		pop {r0-r3}
 
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		mov r1, code
 		bl dma32_set_channel
 		pop {r0-r3}
@@ -647,7 +647,7 @@ snd32_soundplay:
 		beq snd32_soundplay_countup
 
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		mov r1, code
 		bl dma32_change_nextcb
 		pop {r0-r3}
@@ -749,7 +749,7 @@ snd32_soundplay:
 
 		/* PWM Mode */
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		mov r1, #equ32_snd32_silence               @ Silence for Bias Voltage
 		bl dma32_change_nextcb
 		pop {r0-r3}
@@ -766,7 +766,7 @@ snd32_soundplay:
 
 			/* PCM Mode */
 			push {r0-r3}
-			mov r0, #equ32_snd32_dma_channel
+			mov r0, #equ32_dma32_channel_snd32
 			bl dma32_clear_channel
 			pop {r0-r3}
 
@@ -1411,7 +1411,7 @@ snd32_soundmidi:
 
 			/* PWM Mode */
 			push {r0-r3}
-			mov r0, #equ32_snd32_dma_channel
+			mov r0, #equ32_dma32_channel_snd32
 			mov r1, #equ32_snd32_silence      @ Silence for Bias Voltage
 			bl dma32_change_nextcb
 			pop {r0-r3}
@@ -1425,7 +1425,7 @@ snd32_soundmidi:
 		snd32_soundmidi_noteoff_pcm:
 			/* PCM Mode */
 			push {r0-r3}
-			mov r0, #equ32_snd32_dma_channel
+			mov r0, #equ32_dma32_channel_snd32
 			bl dma32_clear_channel
 			pop {r0-r3}
 
@@ -1510,12 +1510,12 @@ macro32_debug data1, 0, 88
 		/* If First */
 
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		bl dma32_clear_channel
 		pop {r0-r3}
 
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		mov r1, data1
 		bl dma32_set_channel
 		pop {r0-r3}
@@ -1526,7 +1526,7 @@ macro32_debug data1, 0, 88
 
 	snd32_soundmidi_noteon_continue:
 		push {r0-r3}
-		mov r0, #equ32_snd32_dma_channel
+		mov r0, #equ32_dma32_channel_snd32
 		mov r1, data1
 		bl dma32_change_nextcb
 		pop {r0-r3}

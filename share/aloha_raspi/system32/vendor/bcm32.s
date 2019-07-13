@@ -736,6 +736,8 @@ bcm32_genericmail:
 	push {lr}
 
 	mov temp, addr_tag
+	cmp size, #24
+	movhi size, #24
 
 	ldr addr_tag, bcm32_mail_generic_addr
 	str temp, [addr_tag, #8]
