@@ -29,7 +29,7 @@
 .equ equ32_dma32_cb_snd32_start,               0
 .equ equ32_dma32_cb_snd32_size,                0x1000     @ Decimal 4096
 .equ equ32_dma32_cb_fb32,                      0x1000
-.equ equ32_dma32_channel_snd32,                0          @ 0-14 (7-14 16-bit length), VideoCore Resereves Channels, Check by Mail
+.equ equ32_dma32_channel_snd32,                7          @ 0-14 (7-14 16-bit length), VideoCore Resereves Channels, Check by Mail
 .equ equ32_dma32_channel_fb32,                 2          @ 0-14 (7-14 16-bit length), VideoCore Resereves Channels, Check by Mail
 .equ equ32_gpio32_gpiomask,                    0x0FFFFFFC @ GPIO 2-27 in Raspberry Pi (Except Earlier Version)
 .equ equ32_pwm32_maxchannel,                   2          @ Number of Available PWM Channels

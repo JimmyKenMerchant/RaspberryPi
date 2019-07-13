@@ -16,11 +16,10 @@
 /**
  * Sound Index is made of an array of 16-bit Blocks.
  * Bit[10:0]: Length of Wave, 0 to 2048.
- *             If Bit[11:0] is 0, Long (0x1F40, Decimal 8000).
- *             If Bit[11:0] is 1, Super Long (0x3E80, Decimal 16000).
+ *            Sine and Triangle need 5 at least. Saw Tooth needs 4. Others need 2.
  * Bit[12:11]: Volume of Wave, 0 is Large, 1 is Medium, 2 is Small, 3 is Tiny
  * Bit[15:13]: Type of Wave, 0 is Sine, 1 is Saw Tooth, 2 is Square, 3 is Triangle, 4 is Distortion
- *              6 is Noise, 7 is Silence.
+ *             6 is Noise, 7 is Silence.
  *
  * Maximum number of blocks is 4096.
  * 0 means End of Sound Index

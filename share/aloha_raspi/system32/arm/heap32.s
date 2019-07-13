@@ -1513,7 +1513,7 @@ heap32_wave_random2:
  *
  * Return: r0 (0 as Success, 1 and 2 as Error)
  * Error(1): Pointer of Start Address is Null (0) or Out of Heap Area
- * Error(2): Sizing is Wrong | Length is Less Than 2
+ * Error(2): Sizing is Wrong | Length is Less Than 4
  */
 .globl heap32_wave_sawtooth
 heap32_wave_sawtooth:
@@ -1558,7 +1558,7 @@ heap32_wave_sawtooth:
 
 	lsl temp, length, #2                        @ Substitution of Multiplication by 4
 	cmp temp, block_size
-	bhi heap32_wave_sawtooth_error2                  @ If Overflow is Expected
+	bhi heap32_wave_sawtooth_error2             @ If Overflow is Expected
 
 	/* Examine Length to know Odd/Even on Half */
 
