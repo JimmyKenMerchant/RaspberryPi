@@ -84,7 +84,7 @@ arm32_core_call:
  *
  * This Function Uses Heap.
  * First of Heap Array is Pointer of Function.
- * Second of Heap Array is Pointer of Full Decending Stack (Decrement Before on Store, Increment After on Load)
+ * Second of Heap Array is Pointer of Full Descending Stack (Decrement Before on Store, Increment After on Load)
  * Third of Heap Array is Number of Arguments.
  * Fourth and More of Heap Array are Arguments of Function.
  *
@@ -93,7 +93,7 @@ arm32_core_call:
  * When Function is Finished, ARM32_CORE_HANDLE_n Will Be Zero to Indicate Finishing.
  *
  * Return: r0 (0 as success, 1 as error)
- * Error: Pointer of Full Decending Stack is Not Valid
+ * Error: Pointer of Full Descending Stack is Not Valid
  */
 .globl arm32_core_handle
 arm32_core_handle:

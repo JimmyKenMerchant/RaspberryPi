@@ -92,7 +92,7 @@ os_debug:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
-	/* Full Decending Stack */
+	/* Full Descending Stack */
 	mov r0, #0xFF
 	bl heap32_malloc
 	mov r4, r0
@@ -106,7 +106,7 @@ os_debug:
 	bl heap32_malloc                          @ Obtain Memory Space (2 Block Means 8 Bytes)
 	ldr r1, core123_handler
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
-	str r4, [r0, #4]                          @ Store Pointer of Full Decending Stack
+	str r4, [r0, #4]                          @ Store Pointer of Full Descending Stack
 	mov r1, #0
 	str r1, [r0, #8]                          @ Store Number of Arguments to Second of Heap Array
 	push {r0-r3}
@@ -130,7 +130,7 @@ os_debug:
 	bl heap32_malloc                          @ Obtain Memory Space (10 Block Means 40 Bytes)
 	ldr r1, core123_handler2
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
-	str r4, [r0, #4]                          @ Store Pointer of Full Decending Stack
+	str r4, [r0, #4]                          @ Store Pointer of Full Descending Stack
 	mov r1, #7
 	str r1, [r0, #8]                          @ Store Number of Arguments to Second of Heap Array
 	mov r1, #0x1
