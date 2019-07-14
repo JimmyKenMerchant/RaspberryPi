@@ -92,65 +92,84 @@ os_debug:
 	ldr r0, [r0]
 	bl fb32_clear_color
 
+	/* Full Decending Stack */
+	mov r0, #0xFF
+	bl heap32_malloc
+	mov r4, r0
+	mov r0, #0xFF
+	lsl r0, r0, #2                            @ Multiply by 4
+	add r4, r4, r0
+
 	/* Core 3 */
 
-	mov r0, #2
-	bl heap32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	mov r0, #3
+	bl heap32_malloc                          @ Obtain Memory Space (2 Block Means 8 Bytes)
 	ldr r1, core123_handler
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
+	str r4, [r0, #4]                          @ Store Pointer of Full Decending Stack
 	mov r1, #0
-	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	str r1, [r0, #8]                          @ Store Number of Arguments to Second of Heap Array
 	push {r0-r3}
 	mov r1, #3                                @ Indicate Number of Core
 	bl arm32_core_call
 	pop {r0-r3}
 
+	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 	_os_render_loop2:
-		ldr r1, ADDR32_ARM32_CORE_HANDLE_3
+		macro32_invalidate_cache r1 ip
+		macro32_dsb ip
 		ldr r1, [r1]
 		cmp r1, #0
 		bne _os_render_loop2
 
-	bl heap32_mfree                         @ Clear Memory Space
+	bl heap32_mfree                           @ Clear Memory Space
 
 	/* Core 3 */
 
-	mov r0, #9
-	bl heap32_malloc                        @ Obtain Memory Space (2 Block Means 8 Bytes)
+	mov r0, #10
+	bl heap32_malloc                          @ Obtain Memory Space (10 Block Means 40 Bytes)
 	ldr r1, core123_handler2
 	str r1, [r0]                              @ Store Pointer of Function to First of Heap Array
+	str r4, [r0, #4]                          @ Store Pointer of Full Decending Stack
 	mov r1, #7
-	str r1, [r0, #4]                          @ Store Number of Arguments to Second of Heap Array
+	str r1, [r0, #8]                          @ Store Number of Arguments to Second of Heap Array
 	mov r1, #0x1
-	str r1, [r0, #8]
-	mov r1, #0x2
 	str r1, [r0, #12]
-	mov r1, #0x3
+	mov r1, #0x2
 	str r1, [r0, #16]
-	mov r1, #0x4
+	mov r1, #0x3
 	str r1, [r0, #20]
-	mov r1, #0x5
+	mov r1, #0x4
 	str r1, [r0, #24]
-	mov r1, #0x6
+	mov r1, #0x5
 	str r1, [r0, #28]
-	mov r1, #0x7
+	mov r1, #0x6
 	str r1, [r0, #32]
+	mov r1, #0x7
+	str r1, [r0, #36]
 	push {r0-r3}
 	mov r1, #3                                @ Indicate Number of Core
 	bl arm32_core_call
 	pop {r0-r3}
 
+	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 	_os_render_loop3:
-		ldr r1, ADDR32_ARM32_CORE_HANDLE_3
+		macro32_invalidate_cache r1 ip
+		macro32_dsb ip
 		ldr r1, [r1]
 		cmp r1, #0
 		bne _os_render_loop3
+
+	push {r0-r3}
+	mov r1, #0                                @ Invalidate for Core to Send
+	bl arm32_cache_operation_heap
+	pop {r0-r3}
 
 	ldr r1, [r0]
 
 macro32_debug r1 500 500
 
-	bl heap32_mfree                         @ Clear Memory Space
+	bl heap32_mfree                           @ Clear Memory Space
 
 	ldr r0, string_hello                      @ Pointer of Array of String
 	macro32_print_string r0, 0, 0, 100

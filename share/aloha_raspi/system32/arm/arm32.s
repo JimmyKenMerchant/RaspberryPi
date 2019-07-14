@@ -21,7 +21,7 @@
  * r1: Number of Core
  *
  * Usage: r0-r2
- * Return: r0 (0 as success, 1 as error), 
+ * Return: r0 (0 as success, 1 as error)
  * Error: Number of Core is Not Valid
  */
 .globl arm32_core_call
@@ -30,6 +30,8 @@ arm32_core_call:
 	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
 	number_core  .req r1 @ Parameter, Register for Argument, Scratch Register
 	handle_addr  .req r2 @ Scratch Register
+
+	push {lr}
 
 	and number_core, number_core, #0b11      @ Prevet Memory Overflow
 
@@ -41,9 +43,19 @@ arm32_core_call:
 	ldr handle_addr, ARM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, number_core
 
+	push {r0-r2}
+	mov r0, heap
+	mov r1, #1                               @ Clean for Core to Receive
+	bl arm32_cache_operation_heap
+	pop {r0-r2}
+
 	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	str heap, [handle_addr]
+
+	macro32_dsb ip
+
+	macro32_clean_cache handle_addr ip       @ Clean for Core to Receive
 
 	macro32_dsb ip
 
@@ -57,7 +69,7 @@ arm32_core_call:
 		mov r0, #0
 
 	arm32_core_call_common:
-		mov pc, lr
+		pop {pc}
 
 .unreq heap
 .unreq number_core
@@ -72,15 +84,16 @@ arm32_core_call:
  *
  * This Function Uses Heap.
  * First of Heap Array is Pointer of Function.
- * Second of Heap Array is Number of Arguments.
- * Third and More of Heap Array are Arguments of Function.
+ * Second of Heap Array is Pointer of Full Decending Stack (Decrement Before on Store, Increment After on Load)
+ * Third of Heap Array is Number of Arguments.
+ * Fourth and More of Heap Array are Arguments of Function.
  *
  * Return Value Will Be Stored to Heap.
  *
  * When Function is Finished, ARM32_CORE_HANDLE_n Will Be Zero to Indicate Finishing.
  *
- * Usage: r0-r9
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error: Pointer of Full Decending Stack is Not Valid
  */
 .globl arm32_core_handle
 arm32_core_handle:
@@ -93,10 +106,10 @@ arm32_core_handle:
 	heap         .req r5
 	addr_start   .req r6
 	num_arg      .req r7
-	dup_num_arg  .req r8
-	temp         .req r9
+	temp         .req r8
+	sp_retrieve  .req r9
 
-	push {r4-r9}
+	push {r4-r9,lr}
 
 	macro32_multicore_id number_core
 
@@ -105,47 +118,54 @@ arm32_core_handle:
 	ldr handle_addr, ARM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, number_core
 
-	.unreq number_core
-	arg0 .req r0
+	ldr sp_retrieve, ARM32_CORE_HANDLE_SP
+	add sp_retrieve, sp_retrieve, number_core
+	str sp, [sp_retrieve]
 
 	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
+	.unreq number_core
+	arg0 .req r0
+
 	arm32_core_handle_loop1:
+		/* Invalidate for Core to Send */
+		macro32_invalidate_cache handle_addr ip
+		macro32_dsb ip
 		ldr heap, [handle_addr]
 		cmp heap, #0
 		beq arm32_core_handle_loop1
 
+	mov r0, heap
+	mov r1, #0                               @ Invalidate for Core to Send
+	bl arm32_cache_operation_heap
+
 	ldr addr_start, [heap]
-	ldr num_arg, [heap, #4]
+	ldr sp, [heap, #4]
+	ldr num_arg, [heap, #8]
 
-	mov dup_num_arg, #0
-
-	push {r0-r3,lr}
+	cmp sp, #0
+	beq arm32_core_handle_error
 
 	cmp num_arg, #0
 	beq arm32_core_handle_branch
 	cmp num_arg, #1
-	ldrge arg0, [heap, #8]
+	ldrge arg0, [heap, #12]
 	beq arm32_core_handle_branch
 	cmp num_arg, #2
-	ldrge arg1, [heap, #12]
+	ldrge arg1, [heap, #16]
 	beq arm32_core_handle_branch
 	cmp num_arg, #3
-	ldrge arg2, [heap, #16]
+	ldrge arg2, [heap, #20]
 	beq arm32_core_handle_branch
 	cmp num_arg, #4
-	ldrge arg3, [heap, #20]
+	ldrge arg3, [heap, #24]
 	beq arm32_core_handle_branch
 
-	mov dup_num_arg, num_arg
-	sub dup_num_arg, dup_num_arg, #4                         @ For Offset of SP Afterward
-	lsl dup_num_arg, dup_num_arg, #2                         @ Substitution of Multiplication by 4
-
 	lsl num_arg, num_arg, #2                                 @ Substitution of Multiplication by 4
-	add num_arg, num_arg, #4
+	add num_arg, num_arg, #8
 
 	arm32_core_handle_loop2:
-		cmp num_arg, #20
+		cmp num_arg, #24
 		bls arm32_core_handle_branch
 		ldr temp, [heap, num_arg]
 		push {temp}
@@ -155,21 +175,31 @@ arm32_core_handle:
 	arm32_core_handle_branch:
 		macro32_dsb ip
 		blx addr_start
-		macro32_dsb ip
 		str r0, [heap]                                @ Return Value r0
 		str r1, [heap, #4]                            @ Return Value r1
-		add sp, sp, dup_num_arg                       @ Offset SP
-		pop {r0-r3,lr}
-		
+		macro32_dsb ip
+
+		mov r0, heap
+		mov r1, #1                                    @ Clean for Core to Receive
+		bl arm32_cache_operation_heap
+
 		mov temp, #0
 		str temp, [handle_addr]                       @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
+		macro32_clean_cache handle_addr ip            @ Clean for Core to Receive
 
+		b arm32_core_handle_success
+
+	arm32_core_handle_error:
+		mov r0, #1
+		b arm32_core_handle_common
+
+	arm32_core_handle_success:
 		mov r0, #0
 
 	arm32_core_handle_common:
+		ldr sp, [sp_retrieve]                         @ Retrieve Stack Pointer
 		macro32_dsb ip
-		pop {r4-r9}
-		mov pc, lr
+		pop {r4-r9,pc}
 
 .unreq arg0
 .unreq arg1
@@ -179,8 +209,8 @@ arm32_core_handle:
 .unreq heap
 .unreq addr_start
 .unreq num_arg
-.unreq dup_num_arg
 .unreq temp
+.unreq sp_retrieve
 
 ARM32_CORE_HANDLE_BASE:      .word ARM32_CORE_HANDLE_0
 .globl ARM32_CORE_HANDLE_0
@@ -191,6 +221,12 @@ ARM32_CORE_HANDLE_0:         .word 0x00
 ARM32_CORE_HANDLE_1:         .word 0x00
 ARM32_CORE_HANDLE_2:         .word 0x00
 ARM32_CORE_HANDLE_3:         .word 0x00
+
+ARM32_CORE_HANDLE_SP:        .word ARM32_CORE_HANDLE_SP_0
+ARM32_CORE_HANDLE_SP_0:      .word 0x00
+ARM32_CORE_HANDLE_SP_1:      .word 0x00
+ARM32_CORE_HANDLE_SP_2:      .word 0x00
+ARM32_CORE_HANDLE_SP_3:      .word 0x00
 
 
 /**
