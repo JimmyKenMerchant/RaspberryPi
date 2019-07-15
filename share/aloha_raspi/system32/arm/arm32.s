@@ -13,8 +13,10 @@
 /**
  * function arm32_core_call
  * Call Cores
- * Need of SMP is on, and Cache is Inner Shareable.
  * Caution! This Function is compatible from ARMv7/AArch32
+ * Need of SMP is on, and the cache is the inner shareable.
+ * The inner cache is maintained by the snoop control unit (SCU),
+ * however, explicitly cleaning and invalidating cache ensures coherency among cores.
  *
  * Parameters
  * r0: Pointer of Heap
@@ -79,8 +81,10 @@ arm32_core_call:
 /**
  * function arm32_core_handle
  * Execute Function with Arguments in Core
- * Need of SMP is on, and Cache is Inner Shareable.
  * Caution! This Function is compatible from ARMv7/AArch32
+ * Need of SMP is on, and the cache is the inner shareable.
+ * The inner cache is maintained by the snoop control unit (SCU),
+ * however, explicitly cleaning and invalidating cache ensures coherency among cores.
  *
  * This Function Uses Heap.
  * First of Heap Array is Pointer of Function.
@@ -969,9 +973,6 @@ arm32_lineup_basic_va:
 
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_none
-.ifndef __ARMV6
-	orr descriptor, descriptor, #equ32_mmu_section_shareable
-.endif
 	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 
@@ -1010,9 +1011,6 @@ arm32_lineup_basic_va:
 	mov descriptor, #equ32_mmu_section|equ32_mmu_section_device
 	orr descriptor, descriptor, #equ32_mmu_section_access_rw_none
 	orr descriptor, descriptor, #equ32_mmu_section_nonsecure
-.ifndef __ARMV6
-	orr descriptor, descriptor, #equ32_mmu_section_shareable
-.endif
 	orr descriptor, descriptor, #equ32_mmu_domain00
 	add descriptor, descriptor, #equ32_peripherals_base
 

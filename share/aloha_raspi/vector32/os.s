@@ -80,7 +80,9 @@ _os_reset:
 	bl os_reset
 	pop {r0-r3}
 
-	/* Set Cache Status for Whole Area of Data Memory */
+	/**
+	 * Set Cache Status for Whole Area of Data Memory
+	 */
 	push {r0-r3}
 .ifndef __ARMV6
 .ifndef __SECURE
@@ -98,6 +100,7 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 .endif
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]
@@ -107,9 +110,8 @@ _os_reset:
 	pop {r0-r3}
 
 	/**
-	 * Set Cache Status for HEAP with Non-cache
-	 * Non-cache HEAP is used for peripheral blocks.
-	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
+	 * Set Cache Status for HEAP Area with Non-cache
+	 * This area is used with peripheral blocks, etc.
 	 */
 	push {r0-r3}
 .ifndef __ARMV6
@@ -139,8 +141,7 @@ _os_reset:
 
 	/**
 	 * Set Cache Status for Memory with Non-cache
-	 * Non-cache memory is used for peripheral blocks.
-	 * To ensure that data is stored in physical main memory, add `shareable` attribute.
+	 * This area is used with peripheral blocks, etc.
 	 */
 	push {r0-r3}
 .ifndef __ARMV6
@@ -168,7 +169,9 @@ _os_reset:
 	bl arm32_set_cache
 	pop {r0-r3}
 
-	/* Set Cache Status for Virtual Address Descriptor */
+	/**
+	 * Set Cache Status for Virtual Address Descriptor
+	 */
 	push {r0-r3}
 .ifndef __ARMV6
 .ifndef __SECURE
@@ -186,6 +189,7 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 .endif
+	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
 	ldr r2, [r2]

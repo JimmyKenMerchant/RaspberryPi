@@ -898,8 +898,8 @@
 .equ equ32_mmu_page_nonsecure,            0b1000                 @ NS[3]
 .equ equ32_mmu_section_pxn,               0b01                   @ PXN[0], Execute Never in Privilege Mode (EL1), If Implemented
 .equ equ32_mmu_section_executenever,      0b10000                @ XN[4]
-.equ equ32_mmu_section_stronglyordered,   0b0000                 @ C[3], B[2], Cacheable, Bufferable
-.equ equ32_mmu_section_device,            0b0100                 @ C[3], B[2]
+.equ equ32_mmu_section_stronglyordered,   0b0000                 @ C[3], B[2], Cacheable, Shareable without S[16]
+.equ equ32_mmu_section_device,            0b0100                 @ C[3], B[2], Shareable without S[16]
 .equ equ32_mmu_section_inner_none,        0b0000                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_wb_wa,       0b0100                 @ C[3], B[2]
 .equ equ32_mmu_section_inner_wt,          0b1000                 @ C[3], B[2]
@@ -913,7 +913,7 @@
 .equ equ32_mmu_section_access_rw_r,       0b0000100000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_rw_rw,      0b0000110000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_r_none,     0b1000010000000000     @ APX[15] and AP[11:10], Privilege Access Only
-.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Memory, Seems Outer Blocks (DMA and Devices)
+.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Normal Memory, Seems Inner and Outer
 .equ equ32_mmu_section_nonglobal,         0b100000000000000000   @ nG[17], Non-global
 .equ equ32_mmu_supersection,              0b1000000000000000000  @ [18], Bit[8:5] are PA[39:36], Bit[23:20] are PA[35:32]
 .equ equ32_mmu_section_nonsecure,         0b10000000000000000000 @ NS[19]
@@ -942,8 +942,8 @@
 .equ equ32_mmu_second_small,                 0b10 @ [1:0] Indexed by Bit[19:12] of Virtual Address, Bit[31:12] becomes Physical
 .equ equ32_mmu_second_small_xn,              0b1  @ XN[0]
 .equ equ32_mmu_second_large_xn,              0b1000000000000000 @ XN[15]
-.equ equ32_mmu_second_stronglyordered,       0b0000 @ C[3], B[2], Cacheable, Bufferable, Common on small/large page
-.equ equ32_mmu_second_device,                0b0100 @ C[3], B[2]
+.equ equ32_mmu_second_stronglyordered,       0b0000 @ C[3], B[2], Cacheable, Shareable without S[16], Common on small/large page
+.equ equ32_mmu_second_device,                0b0100 @ C[3], B[2], Shareable without S[16]
 .equ equ32_mmu_second_inner_none,            0b0000 @ C[3], B[2]
 .equ equ32_mmu_second_inner_wb_wa,           0b0100 @ C[3], B[2]
 .equ equ32_mmu_second_inner_wt,              0b1000 @ C[3], B[2]
@@ -961,7 +961,7 @@
 .equ equ32_mmu_second_access_rw_r,           0b0000100000 @ APX[9] and AP[5:4]
 .equ equ32_mmu_second_access_rw_rw,          0b0000110000 @ APX[9] and AP[5:4]
 .equ equ32_mmu_second_access_r_none,         0b1000010000 @ APX[9] and AP[5:4], Privilege Access Only
-.equ equ32_mmu_second_shareable,             0b10000000000 @ S[10], Shareable Memory, Common on small/large
+.equ equ32_mmu_second_shareable,             0b10000000000 @ S[10], Shareable Normal Memory, Common on small/large
 .equ equ32_mmu_second_nonglobal,             0b100000000000 @ nG[11], Non-global, Common on small/large, C13, Context ID Register
 
 
