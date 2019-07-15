@@ -116,10 +116,9 @@ os_debug:
 
 	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 	_os_render_loop2:
-		macro32_invalidate_cache r1 ip
+		ldr r2, [r1]
+		cmp r2, #0
 		macro32_dsb ip
-		ldr r1, [r1]
-		cmp r1, #0
 		bne _os_render_loop2
 
 	bl heap32_mfree                           @ Clear Memory Space
@@ -154,16 +153,10 @@ os_debug:
 
 	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 	_os_render_loop3:
-		macro32_invalidate_cache r1 ip
+		ldr r2, [r1]
+		cmp r2, #0
 		macro32_dsb ip
-		ldr r1, [r1]
-		cmp r1, #0
 		bne _os_render_loop3
-
-	push {r0-r3}
-	mov r1, #0                                @ Invalidate for Core to Send
-	bl arm32_cache_operation_heap
-	pop {r0-r3}
 
 	ldr r1, [r0]
 

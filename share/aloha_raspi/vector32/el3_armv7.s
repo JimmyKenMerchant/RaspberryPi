@@ -48,11 +48,10 @@ _el3_monitor:
 	push {r0-r3,lr}
 	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r0, r0, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
-	orr r0, r0, #equ32_mmu_section_shareable
 	orr r0, r0, #equ32_mmu_domain00
 	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
-	orr r1, r1, #equ32_mmu_section_nonsecure|equ32_mmu_section_shareable
+	orr r1, r1, #equ32_mmu_section_nonsecure
 	orr r1, r1, #equ32_mmu_domain00
 	bl arm32_lineup_basic_va
 	pop {r0-r3,lr}
@@ -83,7 +82,7 @@ _el3_monitor:
 
 	push {r0-r3,lr}
 	mov r0, #0
-	mov r1, #equ32_ttbr_inner_none|equ32_ttbr_outer_none
+	mov r1, #equ32_ttbr_inner_wb_wa|equ32_ttbr_outer_wb_wa
 	bl arm32_activate_va
 	pop {r0-r3,lr}
 

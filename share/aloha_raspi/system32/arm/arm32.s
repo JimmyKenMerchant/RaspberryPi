@@ -15,8 +15,7 @@
  * Call Cores
  * Caution! This Function is compatible from ARMv7/AArch32
  * Need of SMP is on, and the cache is the inner shareable.
- * The inner cache is maintained by the snoop control unit (SCU),
- * however, explicitly cleaning and invalidating cache ensures coherency among cores.
+ * The inner cache is maintained by the snoop control unit (SCU).
  *
  * Parameters
  * r0: Pointer of Heap
@@ -45,19 +44,9 @@ arm32_core_call:
 	ldr handle_addr, ARM32_CORE_HANDLE_BASE
 	add handle_addr, handle_addr, number_core
 
-	push {r0-r2}
-	mov r0, heap
-	mov r1, #1                               @ Clean for Core to Receive
-	bl arm32_cache_operation_heap
-	pop {r0-r2}
-
 	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
 
 	str heap, [handle_addr]
-
-	macro32_dsb ip
-
-	macro32_clean_cache handle_addr ip       @ Clean for Core to Receive
 
 	macro32_dsb ip
 
@@ -83,8 +72,7 @@ arm32_core_call:
  * Execute Function with Arguments in Core
  * Caution! This Function is compatible from ARMv7/AArch32
  * Need of SMP is on, and the cache is the inner shareable.
- * The inner cache is maintained by the snoop control unit (SCU),
- * however, explicitly cleaning and invalidating cache ensures coherency among cores.
+ * The inner cache is maintained by the snoop control unit (SCU).
  *
  * This Function Uses Heap.
  * First of Heap Array is Pointer of Function.
@@ -132,16 +120,10 @@ arm32_core_handle:
 	arg0 .req r0
 
 	arm32_core_handle_loop1:
-		/* Invalidate for Core to Send */
-		macro32_invalidate_cache handle_addr ip
-		macro32_dsb ip
 		ldr heap, [handle_addr]
 		cmp heap, #0
+		macro32_dsb ip
 		beq arm32_core_handle_loop1
-
-	mov r0, heap
-	mov r1, #0                               @ Invalidate for Core to Send
-	bl arm32_cache_operation_heap
 
 	ldr addr_start, [heap]
 	ldr sp, [heap, #4]
@@ -183,13 +165,8 @@ arm32_core_handle:
 		str r1, [heap, #4]                            @ Return Value r1
 		macro32_dsb ip
 
-		mov r0, heap
-		mov r1, #1                                    @ Clean for Core to Receive
-		bl arm32_cache_operation_heap
-
 		mov temp, #0
 		str temp, [handle_addr]                       @ Indicate End of Function by Zero to 1st of Array for Polling on Another Core
-		macro32_clean_cache handle_addr ip            @ Clean for Core to Receive
 
 		b arm32_core_handle_success
 

@@ -100,7 +100,6 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_DATAMEMORY_ADDR
 	ldr r2, [r2]
@@ -130,7 +129,6 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_HEAP_NONCACHE_ADDR
 	ldr r2, [r2]
@@ -160,7 +158,6 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_SYSTEM32_NONCACHE_ADDR
 	ldr r2, [r2]
@@ -189,7 +186,6 @@ _os_reset:
 	orr r1, r1, #equ32_mmu_section_nonsecure
 .endif
 .endif
-	orr r1, r1, #equ32_mmu_section_shareable
 	orr r1, r1, #equ32_mmu_domain00
 	ldr r2, ADDR32_ARM32_VADESCRIPTOR_ADDR
 	ldr r2, [r2]

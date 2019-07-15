@@ -887,8 +887,9 @@
  * For Short Descriptor Translation Table (32-bit), First Level
  * Super Section (16M Bytes), Section (1M Bytes) and Page (64K/4K Bytes)
  * Super Section is implemented for Long Physical Address Extension (LPAE)
- * If you want XN, APX, S, and nG Bits in ARMv6, enable XP Bit[23] in SCTLR of ARMv6
- * PXN Bit is From ARMv7
+ * If you want XN, APX, S, and nG Bits in ARMv6, enable XP Bit[23] in SCTLR of ARMv6.
+ * PXN Bit is from ARMv7.
+ * S bit seems to define the outer shareable (among CPUs). This bit affects the speed of memory access.
  */
 .equ equ32_mmu_fault,                     0b00                   @ [1:0], Indexed by Bit[31:20] of Virtual Address
 .equ equ32_mmu_page,                      0b01                   @ [1:0], Page Table Base Address Bit[31:10] 2nd Level Descriptor
@@ -913,7 +914,7 @@
 .equ equ32_mmu_section_access_rw_r,       0b0000100000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_rw_rw,      0b0000110000000000     @ APX[15] and AP[11:10]
 .equ equ32_mmu_section_access_r_none,     0b1000010000000000     @ APX[15] and AP[11:10], Privilege Access Only
-.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Normal Memory, Seems Inner and Outer
+.equ equ32_mmu_section_shareable,         0b10000000000000000    @ S[16], Shareable Normal Memory
 .equ equ32_mmu_section_nonglobal,         0b100000000000000000   @ nG[17], Non-global
 .equ equ32_mmu_supersection,              0b1000000000000000000  @ [18], Bit[8:5] are PA[39:36], Bit[23:20] are PA[35:32]
 .equ equ32_mmu_section_nonsecure,         0b10000000000000000000 @ NS[19]
@@ -966,12 +967,13 @@
 
 
 /* Translation Table Base Register (TTBR0/TTBR1), Banked by Secure/Non-secure `MRC/MCR p15, 0, <Rt>, c2, c0, 0/1` */
-.equ equ32_ttbr_share,                0b10      @ [1] Translation Table Walk To Shared Memory, Otherwise, Non-shared Memory
-.equ equ32_ttbr_share_inner,          0b100000  @ NOS[5], Not Outer Shareable
-.equ equ32_ttbr_inner_none,           0b0000000 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
-.equ equ32_ttbr_inner_wb_wa,          0b1000000 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
-.equ equ32_ttbr_inner_wt,             0b0000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
-.equ equ32_ttbr_inner_wb_nowa,        0b1000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk
+.equ equ32_ttbr_share,                0b10      @ S[1] Translation Table Walk To Shared Memory, Otherwise, Non-shared Memory
+.equ equ32_ttbr_ecc,                  0b100     @ P[2] Error Correcting Code If Architecture Supports
+.equ equ32_ttbr_share_inner,          0b100000  @ NOS[5], Not Outer Shareable, Nothing in ARMv6
+.equ equ32_ttbr_inner_none,           0b0000000 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk, Nothing in ARMv6
+.equ equ32_ttbr_inner_wb_wa,          0b1000000 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk, Nothing in ARMv6
+.equ equ32_ttbr_inner_wt,             0b0000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk, Inner Cacheable in ARMv6 C[0]
+.equ equ32_ttbr_inner_wb_nowa,        0b1000001 @ IRGN-0[6], IRNG-1[0], For Translation Table Walk, Nothing in ARMv6
 .equ equ32_ttbr_outer_none,           0b00000   @ RGN[4:3], For Translation Table Walk
 .equ equ32_ttbr_outer_wb_wa,          0b01000   @ RGN[4:3], For Translation Table Walk
 .equ equ32_ttbr_outer_wt,             0b10000   @ RGN[4:3], For Translation Table Walk
