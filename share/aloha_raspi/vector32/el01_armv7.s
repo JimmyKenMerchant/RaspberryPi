@@ -98,6 +98,146 @@ _el01_reset:
 	 * So, If you use Multi-core, you need to have secure process to treat this.
 	 */
 
+	/**
+	 * CPU Mode, Cache, and NEON/VFP Settings Similar to Process in os.s
+	 * SP is not set on each vector except Supervisor mode, which has set sp.
+	 */
+
+	/* SVC Mode (Current), FIQ and IRQ Are Disabled, Aborts Are Enabled */
+	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r0
+	mov r0, #equ32_fiq_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r0
+	mov r0, #equ32_irq_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r0
+	mov r0, #equ32_abt_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r0
+	mov r0, #equ32_und_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r0
+	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
+	msr cpsr_c, r0
+
+	/**
+	 * Set Cache Status for Whole Area of Data Memory
+	 */
+	push {r0-r3}
+.ifndef __SECURE
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_rw
+.ifndef __SECURE
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, EL01_SYSTEM32_DATAMEMORY_ADDR
+	ldr r2, [r2]
+	ldr r3, EL01_SYSTEM32_DATAMEMORY_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3}
+
+	/**
+	 * Set Cache Status for HEAP Area with Non-cache
+	 * This area is used with peripheral blocks, etc.
+	 */
+	push {r0-r3}
+.ifndef __SECURE
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __SECURE
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, EL01_SYSTEM32_HEAP_NONCACHE_ADDR
+	ldr r2, [r2]
+	ldr r3, EL01_SYSTEM32_HEAP_NONCACHE_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3}
+
+	/**
+	 * Set Cache Status for Memory with Non-cache
+	 * This area is used with peripheral blocks, etc.
+	 */
+	push {r0-r3}
+.ifndef __SECURE
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_none|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_none|equ32_mmu_section_access_rw_rw
+.ifndef __SECURE
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, EL01_SYSTEM32_NONCACHE_ADDR
+	ldr r2, [r2]
+	ldr r3, EL01_SYSTEM32_NONCACHE_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3}
+
+	/**
+	 * Set Cache Status for Virtual Address Descriptor
+	 */
+	push {r0-r3}
+.ifndef __SECURE
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+	mov r1, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa|equ32_mmu_section_executenever
+	orr r1, r1, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r
+.ifndef __SECURE
+	orr r1, r1, #equ32_mmu_section_nonsecure
+.endif
+	orr r1, r1, #equ32_mmu_domain00
+	ldr r2, EL01_ARM32_VADESCRIPTOR_ADDR
+	ldr r2, [r2]
+	ldr r3, EL01_ARM32_VADESCRIPTOR_SIZE
+	ldr r3, [r3]
+	bl arm32_set_cache
+	pop {r0-r3}
+
+	macro32_dsb ip
+	macro32_invalidate_tlb_all ip
+	macro32_dsb ip
+	macro32_isb ip
+	macro32_dsb ip
+	macro32_invalidate_instruction_all ip
+	macro32_isb ip
+
+	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
+
+	/**
+	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
+	 * Each 0b01 is for Enable in Previlege Mode
+	 * Each 0b11 is for Enable in Previlege and User Mode
+	 */
+	mov r0, #0b1111
+	lsl r0, r0, #20
+
+	mcr p15, 0, r0, c1, c0, 2                 @ CPACR
+
+	macro32_dsb ip
+	macro32_isb ip                            @ Must Need When You Renew CPACR
+
+	vmrs r0, fpexc                            @ Floating-point Exception Control Register
+	orr r0, r0, #0x40000000                   @ Enable NEON/VFP
+	vmsr fpexc, r0
+
+	vmrs r0, fpscr                            @ Floating-point Status and Control Register
+	orr r0, r0, #0x03000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible) and DN
+	vmsr fpscr, r0
+
 	_el01_reset_loop:
 		bl arm32_core_handle
 		b _el01_reset_loop
@@ -131,3 +271,13 @@ _el01_irq:
 
 _el01_fiq:
 	subs pc, lr, #4
+
+
+EL01_SYSTEM32_DATAMEMORY_ADDR:    .word SYSTEM32_DATAMEMORY_ADDR
+EL01_SYSTEM32_DATAMEMORY_SIZE:    .word SYSTEM32_DATAMEMORY_SIZE
+EL01_SYSTEM32_HEAP_NONCACHE_ADDR: .word SYSTEM32_HEAP_NONCACHE_ADDR
+EL01_SYSTEM32_HEAP_NONCACHE_SIZE: .word SYSTEM32_HEAP_NONCACHE_SIZE
+EL01_SYSTEM32_NONCACHE_ADDR:      .word SYSTEM32_NONCACHE_ADDR
+EL01_SYSTEM32_NONCACHE_SIZE:      .word SYSTEM32_NONCACHE_SIZE
+EL01_ARM32_VADESCRIPTOR_ADDR:     .word ARM32_VADESCRIPTOR_ADDR
+EL01_ARM32_VADESCRIPTOR_SIZE:     .word ARM32_VADESCRIPTOR_SIZE

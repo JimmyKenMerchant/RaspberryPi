@@ -203,7 +203,7 @@ _os_reset:
 	macro32_isb ip
 
 	/* Coprocessor Access Control Register (CPACR) For Floating Point and NEON (SIMD) */
-	
+
 	/**
 	 * 20-21 Bits for CP 10, 22-23 Bits for CP 11
 	 * Each 0b01 is for Enable in Previlege Mode
