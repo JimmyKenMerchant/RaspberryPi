@@ -260,6 +260,12 @@ __attribute__((noinline)) uint32 _display_off( bool bool_off );
 #define _cm_div_integer     12 // LSL Bit[23:12]
 #define _cm_div_fraction    0 // Bit[11:0] (Fractional Value is Bit[11:0] Divided by 1024. Valid Bit[9:0])
 
+#ifndef __ARMV6
+extern ObjArray ARM32_CORE_HANDLE_0;
+extern ObjArray ARM32_CORE_HANDLE_1;
+extern ObjArray ARM32_CORE_HANDLE_2;
+extern ObjArray ARM32_CORE_HANDLE_3;
+#endif
 extern uint32 ARM32_STOPWATCH_LOW;
 extern uint32 ARM32_STOPWATCH_HIGH;
 

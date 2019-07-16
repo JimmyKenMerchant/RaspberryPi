@@ -25,48 +25,47 @@
 .include "vector32/os.s"
 
 os_reset:
+	push {lr}
+
+	/**
+	 * Interrupt
+	 */
 
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_interrupt_base
 
 	mvn r1, #0                                       @ Whole Inverter
-
-	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All IRQs
+	str r1, [r0, #equ32_interrupt_disable_irqs1]     @ Make Sure Disable All
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	mov r1, #0b11000000                       @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
+	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_armtimer_base
+	/**
+	 * Timer
+	 */
 
-	mov r1, #0x95                             @ Decimal 149 to divide 240Mz by 150 to 1.6Mhz (Predivider is 10 Bits Wide)
-	str r1, [r0, #equ32_armtimer_predivider]
+	/* Get a 12hz Timer Interrupt (120000/12000) */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
+	mov r1, #0x2E00                           @ 0x2700 High 1 Byte of decimal 11999 (12000 - 1), 16 bits counter on default
+	add r1, r1, #0xDF                         @ 0x0F Low 1 Byte of decimal 11999, 16 bits counter on default
+	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
+	bl arm32_armtimer
 
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
-	str r1, [r0, #equ32_armtimer_load]
+	/**
+	 * GPIO
+	 */
 
-	mov r1, #0x3E0000                         @ High 2 Bytes
-	add r1, r1, #0b10100100                   @ Low 2 Bytes (00A4), Timer Enable and Timer Interrupt Enable, Prescaler 1/16 to 100K
-	                                          @ 1/16 is #0b10100100, 1/256 is #0b10101000
-	str r1, [r0, #equ32_armtimer_control]
+	/* GPIO0-45 Reset and Pull Down */
+	bl gpio32_gpioreset
 
-	/* So We can get a 10hz Timer Interrupt (100000/10000) */
-
-.ifndef __RASPI3B
-	/* GPIO */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
-
-	ldr r1, [r0, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_7   @ Clear GPIO 21
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_7  @ Set GPIO 47 OUTPUT
-	str r1, [r0, #equ32_gpio_gpfsel40]
-.endif
+	/**
+	 * Video
+	 */
 
 	/* Obtain Framebuffer from VideoCore IV */
+
 	mov r0, #32
 	ldr r1, ADDR32_BCM32_DEPTH
 	str r0, [r1]
@@ -79,11 +78,9 @@ os_reset:
 
 	macro32_clean_cache r1, ip
 
-	push {r0-r3,lr}
 	bl bcm32_get_framebuffer
-	pop {r0-r3,lr}
 
-	mov pc, lr
+	pop {pc}
 
 os_debug:
 	push {r0-r8,lr}
@@ -109,12 +106,12 @@ os_debug:
 	str r4, [r0, #4]                          @ Store Pointer of Full Descending Stack
 	mov r1, #0
 	str r1, [r0, #8]                          @ Store Number of Arguments to Second of Heap Array
-	push {r0-r3}
-	mov r1, #3                                @ Indicate Number of Core
-	bl arm32_core_call
-	pop {r0-r3}
+	macro32_dsb ip
 
 	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
+	str r0, [r1]
+	macro32_isb ip
+
 	_os_render_loop2:
 		ldr r2, [r1]
 		cmp r2, #0
@@ -146,12 +143,12 @@ os_debug:
 	str r1, [r0, #32]
 	mov r1, #0x7
 	str r1, [r0, #36]
-	push {r0-r3}
-	mov r1, #3                                @ Indicate Number of Core
-	bl arm32_core_call
-	pop {r0-r3}
+	macro32_dsb ip
 
 	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
+	str r0, [r1]
+	macro32_isb ip
+
 	_os_render_loop3:
 		ldr r2, [r1]
 		cmp r2, #0

@@ -11,63 +11,6 @@
 .ifndef __ARMV6
 
 /**
- * function arm32_core_call
- * Call Cores
- * Caution! This Function is compatible from ARMv7/AArch32
- * Need of SMP is on, and the cache is the inner shareable.
- * The inner cache is maintained by the snoop control unit (SCU).
- *
- * Parameters
- * r0: Pointer of Heap
- * r1: Number of Core
- *
- * Usage: r0-r2
- * Return: r0 (0 as success, 1 as error)
- * Error: Number of Core is Not Valid
- */
-.globl arm32_core_call
-arm32_core_call:
-	/* Auto (Local) Variables, but just Aliases */
-	heap         .req r0 @ Parameter, Register for Argument and Result, Scratch Register
-	number_core  .req r1 @ Parameter, Register for Argument, Scratch Register
-	handle_addr  .req r2 @ Scratch Register
-
-	push {lr}
-
-	and number_core, number_core, #0b11      @ Prevet Memory Overflow
-
-	cmp number_core, #3                      @ 0 <= number_core <= 3
-	bhi arm32_core_call_error
-
-	lsl number_core, number_core, #2         @ Substitution of Multiplication by 4
-
-	ldr handle_addr, ARM32_CORE_HANDLE_BASE
-	add handle_addr, handle_addr, number_core
-
-	macro32_dsb ip @ Stronger than `dmb`, `dsb` stops all instructions, including instructions with no memory access
-
-	str heap, [handle_addr]
-
-	macro32_dsb ip
-
-	b arm32_core_call_success
-
-	arm32_core_call_error:
-		mov r0, #1
-		b arm32_core_call_common
-
-	arm32_core_call_success:
-		mov r0, #0
-
-	arm32_core_call_common:
-		pop {pc}
-
-.unreq heap
-.unreq number_core
-.unreq handle_addr 
-
-
-/**
  * function arm32_core_handle
  * Execute Function with Arguments in Core
  * Caution! This Function is compatible from ARMv7/AArch32
@@ -193,7 +136,15 @@ arm32_core_handle:
 .unreq temp
 .unreq sp_retrieve
 
+ARM32_CORE_HANDLE_SP:        .word ARM32_CORE_HANDLE_SP_0
+ARM32_CORE_HANDLE_SP_0:      .word 0x00
+ARM32_CORE_HANDLE_SP_1:      .word 0x00
+ARM32_CORE_HANDLE_SP_2:      .word 0x00
+ARM32_CORE_HANDLE_SP_3:      .word 0x00
+
 ARM32_CORE_HANDLE_BASE:      .word ARM32_CORE_HANDLE_0
+
+.section	.data
 .globl ARM32_CORE_HANDLE_0
 .globl ARM32_CORE_HANDLE_1
 .globl ARM32_CORE_HANDLE_2
@@ -202,13 +153,7 @@ ARM32_CORE_HANDLE_0:         .word 0x00
 ARM32_CORE_HANDLE_1:         .word 0x00
 ARM32_CORE_HANDLE_2:         .word 0x00
 ARM32_CORE_HANDLE_3:         .word 0x00
-
-ARM32_CORE_HANDLE_SP:        .word ARM32_CORE_HANDLE_SP_0
-ARM32_CORE_HANDLE_SP_0:      .word 0x00
-ARM32_CORE_HANDLE_SP_1:      .word 0x00
-ARM32_CORE_HANDLE_SP_2:      .word 0x00
-ARM32_CORE_HANDLE_SP_3:      .word 0x00
-
+.section	.arm_system32
 
 /**
  * function arm32_cache_operation_all
