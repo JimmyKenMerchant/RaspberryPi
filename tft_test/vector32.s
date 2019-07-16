@@ -76,19 +76,6 @@ os_reset:
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_gpio_base
 
-.ifndef __RASPI3B
-	/* USB Current Up */
-	ldr r1, [r0, #equ32_gpio_gpfsel30]
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_8   @ Set GPIO 38 OUTPUT
-	str r1, [r0, #equ32_gpio_gpfsel30]
-
-	macro32_dsb ip
-
-	/* Set USB Current Up (RasPi3 has already as default) */
-	mov r1, #equ32_gpio38
-	str r1, [r0, #equ32_gpio_gpset1]                               @ GPIO 38 OUTPUT High
-.endif
-
 	/* I/O Settings */
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_7       @ Set GPIO 7 ALT 0

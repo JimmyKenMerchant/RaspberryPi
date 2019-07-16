@@ -76,3 +76,7 @@ init_uart_clock=18000000
 # Secondary Memory Interface (SMI) exist in the SoC. It's the interface for parallel buses, 80 series CPU, 68 series CPU, etc.
 # However, compute modules can treat SMI.
 #fake_vsync_isr=1
+
+# USB Power from 600mA to 1200mA. This makes GPIO 38 high state.
+# RasPi3 uses GPIO 38 for the other purpose and 1200mA in default.
+#max_usb_current=1
