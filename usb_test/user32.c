@@ -10,8 +10,8 @@
 #include "system32.h"
 #include "system32.c"
 
-#define ACT_TIME_ROOTHUB 200000
-#define ACT_TIME_DEVICE  700000
+#define ACT_TIME_ROOTHUB 750000
+#define ACT_TIME_DEVICE  750000
 
 bool init_usb_keyboard( uint32 usb_channel );
 bool console_rollup();

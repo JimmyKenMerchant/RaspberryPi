@@ -4,6 +4,10 @@
 * License: MIT
 * License URL: https://opensource.org/licenses/MIT
 
+**Purpose**
+
+* Making Experimental UART Console Inputted by USB Keyboard
+
 **Output/Input**
 
 * GPIO 4 as GPCLK0 for Second Timer
@@ -25,6 +29,8 @@
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`, Needs Commented Out of `bl gpio32_gpioreset`, However Only One Is Tested.
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+
+* Add `debug=yes` to these commands to enter the test mode which displays characters received from the USB keyboard.
 
 * Initializing process of USB are almost the same as a project, Aloha Calc. However setting process of GPIO in vector32.s has a difference from Aloha Calc. In this project, `bl gpio32_gpioreset` is commented out because of checking compatibility.
 
