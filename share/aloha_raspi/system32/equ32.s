@@ -11,7 +11,7 @@
  * Constants
  */
 
-.equ equ32_bcm32_core_os,                      2          @ 0-3 Number of Core to Handle OS (Route GPU IRQ and GPU FIQ)
+.equ equ32_bcm32_core_os,                      0          @ 0-3 Number of Core to Handle OS (Route GPU IRQ and GPU FIQ)
 .equ equ32_bcm32_cores_mailbox_call,           0          @ 0-3 Number of Mailbox to Receive Call
 .equ equ32_bcm32_display_width,                800
 .equ equ32_bcm32_display_height,               648
