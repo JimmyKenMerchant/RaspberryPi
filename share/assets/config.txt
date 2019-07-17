@@ -80,3 +80,9 @@ init_uart_clock=18000000
 # USB Power from 600mA to 1200mA. This makes GPIO 38 high state.
 # RasPi3 uses GPIO 38 for the other purpose and 1200mA in default.
 #max_usb_current=1
+
+# On booting, these set the wait time before loading binaries from the boot media to satisfy the requirement of the boot media.
+# In my opinion, this settings may increase the stability to access with the boot media.
+# boot_delay is in second, boot_delay_ms is in millisecond.
+#boot_delay=1
+#boot_delay_ms=100

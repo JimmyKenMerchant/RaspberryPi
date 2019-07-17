@@ -944,6 +944,46 @@ bcm32_mailbox_send:
 .unreq status
 .unreq write
 
+/* Definition Only in ARMv7/AArch32 */
+.ifndef __ARMV6
+
+/**
+ * function bcm32_route_gpuinterrupt
+ * Route GPU IRQ and GPU FIQ to Particular Core
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Number of Core to Route GPU IRQ
+ * r1: Number of Core to Route GPU FIQ
+ *
+ * Return: r0 (0 as success, 1 as error)
+ */
+.globl bcm32_route_gpuinterrupt
+bcm32_route_gpuinterrupt:
+	/* Auto (Local) Variables, but just Aliases */
+	core_irq       .req r0
+	core_fiq       .req r1
+	memorymap_base .req r2
+
+	and core_irq, core_irq, #0b11
+	and core_fiq, core_fiq, #0b11
+	orr core_irq, core_irq, core_fiq, lsl #2
+
+	mov memorymap_base, #bcm32_cores_base
+	add memorymap_base, memorymap_base, #bcm32_cores_gpuinterrupt_routing
+
+	str core_irq, [memorymap_base]
+
+	bcm32_route_gpuinterrupt_common:
+		macro32_dsb ip
+		mov pc, lr
+
+.unreq core_irq
+.unreq core_fiq
+.unreq memorymap_base
+
+.endif
+
 
 .equ bcm32_mailbox_base,          0x0000B800
 .equ bcm32_mailbox_channel0,      0x00
@@ -971,7 +1011,20 @@ bcm32_mailbox_send:
 .equ bcm32_mailbox_gpuoffset,     0x40000000 @ If L2 Cache Disabled by `disable_l2cache=1` in config.txt, 0xC0000000
 .equ bcm32_mailbox_armmask,       0x3FFFFFFF
 
+/* Definition Only in ARMv7/AArch32 */
+.ifndef __ARMV6
+
 .equ bcm32_cores_base,                  0x40000000
+.equ bcm32_cores_gpuinterrupt_routing,  0x0C @ Bit[3:2] GPU FIQ Routing, Bit[1:0] GPU IRQ Rouring, Set Core Number
+.equ bcm32_core0_irq_source,            0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ bcm32_core1_irq_source,            0x64
+.equ bcm32_core2_irq_source,            0x68
+.equ bcm32_core3_irq_source,            0x6C
+.equ bcm32_core0_fiq_source,            0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ bcm32_core1_fiq_source,            0x74
+.equ bcm32_core2_fiq_source,            0x78
+.equ bcm32_core3_fiq_source,            0x7C
+
 .equ bcm32_cores_mailbox_offset,        0x10 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
 .equ bcm32_cores_mailbox0_writeset,     0x80
 .equ bcm32_cores_mailbox1_writeset,     0x84
@@ -986,12 +1039,5 @@ bcm32_mailbox_send:
 .equ bcm32_core2_mailboxes_interrupt,   0x58
 .equ bcm32_core3_mailboxes_interrupt,   0x5C
 
-.equ bcm32_core0_irq_source,   0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
-.equ bcm32_core1_irq_source,   0x64
-.equ bcm32_core2_irq_source,   0x68
-.equ bcm32_core3_irq_source,   0x6C
-.equ bcm32_core0_fiq_source,   0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
-.equ bcm32_core1_fiq_source,   0x74
-.equ bcm32_core2_fiq_source,   0x78
-.equ bcm32_core3_fiq_source,   0x7C
+.endif
 
