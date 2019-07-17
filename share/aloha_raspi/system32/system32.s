@@ -168,6 +168,7 @@ SYSTEM32_BUFFER_END:
  * Initial SVC Mode: 0x4000 (-0x200 Offset by Core ID)
  * Initial Hyp Mode: 0x5000 (-0x200 Offset by Core ID)
  * Initial Mon Mode: 0x6000 (-0x200 Offset by Core ID)
+ * Multi-core FIQ Mode: 0x7000 (-0x200 Offset by Core ID)
  * OS Undefined Mode: 0x7200
  * OS Supervisor Mode: 0x7400
  * OS Abort Mode: 0x7600

@@ -18,6 +18,15 @@ __attribute__((noinline)) uint32 _example_svc_0( int32 a, int32 b, int32 c, int3
 	return result;
 }
 
+#ifndef __ARMV6
+__attribute__((noinline)) uint32 _set_mail( uint32 number_core, uint32 number_mailbox, uint32 mail )
+{
+	register uint32 result asm("r0");
+	asm volatile ("svc #1");
+	return result;
+}
+#endif
+
 __attribute__((noinline)) uint32 _display_off( bool bool_off )
 {
 	register uint32 result asm("r0");

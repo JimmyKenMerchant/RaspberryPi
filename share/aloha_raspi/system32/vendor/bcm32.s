@@ -948,6 +948,190 @@ bcm32_mailbox_send:
 .ifndef __ARMV6
 
 /**
+ * function bcm32_set_interrupt
+ * Set Mailbox Interrupt to Send
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Number of Core
+ * r1: Mailbox Interrupt Control
+ *
+ * Return: r0 (0 as success)
+ */
+.globl bcm32_set_interrupt
+bcm32_set_interrupt:
+	/* Auto (Local) Variables, but just Aliases */
+	number_core    .req r0
+	interrupt_ctrl .req r1
+	memorymap_base .req r2
+
+	and number_core, number_core, #0b11
+
+	mov memorymap_base, #bcm32_cores_core_offset
+	mul number_core, number_core, memorymap_base
+
+	mov memorymap_base, #bcm32_cores_base
+	add memorymap_base, memorymap_base, #bcm32_cores_mailbox_interrupt_base
+	add memorymap_base, memorymap_base, number_core
+
+	str interrupt_ctrl, [memorymap_base]
+
+	bcm32_set_interrupt_common:
+		macro32_dsb ip
+		mov r0, #0
+		mov pc, lr
+
+.unreq number_core
+.unreq interrupt_ctrl
+.unreq memorymap_base
+
+
+/**
+ * function bcm32_receive_interrupt
+ * Set Core IRQ and Core FIQ Source
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Number of Core
+ * r1: Core IRQ Source
+ * r2: Core FIQ Source
+ *
+ * Return: r0 (0 as success)
+ */
+.globl bcm32_receive_interrupt
+bcm32_receive_interrupt:
+	/* Auto (Local) Variables, but just Aliases */
+	number_core    .req r0
+	source_irq     .req r1
+	source_fiq     .req r2
+	memorymap_base .req r3
+
+	and number_core, number_core, #0b11
+
+	mov memorymap_base, #bcm32_cores_core_offset
+	mul number_core, number_core, memorymap_base
+
+	mov memorymap_base, #bcm32_cores_base
+	add memorymap_base, memorymap_base, #bcm32_cores_irq_source_base
+	add memorymap_base, memorymap_base, number_core
+
+	str source_irq, [memorymap_base]
+
+	macro32_dsb ip
+
+	mov memorymap_base, #bcm32_cores_base
+	add memorymap_base, memorymap_base, #bcm32_cores_fiq_source_base
+	add memorymap_base, memorymap_base, number_core
+
+	str source_fiq, [memorymap_base]
+
+	bcm32_receive_interrupt_common:
+		macro32_dsb ip
+		mov r0, #0
+		mov pc, lr
+
+.unreq number_core
+.unreq source_irq
+.unreq source_fiq
+.unreq memorymap_base
+
+
+/**
+ * function bcm32_set_mail
+ * Write-set Mail to Particular Mailbox of Particular Core
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Number of Core
+ * r1: Number of Mailbox
+ * r2: Mail
+ *
+ * Return: r0 (0 as success, 1 as error)
+ */
+.globl bcm32_set_mail
+bcm32_set_mail:
+	/* Auto (Local) Variables, but just Aliases */
+	number_core    .req r0
+	number_mailbox .req r1
+	mail           .req r2
+	memorymap_base .req r3
+
+	and number_core, number_core, #0b11
+	and number_mailbox, number_mailbox, #0b11
+
+	mov memorymap_base, #bcm32_cores_mailbox_core_offset
+	mul number_core, number_core, memorymap_base
+
+	mov memorymap_base, #bcm32_cores_mailbox_mailbox_offset
+	mul number_mailbox, number_mailbox, memorymap_base
+
+	mov memorymap_base, #bcm32_cores_base
+	add memorymap_base, memorymap_base, #bcm32_cores_mailbox_writeset_base
+	add memorymap_base, memorymap_base, number_core
+	add memorymap_base, memorymap_base, number_mailbox
+
+	str mail, [memorymap_base]
+
+	bcm32_set_mail_common:
+		macro32_dsb ip
+		mov r0, #0
+		mov pc, lr
+
+.unreq number_core
+.unreq number_mailbox
+.unreq mail
+.unreq memorymap_base
+
+
+/**
+ * function bcm32_clear_mail
+ * Read and Write-clear Mail to Particular Mailbox of Particular Core
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Number of Core
+ * r1: Number of Mailbox
+ *
+ * Return: r0 (Mail)
+ */
+.globl bcm32_clear_mail
+bcm32_clear_mail:
+	/* Auto (Local) Variables, but just Aliases */
+	number_core    .req r0
+	number_mailbox .req r1
+	memorymap_base .req r2
+
+	and number_core, number_core, #0b11
+	and number_mailbox, number_mailbox, #0b11
+
+	mov memorymap_base, #bcm32_cores_mailbox_core_offset
+	mul number_core, number_core, memorymap_base
+
+	mov memorymap_base, #bcm32_cores_mailbox_mailbox_offset
+	mul number_mailbox, number_mailbox, memorymap_base
+
+	mov memorymap_base, #bcm32_cores_base
+	add memorymap_base, memorymap_base, #bcm32_cores_mailbox_readclear_base
+	add memorymap_base, memorymap_base, number_core
+	add memorymap_base, memorymap_base, number_mailbox
+
+	.unreq number_core
+	mail .req r0
+
+	ldr mail, [memorymap_base]
+	macro32_dsb ip
+	str mail, [memorymap_base]
+
+	bcm32_clear_mail_common:
+		macro32_dsb ip
+		mov pc, lr
+
+.unreq mail
+.unreq number_mailbox
+.unreq memorymap_base
+
+
+/**
  * function bcm32_route_gpuinterrupt
  * Route GPU IRQ and GPU FIQ to Particular Core
  * This function is using a vendor-implemented process.
@@ -956,7 +1140,7 @@ bcm32_mailbox_send:
  * r0: Number of Core to Route GPU IRQ
  * r1: Number of Core to Route GPU FIQ
  *
- * Return: r0 (0 as success, 1 as error)
+ * Return: r0 (0 as success)
  */
 .globl bcm32_route_gpuinterrupt
 bcm32_route_gpuinterrupt:
@@ -976,6 +1160,7 @@ bcm32_route_gpuinterrupt:
 
 	bcm32_route_gpuinterrupt_common:
 		macro32_dsb ip
+		mov r0, #0
 		mov pc, lr
 
 .unreq core_irq
@@ -1014,30 +1199,17 @@ bcm32_route_gpuinterrupt:
 /* Definition Only in ARMv7/AArch32 */
 .ifndef __ARMV6
 
-.equ bcm32_cores_base,                  0x40000000
-.equ bcm32_cores_gpuinterrupt_routing,  0x0C @ Bit[3:2] GPU FIQ Routing, Bit[1:0] GPU IRQ Rouring, Set Core Number
-.equ bcm32_core0_irq_source,            0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
-.equ bcm32_core1_irq_source,            0x64
-.equ bcm32_core2_irq_source,            0x68
-.equ bcm32_core3_irq_source,            0x6C
-.equ bcm32_core0_fiq_source,            0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
-.equ bcm32_core1_fiq_source,            0x74
-.equ bcm32_core2_fiq_source,            0x78
-.equ bcm32_core3_fiq_source,            0x7C
+.equ bcm32_cores_base,                   0x40000000
+.equ bcm32_cores_core_offset,            0x04 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
+.equ bcm32_cores_gpuinterrupt_routing,   0x0C @ Bit[3:2] GPU FIQ Routing, Bit[1:0] GPU IRQ Rouring, Set Core Number
+.equ bcm32_cores_mailbox_interrupt_base, 0x50 @ Bit[3:0] Mailbox3-0 IRQ Control, Bit[6:4] Mailbox3-0 FIQ Control
+.equ bcm32_cores_irq_source_base,        0x60 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
+.equ bcm32_cores_fiq_source_base,        0x70 @ Bit[4] Mailbox0, Bit[5] Mailbox1, Bit[6] Mailbox2, Bit[7] Mailbox3
 
-.equ bcm32_cores_mailbox_offset,        0x10 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
-.equ bcm32_cores_mailbox0_writeset,     0x80
-.equ bcm32_cores_mailbox1_writeset,     0x84
-.equ bcm32_cores_mailbox2_writeset,     0x88
-.equ bcm32_cores_mailbox3_writeset,     0x8C @ Use for Inter-core Communication in RasPi's start.elf
-.equ bcm32_cores_mailbox0_readclear,    0xC0 @ Write High to Clear
-.equ bcm32_cores_mailbox1_readclear,    0xC4
-.equ bcm32_cores_mailbox2_readclear,    0xC8
-.equ bcm32_cores_mailbox3_readclear,    0xCC
-.equ bcm32_core0_mailboxes_interrupt,   0x50 @ Bit[0]+ Mailbox0+ IRQ Control, Bit[4]+ Mailbox0+ FIQ Control, IRQ Bit (0-3)
-.equ bcm32_core1_mailboxes_interrupt,   0x54
-.equ bcm32_core2_mailboxes_interrupt,   0x58
-.equ bcm32_core3_mailboxes_interrupt,   0x5C
+.equ bcm32_cores_mailbox_core_offset,    0x10 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
+.equ bcm32_cores_mailbox_mailbox_offset, 0x04 @ Mailbox0 * 0, Mailbox1 * 1, Mailbox2 * 2, Mailbox3 * 3
+.equ bcm32_cores_mailbox_writeset_base,  0x80 @ Mailbox3 Is Used for Inter-core Communication in RasPi's start.elf (No `kernel_old=1`)
+.equ bcm32_cores_mailbox_readclear_base, 0xC0 @ Write High to Clear
 
 .endif
 

@@ -210,6 +210,8 @@ void _no_op();
 
 /* Constants */
 
+#define BCM32_CORES_MAILBOX_CALL 0 // 0-3 Number of Mailbox to Receive Call
+
 extern uint32 BCM32_EDID_ADDR; // First 8 Bytes Are Prefix, Block Number and Status, Following 128 Bytes Are Actual EDID
 extern uint32 BCM32_CELCIUS;
 extern uint32 BCM32_MAXCELCIUS;
@@ -227,6 +229,10 @@ extern uint32 BCM32_GENERIC4;
 extern uint32 BCM32_GENERIC5;
 
 /* Relative System Calls  */
+
+#ifndef __ARMV6
+__attribute__((noinline)) uint32 _set_mail( uint32 number_core, uint32 number_mailbox, uint32 mail );
+#endif
 
 __attribute__((noinline)) uint32 _display_off( bool bool_off );
 

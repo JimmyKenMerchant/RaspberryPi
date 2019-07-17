@@ -309,7 +309,11 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x01:
+.ifndef __ARMV6
+		bl bcm32_set_mail
+.else
 		mov r0, r0
+.endif
 		b _os_svc_common
 
 	_os_svc_0x02:

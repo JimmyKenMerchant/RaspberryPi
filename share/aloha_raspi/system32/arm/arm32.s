@@ -28,7 +28,7 @@
  * When Function is Finished, ARM32_CORE_HANDLE_n Will Be Zero to Indicate Finishing.
  *
  * Return: r0 (0 as success, 1 as error)
- * Error: Pointer of Full Descending Stack is Not Valid
+ * Error: Heap or Pointer of Full Descending Stack is Not Valid
  */
 .globl arm32_core_handle
 arm32_core_handle:
@@ -62,11 +62,10 @@ arm32_core_handle:
 	.unreq number_core
 	arg0 .req r0
 
-	arm32_core_handle_loop1:
-		ldr heap, [handle_addr]
-		cmp heap, #0
-		macro32_dsb ip
-		beq arm32_core_handle_loop1
+	ldr heap, [handle_addr]
+	macro32_dsb ip
+	cmp heap, #0
+	beq arm32_core_handle_error
 
 	ldr addr_start, [heap]
 	ldr sp, [heap, #4]

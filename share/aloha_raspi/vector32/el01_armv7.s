@@ -99,6 +99,17 @@ _el01_reset:
 	moveq r1, #0x8000
 	blxeq r1
 
+	push {r0-r3}
+	mov r1, #0b00010000<<equ32_bcm32_cores_mailbox_call
+	bl bcm32_set_interrupt
+	push {r0-r3}
+
+	push {r0-r3}
+	mov r1, #0b00000000
+	mov r2, #0b00010000<<equ32_bcm32_cores_mailbox_call
+	bl bcm32_receive_interrupt
+	push {r0-r3}
+
 	/**
 	 * Caution! Multi-core seems to share memories in privileged mode only.
 	 * So, If you use Multi-core, you need to have secure process to treat this.
@@ -112,14 +123,27 @@ _el01_reset:
 	/* SVC Mode (Current), FIQ and IRQ Are Disabled, Aborts Are Enabled */
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
+
 	mov r0, #equ32_fiq_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
+
+	macro32_multicore_id r0
+
+	mov ip, #0x200                            @ Offset 0x200 Bytes (128 Words) per Core
+	mul ip, ip, r0
+	mov fp, #0x7000
+	sub fp, fp, ip
+	mov sp, fp
+
 	mov r0, #equ32_irq_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
+
 	mov r0, #equ32_abt_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
+
 	mov r0, #equ32_und_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
+
 	mov r0, #equ32_svc_mode|equ32_fiq_disable|equ32_irq_disable
 	msr cpsr_c, r0
 
@@ -244,8 +268,10 @@ _el01_reset:
 	orr r0, r0, #0x03000000                   @ Enable flush-to-zero mode (Becomes No IEEE-754 Compatible) and DN
 	vmsr fpscr, r0
 
+	mov r0, #equ32_svc_mode                   @ Enable FIQ and IRQ
+	msr cpsr_c, r0
+
 	_el01_reset_loop:
-		bl arm32_core_handle
 		b _el01_reset_loop
 
 
@@ -276,6 +302,15 @@ _el01_irq:
 
 
 _el01_fiq:
+	push {r0-r7,lr}
+
+	macro32_multicore_id r0
+	mov r1, #0
+	bl bcm32_clear_mail
+
+	bl arm32_core_handle
+
+	pop {r0-r7,lr}
 	subs pc, lr, #4
 
 

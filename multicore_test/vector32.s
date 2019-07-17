@@ -112,6 +112,13 @@ os_debug:
 	str r0, [r1]
 	macro32_isb ip
 
+	push {r0-r2}
+	mov r0, #3
+	mov r1, #equ32_bcm32_cores_mailbox_call
+	mov r2, #0xFFFFFFFF
+	bl bcm32_set_mail
+	pop {r0-r2}
+
 	_os_render_loop2:
 		ldr r2, [r1]
 		cmp r2, #0
@@ -148,6 +155,13 @@ os_debug:
 	ldr r1, ADDR32_ARM32_CORE_HANDLE_3
 	str r0, [r1]
 	macro32_isb ip
+
+	push {r0-r2}
+	mov r0, #3
+	mov r1, #equ32_bcm32_cores_mailbox_call
+	mov r2, #0xFFFFFFFF
+	bl bcm32_set_mail
+	pop {r0-r2}
 
 	_os_render_loop3:
 		ldr r2, [r1]
