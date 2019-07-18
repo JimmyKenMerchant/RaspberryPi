@@ -4,6 +4,10 @@
 * License: MIT
 * License URL: https://opensource.org/licenses/MIT
 
+**Purpose**
+
+* This project is testing multi-core process.
+
 **Output/Input**
 
 * GPIO 47 (ACT LED) as Output

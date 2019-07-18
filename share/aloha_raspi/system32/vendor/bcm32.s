@@ -944,7 +944,8 @@ bcm32_mailbox_send:
 .unreq status
 .unreq write
 
-/* Definition Only in ARMv7/AArch32 */
+
+/* Definition only from BCM2836, Multi-core Processor */
 .ifndef __ARMV6
 
 /**
@@ -1196,8 +1197,12 @@ bcm32_route_gpuinterrupt:
 .equ bcm32_mailbox_gpuoffset,     0x40000000 @ If L2 Cache Disabled by `disable_l2cache=1` in config.txt, 0xC0000000
 .equ bcm32_mailbox_armmask,       0x3FFFFFFF
 
-/* Definition Only in ARMv7/AArch32 */
-.ifndef __ARMV6
+/**
+ * Definition Used from BCM2836, Multi-core Processor
+ * Reset values of interrupt registers assume zero.
+ * Reset values of mailbox write-set and read & write-high-to-clear registers are undefined.
+ * However, non-zero issues the interrupt in each mailbox, so the reset value is needed to be zero not to issue the interrupt.
+ */
 
 .equ bcm32_cores_base,                   0x40000000
 .equ bcm32_cores_core_offset,            0x04 @ Core0 * 0, Core1 * 1, Core2 * 2, Core3 * 3
@@ -1210,6 +1215,3 @@ bcm32_route_gpuinterrupt:
 .equ bcm32_cores_mailbox_mailbox_offset, 0x04 @ Mailbox0 * 0, Mailbox1 * 1, Mailbox2 * 2, Mailbox3 * 3
 .equ bcm32_cores_mailbox_writeset_base,  0x80 @ Mailbox3 Is Used for Inter-core Communication in RasPi's start.elf (No `kernel_old=1`)
 .equ bcm32_cores_mailbox_readclear_base, 0xC0 @ Write High to Clear
-
-.endif
-

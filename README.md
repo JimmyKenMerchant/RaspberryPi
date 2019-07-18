@@ -376,9 +376,19 @@ make type=zerow sound=i2s
 
 * Paste kernel.img, config.txt, and LICENSE.aloha to the root directory of your boot media. config.txt and LICENSE.aloha are in share/assets/ of this project. If you fail to `make` with any error, check share/aloha_raspi/README.txt which describes versions of Assembler and Compiler.
 
-* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and paste these to the root directory of your boot media.
+* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and also need to make dt-blob.bin. Paste these to the root directory of your boot media.
+	* start.elf is the firmware. bootcode.bin is the lower procedure than start.elf.
 	* fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM.
 	* The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on Raspberry Pi with ARMv7 and later.
+	* dt-blob.bin is compiled [dt-blob.dts](https://github.com/raspberrypi/firmware/blob/master/extra/dt-blob.dts). Check [Changing the default pin configuration](https://www.raspberrypi.org/documentation/configuration/pin-configuration.md) to know how to compile this file. I recommend that you don't change the default pin configuration in this file. dt-blob.bin is read by the firmware. Properties in config.txt can change the pin configuration in the new version of the firmware.
+
+```bash
+cd ~/Desktop
+sudo apt-get install device-tree-compiler
+wget https://raw.githubusercontent.com/raspberrypi/firmware/master/extra/dt-blob.dts -O dt-blob.dts
+# Suppress Warnings
+sudo dtc -I dts -O dtb -o dt-blob.bin dt-blob.dts -q
+```
 
 **Arguments for 'make'. Compatibilities are different on each project. Please check README of programs.**
 
@@ -457,7 +467,7 @@ sudo pacman -S arm-none-eabi-gcc
 
 **Wireless (WiFi and Bluetooth) Chip**
 
-* In this project, the embedded wireless chip (CYW43438 for RasPi3B and RasPiZeroW, CYW43455 for RasPi3A+ and RasPi3B+) never be used, and any RasPi never emit radio frequency (RF). The chip has receivers for signals, WL_REG_ON and BT_REG_ON. These signals stop power supply for each circuit if these are low state. WL_REG_ON and BT_REG_ON are from GPIOs or extend GPIOs (since RasPis with BCM2837), which are low state in default by the firmware, start.elf, on the booting process.
+* In this project, the embedded wireless chip (CYW43438 for RasPi3B and RasPiZeroW, CYW43455 for RasPi3A+ and RasPi3B+) never be used, and any RasPi never emit radio frequency (RF). The chip has receivers for signals, WL_REG_ON and BT_REG_ON. These signals stop power supply for each circuit if these are low state. WL_REG_ON and BT_REG_ON are from GPIOs or extend GPIOs (since RasPis with BCM2837), which become low state in default by the firmware, start.elf, on the booting process. Check out [dt-blob.dts](https://github.com/raspberrypi/firmware/blob/master/extra/dt-blob.dts).
 
 * In my opinion, the chip is good enough to apply with gadgets in this IoT age. However, these command sets are not open-sourced so far. Plus, regulations to RF emittance differ among various countries. E.g., in Japan, because of its narrow land, the regulation are strict. It's not duty of best efforts, but mandatory. This regulation spans to softwares of products. Products which are not permitted to be used in Japan by the regulator can't emit radio frequencies. Other countries may have or become stricter than Japan. I think, to fit with regulations, IoT projects need to have any wireless module which is separately permitted by regulators and opens its command sets.
 
