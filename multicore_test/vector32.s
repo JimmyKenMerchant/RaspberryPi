@@ -201,7 +201,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r7}
+	push {r0-r7,lr}
 	mov r0, #equ32_peripherals_base
 	add r0, r0, #equ32_armtimer_base
 
@@ -231,10 +231,8 @@ os_fiq:
 	sub r2, r0, r1
 	str r0, sys_timer_previous
 
-	push {lr}
 	mov r0, r2
 	bl cvt32_hexa_to_deci
-	pop {lr}
 
 	macro32_print_number_double r0 r1 80 388 16
 
@@ -251,8 +249,7 @@ os_fiq:
 
 	macro32_print_number_double r0 r1 80 400 16
 
-	pop {r0-r7}
-	mov pc, lr
+	pop {r0-r7,pc}
 
 core123_handler: .word _core123_handler
 

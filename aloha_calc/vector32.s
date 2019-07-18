@@ -159,6 +159,10 @@ os_reset:
 
 	pop {pc}
 
+os_debug:
+	push {lr}
+	pop {pc}
+
 os_irq:
 	push {r0-r12,lr}
 
@@ -181,8 +185,12 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
-	macro32_dsb ip
+	/* Acknowledge One Frame */
+	mov r0, #1
+	ldr r1, OS_FIQ_ONEFRAME_ADDR
+	strb r0, [r1]
 
+	macro32_dsb ip
 
 .ifndef __RASPI3B
 	/* ACT Blinker, GPIO 47 Is Preset as OUT */
@@ -192,6 +200,7 @@ os_fiq:
 	macro32_dsb ip
 .endif
 
+/*
 .ifdef __SOUND
 	push {r0-r3}
 .ifdef __SOUND_I2S
@@ -209,24 +218,30 @@ os_fiq:
 	mov r0, #0x0F800000                        @ GPIO23-27
 	bl gpio32_gpioplay
 	pop {r0-r3}
+*/
 
 	pop {r0-r7,pc}
-
-os_debug:
-	push {lr}
-	pop {pc}
-
 
 /**
  * Variables
  */
 .balign 4
-_string_hello:
-	.ascii "\nAloha! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
-.balign 4
+
 string_hello:
 	.word _string_hello
+OS_FIQ_ONEFRAME_ADDR:  .word OS_FIQ_ONEFRAME
 
 .include "addr32.s" @ If you want binary, use `.incbin`
+
+.section	.data
+_string_hello:
+	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+.balign 4
+.globl OS_FIQ_ONEFRAME
+OS_FIQ_ONEFRAME:       .byte 0x00
+.balign 4
+
+/* Additional Libraries Here */
+.section	.text
 
 /* End of Line is Needed */

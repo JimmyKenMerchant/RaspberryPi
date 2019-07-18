@@ -376,11 +376,11 @@ make type=zerow sound=i2s
 
 * Paste kernel.img, config.txt, and LICENSE.aloha to the root directory of your boot media. config.txt and LICENSE.aloha are in share/assets/ of this project. If you fail to `make` with any error, check share/aloha_raspi/README.txt which describes versions of Assembler and Compiler.
 
-* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and also need to make dt-blob.bin. Paste these to the root directory of your boot media.
+* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from the boot folder of [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and also need to make dt-blob.bin. Paste these to the root directory of your boot media.
 	* start.elf is the firmware. bootcode.bin is the lower procedure than start.elf.
 	* fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM.
 	* The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on Raspberry Pi with ARMv7 and later.
-	* dt-blob.bin is compiled [dt-blob.dts](https://github.com/raspberrypi/firmware/blob/master/extra/dt-blob.dts). Check [Changing the default pin configuration](https://www.raspberrypi.org/documentation/configuration/pin-configuration.md) to know how to compile this file. I recommend that you don't change the default pin configuration in this file. dt-blob.bin is read by the firmware. Properties in config.txt can change the pin configuration in the new version of the firmware.
+	* dt-blob.bin is compiled [dt-blob.dts](https://github.com/raspberrypi/firmware/blob/master/extra/dt-blob.dts). Check [Changing the default pin configuration](https://www.raspberrypi.org/documentation/configuration/pin-configuration.md) to know how to compile this file. I recommend that you don't change the default pin configuration in this file. dt-blob.bin is read by the firmware. Properties in config.txt can change the pin configuration in the new version of the firmware. You can watch dtb files named with SoC product names in the boot folder. These are used with ARM Linux to check device properties.
 
 ```bash
 cd ~/Desktop
@@ -421,6 +421,8 @@ sudo dtc -I dts -O dtb -o dt-blob.bin dt-blob.dts -q
 * `optimize=O2`: Change Option for Optimization to -O2 (Optimize even more) in GCC
 
 * `optimize=O0`: Change Option for Optimization to -O0 (Disable Optimization) in GCC
+
+* `debug=yes`: Enter Debug Mode Defined in Each Project
 
 **Preparation on [Arch Linux](https://www.archlinux.org/)**
 

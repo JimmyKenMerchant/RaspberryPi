@@ -8,7 +8,7 @@
 
 **About Aloha Calc**
 
-* "Aloha Calc" is a programmable calculator. "Aloha Calc" runs the script, "Aloha Mini Language", that resembles assembly languages. Several commands of "Aloha Mini Language" are derived from BASIC, but its syntax is just simpler than BASIC, e.g., `add %1 %2 %3` means `%1 = %2 + %3` in natural (% is prefix for line numbers). This simplicity is not only usable for learning assembly language, but also usable for development with a flowchart. "Aloha Mini Language" has no need of declaration any type for variables. Variables, for source or destination, are assigned by each line number or label.
+* "Aloha Calc" is a programmable calculator. "Aloha Calc" runs the script, "Aloha Mini Language" that resembles BASIC. E.g., `int @1 @2 + @3` means `@1 = @2 + @3` in integer (@ is prefix for line numbers). "Aloha Mini Language" has no need of declaration any type for variables. Variables, for source or destination, are assigned by each line number or label.
 
 ```
 |01| * Example of "Aloha Mini Language" to say "Hello World!".
@@ -21,9 +21,9 @@
 
 **Output/Input**
 
-* GPIO12 as Output of PWM0 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
+* GPIO 12 as Output of PWM0 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
 
-* GPIO13 as Output of PWM1 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
+* GPIO 13 as Output of PWM1 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
 
 * GPIO 2 as SDA1 (Use for EEPROM)
 
@@ -33,9 +33,9 @@
 
 * GPIO 15 as RXD0
 
-* GPIO22 as Input for Start Up Bit
+* GPIO 22 as Input for Start Up Bit
 
-* GPIO23-27 as Output
+* GPIO 23-27 as Output
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s (If you no need, uncomment __SOUND on the top of vector.s)
 
@@ -59,10 +59,7 @@
 # 5 Interfacing Options > P6 Serial > No (serial login shell) > Yes (serial interface) > OK > Finish (Reboot)
 sudo raspi-config
 
-# Make Sure of comment "enable_uart=1" if RasPi 3B which uses UART1 for the interface
-sudo less /boot/config.txt
-
-# Check current status
+# If You Can't Find Out "/dev/serial0", Check Out https://www.raspberrypi.org/documentation/configuration/uart.md
 sudo stty -F /dev/serial0 -a
 
 # Set UART rate to 115200 baud
@@ -73,8 +70,8 @@ sudo stty -F /dev/serial0 speed
 
 # To Read and Write
 # Ctrl+m Sends CR, Ctrl+j Sends LF, Ctrl+@ Sends Null Character, Similar to Macros of TeraTerm
-sudo minicom -D /dev/serial0
 # sudo apt-get install minicom
+sudo minicom -D /dev/serial0
 
 # To Write on another terminal (Write Once per Word, 4 Bytes)
 # sudo echo -ne 'GOOD\r\n' > /dev/serial0

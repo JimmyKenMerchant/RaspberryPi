@@ -34,6 +34,8 @@
 #define rawdata_maxlength    16
 #define stack_offset_default 2 // Last Line Is Used for Input Buffer on "input" Command
 
+extern bool OS_FIQ_ONEFRAME;
+
 /**
  * On this program, the last line will be used as input buffer.
  * If you use "push" command, the data is stored to the line that the number is length of lines minus "stack_offset".
@@ -242,6 +244,7 @@ bool startup_executer();
 void sound_makesilence();
 bool compare_signed( String target_str, uint32 length, uint32 status_nzcv );
 bool compare_unsigned( String target_str, uint32 length, uint32 status_nzcv );
+bool timer_routine();
 
 /* Variables on Global Scope */
 dictionary label_list;
@@ -250,6 +253,7 @@ obj buffer_zero; // Zero Buffer
 bool flag_pass; // Use in IF Statements and FOR/WHILE Loops
 uint32 count_pass; // Use in IF Statements and FOR/WHILE Loops, Check Nested Statements and Loops
 uint32 x_offset;
+bool mode_soundplay;
 
 /* Start Up */
 bool startup;
@@ -306,8 +310,10 @@ int32 _user_start() {
 
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
+	mode_soundplay = True;
 #else
 	_sounddecode( _SOUND_INDEX, SND32_PWM, _SOUND_ADJUST );
+	mode_soundplay = False;
 #endif
 
 	sound_makesilence();
@@ -1397,6 +1403,8 @@ int32 _user_start() {
 								while ( true ) {
 
 									if ( _load_32( UART32_UARTINT_BUSY_ADDR ) ) break;
+									timer_routine();
+									arm32_dsb();
 								}
 
 								/* Change UART Client Mode */
@@ -1746,6 +1754,8 @@ int32 _user_start() {
 			_store_32( UART32_UARTINT_CTRL_ADDR, var_temp.u32 );
 		}
 		if ( startup ) startup_executer();
+		timer_routine();
+		arm32_dsb();
 	}
 
 	return EXIT_SUCCESS;
@@ -2051,5 +2061,15 @@ bool compare_unsigned( String target_str, uint32 length, uint32 status_nzcv ) {
 
 	return true;
 
+}
+
+
+bool timer_routine() {
+	if ( OS_FIQ_ONEFRAME ) {
+		_soundplay( mode_soundplay );
+		_gpioplay( gpio_output );
+		OS_FIQ_ONEFRAME = False;
+	}
+	return true;
 }
 

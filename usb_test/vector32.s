@@ -267,7 +267,7 @@ macro32_debug r3 500 212
 macro32_debug r0 500 224
 */
 
-		pop {r0-r8,pc}
+	pop {r0-r8,pc}
 
 os_irq:
 	push {r0-r12,lr}

@@ -111,7 +111,7 @@ os_irq:
 	mov pc, lr
 
 os_fiq:
-	push {r0-r4,lr}                           @ r5-r7 is used across modes
+	push {r0-r7,lr}
 
 .ifdef __ARMV6
 	macro32_invalidate_instruction_all ip
@@ -133,7 +133,7 @@ os_fiq:
 
 .ifdef __DEBUG
 .ifndef __RASPI3B
-	/* ACT Blinker */
+	/* ACT Blinker, GPIO 47 Is Preset as OUT */
 	mov r0, #47
 	mov r1, #2
 	bl gpio32_gpiotoggle
@@ -141,7 +141,7 @@ os_fiq:
 .endif
 .endif
 
-	pop {r0-r4,pc}
+	pop {r0-r7,pc}
 
 /**
  * Variables
