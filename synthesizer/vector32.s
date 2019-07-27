@@ -16,8 +16,6 @@
 /* If You Want External Synchronization Clock */
 /*.equ __NOSYNCCLOCK, 1*/
 
-.equ __MIDI_BASECHANNEL, 0                               @ Default MIDI Channel (Actual Channel No. Minus One)
-
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
@@ -59,30 +57,8 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	/*
-	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
-	str r1, [r0, #equ32_interrupt_fiq_control]
-	*/
-
-	/* Enable UART IRQ */
-	/*
-	mov r1, #1<<25                                   @ UART IRQ #57
-	str r1, [r0, #equ32_interrupt_enable_irqs2]
-	*/
-
-	/**
-	 * Timer
-	 */
-
-	/* Get a 4800hz Timer Interrupt (480000/100) */
-	/*
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
-	mov r1, #0x0000                           @ High 1 Byte of decimal 99 (100 - 1), 16 bits counter on default
-	orr r1, r1, #0x63                         @ Low 1 Byte of decimal 99, 16 bits counter on default
-	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
-	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
-	bl arm32_armtimer
-	*/
+	mov r1, #0
+	str r1, [r0, #equ32_interrupt_fiq_control]       @ Disable ALL FIQs
 
 	/**
 	 * GPIO
@@ -102,11 +78,13 @@ os_reset:
 .else
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 5 ALT 0 as GPCLK1
 .endif
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 9 INPUT, MIDI Channel Select Bit[0]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_8    @ Set GPIO 8 INPUT, MIDI Channel Select Bit[0]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 9 INPUT, MIDI Channel Select Bit[1]
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[1]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[2]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 11 INPUT, MIDI Channel Select Bit[3]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
@@ -131,14 +109,11 @@ os_reset:
 
 	macro32_dsb ip
 
-	/* Check MIDI Channel, GPIO9 (Bit[0]) and GPIO10 (Bit[1]) */
+	/* Check MIDI Channel, GPIO8 (Bit[0]), GPIO9 (Bit[1]), GPIO10 (Bit[2]), and GPIO11 (Bit[3]) */
 	ldr r1, [r0, #equ32_gpio_gplev0]
-	ldr r2, OS_RESET_MIDI_CHANNEL
-	tst r1, #equ32_gpio09
-	addne r2, r2, #1
-	tst r1, #equ32_gpio10
-	addne r2, r2, #2
-	str r2, OS_RESET_MIDI_CHANNEL
+	lsr r1, r1, #8
+	and r1, r1, #0b1111
+	str r1, OS_RESET_MIDI_CHANNEL
 
 .ifndef __NOSYNCCLOCK
 	/**
@@ -191,17 +166,6 @@ os_reset:
 	pop {r0-r3}
 .endif
 
-	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
-	/* But Now on Only Using Rx Timeout */
-	/*
-	push {r0-r3}
-	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
-	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
-	bl uart32_uartsetint
-	pop {r0-r3}
-	*/
-
 	push {r0-r3}
 	mov r0, #64
 	ldr r1, os_reset_SYNTHE_NOTES
@@ -216,7 +180,7 @@ os_reset_SYNTHE_NOTES:   .word _SYNTHE_NOTES
 os_reset_SYNTHE_PRESETS: .word _SYNTHE_PRESETS
 
 .globl OS_RESET_MIDI_CHANNEL
-OS_RESET_MIDI_CHANNEL:   .word __MIDI_BASECHANNEL
+OS_RESET_MIDI_CHANNEL:   .word 0x00               @ MIDI Channel (Actual Channel No. - 1)
 
 os_debug:
 	push {lr}
@@ -224,74 +188,10 @@ os_debug:
 
 os_irq:
 	push {r0-r12,lr}
-
-	ldr r0, OS_RESET_MIDI_CHANNEL
-
-.ifdef __SOUND_I2S
-	mov r1, #1
-	mov r2, #8
-	bl sts32_synthemidi
-.endif
-.ifdef __SOUND_I2S_BALANCED
-	mov r1, #1
-	mov r2, #8
-	bl sts32_synthemidi
-.endif
-.ifdef __SOUND_PWM
-	mov r1, #0
-	mov r2, #8
-	bl sts32_synthemidi
-.endif
-.ifdef __SOUND_PWM_BALANCED
-	mov r1, #0
-	mov r2, #8
-	bl sts32_synthemidi
-.endif
-.ifdef __SOUND_JACK
-	mov r1, #0
-	mov r2, #8
-	bl sts32_synthemidi
-.endif
-.ifdef __SOUND_JACK_BALANCED
-	mov r1, #0
-	mov r2, #8
-	bl sts32_synthemidi
-.endif
-
 	pop {r0-r12,pc}
 
 os_fiq:
 	push {r0-r7,lr}
-
-.ifdef __ARMV6
-	macro32_invalidate_instruction_all ip
-	macro32_dsb ip
-.endif
-
-	/* Clear Timer Interrupt */
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_armtimer_base
-	mov r1, #0
-	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
-	macro32_dsb ip
-
-.ifdef __DEBUG
-.ifndef __RASPI3B
-	/* ACT Blinker */
-	mov r0, #47
-	mov r1, #2
-	bl gpio32_gpiotoggle
-	macro32_dsb ip
-.endif
-.endif
-
-	/*
-	mov r0, #17
-	mov r1, #2
-	bl gpio32_gpiotoggle
-	macro32_dsb ip
-	*/
-
 	pop {r0-r7,pc}
 
 /**

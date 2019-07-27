@@ -1638,8 +1638,8 @@ sts32_synthemidi:
 			/* Test Whether The Voice Is under Usage as Attack, Decay, and Sustain with MIDI or Not */
 			lsl temp, voices, #2              @ Multiply by 4
 			mov temp2, #0b11
-			lsl temp, temp2, temp
-			tst status_voices, temp
+			lsl temp2, temp2, temp
+			tst status_voices, temp2
 			beq sts32_synthemidi_noteoff_voicesearch_common
 
 			/* Load Each Concurrent Note, If Not Matched Do Nothing */
@@ -1923,14 +1923,29 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_volume:
-			/* (data^1/2) / 2 */
+			/**
+			 * Maximum 12800 (Default is 12800 = 100 in CC#7)
+			 * data / 12800 * Constant
+			 */
+
+			/* Saturated by 12800 */
+			mov temp, #0x3200
+			cmp data2, temp
+			movhi data2, temp
+
+			/* Division */
 			vmov vfp_volume, data2
 			vcvt.f32.u32 vfp_volume, vfp_volume
-			mov temp, #2
 			vmov vfp_temp, temp
 			vcvt.f32.u32 vfp_temp, vfp_temp
-			vsqrt.f32 vfp_volume, vfp_volume
 			vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+
+			/* Multiplication */
+			mov temp, #equ32_sts32_synthemidi_volume
+			vmov vfp_temp, temp
+			vcvt.f32.u32 vfp_temp, vfp_temp
+			vmul.f32 vfp_volume, vfp_volume, vfp_temp
+
 			vcvt.u32.f32 vfp_volume, vfp_volume
 			vmov temp, vfp_volume
 			str temp, STS32_SYNTHEMIDI_VOLUME
@@ -2155,7 +2170,60 @@ sts32_synthemidi:
 			b sts32_synthemidi_success
 
 		sts32_synthemidi_control_others:
+			cmp data1, #123                                @ All Notes Off, Typically Received in Panic Button
+			beq sts32_synthemidi_control_allnotesoff
+
 			b sts32_synthemidi_success
+
+		sts32_synthemidi_control_allnotesoff:
+			ldr status_voices, STS32_VOICES
+
+			mov voices, #0
+			sts32_synthemidi_control_allnotesoff_voicesearch:
+				cmp voices, num_voices
+
+				strhs status_voices, STS32_VOICES
+				bhs sts32_synthemidi_success
+
+				/* Test Whether The Voice Is under Usage as Attack, Decay, and Sustain with MIDI or Not */
+				lsl temp, voices, #2              @ Multiply by 4
+				mov temp2, #0b11
+				lsl temp2, temp2, temp
+				tst status_voices, temp2
+				addeq voices, voices, #1
+				beq sts32_synthemidi_control_allnotesoff_voicesearch
+
+				/* Change Status to Release */
+				bic status_voices, status_voices, temp2
+				mov temp2, #0b100
+				lsl temp2, temp2, temp
+				orr status_voices, status_voices, temp2
+
+				/**
+				 * Store Delta for Release to Envelope Pointer
+				 */
+
+				lsl temp, voices, #4               @ Multiply by 16
+				ldr temp2, STS32_SYNTHEWAVE_PARAM
+				add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
+				add data2, data2, #4               @ Offset Voice No. + 4 Bytes
+				vldr vfp_volume, [data2]           @ Get Current Main Amplitude
+
+				ldr data2, STS32_SYNTHEMIDI_RELEASE
+				vmov vfp_temp, data2
+				vcvt.f32.u32 vfp_temp, vfp_temp
+				vdiv.f32 vfp_volume, vfp_volume, vfp_temp
+
+				/* Reset Count to Zero and Store Delta for Release */
+				ldr temp2, STS32_SYNTHEMIDI_ENVELOPE
+				add data2, temp2, temp             @ vldr/vstr Has Offset Only with Immediate Value
+				mov temp, #0
+				str temp, [data2]                  @ Store Count Zero
+				add data2, data2, #12              @ Offset Voice No. + 12 Bytes
+				vstr vfp_volume, [data2]           @ Store Delta for Release
+
+				add voices, voices, #1
+				b sts32_synthemidi_control_allnotesoff_voicesearch
 
 	sts32_synthemidi_programchange:
 		cmp count, #2

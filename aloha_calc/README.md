@@ -60,6 +60,7 @@
 sudo raspi-config
 
 # If You Can't Find Out "/dev/serial0", Check Out https://www.raspberrypi.org/documentation/configuration/uart.md
+# Add dtoverlay=pi3-miniuart-bt and core_freq=250 in /boot/config.txt to Enable serial0 on RasPi with Wireless Module
 sudo stty -F /dev/serial0 -a
 
 # Set UART rate to 115200 baud

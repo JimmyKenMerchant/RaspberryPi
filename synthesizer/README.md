@@ -32,9 +32,13 @@
 
 ## Output and Input
 
-* GPIO9 as Input of MIDI Channel Select Bit[0]
+* GPIO8 as Input of MIDI Channel Select Bit[0]
 
-* GPIO10 as Input of MIDI Channel Select Bit[1]
+* GPIO9 as Input of MIDI Channel Select Bit[1]
+
+* GPIO10 as Input of MIDI Channel Select Bit[2]
+
+* GPIO11 as Input of MIDI Channel Select Bit[3]
 
 * GPIO12 as Output of PWM0 on sound=pwm
 
@@ -106,11 +110,13 @@
 
 ## MIDI IN
 
-* Synthesizer can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
+* Synthesizer can accept limited MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
 
-* MIDI channel of Synthesizer is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
+* MIDI channel of Synthesizer is selectable through MIDI channel select Bit[3:0] (GPIO8 to GPIO11). The number of MIDI channel is the sum of the value of MIDI channel select Bit[3:0] and one.
 
 * Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing a sequence of Synthesizer codes.
+
+* Program change is implemented. It depends on presets.h in share/include/sts32 of this repository.
 
 * Note on / Note off is acceptable and polyphonic up to 8 voices, playing a sequence of Synthesizer codes subtracts voices to use.
 
@@ -128,9 +134,13 @@
 	* CC#75 sets decay time. 64 is the default value.
 	* CC#79 sets sustain level. 127 is the default value (100% sustain).
 
-* Volume is changeable thorough CC#7.
+* Volume is changeable thorough CC#7. Default Value is 100 (Saturated by 100).
 
 * Tone (Low-pass Filter) is CC#9.
+
+* CC#123 (All Notes Off) is implemented. It's typically included in the panic button in your MIDI sequencer.
+
+* Omni Off, Poly (MIDI Mode 3)
 
 ## Synthesizer Pre-code
 

@@ -1589,6 +1589,8 @@ macro32_debug data1, 0, 112
 		cmp count, #3
 		blo snd32_soundmidi_success
 
+		mov count, #0
+
 		cmp data1, #64
 		bhs snd32_soundmidi_control_others
 		cmp data1, #32
@@ -1604,8 +1606,6 @@ macro32_debug data1, 0, 112
 		bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
 		orr data2, temp2, data2, lsl #7
 		strh data2, [temp, data1]
-
-		mov count, #0
 
 		/**
 		 * Immediate Changes Here
@@ -1633,8 +1633,6 @@ macro32_debug data1, 0, 112
 			bic temp2, #0xC000                                 @ Clear Bit[15:14], Not Necessary
 			orr data2, temp2, data2
 			strh data2, [temp, data1]
-
-			mov count, #0
 
 			/**
 			 * Immediate Changes Here
@@ -1721,8 +1719,9 @@ macro32_debug data1, 0, 112
 			b snd32_soundmidi_success
 
 		snd32_soundmidi_control_others:
+			cmp data1, #123                                    @ All Notes Off, Typically Received in Panic Button
+			beq snd32_soundmidi_noteoff_pwm                    @ Hook to Note Off Event without Checking Current Note
 
-			mov count, #0
 			b snd32_soundmidi_success
 
 	snd32_soundmidi_programchange:
@@ -1854,7 +1853,7 @@ macro32_debug data1, 0, 112
 
 	snd32_soundmidi_systemrealtime:
 
-		/* If Reset, Hook to Note Off Event */
+		/* If Reset, Hook to Note Off Event without Checking Current Note */
 		cmp byte, #255
 		beq snd32_soundmidi_noteoff_pwm
 

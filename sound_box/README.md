@@ -38,9 +38,13 @@
 
 ## Output and Input
 
-* GPIO9 as Input of MIDI Channel Select Bit[0]
+* GPIO8 as Input of MIDI Channel Select Bit[0]
 
-* GPIO10 as Input of MIDI Channel Select Bit[1]
+* GPIO9 as Input of MIDI Channel Select Bit[1]
+
+* GPIO10 as Input of MIDI Channel Select Bit[2]
+
+* GPIO11 as Input of MIDI Channel Select Bit[3]
 
 * GPIO12 as Output of PWM0 on sound=pwm or sound=pwmb
 
@@ -132,15 +136,21 @@
 
 ## MIDI IN
 
-* Sound Box can accept MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
+* Sound Box can accept limited MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
 
-* MIDI channel of Sound Box is selectable through MIDI channel select Bit[1:0] (GPIO9 and GPIO10, high means 1, low means 0) and `__MIDI_BASECHANNEL` in vector32.s. The number of MIDI channel is the sum of the value of `__MIDI_BASECHANNEL` and the value of MIDI channel select Bit[1:0] and one: `__MIDI_BASECHANNEL` + MIDI channel select Bit[1:0] + 1.
+* MIDI channel of Sound Box is selectable through MIDI channel select Bit[3:0] (GPIO8 to GPIO11). The number of MIDI channel is the sum of the value of MIDI channel select Bit[3:0] and one.
 
 * Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing Music code.
+
+* Program change is implemented. See [Sound](#sound).
 
 * Modulation, low-frequency oscillator, is implemented. CC#1 (Modulation) sets changing speed (delta) of frequency and CC#16 (General Purpose Controller 1) sets range (interval) of highest-lowest frequency.
 
 * Pitch bending is implemented. Range is fixed within appx. +-5 semitones.
+
+* CC#123 (All Notes Off) is implemented. It's typically included in the panic button in your MIDI sequencer.
+
+* Omni Off, Mono (MIDI Mode 4)
 
 ## Sound
 
