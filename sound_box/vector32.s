@@ -57,10 +57,6 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	/* Enable UART IRQ */
-	mov r1, #1<<25                                   @ UART IRQ #57
-	str r1, [r0, #equ32_interrupt_enable_irqs2]
-
 .ifndef __NOSYNCCLOCK
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
@@ -132,7 +128,7 @@ os_reset:
 	ldr r1, [r0, #equ32_gpio_gplev0]
 	lsr r1, r1, #8
 	and r1, r1, #0b1111
-	str r1, os_irq_midi_channel
+	str r1, OS_RESET_MIDI_CHANNEL
 
 	/**
 	 * Sound
@@ -185,15 +181,6 @@ os_reset:
 	pop {r0-r3}
 .endif
 
-	/* Each FIFO is 16 Words Depth (8-bit on Tx, 12-bit on Rx) */
-	/* The Setting of r1 Below Triggers Tx and Rx Interrupts on Reaching 2 Bytes of RxFIFO (0b000) */
-	/* But Now on Only Using Rx Timeout */
-	push {r0-r3}
-	mov r0, #0b000<<equ32_uart0_ifls_rxiflsel|0b000<<equ32_uart0_ifls_txiflsel @ Trigger Points of Both FIFOs Levels to 1/4
-	mov r1, #equ32_uart0_intr_rt @ When 1 Byte and More Exist on RxFIFO
-	bl uart32_uartsetint
-	pop {r0-r3}
-
 	push {r0-r3}
 	mov r0, #64
 	bl snd32_soundmidi_malloc
@@ -201,52 +188,16 @@ os_reset:
 	
 	pop {pc}
 
+.globl OS_RESET_MIDI_CHANNEL
+OS_RESET_MIDI_CHANNEL:   .word 0x00               @ MIDI Channel (Actual Channel No. - 1)
+
 os_debug:
 	push {lr}
 	pop {pc}
 
 os_irq:
 	push {r0-r12,lr}
-
-	ldr r0, os_irq_midi_channel
-
-.ifdef __SOUND_I2S
-	mov r1, #1
-	bl snd32_soundmidi
-.endif
-.ifdef __SOUND_I2S_BALANCED
-	mov r1, #1
-	bl snd32_soundmidi
-.endif
-.ifdef __SOUND_PWM
-	mov r1, #0
-	bl snd32_soundmidi
-.endif
-.ifdef __SOUND_PWM_BALANCED
-	mov r1, #0
-	bl snd32_soundmidi
-.endif
-.ifdef __SOUND_JACK
-	mov r1, #0
-	bl snd32_soundmidi
-.endif
-.ifdef __SOUND_JACK_BALANCED
-	mov r1, #0
-	bl snd32_soundmidi
-.endif
-
-	/* High on GPIO20 If MIDI Note On */
-	ldr r0, ADDR32_SND32_STATUS
-	ldr r0, [r0]
-	tst r0, #0x4                                      @ Bit[2] MIDI Note Off(0)/ Note On(1)
-	movne r1, #1                                      @ Gate On
-	moveq r1, #0                                      @ Gate Off
-	mov r0, #20                                       @ GPIO 20
-	bl gpio32_gpiotoggle
-
 	pop {r0-r12,pc}
-
-os_irq_midi_channel: .word 0x00                           @ MIDI Channel (Actual Channel No. - 1)
 
 os_fiq:
 	push {r0-r7,lr}

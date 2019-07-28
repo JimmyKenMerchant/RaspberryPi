@@ -1322,9 +1322,12 @@ extern uint32 draw32_enlarge
 #define SND32_I2S          2
 #define SND32_I2S_BALANCED 3
 #define SND32_END          0xFFFF
+#define SND32_MIDI_PWM     0
+#define SND32_MIDI_PCM     1
 
 /* Global Variable */
 
+extern uint32 SND32_STATUS;
 extern uint32 SND32_VIRTUAL_PARALLEL;
 extern uint32 SND32_DIVISOR;
 extern int32 SND32_MODULATION_DELTA;
@@ -1343,6 +1346,8 @@ __attribute__((noinline)) uint32 _soundplay( bool mode ); // True as PCM, False 
 __attribute__((noinline)) uint32 _soundinterrupt( music_code* music, uint32 length, uint32 count, int32 repeat );
 
 __attribute__((noinline)) uint32 _soundclear();
+
+__attribute__((noinline)) uint32 _soundmidi( uint32 channel, uint32 mode );
 
 
 /* Regular Functions */

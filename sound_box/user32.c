@@ -18,6 +18,8 @@
 #define timer_count_multiplier_minlimit 20
 #define timer_count_multiplier_maxlimit 200
 
+extern uint32 OS_RESET_MIDI_CHANNEL;
+
 void makesilence();
 
 #define loop_countdown_default          10 // one out of ten
@@ -422,6 +424,7 @@ void makesilence() {
 int32 _user_start() {
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
+	bool flag_midi_noteon = False;
 	uint32 detect_parallel;
 	uchar8 result;
 	uchar8 playing_signal;
@@ -471,6 +474,33 @@ int32 _user_start() {
 	makesilence();
 
 	while ( true ) {
+#ifdef __SOUND_I2S
+		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PCM );
+#elif defined(__SOUND_I2S_BALANCED)
+		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PCM );
+#elif defined(__SOUND_PWM)
+		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PWM );
+#elif defined(__SOUND_PWM_BALANCED)
+		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PWM );
+#elif defined(__SOUND_JACK)
+		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PWM );
+#elif defined(__SOUND_JACK_BALANCED)
+		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PWM );
+#endif
+
+		/* High on GPIO20 If MIDI Note On */
+		if ( SND32_STATUS & 0x4 ) { // Bit[2] MIDI Note Off(0)/ Note On(1)
+			if ( ! flag_midi_noteon ) {
+				flag_midi_noteon = True;
+				_gpiotoggle( 20, flag_midi_noteon ); // Gate On
+			}
+		} else {
+			if ( flag_midi_noteon ) {
+				flag_midi_noteon = False;
+				_gpiotoggle( 20, flag_midi_noteon ); // Gate Off
+			}
+		}
+
 		if ( _gpio_detect( 17 ) ) {
 
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
