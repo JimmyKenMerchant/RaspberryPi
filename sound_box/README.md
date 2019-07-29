@@ -180,6 +180,10 @@
 
 * [Sound System for PWM Output](../schematics/sound_system_pwm.pdf)
 
+* [MIDI IN with 3.3V](../schematics/midi_in.pdf)
+
+* [MIDI OUT with Level Shifting 3.3V to 5V](../schematics/midi_out.pdf)
+
 * [Low-pass Filter for PWM](../schematics/lowpass_filter.pdf)
 
 ## Draft

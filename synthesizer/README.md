@@ -18,6 +18,8 @@
 
 * [Synthesizer Pre-code](#synthesizer-pre-code)
 
+* [Electric Schematics](#electric-schematics)
+
 ## Purpose
 
 * Programmable Synthesizer, MIDI IN Acceptable
@@ -145,3 +147,9 @@
 ## Synthesizer Pre-code
 
 * Other than MIDI IN, there is unique programmable codes, called "Synthesizer Code". To decode this, "Synthesizer Pre-code" helps you.
+
+## Electric Schematics
+
+* [MIDI IN with 3.3V](../schematics/midi_in.pdf)
+
+* [MIDI OUT with Level Shifting 3.3V to 5V](../schematics/midi_out.pdf)
