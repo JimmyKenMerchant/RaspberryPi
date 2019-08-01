@@ -188,18 +188,12 @@
 
 ## Draft
 
-**Draft of Description about "DMA Transfer to PWM"**
+**DMA Transfer for PWM**
 
-* We should NOT use DMA with cached region for Control Block (CB) and Source/Destination. Because DMA is not CPU which is made for using with any cache to have quick speed. Note that DMA is a peripheral block which is made for using with physical main memory. This means we may need of any cache operation to Point of Coherency (PoC) to ensure that intended data is stored in physical main memory.
+* You should NOT use DMA with cached region for Control Block (CB) and Source/Destination. Note that DMA is a peripheral block which is made for using with physical main memory. This means you may need any cache operation towards Point of Coherency (PoC) to ensure that intended data is stored in physical main memory.
 
-* If you use cache on your system, you need to assign any `shareable` attribute on the cache table to some memory region which is used by DMA. Again, DMA is a peripheral block, but strongly accesses physical main memory. To ensure data you want to transfer by DMA in physical main memory, make sure to set the `shareable` attribute.
+**PWM and Electronics**
 
-* DMA seems to have its own buffer for CB. On the side of DMA, this performs like data cache. If you want to reuse memory space for CB, CB structure will stay the prior state to the intended state ARM intended. To prevent this, you need to make new memory space for CB.
-
-* DMA mainly depends on Peripheral Bus of SoC (e.g. Advanced Peripheral Bus: APB), so long transfer length may cause a issue on PWM, such as noisy wave. To avoid this, we need to consider of length of transfer by DMA. Peripheral Bus is used by a lot of peripheral blocks to access CPU or other blocks, which may have more dominance than DMA.
-
-* See Application Note (AN) 228, "Implementing DMA on ARM SMP Systems" in Application Notes and Tutorial of ARM website. This article describes relationship between DMA and ARM well.
-
-* RasPi is not a tool to source electric current, but to source electric voltage. If you want to make big sound with your RasPi solely, it will make any possible malfunction. Even if you source PWM from any GPIO, the current from the GPIO should be under 1mA. Furthermore, I tested 2K Resister and 10K Resister to attach to GPIO for PWM output as an attenuator. 10K Resister apparently made RasPi stable, but 2K Resister made RasPi take on unpredictable malfunctions, such as stopping the PWM and Video output. PWM output seems to be more sensitive to electric conditions than others.　Any anti-static measure is needed for the properly working.
+* RasPi is not a tool to source electric current, but to source electric voltage. If you want to make big sound with your RasPi solely, it will make any possible malfunction. Even if you source PWM from any GPIO, the current from the GPIO should be under 1mA. Furthermore, I tested 2K resistor and 10K resistor to attach to GPIO for PWM output as an attenuator. 10K resistor apparently made RasPi stable, but 2K resistor made RasPi take on unpredictable malfunctions, such as stopping the PWM and Video output. PWM output seems to be more sensitive to electric conditions than others. Any anti-static measure is also needed for the properly working.
 
 * To work an amplifier to attach to GPIO for PWM output, you should not use power pins on RasPi. Power pins have noise. Use batteries (two 1.5-Volts batteries are preferred) to work it, but make sure to check polarity of the batteries. Don't power to GND of RasPi.

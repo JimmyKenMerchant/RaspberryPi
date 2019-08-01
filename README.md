@@ -463,7 +463,7 @@ sudo pacman -S arm-none-eabi-gcc
 
 * 3.3V power source is derived from the DC/DC converter (PAM2306AYPKE, etc.). Check electrical characteristics of the chip to check the maximum current.
 
-* 5.0V power source seems to be derived from the power-in, but has a fuse (MS-MSMF200, etc.).
+* 5.0V power source seems to be derived from the power-in, but has a polyfuse (MS-MSMF200, etc.) except on Zero and Zero W.
 
 * About USB current source, there are experiences online. 600mA/1200mA switchable (RasPi3B is 1200mA in default) seems to be an answer. But, [there is no official document about the USB maximum ratings](https://www.raspberrypi.org/documentation/hardware/raspberrypi/usb/README.md), and [the official document restricts the total usage of the current on a RasPi for peripherals including USB devices up to 1A](https://www.raspberrypi.org/documentation/hardware/raspberrypi/power/README.md).
 
