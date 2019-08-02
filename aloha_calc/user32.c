@@ -143,6 +143,8 @@ typedef enum _command_list {
 	label, // Re-enumeration of labels from the line, "label".
 	clear, // Clear all in every Line then end, "clear".
 	run, // Meta Command: Runs script from list number zero
+	insert, // Meta Command: Insert Line
+	delete, // Meta Command: Delete Line
 	set // Meta Command: Set Line
 } command_list;
 
@@ -155,7 +157,7 @@ typedef enum _command_list {
  * Strings without these prefixes are ignored. However, "let" and "append" commands allow immediate values as the second argument.
  * For example, "let @1 1234" stores 1234 to line No. 1.
  * Also, "print" and "sleep" commands allow immediate values as the first argument.
- * However, ".:@[" are not used in the immediate values for "let", "append", "print", and "sleep".
+ * However, ".:@" can't be used in the immediate values for "let", "append", "print", and "sleep".
  */
 
 /**
@@ -1716,8 +1718,51 @@ int32 _user_start() {
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
-					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
-					_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
+					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
+					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
+				} else if ( str32_strmatch( UART32_UARTINT_HEAP, 6, "insert\0", 6 ) ) {
+					/* If You Command "insert", It Inserts A Line */
+					text_sender( "\x1B[2K\x1B[6D\0" ); // Clear Entire Line and 6 Cursor Backs
+					/* Retrieve Previous Content in Line that is Wrote Meta Command */
+					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 ); // Add Null Character
+					line_clean( UART32_UARTINT_HEAP );
+					var_temp.u32 = UART32_UARTMALLOC_NUMBER;
+					var_temp2.u32 = UART32_UARTMALLOC_LENGTH - var_temp.u32;
+					/* From Current Line, Move Content to +1 Line. Content in Last Line is Removed */
+					for ( uint32 i = 1; i < var_temp2.u32; i++ ) {
+						_uartsetheap( UART32_UARTMALLOC_LENGTH - i - 1 );
+						heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 );
+						_uartsetheap( UART32_UARTMALLOC_LENGTH - i );
+						heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 );
+						line_clean( UART32_UARTINT_HEAP );
+					}
+					/* Set Line */
+					_uartsetheap( var_temp.u32 );
+					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_zero, 0, UART32_UARTMALLOC_MAXROW + 1 );
+					heap32_mcopy( buffer_line, 0, buffer_zero, 0, UART32_UARTMALLOC_MAXROW + 1 );
+					process_counter();
+					_store_32( UART32_UARTINT_COUNT_ADDR, 0 );
+					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
+				} else if ( str32_strmatch( UART32_UARTINT_HEAP, 6, "delete\0", 6 ) ) {
+					/* If You Command "delete", It Deletes The Current Line */
+					text_sender( "\x1B[2K\x1B[6D\0" ); // Clear Entire Line and 6 Cursor Backs
+					var_temp.u32 = UART32_UARTMALLOC_NUMBER;
+					/* From Current Line, Move Content to -1 Line to Delete. Content in Current Line is Removed */
+					for ( uint32 i = var_temp.u32; i < UART32_UARTMALLOC_LENGTH - 1; i++ ) {
+						_uartsetheap( i + 1 );
+						heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 );
+						_uartsetheap( i );
+						heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_line, 0, str32_strlen( (String)buffer_line ) + 1 );
+						line_clean( UART32_UARTINT_HEAP );
+					}
+					_uartsetheap( UART32_UARTMALLOC_LENGTH - 1 );
+					heap32_mcopy( (obj)UART32_UARTINT_HEAP, 0, buffer_zero, 0, UART32_UARTMALLOC_MAXROW + 1 );
+					/* Set Line */
+					_uartsetheap( var_temp.u32 );
+					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
+					process_counter();
+					text_sender( UART32_UARTINT_HEAP );
+					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				} else {
 					text_sender( "\r\n\0" ); // Send These Because Teletype Is Only Mirrored Carriage Return from Host
@@ -1726,8 +1771,7 @@ int32 _user_start() {
 					heap32_mcopy( buffer_line, 0, (obj)UART32_UARTINT_HEAP, 0, str32_strlen( UART32_UARTINT_HEAP ) + 1 ); // Add Null
 					process_counter();
 					text_sender( UART32_UARTINT_HEAP );
-					var_temp.u32 = str32_strlen( UART32_UARTINT_HEAP );
-					_store_32( UART32_UARTINT_COUNT_ADDR, var_temp.u32 );
+					_store_32( UART32_UARTINT_COUNT_ADDR, str32_strlen( UART32_UARTINT_HEAP ) );
 					_store_32( UART32_UARTINT_BUSY_ADDR, 0 );
 				}
 			}
