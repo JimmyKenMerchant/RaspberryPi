@@ -149,10 +149,9 @@ typedef enum _command_list {
 /**
  * Four Types of Arguments
  * 1. Label, indicated by ".", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
- * 1. Indirect Label, indicated by ":", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
+ * 2. Indirect Label, indicated by ":", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
  * 3. Line Number, indicated by "@".
- * 4. Indirect Number, indicated by "[".
- * Caution that labels should not use characters, "&|^.:@[=!<>+-/%*", for their naming.
+ * Caution that labels should not use characters, "&|^.:@=!<>+-/%*", for their naming.
  * Strings without these prefixes are ignored. However, "let" and "append" commands allow immediate values as the second argument.
  * For example, "let @1 1234" stores 1234 to line No. 1.
  * Also, "print" and "sleep" commands allow immediate values as the first argument.
@@ -816,19 +815,7 @@ int32 _user_start() {
 								var_temp.u32 = cvt32_string_to_int32( temp_str, length_temp );
 								_store_32( array_argpointer + 4 * i,  var_temp.u32 );
 								i++;
-							} else if ( str32_charsearch( temp_str, 1, 0x5B ) != -1 ) { // Ascii Code of [ (Square Bracket Left)
-								/* Indirect Argument (Pointer) Indicated by "[N" */
-								temp_str++; // Next of Character
-								length_temp = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
-								if ( length_temp == -1 ) length_temp = str32_strlen( temp_str ); // Ascii Code of Null, for Last Variable
-								var_temp.u32 = cvt32_string_to_int32( temp_str, length_temp );
-								if ( _uartsetheap( var_temp.u32 ) ) _uartsetheap( initial_line );
-								/*  Pass Spaces and Label*/
-								temp_str2 = pass_space_label( UART32_UARTINT_HEAP );
-								var_temp2.u32 = cvt32_string_to_int32( temp_str2, str32_strlen( temp_str2 ) );
-								_store_32( array_argpointer + 4 * i,  var_temp2.u32 );
-								i++;
-							} else { // Nothing of . : @ [
+							} else { // Nothing of . : @
 								temp_str++; // Next of Character
 							}
 						}

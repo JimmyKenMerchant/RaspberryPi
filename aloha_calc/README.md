@@ -11,12 +11,42 @@
 * "Aloha Calc" is a programmable calculator. "Aloha Calc" runs the script, "Aloha Mini Language" that resembles BASIC. E.g., `int @1 @2 + @3` means `@1 = @2 + @3` in integer (@ is prefix for line numbers). "Aloha Mini Language" has no need of declaration any type for variables. Variables, for source or destination, are assigned by each line number or label.
 
 ```
-|01| * Example of "Aloha Mini Language" to say "Hello World!".
-|02| * ".greeting" is a label which is prefixed by a period.
-|03| print .greeting
-|04| .greeting Hello World!
-|05| end
-|06| run
+* Example of "Aloha Mini Language" to say "Hello World!".
+* ".greeting" is a label which is prefixed by a period.
+print .greeting
+.greeting Hello World!
+end
+run
+
+```
+
+```
+* Example of "Aloha Mini Language" to Multiply Integers.
+int .answer .number1 * number2
+.answer
+.number1 3
+.number2 4
+end
+run
+
+```
+
+```
+* Example of "Aloha Mini Language".
+* If input is "e", program will end.
+.str_prompt Press "e" then Enter to end: 
+.str_bye See Yo!\n
+.answer a
+.str_end e
+.loop print .str_prompt
+ input .answer
+ ifs .answer != .str_end
+  jmp .loop
+ endif
+print .str_bye
+end
+run
+
 ```
 
 **Output/Input**

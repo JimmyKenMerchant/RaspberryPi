@@ -796,31 +796,29 @@ snd32_soundplay:
 			ldr temp3, SND32_INTERRUPT_COUNT           @ Count of Interrupt Throughout
 			add temp2, temp2, temp3
 
-			cmp temp2, temp
-			bls snd32_soundplay_free_interrupt_jump
+			push {r0-r3}
+			mov r0, temp2
+			mov r1, temp
+			bl arm32_urem
+			mov temp2, r0
+			pop {r0-r3}
 
-			snd32_soundplay_free_interrupt_loop:
-				subs temp2, temp2, temp
-				bhi snd32_soundplay_free_interrupt_loop
+			str temp2, SND32_COUNT
 
-			snd32_soundplay_free_interrupt_jump:
+			ldr temp, SND32_SUSPEND_REPEAT
+			str temp, SND32_REPEAT
+			bic status, status, #0x2                   @ Clear Interrupt State Bit[1]
+			str status, SND32_STATUS
+			ldr temp, SND32_SUSPEND_CODE
+			str temp, SND32_CODE
 
-				str temp2, SND32_COUNT
+			macro32_dsb ip
 
-				ldr temp, SND32_SUSPEND_REPEAT
-				str temp, SND32_REPEAT
-				bic status, status, #0x2                   @ Clear Interrupt State Bit[1]
-				str status, SND32_STATUS
-				ldr temp, SND32_SUSPEND_CODE
-				str temp, SND32_CODE
+			push {r1-r3}
+			bl snd32_soundplay                         @ Execute Itself
+			pop {r1-r3}
 
-				macro32_dsb ip
-
-				push {r1-r3}
-				bl snd32_soundplay                         @ Execute Itself
-				pop {r1-r3}
-
-				b snd32_soundplay_common
+			b snd32_soundplay_common
 
 	snd32_soundplay_error1:
 		mov r0, #1                            @ Return with Error 1
