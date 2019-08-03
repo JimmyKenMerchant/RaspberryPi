@@ -50,8 +50,8 @@ typedef enum _command_list {
 	end, // End of script, should search after "end*" on search_command to prevent missing.
 	_else, // IF statement, flip the pass flag.
 	_break, // FOR/WHILE loop, break the loop
-	print, // Print string, "print @S" or "print <Immediate Value>" Print string in S or immediate value.
-	sleep, // Sleep microseconds by integer "Sleep @S1": Number in S1 means micro seconds to sleep.
+	print, // Print string, "print @S1" or "print '<Immediate Value>" Print string in S1 or immediate value.
+	sleep, // Sleep, "sleep @S1" or "sleep '<Immediate Value>": Number in S1 or immediate value means micro seconds in integer.
 	/**
 	 * Set calender and clock, "stime @S1 @S2 @S3 @S4 @S5 @S6 @S7":
 	 * Year in S1, Month in S2, Day in S3, Hour in S4, Minute in S5, Second in S6, Micro Second in S7.
@@ -86,6 +86,7 @@ typedef enum _command_list {
 	 */
 	gpio,
 	clrgpio, // Clear outputting from GPIO. "clrgpio @S1": clear all (0) / stay GPIO current status (1) in S1.
+	ingpio, // Check GPIO Status High(1) / Low(0) "ingpio @D @S1"; Check GPIO Numbered in S1
 	/**
 	 * "snd" does sequential outputting sound. "snd @S1 @S2":
 	 * S1 is the number of raw data array. S2 is the count of repeating, if the count is -1, infinite repeating.
@@ -130,9 +131,9 @@ typedef enum _command_list {
 	read, // Input one byte to D without flushing by sending carriage return, "read @D".
 	ifs, // IF statement, "ifs @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
 	whiles, // WHILE loop, "whiles @S1 <Comparison Symbol> @S2": Compare S1 and S2 as string.
-	let, // Copy, "let @D @S1" or "let @D <Immediate Value>".
-	append, // Append, "append @D @S1" or "append @D <Immediate Value>".
-	vlen, // Vertical Length, "vlen @D @S1".
+	let, // Copy, "let @D @S1" or "let @D '<Immediate Value>".
+	append, // Append, "append @D @S1" or "append @D '<Immediate Value>".
+	vlen, // Vertical Length, "vlen @D @S1": E.g. Measure length between a label of the source and a label which is not initialized.
 	hlen, // Horizontal Length, "hlen @D @S1".
 	jmp, // Jump to the line, "jmp @S1": Next line will be the number in S1.
 	call, // Jump to the line and store number of current line to the array (Last In First Out) for linking.
@@ -153,11 +154,10 @@ typedef enum _command_list {
  * 1. Label, indicated by ".", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
  * 2. Indirect Label, indicated by ":", must be initialized to hide inaccurate execution, otherwise, the execution will stop, etc.
  * 3. Line Number, indicated by "@".
- * Caution that labels should not use characters, "&|^.:@=!<>+-/%*", for their naming.
- * Strings without these prefixes are ignored. However, "let" and "append" commands allow immediate values as the second argument.
- * For example, "let @1 1234" stores 1234 to line No. 1.
+ * Caution that labels should not use characters, "&|^.:@'=!<>+-/%*", for their naming.
+ * Strings without these prefixes are ignored. However, "let" and "append" commands allow immediate values as the second argument by prefixing an apostrophe.
+ * For example, "let @1 '1234" stores 1234 to line No. 1.
  * Also, "print" and "sleep" commands allow immediate values as the first argument.
- * However, ".:@" can't be used in the immediate values for "let", "append", "print", and "sleep".
  */
 
 /**
@@ -436,6 +436,11 @@ int32 _user_start() {
 								length_arg = 1;
 								pipe_type = enumurate_sources;
 								src_index = 0;
+							} else if ( str32_strmatch( temp_str, 6, "ingpio\0", 6 ) ) {
+								command_type = ingpio;
+								length_arg = 2;
+								pipe_type = enumurate_sources;
+								src_index = 1; // 0 is Direction
 							} else if ( str32_strmatch( temp_str, 3, "snd\0", 3 ) ) {
 								command_type = snd;
 								length_arg = 2;
@@ -775,7 +780,9 @@ int32 _user_start() {
 							while ( str32_charsearch( temp_str, 1, 0x20 ) != -1 ) { // Ascii Code of Space
 								temp_str++;
 							}
-							if ( str32_charsearch( temp_str, 1, 0x2E ) != -1 ) { // Ascii Code of Period
+							if ( str32_charsearch( temp_str, 1, 0x27 ) != -1 ) { // Ascii Code of Apostrophe
+								temp_str++; // Next of Character
+							} else if ( str32_charsearch( temp_str, 1, 0x2E ) != -1 ) { // Ascii Code of Period
 								/* Label Argument Indicated by ".<NAME>" */
 								temp_str++; // Next of Character
 								length_temp = str32_charindex( temp_str, 0x20 ); // Ascii Code of Space
@@ -817,7 +824,7 @@ int32 _user_start() {
 								var_temp.u32 = cvt32_string_to_int32( temp_str, length_temp );
 								_store_32( array_argpointer + 4 * i,  var_temp.u32 );
 								i++;
-							} else { // Nothing of . : @
+							} else { // Nothing of . : @ '
 								temp_str++; // Next of Character
 							}
 						}
@@ -884,10 +891,10 @@ int32 _user_start() {
 									if ( _uartsetheap( var_temp.u32 ) ) break;
 									command_print( UART32_UARTINT_HEAP );
 								} else { // If Null, That Is, Having Immediate or Nothing of First Argument
-									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									length_temp = str32_charindex( temp_str_dup, 0x27 ); // Ascii Code of Apostrophe
 									if ( length_temp == -1 ) break; // Reaching End of Script of Line
 									temp_str_dup += length_temp; // Beyond Command
-									temp_str_dup++; // Next of Space
+									temp_str_dup++; // Next of Apostrophe
 									command_print( temp_str_dup );
 								}
 
@@ -897,13 +904,18 @@ int32 _user_start() {
 								if ( var_temp.u32 ) { // If Not Null, That Is, Having First Argument with Label
 									var_temp.u32 = _load_32( array_source );
 								} else { // If Null, That Is, Having Immediate or Nothing of First Argument
-									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									length_temp = str32_charindex( temp_str_dup, 0x27 ); // Ascii Code of Apostrophe
 									if ( length_temp == -1 ) break; // Reaching End of Script of Line
 									temp_str_dup += length_temp; // Beyond Command
-									temp_str_dup++; // Next of Space
+									temp_str_dup++; // Next of Apostrophe
 									var_temp.u32 = cvt32_string_to_int32( temp_str_dup, str32_strlen( temp_str_dup ) );
 								}
-								_sleep( var_temp.u32 );
+								_stopwatch_start();
+								while ( true ) {
+									if ( (uint32)_stopwatch_end() > var_temp.u32 ) break;
+									timer_routine();
+									arm32_dsb();
+								}
 
 								break;
 							case stime:
@@ -1035,6 +1047,11 @@ int32 _user_start() {
 								break;
 							case clrgpio:
 								_gpioclear( gpio_output, _load_32( array_source ) );
+
+								break;
+							case ingpio:
+								direction.s32 = _gpio_in( _load_32( array_source + 4 ) );
+								str_direction = cvt32_int32_to_string_deci( direction.s32, 1, 1 );
 
 								break;
 							case snd:
@@ -1472,11 +1489,10 @@ int32 _user_start() {
 								} else { // If Null, That Is, Having Immediate or Nothing of Second Argument
 									if ( _uartsetheap( current_line ) ) break;
 									src_str = UART32_UARTINT_HEAP;
-									/* Pass Spaces, Labels, Command of Source String */
-									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									length_temp = str32_charindex( temp_str_dup, 0x27 ); // Ascii Code of Apostrophe
 									if ( length_temp == -1 ) break; // Reaching End of Script of Line
 									temp_str_dup += length_temp; // Beyond Command
-									temp_str_dup++; // Next of Space
+									temp_str_dup++; // Next of Apostrophe
 									temp_str = pass_space_label( temp_str_dup );
 									var_temp2.u32 = temp_str - src_str;
 									var_temp3.u32 = str32_strlen( temp_str );
@@ -1506,11 +1522,10 @@ int32 _user_start() {
 								} else { // If Null, That Is, Having Immediate or Nothing of Second Argument
 									if ( _uartsetheap( current_line ) ) break;
 									src_str = UART32_UARTINT_HEAP;
-									/* Pass Spaces, Labels, Command of Source String */
-									length_temp = str32_charindex( temp_str_dup, 0x20 ); // Ascii Code of Space
+									length_temp = str32_charindex( temp_str_dup, 0x27 ); // Ascii Code of Apostrophe
 									if ( length_temp == -1 ) break; // Reaching End of Script of Line
 									temp_str_dup += length_temp; // Beyond Command
-									temp_str_dup++; // Next of Space
+									temp_str_dup++; // Next of Apostrophe
 									temp_str = pass_space_label( temp_str_dup );
 									var_temp2.u32 = temp_str - src_str;
 									var_temp3.u32 = str32_strlen( temp_str );

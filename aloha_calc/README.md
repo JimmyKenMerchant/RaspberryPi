@@ -49,6 +49,55 @@ run
 
 ```
 
+```
+* Example of "Aloha Mini Language".
+.str_high High\n
+.str_low Low\n
+.level
+.gpionumber 21
+.compare 1
+
+ingpio .level .gpionumber
+print 'High or Low of GPIO21: 
+if .level == .compare
+ print .str_high
+else
+ print .str_low
+endif
+end
+run
+
+```
+
+```
+* Example of "Aloha Mini Language", Music Test.
+.arr0
+.d 9,8,7,6,5,4,3,4,5,6,7,8,
+   9,9,9,9,9,9,8,8,8,8,8,8,
+   7,7,7,7,7,7,6,6,6,6,6,6,
+   5,5,4,4,3,3,3,3,4,4,5,5,
+   xFFFF
+.d_end
+.d_length
+.d_ptr
+.2_byte_align 1
+.repeat_infinite -1
+
+* Get pointer and length of array of data.
+ptr .d_ptr .d
+* vlen measures length between a label (.d) and a label which is not initialized (.d_end).
+vlen .d_length .d
+arr .arr0 .d_ptr .d_length .2_byte_align
+* Start sound
+snd .arr0 .repeat_infinite
+* Sleep 10 Seconds then music will end.
+sleep '10000000
+clrsnd
+end
+run
+
+```
+
 **Output/Input**
 
 * GPIO 12 as Output of PWM0 on sound=pwm (If you no need, uncomment __SOUND on the top of vector.s)
