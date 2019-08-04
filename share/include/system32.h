@@ -1393,6 +1393,7 @@ extern float32 STS32_DIGITALMOD_MAX;
 extern float32 STS32_DIGITALMOD_MIN;
 extern float32 STS32_DIGITALMOD_MEDIUM;
 extern float32 STS32_TONE;
+extern uint32 STS32_LANE;
 
 /* Relative System Calls  */
 
@@ -1402,9 +1403,9 @@ __attribute__((noinline)) uint32 _synthewave_i2s( float32 bend_rate, float32 ton
 
 __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length, uint32 count, int32 repeat );
 
-__attribute__((noinline)) uint32 _syntheplay( uint32 number_voices );
+__attribute__((noinline)) uint32 _syntheplay( uint32 offset_voice, uint32 number_voices );
 
-__attribute__((noinline)) uint32 _syntheclear( uint32 number_voices );
+__attribute__((noinline)) uint32 _syntheclear( uint32 offset_voice, uint32 number_voices );
 
 __attribute__((noinline)) uint32 _synthemidi( uint32 channel, uint32 mode, uint32 number_voices );
 

@@ -255,14 +255,14 @@ __attribute__((noinline)) uint32 _syntheset( synthe_code* synthe, uint32 length,
 	return result;
 }
 
-__attribute__((noinline)) uint32 _syntheplay( uint32 number_voices )
+__attribute__((noinline)) uint32 _syntheplay( uint32 offset_voice, uint32 number_voices )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x24");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _syntheclear( uint32 number_voices )
+__attribute__((noinline)) uint32 _syntheclear( uint32 offset_voice, uint32 number_voices )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x25");

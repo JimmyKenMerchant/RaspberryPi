@@ -797,40 +797,6 @@ STS32_SYNTHEWAVE_TONE_R: .float 0.0
 STS32_SYNTHEWAVE_TONE_L: .float 0.0
 
 
-/* If End or Step Up, Automatically Cleared */
-STS32_CODE:            .word 0x00 @ Pointer of Synthesizer Code
-STS32_LENGTH:          .word 0x00 @ Length of Synthesizer Code
-STS32_REPEAT:          .word 0x00 @ Repeat status of Synthesizer Code
-STS32_COUNT:           .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
-STS32_CODE_NEXT:       .word 0x00 @ Pointer of Next Synthesizer Code
-STS32_LENGTH_NEXT:     .word 0x00 @ Length of Next Synthesizer Code
-STS32_REPEAT_NEXT:     .word 0x00 @ Repeat status of Next Synthesizer Code
-STS32_COUNT_NEXT:      .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
-
-/**
- * Bit[0] Synthesizer Code Stop(0)/ Playing (1)
- * Bit[1] Reserved
- * Bit[2] Reserved
- * Bit[3] Reserved
- * Bit[31] Not Initialized(0)/ Initialized(1)
- */
-STS32_STATUS:             .word 0x00
-
-
-/**
- * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
- * Bit[3:0] Voice L1
- * Bit[7:4] Voice R1
- * Bit[11:8] Voice L2
- * Bit[15:12] Voice R2
- * Bit[19:16] Voice L3
- * Bit[23:20] Voice R3
- * Bit[27:24] Voice L4
- * Bit[31:28] Voice R4
- */
-STS32_VOICES:             .word 0x00
-
-
 /**
  * function sts32_syntheset
  * Set Synthesizer
@@ -851,35 +817,46 @@ sts32_syntheset:
 	length      .req r1 @ Scratch Register
 	count       .req r2 @ Scratch Register
 	repeat      .req r3 @ Scratch Register
-	status      .req r4
+	offset_lane .req r4
+	addr_lane   .req r5
+	status      .req r6
 
-	push {r4}
+	push {r4-r6}
 
 	cmp addr_code, #0
 	beq sts32_syntheset_error
 	cmp length, #0
 	beq sts32_syntheset_error
 
+	ldr offset_lane, STS32_LANE_ADDR
+	ldr offset_lane, [offset_lane]
+	cmp offset_lane, #equ32_sts32_lane_max
+	movhs offset_lane, #equ32_sts32_lane_max - 1
+	ldr addr_lane, STS32_CODES
+	add addr_lane, addr_lane, offset_lane, lsl #5    @ Addition with Multiply by 32
+
+	mov status, #1
+	lsl offset_lane, status, offset_lane             @ Test Bit for Assigned Lane
 	ldr status, STS32_STATUS
-	tst status, #1
+	tst status, offset_lane
 	bne sts32_syntheset_next
 
 	/* First Set */
-	str addr_code, STS32_CODE
-	str length, STS32_LENGTH
-	str count, STS32_COUNT
-	str repeat, STS32_REPEAT
+	str addr_code, [addr_lane]
+	str length, [addr_lane, #4]
+	str count, [addr_lane, #8]
+	str repeat, [addr_lane, #12]
 
-	orr status, status, #1         @ Set Synthesizer Code Playing Bit[0]
+	orr status, status, offset_lane                  @ Set Synthesizer Code Playing Bit[3:0] for Assigned Lane
 	str status, STS32_STATUS
 
 	b sts32_syntheset_success
 
 	sts32_syntheset_next:
-		str addr_code, STS32_CODE_NEXT
-		str length, STS32_LENGTH_NEXT
-		str count, STS32_COUNT_NEXT
-		str repeat, STS32_REPEAT_NEXT
+		str addr_code, [addr_lane, #16]
+		str length, [addr_lane, #20]
+		str count, [addr_lane, #24]
+		str repeat, [addr_lane, #28]
 
 		b sts32_syntheset_success
 
@@ -892,13 +869,15 @@ sts32_syntheset:
 		mov r0, #0                                 @ Return with Success
 
 	sts32_syntheset_common:
-		pop {r4}
+		pop {r4-r6}
 		mov pc, lr
 
 .unreq addr_code
 .unreq length
 .unreq count
 .unreq repeat
+.unreq offset_lane
+.unreq addr_lane
 .unreq status
 
 
@@ -907,27 +886,28 @@ sts32_syntheset:
  * Play Synthesizer
  *
  * Parameters
- * r0: Number of Voices
+ * r0: Number of Voice Offset, From 0
+ * r1: Number of Voices
  *
  * Return: r0 (0 as success, 1 and 2 as error)
- * Error(1): Music Code is Not Assgined
+ * Error(1): Music Code is Not Assgined or Opened Lane
  * Error(2): Not Initialized
  */
 .globl sts32_syntheplay
 sts32_syntheplay:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_code     .req r0
-	length        .req r1
-	count         .req r2
-	repeat        .req r3
-	status        .req r4
-	code          .req r5
-	temp          .req r6
-	status_voices .req r7
-	voices        .req r8
-	addr_param    .req r9
-	num_voices    .req r10
-	offset_code   .req r11
+	offset_voice  .req r0
+	num_voices    .req r1
+	offset_lane   .req r2
+	addr_lane     .req r3
+	addr_code     .req r4
+	length        .req r5
+	count         .req r6
+	repeat        .req r7
+	status        .req r8
+	code          .req r9
+	temp          .req r10
+	addr_param    .req r11
 
 	/* VFP Registers */
 	vfp_temp      .req s0
@@ -939,33 +919,41 @@ sts32_syntheplay:
 	push {r4-r11,lr}
 	vpush {s0-s4}
 
-	mov num_voices, addr_code
-	cmp num_voices, #equ32_sts32_voice_max
-	movhi num_voices, #equ32_sts32_voice_max
+	ldr offset_lane, STS32_LANE_ADDR
+	ldr offset_lane, [offset_lane]
+	cmp offset_lane, #equ32_sts32_lane_max
+	movhs offset_lane, #equ32_sts32_lane_max -1
 
-	ldr addr_code, STS32_CODE
+	ldr status, STS32_STATUS
+	tst status, #0x80000000                          @ If Not Initialized
+	beq sts32_syntheplay_error2
+	mov temp, #1
+	lsl temp, temp, offset_lane
+	tst status, temp                                 @ If Opened Lane
+	beq sts32_syntheplay_error1
+
+	ldr addr_lane, STS32_CODES
+	add addr_lane, addr_lane, offset_lane, lsl #5    @ Addition with Multiply by 32
+
+	ldr addr_code, [addr_lane]
 	cmp addr_code, #0
 	beq sts32_syntheplay_error1
 
-	ldr length, STS32_LENGTH
+	ldr length, [addr_lane, #4]
 	cmp length, #0
 	beq sts32_syntheplay_error1
 
-	ldr count, STS32_COUNT
-	ldr repeat, STS32_REPEAT
-	ldr status, STS32_STATUS
-	ldr status_voices, STS32_VOICES
+	ldr count, [addr_lane, #8]
+	ldr repeat, [addr_lane, #12]
+	ldr status, STS32_VOICES
 
 	macro32_dsb ip
-
-	tst status, #0x80000000                   @ If Not Initialized
-	beq sts32_syntheplay_error2
 
 	cmp count, length
 	blo sts32_syntheplay_encode
 
 	/* If Next Synthesizer Code Exists Alter Current Code on Point of Repeating */
-	ldr temp, STS32_CODE_NEXT
+	ldr temp, [addr_lane, #16]
 	cmp temp, #0
 	bne sts32_syntheplay_next
 
@@ -981,21 +969,21 @@ sts32_syntheplay:
 
 	sts32_syntheplay_next:
 		mov addr_code, temp
-		ldr length, STS32_LENGTH_NEXT
-		ldr count, STS32_COUNT_NEXT
-		ldr repeat, STS32_REPEAT_NEXT
+		ldr length, [addr_lane, #20]
+		ldr count, [addr_lane, #24]
+		ldr repeat, [addr_lane, #28]
 
-		str addr_code, STS32_CODE
-		str length, STS32_LENGTH
+		str addr_code, [addr_lane]
+		str length, [addr_lane, #4]
 
 		mov temp, #0
-		str temp, STS32_CODE_NEXT
-		str temp, STS32_LENGTH_NEXT
-		str temp, STS32_COUNT_NEXT
-		str temp, STS32_REPEAT_NEXT
+		str temp, [addr_lane, #16]
+		str temp, [addr_lane, #20]
+		str temp, [addr_lane, #24]
+		str temp, [addr_lane, #28]
 
 		.unreq length
-		offset_param .req r1
+		offset_param .req r5
 
 	sts32_syntheplay_encode:
 		/* Hard Code of Single Precision Float 0.125 */
@@ -1009,19 +997,26 @@ sts32_syntheplay:
 		vmov vfp_max, temp
 		vcvt.f32.u32 vfp_max, vfp_max
 
-		mov voices, #0
 		ldr addr_param, STS32_SYNTHEWAVE_PARAM
 
 		/* Make Offset for Code */
-		mov temp, #8
-		mul temp, num_voices, temp                     @ Multiply by 8 to Make Stride, One Set for Each Voice is 8 Bytes (Two Words)
-		mul offset_code, count, temp                   @ Multiply by Stride
+		push {count}
+		.unreq count
+		offset_code .req r6
+		lsl temp, num_voices, #3                       @ Multiply by 8 to Make Stride, One Set for Each Voice is 8 Bytes (Two Words)
+		mul offset_code, offset_code, temp             @ Multiply by Stride
+
+		cmp offset_voice, #equ32_sts32_voice_max
+		movhs offset_voice, #equ32_sts32_voice_max - 1
+		add num_voices, offset_voice, num_voices
+		cmp num_voices, #equ32_sts32_voice_max
+		movhi num_voices, #equ32_sts32_voice_max
 
 		sts32_syntheplay_encode_loop:
-			cmp voices, num_voices
-			bge sts32_syntheplay_encode_common
+			cmp offset_voice, num_voices
+			bhs sts32_syntheplay_encode_common
 
-			lsl offset_param, voices, #4               @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
+			lsl offset_param, offset_voice, #4         @ Multiply by 16, 16 Bytes (Four Words) Offset for Each Parameter
 
 			/**
 			 * Main
@@ -1092,46 +1087,30 @@ sts32_syntheplay:
 			str temp, [addr_param, offset_param]       @ Sub Amplitude
 
 			/* Set Voices Status */
-			lsl code, voices, #2                       @ Multiply by 4
+			lsl code, offset_voice, #2                 @ Multiply by 4
 			mov temp, #0b1000
 			lsl temp, temp, code
-			orr status_voices, status_voices, temp
+			orr status, status, temp
 
-			add voices, voices, #1
+			add offset_voice, offset_voice, #1
 			b sts32_syntheplay_encode_loop
 
 		sts32_syntheplay_encode_common:
+			pop {offset_code}
+			.unreq offset_code
+			count .req r6
 
 			add count, count, #1
-			str count, STS32_COUNT
-			str repeat, STS32_REPEAT
-			str status, STS32_STATUS
-			str status_voices, STS32_VOICES
+			str count, [addr_lane, #8]
+			str repeat, [addr_lane, #12]
+			str status, STS32_VOICES
 
 			b sts32_syntheplay_success
 
 	sts32_syntheplay_free:
-		bic status, status, #1                     @ Clear Bit[0]
-		str status, STS32_STATUS
-
-		mov addr_code, #0
-
-		str addr_code, STS32_CODE
-		str addr_code, STS32_LENGTH
-		str count, STS32_COUNT                     @ count is Already Zero
-		str repeat, STS32_REPEAT                   @ repeat is Already Zero
-
-		/* Clear Voices Status */
-		sts32_syntheplay_free_voices:
-			sub num_voices, num_voices, #1
-			lsl voices, num_voices, #2             @ Multiply by 4
-			mov temp, #0b1000
-			lsl temp, temp, voices
-			bic status_voices, status_voices, temp
-			cmp num_voices, #0
-			bhi sts32_syntheplay_free_voices
-
-		str status_voices, STS32_VOICES
+		push {r0-r3}
+		bl sts32_syntheclear
+		pop {r0-r3}
 
 		b sts32_syntheplay_success
 
@@ -1151,6 +1130,10 @@ sts32_syntheplay:
 		vpop {s0-s4}
 		pop {r4-r11,pc}
 
+.unreq offset_voice
+.unreq num_voices
+.unreq offset_lane
+.unreq addr_lane
 .unreq addr_code
 .unreq offset_param
 .unreq count
@@ -1158,11 +1141,7 @@ sts32_syntheplay:
 .unreq status
 .unreq code
 .unreq temp
-.unreq status_voices
-.unreq voices
 .unreq addr_param
-.unreq num_voices
-.unreq offset_code
 .unreq vfp_temp
 .unreq vfp_pi_double
 .unreq vfp_max
@@ -1177,62 +1156,129 @@ sts32_syntheplay_MATH32_PI_DOUBLE: .word MATH32_PI_DOUBLE
  * Clear Synthesizer Code
  *
  * Parameters
- * r0: Number of Voices
+ * r0: Number of Voice Offset, From 0
+ * r1: Number of Voices
  *
  * Return: r0 (0 as success)
  */
 .globl sts32_syntheclear
 sts32_syntheclear:
 	/* Auto (Local) Variables, but just Aliases */
-	num_voices .req r0
-	temp       .req r1
-	temp2      .req r2
-	temp3      .req r3
+	offset_voice .req r0
+	num_voices   .req r1
+	offset_lane  .req r2
+	temp         .req r3
+	temp2        .req r4
+	temp3        .req r5
 
+	push {r4-r5}
+
+	ldr offset_lane, STS32_LANE_ADDR
+	ldr offset_lane, [offset_lane]
+	cmp offset_lane, #equ32_sts32_lane_max
+	movhs offset_lane, #equ32_sts32_lane_max -1
+	cmp offset_voice, #equ32_sts32_voice_max
+	movhs offset_voice, #equ32_sts32_voice_max - 1
+	add num_voices, offset_voice, num_voices
 	cmp num_voices, #equ32_sts32_voice_max
 	movhi num_voices, #equ32_sts32_voice_max
 
 	ldr temp, STS32_STATUS
-	bic temp, temp, #1                         @ Clear Bit[1]
+	mov temp2, #1
+	lsl temp2, temp2, offset_lane
+	bic temp, temp, temp2                  @ Clear Bit[3:0] for Opened Lane
 	str temp, STS32_STATUS
 
 	ldr temp, STS32_VOICES
 
 	/* Clear Voices Status */
 	sts32_syntheclear_voices:
-		sub num_voices, num_voices, #1
-		lsl temp2, num_voices, #2              @ Multiply by 4
+		cmp offset_voice, num_voices
+		bhs sts32_syntheclear_jump
+		lsl temp2, offset_voice, #2           @ Multiply by 4
 		mov temp3, #0b1000
 		lsl temp3, temp3, temp2
 		bic temp, temp, temp3
-		cmp num_voices, #0
-		bhi sts32_syntheclear_voices
+		add offset_voice, offset_voice, #1
+		b sts32_syntheclear_voices
 
-	str temp, STS32_VOICES
+	sts32_syntheclear_jump:
+		str temp, STS32_VOICES
 
-	mov temp, #0
+		ldr temp, STS32_CODES
+		add temp, temp, offset_lane, lsl #5    @ Addition with Multiply by 32
 
-	str temp, STS32_CODE
-	str temp, STS32_LENGTH
-	str temp, STS32_COUNT
-	str temp, STS32_REPEAT
+		mov temp2, #0
 
-	str temp, STS32_CODE_NEXT
-	str temp, STS32_LENGTH_NEXT
-	str temp, STS32_COUNT_NEXT
-	str temp, STS32_REPEAT_NEXT
+		str temp2, [temp]
+		str temp2, [temp, #4]
+		str temp2, [temp, #8]
+		str temp2, [temp, #12]
+
+		str temp2, [temp, #16]
+		str temp2, [temp, #20]
+		str temp2, [temp, #24]
+		str temp2, [temp, #28]
 
 	sts32_syntheclear_success:
 		macro32_dsb ip
 		mov r0, #0                            @ Return with Success
 
 	sts32_syntheclear_common:
+		pop {r4-r5}
 		mov pc, lr
 
+.unreq offset_voice
 .unreq num_voices
+.unreq offset_lane
 .unreq temp
 .unreq temp2
 .unreq temp3
+
+
+/* If End or Step Up, Automatically Cleared */
+STS32_CODES:            .word STS32_CODE_LANE
+.section	.data
+STS32_CODE_LANE:        .word 0x00 @ Pointer of Synthesizer Code
+STS32_LENGTH_LANE:      .word 0x00 @ Length of Synthesizer Code
+STS32_COUNT_LANE:       .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+STS32_REPEAT_LANE:      .word 0x00 @ Repeat status of Synthesizer Code
+STS32_CODE_LANE_NEXT:   .word 0x00 @ Pointer of Next Synthesizer Code
+STS32_LENGTH_LANE_NEXT: .word 0x00 @ Length of Next Synthesizer Code
+STS32_COUNT_LANE_NEXT:  .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+STS32_REPEAT_LANE_NEXT: .word 0x00 @ Repeat status of Next Synthesizer Code
+.space 32 * equ32_sts32_lane_max, 0x00 @ Total 4 Lanes in Default
+.section	.library_system32
+
+STS32_LANE_ADDR:        .word STS32_LANE
+.section	.data
+.globl STS32_LANE
+STS32_LANE:             .word 0    @ Current LANE to Handle (Lane No. - 1)
+.section	.library_system32
+
+
+/**
+ * Bit[0] Synthesizer Code Lane 1 Stop(0)/ Playing (1)
+ * Bit[1] Synthesizer Code Lane 2 Stop(0)/ Playing (1)
+ * Bit[2] Synthesizer Code Lane 3 Stop(0)/ Playing (1)
+ * Bit[3] Synthesizer Code Lane 4 Stop(0)/ Playing (1)
+ * Bit[31] Not Initialized(0)/ Initialized(1)
+ */
+STS32_STATUS:             .word 0x00
+
+
+/**
+ * Status of Voices, 0 as Inactive, 1 as Attack, 2 as Decay, 3 as Sustain, 4 as Release, 8 as Synthesizer Code
+ * Bit[3:0] Voice L1
+ * Bit[7:4] Voice R1
+ * Bit[11:8] Voice L2
+ * Bit[15:12] Voice R2
+ * Bit[19:16] Voice L3
+ * Bit[23:20] Voice R3
+ * Bit[27:24] Voice L4
+ * Bit[31:28] Voice R4
+ */
+STS32_VOICES:             .word 0x00
 
 
 /**
