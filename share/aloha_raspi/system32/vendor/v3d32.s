@@ -7,6 +7,75 @@
  *
  */
 
+V3D32_BCM32_GENERIC0_ADDR: .word BCM32_GNENRIC0
+
+
+/**
+ * function v3d32_enableqpu
+ * Utilize QPU of VideoCore IV from ARM
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: 0 as Disable, 1 as Enable
+ *
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Error in Response
+ * Error(2): Failure to Enable QPU
+ */
+.globl v3d32_enableqpu
+v3d32_enableqpu:
+	/* Auto (Local) Variables, but just Aliases */
+	flag_enable .req r0
+	addr_value  .req r1
+	temp        .req r2
+
+	push {lr}
+
+	ldr addr_value, V3D32_BCM32_GENERIC0_ADDR
+	str flag_enable, [addr_value] @ BCM32_GENERIC0
+
+	mov temp, #0
+	str temp, [addr_value, #4]    @ BCM32_GENERIC1
+	str temp, [addr_value, #8]    @ BCM32_GENERIC2
+	str temp, [addr_value, #12]   @ BCM32_GENERIC3
+	str temp, [addr_value, #16]   @ BCM32_GENERIC4
+	str temp, [addr_value, #20]   @ BCM32_GENERIC5
+
+	push {r0-r2}
+	mov r0, #0x00030000
+	orr r0, r0, #0x00000012
+	mov r1, #4
+	bl bcm32_genericmail
+	cmp r0, #0
+	pop {r0-r2}
+
+	macro32_dsb ip
+
+	bne v3d32_enableqpu_error1
+
+	ldr flag_enable, [addr_value]
+	cmp flag_enable, #0
+	beq v3d32_enableqpu_success
+	bne v3d32_enableqpu_error2
+
+	v3d32_enableqpu_error1:
+		mov r0, #1
+		b v3d32_enableqpu_common
+
+	v3d32_enableqpu_error2:
+		mov r0, #2
+		b v3d32_enableqpu_common
+
+	v3d32_enableqpu_success:
+		mov r0, #0
+
+	v3d32_enableqpu_common:
+		pop {pc}
+
+.unreq flag_enable
+.unreq addr_value
+.unreq temp
+
 .equ v3d32_base,    0x00C00000
 
 /* V3D Identity Registers */

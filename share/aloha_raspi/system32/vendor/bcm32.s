@@ -130,7 +130,7 @@ bcm32_mail_getvoltage_end:
 bcm32_mail_getclockrate:    @ Get Clock Rate
 	.word bcm32_mail_getclockrate_end - bcm32_mail_getclockrate @ Size of this Mail
 	.word 0x00000000        @ Request (in Response, 0x80000000 with success, 0x80000001 with error)
-	.word 0x00030002        @ Tag Identifier, Get Clock Rate (0x00030004 is Get Maximum)
+	.word 0x00030002        @ Tag Identifier, Get Clock Rate (0x00038002: Set, 0x00030004: Maximum, 0x00030007: Minimum)
 	.word 0x00000008        @ Value Buffer Size in Bytes
 	.word 0x00000000        @ Request Code(0x00000000) or Response Code (0x80000000|Value_Length_in_Bytes)
 	.word 0x00000001        @ Clock ID (1 EMMC, 2 UART, 3 ARM, 4 Core, 5 V3D, 6 H264, 7 ISP, 8 SDRAM, 9 PIXEL, A PWM)
@@ -277,6 +277,8 @@ bcm32_FB32_FRAMEBUFFER_addr:
 .globl BCM32_EDID_ADDR
 BCM32_EDID_ADDR:
 	.word bcm32_mail_getedid + 20
+
+BCM32_GENERIC0_ADDR: .word BCM32_GENERIC0
 
 
 /**
@@ -716,6 +718,252 @@ bcm32_get_edid:
 
 
 /**
+ * function bcm32_allocate_memory
+ * Allocate Memory (Obtain Handle Number) for VideoCore IV at GPU Memory Partition
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Size in Bytes
+ * r1: Alignment in Bytes
+ * r2: Bit[6]: Permanent Lock, Bit[5]: No Filled by 1 at Init, Bit[4]: Init by 0, Bit[3]: L2 Coherent "0x8", Bit[2]: Uncached "0xC", Bit[0]: Resizable with Cached, Bit[3]|Bit[2]: PoC
+ *
+ * Return: r0 (Handle Number, -1 as Error)
+ * Error(-1): Error in Response
+ */
+.globl bcm32_allocate_memory
+bcm32_allocate_memory:
+	/* Auto (Local) Variables, but just Aliases */
+	size       .req r0
+	alignment  .req r1
+	flags      .req r2
+	temp       .req r3
+	addr_value .req r4
+
+	push {r4,lr}
+
+	ldr addr_value, BCM32_GENERIC0_ADDR
+	str size, [addr_value]
+	str alignment, [addr_value, #4]
+	str flags, [addr_value, #8]
+
+	mov temp, #0
+	str temp, [addr_value, #12]
+	str temp, [addr_value, #16]
+	str temp, [addr_value, #20]
+
+	macro32_dsb ip
+
+	mov r0, #0x00030000
+	orr r0, r0, #0x0000000C
+	mov r1, #12
+	bl bcm32_onemail
+	cmp r0, #0
+
+	macro32_dsb ip
+
+	beq bcm32_allocate_memory_success
+
+	bcm32_allocate_memory_error:
+		mvn r0, #0
+		b bcm32_allocate_memory_common
+
+	bcm32_allocate_memory_success:
+		ldr r0, [addr_value]
+
+	bcm32_allocate_memory_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
+		pop {r4,pc}
+
+.unreq size
+.unreq alignment
+.unreq flags
+.unreq temp
+.unreq addr_value
+
+
+/**
+ * function bcm32_lock_memory
+ * Lock Memory for VideoCore IV at GPU Memory Partition
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Handle Number Obtained through bcm32_alocate_memory
+ *
+ * Return: r0 (First Bus Address to Be Locked as success, -1 as Error)
+ * Error(-1): Error in Response
+ */
+.globl bcm32_lock_memory
+bcm32_lock_memory:
+	/* Auto (Local) Variables, but just Aliases */
+	handle     .req r0
+	temp       .req r1
+	addr_value .req r2
+
+	push {lr}
+
+	ldr addr_value, BCM32_GENERIC0_ADDR
+	str handle, [addr_value]
+
+	mov temp, #0
+	str temp, [addr_value, #4]
+	str temp, [addr_value, #8]
+	str temp, [addr_value, #12]
+	str temp, [addr_value, #16]
+	str temp, [addr_value, #20]
+
+	macro32_dsb ip
+
+	push {r0-r2}
+	mov r0, #0x00030000
+	orr r0, r0, #0x0000000D
+	mov r1, #4
+	bl bcm32_onemail
+	cmp r0, #0
+	pop {r0-r2}
+
+	macro32_dsb ip
+
+	beq bcm32_lock_memory_success
+
+	bcm32_lock_memory_error:
+		mvn r0, #0
+		b bcm32_lock_memory_common
+
+	bcm32_lock_memory_success:
+		ldr r0, [addr_value]
+
+	bcm32_lock_memory_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq handle
+.unreq temp
+.unreq addr_value
+
+
+/**
+ * function bcm32_unlock_memory
+ * Unlock Memory for VideoCore IV at GPU Memory Partition
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Handle Number Obtained through bcm32_alocate_memory
+ *
+ * Return: r0 (0 as Success, -1 as Error, Handle Number as Error)
+ * Error(-1): Error in Response
+ * Error(Handle Number): Error in Unlocking Memory
+ */
+.globl bcm32_unlock_memory
+bcm32_unlock_memory:
+	/* Auto (Local) Variables, but just Aliases */
+	handle     .req r0
+	temp       .req r1
+	addr_value .req r2
+
+	push {lr}
+
+	ldr addr_value, BCM32_GENERIC0_ADDR
+	str handle, [addr_value]
+
+	mov temp, #0
+	str temp, [addr_value, #4]
+	str temp, [addr_value, #8]
+	str temp, [addr_value, #12]
+	str temp, [addr_value, #16]
+	str temp, [addr_value, #20]
+
+	macro32_dsb ip
+
+	push {r0-r2}
+	mov r0, #0x00030000
+	orr r0, r0, #0x0000000E
+	mov r1, #4
+	bl bcm32_onemail
+	cmp r0, #0
+	pop {r0-r2}
+
+	macro32_dsb ip
+
+	beq bcm32_unlock_memory_success
+
+	bcm32_unlock_memory_error:
+		mvn r0, #0
+		b bcm32_unlock_memory_common
+
+	bcm32_unlock_memory_success:
+		ldr r0, [addr_value]
+
+	bcm32_unlock_memory_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq handle
+.unreq temp
+.unreq addr_value
+
+
+/**
+ * function bcm32_release_memory
+ * Release Memory for VideoCore IV at GPU Memory Partition
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Handle Number Obtained through bcm32_alocate_memory
+ *
+ * Return: r0 (0 as Success, -1 as Error, Handle Number as Error)
+ * Error(-1): Error in Response
+ * Error(Handle Number): Error in Releasing Memory
+ */
+.globl bcm32_release_memory
+bcm32_release_memory:
+	/* Auto (Local) Variables, but just Aliases */
+	handle     .req r0
+	temp       .req r1
+	addr_value .req r2
+
+	push {lr}
+
+	ldr addr_value, BCM32_GENERIC0_ADDR
+	str handle, [addr_value]
+
+	mov temp, #0
+	str temp, [addr_value, #4]
+	str temp, [addr_value, #8]
+	str temp, [addr_value, #12]
+	str temp, [addr_value, #16]
+	str temp, [addr_value, #20]
+
+	macro32_dsb ip
+
+	push {r0-r2}
+	mov r0, #0x00030000
+	orr r0, r0, #0x0000000F
+	mov r1, #4
+	bl bcm32_onemail
+	cmp r0, #0
+	pop {r0-r2}
+
+	macro32_dsb ip
+
+	beq bcm32_release_memory_success
+
+	bcm32_release_memory_error:
+		mvn r0, #0
+		b bcm32_release_memory_common
+
+	bcm32_release_memory_success:
+		ldr r0, [addr_value]
+
+	bcm32_release_memory_common:
+		macro32_dsb ip                                        @ Ensure Completion of Instructions Before
+		pop {pc}
+
+.unreq handle
+.unreq temp
+.unreq addr_value
+
+
+/**
  * function bcm32_genericmail
  * Send and Receive Generic Mail Up to 24 Bytes from VideoCore IV
  * This function is using a vendor-implemented process.
@@ -725,6 +973,7 @@ bcm32_get_edid:
  * r1: Value Buffer Size in Bytes, Up to 24 Bytes
  *
  * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response
  */
 .globl bcm32_genericmail
 bcm32_genericmail:
@@ -779,7 +1028,7 @@ bcm32_onemail:
 	mov addr_tag_dup, addr_tag
 	mov temp, #0
 	str temp, [addr_tag_dup, #bcm32_mailbox_gpuconfirm] @ Reset Request
-	str temp, [addr_tag_dup, #16]                       @ Reset Tag
+	str temp, [addr_tag_dup, #16]                       @ Reset Request Code
 	ldr temp, [addr_tag_dup]                            @ Get Size
 	add temp, addr_tag_dup, temp
 
