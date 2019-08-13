@@ -756,7 +756,7 @@ bcm32_allocate_memory:
 	mov r0, #0x00030000
 	orr r0, r0, #0x0000000C
 	mov r1, #12
-	bl bcm32_onemail
+	bl bcm32_genericmail
 	cmp r0, #0
 
 	macro32_dsb ip
@@ -817,7 +817,7 @@ bcm32_lock_memory:
 	mov r0, #0x00030000
 	orr r0, r0, #0x0000000D
 	mov r1, #4
-	bl bcm32_onemail
+	bl bcm32_genericmail
 	cmp r0, #0
 	pop {r0-r2}
 
@@ -878,7 +878,7 @@ bcm32_unlock_memory:
 	mov r0, #0x00030000
 	orr r0, r0, #0x0000000E
 	mov r1, #4
-	bl bcm32_onemail
+	bl bcm32_genericmail
 	cmp r0, #0
 	pop {r0-r2}
 
@@ -939,7 +939,7 @@ bcm32_release_memory:
 	mov r0, #0x00030000
 	orr r0, r0, #0x0000000F
 	mov r1, #4
-	bl bcm32_onemail
+	bl bcm32_genericmail
 	cmp r0, #0
 	pop {r0-r2}
 
