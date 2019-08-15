@@ -24,6 +24,7 @@
 .section	.vendor_system32
 
 .include "system32/vendor/bcm32.s"
+.include "system32/vendor/v3d32.s"
 
 /**
  * "arm_system32" is to be used for drivers of ARM system registers, and standard peripherals,

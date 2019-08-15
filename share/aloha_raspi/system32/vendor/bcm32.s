@@ -849,9 +849,8 @@ bcm32_lock_memory:
  * Parameters
  * r0: Handle Number Obtained through bcm32_alocate_memory
  *
- * Return: r0 (0 as Success, -1 as Error, Handle Number as Error)
+ * Return: r0 (0 as Success, -1 as Error)
  * Error(-1): Error in Response
- * Error(Handle Number): Error in Unlocking Memory
  */
 .globl bcm32_unlock_memory
 bcm32_unlock_memory:
@@ -910,9 +909,8 @@ bcm32_unlock_memory:
  * Parameters
  * r0: Handle Number Obtained through bcm32_alocate_memory
  *
- * Return: r0 (0 as Success, -1 as Error, Handle Number as Error)
+ * Return: r0 (0 as Success, -1 as Error)
  * Error(-1): Error in Response
- * Error(Handle Number): Error in Releasing Memory
  */
 .globl bcm32_release_memory
 bcm32_release_memory:
