@@ -11,7 +11,7 @@ V3D32_BCM32_GENERIC0_ADDR: .word BCM32_GENERIC0
 
 
 /**
- * function v3d32_enableqpu
+ * function v3d32_enable_qpu
  * Utilize QPU of VideoCore IV from ARM
  * This function is using a vendor-implemented process.
  *
@@ -22,8 +22,8 @@ V3D32_BCM32_GENERIC0_ADDR: .word BCM32_GENERIC0
  * Error(1): Error in Response
  * Error(2): Failure to Enable QPU
  */
-.globl v3d32_enableqpu
-v3d32_enableqpu:
+.globl v3d32_enable_qpu
+v3d32_enable_qpu:
 	/* Auto (Local) Variables, but just Aliases */
 	flag_enable .req r0
 	addr_value  .req r1
@@ -51,30 +51,229 @@ v3d32_enableqpu:
 
 	macro32_dsb ip
 
-	bne v3d32_enableqpu_error1
+	bne v3d32_enable_qpu_error1
 
 	ldr flag_enable, [addr_value]
 	cmp flag_enable, #0
-	beq v3d32_enableqpu_success
-	bne v3d32_enableqpu_error2
+	beq v3d32_enable_qpu_success
+	bne v3d32_enable_qpu_error2
 
-	v3d32_enableqpu_error1:
+	v3d32_enable_qpu_error1:
 		mov r0, #1
-		b v3d32_enableqpu_common
+		b v3d32_enable_qpu_common
 
-	v3d32_enableqpu_error2:
+	v3d32_enable_qpu_error2:
 		mov r0, #2
-		b v3d32_enableqpu_common
+		b v3d32_enable_qpu_common
 
-	v3d32_enableqpu_success:
+	v3d32_enable_qpu_success:
 		mov r0, #0
 
-	v3d32_enableqpu_common:
+	v3d32_enable_qpu_common:
 		pop {pc}
 
 .unreq flag_enable
 .unreq addr_value
 .unreq temp
+
+
+/**
+ * function v3d32_enable_qpul2cache
+ * Enable L2 Cache for QPU of VideoCore IV from ARM
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: 0 as Disable L2 Cache, 1 as Enable L2 Cache
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_enable_qpul2cache
+v3d32_enable_qpul2cache:
+	/* Auto (Local) Variables, but just Aliases */
+	flag_enable .req r0
+	addr_qpu    .req r1
+
+	push {lr}
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	and flag_enable, flag_enable, #0b1
+	str flag_enable, [addr_qpu, #v3d32_l2cactl]
+
+	v3d32_enable_qpul2cache_success:
+		mov r0, #0
+
+	v3d32_enable_qpul2cache_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq flag_enable
+.unreq addr_qpu
+
+
+/**
+ * function v3d32_control_qpuinterrupt
+ * Control Interrupt for QPU of VideoCore IV from ARM
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Bit[15:0] (Bit[15]: 0 as Disable, 1 as Enable QPU15 Interrupt, ...Bit[0]: 0 as Disable, 1 as Enable QPU0 Interrupt)
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_control_qpuinterrupt
+v3d32_control_qpuinterrupt:
+	/* Auto (Local) Variables, but just Aliases */
+	flags_enable .req r0
+	addr_qpu     .req r1
+	temp         .req r2
+
+	push {lr}
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	/* Write Clear QPU Interrupt */
+	ldr temp, [addr_qpu, #v3d32_dbqitc]
+	str temp, [addr_qpu, #v3d32_dbqitc]
+
+	/* Disable Interrupt */
+	str flags_enable, [addr_qpu, #v3d32_dbqite]
+
+	v3d32_control_qpuinterrupt_success:
+		mov r0, #0
+
+	v3d32_control_qpuinterrupt_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq flags_enable
+.unreq addr_qpu
+.unreq temp
+
+
+/**
+ * function v3d32_execute_qpu
+ * Execute User Program for QPU of VideoCore IV from ARM
+ * This function is using a vendor-implemented process.
+ * This function is similar to the mail #0x00030011. However, in this funtion, QPU is controlled from ARM.
+ * You need to make QPU enabled from ARM using "v3d32_enable_qpu".
+ *
+ * Parameters
+ * r0: Number of QPUs to Be Executed
+ * r1: Pointer of Array of Jobs, Pointer of Array of Uniforms and Pointer of Codes for QPU Alternatively
+ * r2: 0 as Flush, 1 as No Flush
+ * r3: Timeout in Clocks
+ *
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Time Out
+ * Error(2): FIFO is Full
+ */
+.globl v3d32_execute_qpu
+v3d32_execute_qpu:
+	/* Auto (Local) Variables, but just Aliases */
+	number_qpu     .req r0
+	buffer_job     .req r1
+	flag_noflush   .req r2
+	timeout        .req r3
+	addr_qpu       .req r4
+	temp           .req r5
+	dup_number_qpu .req r6
+
+	push {r4-r6,lr}
+
+	mov dup_number_qpu, number_qpu
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	/* Clear Counters */
+	mov temp, #1|1<<7
+	orr temp, temp, #1<<8
+	orr temp, temp, #1<<16
+	str temp, [addr_qpu, #v3d32_srqcs]
+
+	macro32_dsb ip
+
+	cmp flag_noflush, #1
+	beq v3d32_execute_qpu_execute
+
+	v3d32_execute_qpu_flush:
+		/* Clear L2 Cache */
+		mov temp, #0b110
+		str temp, [addr_qpu, #v3d32_l2cactl]
+
+		/* Clear Caches Near QPU */
+		mov temp, #0xF<<24
+		orr temp, temp, #0xF<<16
+		orr temp, temp, #0xF<<8
+		str temp, [addr_qpu, #v3d32_slcactl]
+
+		macro32_dsb ip
+
+	v3d32_execute_qpu_execute:
+		subs dup_number_qpu, #1
+		blo v3d32_execute_qpu_wait
+
+		/* Store Uniforms Address */
+		ldr temp, [buffer_job]
+		str temp, [addr_qpu, #v3d32_srqua]
+		add buffer_job, buffer_job, #4
+
+		/* Store Uniforms Length as Unlimited */
+		mov temp, #1024
+		str temp, [addr_qpu, #v3d32_srqul]
+
+		/* Store Code Address */
+		ldr temp, [buffer_job]
+		str temp, [addr_qpu, #v3d32_srqpc]
+		add buffer_job, buffer_job, #4
+
+		/* Test Queue Error, FIFO is Full */
+		ldr temp, [addr_qpu, #v3d32_srqcs]
+		tst temp, #1<<7
+		bne v3d32_execute_qpu_error2
+
+		macro32_dsb ip
+		b v3d32_execute_qpu_execute
+
+	v3d32_execute_qpu_wait:
+		subs timeout, #1
+		blo v3d32_execute_qpu_error1
+
+		ldr temp, [addr_qpu, #v3d32_srqcs]
+		lsr temp, temp, #16
+		cmp temp, number_qpu
+		blo v3d32_execute_qpu_wait
+
+		b v3d32_execute_qpu_success
+
+	v3d32_execute_qpu_error1:
+		mov r0, #1
+		b v3d32_execute_qpu_common
+
+	v3d32_execute_qpu_error2:
+		mov temp, #1<<7
+		str temp, [addr_qpu, #v3d32_srqcs]
+		mov r0, #2
+		b v3d32_execute_qpu_common
+
+	v3d32_execute_qpu_success:
+		mov r0, #0
+
+	v3d32_execute_qpu_common:
+		macro32_dsb ip
+		pop {r4-r6,pc}
+
+.unreq number_qpu
+.unreq buffer_job
+.unreq flag_noflush
+.unreq timeout
+.unreq addr_qpu
+.unreq temp
+.unreq dup_number_qpu
+
 
 .equ v3d32_base,    0x00C00000
 
@@ -172,6 +371,10 @@ v3d32_enableqpu:
 .equ v3d32_pctrs14, 0x06F4
 .equ v3d32_pctr15,  0x06F8
 .equ v3d32_pctrs15, 0x06FC
+
+/* QPU Interrupt Control */
+.equ v3d32_dbqitc,  0x0E2C
+.equ v3d32_dbqite,  0x0E30
 
 /* Error and Diagnostic Registers */
 .equ v3d32_dbge,    0x0F00 @ PSE Error Signals

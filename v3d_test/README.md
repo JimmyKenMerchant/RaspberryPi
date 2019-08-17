@@ -15,3 +15,14 @@
 **Compatibility**
 
 * Under Construction
+
+**About QPU**
+
+BCM2835, BCM2836, and BCM2837 have 16 QPUs. A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders.
+
+**VC4ASM**
+
+```bash
+vc4asm -V -o qasm_sample1.bin -I /usr/local/share/vc4inc/ -i vc4.qinc qasm_sample1.qasm
+vc4dis -V -o qasm_sample1_dis.qasm -v qasm_sample1.bin
+```

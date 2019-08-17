@@ -17,13 +17,22 @@ DATA_COLOR32_SAMPLE_IMAGE0_SIZE: .word _DATA_COLOR32_SAMPLE_IMAGE0_END - _DATA_C
 DATA_COLOR32_SAMPLE_IMAGE1: .word _DATA_COLOR32_SAMPLE_IMAGE1
 DATA_COLOR32_SAMPLE_IMAGE1_SIZE: .word _DATA_COLOR32_SAMPLE_IMAGE1_END - _DATA_COLOR32_SAMPLE_IMAGE1
 
+.globl DATA_QASM_SAMPLE1
+.globl DATA_QASM_SAMPLE1_SIZE
+DATA_QASM_SAMPLE1: .word _DATA_QASM_SAMPLE1
+DATA_QASM_SAMPLE1_SIZE: .word _DATA_QASM_SAMPLE1_END - _DATA_QASM_SAMPLE1
+
 .section	.data
 
 _DATA_COLOR32_SAMPLE_IMAGE0:
-.incbin "../framebuffer_32bit_test/data/bugufo_abgr.bin"          @ Little Endian, ABGR Style
+.incbin "data/bugufo_abgr.bin"          @ Little Endian, ABGR Style
 _DATA_COLOR32_SAMPLE_IMAGE0_END:
 _DATA_COLOR32_SAMPLE_IMAGE1:
-.incbin "../framebuffer_32bit_test/data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style
+.incbin "data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style
 _DATA_COLOR32_SAMPLE_IMAGE1_END:
+.balign 16
+_DATA_QASM_SAMPLE1:
+.incbin "data/qasm_sample1.bin"
+_DATA_QASM_SAMPLE1_END:
 
 .section	.library_system32
