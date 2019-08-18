@@ -68,6 +68,8 @@ os_reset:
 os_debug:
 	push {r4-r10,lr}
 
+	/* Enable QPU */
+
 	push {r0-r3}
 	mov r0, #1
 	bl v3d32_enable_qpu
@@ -76,15 +78,25 @@ os_debug:
 
 macro32_debug r4, 100, 88
 
+	/* Enable L2 Cache */
+
 	push {r0-r3}
 	mov r0, #0b001
 	bl v3d32_control_qpul2cache
 	pop {r0-r3}
 
+	/* Disable QPU Interrupt */
+
 	push {r0-r3}
 	mov r0, #0x0000
 	bl v3d32_control_qpuinterrupt
 	pop {r0-r3}
+
+	/**
+	 * Allocate and Lock GPU Memory
+	 */
+
+	/* For Array of Jobs to Execute User Program */
 
 	push {r0-r3}
 	mov r0, #8
@@ -108,6 +120,8 @@ macro32_debug r4, 100, 112
 
 	str r4, addr_mail
 
+	/* For Array of Uniforms */
+
 	push {r0-r3}
 	mov r0, #4
 	mov r1, #16
@@ -129,6 +143,8 @@ macro32_debug r4, 100, 124
 macro32_debug r4, 100, 136
 
 	str r4, addr_uniform
+
+	/* For Output */
 
 	push {r0-r3}
 	mov r0, #256
@@ -152,6 +168,8 @@ macro32_debug r4, 100, 160
 
 	str r4, addr_output
 
+	/* For Codes */
+
 	push {r0-r3}
 	ldr r0, DATA_QASM_SAMPLE1_SIZE
 	mov r1, #4096
@@ -174,73 +192,94 @@ macro32_debug r4, 100, 184
 
 	str r4, addr_code
 
-	ldr r0, DATA_QASM_SAMPLE1
-	ldr r1, DATA_QASM_SAMPLE1_SIZE
-	bic r2, r4, #0xC0000000
+	/* Copy Codes to Locked GPU Memory */
 
-	os_debug_loop:
-		ldr r3, [r0]
-		str r3, [r2]
-		macro32_clean_cache r2, ip
-		add r0, r0, #4
-		add r2, r2, #4
-		macro32_dsb ip
-		subs r1, r1, #4
-		bgt os_debug_loop
+	push {r0-r3}
+	mov r0, r4
+	ldr r1, DATA_QASM_SAMPLE1
+	orr r1, r1, #equ32_bus_physical_base @ Convert to Bus Address
+	ldr r2, DATA_QASM_SAMPLE1_SIZE
+	bl dma32_datacopy
+	pop {r0-r3}
 
 	bic r2, r4, #0xC0000000
+
+macro32_debug_hexa r2, 0, 196, 256
+
+
+	/* Address of Output to First Item of Uniforms, and Set Array of Jobs */
 
 	ldr r0, addr_mail
-	bic r0, r0, #0xC0000000
+	bic r0, r0, #0xC0000000              @ Convert to ARM Address
 	ldr r1, addr_uniform
-	bic r2, r1, #0xC0000000
+	bic r2, r1, #0xC0000000              @ Convert to ARM Address
 	ldr r3, addr_output
 
-	str r3, [r2]
-	str r1, [r0]
-	str r4, [r0, #4]
-
-	macro32_clean_cache r0, ip
-	macro32_clean_cache r2, ip
+	str r3, [r2]                         @ Address of Output to First Item of Uniforms
+	str r1, [r0]                         @ Jobs (1) Address of Uniforms
+	str r4, [r0, #4]                     @ Jobs (2) Address of Codes
 
 	macro32_dsb ip
+
+	/* Execute User Program */
 
 	push {r0-r3}
 	mov r0, #1
 	ldr r1, addr_mail
+	bic r1, r1, #0xC0000000              @ Convert to ARM Address
 	mov r2, #0
 	mov r3, #0xFF0000
-	bl v3d32_execute_qpu
+	bl v3d32_execute_qpu                 @ Direct Execution of User Program from ARM
 	mov r4, r0
 	pop {r0-r3}
 
-macro32_debug r4, 100, 208
+macro32_debug r4, 100, 352
 
 	bic r3, r3, #0xC0000000
 
-macro32_debug_hexa r3, 0, 220, 256
+macro32_debug_hexa r3, 0, 368, 256
 
-/*
+	/* Unlock and Release GPU Memory */
+
 	push {r0-r3}
-	mov r0, r4
+	ldr r0, handle_mail
 	bl bcm32_unlock_memory
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, r4
+	ldr r0, handle_mail
 	bl bcm32_release_memory
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, r6
+	ldr r0, handle_uniform
 	bl bcm32_unlock_memory
 	pop {r0-r3}
 
 	push {r0-r3}
-	mov r0, r6
+	ldr r0, handle_uniform
 	bl bcm32_release_memory
 	pop {r0-r3}
-*/
+
+	push {r0-r3}
+	ldr r0, handle_output
+	bl bcm32_unlock_memory
+	pop {r0-r3}
+
+	push {r0-r3}
+	ldr r0, handle_output
+	bl bcm32_release_memory
+	pop {r0-r3}
+
+	push {r0-r3}
+	ldr r0, handle_code
+	bl bcm32_unlock_memory
+	pop {r0-r3}
+
+	push {r0-r3}
+	ldr r0, handle_code
+	bl bcm32_release_memory
+	pop {r0-r3}
 
 	pop {r4-r10,pc}
 

@@ -55,8 +55,11 @@ dma32_datacopy:
 	mov number_cb, #equ32_dma32_cb_dma32_start
 	add number_cb, number_cb, number_core
 
-	push {r0-r3}
+	push {r0-r6}
+	mov r3, addr_dst                                        @ Destination Address
 	mov r0, number_cb
+	mov r4, size                                            @ Transfer Size
+	mov r2, addr_src                                        @ Source Address
 	mov r1, #0<<equ32_dma_ti_permap                         @ DREQ Map for No DREQ
 	bic r1, r1, #equ32_dma_ti_no_wide_bursts
 	orr r1, r1, #0<<equ32_dma_ti_waits
@@ -64,15 +67,12 @@ dma32_datacopy:
 	orr r1, r1, #equ32_dma_ti_src_inc                       @ Transfer Information Source
 	orr r1, r1, #equ32_dma_ti_dst_inc                       @ Transfer Information Destination
 	orr r1, r1, #equ32_dma_ti_wait_resp
-	mov r2, addr_src                                        @ Source Address
-	mov r3, addr_dst                                        @ Destination Address
-	mov r4, size                                            @ Transfer Size
 	mov r5, #0                                              @ 2D Stride
 	mov r6, #-1                                             @ Next CB Number
 	push {r4-r6}
 	bl dma32_set_cb
 	add sp, sp, #12
-	pop {r0-r3}
+	pop {r0-r6}
 
 	push {r0-r3}
 	mov r0, channel
