@@ -77,8 +77,8 @@ os_debug:
 macro32_debug r4, 100, 88
 
 	push {r0-r3}
-	mov r0, #1
-	bl v3d32_enable_qpul2cache
+	mov r0, #0b001
+	bl v3d32_control_qpul2cache
 	pop {r0-r3}
 
 	push {r0-r3}
@@ -208,7 +208,7 @@ macro32_debug r4, 100, 184
 	push {r0-r3}
 	mov r0, #1
 	ldr r1, addr_mail
-	mov r2, #1
+	mov r2, #0
 	mov r3, #0xFF0000
 	bl v3d32_execute_qpu
 	mov r4, r0

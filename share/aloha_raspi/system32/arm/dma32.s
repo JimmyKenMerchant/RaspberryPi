@@ -17,15 +17,111 @@
 
 
 /**
+ * function dma32_datacopy
+ * Copy Data Using DMA
+ * The DMA channel is enabled, once this function is executed.
+ *
+ * Parameters
+ * r0: Pointer of Destination in Bus Address
+ * r1: Pointer of Source in Bus Address
+ * r2: Size (Bytes) Up to 65535 Bytes
+ *
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): Channel of DMA or CB Number is Overflow
+ */
+.globl dma32_datacopy
+dma32_datacopy:
+	/* Auto (Local) Variables, but just Aliases */
+	addr_dst     .req r0
+	addr_src     .req r1
+	size         .req r2
+	channel      .req r3
+	number_cb    .req r4
+	number_core  .req r5
+	temp         .req r6
+
+	push {r4-r6,lr}
+
+	macro32_multicore_id number_core
+
+	cmp number_core, #equ32_dma32_channel_dma32_size
+	bhs dma32_datacopy_error
+	cmp number_core, #equ32_dma32_cb_dma32_size
+	bhs dma32_datacopy_error
+
+	mov channel, #equ32_dma32_channel_dma32
+	add channel, channel, number_core
+
+	mov number_cb, #equ32_dma32_cb_dma32_start
+	add number_cb, number_cb, number_core
+
+	push {r0-r3}
+	mov r0, number_cb
+	mov r1, #0<<equ32_dma_ti_permap                         @ DREQ Map for No DREQ
+	bic r1, r1, #equ32_dma_ti_no_wide_bursts
+	orr r1, r1, #0<<equ32_dma_ti_waits
+	orr r1, r1, #0<<equ32_dma_ti_burst_length
+	orr r1, r1, #equ32_dma_ti_src_inc                       @ Transfer Information Source
+	orr r1, r1, #equ32_dma_ti_dst_inc                       @ Transfer Information Destination
+	orr r1, r1, #equ32_dma_ti_wait_resp
+	mov r2, addr_src                                        @ Source Address
+	mov r3, addr_dst                                        @ Destination Address
+	mov r4, size                                            @ Transfer Size
+	mov r5, #0                                              @ 2D Stride
+	mov r6, #-1                                             @ Next CB Number
+	push {r4-r6}
+	bl dma32_set_cb
+	add sp, sp, #12
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, channel
+	mov r1, number_cb
+	bl dma32_set_channel
+	pop {r0-r3}
+
+	dma32_datacopy_wait:
+		push {r0-r3}
+		mov r0, channel
+		mov r1, size
+		bl dma32_wait_channel
+		mov temp, r0
+		pop {r0-r3}
+		cmp temp, #0
+		bne dma32_datacopy_wait
+
+	b dma32_datacopy_success
+
+	dma32_datacopy_error:
+		mov r0, #1
+		b dma32_datacopy_common
+
+	dma32_datacopy_success:
+		mov r0, #0
+
+	dma32_datacopy_common:
+		macro32_dsb ip
+		pop {r4-r6,pc}
+
+.unreq addr_dst
+.unreq addr_src
+.unreq size
+.unreq channel
+.unreq number_cb
+.unreq number_core
+.unreq temp
+
+
+/**
  * function dma32_set_channel
  * Set DMA Channel
  *
  * Parameters
  * r0: Channel of DMA
- * r1: Number of Control Block (CB)
+ * r1: Control Block (CB) Number
  *
  * Return: r0 (0 as Success, 1 as Error)
- * Error: Channel of DMA or Number of Next CB is Overflow
+ * Error: Channel of DMA or CB Number is Overflow
  */
 .globl dma32_set_channel
 dma32_set_channel:
@@ -43,7 +139,7 @@ dma32_set_channel:
 	bhi dma32_set_channel_error
 
 	cmp number_cb, #equ32_dma32_cb_max
-	bhi dma32_set_channel_error
+	bhs dma32_set_channel_error
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
 	mov temp, #32                                  @ 256-bit Align
@@ -107,6 +203,67 @@ dma32_set_channel:
 .unreq temp
 .unreq temp2
 .unreq addr_cb
+
+
+/**
+ * function dma32_wait_channel
+ * Wait for DMA Channel
+ *
+ * Parameters
+ * r0: Channel of DMA
+ * r1: Time Out in Turns
+ *
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Time Out
+ * Error(2): Channel of DMA is Overflow
+ */
+.globl dma32_wait_channel
+dma32_wait_channel:
+	/* Auto (Local) Variables, but just Aliases */
+	channel    .req r0
+	timeout    .req r1
+	addr_dma   .req r2
+	temp       .req r3
+
+	cmp channel, #14
+	bhi dma32_wait_channel_error2
+
+	mov addr_dma, #equ32_peripherals_base
+	add addr_dma, addr_dma, #equ32_dma_base
+
+	mov temp, #equ32_dma_channel_offset
+	mul temp, channel, temp
+	add addr_dma, addr_dma, temp
+
+	macro32_dsb ip
+
+	dma32_wait_channel_loop:
+		subs timeout, #1
+		blo dma32_wait_channel_error1
+		ldr temp, [addr_dma, #equ32_dma_cs]
+		tst temp, #equ32_dma_cs_active
+		beq dma32_wait_channel_success             @ If Not Active
+		macro32_dsb ip
+		b dma32_wait_channel_loop
+
+	dma32_wait_channel_error1:
+		mov r0, #1
+		b dma32_wait_channel_common
+
+	dma32_wait_channel_error2:
+		mov r0, #2
+		b dma32_wait_channel_common
+
+	dma32_wait_channel_success:
+		mov r0, #0
+
+	dma32_wait_channel_common:
+		mov pc, lr
+
+.unreq channel
+.unreq timeout
+.unreq addr_dma
+.unreq temp
 
 
 /**
@@ -206,10 +363,10 @@ dma32_clear_channel:
  *
  * Parameters
  * r0: Channel of DMA
- * r1: Number of Next CB
+ * r1: Next Control Blocks (CB) Number
  *
  * Return: r0 (0 as Success, 1 as Error)
- * Error: Channel of DMA or Number of Next CB is Overflow
+ * Error: Channel of DMA or Next CB Number is Overflow
  */
 .globl dma32_change_nextcb
 dma32_change_nextcb:
@@ -226,7 +383,7 @@ dma32_change_nextcb:
 	bhi dma32_change_nextcb_error
 
 	cmp nextconbk, #equ32_dma32_cb_max
-	bhi dma32_change_nextcb_error
+	bhs dma32_change_nextcb_error
 
 	mov addr_dma, #equ32_peripherals_base
 	add addr_dma, addr_dma, #equ32_dma_base
@@ -298,15 +455,15 @@ macro32_debug temp, 200, 360
  * Set Control Block
  *
  * Parameters
- * r0: Number of Control Blocks (CB)
+ * r0: Control Blocks (CB) Number
  * r1: Transfer Information
  * r2: Source Address
  * r3: Destination Address
  * r4: Transfer Length
  * r5: 2D Stride
- * r6: Number of Next CB, -1 as Nothing of Next CB
+ * r6: Next CB Number, -1 as Nothing of Next CB
  *
- * Return: r0 (Pointer of Control Block, If -1, Number of CB is Overflow)
+ * Return: r0 (Pointer of Control Block, If -1, CB Number is Overflow)
  */
 .globl dma32_set_cb
 dma32_set_cb:
@@ -327,8 +484,15 @@ dma32_set_cb:
 	pop {r4-r6}                                    @ Get Fifth to Seventh Arguments
 	sub sp, sp, #32  
 
+	/* Check Overflow of CB */
 	cmp number_cb, #equ32_dma32_cb_max
+	bhs dma32_set_cb_error
+
+	/* Check Overflow of Next CB */
+	add nextconbk, nextconbk, #1                   @ Convert [-1 to equ32_dma32_cb_max] to [0 to equ32_dma32_cb_max + 1]
+	cmp nextconbk, #equ32_dma32_cb_max
 	bhi dma32_set_cb_error
+	sub nextconbk, nextconbk, #1                   @ Retrieve Next CB Number
 
 	ldr addr_cb, DMA32_CB                          @ Base Address of CBs
 	mov mul_number, #32                            @ 256-bit Align

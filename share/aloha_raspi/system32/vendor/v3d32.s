@@ -78,37 +78,37 @@ v3d32_enable_qpu:
 
 
 /**
- * function v3d32_enable_qpul2cache
- * Enable L2 Cache for QPU of VideoCore IV from ARM
+ * function v3d32_control_qpul2cache
+ * Control L2 Cache for QPU of VideoCore IV from ARM
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: 0 as Disable L2 Cache, 1 as Enable L2 Cache
+ * r0: Bit[2]: Write 1 as Clear L2 Cache, Bit[1]: Write 1 as Disable L2 Cache, Bit[0]: Write 1 as Enable L2 Cache
  *
  * Return: r0 (0 as success)
  */
-.globl v3d32_enable_qpul2cache
-v3d32_enable_qpul2cache:
+.globl v3d32_control_qpul2cache
+v3d32_control_qpul2cache:
 	/* Auto (Local) Variables, but just Aliases */
-	flag_enable .req r0
-	addr_qpu    .req r1
+	ctrl_l2  .req r0
+	addr_qpu .req r1
 
 	push {lr}
 
 	mov addr_qpu, #equ32_peripherals_base
 	orr addr_qpu, addr_qpu, #v3d32_base
 
-	and flag_enable, flag_enable, #0b1
-	str flag_enable, [addr_qpu, #v3d32_l2cactl]
+	and ctrl_l2, ctrl_l2, #0b111
+	str ctrl_l2, [addr_qpu, #v3d32_l2cactl]
 
-	v3d32_enable_qpul2cache_success:
+	v3d32_control_qpul2cache_success:
 		mov r0, #0
 
-	v3d32_enable_qpul2cache_common:
+	v3d32_control_qpul2cache_common:
 		macro32_dsb ip
 		pop {pc}
 
-.unreq flag_enable
+.unreq ctrl_l2
 .unreq addr_qpu
 
 
@@ -164,7 +164,7 @@ v3d32_control_qpuinterrupt:
  * r0: Number of QPUs to Be Executed
  * r1: Pointer of Array of Jobs, Pointer of Array of Uniforms and Pointer of Codes for QPU Alternatively
  * r2: 0 as Flush, 1 as No Flush
- * r3: Timeout in Clocks
+ * r3: Timeout in Turns
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Time Out
@@ -201,13 +201,14 @@ v3d32_execute_qpu:
 
 	v3d32_execute_qpu_flush:
 		/* Clear L2 Cache */
-		mov temp, #0b110
+		mov temp, #0b100
 		str temp, [addr_qpu, #v3d32_l2cactl]
 
 		/* Clear Caches Near QPU */
 		mov temp, #0xF<<24
 		orr temp, temp, #0xF<<16
 		orr temp, temp, #0xF<<8
+		orr temp, temp, #0xF
 		str temp, [addr_qpu, #v3d32_slcactl]
 
 		macro32_dsb ip
@@ -243,13 +244,25 @@ v3d32_execute_qpu:
 		blo v3d32_execute_qpu_error1
 
 		ldr temp, [addr_qpu, #v3d32_srqcs]
+
+/*
+macro32_debug temp, 400, 436
+*/
 		lsr temp, temp, #16
 		cmp temp, number_qpu
 		blo v3d32_execute_qpu_wait
 
+		macro32_dsb ip
+
 		b v3d32_execute_qpu_success
 
 	v3d32_execute_qpu_error1:
+
+/*
+ldr temp, [addr_qpu, #v3d32_errstat]
+macro32_debug temp, 400, 448
+*/
+
 		mov r0, #1
 		b v3d32_execute_qpu_common
 
