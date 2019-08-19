@@ -20,7 +20,7 @@
 
 * V3D is the hardware acceleration for 3D graphics. V3D is based on QPU, a special processing unit. Read [the official GPU documentation](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2835/README.md). The documentation describes QPU. Note that GPU has several units including QPU. The firmware of the SoC, which is communicating with ARM via Mailbox, has be run by another processing unit, VPU. About VPU, check [Herman H Hermitage's Repository](https://github.com/hermanhermitage/videocoreiv).
 
-* BCM2835, BCM2836, and BCM2837 have 16 QPUs. A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders.
+* BCM2835, BCM2836, and BCM2837 have 16 QPUs. A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
 
 **About User Program**
 
