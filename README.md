@@ -522,7 +522,11 @@ The software is made of publicly available technology, is not including any prop
 
 * [Rasberry Pi Firmware Wiki](https://github.com/raspberrypi/firmware/wiki)
 
-* [VideoCore IV](https://github.com/hermanhermitage/videocoreiv): NON-COMMERCIAL USE ONLY
+* [VPU of VideoCore IV](https://github.com/hermanhermitage/videocoreiv)
+
+* [QPU Assembler](http://maazl.de/project/vc4asm/doc/index.html)
+
+* [GPU_FFT](http://www.aholme.co.uk/GPU_FFT/Main.htm)
 
 **About Primaries**
 

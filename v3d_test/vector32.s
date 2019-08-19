@@ -85,7 +85,7 @@ macro32_debug r4, 100, 88
 	bl v3d32_control_qpul2cache
 	pop {r0-r3}
 
-	/* Disable QPU Interrupt */
+	/* Disable QPU Interrupt, Already Disabled in Default Though */
 
 	push {r0-r3}
 	mov r0, #0x0000
@@ -197,7 +197,7 @@ macro32_debug r4, 100, 184
 	push {r0-r3}
 	mov r0, r4
 	ldr r1, DATA_QASM_SAMPLE1
-	orr r1, r1, #equ32_bus_physical_base @ Convert to Bus Address
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	ldr r2, DATA_QASM_SAMPLE1_SIZE
 	bl dma32_datacopy
 	pop {r0-r3}
@@ -233,11 +233,25 @@ macro32_debug_hexa r2, 0, 196, 256
 	mov r4, r0
 	pop {r0-r3}
 
-macro32_debug r4, 100, 352
+macro32_debug r4, 100, 320
 
 	bic r3, r3, #0xC0000000
 
-macro32_debug_hexa r3, 0, 368, 256
+macro32_debug_hexa r3, 0, 332, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 344, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 356, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 368, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 380, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 392, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 404, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 416, 32
 
 	/* Unlock and Release GPU Memory */
 

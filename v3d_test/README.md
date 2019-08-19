@@ -16,13 +16,25 @@
 
 * Under Construction
 
-**About QPU**
+**About V3D**
 
-BCM2835, BCM2836, and BCM2837 have 16 QPUs. A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders.
+* V3D is the hardware acceleration for 3D graphics. V3D is based on QPU, a special processing unit. Read [the official GPU documentation](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2835/README.md). The documentation describes QPU. Note that GPU has several units including QPU. The firmware of the SoC, which is communicating with ARM via Mailbox, has be run by another processing unit, VPU. About VPU, check [Herman H Hermitage's Repository](https://github.com/hermanhermitage/videocoreiv).
 
-**VC4ASM**
+* BCM2835, BCM2836, and BCM2837 have 16 QPUs. A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders.
+
+**About User Program**
+
+* QPU can run a user program which is not included in shader controls.
+
+* The user program will be executed via two ways. The first way is the Mailbox command. Another way is to set in V3D registers. So far, I'm using V3D registers to execute a user program. The mailbox command is conditioned by the firmware, which seems to use IRQ with an interrupt issued by QPU.
+
+**About VC4ASM**
+
+* There is [an assembler for QPU](http://maazl.de/project/vc4asm/doc/index.html). Files named with ".qasm" in this project are assembled by this assembler.
 
 ```bash
-vc4asm -V -o qasm_sample1.bin -I /usr/local/share/vc4inc/ -i vc4.qinc qasm_sample1.qasm
-vc4dis -V -o qasm_sample1_dis.qasm -v qasm_sample1.bin
+# Assemble to Binary
+vc4asm -V -o data/qasm_sample1.bin -I /usr/local/share/vc4inc/ -i vc4.qinc qasm_sample1.qasm
+# Disassemble to Assembler Codes in Text
+vc4dis -V -o qasm_sample1_dis.qasm -v data/qasm_sample1.bin
 ```
