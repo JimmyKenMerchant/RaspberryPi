@@ -123,7 +123,7 @@ macro32_debug r4, 100, 112
 	/* For Array of Uniforms */
 
 	push {r0-r3}
-	mov r0, #4
+	mov r0, #8
 	mov r1, #16
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -147,7 +147,7 @@ macro32_debug r4, 100, 136
 	/* For Output */
 
 	push {r0-r3}
-	mov r0, #256
+	mov r0, #512
 	mov r1, #16
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -216,6 +216,9 @@ macro32_debug_hexa r2, 0, 196, 256
 	ldr r3, addr_output
 
 	str r3, [r2]                         @ Address of Output to First Item of Uniforms
+	ldr r3, V3D_INPUT1
+	orr r3, r3, #equ32_bus_coherence_base @ Convert to Bus Address
+	str r3, [r2, #4]                     @ Address of Input to Second Item of Uniforms
 	str r1, [r0]                         @ Jobs (1) Address of Uniforms
 	str r4, [r0, #4]                     @ Jobs (2) Address of Codes
 
@@ -233,10 +236,15 @@ macro32_debug_hexa r2, 0, 196, 256
 	mov r4, r0
 	pop {r0-r3}
 
-macro32_debug r4, 100, 320
+macro32_debug r4, 100, 296
 
+	ldr r3, addr_output
 	bic r3, r3, #0xC0000000
 
+macro32_debug_hexa r3, 0, 308, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 320, 32
+add r3, r3, #32
 macro32_debug_hexa r3, 0, 332, 32
 add r3, r3, #32
 macro32_debug_hexa r3, 0, 344, 32
@@ -252,6 +260,18 @@ add r3, r3, #32
 macro32_debug_hexa r3, 0, 404, 32
 add r3, r3, #32
 macro32_debug_hexa r3, 0, 416, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 428, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 440, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 452, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 464, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 476, 32
+add r3, r3, #32
+macro32_debug_hexa r3, 0, 488, 32
 
 	/* Unlock and Release GPU Memory */
 
@@ -332,8 +352,12 @@ os_fiq:
  */
 .globl V3D_SAMPLE1
 .globl V3D_SAMPLE1_SIZE
+.globl V3D_INPUT1
+.globl V3D_INPUT1_SIZE
 V3D_SAMPLE1:      .word _V3D_SAMPLE1
 V3D_SAMPLE1_SIZE: .word _V3D_SAMPLE1_SIZE
+V3D_INPUT1:       .word _V3D_INPUT1
+V3D_INPUT1_SIZE:  .word _V3D_INPUT1_SIZE
 
 /**
  * Variables
