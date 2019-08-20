@@ -160,7 +160,7 @@ kernel.img: inter.elf
 	$(COPY) $< -O ihex kernel.hex
 	$(DUMP) -D $< > inter.list
 
-inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o
+inter.elf: $(OBJ1).o $(OBJ2).o $(OBJ3).o $(V3D_OBJ)
 	$(LINKER) $^ -o $@ -T $(LDSCRIPT) -Map inter.map
 
 $(OBJ3).o: $(OBJ3).c $(CCHEADER)
@@ -176,5 +176,6 @@ $(OBJ1).o: $(OBJ1).s
 warn: all clean
 
 .PHONY: clean
-clean:
+# Double colons allow to execute all recipes when overriding.
+clean::
 	rm *.o inter.elf inter.map inter.list kernel.img kernel.hex

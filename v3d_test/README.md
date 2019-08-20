@@ -30,11 +30,36 @@
 
 **About VC4ASM**
 
-* There is [an assembler for QPU](http://maazl.de/project/vc4asm/doc/index.html). Files named with ".qasm" in this project are assembled by this assembler.
+* There is [an assembler for QPU](http://maazl.de/project/vc4asm/doc/index.html). Files named with ".qasm" in this project are assembled by this assembler. This project uses VC4ASM in Makefile.
+
+* Installation of V 0.2.3 in Raspbian
+
+```bash
+cd ~/Desktop
+wget http://maazl.de/project/vc4asm/vc4asm.tar.bz2
+mkdir vc4asm
+tar -xvjf vc4asm.tar.bz2 -C vc4asm
+cd vc4asm
+make -C src
+sudo cp bin/vc4asm /usr/local/bin/vc4asm
+sudo cp bin/vc4dis /usr/local/bin/vc4dis
+sudo mkdir /usr/local/share/vc4inc
+sudo cp share/vc4.qinc /usr/local/share/vc4inc/vc4.qinc
+```
+
+* Usage
 
 ```bash
 # Assemble to Binary
-vc4asm -V -o data/qasm_sample1.bin -I /usr/local/share/vc4inc/ -i vc4.qinc qasm_sample1.qasm
+vc4asm -V -o v3d.bin -e v3d.o -I /usr/local/share/vc4inc/ -i vc4.qinc v3d.qasm
 # Disassemble to Assembler Codes in Text
-vc4dis -V -o qasm_sample1_dis.qasm -v data/qasm_sample1.bin
+vc4dis -V -o v3d.qasm.dis -v v3d.bin
+```
+
+* Uninstallation
+
+```bash
+sudo rm /usr/local/bin/vc4asm
+sudo rm /usr/local/bin/vc4dis
+sudo rm -r /usr/local/share/vc4inc
 ```

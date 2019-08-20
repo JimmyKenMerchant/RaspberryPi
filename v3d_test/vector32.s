@@ -171,7 +171,7 @@ macro32_debug r4, 100, 160
 	/* For Codes */
 
 	push {r0-r3}
-	ldr r0, DATA_QASM_SAMPLE1_SIZE
+	ldr r0, V3D_SAMPLE1_SIZE
 	mov r1, #4096
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -196,9 +196,9 @@ macro32_debug r4, 100, 184
 
 	push {r0-r3}
 	mov r0, r4
-	ldr r1, DATA_QASM_SAMPLE1
+	ldr r1, V3D_SAMPLE1
 	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
-	ldr r2, DATA_QASM_SAMPLE1_SIZE
+	ldr r2, V3D_SAMPLE1_SIZE
 	bl dma32_datacopy
 	pop {r0-r3}
 
@@ -326,6 +326,14 @@ os_fiq:
 .endif
 
 	pop {r0-r7,pc}
+
+/**
+ * Redifinition of Global Variables from v3d.qasm
+ */
+.globl V3D_SAMPLE1
+.globl V3D_SAMPLE1_SIZE
+V3D_SAMPLE1:      .word _V3D_SAMPLE1
+V3D_SAMPLE1_SIZE: .word _V3D_SAMPLE1_SIZE
 
 /**
  * Variables

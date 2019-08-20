@@ -1,10 +1,16 @@
 ##
-# sample1.qasm
+# v3d.qasm
 # Author: Kenta Ishii
 # License: MIT
 # License URL: https://opensource.org/licenses/MIT
 ##
 
+# Global Label
+.global _V3D_SAMPLE1
+# Global Symbol
+.global _V3D_SAMPLE1_SIZE, :_V3D_SAMPLE1_END - :_V3D_SAMPLE1
+
+:_V3D_SAMPLE1
 .set element,   r0
 .set temp,      r1
 .set multiple,  r2
@@ -38,3 +44,5 @@ nop
 .unset temp
 .unset multiple
 .unset base_addr
+
+:_V3D_SAMPLE1_END
