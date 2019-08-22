@@ -14,9 +14,10 @@
 .global _V3D_INPUT1_SIZE, :_V3D_INPUT1_END - :_V3D_INPUT1
 
 :_V3D_SAMPLE1
-	.set element,     r0
-	.set temp,        r1
-	.set multiple,    r2
+	.set num_element, r0
+	.set num_qpu,     r1
+	.set temp,        r2
+	.set multiple,    r3
 	.set output_addr, ra0
 	.set input_addr,  ra1
 	.set data1,       ra2
@@ -27,27 +28,35 @@
 
 	mov output_addr, unif # Get Base Address for Output
 	mov input_addr, unif  # Get Base Address for Input
-	mov element, elem_num
+	mov num_element, elem_num
+	mov num_qpu, qpu_num
 
-	# DMA Load Horizontal, Assuming VPM Read Vertical
-	mov vr_setup, vdr_setup_1(56)                       # Column Pitch (Distance) 4 Bytes * 14 Rows = 56 Bytes
-	mov vr_setup, vdr_setup_0(0, 14, 5, vdr_h32(1,0,0)) # Load to 14 Rows, 5 Columns, Fr. X 0, Y0, 1 Block Row-to-Row Stride
+	# Obtain Mutex
+	mov -, mutex_acq
+
+	# DMA Load (Horizontal)
+	# Load to 5 Rows, 14 Columns, 5-Deep Rows, Fr. X 0, Y0, 1 Block Row-to-Row Stride:
+	# However, VPM read is vertical. A set of 14 columns and 5-deep rows converts to a set of 5 columns and 14-deep rows.
+	mov vr_setup, vdr_setup_1(56) # Column Pitch (Distance) 4 Bytes * 14 Rows = 56 Bytes
+	mov vr_setup, vdr_setup_0(0, 14, 5, vdr_h32(1,0,0))
 	mov vr_addr, input_addr       # Element 0 Only, Other Elements Pass Through
-	mov -, vr_wait                # Finished when All Elements Done
 
-	# VPM Read Vertical
-	#mov vr_setup, vpm_setup(0, 1, h32(0))   # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
-	mov vr_setup, vpm_setup(0, 1, v32(0,0))  # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
+	# Finished when All Elements Done
+	mov -, vr_wait
+
+	# VPM Read (Vertical)
+	#mov vr_setup, vpm_setup(0, 1, h32(0))  # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
+	mov vr_setup, vpm_setup(0, 1, v32(0,0)) # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
 	mov data1, vpm
 	mov data2, vpm
 	mov data3, vpm
 	mov data4, vpm
 	mov data5, vpm
 
-	# VPM Write Vertical
+	# VPM Write (Vertical)
 	mov vw_setup, vpm_setup(0, 1, v32(0,0)) # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
-	mov vpm, element; mul24 multiple, element, element
-	mov vpm, multiple; mul24 multiple, multiple, element
+	mov vpm, num_element; mul24 multiple, num_element, num_element
+	mov vpm, num_qpu; mul24 multiple, multiple, num_element
 	mov vpm, multiple
 	mov vpm, data1
 	mov vpm, data2
@@ -55,12 +64,15 @@
 	mov vpm, data4
 	mov vpm, data5
 
-	# DMA Store
+	# DMA Store (Horizontal)
 	mov vw_setup, vdw_setup_1(0)
 	mov vw_setup, vdw_setup_0(16, 8, dma_h32(0,0)) # 16 Columns, 8-deep Rows
 	mov temp, 0
 	add vw_addr, output_addr, temp # Element 0 Only, Other Elements Pass Through
 	mov -, vw_wait                 # Finished when All Elements Done
+
+	# Release Mutex
+	mov mutex_rel, 1
 
 	# Thread End, 2 Delays after thrend
 	# Issuing interrupt seems to be used in the Mailbox command.
@@ -69,7 +81,8 @@
 	nop
 	nop
 
-.unset element
+.unset num_element
+.unset num_qpu
 .unset temp
 .unset multiple
 .unset output_addr

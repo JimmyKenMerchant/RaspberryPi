@@ -99,7 +99,7 @@ macro32_debug r4, 100, 88
 	/* For Array of Jobs to Execute User Program */
 
 	push {r0-r3}
-	mov r0, #8
+	mov r0, #16
 	mov r1, #16
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -221,13 +221,15 @@ macro32_debug_hexa r2, 0, 196, 256
 	str r3, [r2, #4]                     @ Address of Input to Second Item of Uniforms
 	str r1, [r0]                         @ Jobs (1) Address of Uniforms
 	str r4, [r0, #4]                     @ Jobs (2) Address of Codes
+	str r1, [r0, #8]                     @ Jobs (3) Address of Uniforms
+	str r4, [r0, #12]                    @ Jobs (4) Address of Codes
 
 	macro32_dsb ip
 
 	/* Execute User Program */
 
 	push {r0-r3}
-	mov r0, #1
+	mov r0, #2                           @ Two QPUs
 	ldr r1, addr_mail
 	bic r1, r1, #0xC0000000              @ Convert to ARM Address
 	mov r2, #0
