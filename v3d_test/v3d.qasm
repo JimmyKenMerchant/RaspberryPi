@@ -35,14 +35,12 @@
 	mov -, mutex_acq
 
 	# DMA Load (Horizontal)
-	# Load to 5 Rows, 14 Columns, 5-Deep Rows, Fr. X 0, Y0, 1 Block Row-to-Row Stride:
+	# Load to 14 Columns, 5-Deep Rows, Fr. X 0, Y0, 1 Block Row-to-Row Stride:
 	# However, VPM read is vertical. A set of 14 columns and 5-deep rows converts to a set of 5 columns and 14-deep rows.
 	mov vr_setup, vdr_setup_1(56) # Column Pitch (Distance) 4 Bytes * 14 Rows = 56 Bytes
 	mov vr_setup, vdr_setup_0(0, 14, 5, vdr_h32(1,0,0))
 	mov vr_addr, input_addr       # Element 0 Only, Other Elements Pass Through
-
-	# Finished when All Elements Done
-	mov -, vr_wait
+	mov -, vr_wait                # Finished when All Elements Done
 
 	# VPM Read (Vertical)
 	#mov vr_setup, vpm_setup(0, 1, h32(0))  # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
@@ -55,6 +53,10 @@
 
 	# VPM Write (Vertical)
 	mov vw_setup, vpm_setup(0, 1, v32(0,0)) # Element 0 Only, Other Elements Pass Through, Automatically Move to Next Column per Element
+	# Test Even or Odd of Element
+	and.setf -, num_element, 1
+	mov.ifnz data4, 0
+	mov.ifz data5, 0
 	mov vpm, num_element; mul24 multiple, num_element, num_element
 	mov vpm, num_qpu; mul24 multiple, multiple, num_element
 	mov vpm, multiple
@@ -63,6 +65,15 @@
 	mov vpm, data3
 	mov vpm, data4
 	mov vpm, data5
+
+	# Count Down
+	mov temp, 8
+	:_V3D_SAMPLE1_TESTLOOP
+		sub.setf temp, temp, 1
+		brr.anynz -, :_V3D_SAMPLE1_TESTLOOP # Branch Any Non-zero
+		nop                    # 3 Instructions Delay after Branch
+		nop
+		nop
 
 	# DMA Store (Horizontal)
 	mov vw_setup, vdw_setup_1(0)
