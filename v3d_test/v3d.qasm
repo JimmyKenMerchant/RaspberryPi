@@ -8,10 +8,12 @@
 # Global Label
 .global _V3D_SAMPLE1
 .global _V3D_INPUT1
+.global _V3D_SIN
 
 # Global Symbol
 .global _V3D_SAMPLE1_SIZE, :_V3D_SAMPLE1_END - :_V3D_SAMPLE1
 .global _V3D_INPUT1_SIZE, :_V3D_INPUT1_END - :_V3D_INPUT1
+.global _V3D_SIN_SIZE, :_V3D_SIN_END - :_V3D_SIN
 
 :_V3D_SAMPLE1
 	.set num_element, r0
@@ -112,3 +114,97 @@
 .int 0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D
 .int 0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D
 :_V3D_INPUT1_END
+
+:_V3D_SIN
+	.set radian,      r0
+	.set twonplus1,   r1
+	.set exponent,    r2
+	.set sign,        r3
+	.set power,       ra0
+	.set output_addr, ra1
+	.set factorial,   ra2
+	.set table,       ra3
+
+	# Taylor series of Sine (n=3)
+	# Sigma[n=0 to Infinity] ((-1)^n/(2n+1)!)*x^(2n+1)
+
+	# 2n+1 and Get Uniforms
+	mov radian, unif
+	mul24 twonplus1, elem_num, 2
+	add twonplus1, twonplus1, 1
+	mov output_addr, unif
+
+	# (-1)^n
+	and.setf -, elem_num, 1
+	mov.ifnz sign, -1
+	mov.ifz sign, 1
+	itof sign, sign
+
+	# (2n+1)!
+	sub.setf -, twonplus1, 7
+	mov.ifz factorial, 5040
+	sub.setf -, twonplus1, 5
+	mov.ifz factorial, 120
+	sub.setf -, twonplus1, 3
+	mov.ifz factorial, 6
+	sub.setf -, twonplus1, 1
+	mov.ifz factorial, 1
+
+	# x^(2n+1)
+	mov power, radian
+	sub.setf -, twonplus1, 7
+	fmul.ifnc power, power, radian
+	sub.setf -, twonplus1, 6
+	fmul.ifnc power, power, radian
+	sub.setf -, twonplus1, 5
+	fmul.ifnc power, power, radian
+	sub.setf -, twonplus1, 4
+	fmul.ifnc power, power, radian
+	sub.setf -, twonplus1, 3
+	fmul.ifnc power, power, radian
+	sub.setf -, twonplus1, 2
+	fmul.ifnc power, power, radian
+
+	.unset radian
+	.unset twonplus1
+	.set result, r0
+	.set temp, r1
+
+	# 1/(2n+1)! and Set VPM Write
+	itof recip, factorial
+	fmul power, power, sign
+	nop
+	fmul result, power, r4
+	mov table, result
+
+	# Summation
+	nop
+	mov temp, table << 1                    # Horizontal (Inter-element) Table Rotation, Its Element + 1
+	fadd result, result, temp
+	mov temp, table << 2                    # Horizontal (Inter-element) Table Rotation, Its Element + 2
+	fadd result, result, temp
+	mov temp, table << 3                    # Horizontal (Inter-element) Table Rotation, Its Element + 3
+	fadd result, result, temp
+
+	# VPM Write and DMA Store (Horizontal)
+	mov vw_setup, vpm_setup(0, 1, v32(0,0)) # VPM Write (Vertical)
+	mov vpm, result
+	mov vw_setup, vdw_setup_1(0)
+	mov vw_setup, vdw_setup_0(1, 1, dma_h32(0,0)) # 1 Columns, 1-deep Rows (Result: First Column)
+	mov vw_addr, output_addr
+	mov -, vw_wait                 # Finished when All Elements Done
+
+	thrend
+	#mov interrupt, 1
+	nop
+	nop
+
+.unset result
+.unset temp
+.unset exponent
+.unset sign
+.unset power
+.unset output_addr
+.unset factorial
+.unset table
+:_V3D_SIN_END
