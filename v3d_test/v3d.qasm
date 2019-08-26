@@ -135,9 +135,7 @@
 	mov output_addr, unif
 
 	# (-1)^n
-	and.setf -, elem_num, 1
-	mov.ifnz sign, -1
-	mov.ifz sign, 1
+	mov sign, [1,-1,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1] # Per-element 2-bit Integers
 	nop
 	itof sign, sign
 
