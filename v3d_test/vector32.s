@@ -254,7 +254,7 @@ macro32_debug_hexa r2, 0, 196, 256
 	ldr r3, addr_output
 
 	str r3, [r2, #4]                     @ Address of Output to First Item of Uniforms
-	mov r3, #0xBF000000                  @ Floating Point -0.5 in Hexadecimal Value
+	mov r3, #0x3E800000                  @ Floating Point -0.25 in Hexadecimal Value
 	str r3, [r2]
 	str r1, [r0]                         @ Jobs (1) Address of Uniforms
 	str r4, [r0, #4]                     @ Jobs (2) Address of Codes

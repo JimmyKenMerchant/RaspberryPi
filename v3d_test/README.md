@@ -20,7 +20,13 @@
 
 * V3D is the hardware acceleration for 3D graphics. V3D is based on QPU, a special processing unit. Read [the official GPU documentation](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2835/README.md). The documentation describes QPU. Note that GPU has several units including QPU. The firmware of the SoC, which is communicating with ARM via Mailbox, has be run by another processing unit, VPU. About VPU, check [Herman H Hermitage's Repository](https://github.com/hermanhermitage/videocoreiv).
 
-* BCM2835, BCM2836, and BCM2837 have 16 QPUs. A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
+* BCM2835, BCM2836, and BCM2837 have 12 QPUs. The control registers reserve up to 16 QPUs. However, the implementation contains 3 slices and 4 QPUs per slice. In default, if you set multiple user programs, the programs start from 12th QPU in decremental order.
+
+* A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
+
+* An element has two types of arithmetic logic units (ALUs), adder and multiplier. You can command both addition and multiplication in an instruction. Plus, a control signal (thread end, etc.) can be included in an instruction, which length is 64-bit. Up to single precision floating point and 32-bit unsigned/signed integer can be handled.
+
+* Note that the concept of threading is for the shading process between binning and rendering. A QPU can run one user program, which is also called as a thread. It means that you can run up to 12 user programs similarly.
 
 **About User Program**
 

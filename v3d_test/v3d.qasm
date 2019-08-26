@@ -119,8 +119,8 @@
 	.set radian,      r0
 	.set twonplus1,   r1
 	.set exponent,    r2
-	.set sign,        r3
-	.set power,       ra0
+	.set power,       r3
+	.set sign,        ra0
 	.set output_addr, ra1
 	.set factorial,   ra2
 	.set table,       ra3
@@ -138,6 +138,7 @@
 	and.setf -, elem_num, 1
 	mov.ifnz sign, -1
 	mov.ifz sign, 1
+	nop
 	itof sign, sign
 
 	# (2n+1)!
@@ -151,18 +152,12 @@
 	mov.ifz factorial, 1
 
 	# x^(2n+1)
-	mov power, radian
-	sub.setf -, twonplus1, 7
-	fmul.ifnc power, power, radian
-	sub.setf -, twonplus1, 6
-	fmul.ifnc power, power, radian
-	sub.setf -, twonplus1, 5
-	fmul.ifnc power, power, radian
-	sub.setf -, twonplus1, 4
-	fmul.ifnc power, power, radian
-	sub.setf -, twonplus1, 3
-	fmul.ifnc power, power, radian
-	sub.setf -, twonplus1, 2
+	mov power, radian; sub.setf -, twonplus1, 7
+	fmul.ifnc power, power, radian; sub.setf -, twonplus1, 6
+	fmul.ifnc power, power, radian; sub.setf -, twonplus1, 5
+	fmul.ifnc power, power, radian; sub.setf -, twonplus1, 4
+	fmul.ifnc power, power, radian; sub.setf -, twonplus1, 3
+	fmul.ifnc power, power, radian; sub.setf -, twonplus1, 2
 	fmul.ifnc power, power, radian
 
 	.unset radian
@@ -170,15 +165,16 @@
 	.set result, r0
 	.set temp, r1
 
-	# 1/(2n+1)! and Set VPM Write
-	itof recip, factorial
+	# 1/(2n+1)!
+	mov -, mutex_acq                        # Obtain Mutex for SFU
+	itof recip, factorial                   # Reciprocal (Multiplicative Inverse) Function, Taking 2 Instructions Delay
 	fmul power, power, sign
 	nop
 	fmul result, power, r4
 	mov table, result
+	mov mutex_rel, 1                        # Release Mutex
 
 	# Summation
-	nop
 	mov temp, table << 1                    # Horizontal (Inter-element) Table Rotation, Its Element + 1
 	fadd result, result, temp
 	mov temp, table << 2                    # Horizontal (Inter-element) Table Rotation, Its Element + 2
@@ -192,7 +188,7 @@
 	mov vw_setup, vdw_setup_1(0)
 	mov vw_setup, vdw_setup_0(1, 1, dma_h32(0,0)) # 1 Columns, 1-deep Rows (Result: First Column)
 	mov vw_addr, output_addr
-	mov -, vw_wait                 # Finished when All Elements Done
+	mov -, vw_wait                          # Finished when All Elements Done
 
 	thrend
 	#mov interrupt, 1
@@ -202,8 +198,8 @@
 .unset result
 .unset temp
 .unset exponent
-.unset sign
 .unset power
+.unset sign
 .unset output_addr
 .unset factorial
 .unset table
