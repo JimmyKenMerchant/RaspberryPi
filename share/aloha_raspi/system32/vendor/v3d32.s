@@ -288,6 +288,246 @@ macro32_debug temp, 400, 448
 .unreq dup_number_qpu
 
 
+/**
+ * Templates of Control Lists, Binning and Rendering
+ * The binning control list is for NV (no vertex shading) mode.
+ * So, fragment (pixel) shading will be executed. Shaded vertex data, including varyings, will be interpolated per pixel.
+ * V3D uses tiled rendering. Binning makes tiles for rendering afterward.
+ */
+.balign 4
+V3D32_CL_BIN_SIZE:                        .word V3D32_CL_BIN_END - V3D32_CL_BIN
+V3D32_CL_BIN_CONFIG:                      .word _V3D32_CL_BIN_CONFIG - V3D32_CL_BIN
+V3D32_CL_BIN_CONFIG_BITS:                 .word _V3D32_CL_BIN_CONFIG_BITS - V3D32_CL_BIN
+V3D32_CL_BIN_CLIP:                        .word _V3D32_CL_BIN_CLIP_WINDOW - V3D32_CL_BIN
+V3D32_CL_BIN_VIEWPORT_OFFSET:             .word _V3D32_CL_BIN_VIEWPORT_OFFSET - V3D32_CL_BIN
+V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES:      .word _V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES - V3D32_CL_BIN
+V3D32_CL_BIN_NV_SHADERSTATE:              .word _V3D32_CL_BIN_NV_SHADERSTATE - V3D32_CL_BIN
+V3D32_CL_RENDER_SIZE:                     .word V3D32_CL_RENDER_END - V3D32_CL_RENDER
+V3D32_CL_RENDER_CLEAR:                    .word _V3D32_CL_RENDER_CLEAR - V3D32_CL_RENDER
+V3D32_CL_RENDER_CONFIG:                   .word _V3D32_CL_RENDER_CONFIG - V3D32_CL_RENDER
+V3D32_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_CL_RENDER_STORE_TILEBUFFER_GENERAL - V3D32_CL_RENDER
+
+V3D32_CL_BIN:
+
+	/**
+	 * Tile Binning Mode Configuration
+	 * 1. Tile Allocation Memory Address (32-bit)
+	 * 2. Tile Allocation Memory Size (32-bit), 32 Bytes * Tiles in Default, Variable with Block Size
+	 * 3. Tile State Data Array Base Address (32-bit), 16-byte Aligned, 48 Bytes * Tiles
+	 * 4. Width in Tile (8-bit)
+	 * 5. Height in Tile (8-bit)
+	 * 6. Multisample Mode 4x (1-bit): For Anti-aliasing
+	 * 7. Tile Buffer 64-bit Color Depth (1-bit)
+	 * 8. Auto-initialize Tile State Data Array (1-bit)
+	 * 9. Tile Allocation Initial Block Size, 0 = 32 Bytes, 1 = 64 Bytes, 2 = 128 Bytes, 3 = 256 Bytes (2-bit)
+	 * 10. Tile Allocation Block Size, 0 = 32 Bytes, 1 = 64 Bytes, 2 = 128 Bytes, 3 = 256 Bytes (2-bit)
+	 * 11. Double-buffer in Non-ms (Non-multisample) Mode (1-bit)
+	 */
+	.byte v3d32_cl_config_binning
+_V3D32_CL_BIN_CONFIG:
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04
+
+	/**
+	 * Configuration Bits
+	 * 1. Enable Forward Facing Primitive (1-bit)
+	 * 2. Enable Reverse Facing Primitive (1-bit)
+	 * 3. Clockwise Primitives (1-bit)
+	 * 4. Enable Depth Offset (1-bit)
+	 * 5. Antialiased Points and Lines (1-bit)
+	 * 6. Coverage Read Type, 0 = 32-bit, 1 = 16-bit (1-bit)
+	 * 7. Rasteriser Oversample Mode, 0 = None, 1 = 4x, 2 = 16x (2-bit)
+	 * 8. Coverage Pipe Select (1-bit)
+	 * 9. Coverage Update Mode, 0 = Non-zero, 1 = Odd, 2 = Or, 3 = Zero (2-bit)
+	 * 10. Coverage Read Mode, 0 = Clear on Read, 1 = Leave on Read (1-bit)
+	 * 11. Depth Test Function, 0 = never, 1 = lt, 2 = eq, 3 = le, 4 = gt, 5 = ne, 6 = ge, 7 = always (3-bit)
+	 * 12. Z Updates Enable (1-bit)
+	 * 13. Early Z Enable (1-bit)
+	 * 14. Early Z Updates Enable (1-bit)
+	 * 15. Reserved (6-bit)
+	 */
+	.byte v3d32_cl_config
+_V3D32_CL_BIN_CONFIG_BITS:
+	.byte 0x01, 0x00, 0x00, 0x00, 0x90, 0x00
+
+	/**
+	 * Clip Window
+	 * 1. Clip Window Left Pixel Coordinate (Unsigned 16-bit)
+	 * 2. Clip Window Bottom Pixel Coordinate (Unsigned 16-bit)
+	 * 3. Clip Window Width in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
+	 * 4. Clip Window Height in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
+	 */
+	.byte v3d32_cl_clip_window
+_V3D32_CL_BIN_CLIP_WINDOW:
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Viewport Offset
+	 * 1. Viewport Centre X-coordinate (Signed 16-bit)
+	 * 2. Viewport Centre Y-coordinate (Signed 16-bit)
+	 */
+	.byte v3d32_cl_viewport_offset
+_V3D32_CL_BIN_VIEWPORT_OFFSET:
+	.byte 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Vertex Array Primitives
+	 * 1. Primitive Mode, 0 = Points, 1 = Lines, 2 = Line_loop, 3 = Line_strip, 4 = Triangles, 5 = Triangle_strip, 6 = Triangle_fan (8-bit)
+	 * 2. Number of Verties (32-bit)
+	 * 3. Index of First Vertex (32-bit)
+	 */
+	.byte v3d32_cl_vertexarray_primitives
+_V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES:
+	.byte 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	.byte v3d32_cl_start_tile_binning
+
+	/**
+	 * NV Shader State
+	 * 1. 16-byte Aligned Memory Address of Shader Recored (32-bit)
+	 */
+	.byte v3d32_cl_nv_shaderstate
+_V3D32_CL_BIN_NV_SHADERSTATE:
+	.word V3D32_NV_SHADERSTATE
+	.byte v3d32_cl_flush
+V3D32_CL_BIN_END:
+
+.balign 4
+V3D32_CL_RENDER:
+
+	/**
+	 * Clear Colors
+	 * 1. Clear Color, Two RGBA8888 or RGBA16161616 (64-bit)
+	 * 2. Clear Z (24-bit)
+	 * 3. Clear VG Mask (8-bit)
+	 * 4. Clear Stencil (8-bit)
+	 */
+	.byte v3d32_cl_clear
+_V3D32_CL_RENDER_CLEAR:
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Tile Rendering Mode Configuration
+	 * 1. Memory Address to Be Rendered (32-bit)
+	 * 2. Width in Pixels (16-bit)
+	 * 3. Height in Pixels (16-bit)
+	 * 4. Multisample Mode 4x (1-bit)
+	 * 5. Tile Buffer 64-bit Color Depth (HDR Mode) (1-bit)
+	 * 6. Non-HDR Frame Buffer Color Format, 0 = BGR565 Dithered, 1 = RGBA8888, 2 = BGR565 (2-bit)
+	 * 7. Decimate Mode, 0 = 1x, 1 = 4x, 2 = 16x (2-bit)
+	 * 8. Texture Memory Format, 0 = Linear, 1 = T-format, 2 = LT-format (2-bit)
+	 * 9. Enable VG Mask Buffer (1-bit)
+	 * 10. Select Coverage Mode (1-bit)
+	 * 11. Early Z Update Direction, 0 = lt/le, 1 = gt/ge (1-bit)
+	 * 12. Early Z / Early Coverage Disable (1-bit)
+	 * 13. Double-buffer in Non-ms (Non-multisample) Mode (1-bit)
+	 * 14. Reserved (3-bit)
+	 */
+	.byte v3d32_cl_config_rendering
+_V3D32_CL_RENDER_CONFIG:
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Tile Coordinates
+	 * 1. Tile Column Number (8-bit)
+	 * 2. Tile Row Number (8-bit)
+	 */
+	.byte v3d32_cl_tile_coordinates
+	.byte 0x00, 0x00
+
+	/**
+	 * Store Tile Buffer General
+	 * 1. Buffer to Store, 0 = None, 1 = Color, 2 = Z/Stencil, 3 = Z, 4 = VG-Mask, 5 = Full Dump (3-bit)
+	 * 2. Reserved (1-bit)
+	 * 3. Format, 0 = Raster Format, 1 = T-format, 2 = LT-format (2-bit)
+	 * ...
+	 */
+	.byte v3d32_cl_store_tilebuffer_general
+_V3D32_CL_RENDER_STORE_TILEBUFFER_GENERAL:
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+V3D32_CL_RENDER_END:
+
+V3D32_NV_SHADERSTATE_SIZE: .word V3D32_NV_SHADERSTATE_END - V3D32_NV_SHADERSTATE
+.balign 16
+V3D32_NV_SHADERSTATE:
+
+	/**
+	 * Flag Bits
+	 * Bit[3]: Clip Coordinates Header Included in Shaded Vertex Data
+	 * Bit[2]: Enable Clipping
+	 * Bit[1]: Point Size Included in Shaded Vertex Data
+	 * Bit[0]: Fragment Shader is Single Threaded
+	 */
+	.byte 0x00
+
+	/**
+	 * Shaded Vertex Data Stride in Bytes
+	 */
+	.byte 0x00
+
+	/**
+	 * Fragment Shader Number of Uniforms
+	 */
+	.byte 0x00
+
+	/**
+	 * Fragment Shader Number of Varyings
+	 */
+	.byte 0x00
+
+	/**
+	 * Fragment Shader Code Address
+	 */
+	.word 0x00000000
+
+	/**
+	 * Fragment Shader Uniforms Address
+	 */
+	.word V3D32_UNIFORMS
+
+	/**
+	 * Shaded Vertex Data Address
+	 */
+	.word 0x00000000
+V3D32_NV_SHADERSTATE_END:
+
+V3D32_UNIFORMS_SIZE: .word V3D32_UNIFORMS_END - V3D32_UNIFORMS
+.balign 16
+V3D32_UNIFORMS:
+	/**
+	 * Texture Config Parameter 0
+	 * Bit[31:12]: 4096-byte Aligned Texture Base Pointer
+	 * Bit[11:10]: Cache Swizzle
+	 * Bit[9]: Cube Map Mode
+	 * Bit[8]: Flip Texture Y Axis
+	 * Bit[7:4]: Texture Data Type
+	 * Bit[3:0]: Number of Mipmap Levels Minus 1
+	 */
+	.word 0x00000000
+
+	/**
+	 * Texture Config Parameter 1
+	 * Bit[31]: Bit[4] in Texture Config Parameter 0
+	 * Bit[30:20]: Image Height
+	 * Bit[19]: Flip ETC Y (per Block)
+	 * Bit[18:8]: Image Width
+	 * Bit[7]: Magnification Filter, 0 = LINEAR, 1 = NEAREST
+	 * Bit[6:4]: Minification Filter, 0 = LINEAR, 1 = NEAREST, 2 = NEAR_MIP_NEAR, 3 = NEAR_MIP_LIN, 4 = LIN_MIP_NEAR, 5 = LIN_MIP_LIN
+	 * Bit[3:2]: T Wrap Mode, 0 = Repeat, 1 = Clamp, 2 = Mirror, 3 = Border
+	 * Bit[1:0]: S Wrap Mode, 0 = Repeat, 1 = Clamp, 2 = Mirror, 3 = Border
+	 */
+	.word 0x00000000
+
+	/**
+	 * Texture Config Parameter 2 for Cube Map Mode
+	 */
+	.word 0x00000000
+
+	/**
+	 * Texture Config Parameter 3 for Cube Map Mode
+	 */
+	.word 0x00000000
+V3D32_UNIFORMS_END:
+
 .equ v3d32_base,    0x00C00000
 
 /* V3D Identity Registers */
@@ -398,28 +638,27 @@ macro32_debug temp, 400, 448
 .equ v3d32_errstat, 0x0F20 @ Miscellaneous Error Signals
 
 /* Control Record ID (Abstracted): Several ID are followed by Data Bytes */
-.equ v3d32_ctl_halt,                      0
-.equ v3d32_ctl_nop,                       1
-.equ v3d32_ctl_flush,                     4   @ Binning Only
-.equ v3d32_ctl_flush_all,                 5   @ Binning Only
-.equ v3d32_ctl_start_tile_binning,        6   @ Binning Only, Start Tile Binning
-.equ v3d32_ctl_inc_semaphore,             7   @ Increment Semaphore
-.equ v3d32_ctl_wait_semaphore,            8   @ Wait on Semaphore
-.equ v3d32_ctl_branch,                    16  @ Branch, Bit[31:0]: Absolute Branch Address
-.equ v3d32_ctl_branch_sublist,            17  @ Branch to Sub-list, Bit[31:0]: Tile Allocation Memory Address + (32 * (Tile Row * Column Length + Tile Column))
-.equ v3d32_ctl_return_sublist,            18  @ Return from Sub-list
-.equ v3d32_ctl_store_tilebuffer_multi,    24  @ Rendering Only, Store Multi-sample Tile Buffer, Place from First
-.equ v3d32_ctl_store_tilebuffer_multiend, 25  @ Rendering Only, Store Multi-sample Tile Buffer and Signal End of Frame, Place at Last
-.equ v3d32_ctl_store_tilebuffer_general,  28  @ Rendering Only, from Sub-list, Followed by 3-byte/6-byte Data (for full-dump), Place Before Multi-sample
-.equ v3d32_ctl_vertexarray_primitives,    33  @ Bit[71:40]: Index of First Vertex, Bit[39:8]: Length, Bit[7:0]: Primitive Mode, 0 = Points, 4 = Triangles, etc.
-.equ v3d32_ctl_nv_shaderstate,            65  @ No Vertex Shading State, Bit[31:0]: Memory Address of Shader Record (16-byte aligned)
-.equ v3d32_ctl_config,                    96  @ Followed by 6-byte Data
-.equ v3d32_ctl_points_size,               98  @ Bit[31:0]: Size in Single Precision Float
-.equ v3d32_ctl_line_width,                99  @ Bit[31:0]: Line Width in Single Precision Float
-.equ v3d32_ctl_clip_window,               102 @ Bit[63:48]: Height in Pixels, Bit[47:32]: Width in Pixels, Bit[31:16]: Bottom, Bit[15:0]: Left
-.equ v3d32_ctl_viewport_offset,           103 @ Bit[31:16]: Y-coordinate (Signed), Bit[15:0]: X-coordinate (Signed)
-.equ v3d32_ctl_config_binning,            112 @ Binning Only, Followed by 15-byte Data
-.equ v3d32_ctl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
-.equ v3d32_ctl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
-.equ v3d32_ctl_tile_coordinates,          115 @ Rendering Only, Bit[15:8]: Tile Row Number, Bit[7:0]: Tile Column Number
-
+.equ v3d32_cl_halt,                      0
+.equ v3d32_cl_nop,                       1
+.equ v3d32_cl_flush,                     4   @ Binning Only
+.equ v3d32_cl_flush_all,                 5   @ Binning Only
+.equ v3d32_cl_start_tile_binning,        6   @ Binning Only, Start Tile Binning
+.equ v3d32_cl_inc_semaphore,             7   @ Increment Semaphore
+.equ v3d32_cl_wait_semaphore,            8   @ Wait on Semaphore
+.equ v3d32_cl_branch,                    16  @ Branch, Bit[31:0]: Absolute Branch Address
+.equ v3d32_cl_branch_sublist,            17  @ Branch to Sub-list, Bit[31:0]: Tile Allocation Memory Address + (32 * (Tile Row * Column Length + Tile Column))
+.equ v3d32_cl_return_sublist,            18  @ Return from Sub-list
+.equ v3d32_cl_store_tilebuffer_multi,    24  @ Rendering Only, Store Multi-sample Tile Buffer, Place from First
+.equ v3d32_cl_store_tilebuffer_multiend, 25  @ Rendering Only, Store Multi-sample Tile Buffer and Signal End of Frame, Place at Last
+.equ v3d32_cl_store_tilebuffer_general,  28  @ Rendering Only, from Sub-list, Followed by 3-byte/6-byte Data (for full-dump), Place Before Multi-sample
+.equ v3d32_cl_vertexarray_primitives,    33  @ Bit[71:40]: Index of First Vertex, Bit[39:8]: Length, Bit[7:0]: Primitive Mode, 0 = Points, 4 = Triangles, etc.
+.equ v3d32_cl_nv_shaderstate,            65  @ No Vertex Shading State, Bit[31:0]: Memory Address of Shader Record (16-byte aligned)
+.equ v3d32_cl_config,                    96  @ Followed by 6-byte Data
+.equ v3d32_cl_points_size,               98  @ Bit[31:0]: Size in Single Precision Float
+.equ v3d32_cl_line_width,                99  @ Bit[31:0]: Line Width in Single Precision Float
+.equ v3d32_cl_clip_window,               102 @ Bit[63:48]: Height in Pixels, Bit[47:32]: Width in Pixels, Bit[31:16]: Bottom, Bit[15:0]: Left
+.equ v3d32_cl_viewport_offset,           103 @ Bit[31:16]: Y-coordinate (Signed), Bit[15:0]: X-coordinate (Signed)
+.equ v3d32_cl_config_binning,            112 @ Binning Only, Followed by 15-byte Data
+.equ v3d32_cl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
+.equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
+.equ v3d32_cl_tile_coordinates,          115 @ Rendering Only, Bit[15:8]: Tile Row Number, Bit[7:0]: Tile Column Number
