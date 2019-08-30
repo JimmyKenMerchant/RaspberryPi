@@ -17,6 +17,34 @@
 
 
 /**
+ * Store Word at Non-aligned Memory Address
+ */
+.macro macro32_store_word reg0_value reg1_addr:req
+	push {\reg0_value}
+	strb \reg0_value, [\reg1_addr]
+	lsr \reg0_value, \reg0_value, #8
+	strb \reg0_value, [\reg1_addr, #1]
+	lsr \reg0_value, \reg0_value, #8
+	strb \reg0_value, [\reg1_addr, #2]
+	lsr \reg0_value, \reg0_value, #8
+	strb \reg0_value, [\reg1_addr, #3]
+	pop {\reg0_value}
+.endm
+
+
+/**
+ * Store Half Word at Non-aligned Memory Address
+ */
+.macro macro32_store_hword reg0_value reg1_addr:req
+	push {\reg0_value}
+	strb \reg0_value, [\reg1_addr]
+	lsr \reg0_value, \reg0_value, #8
+	strb \reg0_value, [\reg1_addr, #1]
+	pop {\reg0_value}
+.endm
+
+
+/**
  * Print Hexadecimal Value
  * Use r0 for Array of Bytes, r1 for color, r2 for back_color, r3 for font. Otherwise, printed incorrectly.
  */

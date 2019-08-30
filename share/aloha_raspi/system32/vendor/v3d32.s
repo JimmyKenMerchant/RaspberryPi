@@ -289,33 +289,428 @@ macro32_debug temp, 400, 448
 
 
 /**
+ * function v3d32_init_cl_binning
+ * Initialize Control List for Binning Except NV Shader State
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Width in Pixel
+ * r1: Height in Pixel
+ * r2: 0 as Standard, 1 as Multisample
+ *
+ * Return: r0 (0 as sucess, 1 and 2 ad error)
+ * Error(1): Failure of Allocating Memory
+ * Error(2): Channel of DMA or CB Number is Overflow
+ */
+.globl v3d32_init_cl_binning
+v3d32_init_cl_binning:
+	/* Auto (Local) Variables, but just Aliases */
+	width         .req r0
+	height        .req r1
+	flag_multi    .req r2
+	num_tiles     .req r3
+	temp          .req r4
+	remain_width  .req r5
+	remain_height .req r6
+
+	push {r4-r6,lr}
+
+	/**
+	 * Calculate Number of Tiles
+	 */
+	
+	/* Check Remainder */
+	cmp flag_multi, #0
+	movne temp, #0b011111
+	moveq temp, #0b111111
+	tst width, temp
+	movne remain_width, #1
+	moveq remain_width, #0
+	tst height, temp
+	movne remain_height, #1
+	moveq remain_height, #0
+
+	cmp flag_multi, #0
+	lsrne width, width, #5           @ Divison by 32
+	lsrne height, height, #5         @ Divison by 32
+	lsreq width, width, #6           @ Divison by 64
+	lsreq height, height, #6         @ Divison by 64
+	add width, width, remain_width
+	add height, height, remain_height
+	mul num_tiles, width, height
+
+	.unreq remain_width
+	.unreq remain_height
+	ptr_ctl_list .req r5
+	offset       .req r6
+
+	/* Load Template of Control List */
+
+	push {r0-r3}
+	ldr r0, V3D32_TML_CL_BIN_SIZE
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov temp, r0
+	pop {r0-r3}
+
+	ble v3d32_init_cl_binning_error1
+	str temp, v3d32_init_cl_binning_handle0
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	mov ptr_ctl_list, r0
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, ptr_ctl_list
+	ldr r1, V3D32_TML_CL_BIN
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+	ldr r2, V3D32_TML_CL_BIN_SIZE
+	bl dma32_datacopy
+	cmp r0, #0
+	pop {r0-r3}
+
+	bne v3d32_init_cl_binning_error2
+
+	/* Tile Allocation Memory */
+
+	push {r0-r3}
+	lsl r0, num_tiles, #5            @ Multiply by 32
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov temp, r0
+	pop {r0-r3}
+
+	ble v3d32_init_cl_binning_error1
+	str temp, v3d32_init_cl_binning_handle1
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	mov temp, r0
+	pop {r0-r3}
+
+	str temp, V3D32_TILE_ALLOCATION
+
+	ldr offset, V3D32_TML_CL_BIN_CONFIG
+	add offset, ptr_ctl_list, offset
+	macro32_store_word temp, offset
+	add offset, offset, #4
+
+	/* Size of Tile Allocation Memory */
+	lsl temp, num_tiles, #5
+	macro32_store_word temp, offset
+	add offset, offset, #4
+
+	/* Tile State Data Array */
+
+	push {r0-r3}
+	mov r0, #48
+	mul r0, num_tiles, r0
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov temp, r0
+	pop {r0-r3}
+
+	ble v3d32_init_cl_binning_error1
+	str temp, v3d32_init_cl_binning_handle2
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	mov temp, r0
+	pop {r0-r3}
+
+	macro32_store_word temp, offset
+	add offset, offset, #4
+
+	/* Width in Tiles */
+	strb width, [offset]
+	add offset, offset, #1
+
+	/* Height in Tiles */
+	strb height, [offset]
+	add offset, offset, #1
+
+	/* Multisample */
+	and flag_multi, flag_multi, #0b1
+	strb flag_multi, [offset]
+
+	b v3d32_init_cl_binning_success
+
+	v3d32_init_cl_binning_error1:
+		mov r0, #1
+		b v3d32_init_cl_binning_common
+
+	v3d32_init_cl_binning_error2:
+		mov r0, #2
+		b v3d32_init_cl_binning_common
+
+	v3d32_init_cl_binning_success:
+		str ptr_ctl_list, V3D32_CL_BIN
+		mov r0, #0
+
+	v3d32_init_cl_binning_common:
+		macro32_dsb ip
+		pop {r4-r6,pc}
+
+.unreq width
+.unreq height
+.unreq flag_multi
+.unreq num_tiles
+.unreq temp
+.unreq ptr_ctl_list
+.unreq offset
+
+v3d32_init_cl_binning_handle0: .word 0x00
+v3d32_init_cl_binning_handle1: .word 0x00
+v3d32_init_cl_binning_handle2: .word 0x00
+
+V3D32_CL_BIN:          .word 0x00
+V3D32_TILE_ALLOCATION: .word 0x00
+V3D32_CL_RENDER:       .word 0x00
+
+
+/**
+ * function v3d32_init_cl_rendering
+ * Initialize Control List for Rendering
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of Buffer
+ * r1: Width in Pixel
+ * r2: Height in Pixel
+ * r3: 0 as Standard, 1 as Multisample
+ *
+ * Return: r0 (0 as sucess, 1 and 2 ad error)
+ * Error(1): Failure of Allocating Memory
+ * Error(2): Channel of DMA or CB Number is Overflow
+ */
+.globl v3d32_init_cl_rendering
+v3d32_init_cl_rendering:
+	/* Auto (Local) Variables, but just Aliases */
+	buffer        .req r0
+	width         .req r1
+	height        .req r2
+	flag_multi    .req r3
+	num_tiles     .req r4
+	remain_width  .req r5
+	remain_height .req r6
+	temp          .req r7
+	size          .req r8
+	width_tile    .req r9
+	height_tile   .req r10
+
+	push {r4-r10,lr}
+
+	/**
+	 * Calculate Number of Tiles
+	 */
+	
+	/* Check Remainder */
+	cmp flag_multi, #0
+	movne temp, #0b011111
+	moveq temp, #0b111111
+	tst width, temp
+	movne remain_width, #1
+	moveq remain_width, #0
+	tst height, temp
+	movne remain_height, #1
+	moveq remain_height, #0
+
+	cmp flag_multi, #0
+	lsrne width, width, #5           @ Divison by 32
+	lsrne height, height, #5         @ Divison by 32
+	lsreq width, width, #6           @ Divison by 64
+	lsreq height, height, #6         @ Divison by 64
+	add width, width, remain_width
+	add height, height, remain_height
+	mul num_tiles, width, height
+
+	.unreq remain_width
+	.unreq remain_height
+	ptr_ctl_list .req r5
+	offset       .req r6
+
+	/* Calculate Size of Control List */
+	mov temp, #9                          @ Calculate Size for Multi-sample Tile Buffer on Each Tile
+	mul size, num_tiles, temp
+	ldr temp, V3D32_TML_CL_RENDER_SIZE    @ Size for Template
+	add size, temp, size
+
+	/* Load Template of Control List  */
+
+	push {r0-r3}
+	mov r0, size 
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov temp, r0
+	pop {r0-r3}
+
+	ble v3d32_init_cl_rendering_error1
+	str temp, v3d32_init_cl_rendering_handle0
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	mov ptr_ctl_list, r0
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r0, ptr_ctl_list
+	ldr r1, V3D32_TML_CL_RENDER
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+	mov r2, size
+	bl dma32_datacopy
+	cmp r0, #0
+	pop {r0-r3}
+
+	bne v3d32_init_cl_rendering_error2
+
+	ldr offset, V3D32_TML_CL_RENDER_CONFIG
+	add offset, ptr_ctl_list, offset
+	macro32_store_word buffer, offset
+	add offset, offset, #4
+
+	/* Width in Pixel */
+	macro32_store_hword width, offset
+	add offset, offset, #2
+
+	/* Height in Pixel */
+	macro32_store_hword height, offset
+	add offset, offset, #2
+
+	/* Multisample */
+	and flag_multi, flag_multi, #0b1
+	strb flag_multi, [offset]
+
+	.unreq width
+	.unreq height
+	i .req r1
+	j .req r2
+
+	/* Tiles */
+	ldr offset, V3D32_TML_CL_RENDER_END
+	add offset, ptr_ctl_list, offset
+
+	ldr buffer, V3D32_TILE_ALLOCATION
+	mov i, #0                        @ Column (Width of Tiles)
+	mov j, #0                        @ Row (Height of Tiles)
+
+	v3d32_init_cl_rendering_tiles:
+		cmp j, height_tile
+		bhs v3d32_init_cl_rendering_success
+
+		v3d32_init_cl_rendering_tiles_column:
+			cmp i, width_tile
+			addhs j, j, #1
+			bhs v3d32_init_cl_rendering_tiles
+
+			/**
+			 * Tile Coordinates
+			 * 1. Tile Column Number (8-bit)
+			 * 2. Tile Row Number (8-bit)
+			 */
+			mov temp, #v3d32_cl_tile_coordinates
+			strb temp, [offset]
+			add offset, offset, #1
+			strb i, [offset]
+			add offset, offset, #1
+			strb j, [offset]
+			add offset, offset, #1
+
+			mov temp, #v3d32_cl_branch_sublist
+			strb temp, [offset]
+			add offset, offset, #1
+
+			mul temp, j, width_tile
+			add temp, temp, i
+			lsl temp, temp, #5                          @ Multiply by 32
+			add temp, temp, buffer
+			macro32_store_word temp, offset
+			add offset, offset, #4
+
+			/* Last Tile Should Be with Signal End */
+			add i, i, #1                                @ Increment
+			add j, j, #1                                @ Increment for Test
+			cmp i, width_tile
+			cmphs j, height_tile
+			movhs temp, #v3d32_cl_store_tilebuffer_multiend
+			movlo temp, #v3d32_cl_store_tilebuffer_multi
+			sub j, j, #1                                @ Decrement to Retrieve
+			strb temp, [offset]
+			add offset, offset, #1
+
+			b v3d32_init_cl_rendering_tiles_column
+
+	v3d32_init_cl_rendering_error1:
+		mov r0, #1
+		b v3d32_init_cl_rendering_common
+
+	v3d32_init_cl_rendering_error2:
+		mov r0, #2
+		b v3d32_init_cl_rendering_common
+
+	v3d32_init_cl_rendering_success:
+		str ptr_ctl_list, V3D32_CL_RENDER
+		mov r0, #0
+
+	v3d32_init_cl_rendering_common:
+		macro32_dsb ip
+		pop {r4-r10,pc}
+
+.unreq buffer
+.unreq i
+.unreq j
+.unreq flag_multi
+.unreq num_tiles
+.unreq ptr_ctl_list
+.unreq offset
+.unreq temp
+.unreq size
+.unreq width_tile
+.unreq height_tile
+
+v3d32_init_cl_rendering_handle0: .word 0x00
+
+
+/**
  * Templates of Control Lists, Binning and Rendering
  * The binning control list is for NV (no vertex shading) mode.
  * So, fragment (pixel) shading will be executed. Shaded vertex data, including varyings, will be interpolated per pixel.
  * V3D uses tiled rendering. Binning makes tiles for rendering afterward.
  */
 .balign 4
-V3D32_CL_BIN_SIZE:                        .word V3D32_CL_BIN_END - V3D32_CL_BIN
-V3D32_CL_BIN_CONFIG:                      .word _V3D32_CL_BIN_CONFIG - V3D32_CL_BIN
-V3D32_CL_BIN_CONFIG_BITS:                 .word _V3D32_CL_BIN_CONFIG_BITS - V3D32_CL_BIN
-V3D32_CL_BIN_CLIP:                        .word _V3D32_CL_BIN_CLIP_WINDOW - V3D32_CL_BIN
-V3D32_CL_BIN_VIEWPORT_OFFSET:             .word _V3D32_CL_BIN_VIEWPORT_OFFSET - V3D32_CL_BIN
-V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES:      .word _V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES - V3D32_CL_BIN
-V3D32_CL_BIN_NV_SHADERSTATE:              .word _V3D32_CL_BIN_NV_SHADERSTATE - V3D32_CL_BIN
-V3D32_CL_RENDER_SIZE:                     .word V3D32_CL_RENDER_END - V3D32_CL_RENDER
-V3D32_CL_RENDER_CLEAR:                    .word _V3D32_CL_RENDER_CLEAR - V3D32_CL_RENDER
-V3D32_CL_RENDER_CONFIG:                   .word _V3D32_CL_RENDER_CONFIG - V3D32_CL_RENDER
-V3D32_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_CL_RENDER_STORE_TILEBUFFER_GENERAL - V3D32_CL_RENDER
+V3D32_TML_CL_BIN_SIZE:                        .word V3D32_TML_CL_BIN_END - V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CONFIG:                      .word _V3D32_TML_CL_BIN_CONFIG - V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CONFIG_BITS:                 .word _V3D32_TML_CL_BIN_CONFIG_BITS - V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CLIP:                        .word _V3D32_TML_CL_BIN_CLIP_WINDOW - V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_VIEWPORT_OFFSET:             .word _V3D32_TML_CL_BIN_VIEWPORT_OFFSET - V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:      .word _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES - V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_NV_SHADERSTATE:              .word _V3D32_TML_CL_BIN_NV_SHADERSTATE - V3D32_TML_CL_BIN
+V3D32_TML_CL_RENDER_SIZE:                     .word V3D32_TML_CL_RENDER_END - V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_CLEAR:                    .word _V3D32_TML_CL_RENDER_CLEAR - V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_CONFIG:                   .word _V3D32_TML_CL_RENDER_CONFIG - V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL - V3D32_TML_CL_RENDER
 
-V3D32_CL_BIN:
+V3D32_TML_CL_BIN:
 
 	/**
 	 * Tile Binning Mode Configuration
 	 * 1. Tile Allocation Memory Address (32-bit)
 	 * 2. Tile Allocation Memory Size (32-bit), 32 Bytes * Tiles in Default, Variable with Block Size
 	 * 3. Tile State Data Array Base Address (32-bit), 16-byte Aligned, 48 Bytes * Tiles
-	 * 4. Width in Tile (8-bit)
-	 * 5. Height in Tile (8-bit)
+	 * 4. Width in Tile (8-bit): 32 Pixels in Multisample mode, 64 Pixels in Non-multisample Mode
+	 * 5. Height in Tile (8-bit): 32 Pixels in Multisample mode, 64 Pixels in Non-multisample Modee
 	 * 6. Multisample Mode 4x (1-bit): For Anti-aliasing
 	 * 7. Tile Buffer 64-bit Color Depth (1-bit)
 	 * 8. Auto-initialize Tile State Data Array (1-bit)
@@ -324,7 +719,7 @@ V3D32_CL_BIN:
 	 * 11. Double-buffer in Non-ms (Non-multisample) Mode (1-bit)
 	 */
 	.byte v3d32_cl_config_binning
-_V3D32_CL_BIN_CONFIG:
+_V3D32_TML_CL_BIN_CONFIG:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04
 
 	/**
@@ -346,7 +741,7 @@ _V3D32_CL_BIN_CONFIG:
 	 * 15. Reserved (6-bit)
 	 */
 	.byte v3d32_cl_config
-_V3D32_CL_BIN_CONFIG_BITS:
+_V3D32_TML_CL_BIN_CONFIG_BITS:
 	.byte 0x01, 0x00, 0x00, 0x00, 0x90, 0x00
 
 	/**
@@ -357,7 +752,7 @@ _V3D32_CL_BIN_CONFIG_BITS:
 	 * 4. Clip Window Height in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
 	 */
 	.byte v3d32_cl_clip_window
-_V3D32_CL_BIN_CLIP_WINDOW:
+_V3D32_TML_CL_BIN_CLIP_WINDOW:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 	/**
@@ -366,7 +761,7 @@ _V3D32_CL_BIN_CLIP_WINDOW:
 	 * 2. Viewport Centre Y-coordinate (Signed 16-bit)
 	 */
 	.byte v3d32_cl_viewport_offset
-_V3D32_CL_BIN_VIEWPORT_OFFSET:
+_V3D32_TML_CL_BIN_VIEWPORT_OFFSET:
 	.byte 0x00, 0x00, 0x00, 0x00
 
 	/**
@@ -376,7 +771,7 @@ _V3D32_CL_BIN_VIEWPORT_OFFSET:
 	 * 3. Index of First Vertex (32-bit)
 	 */
 	.byte v3d32_cl_vertexarray_primitives
-_V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES:
+_V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	.byte 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 	.byte v3d32_cl_start_tile_binning
@@ -386,13 +781,13 @@ _V3D32_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	 * 1. 16-byte Aligned Memory Address of Shader Recored (32-bit)
 	 */
 	.byte v3d32_cl_nv_shaderstate
-_V3D32_CL_BIN_NV_SHADERSTATE:
-	.word V3D32_NV_SHADERSTATE
+_V3D32_TML_CL_BIN_NV_SHADERSTATE:
+	.word V3D32_TML_NV_SHADERSTATE
 	.byte v3d32_cl_flush
-V3D32_CL_BIN_END:
+V3D32_TML_CL_BIN_END:
 
 .balign 4
-V3D32_CL_RENDER:
+V3D32_TML_CL_RENDER:
 
 	/**
 	 * Clear Colors
@@ -402,7 +797,7 @@ V3D32_CL_RENDER:
 	 * 4. Clear Stencil (8-bit)
 	 */
 	.byte v3d32_cl_clear
-_V3D32_CL_RENDER_CLEAR:
+_V3D32_TML_CL_RENDER_CLEAR:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 	/**
@@ -423,7 +818,7 @@ _V3D32_CL_RENDER_CLEAR:
 	 * 14. Reserved (3-bit)
 	 */
 	.byte v3d32_cl_config_rendering
-_V3D32_CL_RENDER_CONFIG:
+_V3D32_TML_CL_RENDER_CONFIG:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 	/**
@@ -442,13 +837,17 @@ _V3D32_CL_RENDER_CONFIG:
 	 * ...
 	 */
 	.byte v3d32_cl_store_tilebuffer_general
-_V3D32_CL_RENDER_STORE_TILEBUFFER_GENERAL:
+_V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-V3D32_CL_RENDER_END:
+V3D32_TML_CL_RENDER_END:
 
-V3D32_NV_SHADERSTATE_SIZE: .word V3D32_NV_SHADERSTATE_END - V3D32_NV_SHADERSTATE
+
+/**
+ * Templates of NV Shader State
+ */
+V3D32_TML_NV_SHADERSTATE_SIZE: .word V3D32_TML_NV_SHADERSTATE_END - V3D32_TML_NV_SHADERSTATE
 .balign 16
-V3D32_NV_SHADERSTATE:
+V3D32_TML_NV_SHADERSTATE:
 
 	/**
 	 * Flag Bits
@@ -482,17 +881,21 @@ V3D32_NV_SHADERSTATE:
 	/**
 	 * Fragment Shader Uniforms Address
 	 */
-	.word V3D32_UNIFORMS
+	.word V3D32_TML_UNIFORMS
 
 	/**
 	 * Shaded Vertex Data Address
 	 */
 	.word 0x00000000
-V3D32_NV_SHADERSTATE_END:
+V3D32_TML_NV_SHADERSTATE_END:
 
-V3D32_UNIFORMS_SIZE: .word V3D32_UNIFORMS_END - V3D32_UNIFORMS
+
+/**
+ * Templates of Uniforms (Texture Setup)
+ */
+V3D32_TML_UNIFORMS_SIZE: .word V3D32_TML_UNIFORMS_END - V3D32_TML_UNIFORMS
 .balign 16
-V3D32_UNIFORMS:
+V3D32_TML_UNIFORMS:
 	/**
 	 * Texture Config Parameter 0
 	 * Bit[31:12]: 4096-byte Aligned Texture Base Pointer
@@ -526,7 +929,7 @@ V3D32_UNIFORMS:
 	 * Texture Config Parameter 3 for Cube Map Mode
 	 */
 	.word 0x00000000
-V3D32_UNIFORMS_END:
+V3D32_TML_UNIFORMS_END:
 
 .equ v3d32_base,    0x00C00000
 
