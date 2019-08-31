@@ -41,14 +41,14 @@ __attribute__((noinline)) uint32 _flush_doublebuffer()
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front, uint32 address_buffer_back )
+__attribute__((noinline)) uint32 _set_doublebuffer( _RenderBuffer* address_buffer_front, _RenderBuffer* address_buffer_back )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x04");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer )
+__attribute__((noinline)) uint32 _attach_buffer( _RenderBuffer* address_buffer )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x05");

@@ -93,13 +93,13 @@ int32 _user_start()
 
 	float32 angle = 0.0;
 
-	ObjArray renderbuffer = (ObjArray)heap32_malloc( 3 );
+	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 3 );
 
-	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[1] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[1] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[2] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[2] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[2], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 
 	_attach_buffer( renderbuffer[0] );
@@ -133,11 +133,11 @@ int32 _user_start()
 		//_attach_buffer( FB32_DOUBLEBUFFER_BACK );
 		/*
 		fb32_image(
-			_load_32( renderbuffer[2] + draw32_renderbuffer_addr ),
+			renderbuffer[2]->addr,
 			0,
 			0,
-			_load_32( renderbuffer[2] + draw32_renderbuffer_width ),
-			_load_32( renderbuffer[2] + draw32_renderbuffer_height ),
+			renderbuffer[2]->width,
+			renderbuffer[2]->height,
 			0,
 			0,
 			0,

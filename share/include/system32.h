@@ -182,9 +182,20 @@
 
 #define obj uint32
 
+#define _wordsizeof(x) ( sizeof(x) + 3 ) / 4
+
 /* Pointers, Array of Address of Data */
 #define String char8*
 #define ObjArray obj*
+
+/* Structs */
+typedef struct draw32_RenderBuffer {
+	uint32 addr;
+	uint32 width;
+	uint32 height;
+	uint32 size;
+	uint32 depth;
+} _RenderBuffer;
 
 /**
  * System calls
@@ -761,9 +772,9 @@ extern uint32 vfp64_f64tou32( float64 value );
  * system32/library/fb32.s
  ********************************/
 
-extern uint32 FB32_FRAMEBUFFER;
-extern uint32 FB32_DOUBLEBUFFER_BACK;
-extern uint32 FB32_DOUBLEBUFFER_FRONT;
+extern _RenderBuffer* FB32_FRAMEBUFFER;
+extern _RenderBuffer* FB32_DOUBLEBUFFER_BACK;
+extern _RenderBuffer* FB32_DOUBLEBUFFER_FRONT;
 
 extern uint32 FB32_ADDR;
 extern uint32 FB32_WIDTH;
@@ -795,7 +806,7 @@ __attribute__((noinline)) uint32 _flush_doublebuffer();
  * Return: 0 as success, 1 as error
  * Error(1): When buffer is not Defined
  */
-__attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front, uint32 address_buffer_back );
+__attribute__((noinline)) uint32 _set_doublebuffer( _RenderBuffer* address_buffer_front, _RenderBuffer* address_buffer_back );
 
 
 /**
@@ -804,7 +815,7 @@ __attribute__((noinline)) uint32 _set_doublebuffer( uint32 address_buffer_front,
  * Return: 0 as sucess, 1 as error
  * Error(1): Buffer In is not Defined
  */
-__attribute__((noinline)) uint32 _attach_buffer( uint32 address_buffer );
+__attribute__((noinline)) uint32 _attach_buffer( _RenderBuffer* address_buffer );
 
 
 /* Regular Functions */
@@ -1094,8 +1105,8 @@ extern uint32 str32_strlen
 
 extern uint32 draw32_antialias
 (
-	uint32 address_buffer_result,
-	uint32 address_buffer_base
+	_RenderBuffer* address_buffer_result,
+	_RenderBuffer* address_buffer_base
 );
 
 /**
@@ -1107,7 +1118,7 @@ extern uint32 draw32_antialias
  */
 extern uint32 draw32_fill_color
 (
-	uint32 address_buffer,
+	_RenderBuffer* address_buffer,
 	uint32 background_color
 );
 
@@ -1121,8 +1132,8 @@ extern uint32 draw32_fill_color
  */
 extern uint32 draw32_mask_image
 (
-	uint32 address_buffer_mask,
-	uint32 address_buffer_base,
+	_RenderBuffer* address_buffer_mask,
+	_RenderBuffer* address_buffer_base,
 	int32 x_coord, // Mask
 	int32 y_coord // Mask
 );
@@ -1163,6 +1174,7 @@ enum Object_draw32_renderbuffer {
 	draw32_renderbuffer_depth  = 16 // Offset in Object
 };
 
+
 /**
  * Initialize Renderbuffer
  *
@@ -1175,7 +1187,7 @@ enum Object_draw32_renderbuffer {
  */
 extern uint32 draw32_renderbuffer_init
 (
-	uint32 address_buffer,
+	_RenderBuffer* address_buffer,
 	uint32 width,
 	uint32 height,
 	uint32 depth
@@ -1189,7 +1201,7 @@ extern uint32 draw32_renderbuffer_init
  */
 extern uint32 draw32_renderbuffer_free
 (
-	uint32 address_buffer
+	_RenderBuffer* address_buffer
 );
 
 /* End Object_draw32_renderbuffer */
@@ -1203,8 +1215,8 @@ extern uint32 draw32_renderbuffer_free
  */
 extern uint32 draw32_copy
 (
-	uint32 address_buffer_in,
-	uint32 address_buffer_out
+	_RenderBuffer* address_buffer_in,
+	_RenderBuffer* address_buffer_out
 );
 
 

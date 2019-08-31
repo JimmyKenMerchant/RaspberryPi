@@ -30,11 +30,11 @@ int32 _user_start()
 
 	uint32 time = 0;
 
-	ObjArray renderbuffer = (ObjArray)heap32_malloc( 2 );
+	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 2 );
 
-	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[1] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[1] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 
 	_attach_buffer( renderbuffer[0] );

@@ -32,20 +32,20 @@ int32 _user_start()
 	float32 tan = math32_tan( end_radian );
 	uchar8 random = _random( 127 );
 
-	ObjArray renderbuffer = (ObjArray)heap32_malloc( 6 );
+	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 6 );
 
-	renderbuffer[0] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[1] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[1] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[2] = (obj)heap32_malloc( draw32_renderbuffer );
-	draw32_renderbuffer_init( renderbuffer[2], 300, 300, 32 );
-	renderbuffer[3] = (obj)heap32_malloc( draw32_renderbuffer );
-	draw32_renderbuffer_init( renderbuffer[3], 300, 300, 32 );
-	renderbuffer[4] = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer[2] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
+	draw32_renderbuffer_init( renderbuffer[2], 300, 300, FB32_DEPTH );
+	renderbuffer[3] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
+	draw32_renderbuffer_init( renderbuffer[3], 300, 300, FB32_DEPTH );
+	renderbuffer[4] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[4], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[5] = (obj)heap32_malloc( draw32_renderbuffer );
-	draw32_renderbuffer_init( renderbuffer[5], 300, 300, 32 );
+	renderbuffer[5] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
+	draw32_renderbuffer_init( renderbuffer[5], 300, 300, FB32_DEPTH );
 
 	_attach_buffer( renderbuffer[0] );
 	fb32_clear_color( COLOR32_NAVYBLUE );
@@ -140,11 +140,11 @@ int32 _user_start()
 	_attach_buffer( FB32_DOUBLEBUFFER_BACK );
 
 	fb32_image(
-			_load_32( renderbuffer[2] + draw32_renderbuffer_addr ),
+			renderbuffer[2]->addr,
 			100,
 			100,
-			_load_32( renderbuffer[2] + draw32_renderbuffer_width ),
-			_load_32( renderbuffer[2] + draw32_renderbuffer_height ),
+			renderbuffer[2]->width,
+			renderbuffer[2]->height,
 			0,
 			0,
 			0,
@@ -154,11 +154,11 @@ int32 _user_start()
 	draw32_antialias( renderbuffer[5], renderbuffer[3] );
 
 	fb32_image(
-			_load_32( renderbuffer[5] + draw32_renderbuffer_addr ),
+			renderbuffer[5]->addr,
 			100,
 			100,
-			_load_32( renderbuffer[5] + draw32_renderbuffer_width ),
-			_load_32( renderbuffer[5] + draw32_renderbuffer_height ),
+			renderbuffer[5]->width,
+			renderbuffer[5]->height,
 			0,
 			0,
 			0,
@@ -177,11 +177,11 @@ int32 _user_start()
 		draw32_copy( FB32_DOUBLEBUFFER_FRONT, renderbuffer[4] );
 
 		fb32_image(
-				_load_32( renderbuffer[4] + draw32_renderbuffer_addr ),
+				renderbuffer[4]->addr,
 				0,
 				0,
-				_load_32( renderbuffer[4] + draw32_renderbuffer_width ),
-				_load_32( renderbuffer[4] + draw32_renderbuffer_height ),
+				renderbuffer[4]->width,
+				renderbuffer[4]->height,
 				0,
 				10,
 				10,

@@ -298,7 +298,7 @@ macro32_debug temp, 400, 448
  * r1: Height in Pixel
  * r2: 0 as Standard, 1 as Multisample
  *
- * Return: r0 (0 as sucess, 1 and 2 ad error)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Failure of Allocating Memory
  * Error(2): Channel of DMA or CB Number is Overflow
  */
@@ -318,7 +318,7 @@ v3d32_init_cl_binning:
 	/**
 	 * Calculate Number of Tiles
 	 */
-	
+
 	/* Check Remainder */
 	cmp flag_multi, #0
 	movne temp, #0b011111
@@ -489,7 +489,7 @@ V3D32_CL_RENDER:       .word 0x00
  * r2: Height in Pixel
  * r3: 0 as Standard, 1 as Multisample
  *
- * Return: r0 (0 as sucess, 1 and 2 ad error)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Failure of Allocating Memory
  * Error(2): Channel of DMA or CB Number is Overflow
  */
@@ -513,7 +513,7 @@ v3d32_init_cl_rendering:
 	/**
 	 * Calculate Number of Tiles
 	 */
-	
+
 	/* Check Remainder */
 	cmp flag_multi, #0
 	movne temp, #0b011111
@@ -548,7 +548,7 @@ v3d32_init_cl_rendering:
 	/* Load Template of Control List  */
 
 	push {r0-r3}
-	mov r0, size 
+	mov r0, size
 	mov r1, #16
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -599,7 +599,7 @@ v3d32_init_cl_rendering:
 	j .req r2
 
 	/* Tiles */
-	ldr offset, V3D32_TML_CL_RENDER_END
+	ldr offset, V3D32_TML_CL_RENDER_SIZE
 	add offset, ptr_ctl_list, offset
 
 	ldr buffer, V3D32_TILE_ALLOCATION
@@ -684,25 +684,147 @@ v3d32_init_cl_rendering_handle0: .word 0x00
 
 
 /**
+ * function v3d32_texture_object
+ * Make Texture Object
+ * This function is using a vendor-implemented process.
+ * Note that this function makes new memory space to be needed to make the memory free.
+ *
+ * The Texture Object is structured by 4 words as decribed below.
+ *
+ * struct TextureObject {
+ *  uint32 address_gpu_memory;
+ *  uint32 handle_gpu_memory;
+ *  uint16 width_in_pixel;
+ *  uint16 height_in_pixel;
+ *  uint8  mipmap_level_minus_1;
+ *  uint8  reserve_0;
+ *  uint16 reserve_1;
+ * };
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
+ * r1: Bit[31:16]:Width in Pixel, Bit[15:0]: Height in Pixel
+ * r2: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
+ * r3: Number of Mipmap Levels Minus 1
+ *
+ * Return: r0 (Pointer of Texture Object, 0 as error)
+ * Error(0): Failure of Allocating Memory
+ */
+.globl v3d32_texture_object
+v3d32_texture_object:
+	/* Auto (Local) Variables, but just Aliases */
+	ptr_texture  .req r0
+	width_height .req r1
+	per_pixel    .req r2
+	num_mipmap   .req r3
+	size         .req r4
+	object       .req r5
+
+	push {r4-r5,lr}
+
+	b v3d32_texture_object_success
+
+	v3d32_texture_object_error:
+		mov r0, #0
+		b v3d32_texture_object_common
+
+	v3d32_texture_object_success:
+		mov r0, object
+
+	v3d32_texture_object_common:
+		macro32_dsb ip
+		pop {r4-r5,pc}
+
+.unreq ptr_texture
+.unreq width_height
+.unreq per_pixel
+.unreq num_mipmap
+.unreq size
+.unreq object
+
+
+/**
+ * function v3d32_vertex_object
+ * Make Vertex Object
+ * This function is using a vendor-implemented process.
+ * Note that this function makes new memory space to be needed to make the memory free.
+ *
+ * The Vertex Object is structured by 3 words as decribed below.
+ *
+ * struct VertexObject {
+ *  uint32 address_gpu_memory;
+ *  uint32 handle_gpu_memory;
+ *  uint16 number_varyings;
+ *  uint16 stride;
+ * };
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
+ * r1: Bit[31:16]:Width in Pixel, Bit[15:0]: Height in Pixel
+ * r2: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
+ * r3: Number of Mipmap Levels Minus 1
+ *
+ * Return: r0 (Pointer of Texture Object, 0 as error)
+ * Error(0): Failure of Allocating Memory
+ */
+.globl v3d32_vertex_object
+v3d32_vertex_object:
+	/* Auto (Local) Variables, but just Aliases */
+	ptr_texture  .req r0
+	width_height .req r1
+	per_pixel    .req r2
+	num_mipmap   .req r3
+	size         .req r4
+	object       .req r5
+
+	push {r4-r5,lr}
+
+	b v3d32_vertex_object_success
+
+	v3d32_vertex_object_error:
+		mov r0, #0
+		b v3d32_vertex_object_common
+
+	v3d32_vertex_object_success:
+		mov r0, object
+
+	v3d32_vertex_object_common:
+		macro32_dsb ip
+		pop {r4-r5,pc}
+
+.unreq ptr_texture
+.unreq width_height
+.unreq per_pixel
+.unreq num_mipmap
+.unreq size
+.unreq object
+
+
+V3D32_TML_CL_BIN:                             .word _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_SIZE:                        .word _V3D32_TML_CL_BIN_END - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CONFIG:                      .word _V3D32_TML_CL_BIN_CONFIG - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CONFIG_BITS:                 .word _V3D32_TML_CL_BIN_CONFIG_BITS - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CLIP:                        .word _V3D32_TML_CL_BIN_CLIP_WINDOW - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_VIEWPORT_OFFSET:             .word _V3D32_TML_CL_BIN_VIEWPORT_OFFSET - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:      .word _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_NV_SHADERSTATE:              .word _V3D32_TML_CL_BIN_NV_SHADERSTATE - _V3D32_TML_CL_BIN
+V3D32_TML_CL_RENDER:                          .word _V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_SIZE:                     .word _V3D32_TML_CL_RENDER_END - _V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_CLEAR:                    .word _V3D32_TML_CL_RENDER_CLEAR - _V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_CONFIG:                   .word _V3D32_TML_CL_RENDER_CONFIG - _V3D32_TML_CL_RENDER
+V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL - _V3D32_TML_CL_RENDER
+V3D32_NV_SHADERSTATE:                         .word _V3D32_NV_SHADERSTATE
+V3D32_UNIFORMS:                               .word _V3D32_UNIFORMS
+
+.section	.data
+.balign 4
+/**
  * Templates of Control Lists, Binning and Rendering
  * The binning control list is for NV (no vertex shading) mode.
  * So, fragment (pixel) shading will be executed. Shaded vertex data, including varyings, will be interpolated per pixel.
  * V3D uses tiled rendering. Binning makes tiles for rendering afterward.
  */
-.balign 4
-V3D32_TML_CL_BIN_SIZE:                        .word V3D32_TML_CL_BIN_END - V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_CONFIG:                      .word _V3D32_TML_CL_BIN_CONFIG - V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_CONFIG_BITS:                 .word _V3D32_TML_CL_BIN_CONFIG_BITS - V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_CLIP:                        .word _V3D32_TML_CL_BIN_CLIP_WINDOW - V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_VIEWPORT_OFFSET:             .word _V3D32_TML_CL_BIN_VIEWPORT_OFFSET - V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:      .word _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES - V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_NV_SHADERSTATE:              .word _V3D32_TML_CL_BIN_NV_SHADERSTATE - V3D32_TML_CL_BIN
-V3D32_TML_CL_RENDER_SIZE:                     .word V3D32_TML_CL_RENDER_END - V3D32_TML_CL_RENDER
-V3D32_TML_CL_RENDER_CLEAR:                    .word _V3D32_TML_CL_RENDER_CLEAR - V3D32_TML_CL_RENDER
-V3D32_TML_CL_RENDER_CONFIG:                   .word _V3D32_TML_CL_RENDER_CONFIG - V3D32_TML_CL_RENDER
-V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL - V3D32_TML_CL_RENDER
-
-V3D32_TML_CL_BIN:
+_V3D32_TML_CL_BIN:
 
 	/**
 	 * Tile Binning Mode Configuration
@@ -782,12 +904,12 @@ _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	 */
 	.byte v3d32_cl_nv_shaderstate
 _V3D32_TML_CL_BIN_NV_SHADERSTATE:
-	.word V3D32_TML_NV_SHADERSTATE
+	.word _V3D32_NV_SHADERSTATE
 	.byte v3d32_cl_flush
-V3D32_TML_CL_BIN_END:
+_V3D32_TML_CL_BIN_END:
 
 .balign 4
-V3D32_TML_CL_RENDER:
+_V3D32_TML_CL_RENDER:
 
 	/**
 	 * Clear Colors
@@ -839,15 +961,14 @@ _V3D32_TML_CL_RENDER_CONFIG:
 	.byte v3d32_cl_store_tilebuffer_general
 _V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-V3D32_TML_CL_RENDER_END:
+_V3D32_TML_CL_RENDER_END:
 
 
 /**
- * Templates of NV Shader State
+ * NV Shader State
  */
-V3D32_TML_NV_SHADERSTATE_SIZE: .word V3D32_TML_NV_SHADERSTATE_END - V3D32_TML_NV_SHADERSTATE
 .balign 16
-V3D32_TML_NV_SHADERSTATE:
+_V3D32_NV_SHADERSTATE:
 
 	/**
 	 * Flag Bits
@@ -881,21 +1002,19 @@ V3D32_TML_NV_SHADERSTATE:
 	/**
 	 * Fragment Shader Uniforms Address
 	 */
-	.word V3D32_TML_UNIFORMS
+	.word _V3D32_UNIFORMS
 
 	/**
 	 * Shaded Vertex Data Address
 	 */
 	.word 0x00000000
-V3D32_TML_NV_SHADERSTATE_END:
 
 
 /**
- * Templates of Uniforms (Texture Setup)
+ * Uniforms (Texture Setup)
  */
-V3D32_TML_UNIFORMS_SIZE: .word V3D32_TML_UNIFORMS_END - V3D32_TML_UNIFORMS
 .balign 16
-V3D32_TML_UNIFORMS:
+_V3D32_UNIFORMS:
 	/**
 	 * Texture Config Parameter 0
 	 * Bit[31:12]: 4096-byte Aligned Texture Base Pointer
@@ -929,7 +1048,13 @@ V3D32_TML_UNIFORMS:
 	 * Texture Config Parameter 3 for Cube Map Mode
 	 */
 	.word 0x00000000
-V3D32_TML_UNIFORMS_END:
+
+.section	.vendor_system32  
+
+
+/**
+ * Definition Used for V3D
+ */
 
 .equ v3d32_base,    0x00C00000
 

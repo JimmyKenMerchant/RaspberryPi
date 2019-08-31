@@ -89,7 +89,7 @@ int32 _user_start()
 	int32 neighbor_horizontal;
 
 	// Initialize Buffer
-	obj renderbuffer = (obj)heap32_malloc( draw32_renderbuffer );
+	_RenderBuffer *renderbuffer = (_RenderBuffer*)heap32_malloc( draw32_renderbuffer );
 	draw32_renderbuffer_init( renderbuffer, TFT_WIDTH, TFT_HEIGHT, 16 );
 	_attach_buffer( renderbuffer );
 
@@ -166,7 +166,7 @@ int32 _user_start()
 				arm32_dsb();
 			}
 		}
-		_tftimage_type1( _load_32( renderbuffer + draw32_renderbuffer_addr ), TFT_SIZE );
+		_tftimage_type1( renderbuffer->addr, TFT_SIZE );
 		_sleep( 250000 );
 	}
 
