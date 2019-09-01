@@ -289,8 +289,8 @@ macro32_debug temp, 400, 448
 
 
 /**
- * function v3d32_init_cl_binning
- * Initialize Control List for Binning Except NV Shader State
+ * function v3d32_make_cl_binning
+ * Initialize Control List for Binning
  * This function is using a vendor-implemented process.
  *
  * Parameters
@@ -302,47 +302,32 @@ macro32_debug temp, 400, 448
  * Error(1): Failure of Allocating Memory
  * Error(2): Channel of DMA or CB Number is Overflow
  */
-.globl v3d32_init_cl_binning
-v3d32_init_cl_binning:
+.globl v3d32_make_cl_binning
+v3d32_make_cl_binning:
 	/* Auto (Local) Variables, but just Aliases */
 	width         .req r0
 	height        .req r1
 	flag_multi    .req r2
 	num_tiles     .req r3
 	temp          .req r4
-	remain_width  .req r5
-	remain_height .req r6
+	ptr_ctl_list  .req r5
+	offset        .req r6
+	width_tile    .req r7
+	height_tile   .req r8
 
-	push {r4-r6,lr}
+	push {r4-r8,lr}
 
-	/**
-	 * Calculate Number of Tiles
-	 */
-
-	/* Check Remainder */
+	/* Calculate Number of Tiles */
 	cmp flag_multi, #0
-	movne temp, #0b011111
-	moveq temp, #0b111111
-	tst width, temp
-	movne remain_width, #1
-	moveq remain_width, #0
-	tst height, temp
-	movne remain_height, #1
-	moveq remain_height, #0
-
-	cmp flag_multi, #0
-	lsrne width, width, #5           @ Divison by 32
-	lsrne height, height, #5         @ Divison by 32
-	lsreq width, width, #6           @ Divison by 64
-	lsreq height, height, #6         @ Divison by 64
-	add width, width, remain_width
-	add height, height, remain_height
-	mul num_tiles, width, height
-
-	.unreq remain_width
-	.unreq remain_height
-	ptr_ctl_list .req r5
-	offset       .req r6
+	addne width_tile, width, #31          @ Addition for Remainder
+	lsrne width_tile, width_tile, #5      @ Divison by 32
+	addne height_tile, height, #31        @ Addition for Remainder
+	lsrne height_tile, height_tile, #5    @ Divison by 32
+	addeq width_tile, width, #63          @ Addition for Remainder
+	lsreq width_tile, width_tile, #6      @ Divison by 64
+	addeq height_tile, height, #63        @ Addition for Remainder
+	lsreq height_tile, height_tile, #6    @ Divison by 64
+	mul num_tiles, width_tile, height_tile
 
 	/* Load Template of Control List */
 
@@ -355,8 +340,8 @@ v3d32_init_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_init_cl_binning_error1
-	str temp, v3d32_init_cl_binning_handle0
+	ble v3d32_make_cl_binning_error1
+	str temp, v3d32_make_cl_binning_handle0
 
 	push {r0-r3}
 	mov r0, temp
@@ -373,7 +358,7 @@ v3d32_init_cl_binning:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_init_cl_binning_error2
+	bne v3d32_make_cl_binning_error2
 
 	/* Tile Allocation Memory */
 
@@ -386,8 +371,8 @@ v3d32_init_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_init_cl_binning_error1
-	str temp, v3d32_init_cl_binning_handle1
+	ble v3d32_make_cl_binning_error1
+	str temp, v3d32_make_cl_binning_handle1
 
 	push {r0-r3}
 	mov r0, temp
@@ -403,7 +388,7 @@ v3d32_init_cl_binning:
 	add offset, offset, #4
 
 	/* Size of Tile Allocation Memory */
-	lsl temp, num_tiles, #5
+	lsl temp, num_tiles, #5          @ Multiply by 32
 	macro32_store_word temp, offset
 	add offset, offset, #4
 
@@ -419,8 +404,8 @@ v3d32_init_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_init_cl_binning_error1
-	str temp, v3d32_init_cl_binning_handle2
+	ble v3d32_make_cl_binning_error1
+	str temp, v3d32_make_cl_binning_handle2
 
 	push {r0-r3}
 	mov r0, temp
@@ -443,23 +428,31 @@ v3d32_init_cl_binning:
 	and flag_multi, flag_multi, #0b1
 	strb flag_multi, [offset]
 
-	b v3d32_init_cl_binning_success
+	/* Width and Height of Clip Window */
+	ldr offset, V3D32_TML_CL_BIN_CLIP_WINDOW
+	add offset, ptr_ctl_list, offset
+	add offset, offset, #4
+	macro32_store_hword width, offset
+	add offset, offset, #2
+	macro32_store_hword height, offset
 
-	v3d32_init_cl_binning_error1:
+	b v3d32_make_cl_binning_success
+
+	v3d32_make_cl_binning_error1:
 		mov r0, #1
-		b v3d32_init_cl_binning_common
+		b v3d32_make_cl_binning_common
 
-	v3d32_init_cl_binning_error2:
+	v3d32_make_cl_binning_error2:
 		mov r0, #2
-		b v3d32_init_cl_binning_common
+		b v3d32_make_cl_binning_common
 
-	v3d32_init_cl_binning_success:
+	v3d32_make_cl_binning_success:
 		str ptr_ctl_list, V3D32_CL_BIN
 		mov r0, #0
 
-	v3d32_init_cl_binning_common:
+	v3d32_make_cl_binning_common:
 		macro32_dsb ip
-		pop {r4-r6,pc}
+		pop {r4-r8,pc}
 
 .unreq width
 .unreq height
@@ -468,10 +461,12 @@ v3d32_init_cl_binning:
 .unreq temp
 .unreq ptr_ctl_list
 .unreq offset
+.unreq width_tile
+.unreq height_tile
 
-v3d32_init_cl_binning_handle0: .word 0x00
-v3d32_init_cl_binning_handle1: .word 0x00
-v3d32_init_cl_binning_handle2: .word 0x00
+v3d32_make_cl_binning_handle0: .word 0x00
+v3d32_make_cl_binning_handle1: .word 0x00
+v3d32_make_cl_binning_handle2: .word 0x00
 
 V3D32_CL_BIN:          .word 0x00
 V3D32_TILE_ALLOCATION: .word 0x00
@@ -479,7 +474,7 @@ V3D32_CL_RENDER:       .word 0x00
 
 
 /**
- * function v3d32_init_cl_rendering
+ * function v3d32_make_cl_rendering
  * Initialize Control List for Rendering
  * This function is using a vendor-implemented process.
  *
@@ -493,16 +488,16 @@ V3D32_CL_RENDER:       .word 0x00
  * Error(1): Failure of Allocating Memory
  * Error(2): Channel of DMA or CB Number is Overflow
  */
-.globl v3d32_init_cl_rendering
-v3d32_init_cl_rendering:
+.globl v3d32_make_cl_rendering
+v3d32_make_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
 	buffer        .req r0
 	width         .req r1
 	height        .req r2
 	flag_multi    .req r3
 	num_tiles     .req r4
-	remain_width  .req r5
-	remain_height .req r6
+	ptr_ctl_list  .req r5
+	offset        .req r6
 	temp          .req r7
 	size          .req r8
 	width_tile    .req r9
@@ -510,34 +505,17 @@ v3d32_init_cl_rendering:
 
 	push {r4-r10,lr}
 
-	/**
-	 * Calculate Number of Tiles
-	 */
-
-	/* Check Remainder */
+	/* Calculate Number of Tiles */
 	cmp flag_multi, #0
-	movne temp, #0b011111
-	moveq temp, #0b111111
-	tst width, temp
-	movne remain_width, #1
-	moveq remain_width, #0
-	tst height, temp
-	movne remain_height, #1
-	moveq remain_height, #0
-
-	cmp flag_multi, #0
-	lsrne width, width, #5           @ Divison by 32
-	lsrne height, height, #5         @ Divison by 32
-	lsreq width, width, #6           @ Divison by 64
-	lsreq height, height, #6         @ Divison by 64
-	add width, width, remain_width
-	add height, height, remain_height
-	mul num_tiles, width, height
-
-	.unreq remain_width
-	.unreq remain_height
-	ptr_ctl_list .req r5
-	offset       .req r6
+	addne width_tile, width, #31          @ Addition for Remainder
+	lsrne width_tile, width_tile, #5      @ Divison by 32
+	addne height_tile, height, #31        @ Addition for Remainder
+	lsrne height_tile, height_tile, #5    @ Divison by 32
+	addeq width_tile, width, #63          @ Addition for Remainder
+	lsreq width_tile, width_tile, #6      @ Divison by 64
+	addeq height_tile, height, #63        @ Addition for Remainder
+	lsreq height_tile, height_tile, #6    @ Divison by 64
+	mul num_tiles, width_tile, height_tile
 
 	/* Calculate Size of Control List */
 	mov temp, #9                          @ Calculate Size for Multi-sample Tile Buffer on Each Tile
@@ -556,8 +534,8 @@ v3d32_init_cl_rendering:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_init_cl_rendering_error1
-	str temp, v3d32_init_cl_rendering_handle0
+	ble v3d32_make_cl_rendering_error1
+	str temp, v3d32_make_cl_rendering_handle0
 
 	push {r0-r3}
 	mov r0, temp
@@ -574,7 +552,7 @@ v3d32_init_cl_rendering:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_init_cl_rendering_error2
+	bne v3d32_make_cl_rendering_error2
 
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
 	add offset, ptr_ctl_list, offset
@@ -606,14 +584,14 @@ v3d32_init_cl_rendering:
 	mov i, #0                        @ Column (Width of Tiles)
 	mov j, #0                        @ Row (Height of Tiles)
 
-	v3d32_init_cl_rendering_tiles:
+	v3d32_make_cl_rendering_tiles:
 		cmp j, height_tile
-		bhs v3d32_init_cl_rendering_success
+		bhs v3d32_make_cl_rendering_success
 
-		v3d32_init_cl_rendering_tiles_column:
+		v3d32_make_cl_rendering_tiles_column:
 			cmp i, width_tile
 			addhs j, j, #1
-			bhs v3d32_init_cl_rendering_tiles
+			bhs v3d32_make_cl_rendering_tiles
 
 			/**
 			 * Tile Coordinates
@@ -650,21 +628,21 @@ v3d32_init_cl_rendering:
 			strb temp, [offset]
 			add offset, offset, #1
 
-			b v3d32_init_cl_rendering_tiles_column
+			b v3d32_make_cl_rendering_tiles_column
 
-	v3d32_init_cl_rendering_error1:
+	v3d32_make_cl_rendering_error1:
 		mov r0, #1
-		b v3d32_init_cl_rendering_common
+		b v3d32_make_cl_rendering_common
 
-	v3d32_init_cl_rendering_error2:
+	v3d32_make_cl_rendering_error2:
 		mov r0, #2
-		b v3d32_init_cl_rendering_common
+		b v3d32_make_cl_rendering_common
 
-	v3d32_init_cl_rendering_success:
+	v3d32_make_cl_rendering_success:
 		str ptr_ctl_list, V3D32_CL_RENDER
 		mov r0, #0
 
-	v3d32_init_cl_rendering_common:
+	v3d32_make_cl_rendering_common:
 		macro32_dsb ip
 		pop {r4-r10,pc}
 
@@ -680,131 +658,181 @@ v3d32_init_cl_rendering:
 .unreq width_tile
 .unreq height_tile
 
-v3d32_init_cl_rendering_handle0: .word 0x00
+v3d32_make_cl_rendering_handle0: .word 0x00
 
 
 /**
- * function v3d32_texture_object
+ * function v3d32_set_nv_shader_state
+ * Set NV Shader State
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of Fragment Shader Code Address
+ * r1: Pointer of Shaded Vertex Data Address
+ * r2: Fragment Shader Number of Varyings
+ * r3: Shaded Vertex Data Stride in Bytes
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_set_nv_shader_state
+v3d32_set_nv_shader_state:
+	/* Auto (Local) Variables, but just Aliases */
+	shader        .req r0
+	vertex        .req r1
+	num_varyings  .req r2
+	stride_vertex .req r3
+	shader_state  .req r4
+
+	push {r4,lr}
+
+	ldr shader_state, V3D32_NV_SHADERSTATE
+	str shader, [shader_state, #4]
+	str vertex, [shader_state, #12]
+	strb num_varyings, [shader_state, #3]
+	strb stride_vertex, [shader_state, #1]
+
+	v3d32_set_nv_shader_state_success:
+		mov r0, #0
+
+	v3d32_set_nv_shader_state_common:
+		macro32_dsb ip
+		pop {r4,pc}
+
+.unreq shader
+.unreq vertex
+.unreq num_varyings
+.unreq stride_vertex
+.unreq shader_state
+
+
+/**
+ * function v3d32_texture_init
  * Make Texture Object
  * This function is using a vendor-implemented process.
  * Note that this function makes new memory space to be needed to make the memory free.
  *
  * The Texture Object is structured by 4 words as decribed below.
  *
- * struct TextureObject {
+ * struct v3d32_Texture {
  *  uint32 address_gpu_memory;
  *  uint32 handle_gpu_memory;
  *  uint16 width_in_pixel;
  *  uint16 height_in_pixel;
+ *  uint8  flag_16;
  *  uint8  mipmap_level_minus_1;
- *  uint8  reserve_0;
  *  uint16 reserve_1;
- * };
+ * } _Texture;
  *
  * Parameters
  * r0: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
- * r1: Bit[31:16]:Width in Pixel, Bit[15:0]: Height in Pixel
+ * r1: Bit[31:16]: Width in Pixel, Bit[15:0]: Height in Pixel
  * r2: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
  * r3: Number of Mipmap Levels Minus 1
  *
  * Return: r0 (Pointer of Texture Object, 0 as error)
  * Error(0): Failure of Allocating Memory
  */
-.globl v3d32_texture_object
-v3d32_texture_object:
+.globl v3d32_texture_init
+v3d32_texture_init:
 	/* Auto (Local) Variables, but just Aliases */
-	ptr_texture  .req r0
-	width_height .req r1
-	per_pixel    .req r2
-	num_mipmap   .req r3
-	size         .req r4
-	object       .req r5
+	texture    .req r0
+	width      .req r1
+	flag_16    .req r2
+	num_mipmap .req r3
+	height     .req r4
+	size       .req r5
+	object     .req r6
+	temp       .req r7
 
-	push {r4-r5,lr}
+	push {r4-r7,lr}
 
-	b v3d32_texture_object_success
+	/* Make Object */
 
-	v3d32_texture_object_error:
+	push {r0-r3}
+	mov r0, #4
+	bl heap32_malloc
+	cmp r0, #0
+	mov object, r0
+	pop {r0-r3}
+
+	beq v3d32_texture_init_error
+
+	/* Extract Width in Pixel, Height in Pixel*/
+
+	mov temp, #0x00FF
+	orr temp, temp, #0xFF00
+	and height, width, temp
+	lsr width, width, #16
+
+	strh width, [object, #8]
+	strh height, [height, #10]
+	strb flag_16, [object, #12]
+	strb num_mipmap, [object, #13]
+
+	/* Sieze in Bytes */
+	mul size, width, height
+	cmp flag_16, #0
+	lsleq size, size, #2                  @ Multiply by 4
+	lslne size, size, #1                  @ Multiply by 2
+
+	/* Make Buffer for Texture at GPU Side */
+
+	push {r0-r3}
+	mov r0, size
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	mov temp, r0
+	pop {r0-r3}
+
+	str temp, [object, #4]                @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	mov temp, r0
+	pop {r0-r3}
+
+	push {r0-r3}
+	mov r1, texture
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+	mov r0, temp
+	mov r2, size
+	bl dma32_datacopy
+	cmp r0, #0
+	pop {r0-r3}
+
+	movne temp, #0                        @ GPU Memory Addres Goes 0 If Datacopy Fails
+	str temp, [object]
+
+	b v3d32_texture_init_success
+
+	v3d32_texture_init_error:
 		mov r0, #0
-		b v3d32_texture_object_common
+		b v3d32_texture_init_common
 
-	v3d32_texture_object_success:
+	v3d32_texture_init_success:
 		mov r0, object
 
-	v3d32_texture_object_common:
+	v3d32_texture_init_common:
 		macro32_dsb ip
-		pop {r4-r5,pc}
+		pop {r4-r7,pc}
 
-.unreq ptr_texture
-.unreq width_height
-.unreq per_pixel
+.unreq texture
+.unreq width
+.unreq flag_16
 .unreq num_mipmap
+.unreq height
 .unreq size
 .unreq object
-
-
-/**
- * function v3d32_vertex_object
- * Make Vertex Object
- * This function is using a vendor-implemented process.
- * Note that this function makes new memory space to be needed to make the memory free.
- *
- * The Vertex Object is structured by 3 words as decribed below.
- *
- * struct VertexObject {
- *  uint32 address_gpu_memory;
- *  uint32 handle_gpu_memory;
- *  uint16 number_varyings;
- *  uint16 stride;
- * };
- *
- * Parameters
- * r0: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
- * r1: Bit[31:16]:Width in Pixel, Bit[15:0]: Height in Pixel
- * r2: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
- * r3: Number of Mipmap Levels Minus 1
- *
- * Return: r0 (Pointer of Texture Object, 0 as error)
- * Error(0): Failure of Allocating Memory
- */
-.globl v3d32_vertex_object
-v3d32_vertex_object:
-	/* Auto (Local) Variables, but just Aliases */
-	ptr_texture  .req r0
-	width_height .req r1
-	per_pixel    .req r2
-	num_mipmap   .req r3
-	size         .req r4
-	object       .req r5
-
-	push {r4-r5,lr}
-
-	b v3d32_vertex_object_success
-
-	v3d32_vertex_object_error:
-		mov r0, #0
-		b v3d32_vertex_object_common
-
-	v3d32_vertex_object_success:
-		mov r0, object
-
-	v3d32_vertex_object_common:
-		macro32_dsb ip
-		pop {r4-r5,pc}
-
-.unreq ptr_texture
-.unreq width_height
-.unreq per_pixel
-.unreq num_mipmap
-.unreq size
-.unreq object
+.unreq temp
 
 
 V3D32_TML_CL_BIN:                             .word _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_SIZE:                        .word _V3D32_TML_CL_BIN_END - _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_CONFIG:                      .word _V3D32_TML_CL_BIN_CONFIG - _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_CONFIG_BITS:                 .word _V3D32_TML_CL_BIN_CONFIG_BITS - _V3D32_TML_CL_BIN
-V3D32_TML_CL_BIN_CLIP:                        .word _V3D32_TML_CL_BIN_CLIP_WINDOW - _V3D32_TML_CL_BIN
+V3D32_TML_CL_BIN_CLIP_WINDOW:                 .word _V3D32_TML_CL_BIN_CLIP_WINDOW - _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_VIEWPORT_OFFSET:             .word _V3D32_TML_CL_BIN_VIEWPORT_OFFSET - _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:      .word _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES - _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_NV_SHADERSTATE:              .word _V3D32_TML_CL_BIN_NV_SHADERSTATE - _V3D32_TML_CL_BIN
@@ -1049,7 +1077,7 @@ _V3D32_UNIFORMS:
 	 */
 	.word 0x00000000
 
-.section	.vendor_system32  
+.section	.vendor_system32
 
 
 /**
