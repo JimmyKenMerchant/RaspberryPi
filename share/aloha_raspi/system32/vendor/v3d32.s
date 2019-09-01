@@ -707,9 +707,9 @@ v3d32_set_nv_shader_state:
 
 /**
  * function v3d32_texture_init
- * Make Texture Object
+ * Set Texture Object
  * This function is using a vendor-implemented process.
- * Note that this function makes new memory space to be needed to make the memory free.
+ * Note that this function reserves new memory space at GPU side.
  *
  * The Texture Object is structured by 4 words as decribed below.
  *
@@ -724,52 +724,41 @@ v3d32_set_nv_shader_state:
  * } _Texture;
  *
  * Parameters
- * r0: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
- * r1: Bit[31:16]: Width in Pixel, Bit[15:0]: Height in Pixel
- * r2: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
- * r3: Number of Mipmap Levels Minus 1
+ * r0: Pointer of Texture Object to Set
+ * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
+ * r2: Width in Pixel
+ * r3: Height in Pixel
+ * r4: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
+ * r5: Number of Mipmap Levels Minus 1
  *
- * Return: r0 (Pointer of Texture Object, 0 as error)
- * Error(0): Failure of Allocating Memory
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Error in Response from Mailbox
+ * Error(2): Channel of DMA or CB Number is Overflow
  */
 .globl v3d32_texture_init
 v3d32_texture_init:
 	/* Auto (Local) Variables, but just Aliases */
-	texture    .req r0
-	width      .req r1
-	flag_16    .req r2
-	num_mipmap .req r3
-	height     .req r4
-	size       .req r5
-	object     .req r6
+	object     .req r0
+	texture    .req r1
+	width      .req r2
+	height     .req r3
+	flag_16    .req r4
+	num_mipmap .req r5
+	size       .req r6
 	temp       .req r7
 
 	push {r4-r7,lr}
 
-	/* Make Object */
-
-	push {r0-r3}
-	mov r0, #4
-	bl heap32_malloc
-	cmp r0, #0
-	mov object, r0
-	pop {r0-r3}
-
-	beq v3d32_texture_init_error
-
-	/* Extract Width in Pixel, Height in Pixel*/
-
-	mov temp, #0x00FF
-	orr temp, temp, #0xFF00
-	and height, width, temp
-	lsr width, width, #16
+	add sp, sp, #20                       @ r4-r7 and lr offset 20 bytes
+	pop {flag_16,num_mipmap}              @ Get Fifth and Sixth Arguments
+	sub sp, sp, #28
 
 	strh width, [object, #8]
 	strh height, [height, #10]
 	strb flag_16, [object, #12]
 	strb num_mipmap, [object, #13]
 
-	/* Sieze in Bytes */
+	/* Size in Bytes */
 	mul size, width, height
 	cmp flag_16, #0
 	lsleq size, size, #2                  @ Multiply by 4
@@ -782,16 +771,22 @@ v3d32_texture_init:
 	mov r1, #16
 	mov r2, #0xC
 	bl bcm32_allocate_memory
+	cmp r0, #-1
 	mov temp, r0
 	pop {r0-r3}
+
+	beq v3d32_texture_init_error1
 
 	str temp, [object, #4]                @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
 
 	push {r0-r3}
 	mov r0, temp
 	bl bcm32_lock_memory
+	cmp r0, #-1
 	mov temp, r0
 	pop {r0-r3}
+
+	beq v3d32_texture_init_error1
 
 	push {r0-r3}
 	mov r1, texture
@@ -802,28 +797,95 @@ v3d32_texture_init:
 	cmp r0, #0
 	pop {r0-r3}
 
-	movne temp, #0                        @ GPU Memory Addres Goes 0 If Datacopy Fails
-	str temp, [object]
+	bne v3d32_texture_init_error2
+
+	str temp, [object]                    @ Error Number (0xFFFFFFFF) in bcm32_lock_memory Is Also Stored
 
 	b v3d32_texture_init_success
 
-	v3d32_texture_init_error:
-		mov r0, #0
+	v3d32_texture_init_error1:
+		mov r0, #1
+		b v3d32_texture_init_common
+
+	v3d32_texture_init_error2:
+		mov r0, #2
 		b v3d32_texture_init_common
 
 	v3d32_texture_init_success:
-		mov r0, object
+		mov r0, #0
 
 	v3d32_texture_init_common:
 		macro32_dsb ip
 		pop {r4-r7,pc}
 
+.unreq object
 .unreq texture
 .unreq width
+.unreq height
 .unreq flag_16
 .unreq num_mipmap
-.unreq height
 .unreq size
+.unreq temp
+
+
+/**
+ * function v3d32_texture_free
+ * Clear Texture Object with Freeing Memory Space at GPU Side
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of Texture Object to Clear
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response from Mailbox
+ */
+.globl v3d32_texture_free
+v3d32_texture_free:
+	/* Auto (Local) Variables, but just Aliases */
+	object     .req r0
+	temp       .req r1
+
+	push {lr}
+
+	ldr temp, [object, #4]
+
+	push {r0-r1}
+	mov r0, temp
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0-r1}
+
+	beq v3d32_texture_free_error
+
+	push {r0-r1}
+	mov r0, temp
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0-r1}
+
+	beq v3d32_texture_free_error
+
+	mov temp, #0
+	str temp, [object]
+	str temp, [object, #4]
+	strh temp, [object, #8]
+	strh temp, [object, #10]
+	strb temp, [object, #12]
+	strb temp, [object, #13]
+
+	b v3d32_texture_free_success
+
+	v3d32_texture_free_error:
+		mov r0, #1
+		b v3d32_texture_free_common
+
+	v3d32_texture_free_success:
+		mov r0, #0
+
+	v3d32_texture_free_common:
+		macro32_dsb ip
+		pop {pc}
+
 .unreq object
 .unreq temp
 
@@ -1074,6 +1136,11 @@ _V3D32_UNIFORMS:
 
 	/**
 	 * Texture Config Parameter 3 for Cube Map Mode
+	 */
+	.word 0x00000000
+
+	/**
+	 * Additional Uniforms Pointer
 	 */
 	.word 0x00000000
 
