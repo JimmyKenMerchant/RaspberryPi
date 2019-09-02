@@ -26,7 +26,7 @@
 
 * An element has two types of arithmetic logic units (ALUs), adder and multiplier. You can command both addition and multiplication in an instruction, i.e, an explicit type of superscaling. Plus, a control signal (thread end, etc.) can be included in an instruction, which length is 64-bit. Up to single precision floating point and 32-bit unsigned/signed integer can be handled.
 
-* Note that the concept of threading is for the shading process, binning and rendering. However, several contexts of the documents seem to mention a thread as an alias of the element. In computer world, threads are typically referred to as logical cores in a physical core, which can run different codes.
+* Note that the concept of threading is for the shading process, binning and rendering. However, several contexts of the documents seem to mention a thread as an alias of the element. In the computer world, threads are typically referred to as logical cores in a physical core, which can run different codes.
 
 **About User Program**
 

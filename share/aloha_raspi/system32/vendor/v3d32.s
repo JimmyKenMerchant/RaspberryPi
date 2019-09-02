@@ -471,6 +471,7 @@ v3d32_make_cl_binning_handle2: .word 0x00
 V3D32_CL_BIN:          .word 0x00
 V3D32_TILE_ALLOCATION: .word 0x00
 V3D32_CL_RENDER:       .word 0x00
+V3D32_CL_RENDER_SIZE:  .word 0x00
 
 
 /**
@@ -522,6 +523,7 @@ v3d32_make_cl_rendering:
 	mul size, num_tiles, temp
 	ldr temp, V3D32_TML_CL_RENDER_SIZE    @ Size for Template
 	add size, temp, size
+	str size, V3D32_CL_RENDER_SIZE
 
 	/* Load Template of Control List  */
 
@@ -662,6 +664,144 @@ v3d32_make_cl_rendering_handle0: .word 0x00
 
 
 /**
+ * function v3d32_execute_cl_binning
+ * Execute Control List for Binning
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Timeout in Turns
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Time Out 
+ */
+.globl v3d32_execute_cl_binning
+v3d32_execute_cl_binning:
+	/* Auto (Local) Variables, but just Aliases */
+	timeout      .req r0
+	addr_qpu     .req r1
+	ptr_ctl_list .req r2
+	temp         .req r3
+
+	push {lr}
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	/* Write 1 to Clear */
+	mov temp, #1
+	str temp, [addr_qpu, #v3d32_bfc]
+
+	ldr ptr_ctl_list, V3D32_CL_BIN
+	str ptr_ctl_list, [addr_qpu, #v3d32_ct0ca]
+	macro32_dsb ip
+
+	ldr temp, V3D32_TML_CL_BIN_SIZE
+	add ptr_ctl_list, ptr_ctl_list, temp
+	str ptr_ctl_list, [addr_qpu, #v3d32_ct0ea]
+	macro32_dsb ip
+
+	v3d32_execute_cl_binning_loop:
+		subs timeout, #1
+		blo v3d32_execute_cl_binning_error
+
+		ldr temp, [addr_qpu, #v3d32_bfc]
+		macro32_dsb ip
+		cmp temp, #0
+		bls v3d32_execute_cl_binning_loop
+
+		/* Write 1 to Clear */
+		mov temp, #1
+		str temp, [addr_qpu, #v3d32_bfc]
+
+		b v3d32_execute_cl_binning_success
+
+	v3d32_execute_cl_binning_error:
+		mov r0, #1
+		b v3d32_execute_cl_binning_common
+
+	v3d32_execute_cl_binning_success:
+		mov r0, #0
+
+	v3d32_execute_cl_binning_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq timeout
+.unreq addr_qpu
+.unreq ptr_ctl_list
+.unreq temp
+
+
+/**
+ * function v3d32_execute_cl_rendering
+ * Execute Control List for Binning
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Timeout in Turns
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Time Out 
+ */
+.globl v3d32_execute_cl_rendering
+v3d32_execute_cl_rendering:
+	/* Auto (Local) Variables, but just Aliases */
+	timeout      .req r0
+	addr_qpu     .req r1
+	ptr_ctl_list .req r2
+	temp         .req r3
+
+	push {lr}
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	/* Write 1 to Clear */
+	mov temp, #1
+	str temp, [addr_qpu, #v3d32_rfc]
+
+	ldr ptr_ctl_list, V3D32_CL_RENDER
+	str ptr_ctl_list, [addr_qpu, #v3d32_ct1ca]
+	macro32_dsb ip
+
+	ldr temp, V3D32_CL_RENDER_SIZE
+	add ptr_ctl_list, ptr_ctl_list, temp
+	str ptr_ctl_list, [addr_qpu, #v3d32_ct1ea]
+	macro32_dsb ip
+
+	v3d32_execute_cl_rendering_loop:
+		subs timeout, #1
+		blo v3d32_execute_cl_rendering_error
+
+		ldr temp, [addr_qpu, #v3d32_rfc]
+		macro32_dsb ip
+		cmp temp, #0
+		bls v3d32_execute_cl_rendering_loop
+
+		/* Write 1 to Clear */
+		mov temp, #1
+		str temp, [addr_qpu, #v3d32_rfc]
+
+		b v3d32_execute_cl_rendering_success
+
+	v3d32_execute_cl_rendering_error:
+		mov r0, #1
+		b v3d32_execute_cl_rendering_common
+
+	v3d32_execute_cl_rendering_success:
+		mov r0, #0
+
+	v3d32_execute_cl_rendering_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq timeout
+.unreq addr_qpu
+.unreq ptr_ctl_list
+.unreq temp
+
+
+/**
  * function v3d32_set_nv_shader_state
  * Set NV Shader State
  * This function is using a vendor-implemented process.
@@ -706,37 +846,37 @@ v3d32_set_nv_shader_state:
 
 
 /**
- * function v3d32_texture_init
- * Set Texture Object
+ * function v3d32_texture2d_init
+ * Set Texture2D Object
  * This function is using a vendor-implemented process.
  * Note that this function reserves new memory space at GPU side.
  *
- * The Texture Object is structured by 4 words as decribed below.
+ * The Texture2D Object is structured by 4 words as decribed below.
  *
- * struct v3d32_Texture {
+ * struct v3d32_Texture2D {
  *  uint32 address_gpu_memory;
  *  uint32 handle_gpu_memory;
  *  uint16 width_in_pixel;
  *  uint16 height_in_pixel;
- *  uint8  flag_16;
  *  uint8  mipmap_level_minus_1;
+ *  uint8  reserve_0;
  *  uint16 reserve_1;
- * } _Texture;
+ * } _Texture2D;
  *
  * Parameters
  * r0: Pointer of Texture Object to Set
  * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
- * r2: Width in Pixel
- * r3: Height in Pixel
+ * r2: Width in Pixel, Up to 2047
+ * r3: Height in Pixel, Up to 2047
  * r4: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
- * r5: Number of Mipmap Levels Minus 1
+ * r5: Number of Mipmap Levels Minus 1, Up to 15
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Error in Response from Mailbox
  * Error(2): Channel of DMA or CB Number is Overflow
  */
-.globl v3d32_texture_init
-v3d32_texture_init:
+.globl v3d32_texture2d_init
+v3d32_texture2d_init:
 	/* Auto (Local) Variables, but just Aliases */
 	object     .req r0
 	texture    .req r1
@@ -753,10 +893,14 @@ v3d32_texture_init:
 	pop {flag_16,num_mipmap}              @ Get Fifth and Sixth Arguments
 	sub sp, sp, #28
 
+	mov temp, #0x700
+	orr temp, temp, #0x0FF
+	and width, width, temp
 	strh width, [object, #8]
+	and height, height, temp
 	strh height, [height, #10]
-	strb flag_16, [object, #12]
-	strb num_mipmap, [object, #13]
+	and num_mipmap, num_mipmap, #0xF
+	strb num_mipmap, [object, #12]
 
 	/* Size in Bytes */
 	mul size, width, height
@@ -775,7 +919,7 @@ v3d32_texture_init:
 	mov temp, r0
 	pop {r0-r3}
 
-	beq v3d32_texture_init_error1
+	beq v3d32_texture2d_init_error1
 
 	str temp, [object, #4]                @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
 
@@ -786,7 +930,7 @@ v3d32_texture_init:
 	mov temp, r0
 	pop {r0-r3}
 
-	beq v3d32_texture_init_error1
+	beq v3d32_texture2d_init_error1
 
 	push {r0-r3}
 	mov r1, texture
@@ -797,24 +941,24 @@ v3d32_texture_init:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_texture_init_error2
+	bne v3d32_texture2d_init_error2
 
 	str temp, [object]                    @ Error Number (0xFFFFFFFF) in bcm32_lock_memory Is Also Stored
 
-	b v3d32_texture_init_success
+	b v3d32_texture2d_init_success
 
-	v3d32_texture_init_error1:
+	v3d32_texture2d_init_error1:
 		mov r0, #1
-		b v3d32_texture_init_common
+		b v3d32_texture2d_init_common
 
-	v3d32_texture_init_error2:
+	v3d32_texture2d_init_error2:
 		mov r0, #2
-		b v3d32_texture_init_common
+		b v3d32_texture2d_init_common
 
-	v3d32_texture_init_success:
+	v3d32_texture2d_init_success:
 		mov r0, #0
 
-	v3d32_texture_init_common:
+	v3d32_texture2d_init_common:
 		macro32_dsb ip
 		pop {r4-r7,pc}
 
@@ -829,7 +973,7 @@ v3d32_texture_init:
 
 
 /**
- * function v3d32_texture_free
+ * function v3d32_texture2d_free
  * Clear Texture Object with Freeing Memory Space at GPU Side
  * This function is using a vendor-implemented process.
  *
@@ -839,8 +983,8 @@ v3d32_texture_init:
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Error in Response from Mailbox
  */
-.globl v3d32_texture_free
-v3d32_texture_free:
+.globl v3d32_texture2d_free
+v3d32_texture2d_free:
 	/* Auto (Local) Variables, but just Aliases */
 	object     .req r0
 	temp       .req r1
@@ -855,7 +999,7 @@ v3d32_texture_free:
 	cmp r0, #-1
 	pop {r0-r1}
 
-	beq v3d32_texture_free_error
+	beq v3d32_texture2d_free_error
 
 	push {r0-r1}
 	mov r0, temp
@@ -863,7 +1007,7 @@ v3d32_texture_free:
 	cmp r0, #-1
 	pop {r0-r1}
 
-	beq v3d32_texture_free_error
+	beq v3d32_texture2d_free_error
 
 	mov temp, #0
 	str temp, [object]
@@ -871,23 +1015,94 @@ v3d32_texture_free:
 	strh temp, [object, #8]
 	strh temp, [object, #10]
 	strb temp, [object, #12]
-	strb temp, [object, #13]
 
-	b v3d32_texture_free_success
+	b v3d32_texture2d_free_success
 
-	v3d32_texture_free_error:
+	v3d32_texture2d_free_error:
 		mov r0, #1
-		b v3d32_texture_free_common
+		b v3d32_texture2d_free_common
 
-	v3d32_texture_free_success:
+	v3d32_texture2d_free_success:
 		mov r0, #0
 
-	v3d32_texture_free_common:
+	v3d32_texture2d_free_common:
 		macro32_dsb ip
 		pop {pc}
 
 .unreq object
 .unreq temp
+
+
+/**
+ * function v3d32_set_texture2d
+ * Clear Texture Object with Freeing Memory Space at GPU Side
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of Texture Object
+ * r1: 0 as No Flip Texture Y Axis, 1 as Flip Texture Y Axis
+ * r2: Texture Data Type, 0 as RGBA8888, etc.
+ * r3: Pointer of Additional Uniforms
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_set_texture2d
+v3d32_set_texture2d:
+	/* Auto (Local) Variables, but just Aliases */
+	object      .req r0
+	flag_flip   .req r1
+	data_type   .req r2
+	additional  .req r3
+	uniforms    .req r4
+	texture_gpu .req r5
+	width       .req r6
+	height      .req r7
+	num_mipmap  .req r8
+
+	push {r4-r8,lr}
+
+	ldr uniforms, V3D32_UNIFORMS
+	ldr texture_gpu, [object]
+	ldrh width, [object, #8]
+	ldrh height, [object, #10]
+	ldrb num_mipmap, [object, #12]
+
+	/* Texture Config Parameter 1 */
+	lsl width, width, #8
+	orr width, width, height, lsl #20
+	tst data_type, #0b10000
+	orrne width, width, #0x80000000
+	str width, [uniforms, #4]
+
+	/* Texture Config Parameter 0 */
+	cmp flag_flip, #0
+	orrne texture_gpu, texture_gpu, #0b100000000
+	orr texture_gpu, texture_gpu, num_mipmap
+	and data_type, data_type, #0b1111
+	orr texture_gpu, texture_gpu, data_type, lsl #4
+	str texture_gpu, [uniforms]
+
+	mov num_mipmap, #0
+	str num_mipmap, [uniforms, #8]
+	str num_mipmap, [uniforms, #12]
+	str additional, [uniforms, #16]
+
+	v3d32_set_texture2d_success:
+		mov r0, #0
+
+	v3d32_set_texture2d_common:
+		macro32_dsb ip
+		pop {r4-r8,pc}
+
+.unreq object
+.unreq flag_flip
+.unreq data_type
+.unreq additional
+.unreq uniforms
+.unreq texture_gpu
+.unreq width
+.unreq height
+.unreq num_mipmap
 
 
 V3D32_TML_CL_BIN:                             .word _V3D32_TML_CL_BIN
@@ -1140,7 +1355,7 @@ _V3D32_UNIFORMS:
 	.word 0x00000000
 
 	/**
-	 * Additional Uniforms Pointer
+	 * Pointer of Additional Uniforms
 	 */
 	.word 0x00000000
 
