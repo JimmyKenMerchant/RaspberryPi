@@ -24,9 +24,9 @@
 
 * A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
 
-* An element has two types of arithmetic logic units (ALUs), adder and multiplier. You can command both addition and multiplication in an instruction. Plus, a control signal (thread end, etc.) can be included in an instruction, which length is 64-bit. Up to single precision floating point and 32-bit unsigned/signed integer can be handled.
+* An element has two types of arithmetic logic units (ALUs), adder and multiplier. You can command both addition and multiplication in an instruction, i.e, an explicit type of superscaling. Plus, a control signal (thread end, etc.) can be included in an instruction, which length is 64-bit. Up to single precision floating point and 32-bit unsigned/signed integer can be handled.
 
-* Note that the concept of threading is for the shading process between binning and rendering. A QPU can run one user program, which is also called as a thread. It means that you can run up to 12 user programs similarly.
+* Note that the concept of threading is for the shading process, binning and rendering. However, several contexts of the documents seem to mention a thread as an alias of the element. In computer world, threads are typically referred to as logical cores in a physical core, which can run different codes.
 
 **About User Program**
 
