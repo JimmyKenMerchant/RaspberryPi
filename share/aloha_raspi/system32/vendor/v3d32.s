@@ -672,7 +672,7 @@ v3d32_make_cl_rendering_handle0: .word 0x00
  * r0: Timeout in Turns
  *
  * Return: r0 (0 as success, 1 as error)
- * Error(1): Time Out 
+ * Error(1): Time Out
  */
 .globl v3d32_execute_cl_binning
 v3d32_execute_cl_binning:
@@ -741,7 +741,7 @@ v3d32_execute_cl_binning:
  * r0: Timeout in Turns
  *
  * Return: r0 (0 as success, 1 as error)
- * Error(1): Time Out 
+ * Error(1): Time Out
  */
 .globl v3d32_execute_cl_rendering
 v3d32_execute_cl_rendering:

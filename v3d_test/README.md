@@ -22,11 +22,17 @@
 
 * BCM2835, BCM2836, and BCM2837 have 12 QPUs. The control registers reserve up to 16 QPUs. However, the implementation contains 3 slices and 4 QPUs per slice. In default, if you set multiple user programs, the programs start from 12th QPU in decremental order.
 
-* A QPU has 16 elements, so the QPU runs the assigned code in 16 ways parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
+* A QPU has 16 elements, so the QPU runs the assigned code in 16 ways (4 ways per clock) parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
 
 * An element has two types of arithmetic logic units (ALUs), adder and multiplier. You can command both addition and multiplication in an instruction, i.e, an explicit type of superscaling. Plus, a control signal (thread end, etc.) can be included in an instruction, which length is 64-bit. Up to single precision floating point and 32-bit unsigned/signed integer can be handled.
 
 * Note that the concept of threading is for the shading process, binning and rendering. However, several contexts of the documents seem to mention a thread as an alias of the element. In the computer world, threads are typically referred to as logical cores in a physical core, which can run different codes.
+
+* FLOPS (floating point operations per second) is calculated as described below.
+	* V3D's clock is 250Mhz: 2 (instructions per clock) * 4 (ways per clock) * 12 (QPUs) * 250Mhz = 24GFLOPS
+	* V3D's clock is 300Mhz: 2 * 4 * 12 * 300Mhz = 28.8GFLOPS
+
+* I'd like to thank Broadcom for publicly opening details of the QPU because it dedicates to the reliability. Have you ever heard "GPU War"? It implies the difficulty of the business on GPU, typically high-end graphic chips. GPU has been regarded as a commodity depending on the semiconductor cycle, i.e., the chip needs to be the newest one. However, GPU is becoming an electrical part for industrial usage, and that means the need of validity and reliability rather than high-specification.
 
 **About User Program**
 

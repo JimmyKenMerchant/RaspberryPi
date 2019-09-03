@@ -9,11 +9,13 @@
 .global _V3D_SAMPLE1
 .global _V3D_INPUT1
 .global _V3D_SIN
+.global _V3D_FRAGMENT_SHADER
 
 # Global Symbol
 .global _V3D_SAMPLE1_SIZE, :_V3D_SAMPLE1_END - :_V3D_SAMPLE1
 .global _V3D_INPUT1_SIZE, :_V3D_INPUT1_END - :_V3D_INPUT1
 .global _V3D_SIN_SIZE, :_V3D_SIN_END - :_V3D_SIN
+.global _V3D_FRAGMENT_SHADER_SIZE, :_V3D_FRAGMENT_SHADER_END - :_V3D_FRAGMENT_SHADER
 
 :_V3D_SAMPLE1
 	.set num_element, r0
@@ -202,3 +204,38 @@
 .unset factorial
 .unset table
 :_V3D_SIN_END
+
+:_V3D_FRAGMENT_SHADER
+	.set texture_s,     r0
+	.set texture_t,     r1
+	.set pixel_color,   r4
+	.set c_coefficient, r5
+	.set parameter_w,   ra15
+	.set parameter_z,   rb15
+
+	# The interpolation of texture S/T (varyings in shaded vertex format) is calculated with the formula:
+	# (A*(X-X0)+B*(Y-Y0))*W+C, where X and Y are the vertex's coordinate.
+	# A and B coefficients are calculated from varyings, considering X-axis and Y-axis.
+	# (A*(X-X0)+B*(Y-Y0)) is calculated automatically and stored to the varying.
+	# W is stored to ra15 when the thread starts. Z is also stored to rb15.
+	# C coefficient is stored to r5 when the varying is read. It's calculated through clipping.
+	# The parameter S of TMU0/1 (Texture and Memory Lookup Unit 0/1) must be stored at the last rather than other parameters.
+	# If you want to access with the memory address but not the texture, just write the address to the parameter S of TMU0/1 and don't touch other parameters.
+	# In this shader, the depth of TLB (TLBZ) is stored for the z test. The early-z test rejects this shader itself though.
+	fmul texture_s, vary, parameter_w
+	fmul texture_t, vary, parameter_w; fadd texture_s, texture_s, c_coefficient; sbwait
+	fadd t0t, texture_t, c_coefficient
+	mov t0s, texture_s
+	mov tlbz, parameter_z; ldtmu0         # Load Pixel Color in TMU0 to r4
+	mov tlbc, pixel_color; thrend         # Store Pixel Color to TLB (Tile Buffer)
+	nop
+	nop; sbdone
+
+.unset texture_s
+.unset texture_t
+.unset pixel_color
+.unset c_coefficient
+.unset parameter_w
+.unset parameter_z
+:_V3D_FRAGMENT_SHADER_END
+
