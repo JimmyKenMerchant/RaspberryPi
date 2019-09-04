@@ -968,10 +968,8 @@ v3d32_set_nv_shaderstate:
  * Parameters
  * r0: Pointer of Texture Object to Set
  * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
- * r2: Width in Pixel, Up to 2047
- * r3: Height in Pixel, Up to 2047
- * r4: 0 as 32-bit per Pixel, 1 as 16-bit per Pixel
- * r5: Number of Mipmap Levels Minus 1, Up to 15
+ * r2: Bit[31:16]: Height in Pixel, Bit[15:0]: Width in Pixel, Up to 2047
+ * r3: Number of Mipmap Levels Minus 1, Up to 15
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Error in Response from Mailbox
@@ -983,18 +981,15 @@ v3d32_texture2d_init:
 	object     .req r0
 	texture    .req r1
 	width      .req r2
-	height     .req r3
-	flag_16    .req r4
-	num_mipmap .req r5
-	size       .req r6
-	temp       .req r7
+	num_mipmap .req r3
+	height     .req r4
+	size       .req r5
+	temp       .req r6
 
-	push {r4-r7,lr}
+	push {r4-r6,lr}
 
-	add sp, sp, #20                       @ r4-r7 and lr offset 20 bytes
-	pop {flag_16,num_mipmap}              @ Get Fifth and Sixth Arguments
-	sub sp, sp, #28
-
+	/* Extract Width and Height Separately */
+	lsr height, width, #16
 	mov temp, #0x700
 	orr temp, temp, #0x0FF
 	and width, width, temp
@@ -1006,9 +1001,7 @@ v3d32_texture2d_init:
 
 	/* Size in Bytes */
 	mul size, width, height
-	cmp flag_16, #0
-	lsleq size, size, #2                  @ Multiply by 4
-	lslne size, size, #1                  @ Multiply by 2
+	lsl size, size, #2                    @ Multiply by 4
 
 	/* Make Buffer for Texture at GPU Side */
 
@@ -1035,9 +1028,8 @@ v3d32_texture2d_init:
 	beq v3d32_texture2d_init_error1
 
 	push {r0-r3}
-	mov r1, texture
-	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	mov r0, temp
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	mov r2, size
 	bl dma32_datacopy
 	cmp r0, #0
@@ -1062,14 +1054,13 @@ v3d32_texture2d_init:
 
 	v3d32_texture2d_init_common:
 		macro32_dsb ip
-		pop {r4-r7,pc}
+		pop {r4-r6,pc}
 
 .unreq object
 .unreq texture
 .unreq width
-.unreq height
-.unreq flag_16
 .unreq num_mipmap
+.unreq height
 .unreq size
 .unreq temp
 
