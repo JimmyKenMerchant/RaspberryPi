@@ -417,11 +417,11 @@ v3d32_make_cl_binning:
 	add offset, offset, #4
 
 	/* Width in Tiles */
-	strb width, [offset]
+	strb width_tile, [offset]
 	add offset, offset, #1
 
 	/* Height in Tiles */
-	strb height, [offset]
+	strb height_tile, [offset]
 	add offset, offset, #1
 
 	/* Multisample */
@@ -478,6 +478,7 @@ V3D32_CL_RENDER_SIZE:  .word 0x00
  * function v3d32_make_cl_rendering
  * Initialize Control List for Rendering
  * This function is using a vendor-implemented process.
+ * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
  *
  * Parameters
  * r0: Pointer of Buffer
@@ -519,7 +520,7 @@ v3d32_make_cl_rendering:
 	mul num_tiles, width_tile, height_tile
 
 	/* Calculate Size of Control List */
-	mov temp, #9                          @ Calculate Size for Multi-sample Tile Buffer on Each Tile
+	mov temp, #9                          @ Calculate Size for Multi-sample Tile Buffer on Each Tile, 9 Bytes per Tile
 	mul size, num_tiles, temp
 	ldr temp, V3D32_TML_CL_RENDER_SIZE    @ Size for Template
 	add size, temp, size
@@ -664,12 +665,82 @@ v3d32_make_cl_rendering_handle0: .word 0x00
 
 
 /**
+ * function v3d32_clear_cl_rendering
+ * Set Value of Clear Color, Z, VG (Alpha) Mask, and Stencil
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Clear Color, RGBA8888 (32-bit)
+ * r1: Clear Z (24-bit)
+ * r2: Clear VG (Alpha) Mask (8-bit)
+ * r3: Clear Stencil (8-bit)
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_clear_cl_rendering
+v3d32_clear_cl_rendering:
+	/* Auto (Local) Variables, but just Aliases */
+	clear_color   .req r0
+	clear_z       .req r1
+	clear_alpha   .req r2
+	clear_stencil .req r3
+	ptr_ctl_list  .req r4
+
+	push {r4,lr}
+
+	ldr ptr_ctl_list, V3D32_CL_RENDER
+	add ptr_ctl_list, ptr_ctl_list, #1
+
+	/* Two Sets of RGBA8888 (64-bit) */
+	macro32_store_word clear_color, ptr_ctl_list
+	add ptr_ctl_list, ptr_ctl_list, #4
+	macro32_store_word clear_color, ptr_ctl_list
+	add ptr_ctl_list, ptr_ctl_list, #4
+
+	/* Z (24-bit)*/
+	strb clear_z, [ptr_ctl_list]
+	add ptr_ctl_list, ptr_ctl_list, #1
+	lsr clear_z, clear_z, #8
+
+	strb clear_z, [ptr_ctl_list]
+	add ptr_ctl_list, ptr_ctl_list, #1
+	lsr clear_z, clear_z, #8
+
+	strb clear_z, [ptr_ctl_list]
+	add ptr_ctl_list, ptr_ctl_list, #1
+	lsr clear_z, clear_z, #8
+
+	/* VG (Alpha) Mask (8-bit) */
+	strb clear_alpha, [ptr_ctl_list]
+	add ptr_ctl_list, ptr_ctl_list, #1
+
+	/* Clear Stencil (8-bit) */
+	strb clear_stencil, [ptr_ctl_list]
+
+	v3d32_clear_cl_rendering_success:
+		mov r0, #0
+
+	v3d32_clear_cl_rendering_common:
+		macro32_dsb ip
+		pop {r4,pc}
+
+.unreq clear_color
+.unreq clear_z
+.unreq clear_alpha
+.unreq clear_stencil
+.unreq ptr_ctl_list
+
+
+/**
  * function v3d32_execute_cl_binning
  * Execute Control List for Binning
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Timeout in Turns
+ * r0: Primitive Mode, 0 = Points, 1 = Lines, 2 = Line_loop, 3 = Line_strip, 4 = Triangles, 5 = Triangle_strip, 6 = Triangle_fan (8-bit)
+ * r1: Number of Vertices (32-bit)
+ * r2: Index of First Vertex (32-bit)
+ * r3: Timeout in Turns
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Time Out
@@ -677,12 +748,15 @@ v3d32_make_cl_rendering_handle0: .word 0x00
 .globl v3d32_execute_cl_binning
 v3d32_execute_cl_binning:
 	/* Auto (Local) Variables, but just Aliases */
-	timeout      .req r0
-	addr_qpu     .req r1
-	ptr_ctl_list .req r2
-	temp         .req r3
+	primitive    .req r0
+	num_vertex   .req r1
+	index_vertex .req r2
+	timeout      .req r3
+	addr_qpu     .req r4
+	ptr_ctl_list .req r5
+	temp         .req r6
 
-	push {lr}
+	push {r4-r6,lr}
 
 	mov addr_qpu, #equ32_peripherals_base
 	orr addr_qpu, addr_qpu, #v3d32_base
@@ -692,6 +766,16 @@ v3d32_execute_cl_binning:
 	str temp, [addr_qpu, #v3d32_bfc]
 
 	ldr ptr_ctl_list, V3D32_CL_BIN
+
+	/* Set Vertex Array Primitives */
+	ldr temp, V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES
+	add temp, temp, ptr_ctl_list
+	strb primitive, [temp]
+	add temp, temp, #1
+	macro32_store_word num_vertex, temp
+	add temp, temp, #4
+	macro32_store_word index_vertex, temp
+
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct0ca]
 	macro32_dsb ip
 
@@ -724,8 +808,11 @@ v3d32_execute_cl_binning:
 
 	v3d32_execute_cl_binning_common:
 		macro32_dsb ip
-		pop {pc}
+		pop {r4-r6,pc}
 
+.unreq primitive
+.unreq num_vertex
+.unreq index_vertex
 .unreq timeout
 .unreq addr_qpu
 .unreq ptr_ctl_list
@@ -738,7 +825,8 @@ v3d32_execute_cl_binning:
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Timeout in Turns
+ * r0: Don't Clear Color (0) or Clear Color (1)
+ * r1: Timeout in Turns
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Time Out
@@ -746,12 +834,13 @@ v3d32_execute_cl_binning:
 .globl v3d32_execute_cl_rendering
 v3d32_execute_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	timeout      .req r0
-	addr_qpu     .req r1
-	ptr_ctl_list .req r2
-	temp         .req r3
+	flag_clear   .req r0
+	timeout      .req r1
+	addr_qpu     .req r2
+	ptr_ctl_list .req r3
+	temp         .req r4
 
-	push {lr}
+	push {r4,lr}
 
 	mov addr_qpu, #equ32_peripherals_base
 	orr addr_qpu, addr_qpu, #v3d32_base
@@ -761,10 +850,14 @@ v3d32_execute_cl_rendering:
 	str temp, [addr_qpu, #v3d32_rfc]
 
 	ldr ptr_ctl_list, V3D32_CL_RENDER
+	cmp flag_clear, #0
+	addeq ptr_ctl_list, ptr_ctl_list, #16
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct1ca]
 	macro32_dsb ip
 
 	ldr temp, V3D32_CL_RENDER_SIZE
+	cmp flag_clear, #0
+	subeq temp, temp, #16
 	add ptr_ctl_list, ptr_ctl_list, temp
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct1ea]
 	macro32_dsb ip
@@ -793,8 +886,9 @@ v3d32_execute_cl_rendering:
 
 	v3d32_execute_cl_rendering_common:
 		macro32_dsb ip
-		pop {pc}
+		pop {r4,pc}
 
+.unreq flag_clear
 .unreq timeout
 .unreq addr_qpu
 .unreq ptr_ctl_list
@@ -802,7 +896,7 @@ v3d32_execute_cl_rendering:
 
 
 /**
- * function v3d32_set_nv_shader_state
+ * function v3d32_set_nv_shaderstate
  * Set NV Shader State
  * This function is using a vendor-implemented process.
  *
@@ -814,8 +908,8 @@ v3d32_execute_cl_rendering:
  *
  * Return: r0 (0 as success)
  */
-.globl v3d32_set_nv_shader_state
-v3d32_set_nv_shader_state:
+.globl v3d32_set_nv_shaderstate
+v3d32_set_nv_shaderstate:
 	/* Auto (Local) Variables, but just Aliases */
 	shader        .req r0
 	vertex        .req r1
@@ -831,10 +925,18 @@ v3d32_set_nv_shader_state:
 	strb num_varyings, [shader_state, #3]
 	strb stride_vertex, [shader_state, #1]
 
-	v3d32_set_nv_shader_state_success:
+	macro32_clean_cache shader_state, ip
+	add shader_state, shader_state, #4
+	macro32_clean_cache shader_state, ip
+	add shader_state, shader_state, #4
+	macro32_clean_cache shader_state, ip
+	add shader_state, shader_state, #4
+	macro32_clean_cache shader_state, ip
+
+	v3d32_set_nv_shaderstate_success:
 		mov r0, #0
 
-	v3d32_set_nv_shader_state_common:
+	v3d32_set_nv_shaderstate_common:
 		macro32_dsb ip
 		pop {r4,pc}
 
@@ -1087,6 +1189,16 @@ v3d32_set_texture2d:
 	str num_mipmap, [uniforms, #12]
 	str additional, [uniforms, #16]
 
+	macro32_clean_cache uniforms, ip
+	add uniforms, uniforms, #4
+	macro32_clean_cache uniforms, ip
+	add uniforms, uniforms, #4
+	macro32_clean_cache uniforms, ip
+	add uniforms, uniforms, #4
+	macro32_clean_cache uniforms, ip
+	add uniforms, uniforms, #4
+	macro32_clean_cache uniforms, ip
+
 	v3d32_set_texture2d_success:
 		mov r0, #0
 
@@ -1169,7 +1281,12 @@ _V3D32_TML_CL_BIN_CONFIG:
 	 */
 	.byte v3d32_cl_config
 _V3D32_TML_CL_BIN_CONFIG_BITS:
-	.byte 0x01, 0x00, 0x00, 0x00, 0x90, 0x00
+	.byte 0x01, 0x90, 0x00
+
+	/**
+	 * Start Tile Binning
+	 */
+	.byte v3d32_cl_start_tile_binning
 
 	/**
 	 * Clip Window
@@ -1194,14 +1311,12 @@ _V3D32_TML_CL_BIN_VIEWPORT_OFFSET:
 	/**
 	 * Vertex Array Primitives
 	 * 1. Primitive Mode, 0 = Points, 1 = Lines, 2 = Line_loop, 3 = Line_strip, 4 = Triangles, 5 = Triangle_strip, 6 = Triangle_fan (8-bit)
-	 * 2. Number of Verties (32-bit)
+	 * 2. Number of Vertices (32-bit)
 	 * 3. Index of First Vertex (32-bit)
 	 */
 	.byte v3d32_cl_vertexarray_primitives
 _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	.byte 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-
-	.byte v3d32_cl_start_tile_binning
 
 	/**
 	 * NV Shader State
@@ -1220,12 +1335,18 @@ _V3D32_TML_CL_RENDER:
 	 * Clear Colors
 	 * 1. Clear Color, Two RGBA8888 or RGBA16161616 (64-bit)
 	 * 2. Clear Z (24-bit)
-	 * 3. Clear VG Mask (8-bit)
+	 * 3. Clear VG (Alpha) Mask (8-bit)
 	 * 4. Clear Stencil (8-bit)
 	 */
 	.byte v3d32_cl_clear
 _V3D32_TML_CL_RENDER_CLEAR:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Offset 2 Bytes to Make 16 Bytes Distance Between Last and Next Items
+	 */
+	.byte v3d32_cl_nop
+	.byte v3d32_cl_nop
 
 	/**
 	 * Tile Rendering Mode Configuration
@@ -1237,7 +1358,7 @@ _V3D32_TML_CL_RENDER_CLEAR:
 	 * 6. Non-HDR Frame Buffer Color Format, 0 = BGR565 Dithered, 1 = RGBA8888, 2 = BGR565 (2-bit)
 	 * 7. Decimate Mode, 0 = 1x, 1 = 4x, 2 = 16x (2-bit)
 	 * 8. Texture Memory Format, 0 = Linear, 1 = T-format, 2 = LT-format (2-bit)
-	 * 9. Enable VG Mask Buffer (1-bit)
+	 * 9. Enable VG (Alpha) Mask Buffer (1-bit)
 	 * 10. Select Coverage Mode (1-bit)
 	 * 11. Early Z Update Direction, 0 = lt/le, 1 = gt/ge (1-bit)
 	 * 12. Early Z / Early Coverage Disable (1-bit)
@@ -1498,5 +1619,5 @@ _V3D32_UNIFORMS:
 .equ v3d32_cl_viewport_offset,           103 @ Bit[31:16]: Y-coordinate (Signed), Bit[15:0]: X-coordinate (Signed)
 .equ v3d32_cl_config_binning,            112 @ Binning Only, Followed by 15-byte Data
 .equ v3d32_cl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
-.equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
+.equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG (Alpha) Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
 .equ v3d32_cl_tile_coordinates,          115 @ Rendering Only, Bit[15:8]: Tile Row Number, Bit[7:0]: Tile Column Number

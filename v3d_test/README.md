@@ -32,7 +32,7 @@
 	* V3D's clock is 250Mhz: 2 (instructions per clock) * 4 (ways per clock) * 12 (QPUs) * 250Mhz = 24GFLOPS
 	* V3D's clock is 300Mhz: 2 * 4 * 12 * 300Mhz = 28.8GFLOPS
 
-* I'd like to thank Broadcom for publicly opening details of the QPU because it dedicates to the reliability. Have you ever heard "GPU War"? It implies the difficulty of the business on GPU, typically high-end graphic chips. GPU has been regarded as a commodity depending on the semiconductor cycle, i.e., the chip needs to be the newest one. However, GPU is becoming an electrical part for industrial usage, and that means the need of validity and reliability rather than high-specification.
+* I'd like to thank Broadcom for publicly opening details of the QPU because it dedicates to the reliability. Have you ever heard "GPU War"? It implies the difficulty of the business on GPU, typically high-end graphic chips. GPU has been regarded as a commodity depending on the semiconductor cycle, i.e., the chip needs to be the newest one with the developing cost and the cost for inventory adjustment. However, GPU is becoming an electrical part for industrial usage, and that means the need of validity and reliability rather than high-specification.
 
 **About User Program**
 
