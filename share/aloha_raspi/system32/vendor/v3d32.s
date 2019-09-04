@@ -481,7 +481,7 @@ V3D32_CL_RENDER_SIZE:  .word 0x00
  * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
  *
  * Parameters
- * r0: Pointer of Buffer
+ * r0: Pointer of Buffer (ARM Side)
  * r1: Width in Pixel
  * r2: Height in Pixel
  * r3: 0 as Standard, 1 as Multisample
@@ -549,7 +549,7 @@ v3d32_make_cl_rendering:
 	push {r0-r3}
 	mov r0, ptr_ctl_list
 	ldr r1, V3D32_TML_CL_RENDER
-	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+	orr r1, r1, #equ32_bus_coherence_base         @ Convert to Bus Address
 	mov r2, size
 	bl dma32_datacopy
 	cmp r0, #0
@@ -559,6 +559,7 @@ v3d32_make_cl_rendering:
 
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
 	add offset, ptr_ctl_list, offset
+	orr buffer, buffer, #equ32_bus_coherence_base @ Convert to Bus Address
 	macro32_store_word buffer, offset
 	add offset, offset, #4
 
@@ -901,8 +902,8 @@ v3d32_execute_cl_rendering:
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Pointer of Fragment Shader Code Address
- * r1: Pointer of Shaded Vertex Data Address
+ * r0: Pointer of Fragment Shader Code Address (ARM Side)
+ * r1: Pointer of Shaded Vertex Data Address (ARM Side)
  * r2: Fragment Shader Number of Varyings
  * r3: Shaded Vertex Data Stride in Bytes
  *
@@ -919,6 +920,8 @@ v3d32_set_nv_shaderstate:
 
 	push {r4,lr}
 
+	orr shader, shader, #equ32_bus_coherence_base @ Convert to Bus Address
+	orr vertex, vertex, #equ32_bus_coherence_base @ Convert to Bus Address
 	ldr shader_state, V3D32_NV_SHADERSTATE
 	str shader, [shader_state, #4]
 	str vertex, [shader_state, #12]
@@ -966,8 +969,8 @@ v3d32_set_nv_shaderstate:
  * } _Texture2D;
  *
  * Parameters
- * r0: Pointer of Texture Object to Set
- * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0
+ * r0: Pointer of Texture Object to Set (ARM Side)
+ * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0 (ARM Side)
  * r2: Bit[31:16]: Height in Pixel, Bit[15:0]: Width in Pixel, Up to 2047
  * r3: Number of Mipmap Levels Minus 1, Up to 15
  *
@@ -1071,7 +1074,7 @@ v3d32_texture2d_init:
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Pointer of Texture Object to Clear
+ * r0: Pointer of Texture Object to Clear (ARM Side)
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Error in Response from Mailbox
@@ -1132,7 +1135,7 @@ v3d32_texture2d_free:
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Pointer of Texture Object
+ * r0: Pointer of Texture Object (ARM Side)
  * r1: 0 as No Flip Texture Y Axis, 1 as Flip Texture Y Axis
  * r2: Texture Data Type, 0 as RGBA8888, etc.
  * r3: Pointer of Additional Uniforms
@@ -1315,7 +1318,7 @@ _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	 */
 	.byte v3d32_cl_nv_shaderstate
 _V3D32_TML_CL_BIN_NV_SHADERSTATE:
-	.word _V3D32_NV_SHADERSTATE
+	.word _V3D32_NV_SHADERSTATE + equ32_bus_coherence_base
 	.byte v3d32_cl_flush
 _V3D32_TML_CL_BIN_END:
 
@@ -1419,7 +1422,7 @@ _V3D32_NV_SHADERSTATE:
 	/**
 	 * Fragment Shader Uniforms Address
 	 */
-	.word _V3D32_UNIFORMS
+	.word _V3D32_UNIFORMS + equ32_bus_coherence_base
 
 	/**
 	 * Shaded Vertex Data Address
