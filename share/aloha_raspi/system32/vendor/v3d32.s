@@ -113,6 +113,41 @@ v3d32_control_qpul2cache:
 
 
 /**
+ * function v3d32_clear_qpucache
+ * Clear Cache Near QPU of VideoCore IV from ARM
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Bit[27:24]: TMU1, Bit[19:16]: TMU0, Bit[11:8]: Uniforms, Bit[3:0] Instruction (per Slice, Write 0b1 to Clear Specified Slice's Cache)
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_clear_qpucache
+v3d32_clear_qpucache:
+	/* Auto (Local) Variables, but just Aliases */
+	clear_bit .req r0
+	addr_qpu  .req r1
+
+	push {lr}
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	/* Clear Caches Near QPU */
+	str clear_bit, [addr_qpu, #v3d32_slcactl]
+
+	v3d32_clear_qpucache_success:
+		mov r0, #0
+
+	v3d32_clear_qpucache_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq clear_bit
+.unreq addr_qpu
+
+
+/**
  * function v3d32_control_qpuinterrupt
  * Control Interrupt for QPU of VideoCore IV from ARM
  * This function is using a vendor-implemented process.
@@ -470,8 +505,93 @@ v3d32_make_cl_binning_handle2: .word 0x00
 
 V3D32_CL_BIN:          .word 0x00
 V3D32_TILE_ALLOCATION: .word 0x00
-V3D32_CL_RENDER:       .word 0x00
-V3D32_CL_RENDER_SIZE:  .word 0x00
+
+
+/**
+ * function v3d32_unmake_cl_binning
+ * Free Control List for Binning
+ * This function is using a vendor-implemented process.
+ * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response from Mailbox
+ */
+.globl v3d32_unmake_cl_binning
+v3d32_unmake_cl_binning:
+	/* Auto (Local) Variables, but just Aliases */
+	handle .req r0
+
+	push {lr}
+
+	ldr handle, v3d32_make_cl_binning_handle0
+
+	push {r0}
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	push {r0}
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	ldr handle, v3d32_make_cl_binning_handle1
+
+	push {r0}
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	push {r0}
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	ldr handle, v3d32_make_cl_binning_handle2
+
+	push {r0}
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	push {r0}
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	mov handle, #0
+	str handle, v3d32_make_cl_binning_handle0
+	str handle, v3d32_make_cl_binning_handle1
+	str handle, v3d32_make_cl_binning_handle2
+	str handle, V3D32_CL_BIN
+	str handle, V3D32_TILE_ALLOCATION
+
+	b v3d32_unmake_cl_binning_success
+
+	v3d32_unmake_cl_binning_error:
+		mov r0, #1
+		b v3d32_unmake_cl_binning_common
+
+	v3d32_unmake_cl_binning_success:
+		mov r0, #0
+
+	v3d32_unmake_cl_binning_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq handle
 
 
 /**
@@ -481,7 +601,7 @@ V3D32_CL_RENDER_SIZE:  .word 0x00
  * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
  *
  * Parameters
- * r0: Pointer of Buffer (ARM Side)
+ * r0: Pointer of Start Address of Framebuffer (ARM Side)
  * r1: Width in Pixel
  * r2: Height in Pixel
  * r3: 0 as Standard, 1 as Multisample
@@ -493,7 +613,7 @@ V3D32_CL_RENDER_SIZE:  .word 0x00
 .globl v3d32_make_cl_rendering
 v3d32_make_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	buffer        .req r0
+	buffer_addr   .req r0
 	width         .req r1
 	height        .req r2
 	flag_multi    .req r3
@@ -559,8 +679,8 @@ v3d32_make_cl_rendering:
 
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
 	add offset, ptr_ctl_list, offset
-	orr buffer, buffer, #equ32_bus_coherence_base @ Convert to Bus Address
-	macro32_store_word buffer, offset
+	orr buffer_addr, buffer_addr, #equ32_bus_coherence_base @ Convert to Bus Address
+	macro32_store_word buffer_addr, offset
 	add offset, offset, #4
 
 	/* Width in Pixel */
@@ -584,7 +704,7 @@ v3d32_make_cl_rendering:
 	ldr offset, V3D32_TML_CL_RENDER_SIZE
 	add offset, ptr_ctl_list, offset
 
-	ldr buffer, V3D32_TILE_ALLOCATION
+	ldr buffer_addr, V3D32_TILE_ALLOCATION
 	mov i, #0                        @ Column (Width of Tiles)
 	mov j, #0                        @ Row (Height of Tiles)
 
@@ -617,7 +737,7 @@ v3d32_make_cl_rendering:
 			mul temp, j, width_tile
 			add temp, temp, i
 			lsl temp, temp, #5                          @ Multiply by 32
-			add temp, temp, buffer
+			add temp, temp, buffer_addr
 			macro32_store_word temp, offset
 			add offset, offset, #4
 
@@ -650,7 +770,7 @@ v3d32_make_cl_rendering:
 		macro32_dsb ip
 		pop {r4-r10,pc}
 
-.unreq buffer
+.unreq buffer_addr
 .unreq i
 .unreq j
 .unreq flag_multi
@@ -664,6 +784,62 @@ v3d32_make_cl_rendering:
 
 v3d32_make_cl_rendering_handle0: .word 0x00
 
+V3D32_CL_RENDER:       .word 0x00
+V3D32_CL_RENDER_SIZE:  .word 0x00
+
+
+/**
+ * function v3d32_unmake_cl_rendering
+ * Free Control List for Rendering
+ * This function is using a vendor-implemented process.
+ * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response from Mailbox
+ */
+.globl v3d32_unmake_cl_rendering
+v3d32_unmake_cl_rendering:
+	/* Auto (Local) Variables, but just Aliases */
+	handle .req r0
+
+	push {lr}
+
+	ldr handle, v3d32_make_cl_rendering_handle0
+
+	push {r0}
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_rendering_error
+
+	push {r0}
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_rendering_error
+
+	mov handle, #0
+	str handle, v3d32_make_cl_rendering_handle0
+	str handle, V3D32_CL_RENDER
+	str handle, V3D32_CL_RENDER_SIZE
+
+	b v3d32_unmake_cl_rendering_success
+
+	v3d32_unmake_cl_rendering_error:
+		mov r0, #1
+		b v3d32_unmake_cl_rendering_common
+
+	v3d32_unmake_cl_rendering_success:
+		mov r0, #0
+
+	v3d32_unmake_cl_rendering_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq handle
+
 
 /**
  * function v3d32_clear_cl_rendering
@@ -676,7 +852,8 @@ v3d32_make_cl_rendering_handle0: .word 0x00
  * r2: Clear VG (Alpha) Mask (8-bit)
  * r3: Clear Stencil (8-bit)
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Control List for Rendering Is Not Initialized
  */
 .globl v3d32_clear_cl_rendering
 v3d32_clear_cl_rendering:
@@ -690,6 +867,8 @@ v3d32_clear_cl_rendering:
 	push {r4,lr}
 
 	ldr ptr_ctl_list, V3D32_CL_RENDER
+	cmp ptr_ctl_list, #0
+	beq v3d32_clear_cl_rendering_error
 	add ptr_ctl_list, ptr_ctl_list, #1
 
 	/* Two Sets of RGBA8888 (64-bit) */
@@ -717,6 +896,12 @@ v3d32_clear_cl_rendering:
 
 	/* Clear Stencil (8-bit) */
 	strb clear_stencil, [ptr_ctl_list]
+
+	b v3d32_clear_cl_rendering_success
+
+	v3d32_clear_cl_rendering_error:
+		mov r0, #1
+		b v3d32_clear_cl_rendering_common
 
 	v3d32_clear_cl_rendering_success:
 		mov r0, #0
@@ -914,7 +1099,7 @@ v3d32_set_nv_shaderstate:
 	/* Auto (Local) Variables, but just Aliases */
 	shader        .req r0
 	vertex        .req r1
-	num_varyings  .req r2
+	num_varying   .req r2
 	stride_vertex .req r3
 	shader_state  .req r4
 
@@ -925,7 +1110,7 @@ v3d32_set_nv_shaderstate:
 	ldr shader_state, V3D32_NV_SHADERSTATE
 	str shader, [shader_state, #4]
 	str vertex, [shader_state, #12]
-	strb num_varyings, [shader_state, #3]
+	strb num_varying, [shader_state, #3]
 	strb stride_vertex, [shader_state, #1]
 
 	macro32_clean_cache shader_state, ip
@@ -945,31 +1130,31 @@ v3d32_set_nv_shaderstate:
 
 .unreq shader
 .unreq vertex
-.unreq num_varyings
+.unreq num_varying
 .unreq stride_vertex
 .unreq shader_state
 
 
 /**
  * function v3d32_texture2d_init
- * Set Texture2D Object
+ * Set _Texture2D Struct
  * This function is using a vendor-implemented process.
  * Note that this function reserves new memory space at GPU side.
  *
- * The Texture2D Object is structured by 4 words as decribed below.
+ * The _Texture2D is structured by 4 words as decribed below.
  *
- * struct v3d32_Texture2D {
+ * typedef struct v3d32_Texture2D {
  *  uint32 address_gpu_memory;
  *  uint32 handle_gpu_memory;
  *  uint16 width_in_pixel;
  *  uint16 height_in_pixel;
- *  uint8  mipmap_level_minus_1;
- *  uint8  reserve_0;
+ *  uchar8 mipmap_level_minus_1;
+ *  uchar8 reserve_0;
  *  uint16 reserve_1;
  * } _Texture2D;
  *
  * Parameters
- * r0: Pointer of Texture Object to Set (ARM Side)
+ * r0: Pointer of _Texture2D to Set (ARM Side)
  * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0 (ARM Side)
  * r2: Bit[31:16]: Height in Pixel, Bit[15:0]: Width in Pixel, Up to 2047
  * r3: Number of Mipmap Levels Minus 1, Up to 15
@@ -981,7 +1166,7 @@ v3d32_set_nv_shaderstate:
 .globl v3d32_texture2d_init
 v3d32_texture2d_init:
 	/* Auto (Local) Variables, but just Aliases */
-	object     .req r0
+	texture2d  .req r0
 	texture    .req r1
 	width      .req r2
 	num_mipmap .req r3
@@ -996,11 +1181,11 @@ v3d32_texture2d_init:
 	mov temp, #0x700
 	orr temp, temp, #0x0FF
 	and width, width, temp
-	strh width, [object, #8]
+	strh width, [texture2d, #8]
 	and height, height, temp
 	strh height, [height, #10]
 	and num_mipmap, num_mipmap, #0xF
-	strb num_mipmap, [object, #12]
+	strb num_mipmap, [texture2d, #12]
 
 	/* Size in Bytes */
 	mul size, width, height
@@ -1019,7 +1204,7 @@ v3d32_texture2d_init:
 
 	beq v3d32_texture2d_init_error1
 
-	str temp, [object, #4]                @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
+	str temp, [texture2d, #4]             @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
 
 	push {r0-r3}
 	mov r0, temp
@@ -1040,7 +1225,7 @@ v3d32_texture2d_init:
 
 	bne v3d32_texture2d_init_error2
 
-	str temp, [object]                    @ Error Number (0xFFFFFFFF) in bcm32_lock_memory Is Also Stored
+	str temp, [texture2d]                 @ Error Number (0xFFFFFFFF) in bcm32_lock_memory Is Also Stored
 
 	b v3d32_texture2d_init_success
 
@@ -1059,7 +1244,7 @@ v3d32_texture2d_init:
 		macro32_dsb ip
 		pop {r4-r6,pc}
 
-.unreq object
+.unreq texture2d
 .unreq texture
 .unreq width
 .unreq num_mipmap
@@ -1070,11 +1255,11 @@ v3d32_texture2d_init:
 
 /**
  * function v3d32_texture2d_free
- * Clear Texture Object with Freeing Memory Space at GPU Side
+ * Clear _Texture2D Struct with Freeing Memory Space at GPU Side
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Pointer of Texture Object to Clear (ARM Side)
+ * r0: Pointer of _Texture2D to to Clear (ARM Side)
  *
  * Return: r0 (0 as success, 1 as error)
  * Error(1): Error in Response from Mailbox
@@ -1082,12 +1267,12 @@ v3d32_texture2d_init:
 .globl v3d32_texture2d_free
 v3d32_texture2d_free:
 	/* Auto (Local) Variables, but just Aliases */
-	object     .req r0
-	temp       .req r1
+	texture2d .req r0
+	temp      .req r1
 
 	push {lr}
 
-	ldr temp, [object, #4]
+	ldr temp, [texture2d, #4]
 
 	push {r0-r1}
 	mov r0, temp
@@ -1106,11 +1291,11 @@ v3d32_texture2d_free:
 	beq v3d32_texture2d_free_error
 
 	mov temp, #0
-	str temp, [object]
-	str temp, [object, #4]
-	strh temp, [object, #8]
-	strh temp, [object, #10]
-	strb temp, [object, #12]
+	str temp, [texture2d]
+	str temp, [texture2d, #4]
+	strh temp, [texture2d, #8]
+	strh temp, [texture2d, #10]
+	strb temp, [texture2d, #12]
 
 	b v3d32_texture2d_free_success
 
@@ -1125,7 +1310,7 @@ v3d32_texture2d_free:
 		macro32_dsb ip
 		pop {pc}
 
-.unreq object
+.unreq texture2d
 .unreq temp
 
 
@@ -1137,7 +1322,7 @@ v3d32_texture2d_free:
  * Parameters
  * r0: Pointer of Texture Object (ARM Side)
  * r1: 0 as No Flip Texture Y Axis, 1 as Flip Texture Y Axis
- * r2: Texture Data Type, 0 as RGBA8888, etc.
+ * r2: Texture Data Type, 0 as RGBA8888, etc. (5-bit)
  * r3: Pointer of Additional Uniforms
  *
  * Return: r0 (0 as success)
@@ -1145,7 +1330,7 @@ v3d32_texture2d_free:
 .globl v3d32_set_texture2d
 v3d32_set_texture2d:
 	/* Auto (Local) Variables, but just Aliases */
-	object      .req r0
+	texture2d   .req r0
 	flag_flip   .req r1
 	data_type   .req r2
 	additional  .req r3
@@ -1158,10 +1343,10 @@ v3d32_set_texture2d:
 	push {r4-r8,lr}
 
 	ldr uniforms, V3D32_UNIFORMS
-	ldr texture_gpu, [object]
-	ldrh width, [object, #8]
-	ldrh height, [object, #10]
-	ldrb num_mipmap, [object, #12]
+	ldr texture_gpu, [texture2d]
+	ldrh width, [texture2d, #8]
+	ldrh height, [texture2d, #10]
+	ldrb num_mipmap, [texture2d, #12]
 
 	/* Texture Config Parameter 1 */
 	lsl width, width, #8
@@ -1200,7 +1385,7 @@ v3d32_set_texture2d:
 		macro32_dsb ip
 		pop {r4-r8,pc}
 
-.unreq object
+.unreq texture2d
 .unreq flag_flip
 .unreq data_type
 .unreq additional
@@ -1448,7 +1633,7 @@ _V3D32_UNIFORMS:
 
 	/**
 	 * Texture Config Parameter 1
-	 * Bit[31]: Bit[4] in Texture Config Parameter 0
+	 * Bit[31]: Fifth Bit of Texture Data Type
 	 * Bit[30:20]: Image Height
 	 * Bit[19]: Flip ETC Y (per Block)
 	 * Bit[18:8]: Image Width

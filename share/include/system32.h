@@ -189,6 +189,7 @@
 #define ObjArray obj*
 
 /* Structs */
+
 typedef struct draw32_RenderBuffer {
 	uint32 addr;
 	uint32 width;
@@ -196,6 +197,17 @@ typedef struct draw32_RenderBuffer {
 	uint32 size;
 	uint32 depth;
 } _RenderBuffer;
+
+typedef struct v3d32_Texture2D {
+	uint32 address_gpu_memory;
+	uint32 handle_gpu_memory;
+	uint16 width_in_pixel;
+	uint16 height_in_pixel;
+	uchar8  mipmap_level_minus_1;
+	uchar8  reserve_0;
+	uint16 reserve_1;
+} _Texture2D;
+
 
 /**
  * System calls
@@ -246,6 +258,43 @@ __attribute__((noinline)) uint32 _set_mail( uint32 number_core, uint32 number_ma
 #endif
 
 __attribute__((noinline)) uint32 _display_off( bool bool_off );
+
+
+/********************************
+ * system32/vendor/v3d32.s
+ ********************************/
+
+/* Constants */
+
+/* Relative System Calls  */
+
+__attribute__((noinline)) uint32 _control_qpul2cache( uchar8 ctrl_l2 );
+
+__attribute__((noinline)) uint32 _clear_qpucache( uint32 clear_bit );
+
+__attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, obj address_job, bool flag_noflush, uint32 timeout );
+
+__attribute__((noinline)) uint32 _make_cl_binning( uint32 width_pixel, uint32 height_pixel, bool flag_multi );
+
+__attribute__((noinline)) uint32 _unmake_cl_binning();
+
+__attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, bool flag_multi );
+
+__attribute__((noinline)) uint32 _unmake_cl_rendering();
+
+__attribute__((noinline)) uint32 _clear_cl_rendering( uint32 clear_color, uint32 clear_z, uchar8 clear_alpha, uchar8 clear_stencil );
+
+__attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 num_vertex, uint32 index_vertex, uint32 timeout );
+
+__attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 timeout );
+
+__attribute__((noinline)) uint32 _set_nv_shaderstate( obj address_shader, obj address_vertex, uint32 num_varying, uint32 stride_vertex );
+
+__attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj address_texture, uint32 height_width_in_pixel, uchar8 mipmap_level_minus_1 );
+
+__attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d );
+
+__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, bool flag_flip, uchar8 data_type, obj address_additional_uniforms );
 
 
 /********************************

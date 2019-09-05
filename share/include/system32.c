@@ -605,6 +605,104 @@ __attribute__((noinline)) uint32 _tftimage_type1( obj address_image, uint32 size
 	return result;
 }
 
+__attribute__((noinline)) uint32 _control_qpul2cache( uchar8 ctrl_l2 )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x56");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _clear_qpucache( uint32 clear_bit )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x57");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, obj address_job, bool flag_noflush, uint32 timeout )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x58");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _make_cl_binning( uint32 width_pixel, uint32 height_pixel, bool flag_multi )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x59");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _unmake_cl_binning()
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x5A");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, bool flag_multi )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x5B");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _unmake_cl_rendering()
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x5C");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _clear_cl_rendering( uint32 clear_color, uint32 clear_z, uchar8 clear_alpha, uchar8 clear_stencil )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x5D");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 num_vertex, uint32 index_vertex, uint32 timeout )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x5E");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 timeout )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x5F");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _set_nv_shaderstate( obj address_shader, obj address_vertex, uint32 num_varying, uint32 stride_vertex )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x60");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj address_texture, uint32 height_width_in_pixel, uchar8 mipmap_level_minus_1 )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x61");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x62");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, bool flag_flip, uchar8 data_type, obj address_additional_uniforms )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x63");
+	return result;
+}
+
 
 /**
  * Unique Definitions
