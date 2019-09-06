@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-.equ __DEBUG, 1
+/*.equ __DEBUG, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -63,27 +63,20 @@ os_reset:
 
 	bl bcm32_get_framebuffer
 
+	/* Enable QPU */
+
+	mov r0, #1
+	bl v3d32_enable_qpu
+
+	/* Enable L2 Cache */
+
+	mov r0, #0b001
+	bl v3d32_control_qpul2cache
+
 	pop {pc}
 
 os_debug:
 	push {r4-r10,lr}
-
-	/* Enable QPU */
-
-	push {r0-r3}
-	mov r0, #1
-	bl v3d32_enable_qpu
-	mov r4, r0
-	pop {r0-r3}
-
-macro32_debug r4, 100, 88
-
-	/* Enable L2 Cache */
-
-	push {r0-r3}
-	mov r0, #0b001
-	bl v3d32_control_qpul2cache
-	pop {r0-r3}
 
 	/* Disable QPU Interrupt, Already Disabled in Default Though */
 
@@ -393,12 +386,16 @@ os_fiq:
 .globl V3D_INPUT1_SIZE
 .globl V3D_SIN
 .globl V3D_SIN_SIZE
-V3D_SAMPLE1:      .word _V3D_SAMPLE1
-V3D_SAMPLE1_SIZE: .word _V3D_SAMPLE1_SIZE
-V3D_INPUT1:       .word _V3D_INPUT1
-V3D_INPUT1_SIZE:  .word _V3D_INPUT1_SIZE
-V3D_SIN:          .word _V3D_SIN
-V3D_SIN_SIZE:     .word _V3D_SIN_SIZE
+.globl _V3D_FRAGMENT_SHADER
+.globl _V3D_FRAGMENT_SHADER_SIZE
+V3D_SAMPLE1:              .word _V3D_SAMPLE1
+V3D_SAMPLE1_SIZE:         .word _V3D_SAMPLE1_SIZE
+V3D_INPUT1:               .word _V3D_INPUT1
+V3D_INPUT1_SIZE:          .word _V3D_INPUT1_SIZE
+V3D_SIN:                  .word _V3D_SIN
+V3D_SIN_SIZE:             .word _V3D_SIN_SIZE
+V3D_FRAGMENT_SHADER:      .word _V3D_FRAGMENT_SHADER
+V3D_FRAGMENT_SHADER_SIZE: .word _V3D_FRAGMENT_SHADER_SIZE
 
 /**
  * Variables

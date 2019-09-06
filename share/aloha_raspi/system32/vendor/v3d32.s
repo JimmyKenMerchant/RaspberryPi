@@ -395,6 +395,9 @@ v3d32_make_cl_binning:
 
 	bne v3d32_make_cl_binning_error2
 
+	str ptr_ctl_list, V3D32_CL_BIN
+	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
+
 	/* Tile Allocation Memory */
 
 	push {r0-r3}
@@ -482,7 +485,9 @@ v3d32_make_cl_binning:
 		b v3d32_make_cl_binning_common
 
 	v3d32_make_cl_binning_success:
-		str ptr_ctl_list, V3D32_CL_BIN
+
+macro32_debug_hexa ptr_ctl_list, 0, 12, 256
+
 		mov r0, #0
 
 	v3d32_make_cl_binning_common:
@@ -677,6 +682,9 @@ v3d32_make_cl_rendering:
 
 	bne v3d32_make_cl_rendering_error2
 
+	str ptr_ctl_list, V3D32_CL_RENDER
+	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
+
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
 	add offset, ptr_ctl_list, offset
 	orr buffer_addr, buffer_addr, #equ32_bus_coherence_base @ Convert to Bus Address
@@ -705,12 +713,12 @@ v3d32_make_cl_rendering:
 	add offset, ptr_ctl_list, offset
 
 	ldr buffer_addr, V3D32_TILE_ALLOCATION
-	mov i, #0                        @ Column (Width of Tiles)
 	mov j, #0                        @ Row (Height of Tiles)
 
 	v3d32_make_cl_rendering_tiles:
 		cmp j, height_tile
 		bhs v3d32_make_cl_rendering_success
+		mov i, #0                        @ Column (Width of Tiles)
 
 		v3d32_make_cl_rendering_tiles_column:
 			cmp i, width_tile
@@ -763,7 +771,9 @@ v3d32_make_cl_rendering:
 		b v3d32_make_cl_rendering_common
 
 	v3d32_make_cl_rendering_success:
-		str ptr_ctl_list, V3D32_CL_RENDER
+
+macro32_debug_hexa ptr_ctl_list, 0, 312, 512
+
 		mov r0, #0
 
 	v3d32_make_cl_rendering_common:
