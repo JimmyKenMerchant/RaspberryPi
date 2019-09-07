@@ -486,7 +486,9 @@ v3d32_make_cl_binning:
 
 	v3d32_make_cl_binning_success:
 
+/*
 macro32_debug_hexa ptr_ctl_list, 0, 12, 256
+*/
 
 		mov r0, #0
 
@@ -772,7 +774,9 @@ v3d32_make_cl_rendering:
 
 	v3d32_make_cl_rendering_success:
 
-macro32_debug_hexa ptr_ctl_list, 0, 312, 512
+/*
+macro32_debug_hexa ptr_ctl_list, 0, 312, 1280
+*/
 
 		mov r0, #0
 
@@ -879,6 +883,7 @@ v3d32_clear_cl_rendering:
 	ldr ptr_ctl_list, V3D32_CL_RENDER
 	cmp ptr_ctl_list, #0
 	beq v3d32_clear_cl_rendering_error
+	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 	add ptr_ctl_list, ptr_ctl_list, #1
 
 	/* Two Sets of RGBA8888 (64-bit) */
@@ -906,6 +911,10 @@ v3d32_clear_cl_rendering:
 
 	/* Clear Stencil (8-bit) */
 	strb clear_stencil, [ptr_ctl_list]
+
+ldr ptr_ctl_list, V3D32_CL_RENDER
+and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
+macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
 
 	b v3d32_clear_cl_rendering_success
 
