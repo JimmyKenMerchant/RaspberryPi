@@ -203,11 +203,21 @@ typedef struct v3d32_Texture2D {
 	uint32 handle_gpu_memory;
 	uint16 width_in_pixel;
 	uint16 height_in_pixel;
-	uchar8  mipmap_level_minus_1;
-	uchar8  reserve_0;
+	uchar8 mipmap_level_minus_1;
+	uchar8 reserve_0;
 	uint16 reserve_1;
 } _Texture2D;
 
+typedef struct v3d32_GPUMemory {
+	uint32 gpu; // Address of GPU Memory (GPU Side)
+	uint32 handle_gpu_memory;
+	uint32* arm; // Address of GPU Memory (ARM Side)
+} _GPUMemory;
+
+typedef struct v3d32_FragmentShader {
+	uint32 gpu; // Address of GPU Memory (GPU Side)
+	uint32 handle_gpu_memory;
+} _FragmentShader;
 
 /**
  * System calls
@@ -266,13 +276,19 @@ __attribute__((noinline)) uint32 _display_off( bool bool_off );
 
 /* Constants */
 
+#ifdef __BCM2835
+#define V3D32_BUS_COHERENCE 0x40000000
+#else
+#define V3D32_BUS_COHERENCE 0x80000000
+#endif
+
 /* Relative System Calls  */
 
 __attribute__((noinline)) uint32 _control_qpul2cache( uchar8 ctrl_l2 );
 
 __attribute__((noinline)) uint32 _clear_qpucache( uint32 clear_bit );
 
-__attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, obj address_job, bool flag_noflush, uint32 timeout );
+__attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, ObjArray address_jobs, bool flag_noflush, uint32 timeout );
 
 __attribute__((noinline)) uint32 _make_cl_binning( uint32 width_pixel, uint32 height_pixel, bool flag_multi );
 
@@ -295,6 +311,14 @@ __attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj add
 __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d );
 
 __attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, bool flag_flip, uchar8 data_type, obj address_additional_uniforms );
+
+__attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags );
+
+__attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory );
+
+__attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size );
+
+__attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader );
 
 
 /********************************

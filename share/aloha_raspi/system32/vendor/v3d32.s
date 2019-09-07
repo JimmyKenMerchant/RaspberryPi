@@ -381,8 +381,11 @@ v3d32_make_cl_binning:
 	push {r0-r3}
 	mov r0, temp
 	bl bcm32_lock_memory
+	cmp r0, #-1
 	mov ptr_ctl_list, r0
 	pop {r0-r3}
+
+	beq v3d32_make_cl_binning_error1
 
 	push {r0-r3}
 	mov r0, ptr_ctl_list
@@ -415,8 +418,11 @@ v3d32_make_cl_binning:
 	push {r0-r3}
 	mov r0, temp
 	bl bcm32_lock_memory
+	cmp r0, #-1
 	mov temp, r0
 	pop {r0-r3}
+
+	beq v3d32_make_cl_binning_error1
 
 	str temp, V3D32_TILE_ALLOCATION
 
@@ -448,8 +454,11 @@ v3d32_make_cl_binning:
 	push {r0-r3}
 	mov r0, temp
 	bl bcm32_lock_memory
+	cmp r0, #-1
 	mov temp, r0
 	pop {r0-r3}
+
+	beq v3d32_make_cl_binning_error1
 
 	macro32_store_word temp, offset
 	add offset, offset, #4
@@ -670,8 +679,11 @@ v3d32_make_cl_rendering:
 	push {r0-r3}
 	mov r0, temp
 	bl bcm32_lock_memory
+	cmp r0, #-1
 	mov ptr_ctl_list, r0
 	pop {r0-r3}
+
+	beq v3d32_make_cl_rendering_error1
 
 	push {r0-r3}
 	mov r0, ptr_ctl_list
@@ -892,7 +904,7 @@ v3d32_clear_cl_rendering:
 	macro32_store_word clear_color, ptr_ctl_list
 	add ptr_ctl_list, ptr_ctl_list, #4
 
-	/* Z (24-bit)*/
+	/* Z (24-bit) */
 	strb clear_z, [ptr_ctl_list]
 	add ptr_ctl_list, ptr_ctl_list, #1
 	lsr clear_z, clear_z, #8
@@ -912,9 +924,11 @@ v3d32_clear_cl_rendering:
 	/* Clear Stencil (8-bit) */
 	strb clear_stencil, [ptr_ctl_list]
 
+/*
 ldr ptr_ctl_list, V3D32_CL_RENDER
 and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
+*/
 
 	b v3d32_clear_cl_rendering_success
 
@@ -1244,7 +1258,7 @@ v3d32_texture2d_init:
 
 	bne v3d32_texture2d_init_error2
 
-	str temp, [texture2d]                 @ Error Number (0xFFFFFFFF) in bcm32_lock_memory Is Also Stored
+	str temp, [texture2d]
 
 	b v3d32_texture2d_init_success
 
@@ -1413,6 +1427,295 @@ v3d32_set_texture2d:
 .unreq width
 .unreq height
 .unreq num_mipmap
+
+
+/**
+ * function v3d32_gpumemory_init
+ * Set _GPUMemory Strunct
+ * This function is using a vendor-implemented process.
+ * Note that this function reserves new memory space at GPU side.
+ *
+ * The _GPUMemmory is structured by 3 words as decribed below.
+ *
+ * typedef struct v3d32_GPUMemory {
+ *  uint32 gpu; // Address of GPU Memory (GPU Side)
+ *  uint32 handle_gpu_memory;
+ *  uint32* arm; // Address of GPU Memory (ARM Side)
+ * } _GPUMemory;
+ *
+ * Parameters
+ * r0: Pointer of _GPUMemory to Set (ARM Side)
+ * r1: Size in Bytes
+ * r2: Alignment in Bytes
+ * r3: Bit[6]: Permanent Lock, Bit[5]: No Filled by 1 at Init, Bit[4]: Init by 0, Bit[3]: L2 Coherent "0x8", Bit[2]: Uncached "0xC", Bit[0]: Resizable with Cached, Bit[3]|Bit[2]: PoC
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response from Mailbox
+ */
+.globl v3d32_gpumemory_init
+v3d32_gpumemory_init:
+	/* Auto (Local) Variables, but just Aliases */
+	gpumemory .req r0
+	size      .req r1
+	alignment .req r2
+	flags     .req r3
+	handle    .req r4
+	addr_gpu  .req r5
+
+	push {r4-r5,lr}
+
+	push {r0-r3}
+	mov r0, size
+	mov r1, alignment
+	mov r2, flags
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov handle, r0
+	pop {r0-r3}
+
+	ble v3d32_gpumemory_init_error
+
+	str handle, [gpumemory, #4]
+
+	push {r0-r3}
+	mov r0, handle
+	bl bcm32_lock_memory
+	cmp r0, #-1
+	mov addr_gpu, r0
+	pop {r0-r3}
+
+	beq v3d32_gpumemory_init_error
+
+	str addr_gpu, [gpumemory]
+	and addr_gpu, addr_gpu, #bcm32_mailbox_armmask
+	str addr_gpu, [gpumemory, #8]
+
+	b v3d32_gpumemory_init_success
+
+	v3d32_gpumemory_init_error:
+		mov r0, #1
+		b v3d32_gpumemory_init_common
+
+	v3d32_gpumemory_init_success:
+		mov r0, #0
+
+	v3d32_gpumemory_init_common:
+		macro32_dsb ip
+		pop {r4-r5,pc}
+
+.unreq gpumemory
+.unreq size
+.unreq alignment
+.unreq flags
+.unreq handle
+.unreq addr_gpu
+
+
+/**
+ * function v3d32_gpumemory_free
+ * Clear _GPUMemory Struct with Freeing Memory Space at GPU Side
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of _GPUMemory to to Clear (ARM Side)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response from Mailbox
+ */
+.globl v3d32_gpumemory_free
+v3d32_gpumemory_free:
+	/* Auto (Local) Variables, but just Aliases */
+	gpumemory .req r0
+	temp      .req r1
+
+	push {lr}
+
+	ldr temp, [gpumemory, #4]
+
+	push {r0-r1}
+	mov r0, temp
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0-r1}
+
+	beq v3d32_gpumemory_free_error
+
+	push {r0-r1}
+	mov r0, temp
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0-r1}
+
+	beq v3d32_gpumemory_free_error
+
+	mov temp, #0
+	str temp, [gpumemory]
+	str temp, [gpumemory, #4]
+	str temp, [gpumemory, #8]
+
+	b v3d32_gpumemory_free_success
+
+	v3d32_gpumemory_free_error:
+		mov r0, #1
+		b v3d32_gpumemory_free_common
+
+	v3d32_gpumemory_free_success:
+		mov r0, #0
+
+	v3d32_gpumemory_free_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq gpumemory
+.unreq temp
+
+
+/**
+ * function v3d32_fragmentshader_init
+ * Set _FragmentShader Struct
+ * This function is using a vendor-implemented process.
+ * Note that this function reserves new memory space at GPU side.
+ *
+ * The _FragmentShader is structured by 2 words as decribed below.
+ *
+ * typedef struct v3d32_FragmentShader {
+ *  uint32 gpu; // Address of GPU Memory (GPU Side)
+ *  uint32 handle_gpu_memory;
+ * } _FragmentShader;
+ *
+ * Parameters
+ * r0: Pointer of _FragmentShader to Set (ARM Side)
+ * r1: Pointer of Start Address of Code for Fragment Shader (ARM Side)
+ * r2: Size of Code for Fragment Shader in Bytes
+ *
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): Error in Response from Mailbox
+ * Error(2): Channel of DMA or CB Number is Overflow
+ */
+.globl v3d32_fragmentshader_init
+v3d32_fragmentshader_init:
+	/* Auto (Local) Variables, but just Aliases */
+	fragmentshader .req r0
+	code           .req r1
+	size           .req r2
+	temp           .req r3
+
+	push {lr}
+
+	/* Make Buffer for Texture at GPU Side */
+
+	push {r0-r2}
+	mov r0, size
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #-1
+	mov temp, r0
+	pop {r0-r2}
+
+	beq v3d32_fragmentshader_init_error1
+
+	str temp, [fragmentshader, #4]             @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
+
+	push {r0-r2}
+	mov r0, temp
+	bl bcm32_lock_memory
+	cmp r0, #-1
+	mov temp, r0
+	pop {r0-r2}
+
+	beq v3d32_fragmentshader_init_error1
+
+	push {r0-r3}
+	mov r0, temp
+	orr r1, r1, #equ32_bus_coherence_base      @ Convert to Bus Address
+	bl dma32_datacopy
+	cmp r0, #0
+	pop {r0-r3}
+
+	bne v3d32_fragmentshader_init_error2
+
+	str temp, [fragmentshader]
+
+	b v3d32_fragmentshader_init_success
+
+	v3d32_fragmentshader_init_error1:
+		mov r0, #1
+		b v3d32_fragmentshader_init_common
+
+	v3d32_fragmentshader_init_error2:
+		mov r0, #2
+		b v3d32_fragmentshader_init_common
+
+	v3d32_fragmentshader_init_success:
+		mov r0, #0
+
+	v3d32_fragmentshader_init_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq fragmentshader
+.unreq code
+.unreq size
+.unreq temp
+
+
+/**
+ * function v3d32_fragmentshader_free
+ * Clear _FragmentShader Struct with Freeing Memory Space at GPU Side
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of _FragmentShader to to Clear (ARM Side)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Error in Response from Mailbox
+ */
+.globl v3d32_fragmentshader_free
+v3d32_fragmentshader_free:
+	/* Auto (Local) Variables, but just Aliases */
+	fragmentshader .req r0
+	temp           .req r1
+
+	push {lr}
+
+	ldr temp, [fragmentshader, #4]
+
+	push {r0-r1}
+	mov r0, temp
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0-r1}
+
+	beq v3d32_fragmentshader_free_error
+
+	push {r0-r1}
+	mov r0, temp
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0-r1}
+
+	beq v3d32_fragmentshader_free_error
+
+	mov temp, #0
+	str temp, [fragmentshader]
+	str temp, [fragmentshader, #4]
+
+	b v3d32_fragmentshader_free_success
+
+	v3d32_fragmentshader_free_error:
+		mov r0, #1
+		b v3d32_fragmentshader_free_common
+
+	v3d32_fragmentshader_free_success:
+		mov r0, #0
+
+	v3d32_fragmentshader_free_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq fragmentshader
+.unreq temp
 
 
 V3D32_TML_CL_BIN:                             .word _V3D32_TML_CL_BIN

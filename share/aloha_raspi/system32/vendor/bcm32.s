@@ -721,6 +721,8 @@ bcm32_get_edid:
  * function bcm32_allocate_memory
  * Allocate Memory (Obtain Handle Number) for VideoCore IV at GPU Memory Partition
  * This function is using a vendor-implemented process.
+ * Note that if you use Bit[3]|Bit[2] (PoC) for r2, BCM2835 returns the address space in 0x40000000,
+ * and BCM2836 and BCM2837 return the address space in 0x80000000.
  *
  * Parameters
  * r0: Size in Bytes

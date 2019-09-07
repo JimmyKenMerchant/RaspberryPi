@@ -619,7 +619,7 @@ __attribute__((noinline)) uint32 _clear_qpucache( uint32 clear_bit )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, obj address_job, bool flag_noflush, uint32 timeout )
+__attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, ObjArray address_jobs, bool flag_noflush, uint32 timeout )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x58");
@@ -700,6 +700,34 @@ __attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, bool fla
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x63");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x64");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x65");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x66");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x67");
 	return result;
 }
 
