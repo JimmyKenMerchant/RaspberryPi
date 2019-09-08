@@ -576,11 +576,6 @@ v3d32_make_cl_binning:
 		b v3d32_make_cl_binning_common
 
 	v3d32_make_cl_binning_success:
-
-/*
-macro32_debug_hexa ptr_ctl_list, 0, 12, 256
-*/
-
 		mov r0, #0
 
 	v3d32_make_cl_binning_common:
@@ -908,11 +903,6 @@ v3d32_make_cl_rendering:
 		b v3d32_make_cl_rendering_common
 
 	v3d32_make_cl_rendering_success:
-
-/*
-macro32_debug_hexa ptr_ctl_list, 0, 312, 1280
-*/
-
 		mov r0, #0
 
 	v3d32_make_cl_rendering_common:
