@@ -211,7 +211,15 @@ typedef struct v3d32_Texture2D {
 typedef struct v3d32_GPUMemory {
 	uint32 gpu; // Address of GPU Memory (GPU Side)
 	uint32 handle_gpu_memory;
-	uint32* arm; // Address of GPU Memory (ARM Side)
+	union _arm {
+		char8 s8;
+		uchar8 u8;
+		int16 s16;
+		uint16 u16;
+		int32 s32;
+		uint32 u32;
+		float32 f32;
+	} *arm; // Address of GPU Memory (ARM Side)
 } _GPUMemory;
 
 typedef struct v3d32_FragmentShader {

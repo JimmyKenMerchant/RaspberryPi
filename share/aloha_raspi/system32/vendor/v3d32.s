@@ -340,17 +340,19 @@ macro32_debug temp, 400, 448
 .globl v3d32_make_cl_binning
 v3d32_make_cl_binning:
 	/* Auto (Local) Variables, but just Aliases */
-	width         .req r0
-	height        .req r1
-	flag_multi    .req r2
-	num_tiles     .req r3
-	temp          .req r4
-	ptr_ctl_list  .req r5
-	offset        .req r6
-	width_tile    .req r7
-	height_tile   .req r8
+	width        .req r0
+	height       .req r1
+	flag_multi   .req r2
+	num_tiles    .req r3
+	temp         .req r4
+	ptr_ctl_list .req r5
+	offset       .req r6
+	width_tile   .req r7
+	height_tile  .req r8
+	shaderstate  .req r9
+	uniforms     .req r10
 
-	push {r4-r8,lr}
+	push {r4-r10,lr}
 
 	/* Calculate Number of Tiles */
 	cmp flag_multi, #0
@@ -364,7 +366,7 @@ v3d32_make_cl_binning:
 	lsreq height_tile, height_tile, #6    @ Divison by 64
 	mul num_tiles, width_tile, height_tile
 
-	/* Load Template of Control List */
+	/* Load Template of Binning Control List to GPU Memory Space */
 
 	push {r0-r3}
 	ldr r0, V3D32_TML_CL_BIN_SIZE
@@ -401,7 +403,7 @@ v3d32_make_cl_binning:
 	str ptr_ctl_list, V3D32_CL_BIN
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 
-	/* Tile Allocation Memory */
+	/* Allocate Tile Allocation Memory at GPU Memory Space */
 
 	push {r0-r3}
 	lsl r0, num_tiles, #5            @ Multiply by 32
@@ -436,7 +438,7 @@ v3d32_make_cl_binning:
 	macro32_store_word temp, offset
 	add offset, offset, #4
 
-	/* Tile State Data Array */
+	/* Allocate Tile State Data Array at GPU Memory Space */
 
 	push {r0-r3}
 	mov r0, #48
@@ -483,6 +485,86 @@ v3d32_make_cl_binning:
 	add offset, offset, #2
 	macro32_store_hword height, offset
 
+	/* Load Template of NV Shader State to GPU Memory Space */
+
+	push {r0-r3}
+	ldr r0, V3D32_TML_NV_SHADERSTATE_SIZE
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov temp, r0
+	pop {r0-r3}
+
+	ble v3d32_make_cl_binning_error1
+	str temp, v3d32_make_cl_binning_handle3
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	cmp r0, #-1
+	mov shaderstate, r0
+	pop {r0-r3}
+
+	beq v3d32_make_cl_binning_error1
+
+	push {r0-r3}
+	mov r0, shaderstate
+	ldr r1, V3D32_TML_NV_SHADERSTATE
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+	ldr r2, V3D32_TML_NV_SHADERSTATE_SIZE
+	bl dma32_datacopy
+	cmp r0, #0
+	pop {r0-r3}
+
+	bne v3d32_make_cl_binning_error2
+
+	/* Store GPU Memory Address of Shader State to Variable and Control List */
+	str shaderstate, V3D32_NV_SHADERSTATE
+	ldr offset, V3D32_TML_CL_BIN_NV_SHADERSTATE
+	add offset, ptr_ctl_list, offset
+	macro32_store_word shaderstate, offset
+
+	and shaderstate, shaderstate, #bcm32_mailbox_armmask
+
+	/* Load Template of Uniforms to GPU Memory Space */
+
+	push {r0-r3}
+	ldr r0, V3D32_TML_UNIFORMS_SIZE
+	mov r1, #16
+	mov r2, #0xC
+	bl bcm32_allocate_memory
+	cmp r0, #0
+	mov temp, r0
+	pop {r0-r3}
+
+	ble v3d32_make_cl_binning_error1
+	str temp, v3d32_make_cl_binning_handle4
+
+	push {r0-r3}
+	mov r0, temp
+	bl bcm32_lock_memory
+	cmp r0, #-1
+	mov uniforms, r0
+	pop {r0-r3}
+
+	beq v3d32_make_cl_binning_error1
+
+	push {r0-r3}
+	mov r0, uniforms
+	ldr r1, V3D32_TML_UNIFORMS
+	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+	ldr r2, V3D32_TML_UNIFORMS_SIZE
+	bl dma32_datacopy
+	cmp r0, #0
+	pop {r0-r3}
+
+	bne v3d32_make_cl_binning_error2
+
+	/* Store GPU Memory Address of Uniforms to Variable and NV Shader State */
+	str uniforms, V3D32_UNIFORMS
+	str uniforms, [shaderstate, #8]
+
 	b v3d32_make_cl_binning_success
 
 	v3d32_make_cl_binning_error1:
@@ -503,7 +585,7 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 256
 
 	v3d32_make_cl_binning_common:
 		macro32_dsb ip
-		pop {r4-r8,pc}
+		pop {r4-r10,pc}
 
 .unreq width
 .unreq height
@@ -514,13 +596,19 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 256
 .unreq offset
 .unreq width_tile
 .unreq height_tile
+.unreq shaderstate
+.unreq uniforms
 
 v3d32_make_cl_binning_handle0: .word 0x00
 v3d32_make_cl_binning_handle1: .word 0x00
 v3d32_make_cl_binning_handle2: .word 0x00
+v3d32_make_cl_binning_handle3: .word 0x00
+v3d32_make_cl_binning_handle4: .word 0x00
 
-V3D32_CL_BIN:          .word 0x00
-V3D32_TILE_ALLOCATION: .word 0x00
+V3D32_CL_BIN:                  .word 0x00 @ Bus Address
+V3D32_TILE_ALLOCATION:         .word 0x00 @ Bus Address
+V3D32_NV_SHADERSTATE:          .word 0x00 @ Bus Address
+V3D32_UNIFORMS:                .word 0x00 @ Bus Address
 
 
 /**
@@ -587,12 +675,47 @@ v3d32_unmake_cl_binning:
 
 	beq v3d32_unmake_cl_binning_error
 
+	ldr handle, v3d32_make_cl_binning_handle3
+
+	push {r0}
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	push {r0}
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	ldr handle, v3d32_make_cl_binning_handle4
+
+	push {r0}
+	bl bcm32_unlock_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
+
+	push {r0}
+	bl bcm32_release_memory
+	cmp r0, #-1
+	pop {r0}
+
+	beq v3d32_unmake_cl_binning_error
 	mov handle, #0
 	str handle, v3d32_make_cl_binning_handle0
 	str handle, v3d32_make_cl_binning_handle1
 	str handle, v3d32_make_cl_binning_handle2
+	str handle, v3d32_make_cl_binning_handle3
+	str handle, v3d32_make_cl_binning_handle4
 	str handle, V3D32_CL_BIN
 	str handle, V3D32_TILE_ALLOCATION
+	str handle, V3D32_NV_SHADERSTATE
+	str handle, V3D32_UNIFORMS
 
 	b v3d32_unmake_cl_binning_success
 
@@ -662,7 +785,7 @@ v3d32_make_cl_rendering:
 	add size, temp, size
 	str size, V3D32_CL_RENDER_SIZE
 
-	/* Load Template of Control List  */
+	/* Load Template of Rendring Control List to GPU Memory Space */
 
 	push {r0-r3}
 	mov r0, size
@@ -1120,12 +1243,13 @@ v3d32_execute_cl_rendering:
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Pointer of Fragment Shader Code Address (ARM Side)
- * r1: Pointer of Shaded Vertex Data Address (ARM Side)
+ * r0: Pointer of Fragment Shader Code Address (GPU Side)
+ * r1: Pointer of Shaded Vertex Data Address (GPU Side)
  * r2: Fragment Shader Number of Varyings
  * r3: Shaded Vertex Data Stride in Bytes
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Address of NV Shader State Is Not Initialized
  */
 .globl v3d32_set_nv_shaderstate
 v3d32_set_nv_shaderstate:
@@ -1134,25 +1258,25 @@ v3d32_set_nv_shaderstate:
 	vertex        .req r1
 	num_varying   .req r2
 	stride_vertex .req r3
-	shader_state  .req r4
+	shaderstate   .req r4
 
 	push {r4,lr}
 
-	orr shader, shader, #equ32_bus_coherence_base @ Convert to Bus Address
-	orr vertex, vertex, #equ32_bus_coherence_base @ Convert to Bus Address
-	ldr shader_state, V3D32_NV_SHADERSTATE
-	str shader, [shader_state, #4]
-	str vertex, [shader_state, #12]
-	strb num_varying, [shader_state, #3]
-	strb stride_vertex, [shader_state, #1]
+	ldr shaderstate, V3D32_NV_SHADERSTATE
+	cmp shaderstate, #0
+	beq v3d32_set_nv_shaderstate_error
 
-	macro32_clean_cache shader_state, ip
-	add shader_state, shader_state, #4
-	macro32_clean_cache shader_state, ip
-	add shader_state, shader_state, #4
-	macro32_clean_cache shader_state, ip
-	add shader_state, shader_state, #4
-	macro32_clean_cache shader_state, ip
+	and shaderstate, shaderstate, #bcm32_mailbox_armmask
+	str shader, [shaderstate, #4]
+	str vertex, [shaderstate, #12]
+	strb num_varying, [shaderstate, #3]
+	strb stride_vertex, [shaderstate, #1]
+
+	b v3d32_set_nv_shaderstate_success
+
+	v3d32_set_nv_shaderstate_error:
+		mov r0, #1
+		b v3d32_set_nv_shaderstate_common
 
 	v3d32_set_nv_shaderstate_success:
 		mov r0, #0
@@ -1165,7 +1289,7 @@ v3d32_set_nv_shaderstate:
 .unreq vertex
 .unreq num_varying
 .unreq stride_vertex
-.unreq shader_state
+.unreq shaderstate
 
 
 /**
@@ -1358,7 +1482,8 @@ v3d32_texture2d_free:
  * r2: Texture Data Type, 0 as RGBA8888, etc. (5-bit)
  * r3: Pointer of Additional Uniforms
  *
- * Return: r0 (0 as success)
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Address of Uniforms Is Not Initialized
  */
 .globl v3d32_set_texture2d
 v3d32_set_texture2d:
@@ -1376,6 +1501,11 @@ v3d32_set_texture2d:
 	push {r4-r8,lr}
 
 	ldr uniforms, V3D32_UNIFORMS
+	cmp uniforms, #0
+	beq v3d32_set_texture2d_error
+
+	and uniforms, uniforms, #bcm32_mailbox_armmask
+
 	ldr texture_gpu, [texture2d]
 	ldrh width, [texture2d, #8]
 	ldrh height, [texture2d, #10]
@@ -1401,15 +1531,11 @@ v3d32_set_texture2d:
 	str num_mipmap, [uniforms, #12]
 	str additional, [uniforms, #16]
 
-	macro32_clean_cache uniforms, ip
-	add uniforms, uniforms, #4
-	macro32_clean_cache uniforms, ip
-	add uniforms, uniforms, #4
-	macro32_clean_cache uniforms, ip
-	add uniforms, uniforms, #4
-	macro32_clean_cache uniforms, ip
-	add uniforms, uniforms, #4
-	macro32_clean_cache uniforms, ip
+	b v3d32_set_texture2d_success
+
+	v3d32_set_texture2d_error:
+		mov r0, #1
+		b v3d32_set_texture2d_common
 
 	v3d32_set_texture2d_success:
 		mov r0, #0
@@ -1440,7 +1566,15 @@ v3d32_set_texture2d:
  * typedef struct v3d32_GPUMemory {
  *  uint32 gpu; // Address of GPU Memory (GPU Side)
  *  uint32 handle_gpu_memory;
- *  uint32* arm; // Address of GPU Memory (ARM Side)
+ *  union _arm {
+ *   char8 s8;
+ *   uchar8 u8;
+ *   int16 s16;
+ *   uint16 u16;
+ *   int32 s32;
+ *   uint32 u32;
+ *   float32 f32;
+ *  } *arm; // Address of GPU Memory (ARM Side)
  * } _GPUMemory;
  *
  * Parameters
@@ -1731,8 +1865,10 @@ V3D32_TML_CL_RENDER_SIZE:                     .word _V3D32_TML_CL_RENDER_END - _
 V3D32_TML_CL_RENDER_CLEAR:                    .word _V3D32_TML_CL_RENDER_CLEAR - _V3D32_TML_CL_RENDER
 V3D32_TML_CL_RENDER_CONFIG:                   .word _V3D32_TML_CL_RENDER_CONFIG - _V3D32_TML_CL_RENDER
 V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL - _V3D32_TML_CL_RENDER
-V3D32_NV_SHADERSTATE:                         .word _V3D32_NV_SHADERSTATE
-V3D32_UNIFORMS:                               .word _V3D32_UNIFORMS
+V3D32_TML_NV_SHADERSTATE:                     .word _V3D32_TML_NV_SHADERSTATE
+V3D32_TML_NV_SHADERSTATE_SIZE:                .word _V3D32_TML_NV_SHADERSTATE_END - V3D32_TML_NV_SHADERSTATE
+V3D32_TML_UNIFORMS:                           .word _V3D32_TML_UNIFORMS
+V3D32_TML_UNIFORMS_SIZE:                      .word _V3D32_TML_UNIFORMS_END - _V3D32_TML_UNIFORMS
 
 .section	.data
 .balign 4
@@ -1825,7 +1961,7 @@ _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	 */
 	.byte v3d32_cl_nv_shaderstate
 _V3D32_TML_CL_BIN_NV_SHADERSTATE:
-	.word _V3D32_NV_SHADERSTATE + equ32_bus_coherence_base
+	.word 0x00000000
 	.byte v3d32_cl_flush
 _V3D32_TML_CL_BIN_END:
 
@@ -1895,7 +2031,7 @@ _V3D32_TML_CL_RENDER_END:
  * NV Shader State
  */
 .balign 16
-_V3D32_NV_SHADERSTATE:
+_V3D32_TML_NV_SHADERSTATE:
 
 	/**
 	 * Flag Bits
@@ -1929,19 +2065,19 @@ _V3D32_NV_SHADERSTATE:
 	/**
 	 * Fragment Shader Uniforms Address
 	 */
-	.word _V3D32_UNIFORMS + equ32_bus_coherence_base
+	.word 0x00000000
 
 	/**
 	 * Shaded Vertex Data Address
 	 */
 	.word 0x00000000
-
+_V3D32_TML_NV_SHADERSTATE_END:
 
 /**
  * Uniforms (Texture Setup)
  */
 .balign 16
-_V3D32_UNIFORMS:
+_V3D32_TML_UNIFORMS:
 	/**
 	 * Texture Config Parameter 0
 	 * Bit[31:12]: 4096-byte Aligned Texture Base Pointer
@@ -1980,7 +2116,7 @@ _V3D32_UNIFORMS:
 	 * Pointer of Additional Uniforms
 	 */
 	.word 0x00000000
-
+_V3D32_TML_UNIFORMS_END:
 .section	.vendor_system32
 
 
