@@ -164,7 +164,7 @@ macro32_debug r4, 100, 160
 	/* For Codes */
 
 	push {r0-r3}
-	ldr r0, V3D_SAMPLE1_SIZE
+	ldr r0, DATA_V3D_SAMPLE1_SIZE
 	mov r1, #4096
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -186,21 +186,21 @@ macro32_debug r4, 100, 184
 	str r4, addr_code
 
 	/* Copy Codes to Locked GPU Memory */
-/*
+
 	push {r0-r3}
 	mov r0, r4
-	ldr r1, V3D_SAMPLE1
+	ldr r1, DATA_V3D_SAMPLE1
 	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
-	ldr r2, V3D_SAMPLE1_SIZE
+	ldr r2, DATA_V3D_SAMPLE1_SIZE
 	bl dma32_datacopy
 	pop {r0-r3}
 
 	bic r2, r4, #0xC0000000
 
 macro32_debug_hexa r2, 0, 196, 256
-*/
+
 	/* Address of Output to First Item of Uniforms, and Set Array of Jobs */
-/*
+
 	ldr r0, addr_mail
 	bic r0, r0, #0xC0000000              @ Convert to ARM Address
 	ldr r1, addr_uniform
@@ -208,7 +208,7 @@ macro32_debug_hexa r2, 0, 196, 256
 	ldr r3, addr_output
 
 	str r3, [r2]                         @ Address of Output to First Item of Uniforms
-	ldr r3, V3D_INPUT1
+	ldr r3, DATA_V3D_INPUT1
 	orr r3, r3, #equ32_bus_coherence_base @ Convert to Bus Address
 	str r3, [r2, #4]                     @ Address of Input to Second Item of Uniforms
 	str r1, [r0]                         @ Jobs (1) Address of Uniforms
@@ -217,47 +217,11 @@ macro32_debug_hexa r2, 0, 196, 256
 	str r4, [r0, #12]                    @ Jobs (4) Address of Codes
 
 	macro32_dsb ip
-*/
+
 	/* Execute User Program */
-/*
+
 	push {r0-r3}
 	mov r0, #2                           @ Two QPUs
-	ldr r1, addr_mail
-	bic r1, r1, #0xC0000000              @ Convert to ARM Address
-	mov r2, #0
-	mov r3, #0xFF0000
-	bl v3d32_execute_qpu                 @ Direct Execution of User Program from ARM
-	mov r4, r0
-	pop {r0-r3}
-*/
-	push {r0-r3}
-	mov r0, r4
-	ldr r1, V3D_SIN
-	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
-	ldr r2, V3D_SIN_SIZE
-	bl dma32_datacopy
-	pop {r0-r3}
-
-	/* Address of Output to First Item of Uniforms, and Set Array of Jobs */
-
-	ldr r0, addr_mail
-	bic r0, r0, #0xC0000000              @ Convert to ARM Address
-	ldr r1, addr_uniform
-	bic r2, r1, #0xC0000000              @ Convert to ARM Address
-	ldr r3, addr_output
-
-	str r3, [r2, #4]                     @ Address of Output to First Item of Uniforms
-	mov r3, #0x3E800000                  @ Floating Point -0.25 in Hexadecimal Value
-	str r3, [r2]
-	str r1, [r0]                         @ Jobs (1) Address of Uniforms
-	str r4, [r0, #4]                     @ Jobs (2) Address of Codes
-
-	macro32_dsb ip
-
-	/* Execute User Program */
-
-	push {r0-r3}
-	mov r0, #1                           @ One QPU
 	ldr r1, addr_mail
 	bic r1, r1, #0xC0000000              @ Convert to ARM Address
 	mov r2, #0
@@ -376,26 +340,6 @@ os_fiq:
 .endif
 
 	pop {r0-r7,pc}
-
-/**
- * Redifinition of Global Variables from v3d.qasm
- */
-.globl V3D_SAMPLE1
-.globl V3D_SAMPLE1_SIZE
-.globl V3D_INPUT1
-.globl V3D_INPUT1_SIZE
-.globl V3D_SIN
-.globl V3D_SIN_SIZE
-.globl V3D_FRAGMENT_SHADER
-.globl V3D_FRAGMENT_SHADER_SIZE
-V3D_SAMPLE1:              .word _V3D_SAMPLE1
-V3D_SAMPLE1_SIZE:         .word _V3D_SAMPLE1_SIZE
-V3D_INPUT1:               .word _V3D_INPUT1
-V3D_INPUT1_SIZE:          .word _V3D_INPUT1_SIZE
-V3D_SIN:                  .word _V3D_SIN
-V3D_SIN_SIZE:             .word _V3D_SIN_SIZE
-V3D_FRAGMENT_SHADER:      .word _V3D_FRAGMENT_SHADER
-V3D_FRAGMENT_SHADER_SIZE: .word _V3D_FRAGMENT_SHADER_SIZE
 
 /**
  * Variables

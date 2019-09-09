@@ -1284,20 +1284,20 @@ v3d32_set_nv_shaderstate:
 
 /**
  * function v3d32_texture2d_init
- * Set _Texture2D Struct
+ * Set _Texture2D Struct (Texture Data is 32-bit per Pixel)
  * This function is using a vendor-implemented process.
  * Note that this function reserves new memory space at GPU side.
  *
  * The _Texture2D is structured by 4 words as decribed below.
  *
  * typedef struct v3d32_Texture2D {
- *  uint32 address_gpu_memory;
+ *  uint32 gpu; // Address of GPU Memory (GPU Side)
  *  uint32 handle_gpu_memory;
- *  uint16 width_in_pixel;
- *  uint16 height_in_pixel;
- *  uchar8 mipmap_level_minus_1;
- *  uchar8 reserve_0;
- *  uint16 reserve_1;
+ *  uint16 width; // In Pixel
+ *  uint16 height; // In Pixel
+ *  uchar8 lod; // Level-of-Detail, Mipmap Level - 1
+ *  uchar8 rsv8; // For 4-byte Align
+ *  uint16 rsv16; // For 4-byte Align
  * } _Texture2D;
  *
  * Parameters
@@ -1330,7 +1330,7 @@ v3d32_texture2d_init:
 	and width, width, temp
 	strh width, [texture2d, #8]
 	and height, height, temp
-	strh height, [height, #10]
+	strh height, [texture2d, #10]
 	and num_mipmap, num_mipmap, #0xF
 	strb num_mipmap, [texture2d, #12]
 
@@ -1440,9 +1440,8 @@ v3d32_texture2d_free:
 	mov temp, #0
 	str temp, [texture2d]
 	str temp, [texture2d, #4]
-	strh temp, [texture2d, #8]
-	strh temp, [texture2d, #10]
-	strb temp, [texture2d, #12]
+	str temp, [texture2d, #8]
+	str temp, [texture2d, #12]
 
 	b v3d32_texture2d_free_success
 

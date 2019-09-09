@@ -10,16 +10,22 @@
 #include "system32.h"
 #include "system32.c"
 
-extern obj V3D_FRAGMENT_SHADER;
-extern uint32 V3D_FRAGMENT_SHADER_SIZE;
-extern obj V3D_SIN;
-extern uint32 V3D_SIN_SIZE;
+extern obj DATA_V3D_FRAGMENT_SHADER;
+extern uint32 DATA_V3D_FRAGMENT_SHADER_SIZE;
+extern obj DATA_V3D_SIN;
+extern uint32 DATA_V3D_SIN_SIZE;
+
+extern obj DATA_COLOR32_SAMPLE_IMAGE0;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
+extern obj DATA_COLOR32_SAMPLE_IMAGE1;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;
 
 int32 _user_start() {
 	_GPUMemory *output;
 	_GPUMemory *uniforms;
 	_GPUMemory *vertex_array;
 	_FragmentShader *fragmentshader;
+	_Texture2D *texture2d;
 	uint32 *jobs;
 	uint32 width_pixel = 384;
 	uint32 height_pixel = 320;
@@ -31,24 +37,22 @@ int32 _user_start() {
 
 	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( output, 8, 16, 0xC );
-
 	uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( uniforms, 8, 16, 0xC );
-
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( vertex_array, 256, 16, 0xC );
 
 	uniforms->arm[0].f32 = 0.5f;
 	uniforms->arm[1].u32 = output->gpu;
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
-	result = _fragmentshader_init( fragmentshader, V3D_SIN, V3D_SIN_SIZE );
+	result = _fragmentshader_init( fragmentshader, DATA_V3D_SIN, DATA_V3D_SIN_SIZE );
 	jobs = (uint32*)heap32_malloc( 2 );
 	jobs[0] = uniforms->gpu;
 	//jobs[1] = V3D_SIN; // There Isn't Code in Cache, Needed to Be Loaded to GPU Cache;
 	jobs[1] = fragmentshader->gpu;
 	result = _execute_qpu( 1, jobs, false, 0xFF0000 );
-print32_debug( result, 0, 24 );
-print32_debug( output->arm[0].u32, 72, 24 );
+print32_debug( result, 0, 0 );
+print32_debug( output->arm[0].u32, 72, 0 );
 
 	_make_cl_binning( width_pixel, height_pixel, flag_multi );
 	_make_cl_rendering( FB32_FRAMEBUFFER->addr, width_pixel, height_pixel, flag_multi );
@@ -61,11 +65,22 @@ print32_debug( output->arm[0].u32, 72, 24 );
 
 	vertex_array->arm[0].u32 = 11;
 	vertex_array->arm[1].u32 = 12;
-	result = _set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
-print32_debug( result, 0, 36 );
-	//_texture2d_init( _Texture2D* texture2d, obj address_texture, uint32 height_width_in_pixel, uchar8 mipmap_level_minus_1 );
-	//_texture2d_free( _Texture2D* texture2d );
-	//_set_texture2d( _Texture2D* texture2d, bool flag_flip, uchar8 data_type, obj address_additional_uniforms );
+	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
+
+	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
+	result = _texture2d_init( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 64<<16|64, 0 );
+print32_debug( result, 0, 12 );
+print32_debug( texture2d->gpu, 72, 12);
+print32_debug( texture2d->handle_gpu_memory, 144, 12);
+print32_debug( texture2d->width, 216, 12);
+print32_debug( texture2d->height, 288, 12);
+print32_debug( texture2d->lod, 360, 12);
+print32_debug_hexa( texture2d->gpu&0x3FFFFFFF, 0, 24, 256 );
+	result = _set_texture2d( texture2d, 1, 0, 0 );
+print32_debug( result, 0, 126 );
+	result = _texture2d_free( texture2d );
+print32_debug( result, 0, 138 );
+
 	while( true ) {
 	}
 	return EXIT_SUCCESS;

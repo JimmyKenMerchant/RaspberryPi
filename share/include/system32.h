@@ -199,13 +199,13 @@ typedef struct draw32_RenderBuffer {
 } _RenderBuffer;
 
 typedef struct v3d32_Texture2D {
-	uint32 address_gpu_memory;
+	uint32 gpu; // Address of GPU Memory (GPU Side)
 	uint32 handle_gpu_memory;
-	uint16 width_in_pixel;
-	uint16 height_in_pixel;
-	uchar8 mipmap_level_minus_1;
-	uchar8 reserve_0;
-	uint16 reserve_1;
+	uint16 width; // In Pixel
+	uint16 height; // In Pixel
+	uchar8 lod; // Level-of-Detail, Mipmap Level - 1
+	uchar8 rsv8; // For 4-byte Align
+	uint16 rsv16; // For 4-byte Align
 } _Texture2D;
 
 typedef struct v3d32_GPUMemory {
