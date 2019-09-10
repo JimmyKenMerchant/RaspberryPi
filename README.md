@@ -518,6 +518,8 @@ The software is made of publicly available technology, is not including any prop
 
 * [Raspberry Pi ARM based bare metal examples](https://github.com/dwelch67/raspberrypi)
 
+* [Raspberry Pi Bare Metal Assembly Programming](https://github.com/PeterLemon/RaspberryPi)
+
 * [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware)
 
 * [Rasberry Pi Firmware Wiki](https://github.com/raspberrypi/firmware/wiki)

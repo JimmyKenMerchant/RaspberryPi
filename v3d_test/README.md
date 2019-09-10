@@ -22,11 +22,15 @@
 
 * BCM2835, BCM2836, and BCM2837 have 12 QPUs. The control registers reserve up to 16 QPUs. However, the implementation contains 3 slices and 4 QPUs per slice. In default, if you set multiple user programs, the programs start from 12th QPU in decremental order.
 
-* A QPU has 16 elements, so the QPU runs the assigned code in 16 ways (4 ways per clock) parallelly. The element number can be obtained in codes. An allotment of vertex attribute is served to each element if you control shaders. Elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes.
+* A QPU has 16 elements, which are logical blocks for parallel execution. So, the QPU runs the assigned code in 16 ways. There are 4 physical blocks in a QPU and these can be multiplied by 4 through 4 clocks, i.e., 4 ways per clock. The technology seems to be similar to hardware threading. However, elements in a QPU run the same codes on the same program counter, so it's the unique system of conditional branches, any of elements or all of elements; whereas each QPU can run different codes: Note that the element number can be obtained in codes. An allotment of attributes for each vertex or pixel in VPM is served to each element if you control shaders. An allotment of the data array in VPM you set is served to each element if you execute the user program.
 
 * An element has two types of arithmetic logic units (ALUs), adder and multiplier. You can command both addition and multiplication in an instruction, i.e, an explicit type of superscaling. Plus, a control signal (thread end, etc.) can be included in an instruction, which length is 64-bit. Up to single precision floating point and 32-bit unsigned/signed integer can be handled.
 
 * Note that the concept of threading is for the shading process, binning and rendering. However, several contexts of the documents seem to mention a thread as an alias of the element. In the computer world, threads are typically referred to as logical cores in a physical core, which can run different codes.
+
+* I referenced PeterLemon's [Raspberry Pi Bare Metal Assembly Programming](https://github.com/PeterLemon/RaspberryPi) for V3D programming. The examples are very nice to know the practical usage of V3D.
+
+* To use V3D with the environment which enables data cache of ARM and/or QPU, all of the code and the data are needed to be stored at the GPU memory space. Make sure that the GPU memory space is not flagged as cacheable by ARM to communicate the data smoothly between ARM and QPU. Caution that the V3D block recognize the bus address (check the beginning of the BCM2835 peripheral manual), and the address should be at the point of coherency (PoC). PoC seems to be the 0x40000000 address space on BCM2835 and the 0x80000000 address space on BCM2835 and BCM2837.
 
 * FLOPS (floating point operations per second) is calculated as described below.
 	* V3D's clock is 250Mhz: 2 (instructions per clock) * 4 (ways per clock) * 12 (QPUs) * 250Mhz = 24GFLOPS
