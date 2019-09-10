@@ -331,7 +331,13 @@ macro32_debug temp, 400, 448
  * Parameters
  * r0: Width in Pixel
  * r1: Height in Pixel
- * r2: 0 as Standard, 1 as Multisample
+ * r2: Configuration Flags (8-bit)
+ *     Bit[7]: Double-buffer in Non-ms (Non-multisample) Mode
+ *     Bit[6:5]: Tile Allocation Block Size, 0 = 32 Bytes, 1 = 64 Bytes, 2 = 128 Bytes, 3 = 256 Bytes
+ *     Bit[4:3]: Tile Allocation Initial Block Size, 0 = 32 Bytes, 1 = 64 Bytes, 2 = 128 Bytes, 3 = 256 Bytes
+ *     Bit[2]: Auto-initialize Tile State Data Array
+ *     Bit[1]: Tile Buffer 64-bit Color Depth
+ *     Bit[0]: Multisample Mode 4x
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Failure of Allocating Memory
@@ -342,7 +348,7 @@ v3d32_make_cl_binning:
 	/* Auto (Local) Variables, but just Aliases */
 	width        .req r0
 	height       .req r1
-	flag_multi   .req r2
+	flags_config .req r2
 	num_tiles    .req r3
 	temp         .req r4
 	ptr_ctl_list .req r5
@@ -355,7 +361,7 @@ v3d32_make_cl_binning:
 	push {r4-r10,lr}
 
 	/* Calculate Number of Tiles */
-	cmp flag_multi, #0
+	tst flags_config, #0b1
 	addne width_tile, width, #31          @ Addition for Remainder
 	lsrne width_tile, width_tile, #5      @ Divison by 32
 	addne height_tile, height, #31        @ Addition for Remainder
@@ -406,8 +412,8 @@ v3d32_make_cl_binning:
 	/* Allocate Tile Allocation Memory at GPU Memory Space */
 
 	push {r0-r3}
-	lsl r0, num_tiles, #5            @ Multiply by 32
-	mov r1, #16
+	lsl r0, num_tiles, #6                 @ Multiply by 64
+	mov r1, #256                          @ 256-byte Align
 	mov r2, #0xC
 	bl bcm32_allocate_memory
 	cmp r0, #0
@@ -434,7 +440,7 @@ v3d32_make_cl_binning:
 	add offset, offset, #4
 
 	/* Size of Tile Allocation Memory */
-	lsl temp, num_tiles, #5          @ Multiply by 32
+	lsl temp, num_tiles, #6               @ Multiply by 64
 	macro32_store_word temp, offset
 	add offset, offset, #4
 
@@ -473,9 +479,9 @@ v3d32_make_cl_binning:
 	strb height_tile, [offset]
 	add offset, offset, #1
 
-	/* Multisample */
-	and flag_multi, flag_multi, #0b1
-	strb flag_multi, [offset]
+	/* Configuration */
+	and flags_config, flags_config, #0xFF
+	strb flags_config, [offset]
 
 	/* Width and Height of Clip Window */
 	ldr offset, V3D32_TML_CL_BIN_CLIP_WINDOW
@@ -584,7 +590,7 @@ v3d32_make_cl_binning:
 
 .unreq width
 .unreq height
-.unreq flag_multi
+.unreq flags_config
 .unreq num_tiles
 .unreq temp
 .unreq ptr_ctl_list
@@ -738,7 +744,18 @@ v3d32_unmake_cl_binning:
  * r0: Pointer of Start Address of Framebuffer (ARM Side)
  * r1: Width in Pixel
  * r2: Height in Pixel
- * r3: 0 as Standard, 1 as Multisample
+ * r3: Configuration Flags (16-bit)
+ *     Bit[15:13]: Reserved
+ *     Bit[12]: Double-buffer in Non-ms (Non-multisample) Mode
+ *     Bit[11]: Early Z / Early Coverage Disable
+ *     Bit[10]: Early Z Update Direction, 0 = lt/le, 1 = gt/ge
+ *     Bit[9]: Select Coverage Mode
+ *     Bit[8]: Enable VG (Alpha) Mask Buffer
+ *     Bit[7:6]: Texture Memory Format, 0 = Linear, 1 = T-format, 2 = LT-format
+ *     Bit[5:4]: Decimate Mode, 0 = 1x, 1 = 4x, 2 = 16x
+ *     Bit[3:2]: Non-HDR Frame Buffer Color Format, 0 = BGR565 Dithered, 1 = RGBA8888, 2 = BGR565
+ *     Bit[1]: Tile Buffer 64-bit Color Depth (HDR Mode)
+ *     Bit[0]: Multisample Mode 4x
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Failure of Allocating Memory
@@ -750,7 +767,7 @@ v3d32_make_cl_rendering:
 	buffer_addr   .req r0
 	width         .req r1
 	height        .req r2
-	flag_multi    .req r3
+	flags_config  .req r3
 	num_tiles     .req r4
 	ptr_ctl_list  .req r5
 	offset        .req r6
@@ -762,7 +779,7 @@ v3d32_make_cl_rendering:
 	push {r4-r10,lr}
 
 	/* Calculate Number of Tiles */
-	cmp flag_multi, #0
+	tst flags_config, #0b1
 	addne width_tile, width, #31          @ Addition for Remainder
 	lsrne width_tile, width_tile, #5      @ Divison by 32
 	addne height_tile, height, #31        @ Addition for Remainder
@@ -831,9 +848,10 @@ v3d32_make_cl_rendering:
 	macro32_store_hword height, offset
 	add offset, offset, #2
 
-	/* Multisample */
-	and flag_multi, flag_multi, #0b1
-	strb flag_multi, [offset]
+	/* Configuration */
+	bic flags_config, flags_config, #0xFF000000
+	bic flags_config, flags_config, #0xFF0000
+	macro32_store_hword flags_config, offset
 
 	.unreq width
 	.unreq height
@@ -912,7 +930,7 @@ v3d32_make_cl_rendering:
 .unreq buffer_addr
 .unreq i
 .unreq j
-.unreq flag_multi
+.unreq flags_config
 .unreq num_tiles
 .unreq ptr_ctl_list
 .unreq offset
@@ -1098,6 +1116,7 @@ v3d32_execute_cl_binning:
 	str temp, [addr_qpu, #v3d32_bfc]
 
 	ldr ptr_ctl_list, V3D32_CL_BIN
+	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 
 	/* Set Vertex Array Primitives */
 	ldr temp, V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES
@@ -1108,6 +1127,7 @@ v3d32_execute_cl_binning:
 	add temp, temp, #4
 	macro32_store_word index_vertex, temp
 
+	ldr ptr_ctl_list, V3D32_CL_BIN
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct0ca]
 	macro32_dsb ip
 
@@ -1342,7 +1362,7 @@ v3d32_texture2d_init:
 
 	push {r0-r3}
 	mov r0, size
-	mov r1, #16
+	mov r1, #4096
 	mov r2, #0xC
 	bl bcm32_allocate_memory
 	cmp r0, #-1
@@ -1872,7 +1892,7 @@ _V3D32_TML_CL_BIN:
 	/**
 	 * Tile Binning Mode Configuration
 	 * 1. Tile Allocation Memory Address (32-bit)
-	 * 2. Tile Allocation Memory Size (32-bit), 32 Bytes * Tiles in Default, Variable with Block Size
+	 * 2. Tile Allocation Memory Size (32-bit), 256-byte Aligned, 64 Bytes * Tiles in Default, Variable with Block Size
 	 * 3. Tile State Data Array Base Address (32-bit), 16-byte Aligned, 48 Bytes * Tiles
 	 * 4. Width in Tile (8-bit): 32 Pixels in Multisample mode, 64 Pixels in Non-multisample Mode
 	 * 5. Height in Tile (8-bit): 32 Pixels in Multisample mode, 64 Pixels in Non-multisample Modee
@@ -1881,11 +1901,27 @@ _V3D32_TML_CL_BIN:
 	 * 8. Auto-initialize Tile State Data Array (1-bit)
 	 * 9. Tile Allocation Initial Block Size, 0 = 32 Bytes, 1 = 64 Bytes, 2 = 128 Bytes, 3 = 256 Bytes (2-bit)
 	 * 10. Tile Allocation Block Size, 0 = 32 Bytes, 1 = 64 Bytes, 2 = 128 Bytes, 3 = 256 Bytes (2-bit)
-	 * 11. Double-buffer in Non-ms (Non-multisample) Mode (1-bit)
+	 * 11. Double-buffer in Non-ms Mode (1-bit)
 	 */
 	.byte v3d32_cl_config_binning
 _V3D32_TML_CL_BIN_CONFIG:
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Start Tile Binning
+	 */
+	.byte v3d32_cl_start_tile_binning
+
+	/**
+	 * Clip Window
+	 * 1. Clip Window Left Pixel Coordinate (Unsigned 16-bit)
+	 * 2. Clip Window Bottom Pixel Coordinate (Unsigned 16-bit)
+	 * 3. Clip Window Width in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
+	 * 4. Clip Window Height in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
+	 */
+	.byte v3d32_cl_clip_window
+_V3D32_TML_CL_BIN_CLIP_WINDOW:
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 	/**
 	 * Configuration Bits
@@ -1907,23 +1943,7 @@ _V3D32_TML_CL_BIN_CONFIG:
 	 */
 	.byte v3d32_cl_config
 _V3D32_TML_CL_BIN_CONFIG_BITS:
-	.byte 0x01, 0x90, 0x00
-
-	/**
-	 * Start Tile Binning
-	 */
-	.byte v3d32_cl_start_tile_binning
-
-	/**
-	 * Clip Window
-	 * 1. Clip Window Left Pixel Coordinate (Unsigned 16-bit)
-	 * 2. Clip Window Bottom Pixel Coordinate (Unsigned 16-bit)
-	 * 3. Clip Window Width in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
-	 * 4. Clip Window Height in Pixel (Unsigned 16-bit): Actual Size to Be Rendered
-	 */
-	.byte v3d32_cl_clip_window
-_V3D32_TML_CL_BIN_CLIP_WINDOW:
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	.byte 0x03, 0x90, 0x00
 
 	/**
 	 * Viewport Offset
@@ -1935,6 +1955,14 @@ _V3D32_TML_CL_BIN_VIEWPORT_OFFSET:
 	.byte 0x00, 0x00, 0x00, 0x00
 
 	/**
+	 * NV Shader State
+	 * 1. 16-byte Aligned Memory Address of Shader Recored (32-bit)
+	 */
+	.byte v3d32_cl_nv_shaderstate
+_V3D32_TML_CL_BIN_NV_SHADERSTATE:
+	.word 0x00000000
+
+	/**
 	 * Vertex Array Primitives
 	 * 1. Primitive Mode, 0 = Points, 1 = Lines, 2 = Line_loop, 3 = Line_strip, 4 = Triangles, 5 = Triangle_strip, 6 = Triangle_fan (8-bit)
 	 * 2. Number of Vertices (32-bit)
@@ -1944,13 +1972,6 @@ _V3D32_TML_CL_BIN_VIEWPORT_OFFSET:
 _V3D32_TML_CL_BIN_VERTEXARRAY_PRIMITIVES:
 	.byte 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
-	/**
-	 * NV Shader State
-	 * 1. 16-byte Aligned Memory Address of Shader Recored (32-bit)
-	 */
-	.byte v3d32_cl_nv_shaderstate
-_V3D32_TML_CL_BIN_NV_SHADERSTATE:
-	.word 0x00000000
 	.byte v3d32_cl_flush
 _V3D32_TML_CL_BIN_END:
 

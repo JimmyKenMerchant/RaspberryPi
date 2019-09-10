@@ -298,11 +298,11 @@ __attribute__((noinline)) uint32 _clear_qpucache( uint32 clear_bit );
 
 __attribute__((noinline)) uint32 _execute_qpu( uchar8 number_qpu, ObjArray address_jobs, bool flag_noflush, uint32 timeout );
 
-__attribute__((noinline)) uint32 _make_cl_binning( uint32 width_pixel, uint32 height_pixel, bool flag_multi );
+__attribute__((noinline)) uint32 _make_cl_binning( uint32 width_pixel, uint32 height_pixel, uchar8 flags_config );
 
 __attribute__((noinline)) uint32 _unmake_cl_binning();
 
-__attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, bool flag_multi );
+__attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, uint16 flags_config );
 
 __attribute__((noinline)) uint32 _unmake_cl_rendering();
 

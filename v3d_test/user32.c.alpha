@@ -1,0 +1,54 @@
+/**
+ * user32.c
+ *
+ * Author: Kenta Ishii
+ * License: MIT
+ * License URL: https://opensource.org/licenses/MIT
+ *
+ */
+
+#include "system32.h"
+#include "system32.c"
+
+extern obj DATA_V3D_SIN;
+extern uint32 DATA_V3D_SIN_SIZE;
+
+int32 _user_start() {
+	_GPUMemory *output;
+	_GPUMemory *uniforms;
+	_FragmentShader *fragmentshader;
+	uint32 *jobs;
+	uint32 result;
+
+	_control_qpul2cache( 0b101 );
+	_clear_qpucache( 0x0F0F0F0F );
+
+	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( output, 8, 16, 0xC );
+	uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( uniforms, 8, 16, 0xC );
+	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
+	_fragmentshader_init( fragmentshader, DATA_V3D_SIN, DATA_V3D_SIN_SIZE );
+
+	uniforms->arm[0].f32 = 0.5f;
+	uniforms->arm[1].u32 = output->gpu;
+	jobs = (uint32*)heap32_malloc( 2 );
+	jobs[0] = uniforms->gpu;
+	//jobs[1] = V3D_SIN; // There Isn't Code in Cache, Needed to Be Loaded to GPU Cache;
+	jobs[1] = fragmentshader->gpu;
+	result = _execute_qpu( 1, jobs, false, 0xFF0000 );
+print32_debug( result, 0, 0 );
+print32_debug( output->arm[0].u32, 72, 0 );
+
+	result = _gpumemory_free( output );
+print32_debug( result, 0, 138 );
+	result = _gpumemory_free( uniforms );
+print32_debug( result, 0, 150 );
+	result = _fragmentshader_free( fragmentshader );
+print32_debug( result, 0, 162 );
+
+	while( true ) {
+	}
+	return EXIT_SUCCESS;
+}
+
