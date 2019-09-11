@@ -41,40 +41,41 @@ int32 _user_start() {
 	_make_cl_rendering( FB32_FRAMEBUFFER->addr, width_pixel, height_pixel, 0b101 );
 	//Tested //_unmake_cl_binning();
 	//Tested //_unmake_cl_rendering();
+	_config_cl_binning( 0x009003 ); // Enable Both Forward and Reverse Facing Primitive, Depth Test LT, Z Update Enable 
 	_clear_cl_rendering( 0xFF00FFFF, 0x000000, 0x0, 0x0 );
 
 	vertex_array->arm[0].u32 = 0*16|(0*16)<<16; // X and Y
 	vertex_array->arm[1].f32 = 1.0f;
 	vertex_array->arm[2].f32 = 1.0f;
 	vertex_array->arm[3].f32 = 0.0f;
-	vertex_array->arm[4].f32 = 0.0f;
+	vertex_array->arm[4].f32 = 1.0f;
 	vertex_array->arm[5].u32 = 0*16|(256*16)<<16; // X and Y
 	vertex_array->arm[6].f32 = 1.0f;
 	vertex_array->arm[7].f32 = 1.0f;
 	vertex_array->arm[8].f32 = 0.0f;
-	vertex_array->arm[9].f32 = 1.0f;
+	vertex_array->arm[9].f32 = 0.0f;
 	vertex_array->arm[10].u32 = 256*16|(256*16)<<16; // X and Y
 	vertex_array->arm[11].f32 = 1.0f;
 	vertex_array->arm[12].f32 = 1.0f;
 	vertex_array->arm[13].f32 = 1.0f;
-	vertex_array->arm[14].f32 = 1.0f;
+	vertex_array->arm[14].f32 = 0.0f;
 	vertex_array->arm[15].u32 = 256*16|(0*16)<<16; // X and Y
 	vertex_array->arm[16].f32 = 1.0f;
 	vertex_array->arm[17].f32 = 1.0f;
 	vertex_array->arm[18].f32 = 1.0f;
-	vertex_array->arm[19].f32 = 0.0f;
+	vertex_array->arm[19].f32 = 1.0f;
 	vertex_array->arm[20].u32 = 0*16|(0*16)<<16; // X and Y
 	vertex_array->arm[21].f32 = 1.0f;
 	vertex_array->arm[22].f32 = 1.0f;
 	vertex_array->arm[23].f32 = 0.0f;
-	vertex_array->arm[24].f32 = 0.0f;
+	vertex_array->arm[24].f32 = 1.0f;
 	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
 
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 64<<16|64, 0 );
 	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
-	_set_texture2d( texture2d, 0, 0b10000, 0 );
+	_set_texture2d( texture2d, 0x190, 0b10000, 0 ); // Flip Y Axis and NEAREST for Magnification and Minification Filter
 
 	result = _execute_cl_binning( 5, 5, 0, 0xFF0000 ); // TRIANGLE_STRIP, 5 Vertices
 print32_debug( result, 0, 114 );

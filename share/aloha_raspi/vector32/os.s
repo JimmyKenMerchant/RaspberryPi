@@ -295,7 +295,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x67                            @ Prevent Overflow SVC Table
+	cmp ip, #0x68                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -673,54 +673,58 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x5B:
-		bl v3d32_make_cl_rendering
+		bl v3d32_config_cl_binning
 		b _os_svc_common
 
 	_os_svc_0x5C:
-		bl v3d32_unmake_cl_rendering
+		bl v3d32_make_cl_rendering
 		b _os_svc_common
 
 	_os_svc_0x5D:
-		bl v3d32_clear_cl_rendering
+		bl v3d32_unmake_cl_rendering
 		b _os_svc_common
 
 	_os_svc_0x5E:
-		bl v3d32_execute_cl_binning
+		bl v3d32_clear_cl_rendering
 		b _os_svc_common
 
 	_os_svc_0x5F:
-		bl v3d32_execute_cl_rendering
+		bl v3d32_execute_cl_binning
 		b _os_svc_common
 
 	_os_svc_0x60:
-		bl v3d32_set_nv_shaderstate
+		bl v3d32_execute_cl_rendering
 		b _os_svc_common
 
 	_os_svc_0x61:
-		bl v3d32_texture2d_init
+		bl v3d32_set_nv_shaderstate
 		b _os_svc_common
 
 	_os_svc_0x62:
-		bl v3d32_texture2d_free
+		bl v3d32_texture2d_init
 		b _os_svc_common
 
 	_os_svc_0x63:
-		bl v3d32_set_texture2d
+		bl v3d32_texture2d_free
 		b _os_svc_common
 
 	_os_svc_0x64:
-		bl v3d32_gpumemory_init
+		bl v3d32_set_texture2d
 		b _os_svc_common
 
 	_os_svc_0x65:
-		bl v3d32_gpumemory_free
+		bl v3d32_gpumemory_init
 		b _os_svc_common
 
 	_os_svc_0x66:
-		bl v3d32_fragmentshader_init
+		bl v3d32_gpumemory_free
 		b _os_svc_common
 
 	_os_svc_0x67:
+		bl v3d32_fragmentshader_init
+		b _os_svc_common
+
+	_os_svc_0x68:
 		bl v3d32_fragmentshader_free
 		b _os_svc_common
 

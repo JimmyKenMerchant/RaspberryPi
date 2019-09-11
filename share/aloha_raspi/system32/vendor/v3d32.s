@@ -735,6 +735,77 @@ v3d32_unmake_cl_binning:
 
 
 /**
+ * function v3d32_config_cl_binning
+ * Set Configuration Bits in Control List for Binning
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Configuration Flags (18-bit)
+ *     Bit[17]: Early Z Updates Enable
+ *     Bit[16]: Early Z Enable
+ *     Bit[15]: Z Updates Enable
+ *     Bit[14:12]: Depth Test Function, 0 = never, 1 = lt, 2 = eq, 3 = le, 4 = gt, 5 = ne, 6 = ge, 7 = always
+ *     Bit[11]: Coverage Read Mode, 0 = Clear on Read, 1 = Leave on Read
+ *     Bit[10:9]: Coverage Update Mode, 0 = Non-zero, 1 = Odd, 2 = Or, 3 = Zero
+ *     Bit[8]: Coverage Pipe Select
+ *     Bit[7:6]: Rasteriser Oversample Mode, 0 = None, 1 = 4x, 2 = 16x
+ *     Bit[5]: Coverage Read Type, 0 = 32-bit, 1 = 16-bit
+ *     Bit[4]: Antialiased Points and Lines
+ *     Bit[3]: Enable Depth Offset
+ *     Bit[2]: Clockwise Primitives
+ *     Bit[1]: Enable Reverse Facing Primitive
+ *     Bit[0]: Enable Forward Facing Primitive
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Control List for Binning Is Not Initialized
+ */
+.globl v3d32_config_cl_binning
+v3d32_config_cl_binning:
+	/* Auto (Local) Variables, but just Aliases */
+	flags_config  .req r0
+	ptr_ctl_list  .req r1
+	offset        .req r2
+
+	push {lr}
+
+	ldr ptr_ctl_list, V3D32_CL_BIN
+	cmp ptr_ctl_list, #0
+	beq v3d32_config_cl_binning_error
+
+	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
+	ldr offset, V3D32_TML_CL_BIN_CONFIG_BITS
+	bic flags_config, flags_config, #0xFF000000
+	bic flags_config, flags_config, #0x00F00000
+
+	strb flags_config, [ptr_ctl_list, offset]
+	add offset, offset, #1
+	lsr flags_config, flags_config, #8
+
+	strb flags_config, [ptr_ctl_list, offset]
+	add offset, offset, #1
+	lsr flags_config, flags_config, #8
+
+	strb flags_config, [ptr_ctl_list, offset]
+
+	b v3d32_config_cl_binning_success
+
+	v3d32_config_cl_binning_error:
+		mov r0, #1
+		b v3d32_config_cl_binning_common
+
+	v3d32_config_cl_binning_success:
+		mov r0, #0
+
+	v3d32_config_cl_binning_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq flags_config
+.unreq ptr_ctl_list
+.unreq offset
+
+
+/**
  * function v3d32_make_cl_rendering
  * Initialize Control List for Rendering
  * This function is using a vendor-implemented process.
@@ -1487,7 +1558,12 @@ v3d32_texture2d_free:
  *
  * Parameters
  * r0: Pointer of Texture Object (ARM Side)
- * r1: 0 as No Flip Texture Y Axis, 1 as Flip Texture Y Axis
+ * r1: Configuration Flags (9-bit)
+ *     Bit[8]: Flip Texture Y Axis
+ *     Bit[7]: Magnification Filter, 0 = LINEAR, 1 = NEAREST
+ *     Bit[6:4]: Minification Filter, 0 = LINEAR, 1 = NEAREST, 2 = NEAR_MIP_NEAR, 3 = NEAR_MIP_LIN, 4 = LIN_MIP_NEAR, 5 = LIN_MIP_LIN
+ *     Bit[3:2]: T Wrap Mode, 0 = Repeat, 1 = Clamp, 2 = Mirror, 3 = Border
+ *     Bit[1:0]: S Wrap Mode, 0 = Repeat, 1 = Clamp, 2 = Mirror, 3 = Border
  * r2: Texture Data Type, 0 as RGBA8888, etc. (5-bit)
  * r3: Pointer of Additional Uniforms
  *
@@ -1497,15 +1573,15 @@ v3d32_texture2d_free:
 .globl v3d32_set_texture2d
 v3d32_set_texture2d:
 	/* Auto (Local) Variables, but just Aliases */
-	texture2d   .req r0
-	flag_flip   .req r1
-	data_type   .req r2
-	additional  .req r3
-	uniforms    .req r4
-	texture_gpu .req r5
-	width       .req r6
-	height      .req r7
-	num_mipmap  .req r8
+	texture2d    .req r0
+	flags_config .req r1
+	data_type    .req r2
+	additional   .req r3
+	uniforms     .req r4
+	texture_gpu  .req r5
+	width        .req r6
+	height       .req r7
+	num_mipmap   .req r8
 
 	push {r4-r8,lr}
 
@@ -1520,18 +1596,22 @@ v3d32_set_texture2d:
 	ldrh height, [texture2d, #10]
 	ldrb num_mipmap, [texture2d, #12]
 
-	/* Texture Config Parameter 1 */
+	/* Set Texture Config Parameter 0 about Bit[8]: Flip Texture Y Axis */
+	tst flags_config, #0x100                        @ Check Bit[8]
+	orrne texture_gpu, texture_gpu, #0x100
+
+	/* Store Texture Config Parameter 1 */
 	lsl width, width, #8
 	orr width, width, height, lsl #20
-	tst data_type, #0b10000
+	tst data_type, #0x10
 	orrne width, width, #0x80000000
+	and flags_config, flags_config, #0xFF
+	orr width, width, flags_config
 	str width, [uniforms, #4]
 
-	/* Texture Config Parameter 0 */
-	cmp flag_flip, #0
-	orrne texture_gpu, texture_gpu, #0b100000000
+	/* Store Texture Config Parameter 0 */
 	orr texture_gpu, texture_gpu, num_mipmap
-	and data_type, data_type, #0b1111
+	and data_type, data_type, #0xF
 	orr texture_gpu, texture_gpu, data_type, lsl #4
 	str texture_gpu, [uniforms]
 
@@ -1554,7 +1634,7 @@ v3d32_set_texture2d:
 		pop {r4-r8,pc}
 
 .unreq texture2d
-.unreq flag_flip
+.unreq flags_config
 .unreq data_type
 .unreq additional
 .unreq uniforms

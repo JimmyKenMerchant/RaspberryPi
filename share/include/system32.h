@@ -302,6 +302,8 @@ __attribute__((noinline)) uint32 _make_cl_binning( uint32 width_pixel, uint32 he
 
 __attribute__((noinline)) uint32 _unmake_cl_binning();
 
+__attribute__((noinline)) uint32 _config_cl_binning( uint32 flags_config );
+
 __attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, uint16 flags_config );
 
 __attribute__((noinline)) uint32 _unmake_cl_rendering();
@@ -318,7 +320,7 @@ __attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj add
 
 __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d );
 
-__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, bool flag_flip, uchar8 data_type, obj address_additional_uniforms );
+__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms );
 
 __attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags );
 
