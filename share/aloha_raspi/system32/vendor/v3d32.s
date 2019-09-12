@@ -1398,7 +1398,7 @@ v3d32_set_nv_shaderstate:
  * Parameters
  * r0: Pointer of _Texture2D to Set (ARM Side)
  * r1: Bit[31:16]: Height in Pixel, Bit[15:0]: Width in Pixel, Up to 2047
- * r2: Size of Texture Level-of-Detail (LOD) 0 in Bytes, Needs to Be Power of 4 and at least 16384
+ * r2: Size of Texture Level-of-Detail (LOD) 0 in Bytes, Needs to Be Power of 4, Minimum 4096
  * r3: Number of Mipmap Levels Minus 1, Up to 15
  *
  * Return: r0 (0 as success, 1 as error)
@@ -1424,16 +1424,20 @@ v3d32_texture2d_init:
 	strh width, [texture2d, #8]
 	and height, height, temp
 	strh height, [texture2d, #10]
-	and num_mipmap, num_mipmap, #0xF
-	strb num_mipmap, [texture2d, #12]
 
 	/* Calculate Log Base 2 of Size of Texture LOD 0 in Bytes */
 	clz size, size                        @ Count Leading Zeros
 	mov temp, #31
 	sub size, temp, size
-	cmp size, #14                         @ At Least log2(16384) = 14
-	movlt size, #14
+	cmp size, #12                         @ At Least log2(4096) = 12
+	movlt size, #12
 	strb size, [texture2d, #13]
+
+	/* Clear Number of Mipmap Level Minus 1 If Size Is Up to 16384 */
+	and num_mipmap, num_mipmap, #0xF
+	cmp size, #14                         @ From log2(16384)
+	movlo num_mipmap, #0
+	strb num_mipmap, [texture2d, #12]
 
 	/* Calculate Size to Allocate GPU Memory in Bytes */
 	mov temp, #1
@@ -1561,8 +1565,9 @@ v3d32_texture2d_free:
  * r1: Pointer of Start Address of Texture Image
  * r2: Mipmap Level
  *
- * Return: r0 (0 as success, 1 as error)
+ * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Channel of DMA or CB Number is Overflow
+ * Error(2): Overflow of Mipmap Level
  */
 .globl v3d32_load_texture2d
 v3d32_load_texture2d:
@@ -1570,13 +1575,15 @@ v3d32_load_texture2d:
 	texture2d    .req r0
 	texture      .req r1
 	mipmap_level .req r2
-	size         .req r3
-	addr_gpu     .req r4
-	temp         .req r5
+	num_mipmap   .req r3
+	size         .req r4
+	addr_gpu     .req r5
+	temp         .req r6
 
-	push {r4-r5,lr}
+	push {r4-r6,lr}
 
 	ldr addr_gpu, [texture2d]
+	ldr num_mipmap, [texture2d, #12]
 	ldr size, [texture2d, #13]
 	mov temp, #1
 	lsl size, temp, size
@@ -1584,6 +1591,8 @@ v3d32_load_texture2d:
 	v3d32_load_texture2d_loop:
 		subs mipmap_level, mipmap_level, #1
 		blo v3d32_load_texture2d_jump
+		subs num_mipmap, num_mipmap, #1
+		blo v3d32_load_texture2d_error2
 
 		lsr size, size, #2
 		sub addr_gpu, addr_gpu, size
@@ -1601,8 +1610,12 @@ v3d32_load_texture2d:
 
 		beq v3d32_load_texture2d_success
 
-	v3d32_load_texture2d_error:
+	v3d32_load_texture2d_error1:
 		mov r0, #1
+		b v3d32_load_texture2d_common
+
+	v3d32_load_texture2d_error2:
+		mov r0, #2
 		b v3d32_load_texture2d_common
 
 	v3d32_load_texture2d_success:
@@ -1610,11 +1623,12 @@ v3d32_load_texture2d:
 
 	v3d32_load_texture2d_common:
 		macro32_dsb ip
-		pop {r4-r5,pc}
+		pop {r4-r6,pc}
 
 .unreq texture2d
 .unreq texture
 .unreq mipmap_level
+.unreq num_mipmap
 .unreq size
 .unreq addr_gpu
 .unreq temp
