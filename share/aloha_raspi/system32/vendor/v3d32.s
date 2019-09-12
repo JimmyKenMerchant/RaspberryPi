@@ -1386,33 +1386,35 @@ v3d32_set_nv_shaderstate:
  *  uint32 handle_gpu_memory;
  *  uint16 width; // In Pixel
  *  uint16 height; // In Pixel
- *  uchar8 lod; // Level-of-Detail, Mipmap Level - 1
- *  uchar8 rsv8; // For 4-byte Align
+ *  uchar8 num_mipmap; // Number of Mipmap Levels - 1
+ *  uchar8 log2_lod0; // Log Base 2 of Size of Texture LOD 0 in Bytes
  *  uint16 rsv16; // For 4-byte Align
  * } _Texture2D;
  *
+ * The start address of the texture level-of-detail (LOD) 0 needs to be aligned by 4096 bytes.
+ * To store mipmaps before the start address,
+ * the size of the texture image for LOD 0 has to be at least 16384 bytes, e.g., 64 (width) * 64 (height) * 4 (bytes).
+ *
  * Parameters
  * r0: Pointer of _Texture2D to Set (ARM Side)
- * r1: Pointer of Start Address of Texture Level-of-Detail (LOD) 0 (ARM Side)
- * r2: Bit[31:16]: Height in Pixel, Bit[15:0]: Width in Pixel, Up to 2047
+ * r1: Bit[31:16]: Height in Pixel, Bit[15:0]: Width in Pixel, Up to 2047
+ * r2: Size of Texture Level-of-Detail (LOD) 0 in Bytes, Needs to Be Power of 4 and at least 16384
  * r3: Number of Mipmap Levels Minus 1, Up to 15
  *
- * Return: r0 (0 as success, 1 and 2 as error)
+ * Return: r0 (0 as success, 1 as error)
  * Error(1): Error in Response from Mailbox
- * Error(2): Channel of DMA or CB Number is Overflow
  */
 .globl v3d32_texture2d_init
 v3d32_texture2d_init:
 	/* Auto (Local) Variables, but just Aliases */
 	texture2d  .req r0
-	texture    .req r1
-	width      .req r2
+	width      .req r1
+	size       .req r2
 	num_mipmap .req r3
 	height     .req r4
-	size       .req r5
-	temp       .req r6
+	temp       .req r5
 
-	push {r4-r6,lr}
+	push {r4-r5,lr}
 
 	/* Extract Width and Height Separately */
 	lsr height, width, #16
@@ -1425,9 +1427,21 @@ v3d32_texture2d_init:
 	and num_mipmap, num_mipmap, #0xF
 	strb num_mipmap, [texture2d, #12]
 
-	/* Size in Bytes */
-	mul size, width, height
-	lsl size, size, #2                    @ Multiply by 4
+	/* Calculate Log Base 2 of Size of Texture LOD 0 in Bytes */
+	clz size, size                        @ Count Leading Zeros
+	mov temp, #31
+	sub size, temp, size
+	cmp size, #14                         @ At Least log2(16384) = 14
+	movlt size, #14
+	strb size, [texture2d, #13]
+
+	/* Calculate Size to Allocate GPU Memory in Bytes */
+	mov temp, #1
+	lsl size, temp, size
+
+	/* Add Half of Size of Texture LOD 0 If Any Mimmap Exist */
+	cmp num_mipmap, #0
+	addhi size, size, size, lsr #1
 
 	/* Make Buffer for Texture at GPU Side */
 
@@ -1440,7 +1454,7 @@ v3d32_texture2d_init:
 	mov temp, r0
 	pop {r0-r3}
 
-	beq v3d32_texture2d_init_error1
+	beq v3d32_texture2d_init_error
 
 	str temp, [texture2d, #4]             @ Error Number (0xFFFFFFFF) in bcm32_allocate_memory Is Also Stored
 
@@ -1451,28 +1465,14 @@ v3d32_texture2d_init:
 	mov temp, r0
 	pop {r0-r3}
 
-	beq v3d32_texture2d_init_error1
-
-	push {r0-r3}
-	mov r0, temp
-	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
-	mov r2, size
-	bl dma32_datacopy
-	cmp r0, #0
-	pop {r0-r3}
-
-	bne v3d32_texture2d_init_error2
+	beq v3d32_texture2d_init_error
 
 	str temp, [texture2d]
 
 	b v3d32_texture2d_init_success
 
-	v3d32_texture2d_init_error1:
+	v3d32_texture2d_init_error:
 		mov r0, #1
-		b v3d32_texture2d_init_common
-
-	v3d32_texture2d_init_error2:
-		mov r0, #2
 		b v3d32_texture2d_init_common
 
 	v3d32_texture2d_init_success:
@@ -1480,14 +1480,13 @@ v3d32_texture2d_init:
 
 	v3d32_texture2d_init_common:
 		macro32_dsb ip
-		pop {r4-r6,pc}
+		pop {r4-r5,pc}
 
 .unreq texture2d
-.unreq texture
 .unreq width
+.unreq size
 .unreq num_mipmap
 .unreq height
-.unreq size
 .unreq temp
 
 
@@ -1552,6 +1551,76 @@ v3d32_texture2d_free:
 
 
 /**
+ * function v3d32_load_texture2d
+ * Load Texture Image to _Texture2D Struct (Texture Image is 32-bit per Pixel)
+ * This function is using a vendor-implemented process.
+ * Note that this function reserves new memory space at GPU side.
+ *
+ * Parameters
+ * r0: Pointer of _Texture2D to Set (ARM Side)
+ * r1: Pointer of Start Address of Texture Image
+ * r2: Mipmap Level
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Channel of DMA or CB Number is Overflow
+ */
+.globl v3d32_load_texture2d
+v3d32_load_texture2d:
+	/* Auto (Local) Variables, but just Aliases */
+	texture2d    .req r0
+	texture      .req r1
+	mipmap_level .req r2
+	size         .req r3
+	addr_gpu     .req r4
+	temp         .req r5
+
+	push {r4-r5,lr}
+
+	ldr addr_gpu, [texture2d]
+	ldr size, [texture2d, #13]
+	mov temp, #1
+	lsl size, temp, size
+
+	v3d32_load_texture2d_loop:
+		subs mipmap_level, mipmap_level, #1
+		blo v3d32_load_texture2d_jump
+
+		lsr size, size, #2
+		sub addr_gpu, addr_gpu, size
+
+		b v3d32_load_texture2d_loop
+
+	v3d32_load_texture2d_jump:
+		push {r0-r3}
+		mov r0, addr_gpu
+		orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
+		mov r2, size
+		bl dma32_datacopy
+		cmp r0, #0
+		pop {r0-r3}
+
+		beq v3d32_load_texture2d_success
+
+	v3d32_load_texture2d_error:
+		mov r0, #1
+		b v3d32_load_texture2d_common
+
+	v3d32_load_texture2d_success:
+		mov r0, #0
+
+	v3d32_load_texture2d_common:
+		macro32_dsb ip
+		pop {r4-r5,pc}
+
+.unreq texture2d
+.unreq texture
+.unreq mipmap_level
+.unreq size
+.unreq addr_gpu
+.unreq temp
+
+
+/**
  * function v3d32_set_texture2d
  * Clear Texture Object with Freeing Memory Space at GPU Side
  * This function is using a vendor-implemented process.
@@ -1578,7 +1647,7 @@ v3d32_set_texture2d:
 	data_type    .req r2
 	additional   .req r3
 	uniforms     .req r4
-	texture_gpu  .req r5
+	addr_gpu     .req r5
 	width        .req r6
 	height       .req r7
 	num_mipmap   .req r8
@@ -1591,14 +1660,14 @@ v3d32_set_texture2d:
 
 	and uniforms, uniforms, #bcm32_mailbox_armmask
 
-	ldr texture_gpu, [texture2d]
+	ldr addr_gpu, [texture2d]
 	ldrh width, [texture2d, #8]
 	ldrh height, [texture2d, #10]
 	ldrb num_mipmap, [texture2d, #12]
 
 	/* Set Texture Config Parameter 0 about Bit[8]: Flip Texture Y Axis */
 	tst flags_config, #0x100                        @ Check Bit[8]
-	orrne texture_gpu, texture_gpu, #0x100
+	orrne addr_gpu, addr_gpu, #0x100
 
 	/* Store Texture Config Parameter 1 */
 	lsl width, width, #8
@@ -1610,10 +1679,10 @@ v3d32_set_texture2d:
 	str width, [uniforms, #4]
 
 	/* Store Texture Config Parameter 0 */
-	orr texture_gpu, texture_gpu, num_mipmap
+	orr addr_gpu, addr_gpu, num_mipmap
 	and data_type, data_type, #0xF
-	orr texture_gpu, texture_gpu, data_type, lsl #4
-	str texture_gpu, [uniforms]
+	orr addr_gpu, addr_gpu, data_type, lsl #4
+	str addr_gpu, [uniforms]
 
 	mov num_mipmap, #0
 	str num_mipmap, [uniforms, #8]
@@ -1638,7 +1707,7 @@ v3d32_set_texture2d:
 .unreq data_type
 .unreq additional
 .unreq uniforms
-.unreq texture_gpu
+.unreq addr_gpu
 .unreq width
 .unreq height
 .unreq num_mipmap

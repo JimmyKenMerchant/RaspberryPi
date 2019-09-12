@@ -703,38 +703,45 @@ __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms )
+__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x64");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags )
+__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x65");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory )
+__attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x66");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size )
+__attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x67");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader )
+__attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x68");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x69");
 	return result;
 }
 

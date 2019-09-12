@@ -203,8 +203,8 @@ typedef struct v3d32_Texture2D {
 	uint32 handle_gpu_memory;
 	uint16 width; // In Pixel
 	uint16 height; // In Pixel
-	uchar8 lod; // Level-of-Detail, Mipmap Level - 1
-	uchar8 rsv8; // For 4-byte Align
+	uchar8 num_mipmap; // Number of Mipmap Levels - 1
+	uchar8 log2_lod0; // Log Base 2 of Size of Texture LOD 0 in Bytes
 	uint16 rsv16; // For 4-byte Align
 } _Texture2D;
 
@@ -316,9 +316,11 @@ __attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 
 
 __attribute__((noinline)) uint32 _set_nv_shaderstate( obj address_shader, obj address_vertex, uint32 num_varying, uint32 stride_vertex );
 
-__attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj address_texture, uint32 height_width_in_pixel, uchar8 mipmap_level_minus_1 );
+__attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, uint32 height_width_in_pixel, uint32 size, uchar8 num_mipmap );
 
 __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d );
+
+__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level );
 
 __attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms );
 

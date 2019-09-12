@@ -72,7 +72,8 @@ int32 _user_start() {
 	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
 
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
-	_texture2d_init( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 64<<16|64, 0 );
+	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 0 );
+	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0 );
 	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	_set_texture2d( texture2d, 0x190, 0b10000, 0 ); // Flip Y Axis and NEAREST for Magnification and Minification Filter
