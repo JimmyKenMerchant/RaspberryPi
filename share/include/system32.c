@@ -647,7 +647,7 @@ __attribute__((noinline)) uint32 _config_cl_binning( uint32 flags_config )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, uint16 flags_config )
+__attribute__((noinline)) uint32 _make_cl_rendering( uint32 width_pixel, uint32 height_pixel, uint16 flags_config )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x5C");
@@ -668,80 +668,87 @@ __attribute__((noinline)) uint32 _clear_cl_rendering( uint32 clear_color, uint32
 	return result;
 }
 
-__attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 num_vertex, uint32 index_vertex, uint32 timeout )
+__attribute__((noinline)) uint32 _setbuffer_cl_rendering( obj address_framebuffer )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x5F");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 timeout )
+__attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 num_vertex, uint32 index_vertex, uint32 timeout )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x60");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_nv_shaderstate( obj address_shader, obj address_vertex, uint32 num_varying, uint32 stride_vertex )
+__attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 timeout )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x61");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj address_texture, uint32 height_width_in_pixel, uchar8 mipmap_level_minus_1 )
+__attribute__((noinline)) uint32 _set_nv_shaderstate( obj address_shader, obj address_vertex, uint32 num_varying, uint32 stride_vertex )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x62");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d )
+__attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, obj address_texture, uint32 height_width_in_pixel, uchar8 mipmap_level_minus_1 )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x63");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level )
+__attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x64");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms )
+__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x65");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags )
+__attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x66");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory )
+__attribute__((noinline)) uint32 _gpumemory_init( _GPUMemory* gpumemory, uint32 size, uint32 alignment, uchar8 flags )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x67");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size )
+__attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x68");
 	return result;
 }
 
-__attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader )
+__attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x69");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x6A");
 	return result;
 }
 

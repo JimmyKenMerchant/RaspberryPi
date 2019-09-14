@@ -38,7 +38,8 @@ int32 _user_start() {
 	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER, DATA_V3D_FRAGMENT_SHADER_SIZE );
 
 	_make_cl_binning( width_pixel, height_pixel, 0b101 );
-	_make_cl_rendering( FB32_FRAMEBUFFER->addr, width_pixel, height_pixel, 0b101 );
+	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
+	_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
 	//Tested //_unmake_cl_binning();
 	//Tested //_unmake_cl_rendering();
 	_config_cl_binning( 0x009003 ); // Enable Both Forward and Reverse Facing Primitive, Depth Test LT, Z Update Enable 

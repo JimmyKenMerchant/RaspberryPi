@@ -304,11 +304,13 @@ __attribute__((noinline)) uint32 _unmake_cl_binning();
 
 __attribute__((noinline)) uint32 _config_cl_binning( uint32 flags_config );
 
-__attribute__((noinline)) uint32 _make_cl_rendering( obj address_framebuffer, uint32 width_pixel, uint32 height_pixel, uint16 flags_config );
+__attribute__((noinline)) uint32 _make_cl_rendering( uint32 width_pixel, uint32 height_pixel, uint16 flags_config );
 
 __attribute__((noinline)) uint32 _unmake_cl_rendering();
 
 __attribute__((noinline)) uint32 _clear_cl_rendering( uint32 clear_color, uint32 clear_z, uchar8 clear_alpha, uchar8 clear_stencil );
+
+__attribute__((noinline)) uint32 _setbuffer_cl_rendering( obj address_framebuffer );
 
 __attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 num_vertex, uint32 index_vertex, uint32 timeout );
 

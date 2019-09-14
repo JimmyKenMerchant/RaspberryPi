@@ -812,10 +812,9 @@ v3d32_config_cl_binning:
  * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
  *
  * Parameters
- * r0: Pointer of Start Address of Framebuffer (ARM Side)
- * r1: Width in Pixel
- * r2: Height in Pixel
- * r3: Configuration Flags (16-bit)
+ * r0: Width in Pixel
+ * r1: Height in Pixel
+ * r2: Configuration Flags (16-bit)
  *     Bit[15:13]: Reserved
  *     Bit[12]: Double-buffer in Non-ms (Non-multisample) Mode
  *     Bit[11]: Early Z / Early Coverage Disable
@@ -835,10 +834,10 @@ v3d32_config_cl_binning:
 .globl v3d32_make_cl_rendering
 v3d32_make_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	buffer_addr   .req r0
-	width         .req r1
-	height        .req r2
-	flags_config  .req r3
+	width         .req r0
+	height        .req r1
+	flags_config  .req r2
+	buffer_addr   .req r3
 	num_tiles     .req r4
 	ptr_ctl_list  .req r5
 	offset        .req r6
@@ -907,8 +906,6 @@ v3d32_make_cl_rendering:
 
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
 	add offset, ptr_ctl_list, offset
-	orr buffer_addr, buffer_addr, #equ32_bus_coherence_base @ Convert to Bus Address
-	macro32_store_word buffer_addr, offset
 	add offset, offset, #4
 
 	/* Width in Pixel */
@@ -926,8 +923,8 @@ v3d32_make_cl_rendering:
 
 	.unreq width
 	.unreq height
-	i .req r1
-	j .req r2
+	i .req r0
+	j .req r1
 
 	/* Tiles */
 	ldr offset, V3D32_TML_CL_RENDER_SIZE
@@ -998,9 +995,9 @@ v3d32_make_cl_rendering:
 		macro32_dsb ip
 		pop {r4-r10,pc}
 
-.unreq buffer_addr
 .unreq i
 .unreq j
+.unreq buffer_addr
 .unreq flags_config
 .unreq num_tiles
 .unreq ptr_ctl_list
@@ -1153,6 +1150,60 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
 
 
 /**
+ * function v3d32_setbuffer_cl_rendering
+ * Change Framebuffer to Render
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of Start Address of Framebuffer (ARM Side)
+ *
+ * Return: r0 (0 as success, 1 as error)
+ * Error(1): Control List for Rendering Is Not Initialized
+ */
+.globl v3d32_setbuffer_cl_rendering
+v3d32_setbuffer_cl_rendering:
+	/* Auto (Local) Variables, but just Aliases */
+	buffer_addr   .req r0
+	ptr_ctl_list  .req r1
+	offset        .req r2
+
+	push {lr}
+
+	ldr ptr_ctl_list, V3D32_CL_RENDER
+	cmp ptr_ctl_list, #0
+	beq v3d32_setbuffer_cl_rendering_error
+
+	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
+	ldr offset, V3D32_TML_CL_RENDER_CONFIG
+	add ptr_ctl_list, ptr_ctl_list, offset
+	macro32_store_word buffer_addr, ptr_ctl_list
+
+
+/*
+ldr ptr_ctl_list, V3D32_CL_RENDER
+and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
+macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
+*/
+
+	b v3d32_setbuffer_cl_rendering_success
+
+	v3d32_setbuffer_cl_rendering_error:
+		mov r0, #1
+		b v3d32_setbuffer_cl_rendering_common
+
+	v3d32_setbuffer_cl_rendering_success:
+		mov r0, #0
+
+	v3d32_setbuffer_cl_rendering_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq buffer_addr
+.unreq ptr_ctl_list
+.unreq offset
+
+
+/**
  * function v3d32_execute_cl_binning
  * Execute Control List for Binning
  * This function is using a vendor-implemented process.
@@ -1244,7 +1295,7 @@ v3d32_execute_cl_binning:
 
 /**
  * function v3d32_execute_cl_rendering
- * Execute Control List for Binning
+ * Execute Control List for Rendering
  * This function is using a vendor-implemented process.
  *
  * Parameters
@@ -2036,7 +2087,6 @@ V3D32_TML_CL_RENDER:                          .word _V3D32_TML_CL_RENDER
 V3D32_TML_CL_RENDER_SIZE:                     .word _V3D32_TML_CL_RENDER_END - _V3D32_TML_CL_RENDER
 V3D32_TML_CL_RENDER_CLEAR:                    .word _V3D32_TML_CL_RENDER_CLEAR - _V3D32_TML_CL_RENDER
 V3D32_TML_CL_RENDER_CONFIG:                   .word _V3D32_TML_CL_RENDER_CONFIG - _V3D32_TML_CL_RENDER
-V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL: .word _V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL - _V3D32_TML_CL_RENDER
 V3D32_TML_NV_SHADERSTATE:                     .word _V3D32_TML_NV_SHADERSTATE
 V3D32_TML_NV_SHADERSTATE_SIZE:                .word _V3D32_TML_NV_SHADERSTATE_END - V3D32_TML_NV_SHADERSTATE
 V3D32_TML_UNIFORMS:                           .word _V3D32_TML_UNIFORMS
@@ -2178,25 +2228,6 @@ _V3D32_TML_CL_RENDER_CLEAR:
 	.byte v3d32_cl_config_rendering
 _V3D32_TML_CL_RENDER_CONFIG:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-
-	/**
-	 * Tile Coordinates
-	 * 1. Tile Column Number (8-bit)
-	 * 2. Tile Row Number (8-bit)
-	 */
-	.byte v3d32_cl_tile_coordinates
-	.byte 0x00, 0x00
-
-	/**
-	 * Store Tile Buffer General
-	 * 1. Buffer to Store, 0 = None, 1 = Color, 2 = Z/Stencil, 3 = Z, 4 = VG-Mask, 5 = Full Dump (3-bit)
-	 * 2. Reserved (1-bit)
-	 * 3. Format, 0 = Raster Format, 1 = T-format, 2 = LT-format (2-bit)
-	 * ...
-	 */
-	.byte v3d32_cl_store_tilebuffer_general
-_V3D32_TML_CL_RENDER_STORE_TILEBUFFER_GENERAL:
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 _V3D32_TML_CL_RENDER_END:
 
 
@@ -2417,9 +2448,12 @@ _V3D32_TML_UNIFORMS_END:
 .equ v3d32_cl_branch,                    16  @ Branch, Bit[31:0]: Absolute Branch Address
 .equ v3d32_cl_branch_sublist,            17  @ Branch to Sub-list, Bit[31:0]: Tile Allocation Memory Address + (32 * (Tile Row * Column Length + Tile Column))
 .equ v3d32_cl_return_sublist,            18  @ Return from Sub-list
-.equ v3d32_cl_store_tilebuffer_multi,    24  @ Rendering Only, Store Multi-sample Tile Buffer, Place from First
-.equ v3d32_cl_store_tilebuffer_multiend, 25  @ Rendering Only, Store Multi-sample Tile Buffer and Signal End of Frame, Place at Last
-.equ v3d32_cl_store_tilebuffer_general,  28  @ Rendering Only, from Sub-list, Followed by 3-byte/6-byte Data (for full-dump), Place Before Multi-sample
+.equ v3d32_cl_store_tilebuffer_multi,    24  @ Rendering Only, Store Multi-sample Tile Color Buffer, Place from First
+.equ v3d32_cl_store_tilebuffer_multiend, 25  @ Rendering Only, Store Multi-sample Tile Color Buffer and Signal End of Frame, Place at Last
+.equ v3d32_cl_store_tilebuffer_full,     26  @ Rendering Only, Bit[31:4]: Memory Address, Bit[3]: Last Tile of Frame, Bit[2]: Disable Clear on Write, Bit[1]: Disable Z/Stencil Buffer Write, Bit[0]: Disable Color Buffer Write
+.equ v3d32_cl_load_tilebuffer_full,      27  @ Rendering Only, Bit[31:4]: Memory Address, Bit[3]: Last Tile of Frame, Bit[1]: Disable Z/Stencil Buffer Read, Bit[0]: Disable Color Buffer Read
+.equ v3d32_cl_store_tilebuffer_general,  28  @ Rendering Only
+.equ v3d32_cl_load_tilebuffer_general,   29  @ Rendering Only
 .equ v3d32_cl_vertexarray_primitives,    33  @ Bit[71:40]: Index of First Vertex, Bit[39:8]: Length, Bit[7:0]: Primitive Mode, 0 = Points, 4 = Triangles, etc.
 .equ v3d32_cl_nv_shaderstate,            65  @ No Vertex Shading State, Bit[31:0]: Memory Address of Shader Record (16-byte aligned)
 .equ v3d32_cl_config,                    96  @ Followed by 6-byte Data
