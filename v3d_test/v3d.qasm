@@ -230,6 +230,7 @@
 	ldtmu0                                # Load Pixel Color in TMU0 to r4
 	shr alpha, pixel_color, 24
 	sub.setf alpha, alpha, 0
+	mov tlbz, parameter_z
 	mov.ifnz tlbc, pixel_color; thrend    # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
 	nop
 	nop; sbdone

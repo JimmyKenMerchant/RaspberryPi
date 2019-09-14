@@ -2168,6 +2168,15 @@ _V3D32_TML_CL_BIN_VIEWPORT_OFFSET:
 	.byte 0x00, 0x00, 0x00, 0x00
 
 	/**
+	 * Z Min and Max Clipping Planes
+	 * 1. Minimum Zw (Float 32-bit)
+	 * 2. Maximum Zw (Float 32-bit)
+	 */
+	.byte v3d32_cl_z_clipping_plane
+	.float 0.0
+	.float 1.0
+
+	/**
 	 * NV Shader State
 	 * 1. 16-byte Aligned Memory Address of Shader Recored (32-bit)
 	 */
@@ -2228,6 +2237,25 @@ _V3D32_TML_CL_RENDER_CLEAR:
 	.byte v3d32_cl_config_rendering
 _V3D32_TML_CL_RENDER_CONFIG:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+	/**
+	 * Tile Coordinates
+	 * 1. Tile Column Number (8-bit)
+	 * 2. Tile Row Number (8-bit)
+	 */
+	.byte v3d32_cl_tile_coordinates
+	.byte 0x00, 0x00
+
+	/**
+	 * Store Tile Buffer General
+	 * 1. Buffer to Store, 0 = None, 1 = Color, 2 = Z/Stencil, 3 = Z, 4 = VG-Mask, 5 = Full Dump (3-bit)
+	 * 2. Reserved (1-bit)
+	 * 3. Format, 0 = Raster Format, 1 = T-format, 2 = LT-format (2-bit)
+	 * ...
+	 */
+	.byte v3d32_cl_store_tilebuffer_general
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
 _V3D32_TML_CL_RENDER_END:
 
 
@@ -2461,6 +2489,7 @@ _V3D32_TML_UNIFORMS_END:
 .equ v3d32_cl_line_width,                99  @ Bit[31:0]: Line Width in Single Precision Float
 .equ v3d32_cl_clip_window,               102 @ Bit[63:48]: Height in Pixels, Bit[47:32]: Width in Pixels, Bit[31:16]: Bottom, Bit[15:0]: Left
 .equ v3d32_cl_viewport_offset,           103 @ Bit[31:16]: Y-coordinate (Signed), Bit[15:0]: X-coordinate (Signed)
+.equ v3d32_cl_z_clipping_plane,          104 @ Bit[64:32]: Maximum Zw (float32), Bit[32:0]: Minimum Zw (float32)
 .equ v3d32_cl_config_binning,            112 @ Binning Only, Followed by 15-byte Data
 .equ v3d32_cl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
 .equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG (Alpha) Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
