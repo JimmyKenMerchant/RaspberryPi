@@ -682,7 +682,7 @@ __attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 n
 	return result;
 }
 
-__attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 timeout )
+__attribute__((noinline)) uint32 _execute_cl_rendering( uint32 timeout )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x61");
@@ -749,6 +749,13 @@ __attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragment
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x6A");
+	return result;
+}
+
+__attribute__((noinline)) uint32 _bind_objectv3d( _ObjectV3D* objectv3d )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x6B");
 	return result;
 }
 

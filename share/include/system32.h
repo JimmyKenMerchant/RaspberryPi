@@ -227,6 +227,21 @@ typedef struct v3d32_FragmentShader {
 	uint32 handle_gpu_memory;
 } _FragmentShader;
 
+typedef struct v3d32_ObjectV3D {
+	uint32 v3d32_make_cl_binning_handle0;
+	uint32 v3d32_make_cl_binning_handle1;
+	uint32 v3d32_make_cl_binning_handle2;
+	uint32 v3d32_make_cl_binning_handle3;
+	uint32 v3d32_make_cl_binning_handle4;
+	uint32 v3d32_make_cl_rendering_handle0;
+	uint32 v3d32_cl_bin;
+	uint32 v3d32_tile_allocation;
+	uint32 v3d32_nv_shaderstate;
+	uint32 v3d32_uniforms;
+	uint32 v3d32_cl_render;
+	uint32 v3d32_cl_render_size;
+} _ObjectV3D;
+
 /**
  * System calls
  * On _user_start, CPU runs with User mode. To access restricted memory area to write, usage of System calls is needed to acccess SVC mode.
@@ -314,7 +329,7 @@ __attribute__((noinline)) uint32 _setbuffer_cl_rendering( obj address_framebuffe
 
 __attribute__((noinline)) uint32 _execute_cl_binning( uchar8 primitive, uint32 num_vertex, uint32 index_vertex, uint32 timeout );
 
-__attribute__((noinline)) uint32 _execute_cl_rendering( bool flag_clear, uint32 timeout );
+__attribute__((noinline)) uint32 _execute_cl_rendering( uint32 timeout );
 
 __attribute__((noinline)) uint32 _set_nv_shaderstate( obj address_shader, obj address_vertex, uint32 num_varying, uint32 stride_vertex );
 
@@ -333,6 +348,8 @@ __attribute__((noinline)) uint32 _gpumemory_free( _GPUMemory* gpumemory );
 __attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragmentshader, obj code, uint32 size );
 
 __attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader );
+
+__attribute__((noinline)) uint32 _bind_objectv3d( _ObjectV3D* objectv3d );
 
 
 /********************************

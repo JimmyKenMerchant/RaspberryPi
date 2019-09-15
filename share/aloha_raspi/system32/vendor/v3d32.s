@@ -339,9 +339,10 @@ macro32_debug temp, 400, 448
  *     Bit[1]: Tile Buffer 64-bit Color Depth
  *     Bit[0]: Multisample Mode 4x
  *
- * Return: r0 (0 as success, 1 and 2 as error)
- * Error(1): Failure of Allocating Memory
- * Error(2): Channel of DMA or CB Number is Overflow
+ * Return: r0 (0 as success, 1, 2 and 3 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Failure of Allocating Memory
+ * Error(3): Channel of DMA or CB Number is Overflow
  */
 .globl v3d32_make_cl_binning
 v3d32_make_cl_binning:
@@ -357,8 +358,13 @@ v3d32_make_cl_binning:
 	height_tile  .req r8
 	shaderstate  .req r9
 	uniforms     .req r10
+	objectv3d    .req r11
 
-	push {r4-r10,lr}
+	push {r4-r11,lr}
+
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_make_cl_binning_error1
 
 	/* Calculate Number of Tiles */
 	tst flags_config, #0b1
@@ -383,8 +389,8 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_make_cl_binning_error1
-	str temp, v3d32_make_cl_binning_handle0
+	ble v3d32_make_cl_binning_error2
+	str temp, [objectv3d, #v3d32_make_cl_binning_handle0]
 
 	push {r0-r3}
 	mov r0, temp
@@ -393,7 +399,7 @@ v3d32_make_cl_binning:
 	mov ptr_ctl_list, r0
 	pop {r0-r3}
 
-	beq v3d32_make_cl_binning_error1
+	beq v3d32_make_cl_binning_error2
 
 	push {r0-r3}
 	mov r0, ptr_ctl_list
@@ -404,9 +410,9 @@ v3d32_make_cl_binning:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_make_cl_binning_error2
+	bne v3d32_make_cl_binning_error3
 
-	str ptr_ctl_list, V3D32_CL_BIN
+	str ptr_ctl_list, [objectv3d, #v3d32_cl_bin]
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 
 	/* Allocate Tile Allocation Memory at GPU Memory Space */
@@ -420,8 +426,8 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_make_cl_binning_error1
-	str temp, v3d32_make_cl_binning_handle1
+	ble v3d32_make_cl_binning_error2
+	str temp, [objectv3d, #v3d32_make_cl_binning_handle1]
 
 	push {r0-r3}
 	mov r0, temp
@@ -430,9 +436,9 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	beq v3d32_make_cl_binning_error1
+	beq v3d32_make_cl_binning_error2
 
-	str temp, V3D32_TILE_ALLOCATION
+	str temp, [objectv3d, #v3d32_tile_allocation]
 
 	ldr offset, V3D32_TML_CL_BIN_CONFIG
 	add offset, ptr_ctl_list, offset
@@ -456,8 +462,8 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_make_cl_binning_error1
-	str temp, v3d32_make_cl_binning_handle2
+	ble v3d32_make_cl_binning_error2
+	str temp, [objectv3d, #v3d32_make_cl_binning_handle2]
 
 	push {r0-r3}
 	mov r0, temp
@@ -466,7 +472,7 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	beq v3d32_make_cl_binning_error1
+	beq v3d32_make_cl_binning_error2
 
 	macro32_store_word temp, offset
 	add offset, offset, #4
@@ -502,8 +508,8 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_make_cl_binning_error1
-	str temp, v3d32_make_cl_binning_handle3
+	ble v3d32_make_cl_binning_error2
+	str temp, [objectv3d, #v3d32_make_cl_binning_handle3]
 
 	push {r0-r3}
 	mov r0, temp
@@ -512,7 +518,7 @@ v3d32_make_cl_binning:
 	mov shaderstate, r0
 	pop {r0-r3}
 
-	beq v3d32_make_cl_binning_error1
+	beq v3d32_make_cl_binning_error2
 
 	push {r0-r3}
 	mov r0, shaderstate
@@ -523,10 +529,10 @@ v3d32_make_cl_binning:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_make_cl_binning_error2
+	bne v3d32_make_cl_binning_error3
 
 	/* Store GPU Memory Address of Shader State to Variable and Control List */
-	str shaderstate, V3D32_NV_SHADERSTATE
+	str shaderstate, [objectv3d, #v3d32_nv_shaderstate]
 	ldr offset, V3D32_TML_CL_BIN_NV_SHADERSTATE
 	add offset, ptr_ctl_list, offset
 	macro32_store_word shaderstate, offset
@@ -544,8 +550,8 @@ v3d32_make_cl_binning:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_make_cl_binning_error1
-	str temp, v3d32_make_cl_binning_handle4
+	ble v3d32_make_cl_binning_error2
+	str temp, [objectv3d, #v3d32_make_cl_binning_handle4]
 
 	push {r0-r3}
 	mov r0, temp
@@ -554,7 +560,7 @@ v3d32_make_cl_binning:
 	mov uniforms, r0
 	pop {r0-r3}
 
-	beq v3d32_make_cl_binning_error1
+	beq v3d32_make_cl_binning_error2
 
 	push {r0-r3}
 	mov r0, uniforms
@@ -565,10 +571,10 @@ v3d32_make_cl_binning:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_make_cl_binning_error2
+	bne v3d32_make_cl_binning_error3
 
 	/* Store GPU Memory Address of Uniforms to Variable and NV Shader State */
-	str uniforms, V3D32_UNIFORMS
+	str uniforms, [objectv3d, #v3d32_uniforms]
 	str uniforms, [shaderstate, #8]
 
 	b v3d32_make_cl_binning_success
@@ -581,12 +587,16 @@ v3d32_make_cl_binning:
 		mov r0, #2
 		b v3d32_make_cl_binning_common
 
+	v3d32_make_cl_binning_error3:
+		mov r0, #3
+		b v3d32_make_cl_binning_common
+
 	v3d32_make_cl_binning_success:
 		mov r0, #0
 
 	v3d32_make_cl_binning_common:
 		macro32_dsb ip
-		pop {r4-r10,pc}
+		pop {r4-r11,pc}
 
 .unreq width
 .unreq height
@@ -599,17 +609,7 @@ v3d32_make_cl_binning:
 .unreq height_tile
 .unreq shaderstate
 .unreq uniforms
-
-v3d32_make_cl_binning_handle0: .word 0x00
-v3d32_make_cl_binning_handle1: .word 0x00
-v3d32_make_cl_binning_handle2: .word 0x00
-v3d32_make_cl_binning_handle3: .word 0x00
-v3d32_make_cl_binning_handle4: .word 0x00
-
-V3D32_CL_BIN:                  .word 0x00 @ Bus Address
-V3D32_TILE_ALLOCATION:         .word 0x00 @ Bus Address
-V3D32_NV_SHADERSTATE:          .word 0x00 @ Bus Address
-V3D32_UNIFORMS:                .word 0x00 @ Bus Address
+.unreq objectv3d
 
 
 /**
@@ -618,110 +618,121 @@ V3D32_UNIFORMS:                .word 0x00 @ Bus Address
  * This function is using a vendor-implemented process.
  * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Error in Response from Mailbox
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Error in Response from Mailbox
  */
 .globl v3d32_unmake_cl_binning
 v3d32_unmake_cl_binning:
 	/* Auto (Local) Variables, but just Aliases */
-	handle .req r0
+	handle     .req r0
+	objectv3d  .req r1
 
 	push {lr}
 
-	ldr handle, v3d32_make_cl_binning_handle0
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_unmake_cl_binning_error1
 
-	push {r0}
+	ldr handle, [objectv3d, #v3d32_make_cl_binning_handle0]
+
+	push {r0-r1}
 	bl bcm32_unlock_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_release_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	ldr handle, v3d32_make_cl_binning_handle1
+	ldr handle, [objectv3d, #v3d32_make_cl_binning_handle1]
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_unlock_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_release_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	ldr handle, v3d32_make_cl_binning_handle2
+	ldr handle, [objectv3d, #v3d32_make_cl_binning_handle2]
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_unlock_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_release_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	ldr handle, v3d32_make_cl_binning_handle3
+	ldr handle, [objectv3d, #v3d32_make_cl_binning_handle3]
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_unlock_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_release_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	ldr handle, v3d32_make_cl_binning_handle4
+	ldr handle, [objectv3d, #v3d32_make_cl_binning_handle4]
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_unlock_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_release_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_binning_error
+	beq v3d32_unmake_cl_binning_error2
+
 	mov handle, #0
-	str handle, v3d32_make_cl_binning_handle0
-	str handle, v3d32_make_cl_binning_handle1
-	str handle, v3d32_make_cl_binning_handle2
-	str handle, v3d32_make_cl_binning_handle3
-	str handle, v3d32_make_cl_binning_handle4
-	str handle, V3D32_CL_BIN
-	str handle, V3D32_TILE_ALLOCATION
-	str handle, V3D32_NV_SHADERSTATE
-	str handle, V3D32_UNIFORMS
+	str handle, [objectv3d, #v3d32_make_cl_binning_handle0]
+	str handle, [objectv3d, #v3d32_make_cl_binning_handle1]
+	str handle, [objectv3d, #v3d32_make_cl_binning_handle2]
+	str handle, [objectv3d, #v3d32_make_cl_binning_handle3]
+	str handle, [objectv3d, #v3d32_make_cl_binning_handle4]
+	str handle, [objectv3d, #v3d32_cl_bin]
+	str handle, [objectv3d, #v3d32_tile_allocation]
+	str handle, [objectv3d, #v3d32_nv_shaderstate]
+	str handle, [objectv3d, #v3d32_uniforms]
 
 	b v3d32_unmake_cl_binning_success
 
-	v3d32_unmake_cl_binning_error:
+	v3d32_unmake_cl_binning_error1:
 		mov r0, #1
+		b v3d32_unmake_cl_binning_common
+
+	v3d32_unmake_cl_binning_error2:
+		mov r0, #2
 		b v3d32_unmake_cl_binning_common
 
 	v3d32_unmake_cl_binning_success:
@@ -732,6 +743,7 @@ v3d32_unmake_cl_binning:
 		pop {pc}
 
 .unreq handle
+.unreq objectv3d
 
 
 /**
@@ -756,21 +768,26 @@ v3d32_unmake_cl_binning:
  *     Bit[1]: Enable Reverse Facing Primitive
  *     Bit[0]: Enable Forward Facing Primitive
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Control List for Binning Is Not Initialized
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Control List for Binning Is Not Initialized
  */
 .globl v3d32_config_cl_binning
 v3d32_config_cl_binning:
 	/* Auto (Local) Variables, but just Aliases */
-	flags_config  .req r0
-	ptr_ctl_list  .req r1
-	offset        .req r2
+	flags_config .req r0
+	ptr_ctl_list .req r1
+	offset       .req r2
+	objectv3d    .req r3
 
 	push {lr}
 
-	ldr ptr_ctl_list, V3D32_CL_BIN
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_config_cl_binning_error1
+	ldr ptr_ctl_list, [objectv3d, #v3d32_cl_bin]
 	cmp ptr_ctl_list, #0
-	beq v3d32_config_cl_binning_error
+	beq v3d32_config_cl_binning_error2
 
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 	ldr offset, V3D32_TML_CL_BIN_CONFIG_BITS
@@ -789,8 +806,12 @@ v3d32_config_cl_binning:
 
 	b v3d32_config_cl_binning_success
 
-	v3d32_config_cl_binning_error:
+	v3d32_config_cl_binning_error1:
 		mov r0, #1
+		b v3d32_config_cl_binning_common
+
+	v3d32_config_cl_binning_error2:
+		mov r0, #2
 		b v3d32_config_cl_binning_common
 
 	v3d32_config_cl_binning_success:
@@ -803,6 +824,7 @@ v3d32_config_cl_binning:
 .unreq flags_config
 .unreq ptr_ctl_list
 .unreq offset
+.unreq objectv3d
 
 
 /**
@@ -827,26 +849,32 @@ v3d32_config_cl_binning:
  *     Bit[1]: Tile Buffer 64-bit Color Depth (HDR Mode)
  *     Bit[0]: Multisample Mode 4x
  *
- * Return: r0 (0 as success, 1 and 2 as error)
- * Error(1): Failure of Allocating Memory
- * Error(2): Channel of DMA or CB Number is Overflow
+ * Return: r0 (0 as success, 1, 2 and 3 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Failure of Allocating Memory
+ * Error(3): Channel of DMA or CB Number is Overflow
  */
 .globl v3d32_make_cl_rendering
 v3d32_make_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	width         .req r0
-	height        .req r1
-	flags_config  .req r2
-	buffer_addr   .req r3
-	num_tiles     .req r4
-	ptr_ctl_list  .req r5
-	offset        .req r6
-	temp          .req r7
-	size          .req r8
-	width_tile    .req r9
-	height_tile   .req r10
+	width        .req r0
+	height       .req r1
+	flags_config .req r2
+	buffer_addr  .req r3
+	num_tiles    .req r4
+	ptr_ctl_list .req r5
+	offset       .req r6
+	temp         .req r7
+	size         .req r8
+	width_tile   .req r9
+	height_tile  .req r10
+	objectv3d    .req r11
 
-	push {r4-r10,lr}
+	push {r4-r11,lr}
+
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_make_cl_rendering_error1
 
 	/* Calculate Number of Tiles */
 	tst flags_config, #0b1
@@ -865,7 +893,7 @@ v3d32_make_cl_rendering:
 	mul size, num_tiles, temp
 	ldr temp, V3D32_TML_CL_RENDER_SIZE    @ Size for Template
 	add size, temp, size
-	str size, V3D32_CL_RENDER_SIZE
+	str size, [objectv3d, #v3d32_cl_render_size]
 
 	/* Load Template of Rendring Control List to GPU Memory Space */
 
@@ -878,8 +906,8 @@ v3d32_make_cl_rendering:
 	mov temp, r0
 	pop {r0-r3}
 
-	ble v3d32_make_cl_rendering_error1
-	str temp, v3d32_make_cl_rendering_handle0
+	ble v3d32_make_cl_rendering_error2
+	str temp, [objectv3d, #v3d32_make_cl_rendering_handle0]
 
 	push {r0-r3}
 	mov r0, temp
@@ -888,7 +916,7 @@ v3d32_make_cl_rendering:
 	mov ptr_ctl_list, r0
 	pop {r0-r3}
 
-	beq v3d32_make_cl_rendering_error1
+	beq v3d32_make_cl_rendering_error2
 
 	push {r0-r3}
 	mov r0, ptr_ctl_list
@@ -899,9 +927,9 @@ v3d32_make_cl_rendering:
 	cmp r0, #0
 	pop {r0-r3}
 
-	bne v3d32_make_cl_rendering_error2
+	bne v3d32_make_cl_rendering_error3
 
-	str ptr_ctl_list, V3D32_CL_RENDER
+	str ptr_ctl_list, [objectv3d, #v3d32_cl_render]
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
@@ -930,7 +958,7 @@ v3d32_make_cl_rendering:
 	ldr offset, V3D32_TML_CL_RENDER_SIZE
 	add offset, ptr_ctl_list, offset
 
-	ldr buffer_addr, V3D32_TILE_ALLOCATION
+	ldr buffer_addr, [objectv3d, #v3d32_tile_allocation]
 	mov j, #0                        @ Row (Height of Tiles)
 
 	v3d32_make_cl_rendering_tiles:
@@ -988,12 +1016,16 @@ v3d32_make_cl_rendering:
 		mov r0, #2
 		b v3d32_make_cl_rendering_common
 
+	v3d32_make_cl_rendering_error3:
+		mov r0, #3
+		b v3d32_make_cl_rendering_common
+
 	v3d32_make_cl_rendering_success:
 		mov r0, #0
 
 	v3d32_make_cl_rendering_common:
 		macro32_dsb ip
-		pop {r4-r10,pc}
+		pop {r4-r11,pc}
 
 .unreq i
 .unreq j
@@ -1006,11 +1038,7 @@ v3d32_make_cl_rendering:
 .unreq size
 .unreq width_tile
 .unreq height_tile
-
-v3d32_make_cl_rendering_handle0: .word 0x00
-
-V3D32_CL_RENDER:       .word 0x00
-V3D32_CL_RENDER_SIZE:  .word 0x00
+.unreq objectv3d
 
 
 /**
@@ -1019,41 +1047,51 @@ V3D32_CL_RENDER_SIZE:  .word 0x00
  * This function is using a vendor-implemented process.
  * Caution that this function needs to follow v3d32_make_cl_binning which is set the tile allocation memory.
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Error in Response from Mailbox
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Error in Response from Mailbox
  */
 .globl v3d32_unmake_cl_rendering
 v3d32_unmake_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	handle .req r0
+	handle    .req r0
+	objectv3d .req r1
 
 	push {lr}
 
-	ldr handle, v3d32_make_cl_rendering_handle0
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_unmake_cl_rendering_error1
 
-	push {r0}
+	ldr handle, [objectv3d, #v3d32_make_cl_rendering_handle0]
+
+	push {r0-r1}
 	bl bcm32_unlock_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_rendering_error
+	beq v3d32_unmake_cl_rendering_error2
 
-	push {r0}
+	push {r0-r1}
 	bl bcm32_release_memory
 	cmp r0, #-1
-	pop {r0}
+	pop {r0-r1}
 
-	beq v3d32_unmake_cl_rendering_error
+	beq v3d32_unmake_cl_rendering_error2
 
 	mov handle, #0
-	str handle, v3d32_make_cl_rendering_handle0
-	str handle, V3D32_CL_RENDER
-	str handle, V3D32_CL_RENDER_SIZE
+	str handle, [objectv3d, #v3d32_make_cl_rendering_handle0]
+	str handle, [objectv3d, #v3d32_cl_render]
+	str handle, [objectv3d, #v3d32_cl_render_size]
 
 	b v3d32_unmake_cl_rendering_success
 
-	v3d32_unmake_cl_rendering_error:
+	v3d32_unmake_cl_rendering_error1:
 		mov r0, #1
+		b v3d32_unmake_cl_rendering_common
+
+	v3d32_unmake_cl_rendering_error2:
+		mov r0, #2
 		b v3d32_unmake_cl_rendering_common
 
 	v3d32_unmake_cl_rendering_success:
@@ -1064,6 +1102,7 @@ v3d32_unmake_cl_rendering:
 		pop {pc}
 
 .unreq handle
+.unreq objectv3d
 
 
 /**
@@ -1077,8 +1116,9 @@ v3d32_unmake_cl_rendering:
  * r2: Clear VG (Alpha) Mask (8-bit)
  * r3: Clear Stencil (8-bit)
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Control List for Rendering Is Not Initialized
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Control List for Rendering Is Not Initialized
  */
 .globl v3d32_clear_cl_rendering
 v3d32_clear_cl_rendering:
@@ -1088,12 +1128,17 @@ v3d32_clear_cl_rendering:
 	clear_alpha   .req r2
 	clear_stencil .req r3
 	ptr_ctl_list  .req r4
+	objectv3d     .req r5
 
-	push {r4,lr}
+	push {r4-r5,lr}
 
-	ldr ptr_ctl_list, V3D32_CL_RENDER
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_clear_cl_rendering_error1
+	ldr ptr_ctl_list, [objectv3d, #v3d32_cl_render]
 	cmp ptr_ctl_list, #0
-	beq v3d32_clear_cl_rendering_error
+	beq v3d32_clear_cl_rendering_error2
+
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 	add ptr_ctl_list, ptr_ctl_list, #1
 
@@ -1131,8 +1176,12 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
 
 	b v3d32_clear_cl_rendering_success
 
-	v3d32_clear_cl_rendering_error:
+	v3d32_clear_cl_rendering_error1:
 		mov r0, #1
+		b v3d32_clear_cl_rendering_common
+
+	v3d32_clear_cl_rendering_error2:
+		mov r0, #2
 		b v3d32_clear_cl_rendering_common
 
 	v3d32_clear_cl_rendering_success:
@@ -1140,13 +1189,14 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
 
 	v3d32_clear_cl_rendering_common:
 		macro32_dsb ip
-		pop {r4,pc}
+		pop {r4-r5,pc}
 
 .unreq clear_color
 .unreq clear_z
 .unreq clear_alpha
 .unreq clear_stencil
 .unreq ptr_ctl_list
+.unreq objectv3d
 
 
 /**
@@ -1157,27 +1207,31 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
  * Parameters
  * r0: Pointer of Start Address of Framebuffer (ARM Side)
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Control List for Rendering Is Not Initialized
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Control List for Rendering Is Not Initialized
  */
 .globl v3d32_setbuffer_cl_rendering
 v3d32_setbuffer_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	buffer_addr   .req r0
-	ptr_ctl_list  .req r1
-	offset        .req r2
+	buffer_addr  .req r0
+	ptr_ctl_list .req r1
+	offset       .req r2
+	objectv3d    .req r3
 
 	push {lr}
 
-	ldr ptr_ctl_list, V3D32_CL_RENDER
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_setbuffer_cl_rendering_error1
+	ldr ptr_ctl_list, [objectv3d, #v3d32_cl_render]
 	cmp ptr_ctl_list, #0
-	beq v3d32_setbuffer_cl_rendering_error
+	beq v3d32_setbuffer_cl_rendering_error2
 
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 	ldr offset, V3D32_TML_CL_RENDER_CONFIG
 	add ptr_ctl_list, ptr_ctl_list, offset
 	macro32_store_word buffer_addr, ptr_ctl_list
-
 
 /*
 ldr ptr_ctl_list, V3D32_CL_RENDER
@@ -1187,8 +1241,12 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
 
 	b v3d32_setbuffer_cl_rendering_success
 
-	v3d32_setbuffer_cl_rendering_error:
+	v3d32_setbuffer_cl_rendering_error1:
 		mov r0, #1
+		b v3d32_setbuffer_cl_rendering_common
+
+	v3d32_setbuffer_cl_rendering_error2:
+		mov r0, #2
 		b v3d32_setbuffer_cl_rendering_common
 
 	v3d32_setbuffer_cl_rendering_success:
@@ -1201,6 +1259,7 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
 .unreq buffer_addr
 .unreq ptr_ctl_list
 .unreq offset
+.unreq objectv3d
 
 
 /**
@@ -1214,8 +1273,9 @@ macro32_debug_hexa ptr_ctl_list, 0, 12, 1280
  * r2: Index of First Vertex (32-bit)
  * r3: Timeout in Turns
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Time Out
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Time Out
  */
 .globl v3d32_execute_cl_binning
 v3d32_execute_cl_binning:
@@ -1227,8 +1287,13 @@ v3d32_execute_cl_binning:
 	addr_qpu     .req r4
 	ptr_ctl_list .req r5
 	temp         .req r6
+	objectv3d    .req r7
 
-	push {r4-r6,lr}
+	push {r4-r7,lr}
+
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_execute_cl_binning_error1
 
 	mov addr_qpu, #equ32_peripherals_base
 	orr addr_qpu, addr_qpu, #v3d32_base
@@ -1237,7 +1302,7 @@ v3d32_execute_cl_binning:
 	mov temp, #1
 	str temp, [addr_qpu, #v3d32_bfc]
 
-	ldr ptr_ctl_list, V3D32_CL_BIN
+	ldr ptr_ctl_list, [objectv3d, #v3d32_cl_bin]
 	and ptr_ctl_list, ptr_ctl_list, #bcm32_mailbox_armmask
 
 	/* Set Vertex Array Primitives */
@@ -1249,7 +1314,7 @@ v3d32_execute_cl_binning:
 	add temp, temp, #4
 	macro32_store_word index_vertex, temp
 
-	ldr ptr_ctl_list, V3D32_CL_BIN
+	ldr ptr_ctl_list, [objectv3d, #v3d32_cl_bin]
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct0ca]
 	macro32_dsb ip
 
@@ -1260,7 +1325,7 @@ v3d32_execute_cl_binning:
 
 	v3d32_execute_cl_binning_loop:
 		subs timeout, #1
-		blo v3d32_execute_cl_binning_error
+		blo v3d32_execute_cl_binning_error2
 
 		ldr temp, [addr_qpu, #v3d32_bfc]
 		macro32_dsb ip
@@ -1273,8 +1338,12 @@ v3d32_execute_cl_binning:
 
 		b v3d32_execute_cl_binning_success
 
-	v3d32_execute_cl_binning_error:
+	v3d32_execute_cl_binning_error1:
 		mov r0, #1
+		b v3d32_execute_cl_binning_common
+
+	v3d32_execute_cl_binning_error2:
+		mov r0, #2
 		b v3d32_execute_cl_binning_common
 
 	v3d32_execute_cl_binning_success:
@@ -1282,7 +1351,7 @@ v3d32_execute_cl_binning:
 
 	v3d32_execute_cl_binning_common:
 		macro32_dsb ip
-		pop {r4-r6,pc}
+		pop {r4-r7,pc}
 
 .unreq primitive
 .unreq num_vertex
@@ -1291,6 +1360,7 @@ v3d32_execute_cl_binning:
 .unreq addr_qpu
 .unreq ptr_ctl_list
 .unreq temp
+.unreq objectv3d
 
 
 /**
@@ -1299,22 +1369,26 @@ v3d32_execute_cl_binning:
  * This function is using a vendor-implemented process.
  *
  * Parameters
- * r0: Don't Clear Color (0) or Clear Color (1)
- * r1: Timeout in Turns
+ * r0: Timeout in Turns
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Time Out
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Time Out
  */
 .globl v3d32_execute_cl_rendering
 v3d32_execute_cl_rendering:
 	/* Auto (Local) Variables, but just Aliases */
-	flag_clear   .req r0
-	timeout      .req r1
-	addr_qpu     .req r2
-	ptr_ctl_list .req r3
-	temp         .req r4
+	timeout      .req r0
+	addr_qpu     .req r1
+	ptr_ctl_list .req r2
+	temp         .req r3
+	objectv3d    .req r4
 
 	push {r4,lr}
+
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_execute_cl_rendering_error1
 
 	mov addr_qpu, #equ32_peripherals_base
 	orr addr_qpu, addr_qpu, #v3d32_base
@@ -1323,22 +1397,18 @@ v3d32_execute_cl_rendering:
 	mov temp, #1
 	str temp, [addr_qpu, #v3d32_rfc]
 
-	ldr ptr_ctl_list, V3D32_CL_RENDER
-	cmp flag_clear, #0
-	addeq ptr_ctl_list, ptr_ctl_list, #16
+	ldr ptr_ctl_list, [objectv3d, #v3d32_cl_render]
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct1ca]
 	macro32_dsb ip
 
-	ldr temp, V3D32_CL_RENDER_SIZE
-	cmp flag_clear, #0
-	subeq temp, temp, #16
+	ldr temp, [objectv3d, #v3d32_cl_render_size]
 	add ptr_ctl_list, ptr_ctl_list, temp
 	str ptr_ctl_list, [addr_qpu, #v3d32_ct1ea]
 	macro32_dsb ip
 
 	v3d32_execute_cl_rendering_loop:
 		subs timeout, #1
-		blo v3d32_execute_cl_rendering_error
+		blo v3d32_execute_cl_rendering_error2
 
 		ldr temp, [addr_qpu, #v3d32_rfc]
 		macro32_dsb ip
@@ -1351,8 +1421,12 @@ v3d32_execute_cl_rendering:
 
 		b v3d32_execute_cl_rendering_success
 
-	v3d32_execute_cl_rendering_error:
+	v3d32_execute_cl_rendering_error1:
 		mov r0, #1
+		b v3d32_execute_cl_rendering_common
+
+	v3d32_execute_cl_rendering_error2:
+		mov r0, #2
 		b v3d32_execute_cl_rendering_common
 
 	v3d32_execute_cl_rendering_success:
@@ -1362,11 +1436,11 @@ v3d32_execute_cl_rendering:
 		macro32_dsb ip
 		pop {r4,pc}
 
-.unreq flag_clear
 .unreq timeout
 .unreq addr_qpu
 .unreq ptr_ctl_list
 .unreq temp
+.unreq objectv3d
 
 
 /**
@@ -1380,8 +1454,9 @@ v3d32_execute_cl_rendering:
  * r2: Fragment Shader Number of Varyings
  * r3: Shaded Vertex Data Stride in Bytes
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Address of NV Shader State Is Not Initialized
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Address of NV Shader State in _ObjectV3D Is Not Initialized
  */
 .globl v3d32_set_nv_shaderstate
 v3d32_set_nv_shaderstate:
@@ -1391,12 +1466,16 @@ v3d32_set_nv_shaderstate:
 	num_varying   .req r2
 	stride_vertex .req r3
 	shaderstate   .req r4
+	objectv3d     .req r5
 
-	push {r4,lr}
+	push {r4-r5,lr}
 
-	ldr shaderstate, V3D32_NV_SHADERSTATE
+	ldr objectv3d, V3D32_OBJECTV3D
+	cmp objectv3d, #0
+	beq v3d32_set_nv_shaderstate_error1
+	ldr shaderstate, [objectv3d, #v3d32_nv_shaderstate]
 	cmp shaderstate, #0
-	beq v3d32_set_nv_shaderstate_error
+	beq v3d32_set_nv_shaderstate_error2
 
 	and shaderstate, shaderstate, #bcm32_mailbox_armmask
 	str shader, [shaderstate, #4]
@@ -1406,8 +1485,12 @@ v3d32_set_nv_shaderstate:
 
 	b v3d32_set_nv_shaderstate_success
 
-	v3d32_set_nv_shaderstate_error:
+	v3d32_set_nv_shaderstate_error1:
 		mov r0, #1
+		b v3d32_set_nv_shaderstate_common
+
+	v3d32_set_nv_shaderstate_error2:
+		mov r0, #2
 		b v3d32_set_nv_shaderstate_common
 
 	v3d32_set_nv_shaderstate_success:
@@ -1415,13 +1498,14 @@ v3d32_set_nv_shaderstate:
 
 	v3d32_set_nv_shaderstate_common:
 		macro32_dsb ip
-		pop {r4,pc}
+		pop {r4-r5,pc}
 
 .unreq shader
 .unreq vertex
 .unreq num_varying
 .unreq stride_vertex
 .unreq shaderstate
+.unreq objectv3d
 
 
 /**
@@ -1701,8 +1785,9 @@ v3d32_load_texture2d:
  * r2: Texture Data Type, 0 as RGBA8888, etc. (5-bit)
  * r3: Pointer of Additional Uniforms
  *
- * Return: r0 (0 as success, 1 as error)
- * Error(1): Address of Uniforms Is Not Initialized
+ * Return: r0 (0 as success, 1 and 2 as error)
+ * Error(1): _ObjectV3D Is Not Binded
+ * Error(2): Address of Uniforms in _ObjectV3D Is Not Initialized
  */
 .globl v3d32_set_texture2d
 v3d32_set_texture2d:
@@ -1716,12 +1801,16 @@ v3d32_set_texture2d:
 	width        .req r6
 	height       .req r7
 	num_mipmap   .req r8
+	objectv3d    .req r9
 
-	push {r4-r8,lr}
+	push {r4-r9,lr}
 
-	ldr uniforms, V3D32_UNIFORMS
+	ldr objectv3d, V3D32_OBJECTV3D
 	cmp uniforms, #0
-	beq v3d32_set_texture2d_error
+	beq v3d32_set_texture2d_error1
+	ldr uniforms, [objectv3d, #v3d32_uniforms]
+	cmp uniforms, #0
+	beq v3d32_set_texture2d_error2
 
 	and uniforms, uniforms, #bcm32_mailbox_armmask
 
@@ -1756,8 +1845,12 @@ v3d32_set_texture2d:
 
 	b v3d32_set_texture2d_success
 
-	v3d32_set_texture2d_error:
+	v3d32_set_texture2d_error1:
 		mov r0, #1
+		b v3d32_set_texture2d_common
+
+	v3d32_set_texture2d_error2:
+		mov r0, #2
 		b v3d32_set_texture2d_common
 
 	v3d32_set_texture2d_success:
@@ -1765,7 +1858,7 @@ v3d32_set_texture2d:
 
 	v3d32_set_texture2d_common:
 		macro32_dsb ip
-		pop {r4-r8,pc}
+		pop {r4-r9,pc}
 
 .unreq texture2d
 .unreq flags_config
@@ -1776,6 +1869,7 @@ v3d32_set_texture2d:
 .unreq width
 .unreq height
 .unreq num_mipmap
+.unreq objectv3d
 
 
 /**
@@ -2074,6 +2168,65 @@ v3d32_fragmentshader_free:
 .unreq fragmentshader
 .unreq temp
 
+
+V3D32_OBJECTV3D: .word 0x00
+
+
+/**
+ * function v3d32_bind_objectv3d
+ * Bind _ObjectV3D Struct
+ * This function is using a vendor-implemented process.
+ *
+ * The _V3D is structured by 12 words as decribed below.
+ *
+ * typedef struct v3d32_ObjectV3D {
+ *  uint32 v3d32_make_cl_binning_handle0;
+ *  uint32 v3d32_make_cl_binning_handle1;
+ *  uint32 v3d32_make_cl_binning_handle2;
+ *  uint32 v3d32_make_cl_binning_handle3;
+ *  uint32 v3d32_make_cl_binning_handle4;
+ *  uint32 v3d32_make_cl_rendering_handle0;
+ *  uint32 v3d32_cl_bin;
+ *  uint32 v3d32_tile_allocation;
+ *  uint32 v3d32_nv_shaderstate;
+ *  uint32 v3d32_uniforms;
+ *  uint32 v3d32_cl_render;
+ *  uint32 v3d32_cl_render_size;
+ * } _ObjectV3D;
+ *
+ * Parameters
+ * r0: Pointer of _ObjectV3D to to Bind (ARM Side)
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_bind_objectv3d
+v3d32_bind_objectv3d:
+	/* Auto (Local) Variables, but just Aliases */
+	objectv3d .req r0
+
+	str objectv3d, V3D32_OBJECTV3D
+
+	v3d32_bind_objectv3d_success:
+		mov r0, #0
+
+	v3d32_bind_objectv3d_common:
+		macro32_dsb ip
+		mov pc, lr
+
+.unreq objectv3d
+
+.equ v3d32_make_cl_binning_handle0,   0x00
+.equ v3d32_make_cl_binning_handle1,   0x04
+.equ v3d32_make_cl_binning_handle2,   0x08
+.equ v3d32_make_cl_binning_handle3,   0x0C
+.equ v3d32_make_cl_binning_handle4,   0x10
+.equ v3d32_make_cl_rendering_handle0, 0x14
+.equ v3d32_cl_bin,                    0x18
+.equ v3d32_tile_allocation,           0x1C
+.equ v3d32_nv_shaderstate,            0x20
+.equ v3d32_uniforms,                  0x24
+.equ v3d32_cl_render,                 0x28
+.equ v3d32_cl_render_size,            0x2C
 
 V3D32_TML_CL_BIN:                             .word _V3D32_TML_CL_BIN
 V3D32_TML_CL_BIN_SIZE:                        .word _V3D32_TML_CL_BIN_END - _V3D32_TML_CL_BIN

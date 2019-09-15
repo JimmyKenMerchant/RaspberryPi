@@ -19,6 +19,7 @@ extern obj DATA_COLOR32_SAMPLE_IMAGE1;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;
 
 int32 _user_start() {
+	_ObjectV3D *objectv3d;
 	_GPUMemory *output;
 	_GPUMemory *vertex_array;
 	_FragmentShader *fragmentshader;
@@ -29,6 +30,9 @@ int32 _user_start() {
 
 	_control_qpul2cache( 0b101 );
 	_clear_qpucache( 0x0F0F0F0F );
+
+	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
+	_bind_objectv3d( objectv3d );
 
 	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( output, 8, 16, 0xC );
@@ -119,7 +123,7 @@ int32 _user_start() {
 
 	result = _execute_cl_binning( 4, 12, 0, 0xFF0000 ); // TRIANGLE_STRIP, 5 Vertices, Index from 5
 print32_debug( result, 0, 114 );
-	result = _execute_cl_rendering( true, 0xFF0000 ); // The Point to Actually Draw Using Vertices
+	result = _execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 print32_debug( result, 0, 126 );
 
 	result = _texture2d_free( texture2d );
