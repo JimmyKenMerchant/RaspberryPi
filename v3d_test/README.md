@@ -44,6 +44,22 @@
 
 * The user program will be executed via two ways. The first way is the Mailbox command. Another way is to set in V3D registers. So far, I'm using V3D registers to execute a user program. The mailbox command is conditioned by the firmware, which seems to use IRQ with an interrupt issued by QPU.
 
+**About 3D Pipeline, Z/Alpha Blending (In My Experience So Far)**
+
+* I determined that the 3D pipeline should be simple. A process of shading means a pair of executing binning and rendering control lists. A process shades a 3D object. Note that the rendering control list can store color to the framebuffer.
+
+* Tile Buffer (TLB) seems implemented buffers for color, z, and stencil in V3D.
+
+* The z/alpha blending are considered external processes. To get a depth buffer, you can code another fragment shader to store the z value as color in TLB, i.e., it means another shading is needed. The z/alpha blending of two 3D objects needs two sets of color shading, depth shading, and z/alpha blending. To execute z/alpha blending, you may need a user program. The user program may be good if you utilize multiple QPUs. Available color formats are different among display drivers, so the user program can convert the color format to fit with a display driver. For example, you want to display a TFT LCD, it would be needed to convert 32-bit ARGB8888 color to 16-bit RGB565 color.
+
+* I use the ARBG8888 format (the alpha channel is MSB). It is useful to display a monitor through HDMI and RCA outputs.
+
+* In my testing, rendering control lists can load and store color in TLB to a self-defined buffer by item No. 27 or No. 29 for loading, item. No. 26 or No. 28 for storing. Make sure to place item No. 115 after No. 27 or No. 29. Place item No. 115 before No. 26 and No. 28. To reflect loaded color, disable color buffer clear. The color data is stored with tile order (32 * 32 pixels or 64 * 64 pixels depending on the setting). Multisample mode stores color for a pixel 4 times, so Multisample mode needs data bytes 4 times as many as Non-multisample mode for a buffer. However I don't use these items to simplify the pipeline.
+
+**About 2D Pipeline**
+
+* V3D can also use as the pipeline for 2D rendering. You can use a texture, maximum 2048 * 2048 pixels, for multiple 2D images by offsetting S and T coordinates. For example, if you use the 64 * 64 pixels images, (2048/64)^2 = 1024 images can be used in a shading. However, as well as the 3D pipeline, the alpha blending is needed multiple shading.
+
 **About VC4ASM**
 
 * There is [an assembler for QPU](http://maazl.de/project/vc4asm/doc/index.html). Files named with ".qasm" in this project are assembled by this assembler. This project uses VC4ASM in Makefile.

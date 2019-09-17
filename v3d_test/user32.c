@@ -116,6 +116,8 @@ int32 _user_start() {
 	vertex_array->arm[59].f32 = 1.0f;
 
 	additional_uniforms->arm[0].u32 = COLOR32_BLUE;
+	additional_uniforms->arm[1].u32 = COLOR32_GRAY;
+	additional_uniforms->arm[2].u32 = COLOR32_PINK;
 
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 0 );

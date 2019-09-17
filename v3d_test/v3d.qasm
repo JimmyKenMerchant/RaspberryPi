@@ -234,7 +234,8 @@
 	mov.ifnz tlbc, pixel_color            # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
 	mov alpha, unif
 	mov alpha, unif
-	mov t0s, unif
+	add alpha, unif, 8                    # Third Item in Array of Additional Uniforms
+	mov t0s, alpha
 	ldtmu0
 	mov.ifz tlbc, pixel_color; thrend
 	nop
