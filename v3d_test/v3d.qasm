@@ -231,7 +231,12 @@
 	shr alpha, pixel_color, 24
 	sub.setf alpha, alpha, 0
 	mov tlbz, parameter_z
-	mov.ifnz tlbc, pixel_color; thrend    # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
+	mov.ifnz tlbc, pixel_color            # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
+	mov alpha, unif
+	mov alpha, unif
+	mov t0s, unif
+	ldtmu0
+	mov.ifz tlbc, pixel_color; thrend
 	nop
 	nop; sbdone
 

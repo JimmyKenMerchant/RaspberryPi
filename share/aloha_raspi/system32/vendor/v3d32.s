@@ -1783,7 +1783,7 @@ v3d32_load_texture2d:
  *     Bit[3:2]: T Wrap Mode, 0 = Repeat, 1 = Clamp, 2 = Mirror, 3 = Border
  *     Bit[1:0]: S Wrap Mode, 0 = Repeat, 1 = Clamp, 2 = Mirror, 3 = Border
  * r2: Texture Data Type, 0 as RGBA8888, etc. (5-bit)
- * r3: Pointer of Additional Uniforms
+ * r3: Pointer of Additional Uniforms, Needed to Read Uniform (ra32/rb32) 3 Times in Fragment Shader
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): _ObjectV3D Is Not Binded

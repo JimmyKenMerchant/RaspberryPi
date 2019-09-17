@@ -22,6 +22,7 @@ int32 _user_start() {
 	_ObjectV3D *objectv3d;
 	_GPUMemory *output;
 	_GPUMemory *vertex_array;
+	_GPUMemory *additional_uniforms;
 	_FragmentShader *fragmentshader;
 	_Texture2D *texture2d;
 	uint32 width_pixel = 800;
@@ -38,6 +39,8 @@ int32 _user_start() {
 	_gpumemory_init( output, 8, 16, 0xC );
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( vertex_array, 256, 16, 0xC );
+	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
 	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER, DATA_V3D_FRAGMENT_SHADER_SIZE );
 
@@ -47,7 +50,7 @@ int32 _user_start() {
 	//Tested //_unmake_cl_binning();
 	//Tested //_unmake_cl_rendering();
 	_config_cl_binning( 0x039007 ); // Enable Forward Facing Primitive, Depth Test LT, Z Update Enable 
-	_clear_cl_rendering( 0xFF00FFFF, 0xFFFFFF, 0x0, 0x0 );
+	_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
 
 	vertex_array->arm[0].u32 = 300*16|(300*16)<<16; // X and Y
@@ -112,6 +115,8 @@ int32 _user_start() {
 	vertex_array->arm[58].f32 = 1.0f;
 	vertex_array->arm[59].f32 = 1.0f;
 
+	additional_uniforms->arm[0].u32 = COLOR32_BLUE;
+
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 0 );
 	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0 );
@@ -119,7 +124,7 @@ int32 _user_start() {
 	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	// Flip Y Axis, NEAREST for Magnification, NEAR_MIP_NEAR for Minification Filter
-	_set_texture2d( texture2d, 0x1A0, 0b10000, 0 );
+	_set_texture2d( texture2d, 0x1A0, 0b10000, additional_uniforms->gpu );
 
 	result = _execute_cl_binning( 4, 12, 0, 0xFF0000 ); // TRIANGLE_STRIP, 5 Vertices, Index from 5
 print32_debug( result, 0, 114 );
@@ -130,8 +135,10 @@ print32_debug( result, 0, 126 );
 print32_debug( result, 0, 138 );
 	result = _gpumemory_free( vertex_array );
 print32_debug( result, 0, 150 );
-	result = _fragmentshader_free( fragmentshader );
+	result = _gpumemory_free( additional_uniforms );
 print32_debug( result, 0, 162 );
+	result = _fragmentshader_free( fragmentshader );
+print32_debug( result, 0, 174 );
 
 	while( true ) {
 	}
