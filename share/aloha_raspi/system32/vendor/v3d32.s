@@ -2322,8 +2322,8 @@ _V3D32_TML_CL_BIN_VIEWPORT_OFFSET:
 
 	/**
 	 * Z Min and Max Clipping Planes
-	 * 1. Minimum Zw (Float 32-bit)
-	 * 2. Maximum Zw (Float 32-bit)
+	 * 1. Minimum Zw (Float 32-bit) Forward
+	 * 2. Maximum Zw (Float 32-bit) Backward
 	 */
 	.byte v3d32_cl_z_clipping_plane
 	.float 0.0
@@ -2643,6 +2643,7 @@ _V3D32_TML_UNIFORMS_END:
 .equ v3d32_cl_clip_window,               102 @ Bit[63:48]: Height in Pixels, Bit[47:32]: Width in Pixels, Bit[31:16]: Bottom, Bit[15:0]: Left
 .equ v3d32_cl_viewport_offset,           103 @ Bit[31:16]: Y-coordinate (Signed), Bit[15:0]: X-coordinate (Signed)
 .equ v3d32_cl_z_clipping_plane,          104 @ Bit[64:32]: Maximum Zw (float32), Bit[32:0]: Minimum Zw (float32)
+.equ v3d32_cl_clipper_z,                 106 @ Bit[64:32]: Viewport Z Offset (float32), Bit[32:0]: Viewport Z Scale (float32)
 .equ v3d32_cl_config_binning,            112 @ Binning Only, Followed by 15-byte Data
 .equ v3d32_cl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
 .equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG (Alpha) Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
