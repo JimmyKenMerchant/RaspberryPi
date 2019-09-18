@@ -53,7 +53,7 @@ float32 cube_vertices[] =
 
 float32 versor_vector[] = { 1.0f, 1.0f, 1.0f };
 float32 camera_position[] = { 0.0f, 2.0f, 2.0f };
-float32 camera_target[] = { 0.0f, 0.0f, 0.0f };
+float32 camera_target[] = { 0.1f, 0.1f, 0.1f }; // Don't Initialize by Zeros, It's Invalid!
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
 float32 angle;
 
