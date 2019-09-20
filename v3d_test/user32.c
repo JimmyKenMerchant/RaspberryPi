@@ -48,7 +48,34 @@ float32 cube_vertices[] =
 
 		0.25f,  0.25f,  0.25f, 0.0f, 1.0f,
 		0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
-		0.25f,  0.25f, -0.25f, 1.0f, 1.0f
+		0.25f,  0.25f, -0.25f, 1.0f, 1.0f,
+
+		// Left
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f,
+
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f,
+		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f,
+
+		// Back
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
+		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f,
+
+		// Down
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f
 };
 
 float32 versor_vector[] = { 1.0f, 1.0f, 1.0f };
@@ -56,6 +83,8 @@ float32 camera_position[] = { 0.0f, 2.0f, 2.0f };
 float32 camera_target[] = { 0.1f, 0.1f, 0.1f }; // Don't Initialize by Zeros, It's Invalid!
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
 float32 angle;
+float32 depth_offset;
+float32 depth_scale; // Depending on Camera Position and Target, Depth Value Needs to Be Between 0.0f to 1.0f
 
 int32 _user_start()
 {
@@ -72,19 +101,21 @@ int32 _user_start()
 	uint32 result;
 	String num_string;
 	uint32 time = 0;
+	depth_offset = 0.0f;
+	depth_scale = 0.5f;
 
 	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
 	_bind_objectv3d( objectv3d );
 	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( output, 8, 16, 0xC );
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( vertex_array, 640, 16, 0xC );
+	_gpumemory_init( vertex_array, 720, 16, 0xC );
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
 	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER, DATA_V3D_FRAGMENT_SHADER_SIZE );
 
-	obj perspective3d = mtx32_perspective3d( 90.0f, 1.234f, 0.2f, 10.0f );
+	obj perspective3d = mtx32_perspective3d( 90.0f, 1.234f, 0.2f, 3.0f );
 	obj view3d = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
 	obj mat_p_v = mtx32_multiply( perspective3d, view3d, 4 );
 	obj mat_p_v_v;
@@ -106,7 +137,7 @@ int32 _user_start()
 
 	_make_cl_binning( width_pixel, height_pixel, 0b101 );
 	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
-	_config_cl_binning( 0x039007 );
+	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 	_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 	_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
 	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
@@ -130,8 +161,8 @@ int32 _user_start()
 		//mat_versor = mtx32_rotatex3d( angle );
 		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
 
-		triangle3d( vertex_array, cube_vertices, 18, mat_p_v_v, width_pixel, height_pixel );
-		_execute_cl_binning( 4, 18, 0, 0xFF0000 ); // TRIANGLE, 18 Vertices, Index from 0
+		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_v, width_pixel, height_pixel );
+		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 18 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
 		heap32_mfree( versor );
@@ -187,7 +218,7 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 
 		result = (float32*)mtx32_multiply_vec( matrix, (obj)vector_xyzw, 4 );
 
-		/* -1.0 to 1.0 coordinate to 0,0 to 1.0, and Flip Y and Z Coordinate  */
+		/* Software -1.0 to 1.0 Coordinate to Hardware 0,0 to 1.0 Coordinate, Flip Y and Z Coordinate  */
 		result[0] = vfp32_fadd( result[0], 1.0f );
 		result[1] = vfp32_fadd( result[1], 1.0f );
 		result[2] = vfp32_fadd( result[2], 1.0f );
@@ -199,8 +230,9 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 		result[2] = vfp32_fsub( result[2], 1.0f );
 		result[2] = vfp32_fmul( result[2], -1.0f );
 
-		/* offset Z */
-		result[2] = vfp32_fsub( result[2], 0.5f );
+		/* Depth Offset and Scale, Depending on Camera Position */
+		result[2] = vfp32_fadd( result[2], depth_offset );
+		result[2] = vfp32_fmul( result[2], depth_scale );
 
 		/* Multiply 0.0 to 1.0 Coordinates by Actual Width and Height of Framebuffer, Convert Float to Integer */
 		int_x = vfp32_f32tou32( vfp32_fmul( result[0], width_float ) );

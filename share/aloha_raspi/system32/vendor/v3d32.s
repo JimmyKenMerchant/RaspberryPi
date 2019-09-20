@@ -764,7 +764,7 @@ v3d32_unmake_cl_binning:
  *     Bit[5]: Coverage Read Type, 0 = 32-bit, 1 = 16-bit
  *     Bit[4]: Antialiased Points and Lines
  *     Bit[3]: Enable Depth Offset
- *     Bit[2]: Clockwise Primitives
+ *     Bit[2]: Clockwise Primitives (Actually Counter-clockwise by Set)
  *     Bit[1]: Enable Reverse Facing Primitive
  *     Bit[0]: Enable Forward Facing Primitive
  *
@@ -2293,7 +2293,7 @@ _V3D32_TML_CL_BIN_CLIP_WINDOW:
 	 * Configuration Bits
 	 * 1. Enable Forward Facing Primitive (1-bit)
 	 * 2. Enable Reverse Facing Primitive (1-bit)
-	 * 3. Clockwise Primitives (1-bit)
+	 * 3. Clockwise Primitives (Actually Counter-clockwise by Set) (1-bit)
 	 * 4. Enable Depth Offset (1-bit)
 	 * 5. Antialiased Points and Lines (1-bit)
 	 * 6. Coverage Read Type, 0 = 32-bit, 1 = 16-bit (1-bit)
