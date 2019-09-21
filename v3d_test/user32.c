@@ -124,14 +124,6 @@ int32 _user_start()
 
 	angle = 0.0f;
 
-	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 3 );
-	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
-	draw32_renderbuffer_init( renderbuffer[0], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[1] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
-	draw32_renderbuffer_init( renderbuffer[1], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-	renderbuffer[2] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
-	draw32_renderbuffer_init( renderbuffer[2], FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
-
 	_control_qpul2cache( 0b101 );
 	_clear_qpucache( 0x0F0F0F0F );
 
@@ -162,7 +154,7 @@ int32 _user_start()
 		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
 
 		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_v, width_pixel, height_pixel );
-		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 18 Vertices, Index from 0
+		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
 		heap32_mfree( versor );

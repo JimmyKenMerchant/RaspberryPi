@@ -204,13 +204,14 @@ mtx32_identity:
  * function mtx32_multiply_vec
  * Square Matrix and Column Vector Multiplication
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
+ * This Function Makes Allocated Memory Space from Heap.
  *
  * Parameters
  * r0: Matrix
  * r1: Vector
  * r2: Number of Vector Size
  *
- * Return: r0 (Value of Dot Product by Single Precision Float)
+ * Return: r0 (Vector to Have Been Multiplied, If Zero Not Allocated Memory)
  */
 .globl mtx32_multiply_vec
 mtx32_multiply_vec:

@@ -58,7 +58,7 @@
 
 **About 2D Pipeline**
 
-* V3D can also use as the pipeline for 2D rendering. You can use a texture, maximum 2048 * 2048 pixels, for multiple 2D images by offsetting S and T coordinates. For example, if you use the 64 * 64 pixels images, (2048/64)^2 = 1024 images can be used in a shading. However, as well as the 3D pipeline, the alpha blending is needed multiple shading.
+* V3D can also use as the pipeline for 2D rendering. You can use a texture, maximum 2048 * 2048 pixels, for multiple 2D images by offsetting S and T coordinates. For example, if you use the 64 * 64 pixels images, (2048/64)^2 = 1024 images can be used in a shading. However, as well as the 3D pipeline, the alpha blending is needed multiple shading. If you implement double-buffer using DMA, the image displayed will be slightly shaking per frame. Using the 2D rendering using V3D resolves this issue, i.e., draw the buffer as a texture.
 
 **About VC4ASM**
 

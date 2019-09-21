@@ -2392,7 +2392,7 @@ _V3D32_TML_CL_RENDER_CONFIG:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 	/**
-	 * Tile Coordinates
+	 * Tile Coordinates (from Upper Left Corner)
 	 * 1. Tile Column Number (8-bit)
 	 * 2. Tile Row Number (8-bit)
 	 */
@@ -2647,4 +2647,4 @@ _V3D32_TML_UNIFORMS_END:
 .equ v3d32_cl_config_binning,            112 @ Binning Only, Followed by 15-byte Data
 .equ v3d32_cl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
 .equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG (Alpha) Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
-.equ v3d32_cl_tile_coordinates,          115 @ Rendering Only, Bit[15:8]: Tile Row Number, Bit[7:0]: Tile Column Number
+.equ v3d32_cl_tile_coordinates,          115 @ Rendering Only, Bit[15:8]: Tile Row Number, Bit[7:0]: Tile Column Number, from Upper Left Corner
