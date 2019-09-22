@@ -1800,3 +1800,104 @@ draw32_enlarge:
 .unreq j
 .unreq dup_x_coord
 
+
+/**
+ * function draw32_smallen
+ * Draw Smallened Image
+ *
+ * Parameters
+ * r0: Pointer of Image
+ * r1: X Coordinate
+ * r2: Y Coordinate
+ * r3: Image Width in Pixels
+ * r4: Image Height in Pixels
+ * r5: Divisor of Width
+ * r6: Divisor of Height
+ * r7: Depth of Image, 16 or 32
+ *
+ * Return: r0 (0 as sucess, 1 as error)
+ * Error: Drawing Is Not Completed
+ */
+.globl draw32_smallen
+draw32_smallen:
+	/* Auto (Local) Variables, but just Aliases */
+	image_point    .req r0
+	x_coord        .req r1
+	y_coord        .req r2
+	image_width    .req r3
+	image_height   .req r4
+	divisor_width  .req r5
+	divisor_height .req r6
+	depth          .req r7
+	color          .req r8
+	x_coord_image  .req r9
+	y_coord_image  .req r10
+	x_coord_dup    .req r11
+
+	push {r4-r11,lr}
+
+	add sp, sp, #36                                       @ r4-r11 and lr offset 36 bytes
+	pop {image_height,divisor_width,divisor_height,depth} @ Get Fifth to Eighth Arguments
+	sub sp, sp, #52                                       @ Retrieve SP
+
+	mov x_coord_dup, x_coord
+	mov y_coord_image, #0
+
+	draw32_smallen_loop:
+		cmp y_coord_image, image_height
+		bhs draw32_smallen_success
+
+		mov x_coord, x_coord_dup
+		mov x_coord_image, #0
+
+		draw32_smallen_loop_horizontal:
+			cmp x_coord_image, image_width
+			addhs y_coord, y_coord, #1
+			addhs y_coord_image, y_coord_image, divisor_height
+			bhs draw32_smallen_loop
+
+			mul color, y_coord_image, image_width
+			add color, color, x_coord_image
+			cmp depth, #32
+			lsleq color, color, #2                    @ Multiply by 4
+			lslne color, color, #1                    @ Multiply by 2
+			ldr color, [image_point, color]
+
+			push {r0-r3}
+			mov r0, color
+			mov r3, #1
+			push {r3}
+			bl fb32_block_color
+			add sp, sp, #4
+			cmp r0, #0
+			pop {r0-r3}
+			bne draw32_smallen_error
+
+			add x_coord, x_coord, #1
+			add x_coord_image, x_coord_image, divisor_width
+
+			b draw32_smallen_loop_horizontal
+
+	draw32_smallen_error:
+		mov r0, #1                                   @ Return with Error 1
+		b draw32_smallen_common
+
+	draw32_smallen_success:
+		mov r0, #0                                   @ Return with Success
+
+	draw32_smallen_common:
+		pop {r4-r11,pc}
+
+.unreq image_point
+.unreq x_coord
+.unreq y_coord
+.unreq image_width
+.unreq image_height
+.unreq divisor_width
+.unreq divisor_height
+.unreq depth
+.unreq color
+.unreq x_coord_image
+.unreq y_coord_image
+.unreq x_coord_dup
+

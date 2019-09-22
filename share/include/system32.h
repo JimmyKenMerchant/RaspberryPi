@@ -337,7 +337,7 @@ __attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, uint32 
 
 __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d );
 
-__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level );
+__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level, bool flag_wait );
 
 __attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms );
 
@@ -1420,6 +1420,25 @@ extern uint32 draw32_enlarge
 	uint32 image_height,
 	uint32 power_width,
 	uint32 Power_height,
+	uchar8 depth
+);
+
+
+/**
+ * Draw Smallened Image
+ *
+ * Return: 0 as sucess, 1 as error
+ * Error: Drawing Is Not Completed
+ */
+extern uint32 draw32_smallen
+(
+	uint32 address_image,
+	int32 x_coord,
+	int32 y_coord,
+	uint32 image_width,
+	uint32 image_height,
+	uint32 divisor_width,
+	uint32 divisor_height,
 	uchar8 depth
 );
 

@@ -140,7 +140,7 @@ int32 _user_start()
 
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 0 );
-	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0 );
+	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
 	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	_set_texture2d( texture2d, 0x1A0, 0b10000, additional_uniforms->gpu );

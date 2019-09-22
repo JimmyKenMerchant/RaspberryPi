@@ -192,6 +192,7 @@ macro32_debug r4, 100, 184
 	ldr r1, DATA_V3D_SAMPLE1
 	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	ldr r2, DATA_V3D_SAMPLE1_SIZE
+	mov r3, #1
 	bl dma32_datacopy
 	pop {r0-r3}
 
@@ -308,6 +309,9 @@ macro32_debug_hexa r3, 0, 488, 32
 	ldr r0, handle_code
 	bl bcm32_release_memory
 	pop {r0-r3}
+
+	os_debug_loop:
+		b os_debug_loop
 
 	pop {r4-r10,pc}
 

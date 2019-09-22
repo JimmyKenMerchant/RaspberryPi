@@ -406,6 +406,7 @@ v3d32_make_cl_binning:
 	ldr r1, V3D32_TML_CL_BIN
 	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	ldr r2, V3D32_TML_CL_BIN_SIZE
+	mov r3, #1
 	bl dma32_datacopy
 	cmp r0, #0
 	pop {r0-r3}
@@ -525,6 +526,7 @@ v3d32_make_cl_binning:
 	ldr r1, V3D32_TML_NV_SHADERSTATE
 	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	ldr r2, V3D32_TML_NV_SHADERSTATE_SIZE
+	mov r3, #1
 	bl dma32_datacopy
 	cmp r0, #0
 	pop {r0-r3}
@@ -567,6 +569,7 @@ v3d32_make_cl_binning:
 	ldr r1, V3D32_TML_UNIFORMS
 	orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
 	ldr r2, V3D32_TML_UNIFORMS_SIZE
+	mov r3, #1
 	bl dma32_datacopy
 	cmp r0, #0
 	pop {r0-r3}
@@ -923,6 +926,7 @@ v3d32_make_cl_rendering:
 	ldr r1, V3D32_TML_CL_RENDER
 	orr r1, r1, #equ32_bus_coherence_base         @ Convert to Bus Address
 	mov r2, size
+	mov r3, #1
 	bl dma32_datacopy
 	cmp r0, #0
 	pop {r0-r3}
@@ -1697,8 +1701,9 @@ v3d32_texture2d_free:
  *
  * Parameters
  * r0: Pointer of _Texture2D to Set (ARM Side)
- * r1: Pointer of Start Address of Texture Image
+ * r1: Pointer of Start Address of Texture Image (ARM Side)
  * r2: Mipmap Level
+ * r3: 0 as No Wait, 1 as Wait for Completion
  *
  * Return: r0 (0 as success, 1 and 2 as error)
  * Error(1): Channel of DMA or CB Number is Overflow
@@ -1710,12 +1715,14 @@ v3d32_load_texture2d:
 	texture2d    .req r0
 	texture      .req r1
 	mipmap_level .req r2
-	num_mipmap   .req r3
-	size         .req r4
-	addr_gpu     .req r5
-	temp         .req r6
+	flag_wait    .req r3
+	num_mipmap   .req r4
+	size         .req r5
+	addr_gpu     .req r6
+	temp         .req r7
+	addr_cache   .req r8
 
-	push {r4-r6,lr}
+	push {r4-r8,lr}
 
 	ldr addr_gpu, [texture2d]
 	ldr num_mipmap, [texture2d, #12]
@@ -1735,6 +1742,22 @@ v3d32_load_texture2d:
 		b v3d32_load_texture2d_loop
 
 	v3d32_load_texture2d_jump:
+		mov addr_cache, texture
+		add temp, addr_cache, size
+		bic addr_cache, addr_cache, #0x1F
+		bic temp, temp, #0x1F
+
+		v3d32_load_texture2d_cleancache:
+			cmp addr_cache, temp
+			bhi v3d32_load_texture2d_jump2
+
+			macro32_clean_cache addr_cache ip
+			macro32_dsb ip
+
+			add addr_cache, addr_cache, #0x20 @ 32 Bytes (4 Words) Align
+			b v3d32_load_texture2d_cleancache
+
+	v3d32_load_texture2d_jump2:
 		push {r0-r3}
 		mov r0, addr_gpu
 		orr r1, r1, #equ32_bus_coherence_base @ Convert to Bus Address
@@ -1758,15 +1781,17 @@ v3d32_load_texture2d:
 
 	v3d32_load_texture2d_common:
 		macro32_dsb ip
-		pop {r4-r6,pc}
+		pop {r4-r8,pc}
 
 .unreq texture2d
 .unreq texture
 .unreq mipmap_level
+.unreq flag_wait
 .unreq num_mipmap
 .unreq size
 .unreq addr_gpu
 .unreq temp
+.unreq addr_cache
 
 
 /**
@@ -2080,6 +2105,7 @@ v3d32_fragmentshader_init:
 	push {r0-r3}
 	mov r0, temp
 	orr r1, r1, #equ32_bus_coherence_base      @ Convert to Bus Address
+	mov r3, #1
 	bl dma32_datacopy
 	cmp r0, #0
 	pop {r0-r3}

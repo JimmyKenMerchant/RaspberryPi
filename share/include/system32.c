@@ -710,7 +710,7 @@ __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d )
 	return result;
 }
 
-__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level )
+__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level, bool flag_wait )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x65");

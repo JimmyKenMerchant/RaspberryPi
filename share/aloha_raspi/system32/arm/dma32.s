@@ -25,6 +25,7 @@
  * r0: Pointer of Destination in Bus Address
  * r1: Pointer of Source in Bus Address
  * r2: Size (Bytes) Up to 65535 Bytes
+ * r3: 0 as No Wait, 1 as Wait for Completion
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error(1): Channel of DMA or CB Number is Overflow
@@ -35,12 +36,13 @@ dma32_datacopy:
 	addr_dst     .req r0
 	addr_src     .req r1
 	size         .req r2
-	channel      .req r3
-	number_cb    .req r4
-	number_core  .req r5
-	temp         .req r6
+	flag_wait    .req r3
+	channel      .req r4
+	number_cb    .req r5
+	number_core  .req r6
+	temp         .req r7
 
-	push {r4-r6,lr}
+	push {r4-r7,lr}
 
 	macro32_multicore_id number_core
 
@@ -80,6 +82,9 @@ dma32_datacopy:
 	bl dma32_set_channel
 	pop {r0-r3}
 
+	cmp flag_wait, #0
+	beq dma32_datacopy_success
+
 	dma32_datacopy_wait:
 		push {r0-r3}
 		mov r0, channel
@@ -101,11 +106,12 @@ dma32_datacopy:
 
 	dma32_datacopy_common:
 		macro32_dsb ip
-		pop {r4-r6,pc}
+		pop {r4-r7,pc}
 
 .unreq addr_dst
 .unreq addr_src
 .unreq size
+.unreq flag_wait
 .unreq channel
 .unreq number_cb
 .unreq number_core
@@ -154,7 +160,8 @@ dma32_set_channel:
 	mov temp2, #1
 
 	ldr temp, [addr_dma, #equ32_dma_channel_enable]
-	orr temp, temp, temp2, lsl channel              @ Enable DMA ChannelN
+	tst temp, temp2, lsl channel
+	orreq temp, temp, temp2, lsl channel           @ Enable DMA ChannelN
 	str temp, [addr_dma, #equ32_dma_channel_enable]
 
 	macro32_dsb ip
@@ -293,7 +300,8 @@ dma32_clear_channel:
 	mov temp2, #1
 
 	ldr temp, [addr_dma, #equ32_dma_channel_enable]
-	orr temp, temp, temp2, lsl channel              @ Enable DMA ChannelN
+	tst temp, temp2, lsl channel
+	orreq temp, temp, temp2, lsl channel            @ Enable DMA ChannelN
 	str temp, [addr_dma, #equ32_dma_channel_enable]
 
 	mov temp, #equ32_dma_channel_offset
