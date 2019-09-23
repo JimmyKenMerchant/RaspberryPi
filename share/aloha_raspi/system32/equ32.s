@@ -171,6 +171,7 @@
 .equ equ32_dma15_base_lower,   0x00005000
 .equ equ32_cm_base_upper,      0x00100000 @ Clock Manager
 .equ equ32_cm_base_lower,      0x00001000 @ Clock Manager
+.equ equ32_smi_base,           0x00600000 @ Secondary Memory Interface
 
 .equ equ32_systemtimer_control_status,   0x00
 .equ equ32_systemtimer_counter_lower,    0x04 @ Lower 32 Bits
@@ -688,6 +689,7 @@
 .equ equ32_cm_div_integer,     12 @ LSL Bit[23:12]
 .equ equ32_cm_div_fraction,    0  @ Bit[11:0] (Fractional Value is Bit[11:0] Divided by 1024. Valid Bit[9:0])
 
+.equ equ32_smi_cs,             0x00000000 @ Secondary Memory Interface Clear Status, Use with "fake_vsync_isr=1" in config.txt
 
 /**
  * USB2.0 On-the-Go (OTG)
