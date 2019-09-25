@@ -12,6 +12,8 @@
 
 extern obj DATA_V3D_FRAGMENT_SHADER;
 extern uint32 DATA_V3D_FRAGMENT_SHADER_SIZE;
+extern obj DATA_V3D_Z_SHADER;
+extern uint32 DATA_V3D_Z_SHADER_SIZE;
 
 extern obj DATA_COLOR32_SAMPLE_IMAGE0;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
@@ -94,10 +96,11 @@ int32 _user_start()
 	_GPUMemory *vertex_array;
 	_GPUMemory *additional_uniforms;
 	_FragmentShader *fragmentshader;
+	_FragmentShader *zshader;
 	_Texture2D *texture2d;
 
-	uint32 width_pixel = 800;
-	uint32 height_pixel = 648;
+	uint32 width_pixel = FB32_WIDTH;
+	uint32 height_pixel = FB32_HEIGHT;
 	uint32 result;
 	String num_string;
 	uint32 time = 0;
@@ -114,6 +117,12 @@ int32 _user_start()
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
 	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER, DATA_V3D_FRAGMENT_SHADER_SIZE );
+	zshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
+	_fragmentshader_init( zshader, DATA_V3D_Z_SHADER, DATA_V3D_Z_SHADER_SIZE );
+
+	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 1 );
+	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
+	draw32_renderbuffer_init( renderbuffer[0], width_pixel, height_pixel, FB32_DEPTH );
 
 	obj perspective3d = mtx32_perspective3d( 90.0f, 1.234f, 0.2f, 3.0f );
 	obj view3d = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
@@ -130,9 +139,6 @@ int32 _user_start()
 	_make_cl_binning( width_pixel, height_pixel, 0b101 );
 	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
-	_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
-	_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
-	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
 
 	additional_uniforms->arm[0].u32 = COLOR32_BLUE;
 	additional_uniforms->arm[1].u32 = COLOR32_GRAY;
@@ -152,14 +158,22 @@ int32 _user_start()
 		mat_versor = mtx32_versortomatrix( versor );
 		//mat_versor = mtx32_rotatex3d( angle );
 		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
-
 		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_v, width_pixel, height_pixel );
-		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
-		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
-
 		heap32_mfree( versor );
 		heap32_mfree( mat_versor );
 		heap32_mfree( mat_p_v_v );
+
+		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
+		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
+		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
+		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
+		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
+
+		_clear_cl_rendering( 0x00FFFFFF, 0xFFFFFF, 0x0, 0x0 );
+		_setbuffer_cl_rendering( renderbuffer[0]->addr );
+		_set_nv_shaderstate( zshader->gpu, vertex_array->gpu, 2, 20 );
+		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
+		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
 		// Angle Change
 		angle = vfp32_fadd( angle, 1.0f );
@@ -169,6 +183,7 @@ int32 _user_start()
 num_string = cvt32_int32_to_string_deci( time, 0, 0 );
 print32_string( num_string, 0, 0, str32_strlen( num_string ) );
 print32_debug( mat_versor, 0, 50 );
+//print32_debug_hexa( FB32_FRAMEBUFFER->addr + ((800 * 324) + 400)*4, 0, 64, 256 );
 		heap32_mfree( (obj)num_string );
 		_sleep( 100000 );
 	}

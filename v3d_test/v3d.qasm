@@ -10,12 +10,14 @@
 .global _V3D_INPUT1
 .global _V3D_SIN
 .global _V3D_FRAGMENT_SHADER
+.global _V3D_Z_SHADER
 
 # Global Symbol
 .global _V3D_SAMPLE1_SIZE, :_V3D_SAMPLE1_END - :_V3D_SAMPLE1
 .global _V3D_INPUT1_SIZE, :_V3D_INPUT1_END - :_V3D_INPUT1
 .global _V3D_SIN_SIZE, :_V3D_SIN_END - :_V3D_SIN
 .global _V3D_FRAGMENT_SHADER_SIZE, :_V3D_FRAGMENT_SHADER_END - :_V3D_FRAGMENT_SHADER
+.global _V3D_Z_SHADER_SIZE, :_V3D_Z_SHADER_END - :_V3D_Z_SHADER
 
 :_V3D_SAMPLE1
 	.set num_element, r0
@@ -249,4 +251,17 @@
 .unset parameter_w
 .unset parameter_z
 :_V3D_FRAGMENT_SHADER_END
+
+:_V3D_Z_SHADER
+	.set parameter_z,   rb15
+
+	nop
+	nop; sbwait
+	mov tlbz, parameter_z
+	mov tlbc, parameter_z; thrend
+	nop
+	nop; sbdone
+
+.unset parameter_z
+:_V3D_Z_SHADER_END
 

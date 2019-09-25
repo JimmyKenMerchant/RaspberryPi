@@ -727,7 +727,7 @@ bcm32_get_edid:
  * Parameters
  * r0: Size in Bytes
  * r1: Alignment in Bytes
- * r2: Bit[6]: Permanent Lock, Bit[5]: No Filled by 1 at Init, Bit[4]: Init by 0, Bit[3]: L2 Coherent "0x8", Bit[2]: Uncached "0xC", Bit[0]: Resizable with Cached, Bit[3]|Bit[2]: PoC
+ * r2: Bit[6]: Permanent Lock, Bit[5]: No Initialize, Bit[4]: Init by 0, Bit[3]: L2 Coherent "0x8", Bit[2]: Uncached "0xC", Bit[0]: Resizable with Cached, Bit[3]|Bit[2]: PoC
  *
  * Return: r0 (Handle Number, -1 as Error)
  * Error(-1): Error in Response
