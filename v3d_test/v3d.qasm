@@ -265,3 +265,141 @@
 .unset parameter_z
 :_V3D_Z_SHADER_END
 
+##
+# Z and Alpha Blending (Depth 32-bit per Pixel)
+# This function writes 16 pixels at once. So, X (intended to be horizontal) pixels to be written are 16 * num_turn_x.
+# Y (intended to be vertical) pixels can stride after all pixels in each X are written.
+##
+.global _V3D_BLENDER
+.global _V3D_BLENDER_SIZE, :_V3D_BLENDER_END - :_V3D_BLENDER
+:_V3D_BLENDER
+	.set color_dst,         r0
+	.set color_src,         r1
+	.set temp,              r2
+	.set ptr_dst_image,     ra0 # Argument 1
+	.set ptr_dst_z,         ra1 # Argument 2
+	.set ptr_src_image,     ra2 # Argument 3
+	.set ptr_src_z,         ra3 # Argument 4
+	.set num_turn_x,        ra4 # Argument 5
+	.set num_turn_y,        ra5 # Argument 6
+	.set alpha_dst,         ra6
+	.set alpha_src,         ra7
+	.set alpha_src_reverse, ra8
+	.set alpha_out,         ra9
+	.set dup_num_turn_x,    ra10
+	.set offset_element,    rb0
+	.set offset_turn,       rb1
+	.set stride_y,          rb2 # Argument 7
+	.set mask_onebyte,      rb3
+
+	mov temp, 4
+	shl offset_element, elem_num, 2 # Multiply by 4
+	mov offset_turn, temp, 4        # Multiply by 16
+	mov ptr_dst_image, unif
+	mov ptr_dst_z, unif
+	mov ptr_src_image, unif
+	mov ptr_src_z, unif
+	mov num_turn_x, unif
+	mov num_turn_y, unif
+	mov dup_num_turn_x, num_turn_x
+	shl stride_y, unif, 2           # Multiply by 4
+
+	:_V3D_BLENDER_Y
+		sub.setf num_turn_y, num_turn_y, 1
+		brr.anyc -, :_V3D_BLENDER_COMMON # Branch Any Carry Set (Lower Than)
+		mov num_turn_x, dup_num_turn_x
+		mov mask_onebyte, 0xFF
+
+		:_V3D_BLENDER_X
+			sub.setf num_turn_x, num_turn_x, 1
+			add.ifc ptr_dst_image, ptr_dst_image, stride_y
+			brr.anyc -, :_V3D_BLENDER_Y      # Branch Any Carry Set (Lower Than)
+			add.ifc ptr_dst_z, ptr_dst_z, stride_y
+			add.ifc ptr_src_image, ptr_src_image, stride_y
+			add.ifc ptr_src_z, ptr_src_z, stride_y
+
+			# Z Test (Lower Than)
+			add t0s, ptr_dst_z, offset_element
+			ldtmu0
+			mov color_dst, r4; add t0s, ptr_src_z, offset_element
+			ldtmu0
+			mov color_src, r4
+			sub.setf -, color_src, color_dst
+
+			# Store Z to DST
+			mov vw_setup, vpm_setup(0, 1, v32(0,0))
+			mov.ifnc temp, color_dst
+			mov.ifc temp, color_src
+			mov vpm, temp
+			mov vw_setup, vdw_setup_1(0)
+			mov vw_setup, vdw_setup_0(16, 1, dma_h32(0,0)) # 16 Columns, 1-deep Rows
+			mov vw_addr, ptr_dst_z                         # Element 0 Only, Other Elements Pass Through
+			mov -, vw_wait                                 # Finished when All Elements Done
+
+			# Preparation for Alpha Blending (Over)
+			# Assuming Alpha of DST is 255 (1.0), So Alpha of Output Becomes 255 (1.0)
+			add t0s, ptr_src_image, offset_element
+			ldtmu0
+			mov color_src, r4; add t0s, ptr_dst_image, offset_element
+			ldtmu0
+			mov color_dst, r4; shr alpha_src, color_src, 24
+			xor.ifc alpha_src_reverse, alpha_src, mask_onebyte
+			#mov.ifc alpha_dst.8abcd, 0xFF
+			mov.ifc alpha_src.8abcd, alpha_src
+			mov.ifc alpha_src_reverse.8abcd, alpha_src_reverse
+
+			# Alpha Out
+			#mov.ifc temp, alpha_src_reverse
+			#v8muld.ifc alpha_out, alpha_dst, temp
+			#mov.ifc temp, alpha_out
+			#v8adds.ifc alpha_out, alpha_src, temp
+
+			# RGB Out
+			v8muld.ifc color_src, color_src, alpha_src
+			#v8muld.ifc color_dst, color_dst, alpha_dst
+			v8muld.ifc color_dst, color_dst, alpha_src_reverse
+			v8adds.ifc color_dst, color_src, color_dst
+
+			# ARGB Out
+			mov.ifc color_dst.8d, 0xFF
+
+			# Store ARGB to DST
+			mov vw_setup, vpm_setup(0, 1, v32(0,0))
+			mov vpm, color_dst
+			mov vw_setup, vdw_setup_1(0)
+			mov vw_setup, vdw_setup_0(16, 1, dma_h32(0,0)) # 16 Columns, 1-deep Rows
+			mov vw_addr, ptr_dst_image                     # Element 0 Only, Other Elements Pass Through
+			mov -, vw_wait                                 # Finished when All Elements Done
+
+			# Loop Back and Offset for Next Turn
+			add ptr_dst_image, ptr_dst_image, offset_turn
+			brr -, :_V3D_BLENDER_X
+			add ptr_dst_z, ptr_dst_z, offset_turn
+			add ptr_src_image, ptr_src_image, offset_turn
+			add ptr_src_z, ptr_src_z, offset_turn
+
+	:_V3D_BLENDER_COMMON
+		nop; thrend
+		nop
+		nop
+
+.unset color_dst
+.unset color_src
+.unset temp
+.unset ptr_dst_image
+.unset ptr_dst_z
+.unset ptr_src_image
+.unset ptr_src_z
+.unset num_turn_x
+.unset num_turn_y
+.unset alpha_dst
+.unset alpha_src
+.unset alpha_src_reverse
+.unset alpha_out
+.unset dup_num_turn_x
+.unset offset_element
+.unset offset_turn
+.unset stride_y
+.unset mask_onebyte
+:_V3D_BLENDER_END
+
