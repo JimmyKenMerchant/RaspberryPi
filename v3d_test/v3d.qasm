@@ -289,8 +289,10 @@
 	.set dup_num_turn_x,    ra10
 	.set offset_element,    rb0
 	.set offset_turn,       rb1
-	.set stride_y,          rb2 # Argument 7
-	.set mask_onebyte,      rb3
+	.set stride_dst_y,      rb2 # Argument 7
+	.set stride_src_y,      rb3 # Argument 8
+	.set mask_lsb,          rb4
+	.set mask_msb,          rb5
 
 	mov temp, 4
 	shl offset_element, elem_num, 2 # Multiply by 4
@@ -302,21 +304,23 @@
 	mov num_turn_x, unif
 	mov num_turn_y, unif
 	mov dup_num_turn_x, num_turn_x
-	shl stride_y, unif, 2           # Multiply by 4
+	shl stride_dst_y, unif, 2       # Multiply by 4
+	shl stride_src_y, unif, 2       # Multiply by 4
 
 	:_V3D_BLENDER_Y
 		sub.setf num_turn_y, num_turn_y, 1
 		brr.anyc -, :_V3D_BLENDER_COMMON # Branch Any Carry Set (Lower Than)
 		mov num_turn_x, dup_num_turn_x
-		mov mask_onebyte, 0xFF
+		mov mask_lsb, 0xFF
+		mov mask_msb, 0xFF000000
 
 		:_V3D_BLENDER_X
 			sub.setf num_turn_x, num_turn_x, 1
-			add.ifc ptr_dst_image, ptr_dst_image, stride_y
+			add.ifc ptr_dst_image, ptr_dst_image, stride_dst_y
 			brr.anyc -, :_V3D_BLENDER_Y      # Branch Any Carry Set (Lower Than)
-			add.ifc ptr_dst_z, ptr_dst_z, stride_y
-			add.ifc ptr_src_image, ptr_src_image, stride_y
-			add.ifc ptr_src_z, ptr_src_z, stride_y
+			add.ifc ptr_dst_z, ptr_dst_z, stride_dst_y
+			add.ifc ptr_src_image, ptr_src_image, stride_src_y
+			add.ifc ptr_src_z, ptr_src_z, stride_src_y
 
 			# Z Test (Lower Than)
 			add t0s, ptr_dst_z, offset_element
@@ -343,7 +347,8 @@
 			mov color_src, r4; add t0s, ptr_dst_image, offset_element
 			ldtmu0
 			mov color_dst, r4; shr alpha_src, color_src, 24
-			xor.ifc alpha_src_reverse, alpha_src, mask_onebyte
+			nop
+			xor.ifc alpha_src_reverse, alpha_src, mask_lsb
 			#mov.ifc alpha_dst.8abcd, 0xFF
 			mov.ifc alpha_src.8abcd, alpha_src
 			mov.ifc alpha_src_reverse.8abcd, alpha_src_reverse
@@ -360,8 +365,8 @@
 			v8muld.ifc color_dst, color_dst, alpha_src_reverse
 			v8adds.ifc color_dst, color_src, color_dst
 
-			# ARGB Out
-			mov.ifc color_dst.8d, 0xFF
+			# Alpha of DST is 0xFF Fixed (ADD Unit Can Not Pack/Unpack with Accumulators)
+			or.ifc color_dst, color_dst, mask_msb
 
 			# Store ARGB to DST
 			mov vw_setup, vpm_setup(0, 1, v32(0,0))
@@ -399,7 +404,9 @@
 .unset dup_num_turn_x
 .unset offset_element
 .unset offset_turn
-.unset stride_y
-.unset mask_onebyte
+.unset stride_dst_y
+.unset stride_src_y
+.unset mask_lsb
+.unset mask_msb
 :_V3D_BLENDER_END
 
