@@ -296,7 +296,7 @@
 
 	mov temp, 4
 	shl offset_element, elem_num, 2 # Multiply by 4
-	mov offset_turn, temp, 4        # Multiply by 16
+	shl offset_turn, temp, 4        # Multiply by 16
 	mov ptr_dst_image, unif
 	mov ptr_dst_z, unif
 	mov ptr_src_image, unif
