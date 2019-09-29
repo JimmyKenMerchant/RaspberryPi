@@ -269,6 +269,16 @@
 # Z and Alpha Blending (Depth 32-bit per Pixel)
 # This function writes 16 pixels at once. So, X (intended to be horizontal) pixels to be written are 16 * num_turn_x.
 # Y (intended to be vertical) pixels can stride after all pixels in each X are written.
+#
+# Parameters (Stored in Array of Uniforms):
+# 1. Pointer of Image for DST
+# 2. Pointer of Z for DST
+# 3. Pointer of Image for SRC
+# 4. Pointer of Z for SRC
+# 5. Number of Turns for X Axis
+# 6. Number of Turns for Y Axis
+# 7. Stride of Y Axis for DST
+# 8. Stride of Y Axis for SRC
 ##
 .global _V3D_BLENDER
 .global _V3D_BLENDER_SIZE, :_V3D_BLENDER_END - :_V3D_BLENDER
@@ -276,12 +286,12 @@
 	.set color_dst,         r0
 	.set color_src,         r1
 	.set temp,              r2
-	.set ptr_dst_image,     ra0 # Argument 1
-	.set ptr_dst_z,         ra1 # Argument 2
-	.set ptr_src_image,     ra2 # Argument 3
-	.set ptr_src_z,         ra3 # Argument 4
-	.set num_turn_x,        ra4 # Argument 5
-	.set num_turn_y,        ra5 # Argument 6
+	.set ptr_dst_image,     ra0 # Parameter 1
+	.set ptr_dst_z,         ra1 # Parameter 2
+	.set ptr_src_image,     ra2 # Parameter 3
+	.set ptr_src_z,         ra3 # Parameter 4
+	.set num_turn_x,        ra4 # Parameter 5
+	.set num_turn_y,        ra5 # Parameter 6
 	.set alpha_dst,         ra6
 	.set alpha_src,         ra7
 	.set alpha_src_reverse, ra8
@@ -289,8 +299,8 @@
 	.set dup_num_turn_x,    ra10
 	.set offset_element,    rb0
 	.set offset_turn,       rb1
-	.set stride_dst_y,      rb2 # Argument 7
-	.set stride_src_y,      rb3 # Argument 8
+	.set stride_dst_y,      rb2 # Parameter 7
+	.set stride_src_y,      rb3 # Parameter 8
 	.set mask_lsb,          rb4
 	.set mask_msb,          rb5
 
@@ -306,6 +316,10 @@
 	mov dup_num_turn_x, num_turn_x
 	shl stride_dst_y, unif, 2       # Multiply by 4
 	shl stride_src_y, unif, 2       # Multiply by 4
+
+	# DMA Store Setup
+	mov vw_setup, vdw_setup_1(0)
+	mov vw_setup, vdw_setup_0(16, 1, dma_h32(0,0)) # 16 Columns, 1-deep Rows
 
 	:_V3D_BLENDER_Y
 		sub.setf num_turn_y, num_turn_y, 1
@@ -331,16 +345,16 @@
 			sub.setf -, color_src, color_dst
 
 			# Store Z to DST
-			mov vw_setup, vpm_setup(0, 1, v32(0,0))
 			mov.ifnc temp, color_dst
 			mov.ifc temp, color_src
+			mov -, mutex_acq
+			mov vw_setup, vpm_setup(0, 1, v32(0,0))
 			mov vpm, temp
-			mov vw_setup, vdw_setup_1(0)
-			mov vw_setup, vdw_setup_0(16, 1, dma_h32(0,0)) # 16 Columns, 1-deep Rows
 			mov vw_addr, ptr_dst_z                         # Element 0 Only, Other Elements Pass Through
 			mov -, vw_wait                                 # Finished when All Elements Done
+			mov mutex_rel, 1
 
-			# Preparation for Alpha Blending (Over)
+			# Preparation for Alpha Blending (Porter-Duff Over)
 			# Assuming Alpha of DST is 255 (1.0), So Alpha of Output Becomes 255 (1.0)
 			add t0s, ptr_src_image, offset_element
 			ldtmu0
@@ -369,12 +383,12 @@
 			or.ifc color_dst, color_dst, mask_msb
 
 			# Store ARGB to DST
+			mov -, mutex_acq
 			mov vw_setup, vpm_setup(0, 1, v32(0,0))
 			mov vpm, color_dst
-			mov vw_setup, vdw_setup_1(0)
-			mov vw_setup, vdw_setup_0(16, 1, dma_h32(0,0)) # 16 Columns, 1-deep Rows
 			mov vw_addr, ptr_dst_image                     # Element 0 Only, Other Elements Pass Through
 			mov -, vw_wait                                 # Finished when All Elements Done
+			mov mutex_rel, 1
 
 			# Loop Back and Offset for Next Turn
 			add ptr_dst_image, ptr_dst_image, offset_turn
