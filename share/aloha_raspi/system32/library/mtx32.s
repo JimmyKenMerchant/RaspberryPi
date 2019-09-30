@@ -773,11 +773,11 @@ mtx32_rotatey3d:
 	mov value, r0
 	pop {r0}
 
-	str value, [matrix_result, #8] @ Matrix_result[2], sin
+	str value, [matrix_result, #8]  @ Matrix_result[2], sin
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value
-	str value, [matrix_result, #32]  @ Matrix_result[8], -sin
+	str value, [matrix_result, #32] @ Matrix_result[8], -sin
 
 	mtx32_rotatey3d_common:
 		mov r0, matrix_result
@@ -840,11 +840,11 @@ mtx32_rotatez3d:
 	mov value, r0
 	pop {r0}
 
-	str value, [matrix_result, #16]  @ Matrix_result[4], sin
+	str value, [matrix_result, #16] @ Matrix_result[4], sin
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value
-	str value, [matrix_result, #4] @ Matrix_result[1], -sin
+	str value, [matrix_result, #4]  @ Matrix_result[1], -sin
 
 	mtx32_rotatez3d_common:
 		mov r0, matrix_result
@@ -1005,9 +1005,10 @@ mtx32_view3d:
 	vec_cam       .req r0
 	vec_trg       .req r1
 	vec_up        .req r2
-	vec_distance  .req r3
-	temp          .req r4
-	vec_cam_inv   .req r5
+	matrix_orient .req r3
+	vec_distance  .req r4
+	temp          .req r5
+	vec_cam_inv   .req r6
 
 	/* VFP Registers */
 	vfp_vec_x     .req s0
@@ -1018,7 +1019,7 @@ mtx32_view3d:
 	vfp_vec2_z    .req s5
 	vfp_temp      .req s6
 
-	push {r4-r5,lr}
+	push {r4-r6,lr}
 	vpush {s0-s6}
 
 	vldr vfp_vec_x, [vec_cam]
@@ -1063,11 +1064,11 @@ mtx32_view3d:
 
 	/* Make Vector of Distance Between Target and Camera Posision */
 
-	push {r0-r2}
+	push {r0-r3}
 	mov r0, #3
 	bl heap32_malloc
 	mov vec_distance, r0
-	pop {r0-r2}
+	pop {r0-r3}
 
 	cmp vec_distance, #0
 	bne mtx32_view3d_distance
@@ -1104,7 +1105,7 @@ mtx32_view3d:
 		pop {r0-r3}
 
 		.unreq vec_distance
-		vec_forward .req r3
+		vec_forward .req r4
 
 		mov vec_forward, temp
 		cmp vec_forward, #0
@@ -1249,7 +1250,42 @@ mtx32_view3d:
 			mov matrix_cam, #0
 			b mtx32_view3d_common
 
-		mtx32_view3d_identify:
+	mtx32_view3d_identify:
+		/* Make Identified 4-4 Martrix */
+
+		push {r0-r2}
+		mov r0, #4
+		bl mtx32_identity
+		mov matrix_orient, r0
+		pop {r0-r2}
+
+		cmp matrix_orient, #0
+		bne mtx32_view3d_identify_main
+
+		push {r0-r3}
+		mov r0, matrix_cam
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_forward
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_right
+		bl heap32_mfree
+		pop {r0-r3}
+
+		push {r0-r3}
+		mov r0, vec_realup
+		bl heap32_mfree
+		pop {r0-r3}
+
+		mov matrix_cam, #0
+		b mtx32_view3d_common
+
+		mtx32_view3d_identify_main:
 
 			vldr vfp_vec_x, [vec_forward]
 			vldr vfp_vec_y, [vec_forward, #4]
@@ -1259,22 +1295,34 @@ mtx32_view3d:
 			vneg.f32 vfp_vec_z, vfp_vec_z @ Invert
 
 			ldr temp, [vec_right]
-			str temp, [matrix_cam]
+			str temp, [matrix_orient]
 			ldr temp, [vec_realup]
-			str temp, [matrix_cam, #16]
-			vstr vfp_vec_x, [matrix_cam, #32]
+			str temp, [matrix_orient, #16]
+			vstr vfp_vec_x, [matrix_orient, #32]
 
 			ldr temp, [vec_right, #4]
-			str temp, [matrix_cam, #4]
+			str temp, [matrix_orient, #4]
 			ldr temp, [vec_realup, #4]
-			str temp, [matrix_cam, #20]
-			vstr vfp_vec_y, [matrix_cam, #36]
+			str temp, [matrix_orient, #20]
+			vstr vfp_vec_y, [matrix_orient, #36]
 
 			ldr temp, [vec_right, #8]
-			str temp, [matrix_cam, #8]
+			str temp, [matrix_orient, #8]
 			ldr temp, [vec_realup, #8]
-			str temp, [matrix_cam, #24]
-			vstr vfp_vec_z, [matrix_cam, #40]
+			str temp, [matrix_orient, #24]
+			vstr vfp_vec_z, [matrix_orient, #40]
+
+			push {r0-r3}
+			mov r1, matrix_orient
+			mov r2, #4
+			bl mtx32_multiply
+			mov temp, r0
+			pop {r0-r3}
+
+			push {r0-r3}
+			mov r0, matrix_cam
+			bl heap32_mfree
+			pop {r0-r3}
 
 			push {r0-r3}
 			mov r0, vec_forward
@@ -1291,13 +1339,21 @@ mtx32_view3d:
 			bl heap32_mfree
 			pop {r0-r3}
 
+			push {r0-r3}
+			mov r0, matrix_orient
+			bl heap32_mfree
+			pop {r0-r3}
+
+			mov matrix_cam, temp
+
 	mtx32_view3d_common:
 		vpop {s0-s6}
-		pop {r4-r5,pc}
+		pop {r4-r6,pc}
 
 .unreq matrix_cam
 .unreq vec_realup
 .unreq vec_right
+.unreq matrix_orient
 .unreq vec_forward
 .unreq temp
 .unreq vec_cam_inv
