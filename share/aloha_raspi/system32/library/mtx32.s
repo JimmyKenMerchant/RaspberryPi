@@ -57,56 +57,56 @@ mtx32_multiply:
 
 	mov index, #0
 
-	/* for ( uint32 column = 0; column < number_mat; column++ ) { */
-	mov column, #0
-	mtx32_multiply_column:
-		cmp column, number_mat
+	/* for ( uint32 row = 0; row < number_mat; row++ ) { */
+	mov row, #0
+	mtx32_multiply_row:
+		cmp row, number_mat
 		bge mtx32_multiply_common
 
-		/* for ( uint32 row = 0; row < number_mat; row++ ) { */
-		mov row, #0
-		mtx32_multiply_column_row:
-			cmp row, number_mat
-			bge mtx32_multiply_column_row_common
+		/* for ( uint32 column = 0; column < number_mat; column++ ) { */
+		mov column, #0
+		mtx32_multiply_row_column:
+			cmp column, number_mat
+			bge mtx32_multiply_row_column_common
 
 			mov temp, #0
 			vmov vfp_sum, temp
-			vcvt.f32.s32 vfp_sum, vfp_sum
+			/*vcvt.f32.s32 vfp_sum, vfp_sum*/
 
 			/* for ( uint32 i = 0; i < number_mat; i++ ) { */
 			mov i, #0
-			mtx32_multiply_column_row_i:
+			mtx32_multiply_row_column_i:
 				cmp i, number_mat
-				bge mtx32_multiply_column_row_i_common
+				bge mtx32_multiply_row_column_i_common
 
-				mul temp, column, number_mat
+				mul temp, row, number_mat
 				add temp, temp, i
 				ldr temp, [matrix1, temp, lsl #2]           @ Substitution of Multiplication by 4
 				
 				mul temp2, i, number_mat
-				add temp2, temp2, row
+				add temp2, temp2, column
 				ldr temp2, [matrix2, temp2, lsl #2]         @ Substitution of Multiplication by 4
 
 				vmov vfp_value, temp, temp2
 				vmla.f32 vfp_sum, vfp_value1, vfp_value2    @ Multiply and Accumulate
 
 				add i, i, #1
-				b mtx32_multiply_column_row_i
+				b mtx32_multiply_row_column_i
 	
 			/* } */
-				mtx32_multiply_column_row_i_common:
+				mtx32_multiply_row_column_i_common:
 					vmov temp, vfp_sum
 					str temp, [matrix_ret, index]
 					add index, index, #4
 
-					add row, row, #1
-					b mtx32_multiply_column_row
+					add column, column, #1
+					b mtx32_multiply_row_column
 
 		/* } */
-			mtx32_multiply_column_row_common:
+			mtx32_multiply_row_column_common:
 
-				add column, column, #1
-				b mtx32_multiply_column
+				add row, row, #1
+				b mtx32_multiply_row
 
 	/* } */
 	mtx32_multiply_common:
@@ -202,7 +202,7 @@ mtx32_identity:
 
 /**
  * function mtx32_multiply_vec
- * Square Matrix and Column Vector Multiplication
+ * Square Matrix and Column Vector Multiplication (Row Order)
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -568,7 +568,7 @@ mtx32_crossproduct:
 
 /**
  * function mtx32_translate3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Translation
+ * Make 4 by 4 Square Matrix (Row Order) with Vector of 3D Translation
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -596,11 +596,11 @@ mtx32_translate3d:
 	beq mtx32_translate3d_common
 
 	ldr value, [vector]
-	str value, [matrix_result, #48] @ Matrix_result[12], X
+	str value, [matrix_result, #12] @ Matrix_result[3], X
 	ldr value, [vector, #4]
-	str value, [matrix_result, #52] @ Matrix_result[13], Y
+	str value, [matrix_result, #28] @ Matrix_result[7], Y
 	ldr value, [vector, #8]
-	str value, [matrix_result, #56] @ Matrix_result[14], Z
+	str value, [matrix_result, #44] @ Matrix_result[11], Z
 
 	mtx32_translate3d_common:
 		mov r0, matrix_result
@@ -613,7 +613,7 @@ mtx32_translate3d:
 
 /**
  * function mtx32_scale3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Scale
+ * Make 4 by 4 Square Matrix (Row Order) with Vector of 3D Scale
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -658,7 +658,7 @@ mtx32_scale3d:
 
 /**
  * function mtx32_rotatex3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate X
+ * Make 4 by 4 Square Matrix (Row Order) with Vector of 3D Rotate X, Clock Wise
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -706,11 +706,11 @@ mtx32_rotatex3d:
 	mov value, r0
 	pop {r0}
 
-	str value, [matrix_result, #24] @ Matrix_result[6], sin
+	str value, [matrix_result, #36] @ Matrix_result[9], sin
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value
-	str value, [matrix_result, #36] @ Matrix_result[9], -sin
+	str value, [matrix_result, #24] @ Matrix_result[6], -sin
 
 	mtx32_rotatex3d_common:
 		mov r0, matrix_result
@@ -725,7 +725,7 @@ mtx32_rotatex3d:
 
 /**
  * function mtx32_rotatey3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate Y
+ * Make 4 by 4 Square Matrix (Row Order) with Vector of 3D Rotate Y, Clock Wise
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -773,11 +773,11 @@ mtx32_rotatey3d:
 	mov value, r0
 	pop {r0}
 
-	str value, [matrix_result, #32] @ Matrix_result[8], sin
+	str value, [matrix_result, #8] @ Matrix_result[2], sin
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value
-	str value, [matrix_result, #8]  @ Matrix_result[2], -sin
+	str value, [matrix_result, #32]  @ Matrix_result[8], -sin
 
 	mtx32_rotatey3d_common:
 		mov r0, matrix_result
@@ -792,7 +792,7 @@ mtx32_rotatey3d:
 
 /**
  * function mtx32_rotatez3d
- * Make 4 by 4 Square Matrix (Column Order) with Vector of 3D Rotate Z
+ * Make 4 by 4 Square Matrix (Row Order) with Vector of 3D Rotate Z, Clock Wise
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -840,11 +840,11 @@ mtx32_rotatez3d:
 	mov value, r0
 	pop {r0}
 
-	str value, [matrix_result, #4]  @ Matrix_result[1], sin
+	str value, [matrix_result, #16]  @ Matrix_result[4], sin
 	vmov vfp_value, value
 	vneg.f32 vfp_value, vfp_value
 	vmov value, vfp_value
-	str value, [matrix_result, #16] @ Matrix_result[4], -sin
+	str value, [matrix_result, #4] @ Matrix_result[1], -sin
 
 	mtx32_rotatez3d_common:
 		mov r0, matrix_result
@@ -859,7 +859,7 @@ mtx32_rotatez3d:
 
 /**
  * function mtx32_perspective3d
- * Make 4 by 4 Square Matrix (Column Order) with Perspective
+ * Make 4 by 4 Square Matrix (Row Order) with Perspective
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -956,7 +956,7 @@ mtx32_perspective3d:
 	mov temp, #-1
 	vmov vfp_temp, temp
 	vcvt.f32.s32 vfp_temp, vfp_temp
-	vstr vfp_temp, [matrix_result, #44]        @ Matrix_result[11]
+	vstr vfp_temp, [matrix_result, #56]        @ Matrix_result[14]
 
 	/* Make Pz, -(2.0 * far * near) / (far - near) */
 	vmul.f32 vfp_temp, vfp_two, vfp_far
@@ -964,7 +964,7 @@ mtx32_perspective3d:
 	vneg.f32 vfp_temp, vfp_temp
 	vsub.f32 vfp_temp2, vfp_far, vfp_near
 	vdiv.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #56]        @ Matrix_result[14]
+	vstr vfp_temp, [matrix_result, #44]        @ Matrix_result[11]
 
 	mtx32_perspective3d_common:
 		mov r0, matrix_result
@@ -988,7 +988,7 @@ mtx32_perspective3d:
 
 /**
  * function mtx32_view3d
- * Make 4 by 4 Square Matrix (Column Order) with View
+ * Make 4 by 4 Square Matrix (Row Order) with View
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -1005,10 +1005,9 @@ mtx32_view3d:
 	vec_cam       .req r0
 	vec_trg       .req r1
 	vec_up        .req r2
-	matrix_orient .req r3
-	vec_distance  .req r4
-	temp          .req r5
-	vec_cam_inv   .req r6
+	vec_distance  .req r3
+	temp          .req r4
+	vec_cam_inv   .req r5
 
 	/* VFP Registers */
 	vfp_vec_x     .req s0
@@ -1019,7 +1018,7 @@ mtx32_view3d:
 	vfp_vec2_z    .req s5
 	vfp_temp      .req s6
 
-	push {r4-r6,lr}
+	push {r4-r5,lr}
 	vpush {s0-s6}
 
 	vldr vfp_vec_x, [vec_cam]
@@ -1064,11 +1063,11 @@ mtx32_view3d:
 
 	/* Make Vector of Distance Between Target and Camera Posision */
 
-	push {r0-r3}
+	push {r0-r2}
 	mov r0, #3
 	bl heap32_malloc
 	mov vec_distance, r0
-	pop {r0-r3}
+	pop {r0-r2}
 
 	cmp vec_distance, #0
 	bne mtx32_view3d_distance
@@ -1105,7 +1104,7 @@ mtx32_view3d:
 		pop {r0-r3}
 
 		.unreq vec_distance
-		vec_forward .req r4
+		vec_forward .req r3
 
 		mov vec_forward, temp
 		cmp vec_forward, #0
@@ -1250,42 +1249,7 @@ mtx32_view3d:
 			mov matrix_cam, #0
 			b mtx32_view3d_common
 
-	mtx32_view3d_identify:
-		/* Make Identified 4-4 Martrix */
-
-		push {r0-r2}
-		mov r0, #4
-		bl mtx32_identity
-		mov matrix_orient, r0
-		pop {r0-r2}
-
-		cmp matrix_orient, #0
-		bne mtx32_view3d_identify_main
-
-		push {r0-r3}
-		mov r0, matrix_cam
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, vec_forward
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, vec_right
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
-		mov r0, vec_realup
-		bl heap32_mfree
-		pop {r0-r3}
-
-		mov matrix_cam, #0
-		b mtx32_view3d_common
-
-		mtx32_view3d_identify_main:
+		mtx32_view3d_identify:
 
 			vldr vfp_vec_x, [vec_forward]
 			vldr vfp_vec_y, [vec_forward, #4]
@@ -1295,34 +1259,22 @@ mtx32_view3d:
 			vneg.f32 vfp_vec_z, vfp_vec_z @ Invert
 
 			ldr temp, [vec_right]
-			str temp, [matrix_orient]
+			str temp, [matrix_cam]
 			ldr temp, [vec_realup]
-			str temp, [matrix_orient, #4]
-			vstr vfp_vec_x, [matrix_orient, #8]
+			str temp, [matrix_cam, #16]
+			vstr vfp_vec_x, [matrix_cam, #32]
 
 			ldr temp, [vec_right, #4]
-			str temp, [matrix_orient, #16]
+			str temp, [matrix_cam, #4]
 			ldr temp, [vec_realup, #4]
-			str temp, [matrix_orient, #20]
-			vstr vfp_vec_y, [matrix_orient, #24]
+			str temp, [matrix_cam, #20]
+			vstr vfp_vec_y, [matrix_cam, #36]
 
 			ldr temp, [vec_right, #8]
-			str temp, [matrix_orient, #32]
+			str temp, [matrix_cam, #8]
 			ldr temp, [vec_realup, #8]
-			str temp, [matrix_orient, #36]
-			vstr vfp_vec_z, [matrix_orient, #40]
-
-			push {r0-r3}
-			mov r1, matrix_orient
-			mov r2, #4
-			bl mtx32_multiply
-			mov temp, r0
-			pop {r0-r3}
-
-			push {r0-r3}
-			mov r0, matrix_cam
-			bl heap32_mfree
-			pop {r0-r3}
+			str temp, [matrix_cam, #24]
+			vstr vfp_vec_z, [matrix_cam, #40]
 
 			push {r0-r3}
 			mov r0, vec_forward
@@ -1339,21 +1291,13 @@ mtx32_view3d:
 			bl heap32_mfree
 			pop {r0-r3}
 
-			push {r0-r3}
-			mov r0, matrix_orient
-			bl heap32_mfree
-			pop {r0-r3}
-
-			mov matrix_cam, temp
-
 	mtx32_view3d_common:
 		vpop {s0-s6}
-		pop {r4-r6,pc}
+		pop {r4-r5,pc}
 
 .unreq matrix_cam
 .unreq vec_realup
 .unreq vec_right
-.unreq matrix_orient
 .unreq vec_forward
 .unreq temp
 .unreq vec_cam_inv
@@ -1485,7 +1429,7 @@ mtx32_versor:
 
 /**
  * function mtx32_versortomatrix
- * Make Matrix from Versor
+ * Make 4 by 4 Square Matrix (Row Order) with Versor
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
  *
@@ -1547,29 +1491,29 @@ mtx32_versortomatrix:
 	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
 	vstr vfp_temp, [matrix_result]
 
-	/* Matrix[1] 2.0 * x * y + 2.0 * w * z */
+	/* Matrix[4] 2.0 * x * y + 2.0 * w * z */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
 	vmul.f32 vfp_temp, vfp_temp, vfp_versor_y
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
 	vadd.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #4]
+	vstr vfp_temp, [matrix_result, #16]
 
-	/* Matrix[2] 2.0 * x * z - 2.0 * w * y */
+	/* Matrix[8] 2.0 * x * z - 2.0 * w * y */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
 	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_y
 	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #8]
+	vstr vfp_temp, [matrix_result, #32]
 
-	/* Matrix[4] 2.0 * x * y - 2.0 * w * z */
+	/* Matrix[1] 2.0 * x * y - 2.0 * w * z */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
 	vmul.f32 vfp_temp, vfp_temp, vfp_versor_y
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_z
 	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #16]
+	vstr vfp_temp, [matrix_result, #4]
 
 	/* Matrix[5] 1.0 - 2.0 * x * x - 2.0 * z * z */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
@@ -1580,29 +1524,29 @@ mtx32_versortomatrix:
 	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
 	vstr vfp_temp, [matrix_result, #20]
 
-	/* Matrix[6] 2.0 * y * z + 2.0 * w * x */
+	/* Matrix[9] 2.0 * y * z + 2.0 * w * x */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_y
 	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_x
 	vadd.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #24]
+	vstr vfp_temp, [matrix_result, #36]
 
-	/* Matrix[8] 2.0 * x * z + 2.0 * w * y */
+	/* Matrix[2] 2.0 * x * z + 2.0 * w * y */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x
 	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_y
 	vadd.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #32]
+	vstr vfp_temp, [matrix_result, #8]
 
-	/* Matrix[9] 2.0 * y * z - 2.0 * w * x */
+	/* Matrix[6] 2.0 * y * z - 2.0 * w * x */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_y
 	vmul.f32 vfp_temp, vfp_temp, vfp_versor_z
 	vmul.f32 vfp_temp2, vfp_two, vfp_versor_w
 	vmul.f32 vfp_temp2, vfp_temp2, vfp_versor_x
 	vsub.f32 vfp_temp, vfp_temp, vfp_temp2
-	vstr vfp_temp, [matrix_result, #36]
+	vstr vfp_temp, [matrix_result, #24]
 
 	/* Matrix[10] 1.0 - 2.0 * x * x - 2.0 * y * y */
 	vmul.f32 vfp_temp, vfp_two, vfp_versor_x

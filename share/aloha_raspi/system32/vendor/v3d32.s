@@ -1582,14 +1582,13 @@ v3d32_texture2d_init:
 	mov temp, #1
 	lsl size, temp, size
 
-	/* Add Half of Size of Texture LOD 0 If Any Mimmap Exist */
-	cmp num_mipmap, #0
-	addhi size, size, size, lsr #1
-
 	/* Make Buffer for Texture at GPU Side */
 
 	push {r0-r3}
-	mov r0, size
+	/* Add Half of Size of Texture LOD 0 If Any Mimmap Exist */
+	cmp num_mipmap, #0
+	addhi r0, size, size, lsr #1
+	movls r0, size
 	mov r1, #4096
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -1610,6 +1609,8 @@ v3d32_texture2d_init:
 
 	beq v3d32_texture2d_init_error
 
+	cmp num_mipmap, #0
+	addhi temp, temp, size, lsr #1
 	str temp, [texture2d]
 
 	b v3d32_texture2d_init_success

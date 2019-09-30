@@ -340,7 +340,7 @@ int32 _user_start() {
 	uniforms4->arm[5].u32 = 1;
 	uniforms4->arm[6].u32 = 0;
 	uniforms4->arm[7].u32 = 0;
-	jobs = (uint32*)heap32_malloc( 4 );
+	jobs = (uint32*)heap32_malloc( 8 );
 	jobs[0] = uniforms1->gpu;
 	jobs[1] = fragmentshader->gpu;
 	jobs[2] = uniforms2->gpu;
