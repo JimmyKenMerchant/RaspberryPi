@@ -25,7 +25,8 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 /**
  * Positive: X Right (Your View), Y Up, Z Forward (Towards You)
  * Front of Geometory: Counter Clock Wise
- * Matrix: Row Order
+ * Calculation: Row order
+ *              Multiplication of matrices needs to exchange Matrix 1 and Matrix 2 to get the same answer as column order.
  */
 
 // X, Y, Z, S, T
@@ -86,7 +87,7 @@ float32 cube_vertices[] =
 		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f
 };
 
-float32 cube_position[] = { -0.4f, 0.2f, 0.0f };
+float32 cube_position[] = { -0.5f, 0.0f, -1.5f };
 float32 versor_vector[] = { 1.0f, 1.0f, 1.0f };
 float32 camera_position[] = { 0.0f, 0.5f, 2.0f };
 float32 camera_target[] = { -0.1f, -0.1f, -0.1f }; // Don't Initialize by Zeros, It's Invalid!
@@ -131,12 +132,18 @@ int32 _user_start()
 	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[0], width_pixel, height_pixel, FB32_DEPTH );
 
+	/**
+	 * Note: Camera Position Upside Down, Leftside Right
+	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
+	 */
 	obj view3d = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj perspective3d = mtx32_perspective3d( 45.0f, 1.234f, 0.2f, 3.0f );
+	obj perspective3d = mtx32_perspective3d( 90.0f, 1.234f, 0.2f, 3.0f );
 	obj mat_p_v = mtx32_multiply( view3d, perspective3d, 4 );
-	obj mat_p_v_v;
+	obj mat_translate;
 	obj versor;
 	obj mat_versor;
+	obj mat_world;
+	obj mat_p_v_v;
 
 	angle = 0.0f;
 
@@ -161,13 +168,16 @@ int32 _user_start()
 	while(True) {
 		_stopwatch_start();
 
+		mat_translate = mtx32_translate3d( (obj)cube_position );
 		versor = mtx32_versor( angle, (obj)versor_vector );
 		mat_versor = mtx32_versortomatrix( versor );
-		//mat_versor = mtx32_translate3d( cube_position );
-		mat_p_v_v = mtx32_multiply( mat_p_v, mat_versor, 4 );
+		mat_world = mtx32_multiply( mat_translate, mat_versor, 4 );
+		mat_p_v_v = mtx32_multiply( mat_p_v, mat_world, 4 );
 		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_v, width_pixel, height_pixel );
+		heap32_mfree( mat_translate );
 		heap32_mfree( versor );
 		heap32_mfree( mat_versor );
+		heap32_mfree( mat_world );
 		heap32_mfree( mat_p_v_v );
 
 		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
@@ -187,6 +197,12 @@ int32 _user_start()
 		// Angle Change
 		angle = vfp32_fadd( angle, 1.0f );
 		if( vfp32_fge( angle, 360.0f ) ) angle = 0.0f;
+
+		// Position Change
+		cube_position[0] = vfp32_fadd( cube_position[0], 0.01f );
+		if( vfp32_fge( cube_position[0], 0.5f ) ) cube_position[0] = -0.5f;
+		cube_position[2] = vfp32_fadd( cube_position[2], 0.03f );
+		if( vfp32_fge( cube_position[2], 1.5f ) ) cube_position[2] = -1.5f;
 
 		time = _stopwatch_end();
 num_string = cvt32_int32_to_string_deci( time, 0, 0 );

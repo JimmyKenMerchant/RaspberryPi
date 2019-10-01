@@ -13,13 +13,8 @@
 /**
  * Positive: X Right (Your View), Y Up
  * Front of Geometory: Counter Clock Wise
- * Matrix: Row Order
- */
-
-/**
- * Note: Camera Position Upside Down, Leftside Right
- * Idea: Not to multiply mat_versor and mat_p_v in advance for geo32_fill3d.
- *       Multiply the model and mat_versor, then multiply mat_p_v.
+ * Calculation: Row order
+ *              Multiplication of matrices needs to exchange Matrix 1 and Matrix 2 to get the same answer as column order.
  */
 
 int32 _user_start()
@@ -96,6 +91,10 @@ int32 _user_start()
 	//heap32_mfree( mat3 );
 	//heap32_mfree( mat4 );
 
+	/**
+	 * Note: Camera Position Upside Down, Leftside Right
+	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
+	 */
 	obj view3d = mtx32_view3d( arr4, arr5, arr6 );
 	obj perspective3d = mtx32_perspective3d( 90.0, 1.234, 0.2, 4.0 );
 	obj mat_p_v = mtx32_multiply( view3d, perspective3d, 4 );

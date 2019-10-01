@@ -991,6 +991,8 @@ mtx32_perspective3d:
  * Make 4 by 4 Square Matrix (Row Order) with View
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
+ * Note: Camera Position Upside Down, Leftside Right
+ *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
  *
  * Parameters
  * r0: Vector of Camera Position, Must Be Three of Vector Size, X, Y, and Z
@@ -1008,7 +1010,6 @@ mtx32_view3d:
 	matrix_orient .req r3
 	vec_distance  .req r4
 	temp          .req r5
-	vec_cam_inv   .req r6
 
 	/* VFP Registers */
 	vfp_vec_x     .req s0
@@ -1019,48 +1020,15 @@ mtx32_view3d:
 	vfp_vec2_z    .req s5
 	vfp_temp      .req s6
 
-	push {r4-r6,lr}
+	push {r4-r5,lr}
 	vpush {s0-s6}
 
 	vldr vfp_vec_x, [vec_cam]
 	vldr vfp_vec_y, [vec_cam, #4]
 	vldr vfp_vec_z, [vec_cam, #8]
-	vneg.f32 vfp_vec_x, vfp_vec_x @ Invert
-	vneg.f32 vfp_vec_y, vfp_vec_y @ Invert
-	vneg.f32 vfp_vec_z, vfp_vec_z @ Invert
 	vldr vfp_vec2_x, [vec_trg]
 	vldr vfp_vec2_y, [vec_trg, #4]
 	vldr vfp_vec2_z, [vec_trg, #8]
-
-	/* Make Matrix of Camera Position*/
-	push {r0-r3}
-	mov r0, #3
-	bl heap32_malloc
-	mov vec_cam_inv, r0
-	pop {r0-r3}
-
-	cmp vec_cam_inv, #0
-	beq mtx32_view3d_common
-
-	vstr vfp_vec_x, [vec_cam_inv]
-	vstr vfp_vec_y, [vec_cam_inv, #4]
-	vstr vfp_vec_z, [vec_cam_inv, #8]
-
-	.unreq vec_cam
-	matrix_cam .req r0
-
-	push {r1-r3}
-	mov r0, vec_cam_inv
-	bl mtx32_translate3d
-	pop {r1-r3}
-
-	push {r0-r3}
-	mov r0, vec_cam_inv
-	bl heap32_mfree
-	pop {r0-r3}
-
-	cmp matrix_cam, #0
-	beq mtx32_view3d_common
 
 	/* Make Vector of Distance Between Target and Camera Posision */
 
@@ -1073,21 +1041,16 @@ mtx32_view3d:
 	cmp vec_distance, #0
 	bne mtx32_view3d_distance
 
-	push {r0-r3}
-	mov r0, matrix_cam
-	bl heap32_mfree
-	pop {r0-r3}
-
-	mov matrix_cam, #0
+	mov r0, #0
 	b mtx32_view3d_common
 
 	mtx32_view3d_distance:
 
-		vadd.f32 vfp_temp, vfp_vec2_x, vfp_vec_x @ Camera Position is Inverted
+		vsub.f32 vfp_temp, vfp_vec2_x, vfp_vec_x @ Camera Position is Inverted
 		vstr vfp_temp, [vec_distance]
-		vadd.f32 vfp_temp, vfp_vec2_y, vfp_vec_y @ Camera Position is Inverted
+		vsub.f32 vfp_temp, vfp_vec2_y, vfp_vec_y @ Camera Position is Inverted
 		vstr vfp_temp, [vec_distance, #4]
-		vadd.f32 vfp_temp, vfp_vec2_z, vfp_vec_z @ Camera Position is Inverted
+		vsub.f32 vfp_temp, vfp_vec2_z, vfp_vec_z @ Camera Position is Inverted
 		vstr vfp_temp, [vec_distance, #8]
 
 		/* Make Forward Vector from Distance, e.g., Index Finger */
@@ -1111,12 +1074,7 @@ mtx32_view3d:
 		cmp vec_forward, #0
 		bne mtx32_view3d_right
 
-		push {r0-r3}
-		mov r0, matrix_cam
-		bl heap32_mfree
-		pop {r0-r3}
-
-		mov matrix_cam, #0
+		mov r0, #0
 		b mtx32_view3d_common
 
 	mtx32_view3d_right:
@@ -1134,16 +1092,11 @@ mtx32_view3d:
 		bne mtx32_view3d_right_normalize
 
 		push {r0-r3}
-		mov r0, matrix_cam
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
 		mov r0, vec_forward
 		bl heap32_mfree
 		pop {r0-r3}
 
-		mov matrix_cam, #0
+		mov r0, #0
 		b mtx32_view3d_common
 
 		mtx32_view3d_right_normalize:
@@ -1168,16 +1121,11 @@ mtx32_view3d:
 			bne mtx32_view3d_realup
 
 			push {r0-r3}
-			mov r0, matrix_cam
-			bl heap32_mfree
-			pop {r0-r3}
-
-			push {r0-r3}
 			mov r0, vec_forward
 			bl heap32_mfree
 			pop {r0-r3}
 
-			mov matrix_cam, #0
+			mov r0, #0
 			b mtx32_view3d_common
 
 	mtx32_view3d_realup:
@@ -1194,11 +1142,6 @@ mtx32_view3d:
 		bne mtx32_view3d_realup_normalize
 
 		push {r0-r3}
-		mov r0, matrix_cam
-		bl heap32_mfree
-		pop {r0-r3}
-
-		push {r0-r3}
 		mov r0, vec_forward
 		bl heap32_mfree
 		pop {r0-r3}
@@ -1208,7 +1151,7 @@ mtx32_view3d:
 		bl heap32_mfree
 		pop {r0-r3}
 
-		mov matrix_cam, #0
+		mov r0, #0
 		b mtx32_view3d_common
 
 		mtx32_view3d_realup_normalize:
@@ -1233,11 +1176,6 @@ mtx32_view3d:
 			bne mtx32_view3d_identify
 
 			push {r0-r3}
-			mov r0, matrix_cam
-			bl heap32_mfree
-			pop {r0-r3}
-
-			push {r0-r3}
 			mov r0, vec_forward
 			bl heap32_mfree
 			pop {r0-r3}
@@ -1247,7 +1185,7 @@ mtx32_view3d:
 			bl heap32_mfree
 			pop {r0-r3}
 
-			mov matrix_cam, #0
+			mov r0, #0
 			b mtx32_view3d_common
 
 	mtx32_view3d_identify:
@@ -1261,11 +1199,6 @@ mtx32_view3d:
 
 		cmp matrix_orient, #0
 		bne mtx32_view3d_identify_main
-
-		push {r0-r3}
-		mov r0, matrix_cam
-		bl heap32_mfree
-		pop {r0-r3}
 
 		push {r0-r3}
 		mov r0, vec_forward
@@ -1282,52 +1215,63 @@ mtx32_view3d:
 		bl heap32_mfree
 		pop {r0-r3}
 
-		mov matrix_cam, #0
+		mov r0, #0
 		b mtx32_view3d_common
 
 		mtx32_view3d_identify_main:
+			/* Store Rotation and Translation with Row Order */
 
-			vldr vfp_vec_x, [vec_forward]
-			vldr vfp_vec_y, [vec_forward, #4]
-			vldr vfp_vec_z, [vec_forward, #8]
-			vneg.f32 vfp_vec_x, vfp_vec_x @ Invert
-			vneg.f32 vfp_vec_y, vfp_vec_y @ Invert
-			vneg.f32 vfp_vec_z, vfp_vec_z @ Invert
+			vldr vfp_vec_x, [vec_cam]
+			vldr vfp_vec_y, [vec_cam, #4]
+			vldr vfp_vec_z, [vec_cam, #8]
 
-			ldr temp, [vec_right]
-			str temp, [matrix_orient]
-			ldr temp, [vec_realup]
-			str temp, [matrix_orient, #16]
-			vstr vfp_vec_x, [matrix_orient, #32]
+			/* Rotation for Right */
+			vldr vfp_vec2_x, [vec_right]
+			vldr vfp_vec2_y, [vec_right, #4]
+			vldr vfp_vec2_z, [vec_right, #8]
+			vstr vfp_vec2_x, [matrix_orient]
+			vstr vfp_vec2_y, [matrix_orient, #4]
+			vstr vfp_vec2_z, [matrix_orient, #8]
 
-			ldr temp, [vec_right, #4]
-			str temp, [matrix_orient, #4]
-			ldr temp, [vec_realup, #4]
-			str temp, [matrix_orient, #20]
-			vstr vfp_vec_y, [matrix_orient, #36]
+			/* Translation for X */
+			vmul.f32 vfp_temp, vfp_vec_x, vfp_vec2_x
+			vmla.f32 vfp_temp, vfp_vec_y, vfp_vec2_y
+			vmla.f32 vfp_temp, vfp_vec_z, vfp_vec2_z
+			vneg.f32 vfp_temp, vfp_temp
+			vstr vfp_temp, [matrix_orient, #12]
 
-			ldr temp, [vec_right, #8]
-			str temp, [matrix_orient, #8]
-			ldr temp, [vec_realup, #8]
-			str temp, [matrix_orient, #24]
-			vstr vfp_vec_z, [matrix_orient, #40]
+			/* Rotation for Real Up */
+			vldr vfp_vec2_x, [vec_realup]
+			vldr vfp_vec2_y, [vec_realup, #4]
+			vldr vfp_vec2_z, [vec_realup, #8]
+			vstr vfp_vec2_x, [matrix_orient, #16]
+			vstr vfp_vec2_y, [matrix_orient, #20]
+			vstr vfp_vec2_z, [matrix_orient, #24]
 
-			push {r0-r3}
-			mov r1, matrix_orient
-			mov r2, #4
-			bl mtx32_multiply
-			mov temp, r0
-			pop {r0-r3}
+			/* Translation for Y */
+			vmul.f32 vfp_temp, vfp_vec_x, vfp_vec2_x
+			vmla.f32 vfp_temp, vfp_vec_y, vfp_vec2_y
+			vmla.f32 vfp_temp, vfp_vec_z, vfp_vec2_z
+			vneg.f32 vfp_temp, vfp_temp
+			vstr vfp_temp, [matrix_orient, #28]
 
-			push {r0-r3}
-			mov r0, matrix_cam
-			bl heap32_mfree
-			pop {r0-r3}
+			/* Rotation for Forward */
+			vldr vfp_vec2_x, [vec_forward]
+			vldr vfp_vec2_y, [vec_forward, #4]
+			vldr vfp_vec2_z, [vec_forward, #8]
+			vneg.f32 vfp_vec2_x, vfp_vec2_x
+			vneg.f32 vfp_vec2_y, vfp_vec2_y
+			vneg.f32 vfp_vec2_z, vfp_vec2_z
+			vstr vfp_vec2_x, [matrix_orient, #32]
+			vstr vfp_vec2_y, [matrix_orient, #36]
+			vstr vfp_vec2_z, [matrix_orient, #40]
 
-			push {r0-r3}
-			mov r0, vec_forward
-			bl heap32_mfree
-			pop {r0-r3}
+			/* Translation for Z */
+			vmul.f32 vfp_temp, vfp_vec_x, vfp_vec2_x
+			vmla.f32 vfp_temp, vfp_vec_y, vfp_vec2_y
+			vmla.f32 vfp_temp, vfp_vec_z, vfp_vec2_z
+			vneg.f32 vfp_temp, vfp_temp
+			vstr vfp_temp, [matrix_orient, #44]
 
 			push {r0-r3}
 			mov r0, vec_right
@@ -1340,23 +1284,22 @@ mtx32_view3d:
 			pop {r0-r3}
 
 			push {r0-r3}
-			mov r0, matrix_orient
+			mov r0, vec_forward
 			bl heap32_mfree
 			pop {r0-r3}
 
-			mov matrix_cam, temp
+			mov r0, matrix_orient
 
 	mtx32_view3d_common:
 		vpop {s0-s6}
-		pop {r4-r6,pc}
+		pop {r4-r5,pc}
 
-.unreq matrix_cam
+.unreq vec_cam
 .unreq vec_realup
 .unreq vec_right
 .unreq matrix_orient
 .unreq vec_forward
 .unreq temp
-.unreq vec_cam_inv
 .unreq vfp_vec_x
 .unreq vfp_vec_y
 .unreq vfp_vec_z
