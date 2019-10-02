@@ -87,12 +87,14 @@ float32 cube_vertices[] =
 		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f
 };
 
-float32 cube_position[] = { -0.5f, 0.0f, -1.5f };
+float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
+float32 cube_scale[] = { 0.5f, 0.5f, 0.5f };
 float32 versor_vector[] = { 1.0f, 1.0f, 1.0f };
 float32 camera_position[] = { 0.0f, 0.5f, 2.0f };
-float32 camera_target[] = { -0.1f, -0.1f, -0.1f }; // Don't Initialize by Zeros, It's Invalid!
+float32 camera_target[] = { 0.0001f, 0.0001f, 0.0001f }; // Don't Initialize by Zeros, It's Invalid!
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
 float32 angle;
+float32 scale;
 float32 depth_offset;
 float32 depth_scale; // Depending on Camera Position and Target, Depth Value Needs to Be Between 0.0f to 1.0f
 
@@ -136,16 +138,19 @@ int32 _user_start()
 	 * Note: Camera Position Upside Down, Leftside Right
 	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
 	 */
-	obj view3d = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj perspective3d = mtx32_perspective3d( 90.0f, 1.234f, 0.2f, 3.0f );
-	obj mat_p_v = mtx32_multiply( view3d, perspective3d, 4 );
+	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
+	obj mat_projection = mtx32_perspective3d( 75.0f, 1.234f, 0.2f, 2.0f );
+	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
 	obj mat_translate;
+	obj mat_scale;
+	obj mat_t_s; // Translate and Scale
 	obj versor;
 	obj mat_versor;
-	obj mat_world;
-	obj mat_p_v_v;
+	obj mat_model;
+	obj mat_p_v_m; // Projection, View, Model
 
 	angle = 0.0f;
+	scale = 0.5f;
 
 	_control_qpul2cache( 0b101 );
 	_clear_qpucache( 0x0F0F0F0F );
@@ -169,16 +174,20 @@ int32 _user_start()
 		_stopwatch_start();
 
 		mat_translate = mtx32_translate3d( (obj)cube_position );
+		mat_scale = mtx32_scale3d( (obj)cube_scale );
+		mat_t_s = mtx32_multiply( mat_scale, mat_translate, 4 );
 		versor = mtx32_versor( angle, (obj)versor_vector );
 		mat_versor = mtx32_versortomatrix( versor );
-		mat_world = mtx32_multiply( mat_translate, mat_versor, 4 );
-		mat_p_v_v = mtx32_multiply( mat_p_v, mat_world, 4 );
-		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_v, width_pixel, height_pixel );
+		mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
+		mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
+		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
 		heap32_mfree( mat_translate );
+		heap32_mfree( mat_scale );
+		heap32_mfree( mat_t_s );
 		heap32_mfree( versor );
 		heap32_mfree( mat_versor );
-		heap32_mfree( mat_world );
-		heap32_mfree( mat_p_v_v );
+		heap32_mfree( mat_model );
+		heap32_mfree( mat_p_v_m );
 
 		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
@@ -201,8 +210,15 @@ int32 _user_start()
 		// Position Change
 		cube_position[0] = vfp32_fadd( cube_position[0], 0.01f );
 		if( vfp32_fge( cube_position[0], 0.5f ) ) cube_position[0] = -0.5f;
-		cube_position[2] = vfp32_fadd( cube_position[2], 0.03f );
-		if( vfp32_fge( cube_position[2], 1.5f ) ) cube_position[2] = -1.5f;
+		cube_position[2] = vfp32_fadd( cube_position[2], 0.04f );
+		if( vfp32_fge( cube_position[2], 2.0f ) ) cube_position[2] = -2.0f;
+
+		// Scale Change
+		scale = vfp32_fadd( scale, 0.01f );
+		if( vfp32_fge( scale, 1.5f ) ) scale = 0.5f;
+		cube_scale[0] = scale;
+		cube_scale[1] = scale;
+		cube_scale[2] = scale;
 
 		time = _stopwatch_end();
 num_string = cvt32_int32_to_string_deci( time, 0, 0 );
@@ -213,8 +229,8 @@ print32_debug( mat_versor, 0, 50 );
 		_sleep( 100000 );
 	}
 
-	heap32_mfree( perspective3d );
-	heap32_mfree( view3d );
+	heap32_mfree( mat_view );
+	heap32_mfree( mat_projection );
 	heap32_mfree( mat_p_v );
 	_texture2d_free( texture2d );
 	_gpumemory_free( vertex_array );

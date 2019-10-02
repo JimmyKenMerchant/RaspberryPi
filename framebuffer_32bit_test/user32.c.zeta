@@ -11,7 +11,7 @@
 #include "system32.c"
 
 /**
- * Positive: X Right (Your View), Y Up
+ * Positive: X Right (Your View), Y Up, Z Forward (Towards You)
  * Front of Geometory: Counter Clock Wise
  * Calculation: Row order
  *              Multiplication of matrices needs to exchange Matrix 1 and Matrix 2 to get the same answer as column order.
