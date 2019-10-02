@@ -214,6 +214,7 @@
 	.set pixel_color,   r4
 	.set c_coefficient, r5
 	.set parameter_w,   ra15
+	.set index_color,   ra0
 	.set parameter_z,   rb15
 
 	# The interpolation of texture S/T (varyings in shaded vertex format) is calculated with the formula:
@@ -234,9 +235,10 @@
 	sub.setf alpha, alpha, 0
 	mov tlbz, parameter_z
 	mov.ifnz tlbc, pixel_color            # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
+	and index_color, x_coord, 0xF         # Only Bit[3:0]
 	mov alpha, unif
 	mov alpha, unif
-	add alpha, unif, 8                    # Third Item in Array of Additional Uniforms
+	add alpha, unif, index_color          # Item in Array of Additional Uniforms
 	mov t0s, alpha
 	ldtmu0
 	mov.ifz tlbc, pixel_color; thrend
@@ -249,6 +251,7 @@
 .unset pixel_color
 .unset c_coefficient
 .unset parameter_w
+.unset index_color
 .unset parameter_z
 :_V3D_FRAGMENT_SHADER_END
 

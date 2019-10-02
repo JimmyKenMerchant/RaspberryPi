@@ -159,9 +159,14 @@ int32 _user_start()
 	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 
-	additional_uniforms->arm[0].u32 = COLOR32_BLUE;
-	additional_uniforms->arm[1].u32 = COLOR32_GRAY;
-	additional_uniforms->arm[2].u32 = COLOR32_PINK;
+	additional_uniforms->arm[0].u32 = COLOR32_GREEN;
+	additional_uniforms->arm[1].u32 = COLOR32_RED;
+	additional_uniforms->arm[2].u32 = COLOR32_BLUE;
+	additional_uniforms->arm[3].u32 = COLOR32_WHITE;
+	additional_uniforms->arm[4].u32 = COLOR32_YELLOW;
+	additional_uniforms->arm[5].u32 = COLOR32_PINK;
+	additional_uniforms->arm[6].u32 = COLOR32_GRAY;
+	additional_uniforms->arm[7].u32 = COLOR32_MAGENTA;
 
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 0 );
@@ -214,6 +219,7 @@ int32 _user_start()
 		if( vfp32_fge( cube_position[2], 2.0f ) ) cube_position[2] = -2.0f;
 
 		// Scale Change
+		// For accuracy, calculate the distance between eye and object, but not this linear incrementation.
 		scale = vfp32_fadd( scale, 0.01f );
 		if( vfp32_fge( scale, 1.5f ) ) scale = 0.5f;
 		cube_scale[0] = scale;
