@@ -228,14 +228,15 @@
 	# In this shader, the depth of TLB (TLBZ) is stored for the z test. The early-z test rejects this shader itself though.
 	fmul texture_s, vary, parameter_w
 	fmul texture_t, vary, parameter_w; fadd texture_s, texture_s, c_coefficient; sbwait
-	fadd t0t, texture_t, c_coefficient
-	mov t0s, texture_s
-	ldtmu0                                # Load Pixel Color in TMU0 to r4
+	fadd t0t, texture_t, c_coefficient; fmul alpha, vary, parameter_w
+	mov t0s, texture_s; fadd alpha, alpha, c_coefficient
+	ftoi index_color, alpha; ldtmu0       # Load Pixel Color in TMU0 to r4
 	shr alpha, pixel_color, 24
+	shl index_color, index_color, 2       # Multiply by 4
 	sub.setf alpha, alpha, 0
 	mov tlbz, parameter_z
 	mov.ifnz tlbc, pixel_color            # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
-	and index_color, x_coord, 0xF         # Only Bit[3:0]
+	#and index_color, x_coord, 0xF         # Only Bit[3:0]
 	mov alpha, unif
 	mov alpha, unif
 	add alpha, unif, index_color          # Item in Array of Additional Uniforms

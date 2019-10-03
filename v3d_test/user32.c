@@ -29,62 +29,62 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
  *              Multiplication of matrices needs to exchange Matrix 1 and Matrix 2 to get the same answer as column order.
  */
 
-// X, Y, Z, S, T
+// X, Y, Z, S, T, Index of Back Color
 float32 cube_vertices[] =
 {
 		// Front
-		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f,
-		-0.25f,-0.25f, 0.25f, 0.0f, 0.0f,
-		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f,
+		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f, 0.0f,
+		-0.25f,-0.25f, 0.25f, 0.0f, 0.0f, 0.0f,
+		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f, 0.0f,
 
-		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f,
-		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f,
-		 0.25f, 0.25f, 0.25f, 1.0f, 1.0f,
+		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f, 0.0f,
+		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f, 0.0f,
+		 0.25f, 0.25f, 0.25f, 1.0f, 1.0f, 0.0f,
 
 		// Up
-		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f,
-		-0.25f, 0.25f,  0.25f, 0.0f, 0.0f,
-		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f,
+		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		-0.25f, 0.25f,  0.25f, 0.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
 
-		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f,
-		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f,
-		 0.25f, 0.25f, -0.25f, 1.0f, 1.0f,
+		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f, -0.25f, 1.0f, 1.0f, 1.0f,
 
 		// Right
-		0.25f,  0.25f,  0.25f, 0.0f, 1.0f,
-		0.25f, -0.25f,  0.25f, 0.0f, 0.0f,
-		0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 2.0f,
+		0.25f, -0.25f,  0.25f, 0.0f, 0.0f, 2.0f,
+		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 2.0f,
 
-		0.25f,  0.25f,  0.25f, 0.0f, 1.0f,
-		0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
-		0.25f,  0.25f, -0.25f, 1.0f, 1.0f,
+		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 2.0f,
+		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 2.0f,
+		0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 2.0f,
 
 		// Left
-		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
-		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f,
-		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f,
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 3.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 3.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 3.0f,
 
-		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
-		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f,
-		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f,
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 3.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 3.0f,
+		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f, 3.0f,
 
 		// Back
-		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
-		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 4.0f,
+		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 4.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 4.0f,
 
-		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f,
-		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
-		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f,
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 4.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 4.0f,
+		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 4.0f,
 
 		// Down
-		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f,
-		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 5.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 5.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 5.0f,
 
-		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f,
-		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f,
-		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 5.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 5.0f,
+		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f, 5.0f
 };
 
 float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
@@ -119,18 +119,18 @@ int32 _user_start()
 
 	uint32 width_pixel = FB32_WIDTH;
 	uint32 height_pixel = FB32_HEIGHT;
-	uint32 result;
+	//uint32 result;
 	String num_string;
 	uint32 time = 0;
 	depth_offset = 0.0f;
-	depth_scale = 0.5f;
+	depth_scale = 0.55f;
 
 	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
 	_bind_objectv3d( objectv3d );
 	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( output, 8, 16, 0xC );
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( vertex_array, 720, 16, 0xC );
+	_gpumemory_init( vertex_array, 864, 16, 0xC );
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
@@ -204,14 +204,14 @@ int32 _user_start()
 
 		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
-		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
+		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
 		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
 		/*
 		_clear_cl_rendering( 0x00FFFFFF, 0xFFFFFF, 0x0, 0x0 );
 		_setbuffer_cl_rendering( renderbuffer[0]->addr );
-		_set_nv_shaderstate( zshader->gpu, vertex_array->gpu, 2, 20 );
+		_set_nv_shaderstate( zshader->gpu, vertex_array->gpu, 3, 24 );
 		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 		*/
@@ -257,7 +257,6 @@ print32_debug( mat_versor, 0, 50 );
 }
 
 void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel ) {
-	uint32 offset = 0;
 	float32 *vector_xyzw = (float32*)heap32_malloc( 4 );
 	float32 *result;
 	uint16 int_x;
@@ -267,13 +266,13 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 
 	for ( uint32 i = 0; i < num_vertex; i++ ) {
 		/* X of Vector*/
-		vector_xyzw[0] = vertices[i*5];
+		vector_xyzw[0] = vertices[i*6];
 
 		/* Y of Vector */
-		vector_xyzw[1] = vertices[i*5+1];
+		vector_xyzw[1] = vertices[i*6+1];
 
 		/* Z of Vector */
-		vector_xyzw[2] = vertices[i*5+2];
+		vector_xyzw[2] = vertices[i*6+2];
 
 		/* W of Vector */
 		vector_xyzw[3] = 1.0f;
@@ -292,7 +291,7 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 		result[2] = vfp32_fsub( result[2], 1.0f );
 		result[2] = vfp32_fmul( result[2], -1.0f );
 
-		/* Depth Offset and Scale, Depending on Camera Position */
+		/* Depth Offset and Scale */
 		result[2] = vfp32_fadd( result[2], depth_offset );
 		result[2] = vfp32_fmul( result[2], depth_scale );
 
@@ -300,11 +299,12 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 		int_x = vfp32_f32tou32( vfp32_fmul( result[0], width_float ) );
 		int_y = vfp32_f32tou32( vfp32_fmul( result[1], height_float ) );
 
-		vertex_array->arm[i*5].u32 = int_x*16|(int_y*16)<<16; // X and Y
-		vertex_array->arm[i*5+1].f32 = result[2]; // Z
-		vertex_array->arm[i*5+2].f32 = 1.0f; // W
-		vertex_array->arm[i*5+3].f32 = vertices[i*5+3]; // S
-		vertex_array->arm[i*5+4].f32 = vertices[i*5+4]; // T
+		vertex_array->arm[i*6].u32 = int_x*16|(int_y*16)<<16; // X and Y
+		vertex_array->arm[i*6+1].f32 = result[2]; // Z
+		vertex_array->arm[i*6+2].f32 = 1.0f; // W
+		vertex_array->arm[i*6+3].f32 = vertices[i*6+3]; // S
+		vertex_array->arm[i*6+4].f32 = vertices[i*6+4]; // T
+		vertex_array->arm[i*6+5].f32 = vertices[i*6+5]; // Index of Back Color
 
 		heap32_mfree( (obj)result );
 		arm32_dsb();
