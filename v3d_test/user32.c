@@ -95,8 +95,16 @@ float32 camera_target[] = { 0.0001f, 0.0001f, 0.0001f }; // Don't Initialize by 
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
 float32 angle;
 float32 scale;
+/**
+ * Depth scale is depending on the values of the near and the far of the perspective projection.
+ * If the near is 0.2f and the far is 2.0f, you need to make the 3D object visible in the distance 1.8f.
+ * The depth value needs to be between 0.0f to 1.0f, so multiply the calculated Z by 1.0f/1.8f.
+ */
+float32 depth_scale;
+/**
+ * Depth offset may be needed if you set the camera target other than 0.0f for all axis.
+ */
 float32 depth_offset;
-float32 depth_scale; // Depending on Camera Position and Target, Depth Value Needs to Be Between 0.0f to 1.0f
 
 int32 _user_start()
 {
