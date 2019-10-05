@@ -19,6 +19,8 @@ extern obj DATA_COLOR32_SAMPLE_IMAGE0;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
 extern obj DATA_COLOR32_SAMPLE_IMAGE1;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;
+extern obj DATA_COLOR32_SAMPLE_IMAGE2;
+extern uint32 DATA_COLOR32_SAMPLE_IMAGE2_SIZE;
 
 void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel );
 
@@ -97,8 +99,9 @@ float32 angle;
 float32 scale;
 /**
  * Depth scale is depending on the values of the near and the far of the perspective projection.
- * If the near is 0.2f and the far is 2.0f, you need to make the 3D object visible in the distance 1.8f.
- * The depth value needs to be between 0.0f to 1.0f, so multiply the calculated Z by 1.0f/1.8f.
+ * If the near is 0.2f and the far is 4.0f, you need to make the 3D object visible in the distance 3.8f.
+ * The software coordinate is between -1.0f to 1.0f in the distance 2.0f.
+ * So multiply the calculated Z by 2.0f/3.8f.
  */
 float32 depth_scale;
 /**
@@ -123,7 +126,7 @@ int32 _user_start()
 	String num_string;
 	uint32 time = 0;
 	depth_offset = 0.0f;
-	depth_scale = 0.55f;
+	depth_scale = 0.5263f;
 
 	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
 	_bind_objectv3d( objectv3d );
@@ -147,7 +150,7 @@ int32 _user_start()
 	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
 	 */
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj mat_projection = mtx32_perspective3d( 75.0f, 1.234f, 0.2f, 2.0f );
+	obj mat_projection = mtx32_perspective3d( 75.0f, 1.234f, 0.2f, 4.0f );
 	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
 	obj mat_translate;
 	obj mat_scale;
@@ -279,7 +282,7 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 
 		result = (float32*)mtx32_multiply_vec( matrix, (obj)vector_xyzw, 4 );
 
-		/* Software -1.0 to 1.0 Coordinate to Hardware 0,0 to 1.0 Coordinate, Flip Y and Z Coordinate  */
+		/* Software (-1.0f, 1.0f) Coordinate to Hardware (0.0f, 1.0f) Coordinate, Flip Y and Z Coordinate */
 		result[0] = vfp32_fadd( result[0], 1.0f );
 		result[1] = vfp32_fadd( result[1], 1.0f );
 		result[2] = vfp32_fadd( result[2], 1.0f );

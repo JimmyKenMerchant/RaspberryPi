@@ -22,7 +22,7 @@ int32 ticket_hid;
 String kb_str;
 extern uint32 OS_FIQ_TIMER_ADDR;
 extern bool OS_FIQ_TIMER;
-obj renderbuffer;
+_RenderBuffer* renderbuffer;
 
 char8 character_buffer[2];
 
@@ -32,7 +32,7 @@ int32 _user_start() {
 
 	if ( ! init_usb_keyboard( usb_channel ) ) return EXIT_FAILURE;
 
-	renderbuffer = (obj)heap32_malloc( draw32_renderbuffer );
+	renderbuffer = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer, FB32_WIDTH, FB32_HEIGHT, FB32_DEPTH );
 
 #ifndef __DEBUG
@@ -166,11 +166,11 @@ bool print_on_receive() {
 			_attach_buffer( FB32_FRAMEBUFFER );
 			arm32_dsb();
 			fb32_image(
-					_load_32( renderbuffer + draw32_renderbuffer_addr ),
+					renderbuffer->addr,
 					0,
 					0,
-					_load_32( renderbuffer + draw32_renderbuffer_width ),
-					_load_32( renderbuffer + draw32_renderbuffer_height ),
+					renderbuffer->width,
+					renderbuffer->height,
 					0,
 					0,
 					0,

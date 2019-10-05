@@ -64,7 +64,7 @@
 
 **About 2D Pipeline**
 
-* V3D can also use as the pipeline for 2D rendering. You can use a texture, maximum 2048 * 2048 pixels, for multiple 2D images by offsetting S and T coordinates. For example, if you use the 64 * 64 pixels images, (2048/64)^2 = 1024 images can be used in a shading. However, as well as the 3D pipeline, the alpha blending is needed multiple shading. However, V3D allows to shade a geometry, which is similar to a sprite. I think it's possible that you utilize one shading per frame. As well as loading a pixel color of texture, you can load a color in an assigned memory space.
+* V3D can also use as the pipeline for 2D rendering. You can use a texture, maximum 2048 * 2048 pixels, for multiple 2D images by offsetting S and T coordinates. For example, if you use the 64 * 64 pixels images, (2048/64)^2 = 1024 images can be used in a shading. However, as well as the 3D pipeline, the alpha blending is needed multiple shading. However, V3D allows to shade a geometry, which is similar to a sprite. I think it's possible that you utilize one shading per frame. As well as loading a pixel color of texture, you can load a color in an assigned memory space using TMU. Note that in my testing, the uniforms address (the pointer for the assigned texture) can't be changed on the fragment shader with control lists.
 
 * If you implement double-buffer using DMA, dynamic images will be slightly shaking on the monitor (I confirmed this issue on the HDMI output). Using the 2D rendering with V3D resolves this issue, i.e., draw the buffer as a texture. I think V3D has proper timing to output images.
 
