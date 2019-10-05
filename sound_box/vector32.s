@@ -164,19 +164,19 @@ os_reset:
 .ifdef __MIDIIN
 	/* UART 31250 Baud */
 	push {r0-r3}
-	mov r0, #36                                               @ Integer Divisor Bit[15:0], 18000000 / (16*31250) is 36
-	mov r1, #0b0                                              @ Fractional Divisor Bit[5:0], Fixed Point Float 0.0
+	mov r0, #15                                               @ Integer Divisor Bit[15:0], 7500000 / (16 * 31250) is 15
+	mov r1, #0b000000                                         @ Fractional Divisor Bit[5:0], Fixed Point Float 0.0
 	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen @ Line Control
-	mov r3, #equ32_uart0_cr_rxe                               @ Coontrol
+	mov r3, #equ32_uart0_cr_rxe                               @ Control
 	bl uart32_uartinit
 	pop {r0-r3}
 .else
-	/* UART 115200 Baud */
+	/* UART 115385 Baud, Approx. 0.2 Percents Error for 115200 Baud */
 	push {r0-r3}
-	mov r0, #9                                                @ Integer Divisor Bit[15:0], 18000000 / (16*115200) is 9.765625
-	mov r1, #0b110001                                         @ Fractional Divisor Bit[5:0], Fixed Point Float 0.765625
+	mov r0, #4                                                @ Integer Divisor Bit[15:0], 7500000 / (16 * 115200) is 4.06901
+	mov r1, #0b000100                                         @ Fractional Divisor Bit[5:0], Fixed Point Float 0.0625
 	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen @ Line Control
-	mov r3, #equ32_uart0_cr_rxe                               @ Coontrol
+	mov r3, #equ32_uart0_cr_rxe                               @ Control
 	bl uart32_uartinit
 	pop {r0-r3}
 .endif

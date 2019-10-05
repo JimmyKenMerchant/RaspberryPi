@@ -169,8 +169,8 @@ os_reset:
 	bl arm32_clockmanager
 
 	/* UART Transmission 250000 Baud */
-	mov r0, #4                                                     @ Integer Divisor Bit[15:0], 18000000 / 16 * 250000 is 4.5
-	mov r1, #0b100000                                              @ Fractional Divisor Bit[5:0], Fixed Point Float 0.5
+	mov r0, #1                                                     @ Integer Divisor Bit[15:0], 7500000 / (16 * 250000) is 1.875
+	mov r1, #0b111000                                              @ Fractional Divisor Bit[5:0], Fixed Point Float 0.875
 	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen|equ32_uart0_lcrh_stp2 @ Line Control
 	mov r3, #equ32_uart0_cr_txe                                    @ Control
 	bl uart32_uartinit

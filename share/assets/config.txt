@@ -69,7 +69,10 @@ hdmi_group=0
 #hdmi_force_hotplug=1
 
 # PL011, UART0 Reference Clock. Besides, UART1 Reference Clock is core_freq.
-init_uart_clock=18000000
+# Its maximum value depends on the type of your RasPi. If UART doesn't work, decrease the value.
+# For example, in my experience, Zero accepts 18Mhz, but Zero W doesn't.
+# This setting makes the error on baud rate for 115200 bps (the error derived from the crystal occurs for all models).
+init_uart_clock=7500000
 
 # Utilize IRQ No.48 (SMI) from GPU to Acknowledge Vertical Sync (Clear is 0 to 0x7E600000 in the bus address.)
 # The game developer requested this: https://github.com/raspberrypi/firmware/issues/67

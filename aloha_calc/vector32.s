@@ -104,12 +104,12 @@ os_reset:
 	bl bcm32_get_framebuffer
 	pop {r0-r3}
 
-	/* UART 115200 Baud */
+	/* UART 115385 Baud, Approx. 0.2 Percents Error for 115200 Baud */
 	push {r0-r3}
-	mov r0, #9                                                @ Integer Divisor Bit[15:0], 18000000 / 16 * 115200 is 9.765625
-	mov r1, #0b110001                                         @ Fractional Divisor Bit[5:0], Fixed Point Float 0.765625
+	mov r0, #4                                                @ Integer Divisor Bit[15:0], 7500000 / (16 * 115200) is 4.06901
+	mov r1, #0b000100                                         @ Fractional Divisor Bit[5:0], Fixed Point Float 0.0625
 	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen @ Line Control
-	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe            @ Coontrol
+	mov r3, #equ32_uart0_cr_rxe|equ32_uart0_cr_txe            @ Control
 	bl uart32_uartinit
 	pop {r0-r3}
 
