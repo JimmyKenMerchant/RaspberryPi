@@ -8,9 +8,12 @@
 
 * The length of time to be spent for each test may be described because the length affects reliability of the test.
 
-* For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc. 
+* For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc.
 
-** October 7, 2019 (#f2e3dd1) **
+**October 7, 2019 (#f2e3dd1)**
+
+* Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
+	* One Minute Run > OK
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
 	* One Minute Run > OK
