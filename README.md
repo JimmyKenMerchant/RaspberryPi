@@ -387,7 +387,7 @@ cd ~/Desktop
 sudo apt-get install device-tree-compiler
 wget https://raw.githubusercontent.com/raspberrypi/firmware/master/extra/dt-blob.dts -O dt-blob.dts
 # Suppress Warnings
-sudo dtc -I dts -O dtb -o dt-blob.bin dt-blob.dts -q
+sudo dtc -I dts -O dtb -o dt-blob.bin -q dt-blob.dts
 ```
 
 **Arguments for 'make'. Compatibilities are different on each project. Please check README of programs.**

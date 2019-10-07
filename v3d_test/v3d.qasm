@@ -208,14 +208,18 @@
 :_V3D_SIN_END
 
 :_V3D_FRAGMENT_SHADER
-	.set texture_s,     r0
-	.set texture_t,     r1
-	.set alpha,         r2
-	.set pixel_color,   r4
-	.set c_coefficient, r5
-	.set parameter_w,   ra15
-	.set index_color,   ra0
-	.set parameter_z,   rb15
+	.set texture_s,         r0
+	.set texture_t,         r1
+	.set temp,              r2
+	.set color_src,         r3
+	.set pixel_color,       r4
+	.set c_coefficient,     r5
+	.set parameter_w,       ra15
+	.set index_color,       ra0
+	.set alpha_src,         ra1
+	.set alpha_src_reverse, ra2
+	.set mask_lsb,          rb0
+	.set parameter_z,       rb15
 
 	# The interpolation of texture S/T (varyings in shaded vertex format) is calculated with the formula:
 	# (A*(X-X0)+B*(Y-Y0))*W+C, where X and Y are the vertex's coordinate.
@@ -226,33 +230,55 @@
 	# The parameter S of TMU0/1 (Texture and Memory Lookup Unit 0/1) must be stored at the last rather than other parameters.
 	# If you want to access with the memory address but not the texture, just write the address to the parameter S of TMU0/1 and don't touch other parameters.
 	# In this shader, the depth of TLB (TLBZ) is stored for the z test. The early-z test rejects this shader itself though.
+
+	# Get Varyings and Pixel Color (SRC) from Texture
 	fmul texture_s, vary, parameter_w
-	fmul texture_t, vary, parameter_w; fadd texture_s, texture_s, c_coefficient; sbwait
-	fadd t0t, texture_t, c_coefficient; fmul alpha, vary, parameter_w
-	mov t0s, texture_s; fadd alpha, alpha, c_coefficient
-	ftoi index_color, alpha; ldtmu0       # Load Pixel Color in TMU0 to r4
-	shr alpha, pixel_color, 24
-	shl index_color, index_color, 2       # Multiply by 4
-	sub.setf alpha, alpha, 0
-	mov tlbz, parameter_z
-	mov.ifnz tlbc, pixel_color            # Store Pixel Color to TLB (Tile Buffer) If Alpha Value Is Not Zero
-	#and index_color, x_coord, 0xF         # Only Bit[3:0]
-	mov alpha, unif
-	mov alpha, unif
-	add alpha, unif, index_color          # Item in Array of Additional Uniforms
-	mov t0s, alpha
+	fadd texture_s, texture_s, c_coefficient; fmul texture_t, vary, parameter_w; sbwait
+	fadd texture_t, texture_t, c_coefficient; fmul temp, vary, parameter_w
+	fadd temp, temp, c_coefficient; mov t0t, texture_t
+	ftoi index_color, temp; mov t0s, texture_s
+	ldtmu0                                              # Load Pixel Color in TMU0 to r4
+	mov color_src, pixel_color; mov mask_lsb, 0xFF
+	shl index_color, index_color, 2                     # Multiply by 4
+
+	.unset temp
+	.set color_dst,         r2
+
+	# Get Back Color (DST) from Uniform
+	shr alpha_src, color_src, 24; mov color_dst, unif
+	mov color_dst, unif
+	add t0s, unif, index_color                          # Item in Array of Additional Uniforms
 	ldtmu0
-	mov.ifz tlbc, pixel_color; thrend
+	mov color_dst, pixel_color
+
+	# Preparation for Alpha Blending (Porter-Duff Over)
+	# Assuming Alpha of DST is 255 (1.0), So Alpha of Output Becomes 255 (1.0)
+	sub.setf alpha_src, alpha_src, 0
+	xor.ifnz alpha_src_reverse, alpha_src, mask_lsb
+	mov.ifnz alpha_src.8abcd, alpha_src                 # Regfile-a Pack
+	mov.ifnz alpha_src_reverse.8abcd, alpha_src_reverse # Regfile-a Pack
+
+	# ARGB Out
+	v8muld.ifnz color_src, color_src, alpha_src
+	v8muld.ifnz color_dst, color_dst, alpha_src_reverse
+	v8adds.ifnz color_dst, color_src, color_dst
+
+	mov tlbz, parameter_z
+	mov tlbc, color_dst; thrend                         # Store Pixel Color to TLB (Tile Buffer) and Thread End
 	nop
 	nop; sbdone
 
 .unset texture_s
 .unset texture_t
-.unset alpha
+.unset color_dst
+.unset color_src
 .unset pixel_color
 .unset c_coefficient
 .unset parameter_w
 .unset index_color
+.unset alpha_src
+.unset alpha_src_reverse
+.unset mask_lsb
 .unset parameter_z
 :_V3D_FRAGMENT_SHADER_END
 

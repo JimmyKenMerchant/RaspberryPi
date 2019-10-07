@@ -184,6 +184,7 @@ int32 _user_start()
 	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
 	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
+	draw32_change_alpha_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x55 );
 	_set_texture2d( texture2d, 0x1A0, 0b10000, additional_uniforms->gpu );
 
 	while(True) {

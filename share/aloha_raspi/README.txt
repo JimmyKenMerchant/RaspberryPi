@@ -59,6 +59,16 @@ The option of arm-none-eabi-gcc, -O2 (Optimize even more) seems not to ensure to
 
 **Technical Notes**
 
+* October 7, 2019:
+LICENCE.broadcom: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/LICENCE.broadcom
+bootcode.bin: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/bootcode.bin
+fixup.dat: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/fixup.dat
+start.elf: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/start.elf
+dt-blob.dts: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/extra/dt-blob.dts
+Device Tree Compiler: device-tree-compiler = DTC 1.4.7
+Description:
+Getting firmware using `wget`. To make dt-blob.bin, `sudo dtc -I dts -O dtb -o dt-blob.bin -q dt-blob.dts`.
+
 * June 28, 2019:
 Description:
 Having partly testing with forward versions of make, assembler, and compiler as described on June 27, 2019.
