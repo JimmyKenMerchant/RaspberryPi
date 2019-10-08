@@ -139,13 +139,24 @@ pwm_sequence pwm14[] =
 
 pwm_sequence pwm15[] =
 {
-	1<<31|2,
+	_50(1<<31|0)
+	_50(1<<31|0)
+	_50(1<<31|31)
+	_50(1<<31|31)
+	_50(1<<31|0)
+	_50(1<<31|0)
+	_50(1<<31|31)
+	_50(1<<31|31)
+	_50(1<<31|0)
+	_50(1<<31|0)
+	_50(1<<31|0)
+	_50(1<<31|0)
 	PWM32_END
 };
 
 pwm_sequence pwm16[] =
 {
-	1<<31|0,
+	1<<31|32,
 	PWM32_END
 };
 
@@ -153,7 +164,7 @@ int32 _user_start()
 {
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
-	uint32 detect_parallel;
+	uint32 detect_parallel = 0;
 	uchar8 result;
 	uchar8 playing_signal;
 
@@ -172,14 +183,19 @@ int32 _user_start()
 	//uint32 pwmlen12 = pwm32_pwmlen( pwm12 );
 	//uint32 pwmlen13 = pwm32_pwmlen( pwm13 );
 	//uint32 pwmlen14 = pwm32_pwmlen( pwm14 );
-	//uint32 pwmlen15 = pwm32_pwmlen( pwm15 );
+	uint32 pwmlen15 = pwm32_pwmlen( pwm15 );
 	uint32 pwmlen16 = pwm32_pwmlen( pwm16 );
 
 	while ( true ) {
-		if ( _gpio_detect( 17 ) ) {
 
+		/* Detect Falling Edge of GPIO */
+		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+		}
+
+		/* If Any Non Zero */
+		if ( detect_parallel ) {
 
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
@@ -279,10 +295,8 @@ int32 _user_start()
 
 			// 0b01111 (15)
 			} else if ( detect_parallel == 0b01111<<22 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
 				_pwmselect( 1 );
-				_pwmclear( 0 );
+				_pwmset( pwm15, pwmlen15, 0, -1 );
 
 			// 0b10000 (16)
 			} else if ( detect_parallel == 0b10000<<22 ) {
@@ -394,7 +408,11 @@ int32 _user_start()
 				_pwmclear( 0 );
 
 			}
+			detect_parallel = 0;
+		}
 
+		/* Detect Rising Edge of GPIO */
+		if ( _gpio_detect( 17 ) ) {
 			_pwmselect( 0 );
 			result = _pwmplay( False, False );
 			if ( result == 0 ) { // Playing
