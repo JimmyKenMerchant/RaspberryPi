@@ -214,9 +214,8 @@ gpio_sequence gpio16[] =
 
 int32 _user_start()
 {
-
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
-	uint32 detect_parallel;
+	uint32 detect_parallel = 0;
 	uchar8 result;
 	uchar8 playing_signal;
 
@@ -239,11 +238,15 @@ int32 _user_start()
 	uint32 gpiolen16 = gpio32_gpiolen( gpio16 );
 
 	while ( true ) {
-		if ( _gpio_detect( 17 ) ) {
 
+		/* Detect Falling Edge of GPIO */
+		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+		}
 
+		/* If Any Non Zero */
+		if ( detect_parallel ) {
 //print32_debug( detect_parallel, 100, 100 );
 
 			/* GPIO22-26 as Bit[26:22] */
@@ -388,7 +391,11 @@ int32 _user_start()
 				_gpioclear( 0x003CFFFC, 0 );
 
 			}
+			detect_parallel = 0;
+		}
 
+		/* Detect Rising Edge of GPIO */
+		if ( _gpio_detect( 17 ) ) {
 			result = _gpioplay( 0x003CFFFC );
 			if ( result == 0 ) { // Playing
 				playing_signal = _GPIOTOGGLE_HIGH;
