@@ -62,6 +62,8 @@
 
 * GPIO15 as Input of RXD0 (UART) for MIDI IN
 
+* GPIO27 as Input of Clock IN for Buttons (Detects Status of Buttons on Falling Edge of Clock IN)
+
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S (as known as 3-wire I2S) on sound=i2s

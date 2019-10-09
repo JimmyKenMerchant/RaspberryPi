@@ -22,7 +22,7 @@
 
 * GPIO17 as Output of Synchronization Clock OUT
 
-* GPIO27 as Input of Clock for Buttons (Detects Status of Buttons on Falling Edge of This Clock)
+* GPIO27 as Input of Clock IN for Buttons (Detects Status of Buttons on Falling Edge of Clock IN)
 
 * GPIO22-26 as Input of GPIO for Buttons (Up to 3.3V): CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 

@@ -425,7 +425,7 @@ int32 _user_start() {
 
 	uint32 timer_count_multiplier = timer_count_multiplier_default;
 	bool flag_midi_noteon = False;
-	uint32 detect_parallel;
+	uint32 detect_parallel = 0;
 	uchar8 result;
 	uchar8 playing_signal;
 	bool mode_soundplay;
@@ -501,49 +501,14 @@ int32 _user_start() {
 			}
 		}
 
-		if ( _gpio_detect( 17 ) ) {
-
+		/* Detect Falling Edge of GPIO */
+		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			if ( SND32_VIRTUAL_PARALLEL ) {
-				detect_parallel |= SND32_VIRTUAL_PARALLEL<<22;
-				SND32_VIRTUAL_PARALLEL = 0;
-			}
+		}
 
-//print32_debug( detect_parallel, 100, 100 );
-
-#ifdef __SOUND_I2S
-			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
-#elif defined(__SOUND_I2S_BALANCED)
-			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
-#elif defined(__SOUND_PWM)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
-#elif defined(__SOUND_PWM_BALANCED)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
-#elif defined(__SOUND_JACK)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
-#elif defined(__SOUND_JACK_BALANCED)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
-#endif
-
-/*
-print32_debug( SND32_DIVISOR, 100, 100 );
-print32_debug( SND32_MODULATION_DELTA, 100, 112 );
-print32_debug( SND32_MODULATION_MAX, 100, 124 );
-print32_debug( SND32_MODULATION_MIN, 100, 136 );
-*/
-
-			/* Triangle LFO */
-			SND32_DIVISOR += SND32_MODULATION_DELTA;
-			if ( SND32_DIVISOR >= SND32_MODULATION_MAX ) {
-				SND32_DIVISOR = SND32_MODULATION_MAX;
-				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
-			} else if ( SND32_DIVISOR <= SND32_MODULATION_MIN ) {
-				SND32_DIVISOR = SND32_MODULATION_MIN;
-				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
-			}
-
-			arm32_dsb();
+		/* If Any Non Zero */
+		if ( detect_parallel ) {
 
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
@@ -688,6 +653,50 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 			} else if ( detect_parallel == 0b11111<<22 ) {
 				makesilence();
 			}
+			detect_parallel = 0;
+		}
+
+		/* Detect Rising Edge of GPIO */
+		if ( _gpio_detect( 17 ) ) {
+			if ( SND32_VIRTUAL_PARALLEL ) {
+				detect_parallel |= SND32_VIRTUAL_PARALLEL<<22;
+				SND32_VIRTUAL_PARALLEL = 0;
+			}
+
+//print32_debug( detect_parallel, 100, 100 );
+
+#ifdef __SOUND_I2S
+			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
+#elif defined(__SOUND_I2S_BALANCED)
+			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
+#elif defined(__SOUND_PWM)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#elif defined(__SOUND_PWM_BALANCED)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#elif defined(__SOUND_JACK)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#elif defined(__SOUND_JACK_BALANCED)
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+#endif
+
+/*
+print32_debug( SND32_DIVISOR, 100, 100 );
+print32_debug( SND32_MODULATION_DELTA, 100, 112 );
+print32_debug( SND32_MODULATION_MAX, 100, 124 );
+print32_debug( SND32_MODULATION_MIN, 100, 136 );
+*/
+
+			/* Triangle LFO */
+			SND32_DIVISOR += SND32_MODULATION_DELTA;
+			if ( SND32_DIVISOR >= SND32_MODULATION_MAX ) {
+				SND32_DIVISOR = SND32_MODULATION_MAX;
+				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
+			} else if ( SND32_DIVISOR <= SND32_MODULATION_MIN ) {
+				SND32_DIVISOR = SND32_MODULATION_MIN;
+				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
+			}
+
+			arm32_dsb();
 
 			loop_countdown--; // Decrement Counter
 			if ( loop_countdown <= 0 ) { // If Reaches Zero
