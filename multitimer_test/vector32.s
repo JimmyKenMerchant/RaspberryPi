@@ -126,6 +126,55 @@ os_reset:
 
 os_debug:
 	push {lr}
+
+	/* Address 0x01000000 to 0x04000000 for SYSTEM32_HEAP */
+
+	mov r0, #0x01000000
+	orr r0, r0, #0x0000F000
+	mov r1, #0x12000000
+	orr r1, r1, #0x00340000
+	orr r1, r1, #0x00005600
+	orr r1, r1, #0x00000078
+	str r1, [r0]
+
+	macro32_dsb ip
+
+	/* Change Destination of Virtual Address */
+
+.ifndef __ARMV6
+.ifndef __SECURE
+	mov r0, #1
+.else
+	mov r0, #0
+.endif
+.else
+	mov r0, #0
+.endif
+	mov r1, #0x03000000 @ Virtual Address (Bit[31:20], per 1M Bytes)
+	mov r2, #0x01000000 @ Destination (Bit[31:20], per 1M Bytes)
+	bl arm32_change_address
+
+	macro32_dsb ip
+	macro32_invalidate_tlb_all ip
+	macro32_dsb ip
+	macro32_isb ip
+	macro32_dsb ip
+	macro32_invalidate_instruction_all ip
+	macro32_isb ip
+
+	mov r0, #0x01000000
+	orr r0, r0, #0x0000F000
+	ldr r0, [r0]
+macro32_debug r0, 300, 300
+	mov r0, #0x02000000
+	orr r0, r0, #0x0000F000
+	ldr r0, [r0]
+macro32_debug r0, 300, 312
+	mov r0, #0x03000000
+	orr r0, r0, #0x0000F000
+	ldr r0, [r0]
+macro32_debug r0, 300, 324
+
 	pop {pc}
 
 os_irq:
