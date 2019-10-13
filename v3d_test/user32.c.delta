@@ -10,8 +10,10 @@
 #include "system32.h"
 #include "system32.c"
 
-extern obj DATA_V3D_FRAGMENT_SHADER2;
-extern uint32 DATA_V3D_FRAGMENT_SHADER2_SIZE;
+extern obj DATA_V3D_FRAGMENT_SHADER;
+extern uint32 DATA_V3D_FRAGMENT_SHADER_SIZE;
+extern obj DATA_V3D_Z_SHADER;
+extern uint32 DATA_V3D_Z_SHADER_SIZE;
 
 extern obj DATA_COLOR32_SAMPLE_IMAGE0;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
@@ -42,49 +44,49 @@ float32 cube_vertices[] =
 		 0.25f, 0.25f, 0.25f, 1.0f, 1.0f, 0.0f,
 
 		// Up
-		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f, 0.25f,  0.25f, 0.0f, 0.0f, 0.0f,
-		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 0.0f,
+		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		-0.25f, 0.25f,  0.25f, 0.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
 
-		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 0.0f,
-		 0.25f, 0.25f, -0.25f, 1.0f, 1.0f, 0.0f,
+		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f, -0.25f, 1.0f, 1.0f, 1.0f,
 
 		// Right
-		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 1.0f,
-		0.25f, -0.25f,  0.25f, 0.0f, 0.0f, 1.0f,
-		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
+		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 2.0f,
+		0.25f, -0.25f,  0.25f, 0.0f, 0.0f, 2.0f,
+		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 2.0f,
 
-		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 1.0f,
-		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
-		0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 1.0f,
+		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 2.0f,
+		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 2.0f,
+		0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 2.0f,
 
 		// Left
-		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
-		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 1.0f,
-		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 3.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 3.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 3.0f,
 
-		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
-		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
-		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f, 1.0f,
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 3.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 3.0f,
+		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f, 3.0f,
 
 		// Back
-		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 4.0f,
+		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 4.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 4.0f,
 
-		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
-		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 0.0f,
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 4.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 4.0f,
+		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 4.0f,
 
 		// Down
-		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 5.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 5.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 5.0f,
 
-		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
-		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f, 0.0f
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 5.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 5.0f,
+		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f, 5.0f
 };
 
 float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
@@ -115,8 +117,8 @@ int32 _user_start()
 	_GPUMemory *vertex_array;
 	_GPUMemory *additional_uniforms;
 	_FragmentShader *fragmentshader;
-	_Texture2D *texture2d_1;
-	_Texture2D *texture2d_2;
+	_FragmentShader *zshader;
+	_Texture2D *texture2d;
 
 	uint32 width_pixel = FB32_WIDTH;
 	uint32 height_pixel = FB32_HEIGHT;
@@ -135,7 +137,9 @@ int32 _user_start()
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
-	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER2, DATA_V3D_FRAGMENT_SHADER2_SIZE );
+	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER, DATA_V3D_FRAGMENT_SHADER_SIZE );
+	zshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
+	_fragmentshader_init( zshader, DATA_V3D_Z_SHADER, DATA_V3D_Z_SHADER_SIZE );
 
 	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 1 );
 	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
@@ -166,21 +170,22 @@ int32 _user_start()
 	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 
-	texture2d_1 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
-	_texture2d_init( texture2d_1, 64<<16|64, 64 * 64 * 4, 0 );
-	_load_texture2d( texture2d_1, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
-	bit32_convert_endianness( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
-	draw32_rgba_to_argb( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
-	_set_texture2d( texture2d_1, 0x1A0, 0b10000, additional_uniforms->gpu );
+	additional_uniforms->arm[0].u32 = COLOR32_GREEN;
+	additional_uniforms->arm[1].u32 = COLOR32_RED;
+	additional_uniforms->arm[2].u32 = COLOR32_BLUE;
+	additional_uniforms->arm[3].u32 = COLOR32_WHITE;
+	additional_uniforms->arm[4].u32 = COLOR32_YELLOW;
+	additional_uniforms->arm[5].u32 = COLOR32_PINK;
+	additional_uniforms->arm[6].u32 = COLOR32_GRAY;
+	additional_uniforms->arm[7].u32 = COLOR32_MAGENTA;
 
-	texture2d_2 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
-	_texture2d_init( texture2d_2, 64<<16|64, 64 * 64 * 4, 0 );
-	_load_texture2d( texture2d_2, DATA_COLOR32_SAMPLE_IMAGE2, 0, True );
-	bit32_convert_endianness( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE, 4 );
-	draw32_rgba_to_argb( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE );
-
-	additional_uniforms->arm[0].u32 = texture2d_1->gpu;
-	additional_uniforms->arm[1].u32 = texture2d_2->gpu;
+	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
+	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 0 );
+	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
+	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
+	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
+	draw32_change_alpha_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 0x55 );
+	_set_texture2d( texture2d, 0x1A0, 0b10000, additional_uniforms->gpu );
 
 	while(True) {
 		_stopwatch_start();
@@ -206,6 +211,14 @@ int32 _user_start()
 		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
 		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
+
+		/*
+		_clear_cl_rendering( 0x00FFFFFF, 0xFFFFFF, 0x0, 0x0 );
+		_setbuffer_cl_rendering( renderbuffer[0]->addr );
+		_set_nv_shaderstate( zshader->gpu, vertex_array->gpu, 3, 24 );
+		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
+		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
+		*/
 
 		// Angle Change
 		angle = vfp32_fadd( angle, 1.0f );
@@ -237,8 +250,7 @@ print32_debug( mat_versor, 0, 50 );
 	heap32_mfree( mat_view );
 	heap32_mfree( mat_projection );
 	heap32_mfree( mat_p_v );
-	_texture2d_free( texture2d_1 );
-	_texture2d_free( texture2d_2 );
+	_texture2d_free( texture2d );
 	_gpumemory_free( vertex_array );
 	_gpumemory_free( additional_uniforms );
 	_fragmentshader_free( fragmentshader );

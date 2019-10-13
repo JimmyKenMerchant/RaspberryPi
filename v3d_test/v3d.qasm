@@ -10,6 +10,7 @@
 .global _V3D_INPUT1
 .global _V3D_SIN
 .global _V3D_FRAGMENT_SHADER
+.global _V3D_FRAGMENT_SHADER2
 .global _V3D_Z_SHADER
 
 # Global Symbol
@@ -17,6 +18,7 @@
 .global _V3D_INPUT1_SIZE, :_V3D_INPUT1_END - :_V3D_INPUT1
 .global _V3D_SIN_SIZE, :_V3D_SIN_END - :_V3D_SIN
 .global _V3D_FRAGMENT_SHADER_SIZE, :_V3D_FRAGMENT_SHADER_END - :_V3D_FRAGMENT_SHADER
+.global _V3D_FRAGMENT_SHADER2_SIZE, :_V3D_FRAGMENT_SHADER2_END - :_V3D_FRAGMENT_SHADER2
 .global _V3D_Z_SHADER_SIZE, :_V3D_Z_SHADER_END - :_V3D_Z_SHADER
 
 :_V3D_SAMPLE1
@@ -207,6 +209,7 @@
 .unset table
 :_V3D_SIN_END
 
+# Load Color from Texture and Alpha Blending
 :_V3D_FRAGMENT_SHADER
 	.set texture_s,         r0
 	.set texture_t,         r1
@@ -281,6 +284,78 @@
 .unset mask_lsb
 .unset parameter_z
 :_V3D_FRAGMENT_SHADER_END
+
+# Load Color through Memory Address (Multiple 32-bit Depth Images) Directly
+:_V3D_FRAGMENT_SHADER2
+	.set texture_s,          r0
+	.set texture_t,          r1
+	.set temp,               r2
+	.set pixel_color,        r4
+	.set c_coefficient,      r5
+	.set parameter_w,        ra15
+	.set index_img,          ra0
+	.set width_height_int,   ra1
+	.set width_height_float, rb0
+	.set mask_width_height,  rb1
+	.set parameter_z,        rb15
+
+	# Get Varyings
+	fmul texture_s, vary, parameter_w
+	fadd texture_s, texture_s, c_coefficient; fmul texture_t, vary, parameter_w; sbwait
+	fadd texture_t, texture_t, c_coefficient; fmul temp, vary, parameter_w
+	fadd temp, temp, c_coefficient; mov t0t, texture_t
+	ftoi index_img, temp; mov t0s, texture_s
+	ldtmu0                                                    # Load Pixel Color in TMU0 to r4
+	mov temp, pixel_color; mov width_height_int, 64           # No Use Pixel Color from Texture, Set Width and Height
+	shl index_img, index_img, 2                               # Multiply by 4
+
+	# Get Pointer of Image
+	mov temp, unif; itof width_height_float, width_height_int
+	mov temp, unif
+	add t0s, unif, index_img                                  # Item in Array of Additional Uniforms
+	ldtmu0                                                    # Load Pointer of Image
+	.unset index_img
+	.set ptr_image, ra0
+	mov ptr_image, pixel_color
+
+	# Get and Flip X Y Coordinates, Assuming Width and Height of Image Are Fixed to 64 (Power of 2)
+	sub mask_width_height, width_height_int, 1                # 0-63 Coordinate
+	fmul texture_s, texture_s, width_height_float
+	fmul texture_t, texture_t, width_height_float; ftoi texture_s, texture_s
+	and texture_s, texture_s, mask_width_height
+	ftoi texture_t, texture_t
+	and texture_t, texture_t, mask_width_height
+	sub texture_s, mask_width_height, texture_s
+	sub texture_t, mask_width_height, texture_t
+
+	# Load Color from Image, Similar to NEAREST
+	mul24 texture_s, texture_s, width_height_int
+	add texture_s, texture_s, texture_t
+	shl texture_s, texture_s, 2                               # Multiply by 4
+	add t0s, ptr_image, texture_s
+	ldtmu0
+
+	# Store Z and Color (If Alpha Is Non-zero) to Tile Buffer
+	shr temp, pixel_color, 24
+	sub.setf temp, temp, 0                                    # Compare Alpha to Zero
+	mov tlbz, parameter_z
+	mov.ifnz tlbc, pixel_color; thrend                        # Store Pixel Color to TLB (Tile Buffer) and Thread End
+	nop
+	nop; sbdone
+
+.unset texture_s
+.unset texture_t
+.unset temp
+.unset pixel_color
+.unset c_coefficient
+.unset parameter_w
+.unset ptr_image
+.unset width_height_int
+.unset width_height_float
+.unset mask_width_height
+.unset parameter_z
+:_V3D_FRAGMENT_SHADER2_END
+
 
 :_V3D_Z_SHADER
 	.set parameter_z,   rb15
