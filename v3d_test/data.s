@@ -70,8 +70,7 @@ _DATA_COLOR32_SAMPLE_IMAGE2:
 .incbin "data/wave_abgr.bin"            @ Little Endian, ABGR Style, 64 * 64 * 4 Bytes
 _DATA_COLOR32_SAMPLE_IMAGE2_END:
 _DATA_COLOR32_SAMPLE_BACKGROUND:
-.incbin "data/background_abgr.bin"      @ Little Endian, ABGR Style, 200 * 156 * 4 Bytes
+.incbin "data/background_abgr.bin"      @ Little Endian, ABGR Style, 256 * 256 * 4 Bytes
 _DATA_COLOR32_SAMPLE_BACKGROUND_END:
-.space 137344                           @ For Padding background_abgr.bin to Have 256 * 256 * 4 Bytes
 
 .section	.library_system32

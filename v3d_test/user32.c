@@ -24,7 +24,7 @@ extern uint32 DATA_COLOR32_SAMPLE_BACKGROUND_SIZE;
 
 void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel );
 
-uint32 va_offset; // Global for Setting Vertex Array
+uint32 va_count; // Global for Setting Vertex Array
 
 /**
  * Positive: X Right (Your View), Y Up, Z Forward (Towards You)
@@ -207,7 +207,7 @@ int32 _user_start()
 	additional_uniforms->arm[1].u32 = texture2d_1->gpu;
 	additional_uniforms->arm[2].u32 = texture2d_2->gpu;
 
-	va_offset = 0; // Offset for Background Vertices
+	va_count = 0; // Offset for Background Vertices
 	va_set_triangle3d( vertex_array, background_vertices, 6, mat_identity4, width_pixel, height_pixel );
 
 	while(True) {
@@ -220,8 +220,8 @@ int32 _user_start()
 		mat_versor = mtx32_versortomatrix( versor );
 		mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
 		mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
-		va_offset = 36; // Offset for Background Vertices
-		va_set_triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
+		va_count = 36; // Offset for Background Vertices
+		va_set_triangle3d( vertex_array, cube_vertices, va_count, mat_p_v_m, width_pixel, height_pixel );
 		heap32_mfree( mat_translate );
 		heap32_mfree( mat_scale );
 		heap32_mfree( mat_t_s );
@@ -322,13 +322,13 @@ void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_
 		int_x = vfp32_f32tou32( vfp32_fmul( result[0], width_float ) );
 		int_y = vfp32_f32tou32( vfp32_fmul( result[1], height_float ) );
 
-		vertex_array->arm[va_offset].u32 = int_x*16|(int_y*16)<<16; // X and Y
-		vertex_array->arm[va_offset+1].f32 = result[2]; // Z
-		vertex_array->arm[va_offset+2].f32 = 1.0f; // W
-		vertex_array->arm[va_offset+3].f32 = vertices[i*6+3]; // S
-		vertex_array->arm[va_offset+4].f32 = vertices[i*6+4]; // T
-		vertex_array->arm[va_offset+5].f32 = vertices[i*6+5]; // Index of Back Color
-		va_offset += 6;
+		vertex_array->arm[va_count].u32 = int_x*16|(int_y*16)<<16; // X and Y
+		vertex_array->arm[va_count+1].f32 = result[2]; // Z
+		vertex_array->arm[va_count+2].f32 = 1.0f; // W
+		vertex_array->arm[va_count+3].f32 = vertices[i*6+3]; // S
+		vertex_array->arm[va_count+4].f32 = vertices[i*6+4]; // T
+		vertex_array->arm[va_count+5].f32 = vertices[i*6+5]; // Index of Back Color
+		va_count += 6;
 
 		heap32_mfree( (obj)result );
 		arm32_dsb();
