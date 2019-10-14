@@ -27,8 +27,9 @@
  * r2: Size (Bytes) Up to 65535 Bytes
  * r3: 0 as No Wait, 1 as Wait for Completion
  *
- * Return: r0 (0 as Success, 1 as Error)
- * Error(1): Channel of DMA or CB Number is Overflow
+ * Return: r0 (0 as Success, 1 and 2 as Error)
+ * Error(1): Mutex is Locked in Wait Mode
+ * Error(2): Channel of DMA or CB Number is Overflow
  */
 .globl dma32_datacopy
 dma32_datacopy:
@@ -44,18 +45,17 @@ dma32_datacopy:
 
 	push {r4-r7,lr}
 
-	macro32_multicore_id number_core
-
-	cmp number_core, #equ32_dma32_channel_dma32_size
-	bhs dma32_datacopy_error
-	cmp number_core, #equ32_dma32_cb_dma32_size
-	bhs dma32_datacopy_error
+	ldrb temp, dma32_datacopy_mutex
+	cmp temp, #0
+	bne dma32_datacopy_error1
 
 	mov channel, #equ32_dma32_channel_dma32
-	add channel, channel, number_core
+	cmp channel, #14
+	bhi dma32_datacopy_error2
 
-	mov number_cb, #equ32_dma32_cb_dma32_start
-	add number_cb, number_cb, number_core
+	mov number_cb, #equ32_dma32_cb_dma32
+	cmp number_cb, #equ32_dma32_cb_max
+	bhs dma32_datacopy_error2
 
 	push {r0-r6}
 	mov r3, addr_dst                                        @ Destination Address
@@ -85,7 +85,12 @@ dma32_datacopy:
 	cmp flag_wait, #0
 	beq dma32_datacopy_success
 
+	/* Lock Mutex */
+	mov temp, #1
+	strb temp, dma32_datacopy_mutex
+
 	dma32_datacopy_wait:
+
 		push {r0-r3}
 		mov r0, channel
 		mov r1, size
@@ -95,10 +100,18 @@ dma32_datacopy:
 		cmp temp, #0
 		bne dma32_datacopy_wait
 
+		/* Unlock Mutex */
+		mov temp, #0
+		strb temp, dma32_datacopy_mutex
+
 	b dma32_datacopy_success
 
-	dma32_datacopy_error:
+	dma32_datacopy_error1:
 		mov r0, #1
+		b dma32_datacopy_common
+
+	dma32_datacopy_error2:
+		mov r0, #2
 		b dma32_datacopy_common
 
 	dma32_datacopy_success:
@@ -116,6 +129,8 @@ dma32_datacopy:
 .unreq number_cb
 .unreq number_core
 .unreq temp
+
+dma32_datacopy_mutex: .word 0x00
 
 
 /**

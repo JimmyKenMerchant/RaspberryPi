@@ -19,8 +19,12 @@ extern obj DATA_COLOR32_SAMPLE_IMAGE1;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE1_SIZE;
 extern obj DATA_COLOR32_SAMPLE_IMAGE2;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE2_SIZE;
+extern obj DATA_COLOR32_SAMPLE_BACKGROUND;
+extern uint32 DATA_COLOR32_SAMPLE_BACKGROUND_SIZE;
 
-void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel );
+void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel );
+
+uint32 va_offset; // Global for Setting Vertex Array
 
 /**
  * Positive: X Right (Your View), Y Up, Z Forward (Towards You)
@@ -29,62 +33,74 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
  *              Multiplication of matrices needs to exchange Matrix 1 and Matrix 2 to get the same answer as column order.
  */
 
-// X, Y, Z, S, T, Index of Back Color
+// X, Y, Z, S, T, Index of Images
 float32 cube_vertices[] =
 {
 		// Front
-		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f,-0.25f, 0.25f, 0.0f, 0.0f, 0.0f,
-		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f, 0.0f,
+		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f, 1.0f,
+		-0.25f,-0.25f, 0.25f, 0.0f, 0.0f, 1.0f,
+		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f, 1.0f,
 
-		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f, 0.0f,
-		 0.25f, 0.25f, 0.25f, 1.0f, 1.0f, 0.0f,
+		-0.25f, 0.25f, 0.25f, 0.0f, 1.0f, 1.0f,
+		 0.25f,-0.25f, 0.25f, 1.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f, 0.25f, 1.0f, 1.0f, 1.0f,
 
 		// Up
-		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f, 0.25f,  0.25f, 0.0f, 0.0f, 0.0f,
-		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 0.0f,
+		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		-0.25f, 0.25f,  0.25f, 0.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
 
-		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 0.0f,
-		 0.25f, 0.25f, -0.25f, 1.0f, 1.0f, 0.0f,
+		-0.25f, 0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		 0.25f, 0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
+		 0.25f, 0.25f, -0.25f, 1.0f, 1.0f, 1.0f,
 
 		// Right
-		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 1.0f,
-		0.25f, -0.25f,  0.25f, 0.0f, 0.0f, 1.0f,
-		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
+		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 2.0f,
+		0.25f, -0.25f,  0.25f, 0.0f, 0.0f, 2.0f,
+		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 2.0f,
 
-		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 1.0f,
-		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
-		0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 1.0f,
+		0.25f,  0.25f,  0.25f, 0.0f, 1.0f, 2.0f,
+		0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 2.0f,
+		0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 2.0f,
 
 		// Left
-		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
-		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 1.0f,
-		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 2.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 2.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 2.0f,
 
-		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
-		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 1.0f,
-		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f, 1.0f,
+		-0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 2.0f,
+		-0.25f, -0.25f,  0.25f, 1.0f, 0.0f, 2.0f,
+		-0.25f,  0.25f,  0.25f, 1.0f, 1.0f, 2.0f,
 
 		// Back
-		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		 0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 1.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
 
-		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
-		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 0.0f,
+		 0.25f,  0.25f, -0.25f, 0.0f, 1.0f, 1.0f,
+		-0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
+		-0.25f,  0.25f, -0.25f, 1.0f, 1.0f, 1.0f,
 
 		// Down
-		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 0.0f,
-		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 1.0f,
+		-0.25f, -0.25f, -0.25f, 0.0f, 0.0f, 1.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
 
-		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 0.0f,
-		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 0.0f,
-		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f, 0.0f
+		-0.25f, -0.25f,  0.25f, 0.0f, 1.0f, 1.0f,
+		 0.25f, -0.25f, -0.25f, 1.0f, 0.0f, 1.0f,
+		 0.25f, -0.25f,  0.25f, 1.0f, 1.0f, 1.0f
+};
+
+// X, Y, Z, S, T, Index of Images
+float32 background_vertices[] =
+{
+		-0.75f, 0.75f, -1.8f, 0.0f, 1.0f, 0.0f,
+		-0.75f,-0.75f, -1.8f, 0.0f, 0.0f, 0.0f,
+		 0.75f,-0.75f, -1.8f, 1.0f, 0.0f, 0.0f,
+
+		-0.75f, 0.75f, -1.8f, 0.0f, 1.0f, 0.0f,
+		 0.75f,-0.75f, -1.8f, 1.0f, 0.0f, 0.0f,
+		 0.75f, 0.75f, -1.8f, 1.0f, 1.0f, 0.0f
 };
 
 float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
@@ -115,6 +131,7 @@ int32 _user_start()
 	_GPUMemory *vertex_array;
 	_GPUMemory *additional_uniforms;
 	_FragmentShader *fragmentshader;
+	_Texture2D *texture2d_background;
 	_Texture2D *texture2d_1;
 	_Texture2D *texture2d_2;
 
@@ -131,7 +148,7 @@ int32 _user_start()
 	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( output, 8, 16, 0xC );
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( vertex_array, 864, 16, 0xC );
+	_gpumemory_init( vertex_array, 1008, 16, 0xC );
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
@@ -145,6 +162,7 @@ int32 _user_start()
 	 * Note: Camera Position Upside Down, Leftside Right
 	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
 	 */
+	obj mat_identity4 = mtx32_identity( 4 );
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
 	obj mat_projection = mtx32_perspective3d( 75.0f, 1.234f, 0.2f, 4.0f );
 	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
@@ -166,12 +184,18 @@ int32 _user_start()
 	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 
+	texture2d_background = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
+	_texture2d_init( texture2d_background, 256<<16|256, 256 * 256 * 4, 0 );
+	_load_texture2d( texture2d_background, DATA_COLOR32_SAMPLE_BACKGROUND, 0, True );
+	bit32_convert_endianness( texture2d_background->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_BACKGROUND_SIZE, 4 );
+	draw32_rgba_to_argb( texture2d_background->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_BACKGROUND_SIZE );
+
 	texture2d_1 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_1, 64<<16|64, 64 * 64 * 4, 0 );
 	_load_texture2d( texture2d_1, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
 	bit32_convert_endianness( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
-	_set_texture2d( texture2d_1, 0x1A0, 0b10000, additional_uniforms->gpu );
+	_set_texture2d( texture2d_1, 0x1A0, 0b10000, additional_uniforms->gpu ); // Texture Size Affects Speed of Shading
 
 	texture2d_2 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_2, 64<<16|64, 64 * 64 * 4, 0 );
@@ -179,8 +203,12 @@ int32 _user_start()
 	bit32_convert_endianness( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE );
 
-	additional_uniforms->arm[0].u32 = texture2d_1->gpu;
-	additional_uniforms->arm[1].u32 = texture2d_2->gpu;
+	additional_uniforms->arm[0].u32 = texture2d_background->gpu;
+	additional_uniforms->arm[1].u32 = texture2d_1->gpu;
+	additional_uniforms->arm[2].u32 = texture2d_2->gpu;
+
+	va_offset = 0; // Offset for Background Vertices
+	va_set_triangle3d( vertex_array, background_vertices, 6, mat_identity4, width_pixel, height_pixel );
 
 	while(True) {
 		_stopwatch_start();
@@ -192,7 +220,8 @@ int32 _user_start()
 		mat_versor = mtx32_versortomatrix( versor );
 		mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
 		mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
-		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
+		va_offset = 36; // Offset for Background Vertices
+		va_set_triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
 		heap32_mfree( mat_translate );
 		heap32_mfree( mat_scale );
 		heap32_mfree( mat_t_s );
@@ -204,7 +233,7 @@ int32 _user_start()
 		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
 		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
-		_execute_cl_binning( 4, 36, 0, 0xFF0000 ); // TRIANGLE, 36 Vertices, Index from 0
+		_execute_cl_binning( 4, 42, 0, 0xFF0000 ); // TRIANGLE, 42 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
 		// Angle Change
@@ -234,6 +263,7 @@ print32_debug( mat_versor, 0, 50 );
 		_sleep( 100000 );
 	}
 
+	heap32_mfree( mat_identity4 );
 	heap32_mfree( mat_view );
 	heap32_mfree( mat_projection );
 	heap32_mfree( mat_p_v );
@@ -248,7 +278,7 @@ print32_debug( mat_versor, 0, 50 );
 	return EXIT_SUCCESS;
 }
 
-void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel ) {
+void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel ) {
 	float32 *vector_xyzw = (float32*)heap32_malloc( 4 );
 	float32 *result;
 	uint16 int_x;
@@ -257,6 +287,7 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 	float32 height_float = vfp32_u32tof32( height_pixel );
 
 	for ( uint32 i = 0; i < num_vertex; i++ ) {
+
 		/* X of Vector*/
 		vector_xyzw[0] = vertices[i*6];
 
@@ -291,12 +322,13 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 		int_x = vfp32_f32tou32( vfp32_fmul( result[0], width_float ) );
 		int_y = vfp32_f32tou32( vfp32_fmul( result[1], height_float ) );
 
-		vertex_array->arm[i*6].u32 = int_x*16|(int_y*16)<<16; // X and Y
-		vertex_array->arm[i*6+1].f32 = result[2]; // Z
-		vertex_array->arm[i*6+2].f32 = 1.0f; // W
-		vertex_array->arm[i*6+3].f32 = vertices[i*6+3]; // S
-		vertex_array->arm[i*6+4].f32 = vertices[i*6+4]; // T
-		vertex_array->arm[i*6+5].f32 = vertices[i*6+5]; // Index of Back Color
+		vertex_array->arm[va_offset].u32 = int_x*16|(int_y*16)<<16; // X and Y
+		vertex_array->arm[va_offset+1].f32 = result[2]; // Z
+		vertex_array->arm[va_offset+2].f32 = 1.0f; // W
+		vertex_array->arm[va_offset+3].f32 = vertices[i*6+3]; // S
+		vertex_array->arm[va_offset+4].f32 = vertices[i*6+4]; // T
+		vertex_array->arm[va_offset+5].f32 = vertices[i*6+5]; // Index of Back Color
+		va_offset += 6;
 
 		heap32_mfree( (obj)result );
 		arm32_dsb();

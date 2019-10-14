@@ -54,16 +54,24 @@ DATA_COLOR32_SAMPLE_IMAGE1_SIZE: .word _DATA_COLOR32_SAMPLE_IMAGE1_END - _DATA_C
 DATA_COLOR32_SAMPLE_IMAGE2: .word _DATA_COLOR32_SAMPLE_IMAGE2
 DATA_COLOR32_SAMPLE_IMAGE2_SIZE: .word _DATA_COLOR32_SAMPLE_IMAGE2_END - _DATA_COLOR32_SAMPLE_IMAGE2
 
-.section	.data
+.globl DATA_COLOR32_SAMPLE_BACKGROUND
+.globl DATA_COLOR32_SAMPLE_BACKGROUND_SIZE
+DATA_COLOR32_SAMPLE_BACKGROUND: .word _DATA_COLOR32_SAMPLE_BACKGROUND
+DATA_COLOR32_SAMPLE_BACKGROUND_SIZE: .word _DATA_COLOR32_SAMPLE_BACKGROUND_END - _DATA_COLOR32_SAMPLE_BACKGROUND
 
+.section	.data
 _DATA_COLOR32_SAMPLE_IMAGE0:
-.incbin "data/bugufo_abgr.bin"          @ Little Endian, ABGR Style
+.incbin "data/bugufo_abgr.bin"          @ Little Endian, ABGR Style, 64 * 64 * 4 Bytes
 _DATA_COLOR32_SAMPLE_IMAGE0_END:
 _DATA_COLOR32_SAMPLE_IMAGE1:
-.incbin "data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style
+.incbin "data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style, 64 * 64 * 4 Bytes
 _DATA_COLOR32_SAMPLE_IMAGE1_END:
 _DATA_COLOR32_SAMPLE_IMAGE2:
-.incbin "data/wave_abgr.bin"            @ Little Endian, ABGR Style
+.incbin "data/wave_abgr.bin"            @ Little Endian, ABGR Style, 64 * 64 * 4 Bytes
 _DATA_COLOR32_SAMPLE_IMAGE2_END:
+_DATA_COLOR32_SAMPLE_BACKGROUND:
+.incbin "data/background_abgr.bin"      @ Little Endian, ABGR Style, 200 * 156 * 4 Bytes
+_DATA_COLOR32_SAMPLE_BACKGROUND_END:
+.space 137344                           @ For Padding background_abgr.bin to Have 256 * 256 * 4 Bytes
 
 .section	.library_system32

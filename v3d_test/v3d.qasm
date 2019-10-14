@@ -306,7 +306,12 @@
 	fadd temp, temp, c_coefficient; mov t0t, texture_t
 	ftoi index_img, temp; mov t0s, texture_s
 	ldtmu0                                                    # Load Pixel Color in TMU0 to r4
-	mov temp, pixel_color; mov width_height_int, 64           # No Use Pixel Color from Texture, Set Width and Height
+	mov temp, pixel_color
+
+	# Get Width and Height of Image
+	sub.setf -, index_img, 0
+	mov.ifz width_height_int, 256
+	mov.ifnz width_height_int, 64
 	shl index_img, index_img, 2                               # Multiply by 4
 
 	# Get Pointer of Image
@@ -318,7 +323,7 @@
 	.set ptr_image, ra0
 	mov ptr_image, pixel_color
 
-	# Get and Flip X Y Coordinates, Assuming Width and Height of Image Are Fixed to 64 (One of Power of 2)
+	# Get X Y Coordinates and Flip Y Coordinate, Assuming Width and Height of Image Are Fixed to 64 (One of Power of 2)
 	# ftoi rounds down, but last pixels becomes just 64 in integer. Mask it for 0-63 range.
 	sub mask_width_height, width_height_int, 1                # 0-63 Range
 	fmul texture_s, texture_s, width_height_float
@@ -326,19 +331,18 @@
 	and texture_s, texture_s, mask_width_height
 	ftoi texture_t, texture_t
 	and texture_t, texture_t, mask_width_height
-	sub texture_s, mask_width_height, texture_s
 	sub texture_t, mask_width_height, texture_t
 
 	# Load Color from Image, Similar to NEAREST
-	mul24 texture_s, texture_s, width_height_int
-	add texture_s, texture_s, texture_t
+	mul24 texture_t, texture_t, width_height_int
+	add texture_s, texture_t, texture_s
 	shl texture_s, texture_s, 2                               # Multiply by 4
 	add t0s, ptr_image, texture_s
 	ldtmu0
 
 	# Store Z and Color (If Alpha Is Non-zero) to Tile Buffer
 	shr temp, pixel_color, 24
-	sub.setf temp, temp, 0                                    # Compare Alpha to Zero
+	sub.setf -, temp, 0                                       # Compare Alpha to Zero
 	mov tlbz, parameter_z
 	mov.ifnz tlbc, pixel_color; thrend                        # Store Pixel Color to TLB (Tile Buffer) and Thread End
 	nop
