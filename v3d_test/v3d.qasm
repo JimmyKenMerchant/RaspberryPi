@@ -318,8 +318,9 @@
 	.set ptr_image, ra0
 	mov ptr_image, pixel_color
 
-	# Get and Flip X Y Coordinates, Assuming Width and Height of Image Are Fixed to 64 (Power of 2)
-	sub mask_width_height, width_height_int, 1                # 0-63 Coordinate
+	# Get and Flip X Y Coordinates, Assuming Width and Height of Image Are Fixed to 64 (One of Power of 2)
+	# ftoi rounds down, but last pixels becomes just 64 in integer. Mask it for 0-63 range.
+	sub mask_width_height, width_height_int, 1                # 0-63 Range
 	fmul texture_s, texture_s, width_height_float
 	fmul texture_t, texture_t, width_height_float; ftoi texture_s, texture_s
 	and texture_s, texture_s, mask_width_height
