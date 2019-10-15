@@ -20,11 +20,12 @@
  * function dma32_datacopy
  * Copy Data Using DMA
  * The DMA channel is enabled, once this function is executed.
+ * Note: To utilize ldrex/strex, targeted memory space configured as normal (non-strongly ordered) and shareable by MMU.
  *
  * Parameters
  * r0: Pointer of Destination in Bus Address
  * r1: Pointer of Source in Bus Address
- * r2: Size (Bytes) Up to 65535 Bytes
+ * r2: Size (Bytes)
  *
  * Return: r0 (0 as Success, 1 as Error)
  * Error(1): Channel of DMA or CB Number is Overflow

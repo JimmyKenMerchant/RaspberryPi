@@ -27,8 +27,8 @@ int32 _user_start() {
 	_GPUMemory *additional_uniforms;
 	_FragmentShader *fragmentshader;
 	_Texture2D *texture2d;
-	uint32 width_pixel = 800;
-	uint32 height_pixel = 648;
+	uint32 width_pixel = FB32_WIDTH;
+	uint32 height_pixel = FB32_HEIGHT;
 	uint32 result;
 
 	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 1 );

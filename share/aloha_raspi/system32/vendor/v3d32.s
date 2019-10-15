@@ -418,7 +418,7 @@ v3d32_make_cl_binning:
 	/* Allocate Tile Allocation Memory at GPU Memory Space */
 
 	push {r0-r3}
-	lsl r0, num_tiles, #6                 @ Multiply by 64
+	lsl r0, num_tiles, #v3d32_make_cl_binning_buffersize
 	mov r1, #256                          @ 256-byte Align
 	mov r2, #0xC
 	bl bcm32_allocate_memory
@@ -446,7 +446,7 @@ v3d32_make_cl_binning:
 	add offset, offset, #4
 
 	/* Size of Tile Allocation Memory */
-	lsl temp, num_tiles, #6               @ Multiply by 64
+	lsl temp, num_tiles, #v3d32_make_cl_binning_buffersize
 	macro32_store_word temp, offset
 	add offset, offset, #4
 
@@ -2319,7 +2319,7 @@ _V3D32_TML_CL_BIN:
 	/**
 	 * Tile Binning Mode Configuration
 	 * 1. Tile Allocation Memory Address (32-bit)
-	 * 2. Tile Allocation Memory Size (32-bit), 256-byte Aligned, 64 Bytes * Tiles in Default, Variable with Block Size
+	 * 2. Tile Allocation Memory Size (32-bit), 256-byte Aligned; If Overflown, Overspill Occurs
 	 * 3. Tile State Data Array Base Address (32-bit), 16-byte Aligned, 48 Bytes * Tiles
 	 * 4. Width in Tile (8-bit): 32 Pixels in Multisample mode, 64 Pixels in Non-multisample Mode
 	 * 5. Height in Tile (8-bit): 32 Pixels in Multisample mode, 64 Pixels in Non-multisample Modee
@@ -2709,3 +2709,6 @@ _V3D32_TML_UNIFORMS_END:
 .equ v3d32_cl_config_rendering,          113 @ Rendering Only, Followed by 10-byte Data
 .equ v3d32_cl_clear,                     114 @ Rendering Only, Bit[103:96]: Stencil, Bit[95:88]: VG (Alpha) Mask, Bit[87:64]: Clear Z, Bit[63:0]: Clear Color (Two RGBA8888 or RGBA16161616)
 .equ v3d32_cl_tile_coordinates,          115 @ Rendering Only, Bit[15:8]: Tile Row Number, Bit[7:0]: Tile Column Number, from Upper Left Corner
+
+/* Parameters */
+.equ v3d32_make_cl_binning_buffersize,   7   @ Value of Logical Shift Left to Number of Tiles, i.e., 128 (2^7) Bytes per Tiles; More Number to Prevent Overspill

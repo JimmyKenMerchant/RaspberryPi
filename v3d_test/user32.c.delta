@@ -150,7 +150,7 @@ int32 _user_start()
 	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
 	 */
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj mat_projection = mtx32_perspective3d( 75.0f, 1.234f, 0.2f, 4.0f );
+	obj mat_projection = mtx32_perspective3d( 75.0f, 1.25f, 0.2f, 4.0f );
 	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
 	obj mat_translate;
 	obj mat_scale;
@@ -263,8 +263,8 @@ print32_debug( mat_versor, 0, 50 );
 void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel ) {
 	float32 *vector_xyzw = (float32*)heap32_malloc( 4 );
 	float32 *result;
-	uint16 int_x;
-	uint16 int_y;
+	int16 int_x;
+	int16 int_y;
 	float32 width_float = vfp32_u32tof32( width_pixel );
 	float32 height_float = vfp32_u32tof32( height_pixel );
 
@@ -300,8 +300,8 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 		result[2] = vfp32_fmul( result[2], depth_scale );
 
 		/* Multiply 0.0 to 1.0 Coordinates by Actual Width and Height of Framebuffer, Convert Float to Integer */
-		int_x = vfp32_f32tou32( vfp32_fmul( result[0], width_float ) );
-		int_y = vfp32_f32tou32( vfp32_fmul( result[1], height_float ) );
+		int_x = vfp32_f32tos32( vfp32_fmul( result[0], width_float ) );
+		int_y = vfp32_f32tos32( vfp32_fmul( result[1], height_float ) );
 
 		vertex_array->arm[i*6].u32 = int_x*16|(int_y*16)<<16; // X and Y
 		vertex_array->arm[i*6+1].f32 = result[2]; // Z

@@ -94,13 +94,13 @@ float32 cube_vertices[] =
 // X, Y, Z, S, T, Index of Images
 float32 background_vertices[] =
 {
-		-0.92f, 0.92f, -1.8f, 0.0f, 1.0f, 0.0f,
-		-0.92f,-0.92f, -1.8f, 0.0f, 0.0f, 0.0f,
-		 0.92f,-0.92f, -1.8f, 1.0f, 0.0f, 0.0f,
+		-1.0f, 1.0f, -1.8f, 0.0f, 1.0f, 0.0f,
+		-1.0f,-1.0f, -1.8f, 0.0f, 0.0f, 0.0f,
+		 1.0f,-1.0f, -1.8f, 1.0f, 0.0f, 0.0f,
 
-		-0.92f, 0.92f, -1.8f, 0.0f, 1.0f, 0.0f,
-		 0.92f,-0.92f, -1.8f, 1.0f, 0.0f, 0.0f,
-		 0.92f, 0.92f, -1.8f, 1.0f, 1.0f, 0.0f
+		-1.0f, 1.0f, -1.8f, 0.0f, 1.0f, 0.0f,
+		 1.0f,-1.0f, -1.8f, 1.0f, 0.0f, 0.0f,
+		 1.0f, 1.0f, -1.8f, 1.0f, 1.0f, 0.0f
 };
 
 float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
@@ -167,7 +167,7 @@ int32 _user_start()
 	 */
 	obj mat_identity4 = mtx32_identity( 4 );
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj mat_projection = mtx32_perspective3d( 75.0f, 1.234f, 0.2f, 4.0f );
+	obj mat_projection = mtx32_perspective3d( 75.0f, 1.25f, 0.2f, 4.0f );
 	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
 	obj mat_translate;
 	obj mat_scale;
@@ -183,8 +183,8 @@ int32 _user_start()
 	_control_qpul2cache( 0b101 );
 	_clear_qpucache( 0x0F0F0F0F );
 
-	_make_cl_binning( width_pixel, height_pixel, 0b100 );
-	_make_cl_rendering( width_pixel, height_pixel, 0b100 );
+	_make_cl_binning( width_pixel, height_pixel, 0b101 );
+	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 
 	texture2d_background = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
@@ -223,8 +223,8 @@ int32 _user_start()
 		mat_versor = mtx32_versortomatrix( versor );
 		mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
 		mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
-		va_count = 36; // Offset for Background Vertices
-		va_set_triangle3d( vertex_array, cube_vertices, va_count, mat_p_v_m, width_pixel, height_pixel );
+		va_count = 6; // Offset for Background Vertices
+		va_set_triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
 		heap32_mfree( mat_translate );
 		heap32_mfree( mat_scale );
 		heap32_mfree( mat_t_s );
@@ -285,8 +285,8 @@ print32_debug( mat_versor, 0, 50 );
 void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel ) {
 	float32 *vector_xyzw = (float32*)heap32_malloc( 4 );
 	float32 *result;
-	uint16 int_x;
-	uint16 int_y;
+	int16 int_x;
+	int16 int_y;
 	float32 width_float = vfp32_u32tof32( width_pixel );
 	float32 height_float = vfp32_u32tof32( height_pixel );
 
@@ -323,16 +323,16 @@ void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_
 		result[2] = vfp32_fmul( result[2], depth_scale );
 
 		/* Multiply 0.0 to 1.0 Coordinates by Actual Width and Height of Framebuffer, Convert Float to Integer */
-		int_x = vfp32_f32tou32( vfp32_fmul( result[0], width_float ) );
-		int_y = vfp32_f32tou32( vfp32_fmul( result[1], height_float ) );
+		int_x = vfp32_f32tos32( vfp32_fmul( result[0], width_float ) );
+		int_y = vfp32_f32tos32( vfp32_fmul( result[1], height_float ) );
 
-		vertex_array->arm[va_count].u32 = int_x*16|(int_y*16)<<16; // X and Y
-		vertex_array->arm[va_count+1].f32 = result[2]; // Z
-		vertex_array->arm[va_count+2].f32 = 1.0f; // W
-		vertex_array->arm[va_count+3].f32 = vertices[i*6+3]; // S
-		vertex_array->arm[va_count+4].f32 = vertices[i*6+4]; // T
-		vertex_array->arm[va_count+5].f32 = vertices[i*6+5]; // Index of Back Color
-		va_count += 6;
+		vertex_array->arm[va_count*6].u32 = int_x*16|(int_y*16)<<16; // X and Y
+		vertex_array->arm[va_count*6+1].f32 = result[2]; // Z
+		vertex_array->arm[va_count*6+2].f32 = 1.0f; // W
+		vertex_array->arm[va_count*6+3].f32 = vertices[i*6+3]; // S
+		vertex_array->arm[va_count*6+4].f32 = vertices[i*6+4]; // T
+		vertex_array->arm[va_count*6+5].f32 = vertices[i*6+5]; // Index of Back Color
+		va_count++;
 
 		heap32_mfree( (obj)result );
 		arm32_dsb();
