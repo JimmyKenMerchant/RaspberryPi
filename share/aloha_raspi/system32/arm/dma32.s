@@ -36,12 +36,13 @@ dma32_datacopy:
 	addr_src       .req r1
 	size           .req r2
 	semaphore      .req r3
-	addr_semaphore .req r4
+	channel        .req r4
 	number_cb      .req r5
 	number_core    .req r6
 	temp           .req r7
+	addr_semaphore .req r8
 
-	push {r4-r7,lr}
+	push {r4-r8,lr}
 
 	dma32_datacopy_checksemaphore:
 		/**
@@ -62,9 +63,6 @@ dma32_datacopy:
 		macro32_dsb ip
 		cmp temp, #0                                   @ Check Success on Storing
 		bne dma32_datacopy_checksemaphore
-
-	.unreq addr_semaphore
-	channel .req r4
 
 	cmp semaphore, #equ32_dma32_cb_dma32_size
 	bhs dma32_datacopy_error
@@ -127,12 +125,15 @@ dma32_datacopy:
 
 	dma32_datacopy_common:
 		/* Increment of Semaphore Value */
-		ldrb semaphore, dma32_datacopy_semaphore
+		ldr addr_semaphore, dma32_datacopy_semaphore_addr
+		ldrex semaphore, [addr_semaphore]              @ Set Exclusive Flag
 		macro32_dsb ip
 		add semaphore, semaphore, #1
-		strb semaphore, dma32_datacopy_semaphore
+		strex temp, semaphore, [addr_semaphore]
 		macro32_dsb ip
-		pop {r4-r7,pc}
+		cmp temp, #0                                   @ Check Success on Storing
+		bne dma32_datacopy_common
+		pop {r4-r8,pc}
 
 .unreq addr_dst
 .unreq addr_src
@@ -142,6 +143,7 @@ dma32_datacopy:
 .unreq number_cb
 .unreq number_core
 .unreq temp
+.unreq addr_semaphore
 
 /* Two Channels Avaialble (4 and 5 in Default) */
 dma32_datacopy_semaphore_addr: .word dma32_datacopy_semaphore
