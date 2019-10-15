@@ -25,37 +25,61 @@
  * r0: Pointer of Destination in Bus Address
  * r1: Pointer of Source in Bus Address
  * r2: Size (Bytes) Up to 65535 Bytes
- * r3: 0 as No Wait, 1 as Wait for Completion
  *
- * Return: r0 (0 as Success, 1 and 2 as Error)
- * Error(1): Mutex is Locked in Wait Mode
- * Error(2): Channel of DMA or CB Number is Overflow
+ * Return: r0 (0 as Success, 1 as Error)
+ * Error(1): Channel of DMA or CB Number is Overflow
  */
 .globl dma32_datacopy
 dma32_datacopy:
 	/* Auto (Local) Variables, but just Aliases */
-	addr_dst     .req r0
-	addr_src     .req r1
-	size         .req r2
-	flag_wait    .req r3
-	channel      .req r4
-	number_cb    .req r5
-	number_core  .req r6
-	temp         .req r7
+	addr_dst       .req r0
+	addr_src       .req r1
+	size           .req r2
+	semaphore      .req r3
+	addr_semaphore .req r4
+	number_cb      .req r5
+	number_core    .req r6
+	temp           .req r7
 
 	push {r4-r7,lr}
 
-	ldrb temp, dma32_datacopy_mutex
-	cmp temp, #0
-	bne dma32_datacopy_error1
+	dma32_datacopy_checksemaphore:
+		/**
+		 * Decrement of Semaphore Value
+		 * From ARMv6, ldrex and strex are added for multi-core handling.
+		 */
+		ldr addr_semaphore, dma32_datacopy_semaphore_addr
+		ldrex semaphore, [addr_semaphore]              @ Set Exclusive Flag
+		macro32_dsb ip
+		cmp semaphore, #0
+		beq dma32_datacopy_checksemaphore
+		sub semaphore, semaphore, #1
+		/**
+		 * Clear exclusive flag and store if allowed.
+		 * If the flag has already cleared by any other core, storing is not allowed.
+		 */
+		strex temp, semaphore, [addr_semaphore]
+		macro32_dsb ip
+		cmp temp, #0                                   @ Check Success on Storing
+		bne dma32_datacopy_checksemaphore
+
+	.unreq addr_semaphore
+	channel .req r4
+
+	cmp semaphore, #equ32_dma32_cb_dma32_size
+	bhs dma32_datacopy_error
+	cmp semaphore, #equ32_dma32_channel_dma32_size
+	bhs dma32_datacopy_error
 
 	mov channel, #equ32_dma32_channel_dma32
+	add channel, channel, semaphore
 	cmp channel, #14
-	bhi dma32_datacopy_error2
+	bhi dma32_datacopy_error
 
 	mov number_cb, #equ32_dma32_cb_dma32
+	add number_cb, number_cb, semaphore
 	cmp number_cb, #equ32_dma32_cb_max
-	bhs dma32_datacopy_error2
+	bhs dma32_datacopy_error
 
 	push {r0-r6}
 	mov r3, addr_dst                                        @ Destination Address
@@ -82,15 +106,7 @@ dma32_datacopy:
 	bl dma32_set_channel
 	pop {r0-r3}
 
-	cmp flag_wait, #0
-	beq dma32_datacopy_success
-
-	/* Lock Mutex */
-	mov temp, #1
-	strb temp, dma32_datacopy_mutex
-
 	dma32_datacopy_wait:
-
 		push {r0-r3}
 		mov r0, channel
 		mov r1, size
@@ -100,37 +116,36 @@ dma32_datacopy:
 		cmp temp, #0
 		bne dma32_datacopy_wait
 
-		/* Unlock Mutex */
-		mov temp, #0
-		strb temp, dma32_datacopy_mutex
-
 	b dma32_datacopy_success
 
-	dma32_datacopy_error1:
+	dma32_datacopy_error:
 		mov r0, #1
-		b dma32_datacopy_common
-
-	dma32_datacopy_error2:
-		mov r0, #2
 		b dma32_datacopy_common
 
 	dma32_datacopy_success:
 		mov r0, #0
 
 	dma32_datacopy_common:
+		/* Increment of Semaphore Value */
+		ldrb semaphore, dma32_datacopy_semaphore
+		macro32_dsb ip
+		add semaphore, semaphore, #1
+		strb semaphore, dma32_datacopy_semaphore
 		macro32_dsb ip
 		pop {r4-r7,pc}
 
 .unreq addr_dst
 .unreq addr_src
 .unreq size
-.unreq flag_wait
+.unreq semaphore
 .unreq channel
 .unreq number_cb
 .unreq number_core
 .unreq temp
 
-dma32_datacopy_mutex: .word 0x00
+/* Two Channels Avaialble (4 and 5 in Default) */
+dma32_datacopy_semaphore_addr: .word dma32_datacopy_semaphore
+dma32_datacopy_semaphore:      .word 2
 
 
 /**

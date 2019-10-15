@@ -186,20 +186,20 @@ int32 _user_start()
 
 	texture2d_background = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_background, 256<<16|256, 256 * 256 * 4, 0 );
-	_load_texture2d( texture2d_background, DATA_COLOR32_SAMPLE_BACKGROUND, 0, True );
+	_load_texture2d( texture2d_background, DATA_COLOR32_SAMPLE_BACKGROUND, 0 );
 	bit32_convert_endianness( texture2d_background->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_BACKGROUND_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_background->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_BACKGROUND_SIZE );
 
 	texture2d_1 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_1, 64<<16|64, 64 * 64 * 4, 0 );
-	_load_texture2d( texture2d_1, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
+	_load_texture2d( texture2d_1, DATA_COLOR32_SAMPLE_IMAGE0, 0 );
 	bit32_convert_endianness( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	_set_texture2d( texture2d_1, 0x1A0, 0b10000, additional_uniforms->gpu ); // Texture Size Affects Speed of Shading
 
 	texture2d_2 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_2, 64<<16|64, 64 * 64 * 4, 0 );
-	_load_texture2d( texture2d_2, DATA_COLOR32_SAMPLE_IMAGE2, 0, True );
+	_load_texture2d( texture2d_2, DATA_COLOR32_SAMPLE_IMAGE2, 0 );
 	bit32_convert_endianness( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE );
 

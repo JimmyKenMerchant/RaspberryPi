@@ -337,7 +337,7 @@ __attribute__((noinline)) uint32 _texture2d_init( _Texture2D* texture2d, uint32 
 
 __attribute__((noinline)) uint32 _texture2d_free( _Texture2D* texture2d );
 
-__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level, bool flag_wait );
+__attribute__((noinline)) uint32 _load_texture2d( _Texture2D* texture2d, obj texture, uchar8 mipmap_level );
 
 __attribute__((noinline)) uint32 _set_texture2d( _Texture2D* texture2d, uint16 flags_config, uchar8 data_type, obj address_additional_uniforms );
 

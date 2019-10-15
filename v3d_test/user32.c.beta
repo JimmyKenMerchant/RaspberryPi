@@ -47,7 +47,7 @@ int32 _user_start() {
 	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( output, 8, 16, 0xC );
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( vertex_array, 256, 16, 0xC );
+	_gpumemory_init( vertex_array, 288, 16, 0xC );
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
@@ -60,78 +60,95 @@ int32 _user_start() {
 	//Tested //_unmake_cl_rendering();
 	_config_cl_binning( 0x039007 ); // Enable Forward Facing Primitive, Depth Test LT, Z Update Enable 
 	_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
-	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 2, 20 );
+	_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
 
 	vertex_array->arm[0].u32 = 300*16|(300*16)<<16; // X and Y
 	vertex_array->arm[1].f32 = 0.5f;
 	vertex_array->arm[2].f32 = 1.0f;
 	vertex_array->arm[3].f32 = 0.0f;
 	vertex_array->arm[4].f32 = 1.0f;
-	vertex_array->arm[5].u32 = 300*16|(332*16)<<16; // X and Y
-	vertex_array->arm[6].f32 = 0.5f;
-	vertex_array->arm[7].f32 = 1.0f;
-	vertex_array->arm[8].f32 = 0.0f;
+	vertex_array->arm[5].f32 = 3.0f;
+	vertex_array->arm[6].u32 = 300*16|(332*16)<<16; // X and Y
+	vertex_array->arm[7].f32 = 0.5f;
+	vertex_array->arm[8].f32 = 1.0f;
 	vertex_array->arm[9].f32 = 0.0f;
-	vertex_array->arm[10].u32 = 332*16|(332*16)<<16; // X and Y
-	vertex_array->arm[11].f32 = 0.5f;
-	vertex_array->arm[12].f32 = 1.0f;
-	vertex_array->arm[13].f32 = 1.0f;
-	vertex_array->arm[14].f32 = 0.0f;
-	vertex_array->arm[15].u32 = 300*16|(300*16)<<16; // X and Y
-	vertex_array->arm[16].f32 = 0.5f;
-	vertex_array->arm[17].f32 = 1.0f;
-	vertex_array->arm[18].f32 = 0.0f;
-	vertex_array->arm[19].f32 = 1.0f;
-	vertex_array->arm[20].u32 = 332*16|(332*16)<<16; // X and Y
-	vertex_array->arm[21].f32 = 0.5f;
+	vertex_array->arm[10].f32 = 0.0f;
+	vertex_array->arm[11].f32 = 3.0f;
+	vertex_array->arm[12].u32 = 332*16|(332*16)<<16; // X and Y
+	vertex_array->arm[13].f32 = 0.5f;
+	vertex_array->arm[14].f32 = 1.0f;
+	vertex_array->arm[15].f32 = 1.0f;
+	vertex_array->arm[16].f32 = 0.0f;
+	vertex_array->arm[17].f32 = 3.0f;
+	vertex_array->arm[18].u32 = 300*16|(300*16)<<16; // X and Y
+	vertex_array->arm[19].f32 = 0.5f;
+	vertex_array->arm[20].f32 = 1.0f;
+	vertex_array->arm[21].f32 = 0.0f;
 	vertex_array->arm[22].f32 = 1.0f;
-	vertex_array->arm[23].f32 = 1.0f;
-	vertex_array->arm[24].f32 = 0.0f;
-	vertex_array->arm[25].u32 = 332*16|(300*16)<<16; // X and Y
-	vertex_array->arm[26].f32 = 0.5f;
+	vertex_array->arm[23].f32 = 3.0f;
+	vertex_array->arm[24].u32 = 332*16|(332*16)<<16; // X and Y
+	vertex_array->arm[25].f32 = 0.5f;
+	vertex_array->arm[26].f32 = 1.0f;
 	vertex_array->arm[27].f32 = 1.0f;
-	vertex_array->arm[28].f32 = 1.0f;
-	vertex_array->arm[29].f32 = 1.0f;
-
-	vertex_array->arm[30].u32 = 256*16|(256*16)<<16; // X and Y
-	vertex_array->arm[31].f32 = 0.6f;
+	vertex_array->arm[28].f32 = 0.0f;
+	vertex_array->arm[29].f32 = 3.0f;
+	vertex_array->arm[30].u32 = 332*16|(300*16)<<16; // X and Y
+	vertex_array->arm[31].f32 = 0.5f;
 	vertex_array->arm[32].f32 = 1.0f;
-	vertex_array->arm[33].f32 = 0.0f;
+	vertex_array->arm[33].f32 = 1.0f;
 	vertex_array->arm[34].f32 = 1.0f;
-	vertex_array->arm[35].u32 = 256*16|(512*16)<<16; // X and Y
-	vertex_array->arm[36].f32 = 0.6f;
-	vertex_array->arm[37].f32 = 1.0f;
-	vertex_array->arm[38].f32 = 0.0f;
-	vertex_array->arm[39].f32 = 0.0f;
-	vertex_array->arm[40].u32 = 512*16|(512*16)<<16; // X and Y
-	vertex_array->arm[41].f32 = 0.6f;
-	vertex_array->arm[42].f32 = 1.0f;
-	vertex_array->arm[43].f32 = 1.0f;
-	vertex_array->arm[44].f32 = 0.0f;
-	vertex_array->arm[45].u32 = 256*16|(256*16)<<16; // X and Y
-	vertex_array->arm[46].f32 = 0.6f;
-	vertex_array->arm[47].f32 = 1.0f;
-	vertex_array->arm[48].f32 = 0.0f;
-	vertex_array->arm[49].f32 = 1.0f;
-	vertex_array->arm[50].u32 = 512*16|(512*16)<<16; // X and Y
-	vertex_array->arm[51].f32 = 0.6f;
-	vertex_array->arm[52].f32 = 1.0f;
-	vertex_array->arm[53].f32 = 1.0f;
-	vertex_array->arm[54].f32 = 0.0f;
-	vertex_array->arm[55].u32 = 512*16|(256*16)<<16; // X and Y
-	vertex_array->arm[56].f32 = 0.6f;
-	vertex_array->arm[57].f32 = 1.0f;
-	vertex_array->arm[58].f32 = 1.0f;
-	vertex_array->arm[59].f32 = 1.0f;
+	vertex_array->arm[35].f32 = 3.0f;
 
-	additional_uniforms->arm[0].u32 = COLOR32_BLUE;
-	additional_uniforms->arm[1].u32 = COLOR32_GRAY;
-	additional_uniforms->arm[2].u32 = COLOR32_PINK;
+	vertex_array->arm[36].u32 = 256*16|(256*16)<<16; // X and Y
+	vertex_array->arm[37].f32 = 0.6f;
+	vertex_array->arm[38].f32 = 1.0f;
+	vertex_array->arm[39].f32 = 0.0f;
+	vertex_array->arm[40].f32 = 1.0f;
+	vertex_array->arm[41].f32 = 3.0f;
+	vertex_array->arm[42].u32 = 256*16|(512*16)<<16; // X and Y
+	vertex_array->arm[43].f32 = 0.6f;
+	vertex_array->arm[44].f32 = 1.0f;
+	vertex_array->arm[45].f32 = 0.0f;
+	vertex_array->arm[46].f32 = 0.0f;
+	vertex_array->arm[47].f32 = 3.0f;
+	vertex_array->arm[48].u32 = 512*16|(512*16)<<16; // X and Y
+	vertex_array->arm[49].f32 = 0.6f;
+	vertex_array->arm[50].f32 = 1.0f;
+	vertex_array->arm[51].f32 = 1.0f;
+	vertex_array->arm[52].f32 = 0.0f;
+	vertex_array->arm[53].f32 = 3.0f;
+	vertex_array->arm[54].u32 = 256*16|(256*16)<<16; // X and Y
+	vertex_array->arm[55].f32 = 0.6f;
+	vertex_array->arm[56].f32 = 1.0f;
+	vertex_array->arm[57].f32 = 0.0f;
+	vertex_array->arm[58].f32 = 1.0f;
+	vertex_array->arm[59].f32 = 3.0f;
+	vertex_array->arm[60].u32 = 512*16|(512*16)<<16; // X and Y
+	vertex_array->arm[61].f32 = 0.6f;
+	vertex_array->arm[62].f32 = 1.0f;
+	vertex_array->arm[63].f32 = 1.0f;
+	vertex_array->arm[64].f32 = 0.0f;
+	vertex_array->arm[65].f32 = 3.0f;
+	vertex_array->arm[66].u32 = 512*16|(256*16)<<16; // X and Y
+	vertex_array->arm[67].f32 = 0.6f;
+	vertex_array->arm[68].f32 = 1.0f;
+	vertex_array->arm[69].f32 = 1.0f;
+	vertex_array->arm[70].f32 = 1.0f;
+	vertex_array->arm[71].f32 = 3.0f;
+
+	additional_uniforms->arm[0].u32 = COLOR32_GREEN;
+	additional_uniforms->arm[1].u32 = COLOR32_RED;
+	additional_uniforms->arm[2].u32 = COLOR32_BLUE;
+	additional_uniforms->arm[3].u32 = COLOR32_WHITE;
+	additional_uniforms->arm[4].u32 = COLOR32_YELLOW;
+	additional_uniforms->arm[5].u32 = COLOR32_PINK;
+	additional_uniforms->arm[6].u32 = COLOR32_GRAY;
+	additional_uniforms->arm[7].u32 = COLOR32_MAGENTA;
 
 	texture2d = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d, 64<<16|64, 64 * 64 * 4, 1 );
-	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0, True );
-	_load_texture2d( texture2d, renderbuffer[0]->addr, 1, True );
+	_load_texture2d( texture2d, DATA_COLOR32_SAMPLE_IMAGE0, 0 );
+	_load_texture2d( texture2d, renderbuffer[0]->addr, 1 );
 	bit32_convert_endianness( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
 	// Flip Y Axis, NEAREST for Magnification, NEAR_MIP_NEAR for Minification Filter
