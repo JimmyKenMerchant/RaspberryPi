@@ -153,7 +153,7 @@ int32 _user_start()
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 	overspillmemory = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( overspillmemory, 0x200000, 16, 0xC );
+	_gpumemory_init( overspillmemory, 0x20000, 256, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
 	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER2, DATA_V3D_FRAGMENT_SHADER2_SIZE );
 
@@ -236,7 +236,7 @@ int32 _user_start()
 		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
 		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
-		_set_overspillmemory( overspillmemory->gpu, 0x200000 );
+		_set_overspillmemory( overspillmemory->gpu, 0x20000 );
 		_execute_cl_binning( 4, 42, 0, 0xFF0000 ); // TRIANGLE, 42 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
