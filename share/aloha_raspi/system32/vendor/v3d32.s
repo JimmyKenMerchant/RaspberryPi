@@ -1326,7 +1326,11 @@ v3d32_execute_cl_binning:
 	v3d32_execute_cl_binning_loop:
 		subs timeout, #1
 		blo v3d32_execute_cl_binning_error2
-
+/*
+ldr temp, [addr_qpu, #v3d32_intctl]
+str temp, [addr_qpu, #v3d32_intctl]
+macro32_debug temp, 300, 300
+*/
 		ldr temp, [addr_qpu, #v3d32_bfc]
 		macro32_dsb ip
 		cmp temp, #0
@@ -2186,6 +2190,44 @@ v3d32_fragmentshader_free:
 
 .unreq fragmentshader
 .unreq temp
+
+
+/**
+ * function v3d32_set_overspillmemory
+ * Set Overspill Memory Block for QPU of VideoCore IV from ARM
+ * This function is using a vendor-implemented process.
+ *
+ * Parameters
+ * r0: Pointer of Overspill Memory Block (GPU Side)
+ * r1: Size of Overspill Memory Block
+ *
+ * Return: r0 (0 as success)
+ */
+.globl v3d32_set_overspillmemory
+v3d32_set_overspillmemory:
+	/* Auto (Local) Variables, but just Aliases */
+	overspillmemory .req r0
+	size            .req r1
+	addr_qpu        .req r2
+
+	push {lr}
+
+	mov addr_qpu, #equ32_peripherals_base
+	orr addr_qpu, addr_qpu, #v3d32_base
+
+	str overspillmemory, [addr_qpu, #v3d32_bpoa]
+	str size, [addr_qpu, #v3d32_bpos]
+
+	v3d32_set_overspillmemory_success:
+		mov r0, #0
+
+	v3d32_set_overspillmemory_common:
+		macro32_dsb ip
+		pop {pc}
+
+.unreq overspillmemory
+.unreq size
+.unreq addr_qpu
 
 
 V3D32_OBJECTV3D: .word 0x00

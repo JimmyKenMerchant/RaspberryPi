@@ -94,13 +94,13 @@ float32 cube_vertices[] =
 // X, Y, Z, S, T, Index of Images
 float32 background_vertices[] =
 {
-		-0.75f, 0.75f, -1.8f, 0.0f, 1.0f, 0.0f,
-		-0.75f,-0.75f, -1.8f, 0.0f, 0.0f, 0.0f,
-		 0.75f,-0.75f, -1.8f, 1.0f, 0.0f, 0.0f,
+		-0.92f, 0.92f, -1.8f, 0.0f, 1.0f, 0.0f,
+		-0.92f,-0.92f, -1.8f, 0.0f, 0.0f, 0.0f,
+		 0.92f,-0.92f, -1.8f, 1.0f, 0.0f, 0.0f,
 
-		-0.75f, 0.75f, -1.8f, 0.0f, 1.0f, 0.0f,
-		 0.75f,-0.75f, -1.8f, 1.0f, 0.0f, 0.0f,
-		 0.75f, 0.75f, -1.8f, 1.0f, 1.0f, 0.0f
+		-0.92f, 0.92f, -1.8f, 0.0f, 1.0f, 0.0f,
+		 0.92f,-0.92f, -1.8f, 1.0f, 0.0f, 0.0f,
+		 0.92f, 0.92f, -1.8f, 1.0f, 1.0f, 0.0f
 };
 
 float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
@@ -130,6 +130,7 @@ int32 _user_start()
 	_GPUMemory *output;
 	_GPUMemory *vertex_array;
 	_GPUMemory *additional_uniforms;
+	_GPUMemory *overspillmemory;
 	_FragmentShader *fragmentshader;
 	_Texture2D *texture2d_background;
 	_Texture2D *texture2d_1;
@@ -151,6 +152,8 @@ int32 _user_start()
 	_gpumemory_init( vertex_array, 1008, 16, 0xC );
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
+	overspillmemory = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( overspillmemory, 0x200000, 16, 0xC );
 	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
 	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER2, DATA_V3D_FRAGMENT_SHADER2_SIZE );
 
@@ -180,8 +183,8 @@ int32 _user_start()
 	_control_qpul2cache( 0b101 );
 	_clear_qpucache( 0x0F0F0F0F );
 
-	_make_cl_binning( width_pixel, height_pixel, 0b101 );
-	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
+	_make_cl_binning( width_pixel, height_pixel, 0b100 );
+	_make_cl_rendering( width_pixel, height_pixel, 0b100 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 
 	texture2d_background = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
@@ -233,6 +236,7 @@ int32 _user_start()
 		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
 		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
 		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
+		_set_overspillmemory( overspillmemory->gpu, 0x200000 );
 		_execute_cl_binning( 4, 42, 0, 0xFF0000 ); // TRIANGLE, 42 Vertices, Index from 0
 		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 

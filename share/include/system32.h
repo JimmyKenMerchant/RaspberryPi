@@ -349,6 +349,8 @@ __attribute__((noinline)) uint32 _fragmentshader_init( _FragmentShader* fragment
 
 __attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragmentshader );
 
+__attribute__((noinline)) uint32 _set_overspillmemory( obj address_overspillmemory, uint32 size );
+
 __attribute__((noinline)) uint32 _bind_objectv3d( _ObjectV3D* objectv3d );
 
 

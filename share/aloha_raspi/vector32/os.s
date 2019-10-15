@@ -295,7 +295,7 @@ _os_svc:
 	push {lr}                                @ Push fp and lr
 	ldr ip, [lr, #-4]                        @ Load SVC Instruction
 	bic ip, #0xFF000000                      @ Immediate Bit[23:0]
-	cmp ip, #0x6B                            @ Prevent Overflow SVC Table
+	cmp ip, #0x6C                            @ Prevent Overflow SVC Table
 	bhi _os_svc_common
 	lsl ip, ip, #3                           @ Substitution of Multiplication by 8
 	add pc, pc, ip
@@ -737,6 +737,10 @@ _os_svc:
 		b _os_svc_common
 
 	_os_svc_0x6B:
+		bl v3d32_set_overspillmemory
+		b _os_svc_common
+
+	_os_svc_0x6C:
 		bl v3d32_bind_objectv3d
 		b _os_svc_common
 

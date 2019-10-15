@@ -752,10 +752,18 @@ __attribute__((noinline)) uint32 _fragmentshader_free( _FragmentShader* fragment
 	return result;
 }
 
-__attribute__((noinline)) uint32 _bind_objectv3d( _ObjectV3D* objectv3d )
+__attribute__((noinline)) uint32 _set_overspillmemory( obj address_overspillmemory, uint32 size )
 {
 	register int32 result asm("r0");
 	asm volatile ("svc #0x6B");
+	return result;
+
+}
+
+__attribute__((noinline)) uint32 _bind_objectv3d( _ObjectV3D* objectv3d )
+{
+	register int32 result asm("r0");
+	asm volatile ("svc #0x6C");
 	return result;
 }
 
