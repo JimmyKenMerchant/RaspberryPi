@@ -150,7 +150,7 @@ int32 _user_start()
 	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
 	 */
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj mat_projection = mtx32_perspective3d( 75.0f, 1.25f, 0.2f, 4.0f );
+	obj mat_projection = mtx32_perspective3d( 75.0f, 1.3333333f, 0.2f, 4.0f );
 	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
 	obj mat_translate;
 	obj mat_scale;

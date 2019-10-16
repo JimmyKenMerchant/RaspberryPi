@@ -127,11 +127,11 @@ int32 _user_start()
 {
 
 	_ObjectV3D *objectv3d;
-	_GPUMemory *output;
 	_GPUMemory *vertex_array;
 	_GPUMemory *additional_uniforms;
 	_GPUMemory *overspillmemory;
 	_FragmentShader *fragmentshader;
+	_Texture2D *texture2d_0;
 	_Texture2D *texture2d_background;
 	_Texture2D *texture2d_1;
 	_Texture2D *texture2d_2;
@@ -146,8 +146,6 @@ int32 _user_start()
 
 	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
 	_bind_objectv3d( objectv3d );
-	output = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( output, 8, 16, 0xC );
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( vertex_array, 1008, 16, 0xC );
 	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
@@ -167,7 +165,7 @@ int32 _user_start()
 	 */
 	obj mat_identity4 = mtx32_identity( 4 );
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
-	obj mat_projection = mtx32_perspective3d( 75.0f, 1.25f, 0.2f, 4.0f );
+	obj mat_projection = mtx32_perspective3d( 75.0f, 1.3333333f, 0.2f, 4.0f );
 	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
 	obj mat_translate;
 	obj mat_scale;
@@ -187,6 +185,10 @@ int32 _user_start()
 	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
 	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
 
+	texture2d_0 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
+	_texture2d_init( texture2d_0, 1<<16|1, 32 * 32 * 4, 0 ); // Init Minimum Texture
+	_set_texture2d( texture2d_0, 0x1A0, 0b10000, additional_uniforms->gpu ); // Texture Size Affects Speed of Shading
+
 	texture2d_background = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_background, 256<<16|256, 256 * 256 * 4, 0 );
 	_load_texture2d( texture2d_background, DATA_COLOR32_SAMPLE_BACKGROUND, 0 );
@@ -198,7 +200,6 @@ int32 _user_start()
 	_load_texture2d( texture2d_1, DATA_COLOR32_SAMPLE_IMAGE0, 0 );
 	bit32_convert_endianness( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_1->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE0_SIZE );
-	_set_texture2d( texture2d_1, 0x1A0, 0b10000, additional_uniforms->gpu ); // Texture Size Affects Speed of Shading
 
 	texture2d_2 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_2, 64<<16|64, 64 * 64 * 4, 0 );
@@ -271,13 +272,26 @@ print32_debug( mat_versor, 0, 50 );
 	heap32_mfree( mat_view );
 	heap32_mfree( mat_projection );
 	heap32_mfree( mat_p_v );
-	_texture2d_free( texture2d_1 );
-	_texture2d_free( texture2d_2 );
 	_gpumemory_free( vertex_array );
+	heap32_mfree( (obj)vertex_array );
 	_gpumemory_free( additional_uniforms );
+	heap32_mfree( (obj)additional_uniforms );
+	_gpumemory_free( overspillmemory );
+	heap32_mfree( (obj)overspillmemory );
 	_fragmentshader_free( fragmentshader );
+	heap32_mfree( (obj)fragmentshader );
+	_texture2d_free( texture2d_0 );
+	heap32_mfree( (obj)texture2d_0 );
+	_texture2d_free( texture2d_background );
+	heap32_mfree( (obj)texture2d_background );
+	_texture2d_free( texture2d_1 );
+	heap32_mfree( (obj)texture2d_1 );
+	_texture2d_free( texture2d_2 );
+	heap32_mfree( (obj)texture2d_2 );
 	_unmake_cl_binning();
 	_unmake_cl_rendering();
+	_bind_objectv3d( 0 );  // Unbind
+	heap32_mfree( (obj)objectv3d );
 
 	return EXIT_SUCCESS;
 }

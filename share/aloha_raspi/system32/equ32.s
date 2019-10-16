@@ -13,9 +13,9 @@
 
 .equ equ32_bcm32_core_os,                      0          @ 0-3 Number of Core to Handle OS (Route GPU IRQ and GPU FIQ)
 .equ equ32_bcm32_cores_mailbox_call,           0          @ 0-3 Number of Mailbox to Receive Call
-.equ equ32_bcm32_display_width,                960
+.equ equ32_bcm32_display_width,                1024
 .equ equ32_bcm32_display_height,               768
-.equ equ32_bcm32_width,                        960
+.equ equ32_bcm32_width,                        1024
 .equ equ32_bcm32_height,                       768
 .equ equ32_bcm32_alpha,                        16
 .equ equ32_arm32_random_value,                 0xFF       @ Initial Value to Be Shuffled
