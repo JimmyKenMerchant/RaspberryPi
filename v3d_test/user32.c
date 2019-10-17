@@ -10,9 +10,9 @@
 #include "system32.h"
 #include "system32.c"
 
+/* Declare Global Variables Exported from data32.s */
 extern obj DATA_V3D_FRAGMENT_SHADER2;
 extern uint32 DATA_V3D_FRAGMENT_SHADER2_SIZE;
-
 extern obj DATA_COLOR32_SAMPLE_IMAGE0;
 extern uint32 DATA_COLOR32_SAMPLE_IMAGE0_SIZE;
 extern obj DATA_COLOR32_SAMPLE_IMAGE1;
@@ -22,9 +22,27 @@ extern uint32 DATA_COLOR32_SAMPLE_IMAGE2_SIZE;
 extern obj DATA_COLOR32_SAMPLE_BACKGROUND;
 extern uint32 DATA_COLOR32_SAMPLE_BACKGROUND_SIZE;
 
+/* Declare Global Variables Exported from vector32.s */
+extern bool OS_FIQ_ONEFRAME;
+
+/* Declare Unique Definitions */
+#define MAXCOUNT_UPDATE 8 // 30Hz
+
+typedef struct user32_Legend3D {
+	uint32 image_index;
+	float32 position[3];
+	float32 speed_position[3];
+	float32 scale[3];
+	float32 versor_angle;
+	float32 versor_vector[3];
+} Legend3D;
+
+/* Declare Unique Functions */
 void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex, obj matrix, uint32 width_pixel, uint32 height_pixel );
 
+/* Declare Unique Global Variables, Zero Can't Be Stored If You Want to Define with Declaration */
 uint32 va_count; // Global for Setting Vertex Array
+uint32 count_update;
 
 /**
  * Positive: X Right (Your View), Y Up, Z Forward (Towards You)
@@ -103,14 +121,10 @@ float32 background_vertices[] =
 		 1.0f, 1.0f, -1.8f, 1.0f, 1.0f, 0.0f
 };
 
-float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
-float32 cube_scale[] = { 0.5f, 0.5f, 0.5f };
-float32 versor_vector[] = { 1.0f, 1.0f, 1.0f };
 float32 camera_position[] = { 0.0f, 0.5f, 2.0f };
 float32 camera_target[] = { 0.0001f, 0.0001f, 0.0001f }; // Don't Initialize by Zeros, It's Invalid!
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
-float32 angle;
-float32 scale;
+
 /**
  * Depth scale is depending on the values of the near and the far of the perspective projection.
  * If the near is 0.2f and the far is 4.0f, you need to make the 3D object visible in the distance 3.8f.
@@ -126,6 +140,13 @@ float32 depth_offset;
 int32 _user_start()
 {
 
+	// Define Global Variables
+	depth_offset = 0.0f;
+	depth_scale = 0.5263f;
+	va_count = 0; // Offset for Background Vertices
+	count_update = 0;
+
+	// Declare and Define Local Variables
 	_ObjectV3D *objectv3d;
 	_GPUMemory *vertex_array;
 	_GPUMemory *additional_uniforms;
@@ -135,29 +156,10 @@ int32 _user_start()
 	_Texture2D *texture2d_background;
 	_Texture2D *texture2d_1;
 	_Texture2D *texture2d_2;
-
+	Legend3D **cubes = (Legend3D**)heap32_malloc( 2 );
+	uint32 cubes_length = 0;
 	uint32 width_pixel = FB32_WIDTH;
 	uint32 height_pixel = FB32_HEIGHT;
-	//uint32 result;
-	String num_string;
-	uint32 time = 0;
-	depth_offset = 0.0f;
-	depth_scale = 0.5263f;
-
-	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
-	_bind_objectv3d( objectv3d );
-	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( vertex_array, 1008, 16, 0xC );
-	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
-	overspillmemory = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
-	_gpumemory_init( overspillmemory, 0x20000, 256, 0xC );
-	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
-	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER2, DATA_V3D_FRAGMENT_SHADER2_SIZE );
-
-	_RenderBuffer **renderbuffer = (_RenderBuffer**)heap32_malloc( 1 );
-	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
-	draw32_renderbuffer_init( renderbuffer[0], width_pixel, height_pixel, FB32_DEPTH );
 
 	/**
 	 * Note: Camera Position Upside Down, Leftside Right
@@ -175,19 +177,20 @@ int32 _user_start()
 	obj mat_model;
 	obj mat_p_v_m; // Projection, View, Model
 
-	angle = 0.0f;
-	scale = 0.5f;
+	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( vertex_array, 1008, 16, 0xC );
 
-	_control_qpul2cache( 0b101 );
-	_clear_qpucache( 0x0F0F0F0F );
+	additional_uniforms = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( additional_uniforms, 256, 16, 0xC );
 
-	_make_cl_binning( width_pixel, height_pixel, 0b101 );
-	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
-	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
+	overspillmemory = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
+	_gpumemory_init( overspillmemory, 0x20000, 256, 0xC );
+
+	fragmentshader = (_FragmentShader*)heap32_malloc( _wordsizeof( _FragmentShader ) );
+	_fragmentshader_init( fragmentshader, DATA_V3D_FRAGMENT_SHADER2, DATA_V3D_FRAGMENT_SHADER2_SIZE );;
 
 	texture2d_0 = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_0, 1<<16|1, 32 * 32 * 4, 0 ); // Init Minimum Texture
-	_set_texture2d( texture2d_0, 0x1A0, 0b10000, additional_uniforms->gpu ); // Texture Size Affects Speed of Shading
 
 	texture2d_background = (_Texture2D*)heap32_malloc( _wordsizeof( _Texture2D ) );
 	_texture2d_init( texture2d_background, 256<<16|256, 256 * 256 * 4, 0 );
@@ -207,65 +210,107 @@ int32 _user_start()
 	bit32_convert_endianness( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE, 4 );
 	draw32_rgba_to_argb( texture2d_2->gpu&0x3FFFFFFF, DATA_COLOR32_SAMPLE_IMAGE2_SIZE );
 
+	cubes[0] = (Legend3D*)heap32_malloc( _wordsizeof( Legend3D ) );
+	cubes_length++;
+	cubes[0]->position[0] = -0.5f; // X
+	cubes[0]->position[1] = 0.0f; // Y
+	cubes[0]->position[2] = -2.0f; // Z
+	cubes[0]->speed_position[0] = 0.005f; // X
+	cubes[0]->speed_position[1] = 0.0f; // Y
+	cubes[0]->speed_position[2] = 0.02f; // Z
+	cubes[0]->scale[0] = 0.5f; // X
+	cubes[0]->scale[1] = 0.5f; // Y
+	cubes[0]->scale[2] = 0.5f; // Z
+	cubes[0]->versor_angle = 0.0f;
+	cubes[0]->versor_vector[0] = 1.0f; // X
+	cubes[0]->versor_vector[1] = 1.0f; // Y
+	cubes[0]->versor_vector[2] = 1.0f; // Z
+
+	// Set Textures to Array
 	additional_uniforms->arm[0].u32 = texture2d_background->gpu;
 	additional_uniforms->arm[1].u32 = texture2d_1->gpu;
 	additional_uniforms->arm[2].u32 = texture2d_2->gpu;
 
-	va_count = 0; // Offset for Background Vertices
+	// Set Background Vertices
 	va_set_triangle3d( vertex_array, background_vertices, 6, mat_identity4, width_pixel, height_pixel );
 
+	// Make Control Lists for Binning and Rendering
+	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
+	_bind_objectv3d( objectv3d );
+	_make_cl_binning( width_pixel, height_pixel, 0b101 );
+	_make_cl_rendering( width_pixel, height_pixel, 0b101 );
+	_config_cl_binning( 0x039005 ); // Forward Primitive, CCW, Depth Test
+	_set_texture2d( texture2d_0, 0x1A0, 0b10000, additional_uniforms->gpu ); // Texture Size Affects Speed of Shading
+
+	// Treat Cache for QPU
+	_control_qpul2cache( 0b101 );
+	_clear_qpucache( 0x0F0F0F0F );
+
 	while(True) {
-		_stopwatch_start();
+		if ( OS_FIQ_ONEFRAME ) {
+			/**
+			 * If the count reaches the number, update the display.
+			 */
+			if ( ++count_update >= MAXCOUNT_UPDATE ) { // Increment Count Before, Then Compare with Number
+_stopwatch_start();
 
-		mat_translate = mtx32_translate3d( (obj)cube_position );
-		mat_scale = mtx32_scale3d( (obj)cube_scale );
-		mat_t_s = mtx32_multiply( mat_scale, mat_translate, 4 );
-		versor = mtx32_versor( angle, (obj)versor_vector );
-		mat_versor = mtx32_versortomatrix( versor );
-		mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
-		mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
-		va_count = 6; // Offset for Background Vertices
-		va_set_triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
-		heap32_mfree( mat_translate );
-		heap32_mfree( mat_scale );
-		heap32_mfree( mat_t_s );
-		heap32_mfree( versor );
-		heap32_mfree( mat_versor );
-		heap32_mfree( mat_model );
-		heap32_mfree( mat_p_v_m );
+				// Make Matrix
+				mat_translate = mtx32_translate3d( (obj)cubes[0]->position );
+				mat_scale = mtx32_scale3d( (obj)cubes[0]->scale );
+				mat_t_s = mtx32_multiply( mat_scale, mat_translate, 4 );
+				versor = mtx32_versor( cubes[0]->versor_angle, (obj)cubes[0]->versor_vector );
+				mat_versor = mtx32_versortomatrix( versor );
+				mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
+				mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
+				va_count = 6; // Offset for Background Vertices
+				va_set_triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
+				heap32_mfree( mat_translate );
+				heap32_mfree( mat_scale );
+				heap32_mfree( mat_t_s );
+				heap32_mfree( versor );
+				heap32_mfree( mat_versor );
+				heap32_mfree( mat_model );
+				heap32_mfree( mat_p_v_m );
 
-		_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
-		_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
-		_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
-		_set_overspillmemory( overspillmemory->gpu, 0x20000 );
-		_execute_cl_binning( 4, 42, 0, 0xFF0000 ); // TRIANGLE, 42 Vertices, Index from 0
-		_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
+				// Actual Rendering
+				_clear_cl_rendering( COLOR32_CYAN, 0xFFFFFF, 0x0, 0x0 );
+				_setbuffer_cl_rendering( FB32_FRAMEBUFFER->addr );
+				_set_nv_shaderstate( fragmentshader->gpu, vertex_array->gpu, 3, 24 );
+				_set_overspillmemory( overspillmemory->gpu, 0x20000 );
+				_execute_cl_binning( 4, va_count, 0, 0xFF0000 ); // TRIANGLE, 42 Vertices, Index from 0
+				_execute_cl_rendering( 0xFF0000 ); // The Point to Actually Draw Using Vertices
 
-		// Angle Change
-		angle = vfp32_fadd( angle, 1.0f );
-		if( vfp32_fge( angle, 360.0f ) ) angle = 0.0f;
+				// Angle Change
+				cubes[0]->versor_angle = vfp32_fadd( cubes[0]->versor_angle, 0.5f );
+				if( vfp32_fge( cubes[0]->versor_angle, 360.0f ) ) cubes[0]->versor_angle = 0.0f;
 
-		// Position Change
-		cube_position[0] = vfp32_fadd( cube_position[0], 0.01f );
-		if( vfp32_fge( cube_position[0], 0.5f ) ) cube_position[0] = -0.5f;
-		cube_position[2] = vfp32_fadd( cube_position[2], 0.04f );
-		if( vfp32_fge( cube_position[2], 2.0f ) ) cube_position[2] = -2.0f;
+				// Position Change
+				cubes[0]->position[0] = vfp32_fadd( cubes[0]->position[0], cubes[0]->speed_position[0] ); // X
+				if( vfp32_fge( cubes[0]->position[0], 0.5f ) ) cubes[0]->position[0] = -0.5f;
+				cubes[0]->position[2] = vfp32_fadd( cubes[0]->position[2], cubes[0]->speed_position[2] ); // Y
+				if( vfp32_fge( cubes[0]->position[2], 2.0f ) ) cubes[0]->position[2] = -2.0f;
 
-		// Scale Change
-		// For accuracy, calculate the distance between eye and object, but not this linear incrementation.
-		scale = vfp32_fadd( scale, 0.01f );
-		if( vfp32_fge( scale, 1.5f ) ) scale = 0.5f;
-		cube_scale[0] = scale;
-		cube_scale[1] = scale;
-		cube_scale[2] = scale;
+				// Scale Change
+				// For accuracy, calculate the distance between eye and object, but not this linear incrementation.
+				cubes[0]->scale[0] = vfp32_fadd( cubes[0]->scale[0], 0.005f );
+				if( vfp32_fge( cubes[0]->scale[0], 1.5f ) ) cubes[0]->scale[0] = 0.5f;
+				cubes[0]->scale[1] = vfp32_fadd( cubes[0]->scale[1], 0.005f );
+				if( vfp32_fge( cubes[0]->scale[1], 1.5f ) ) cubes[0]->scale[1] = 0.5f;
+				cubes[0]->scale[2] = vfp32_fadd( cubes[0]->scale[2], 0.005f );
+				if( vfp32_fge( cubes[0]->scale[2], 1.5f ) ) cubes[0]->scale[2] = 0.5f;
 
-		time = _stopwatch_end();
-num_string = cvt32_int32_to_string_deci( time, 0, 0 );
+uint32 time = _stopwatch_end();
+String num_string = cvt32_int32_to_string_deci( time, 0, 0 );
 print32_string( num_string, 0, 0, str32_strlen( num_string ) );
 print32_debug( mat_versor, 0, 50 );
 //print32_debug_hexa( FB32_FRAMEBUFFER->addr + ((800 * 324) + 400)*4, 0, 64, 256 );
-		heap32_mfree( (obj)num_string );
-		_sleep( 100000 );
+heap32_mfree( (obj)num_string );
+
+				count_update = 0;
+			}
+			OS_FIQ_ONEFRAME = False;
+		}
+		arm32_dsb();
 	}
 
 	heap32_mfree( mat_identity4 );
@@ -280,6 +325,8 @@ print32_debug( mat_versor, 0, 50 );
 	heap32_mfree( (obj)overspillmemory );
 	_fragmentshader_free( fragmentshader );
 	heap32_mfree( (obj)fragmentshader );
+	heap32_mfree( (obj)cubes[0] );
+	heap32_mfree( (obj)cubes );
 	_texture2d_free( texture2d_0 );
 	heap32_mfree( (obj)texture2d_0 );
 	_texture2d_free( texture2d_background );

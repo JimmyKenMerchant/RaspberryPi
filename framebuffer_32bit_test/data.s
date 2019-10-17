@@ -26,4 +26,4 @@ _DATA_COLOR32_SAMPLE_IMAGE1:
 .incbin "../framebuffer_32bit_test/data/moonsymbol_abgr.bin"      @ Little Endian, ABGR Style
 _DATA_COLOR32_SAMPLE_IMAGE1_END:
 
-.section	.library_system32
+.section	.os_vector32

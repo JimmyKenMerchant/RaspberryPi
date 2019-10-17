@@ -73,4 +73,4 @@ _DATA_COLOR32_SAMPLE_BACKGROUND:
 .incbin "data/background_abgr.bin"      @ Little Endian, ABGR Style, 256 * 256 * 4 Bytes
 _DATA_COLOR32_SAMPLE_BACKGROUND_END:
 
-.section	.library_system32
+.section	.os_vector32

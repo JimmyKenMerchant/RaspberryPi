@@ -39,13 +39,12 @@ os_reset:
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
-	/**
-	 * Get a 10hz Timer Interrupt (120000/12000)
-	 */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x2E00                                  @ 0x2E00 High 1 Byte of decimal 11999 (12000 - 1), 16 bits counter on default
-	add r1, r1, #0xDF                                @ 0xDF Low 1 Byte of decimal 11999, 16 bits counter on default
-	mov r2, #0x7C                                    @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
+	/* Get a 240hz Timer Interrupt (480000/2000) */
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
+	mov r1, #0x700                            @ High 1 Byte of decimal 1999 (2000 - 1), 16 bits counter on default
+	orr r1, r1, #0x0CF                        @ Low 1 Byte of decimal 1999, 16 bits counter on default
+	mov r2, #0x1F0                            @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
+	orr r2, r2, #0x003                        @ Decimal 499 to divide 240Mz by 500 to 480Khz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
 	/* Obtain Framebuffer from VideoCore IV */
@@ -333,14 +332,22 @@ os_fiq:
 	mov r1, #0
 	str r1, [r0, #equ32_armtimer_clear]       @ any write to clear/ acknowledge
 
+	/* Acknowledge One Frame */
+	mov r0, #1
+	ldr r1, OS_FIQ_ONEFRAME_ADDR
+	strb r0, [r1]
+
 	macro32_dsb ip
 
+/*.ifdef __DEBUG*/
 .ifndef __RASPI3B
 	/* ACT Blinker, GPIO 47 Is Preset as OUT */
 	mov r0, #47
 	mov r1, #2
 	bl gpio32_gpiotoggle
+	macro32_dsb ip
 .endif
+/*.endif*/
 
 	pop {r0-r7,pc}
 
@@ -355,15 +362,25 @@ handle_output:  .word 0x00
 addr_output:    .word 0x00
 handle_code:    .word 0x00
 addr_code:      .word 0x00
-_string_hello:
-	.ascii "\nMAHALO! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
-.balign 4
 string_hello:
 	.word _string_hello
+OS_FIQ_ONEFRAME_ADDR:  .word OS_FIQ_ONEFRAME
 
 .include "addr32.s" @ If you want binary, use `.incbin`
 .balign 4
 
 .include "data.s" @ If you want binary, use `.incbin`
 .balign 4
+
+.section	.data
+_string_hello:
+	.ascii "\nALOHA! WE ARE OHANA!\n\0" @ Add Null Escape Character on The End
+.balign 4
+.globl OS_FIQ_ONEFRAME
+OS_FIQ_ONEFRAME:       .byte 0x00
+.balign 4
+
+/* Additional Libraries Here */
+.section	.text
+
 /* End of Line is Needed */
