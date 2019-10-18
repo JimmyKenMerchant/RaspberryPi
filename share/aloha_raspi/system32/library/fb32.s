@@ -928,7 +928,7 @@ fb32_flush_doublebuffer:
 	mov r1, #0<<equ32_dma_ti_permap                         @ DREQ Map for No DREQ
 	bic r1, r1, #equ32_dma_ti_no_wide_bursts
 	orr r1, r1, #0<<equ32_dma_ti_waits
-	orr r1, r1, #0<<equ32_dma_ti_burst_length
+	orr r1, r1, #4<<equ32_dma_ti_burst_length
 	orr r1, r1, #equ32_dma_ti_src_inc                       @ Transfer Information Source
 	orr r1, r1, #equ32_dma_ti_dst_inc                       @ Transfer Information Destination
 	orr r1, r1, #equ32_dma_ti_wait_resp
