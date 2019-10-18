@@ -475,7 +475,15 @@ sudo pacman -S arm-none-eabi-gcc
 
 **Duration of Booting**
 
-* The duration of Booting mainly depends on the execution of `heap32_clear_heap` in share/aloha_raspi/vector32/el3_armv6.s or share/aloha_raspi/vector32/el3_armv7.s. The size of the heap area is defined as SYSTEM32_HEAP and SYSTEM32_HEAP_NONCACHE in share/aloha_raspi/system32/system32.s. I recognize the duration of RasPiZero is faster than RasPi2B and RasPi3B. To dangle the duration, you may need display an image before executing `heap32_clear_heap` which enables to allocate dynamic memory spaces.
+* The duration of Booting mainly depends on the execution of `heap32_clear_heap` in share/aloha_raspi/vector32/el3_armv6.s or share/aloha_raspi/vector32/el3_armv7.s, and cache operations. The size of the heap area is defined as SYSTEM32_HEAP and SYSTEM32_HEAP_NONCACHE in share/aloha_raspi/system32/system32.s. I recognize the duration of RasPiZero is faster than RasPi2B and RasPi3B. To dangle the duration, you may need display an image before executing `heap32_clear_heap` which enables to allocate dynamic memory spaces. Cache operations need the time to be completed. In my system, ARMv7 and later have more cache operations than ARMv6 because of operating L1 cache and L2 cache.
+
+**List of Functions Considered of Multi-core Handling**
+
+* `arm32_stopwatch_start` and `arm32_stopwatch_end`: Storing Each Value per Core
+
+* `dma32_datacopy`: Used ldrex and strex, which need several conditions to be utilized, e.g., cached, shareable, etc.
+
+* Caution: So far, I haven't tested these functions in the multi-core environment yet.
 
 ## Licenses
 
