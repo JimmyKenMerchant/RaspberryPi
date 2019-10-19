@@ -481,13 +481,7 @@ sudo pacman -S arm-none-eabi-gcc
 
 * `arm32_stopwatch_start` and `arm32_stopwatch_end`: Storing Each Value per Core
 
-* `dma32_datacopy`: Used ldrex and strex (for a semaphore), which need several conditions to be utilized, e.g., shareable, etc.
-
-* `heap32_malloc`: Used ldrex and strex (for a mutex), which need several conditions to be utilized, e.g., shareable, etc.
-
-* `heap32_malloc_noncache`: Used ldrex and strex (for a mutex), which need several conditions to be utilized, e.g., shareable, etc.
-
-* Caution: So far, I haven't tested these functions in the multi-core environment yet.
+* Caution: In the commit #21fd8ab (October 19, 2019), I tested exclusive accesses using ldrex and strex at Multicore Test. In the test, I found that strex returned 0 (success of an exclusive access) even if other cores accessed at the same time, i.e., exclusive accesses failed. I think, so far, it seems that the abilities to make an exclusive access of ldrex and strex depend on a vendor-implemented memory management unit (MMU). I also referred to [David Welch's Test for MMU](https://github.com/dwelch67/raspberrypi/tree/master/extest). Therefore, I removed all semaphores and mutexes in `dma32_datacopy`, `heap32_malloc`, and `heap32_malloc_noncache` implemented these exclusive accesses until the commit.
 
 ## Licenses
 

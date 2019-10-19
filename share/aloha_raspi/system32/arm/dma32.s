@@ -20,8 +20,6 @@
  * function dma32_datacopy
  * Copy Data Using DMA
  * The DMA channel is enabled, once this function is executed.
- * Note: This function use ldrex and strex for multi-core handling.
- *       To utilize ldrex and strex, targeted memory space configured as normal (non-strongly ordered) and shareable by MMU.
  *
  * Parameters
  * r0: Pointer of Destination in Bus Address
@@ -37,46 +35,17 @@ dma32_datacopy:
 	addr_dst       .req r0
 	addr_src       .req r1
 	size           .req r2
-	semaphore      .req r3
-	channel        .req r4
-	number_cb      .req r5
-	number_core    .req r6
-	temp           .req r7
-	addr_semaphore .req r8
+	channel        .req r3
+	number_cb      .req r4
+	temp           .req r5
 
-	push {r4-r8,lr}
-
-	dma32_datacopy_checksemaphore:
-		/**
-		 * Decrement of Semaphore Value
-		 * From ARMv6, ldrex and strex are added for multi-core handling.
-		 */
-		ldr addr_semaphore, dma32_datacopy_semaphore_addr
-		ldrex semaphore, [addr_semaphore]              @ Set Exclusive Flag
-		cmp semaphore, #0
-		beq dma32_datacopy_checksemaphore
-		sub semaphore, semaphore, #1
-		/**
-		 * Clear exclusive flag and store if allowed.
-		 * If the flag has already cleared by any other core, storing is not allowed.
-		 */
-		strex ip, semaphore, [addr_semaphore]
-		cmp ip, #0                                     @ Check Success on Storing
-		bne dma32_datacopy_checksemaphore
-		macro32_dmb ip
-
-	cmp semaphore, #equ32_dma32_cb_dma32_size
-	bhs dma32_datacopy_error
-	cmp semaphore, #equ32_dma32_channel_dma32_size
-	bhs dma32_datacopy_error
+	push {r4-r5,lr}
 
 	mov channel, #equ32_dma32_channel_dma32
-	add channel, channel, semaphore
 	cmp channel, #14
 	bhi dma32_datacopy_error
 
 	mov number_cb, #equ32_dma32_cb_dma32
-	add number_cb, number_cb, semaphore
 	cmp number_cb, #equ32_dma32_cb_max
 	bhs dma32_datacopy_error
 
@@ -125,31 +94,15 @@ dma32_datacopy:
 		mov r0, #0
 
 	dma32_datacopy_common:
-		/* Increment of Semaphore Value */
-		ldr addr_semaphore, dma32_datacopy_semaphore_addr
-		ldrex semaphore, [addr_semaphore]              @ Set Exclusive Flag
-		add semaphore, semaphore, #1
-		strex temp, semaphore, [addr_semaphore]
 		macro32_dsb ip
-		cmp temp, #0                                   @ Check Success on Storing
-		bne dma32_datacopy_common
-		pop {r4-r8,pc}
+		pop {r4-r5,pc}
 
 .unreq addr_dst
 .unreq addr_src
 .unreq size
-.unreq semaphore
 .unreq channel
 .unreq number_cb
-.unreq number_core
 .unreq temp
-.unreq addr_semaphore
-
-/* Two Channels Avaialble (4 and 5 in Default) */
-dma32_datacopy_semaphore_addr: .word dma32_datacopy_semaphore
-.section .data                                  @ Prevent Data Abort
-dma32_datacopy_semaphore:      .word 2
-.section .arm_system32
 
 
 /**
