@@ -351,8 +351,7 @@ heap32_malloc:
 .unreq check_size
 
 heap32_malloc_mutex_addr: .word heap32_malloc_mutex
-/* Prevent Mutex to Enter Instruction Cache */
-.section .data
+.section .data                                  @ Prevent Data Abort
 heap32_malloc_mutex:      .word 1
 .section .arm_system32
 
@@ -461,8 +460,7 @@ heap32_malloc_noncache:
 .unreq check_size
 
 heap32_malloc_noncache_mutex_addr: .word heap32_malloc_noncache_mutex
-/* Prevent Mutex to Enter Instruction Cache */
-.section .data
+.section .data                                  @ Prevent Data Abort
 heap32_malloc_noncache_mutex:      .word 1
 .section .arm_system32
 

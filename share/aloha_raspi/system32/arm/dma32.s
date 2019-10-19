@@ -147,8 +147,7 @@ dma32_datacopy:
 
 /* Two Channels Avaialble (4 and 5 in Default) */
 dma32_datacopy_semaphore_addr: .word dma32_datacopy_semaphore
-/* Prevent Semaphore to Enter Instruction Cache */
-.section .data
+.section .data                                  @ Prevent Data Abort
 dma32_datacopy_semaphore:      .word 2
 .section .arm_system32
 

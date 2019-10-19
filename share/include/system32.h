@@ -2974,6 +2974,8 @@ extern uint32 heap32_mpop
 
 extern obj heap32_malloc( uint32 block_size );
 
+extern obj heap32_malloc_noncache( uint32 block_size );
+
 extern uint32 heap32_mfree( obj heap );
 
 extern int32 heap32_mcount( obj heap );
