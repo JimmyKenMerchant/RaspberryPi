@@ -128,7 +128,6 @@ dma32_datacopy:
 		/* Increment of Semaphore Value */
 		ldr addr_semaphore, dma32_datacopy_semaphore_addr
 		ldrex semaphore, [addr_semaphore]              @ Set Exclusive Flag
-		macro32_dsb ip
 		add semaphore, semaphore, #1
 		strex temp, semaphore, [addr_semaphore]
 		macro32_dsb ip
@@ -148,7 +147,10 @@ dma32_datacopy:
 
 /* Two Channels Avaialble (4 and 5 in Default) */
 dma32_datacopy_semaphore_addr: .word dma32_datacopy_semaphore
+/* Prevent Semaphore to Enter Instruction Cache */
+.section .data
 dma32_datacopy_semaphore:      .word 2
+.section .arm_system32
 
 
 /**

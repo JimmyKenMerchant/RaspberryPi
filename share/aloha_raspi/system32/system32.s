@@ -92,9 +92,9 @@ SYSTEM32_BUFFER_SIZE: .word SYSTEM32_BUFFER_END - SYSTEM32_BUFFER
 .section	.library_system32
 
 .balign 4
-.include "system32/library/fb32.s"            @ Having Section .data
+.include "system32/library/fb32.s"
 .balign 4
-.include "system32/library/print32.s"         @ Having Section .data
+.include "system32/library/print32.s"
 .balign 4
 .include "system32/library/str32.s"
 .balign 4

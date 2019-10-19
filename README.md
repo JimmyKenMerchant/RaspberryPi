@@ -481,7 +481,11 @@ sudo pacman -S arm-none-eabi-gcc
 
 * `arm32_stopwatch_start` and `arm32_stopwatch_end`: Storing Each Value per Core
 
-* `dma32_datacopy`: Used ldrex and strex, which need several conditions to be utilized, e.g., cached, shareable, etc.
+* `dma32_datacopy`: Used ldrex and strex (for a semaphore), which need several conditions to be utilized, e.g., shareable, etc.
+
+* `heap32_malloc`: Used ldrex and strex (for a mutex), which need several conditions to be utilized, e.g., shareable, etc.
+
+* `heap32_malloc_noncache`: Used ldrex and strex (for a mutex), which need several conditions to be utilized, e.g., shareable, etc.
 
 * Caution: So far, I haven't tested these functions in the multi-core environment yet.
 

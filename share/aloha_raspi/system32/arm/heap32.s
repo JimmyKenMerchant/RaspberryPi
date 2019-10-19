@@ -253,6 +253,8 @@ heap32_clear_heap:
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
  * Argument, Size Means Number of Words Allocated
  * Caution! There are differences between the standard function in C language and this function.
+ * Note: This function use ldrex and strex for multi-core handling.
+ *       To utilize ldrex and strex, targeted memory space configured as normal (non-strongly ordered) and shareable by MMU.
  *
  * Parameters
  * r0: Number of Words, 1 Word means 4 Bytes
@@ -271,14 +273,24 @@ heap32_malloc:
 
 	push {r4-r5}
 
-	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+	heap32_malloc_mutexlock:
+		ldr heap_start, heap32_malloc_mutex_addr
+		ldrex heap_size, [heap_start]
+		cmp heap_size, #0
+		beq heap32_malloc_mutexlock
+		mov heap_size, #0
+		strex ip, heap_size, [heap_start]
+		cmp ip, #0
+		bne heap32_malloc_mutexlock
 
-	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
+		macro32_dsb ip                        @ Ensure Completion of Instructions Before
 
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_MALLOC_SIZE           @ In Bytes
+		lsl size, size, #2                    @ Substitution of Multiplication by 4, Words to Bytes
 
-	add heap_size, heap_start, heap_size
+		ldr heap_start, HEAP32_ADDR
+		ldr heap_size, HEAP32_MALLOC_SIZE     @ In Bytes
+
+		add heap_size, heap_start, heap_size
 
 	heap32_malloc_loop:
 		cmp heap_start, heap_size
@@ -324,6 +336,9 @@ heap32_malloc:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	heap32_malloc_common:
+		mov heap_size, #1
+		ldr heap_start, heap32_malloc_mutex_addr
+		str heap_size, [heap_start]
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4-r5}
 		mov pc, lr
@@ -335,6 +350,12 @@ heap32_malloc:
 .unreq check_start
 .unreq check_size
 
+heap32_malloc_mutex_addr: .word heap32_malloc_mutex
+/* Prevent Mutex to Enter Instruction Cache */
+.section .data
+heap32_malloc_mutex:      .word 1
+.section .arm_system32
+
 
 /**
  * function heap32_malloc_noncache
@@ -342,6 +363,8 @@ heap32_malloc:
  * Allocated Memory Size is Stored from the Address where Start Address of Memory Minus 4 Bytes
  * Argument, Size Means Number of Words Allocated
  * Caution! There are differences between the standard function in C language and this function.
+ * Note: This function use ldrex and strex for multi-core handling.
+ *       To utilize ldrex and strex, targeted memory space configured as normal (non-strongly ordered) and shareable by MMU.
  *
  * Parameters
  * r0: Number of Words, 1 Word means 4 Bytes
@@ -360,14 +383,24 @@ heap32_malloc_noncache:
 
 	push {r4-r5}
 
-	macro32_dsb ip                              @ Ensure Completion of Instructions Before
+	heap32_malloc_noncache_mutexlock:
+		ldr heap_start, heap32_malloc_noncache_mutex_addr
+		ldrex heap_size, [heap_start]
+		cmp heap_size, #0
+		beq heap32_malloc_noncache_mutexlock
+		mov heap_size, #0
+		strex ip, heap_size, [heap_start]
+		cmp ip, #0
+		bne heap32_malloc_noncache_mutexlock
 
-	lsl size, size, #2                          @ Substitution of Multiplication by 4, Words to Bytes
+		macro32_dsb ip                                 @ Ensure Completion of Instructions Before
 
-	ldr heap_start, HEAP32_NONCACHE_ADDR
-	ldr heap_size, HEAP32_NONCACHE_SIZE           @ In Bytes
+		lsl size, size, #2                             @ Substitution of Multiplication by 4, Words to Bytes
 
-	add heap_size, heap_start, heap_size
+		ldr heap_start, HEAP32_NONCACHE_ADDR
+		ldr heap_size, HEAP32_NONCACHE_SIZE            @ In Bytes
+
+		add heap_size, heap_start, heap_size
 
 	heap32_malloc_noncache_loop:
 		cmp heap_start, heap_size
@@ -413,6 +446,9 @@ heap32_malloc_noncache:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	heap32_malloc_noncache_common:
+		mov heap_size, #1
+		ldr heap_start, heap32_malloc_noncache_mutex_addr
+		str heap_size, [heap_start]
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4-r5}
 		mov pc, lr
@@ -423,6 +459,12 @@ heap32_malloc_noncache:
 .unreq heap_bytes
 .unreq check_start
 .unreq check_size
+
+heap32_malloc_noncache_mutex_addr: .word heap32_malloc_noncache_mutex
+/* Prevent Mutex to Enter Instruction Cache */
+.section .data
+heap32_malloc_noncache_mutex:      .word 1
+.section .arm_system32
 
 
 /**
