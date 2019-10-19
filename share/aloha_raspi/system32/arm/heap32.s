@@ -273,6 +273,8 @@ heap32_malloc:
 
 	push {r4-r5}
 
+/* Lock Mutex Only in ARMv7/AArch32 */
+.ifndef __ARMV6
 	heap32_malloc_mutexlock:
 		ldr heap_start, heap32_malloc_mutex_addr
 		ldrex heap_size, [heap_start]
@@ -282,6 +284,7 @@ heap32_malloc:
 		strex ip, heap_size, [heap_start]
 		cmp ip, #0
 		bne heap32_malloc_mutexlock
+.endif
 
 		macro32_dsb ip                        @ Ensure Completion of Instructions Before
 
@@ -336,9 +339,12 @@ heap32_malloc:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	heap32_malloc_common:
+/* UnLock Mutex Only in ARMv7/AArch32 */
+.ifndef __ARMV6
 		mov heap_size, #1
 		ldr heap_start, heap32_malloc_mutex_addr
 		str heap_size, [heap_start]
+.endif
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4-r5}
 		mov pc, lr
@@ -350,10 +356,12 @@ heap32_malloc:
 .unreq check_start
 .unreq check_size
 
+.ifndef __ARMV6
 heap32_malloc_mutex_addr: .word heap32_malloc_mutex
 .section .data                                  @ Prevent Data Abort
 heap32_malloc_mutex:      .word 1
 .section .arm_system32
+.endif
 
 
 /**
@@ -382,6 +390,8 @@ heap32_malloc_noncache:
 
 	push {r4-r5}
 
+/* Lock Mutex Only in ARMv7/AArch32 */
+.ifndef __ARMV6
 	heap32_malloc_noncache_mutexlock:
 		ldr heap_start, heap32_malloc_noncache_mutex_addr
 		ldrex heap_size, [heap_start]
@@ -391,6 +401,7 @@ heap32_malloc_noncache:
 		strex ip, heap_size, [heap_start]
 		cmp ip, #0
 		bne heap32_malloc_noncache_mutexlock
+.endif
 
 		macro32_dsb ip                                 @ Ensure Completion of Instructions Before
 
@@ -445,9 +456,12 @@ heap32_malloc_noncache:
 		add r0, r0, #4                          @ Slide for Start Address of Memory
 
 	heap32_malloc_noncache_common:
+/* UnLock Mutex Only in ARMv7/AArch32 */
+.ifndef __ARMV6
 		mov heap_size, #1
 		ldr heap_start, heap32_malloc_noncache_mutex_addr
 		str heap_size, [heap_start]
+.endif
 		macro32_dsb ip                          @ Ensure Completion of Instructions Before
 		pop {r4-r5}
 		mov pc, lr
@@ -459,10 +473,12 @@ heap32_malloc_noncache:
 .unreq check_start
 .unreq check_size
 
+.ifndef __ARMV6
 heap32_malloc_noncache_mutex_addr: .word heap32_malloc_noncache_mutex
 .section .data                                  @ Prevent Data Abort
 heap32_malloc_noncache_mutex:      .word 1
 .section .arm_system32
+.endif
 
 
 /**
