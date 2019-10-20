@@ -8,10 +8,147 @@
  */
 
 HEAP32_ADDR:          .word SYSTEM32_HEAP
-HEAP32_SIZE:          .word SYSTEM32_HEAP_END - SYSTEM32_HEAP                   @ Size of All
 HEAP32_MALLOC_SIZE:   .word SYSTEM32_HEAP_NONCACHE - SYSTEM32_HEAP
 HEAP32_NONCACHE_ADDR: .word SYSTEM32_HEAP_NONCACHE
 HEAP32_NONCACHE_SIZE: .word SYSTEM32_HEAP_NONCACHE_END - SYSTEM32_HEAP_NONCACHE
+HEAP32_SIZE:          .word SYSTEM32_HEAP_END - SYSTEM32_HEAP                   @ Size of All
+
+/* Memory Partition for heap32_malloc and heap32_malloc_noncache */
+HEAP32_MPARTITION_ADDR:           .word HEAP32_MPARTITION0
+HEAP32_MPARTITION0:               .word SYSTEM32_HEAP
+HEAP32_MPARTITION0_SIZE:          .word SYSTEM32_HEAP_NONCACHE - SYSTEM32_HEAP
+HEAP32_MPARTITION1:               .word 0x00
+HEAP32_MPARTITION1_SIZE:          .word 0x00
+HEAP32_MPARTITION2:               .word 0x00
+HEAP32_MPARTITION2_SIZE:          .word 0x00
+HEAP32_MPARTITION3:               .word 0x00
+HEAP32_MPARTITION3_SIZE:          .word 0x00
+HEAP32_NONCACHE_MPARTITION0:      .word SYSTEM32_HEAP_NONCACHE
+HEAP32_NONCACHE_MPARTITION0_SIZE: .word SYSTEM32_HEAP_NONCACHE_END - SYSTEM32_HEAP_NONCACHE
+HEAP32_NONCACHE_MPARTITION1:      .word 0x00
+HEAP32_NONCACHE_MPARTITION1_SIZE: .word 0x00
+HEAP32_NONCACHE_MPARTITION2:      .word 0x00
+HEAP32_NONCACHE_MPARTITION2_SIZE: .word 0x00
+HEAP32_NONCACHE_MPARTITION3:      .word 0x00
+HEAP32_NONCACHE_MPARTITION3_SIZE: .word 0x00
+
+
+/**
+ * function heap32_mpartition
+ * Set Memory Partition for heap32_malloc
+ *
+ * Parameters
+ * r0: Memory Size (Bytes) for First Partition, 4 Bytes Align
+ * r1: Memory Size (Bytes) for Second Partition, 4 Bytes Align
+ * r2: Memory Size (Bytes) for Third Partition, 4 Bytes Align
+ * r3: Memory Size (Bytes) for Fourth Partition, 4 Bytes Align
+ *
+ * Return: r0 (0 as success)
+ */
+.globl heap32_mpartition
+heap32_mpartition:
+	/* Auto (Local) Variables, but just Aliases */
+	mpartition0_size .req r0
+	mpartition1_size .req r1
+	mpartition2_size .req r2
+	mpartition3_size .req r3
+	heap_start       .req r4
+	heap_size        .req r5
+	mpartition_addr  .req r6
+
+	push {r4-r6,lr}
+
+	ldr mpartition_addr, HEAP32_MPARTITION_ADDR
+	ldr heap_start, HEAP32_ADDR
+	ldr heap_size, HEAP32_MALLOC_SIZE
+
+	heap32_mpartition_partition:
+		bic mpartition0_size, mpartition0_size, #0b11
+		bic mpartition1_size, mpartition1_size, #0b11
+		bic mpartition2_size, mpartition2_size, #0b11
+		bic mpartition3_size, mpartition3_size, #0b11
+
+		subs heap_size, heap_size, mpartition0_size
+		blt heap32_mpartition_success
+		add heap_start, heap_start, mpartition0_size
+		str mpartition0_size, [mpartition_addr, #4]
+
+		subs heap_size, heap_size, mpartition1_size
+		blt heap32_mpartition_success
+		str heap_start, [mpartition_addr, #8]
+		add heap_start, heap_start, mpartition1_size
+		str mpartition1_size, [mpartition_addr, #12]
+
+		subs heap_size, heap_size, mpartition2_size
+		blt heap32_mpartition_success
+		str heap_start, [mpartition_addr, #16]
+		add heap_start, heap_start, mpartition2_size
+		str mpartition2_size, [mpartition_addr, #20]
+
+		subs heap_size, heap_size, mpartition3_size
+		blt heap32_mpartition_success
+		str heap_start, [mpartition_addr, #24]
+		str mpartition3_size, [mpartition_addr, #28]
+
+	heap32_mpartition_success:
+		mov r0, #0
+
+	heap32_mpartition_common:
+		macro32_dsb ip                            @ Ensure Completion of Instructions Before
+		pop {r4-r6,pc}
+
+.unreq mpartition0_size
+.unreq mpartition1_size
+.unreq mpartition2_size
+.unreq mpartition3_size
+.unreq heap_start
+.unreq heap_size
+.unreq mpartition_addr
+
+
+/**
+ * function heap32_mpartition_noncache
+ * Set Memory Partition for heap32_malloc_noncache
+ *
+ * Parameters
+ * r0: Memory Size (Bytes) for First Partition, 4 Bytes Align
+ * r1: Memory Size (Bytes) for Second Partition, 4 Bytes Align
+ * r2: Memory Size (Bytes) for Third Partition, 4 Bytes Align
+ * r3: Memory Size (Bytes) for Fourth Partition, 4 Bytes Align
+ *
+ * Return: r0 (0 as success)
+ */
+.globl heap32_mpartition_noncache
+heap32_mpartition_noncache:
+	/* Auto (Local) Variables, but just Aliases */
+	mpartition0_size .req r0
+	mpartition1_size .req r1
+	mpartition2_size .req r2
+	mpartition3_size .req r3
+	heap_start       .req r4
+	heap_size        .req r5
+	mpartition_addr  .req r6
+
+	push {r4-r6,lr}
+
+	ldr mpartition_addr, HEAP32_MPARTITION_ADDR
+	/* Offset for Noncache Partition */
+	add mpartition_addr, mpartition_addr, #32
+	ldr heap_start, HEAP32_NONCACHE_ADDR
+	ldr heap_size, HEAP32_NONCACHE_SIZE
+
+	/**
+	 * Hook to Process of heap32_mpartition
+	 */
+	b heap32_mpartition_partition
+
+.unreq mpartition0_size
+.unreq mpartition1_size
+.unreq mpartition2_size
+.unreq mpartition3_size
+.unreq heap_start
+.unreq heap_size
+.unreq mpartition_addr
 
 
 /**
@@ -262,23 +399,47 @@ heap32_clear_heap:
 .globl heap32_malloc
 heap32_malloc:
 	/* Auto (Local) Variables, but just Aliases */
-	size           .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
-	heap_start     .req r1
-	heap_size      .req r2
-	heap_bytes     .req r3
-	check_start    .req r4
-	check_size     .req r5
+	size            .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
+	heap_start      .req r1
+	heap_size       .req r2
+	heap_bytes      .req r3
+	mpartition_addr .req r4
+	number_core     .req r5
 
 	push {r4-r5}
 
 	macro32_dsb ip                        @ Ensure Completion of Instructions Before
 
-	lsl size, size, #2                    @ Substitution of Multiplication by 4, Words to Bytes
+	lsl size, size, #2                    @ Multiply by 4, Words to Bytes
 
-	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_MALLOC_SIZE     @ In Bytes
+	ldr mpartition_addr, HEAP32_MPARTITION_ADDR
 
+	heap32_malloc_multicore:
+/* Consider of Multi-core on ARMv7/AArch32 */
+.ifndef __ARMV6
+		mrs ip, cpsr
+		tst ip, #0xF                          @ Check User Mode (EL0) or Not
+
+		/* If User Mode (EL0) */
+		moveq number_core, #equ32_bcm32_core_os
+		beq heap32_malloc_multicore_common
+
+		/* If Other than User Mode (EL0) */
+		macro32_multicore_id number_core
+
+		heap32_malloc_multicore_common:
+			lsl number_core, number_core, #3      @ Multiply by 8
+			add mpartition_addr, mpartition_addr, number_core
+.endif
+
+	ldr heap_start, [mpartition_addr]
+	ldr heap_size, [mpartition_addr, #4]  @ In Bytes
 	add heap_size, heap_start, heap_size
+
+	.unreq mpartition_addr
+	.unreq number_core
+	check_start .req r4
+	check_size  .req r5
 
 	heap32_malloc_loop:
 		cmp heap_start, heap_size
@@ -351,71 +512,32 @@ heap32_malloc:
 .globl heap32_malloc_noncache
 heap32_malloc_noncache:
 	/* Auto (Local) Variables, but just Aliases */
-	size           .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
-	heap_start     .req r1
-	heap_size      .req r2
-	heap_bytes     .req r3
-	check_start    .req r4
-	check_size     .req r5
+	size            .req r0 @ Parameter, Register for Argument and Result, Scratch Register, Block (4 Bytes) Size
+	heap_start      .req r1
+	heap_size       .req r2
+	heap_bytes      .req r3
+	mpartition_addr .req r4
+	number_core     .req r5
 
 	push {r4-r5}
 
-	macro32_dsb ip                                 @ Ensure Completion of Instructions Before
+	macro32_dsb ip                        @ Ensure Completion of Instructions Before
 
-	lsl size, size, #2                             @ Substitution of Multiplication by 4, Words to Bytes
+	lsl size, size, #2                    @ Multiply by 4, Words to Bytes
 
-	ldr heap_start, HEAP32_NONCACHE_ADDR
-	ldr heap_size, HEAP32_NONCACHE_SIZE            @ In Bytes
+	ldr mpartition_addr, HEAP32_MPARTITION_ADDR
+	/* Offset for Noncache Partition */
+	add mpartition_addr, mpartition_addr, #32
 
-	add heap_size, heap_start, heap_size
+	.unreq mpartition_addr
+	.unreq number_core
+	check_start .req r4
+	check_size  .req r5
 
-	heap32_malloc_noncache_loop:
-		cmp heap_start, heap_size
-		bhs heap32_malloc_noncache_error               @ If Heap Space Overflow
-
-		ldr heap_bytes, [heap_start]
-		cmp heap_bytes, #0
-		beq heap32_malloc_noncache_loop_sizecheck      @ If Bytes are Zero
-
-		add heap_start, heap_start, heap_bytes
-		b heap32_malloc_noncache_loop                  @ If Bytes are not Zero
-
-		/* Whether Check Size is Enough or Not */
-
-		heap32_malloc_noncache_loop_sizecheck:
-			mov check_start, heap_start
-			add check_size, check_start, size
-
-			heap32_malloc_noncache_loop_sizecheck_loop:
-				cmp check_start, heap_size
-				bhs heap32_malloc_noncache_error               @ If Heap Space Overflow
-
-				cmp check_start, check_size
-				bhi heap32_malloc_noncache_success             @ Inclusive Loop Because Memory Needs Its Required Size Plus 4 Bytes
-
-				ldr heap_bytes, [check_start]
-
-				cmp heap_bytes, #0
-				addeq check_start, check_start, #4
-				beq heap32_malloc_noncache_loop_sizecheck_loop @ If Bytes are Zero
-
-				add heap_start, check_start, heap_bytes
-				b heap32_malloc_noncache_loop                  @ If Bytes are not Zero
-
-	heap32_malloc_noncache_error:
-		mov r0, #0
-		b heap32_malloc_noncache_common
-
-	heap32_malloc_noncache_success:
-		add size, size, #4                      @ Add Space of Size Indicator Itself
-		str size, [heap_start]                  @ Store Size (Bytes) on Start Address of Memory Minus 4 Bytes
-		mov r0, heap_start
-		add r0, r0, #4                          @ Slide for Start Address of Memory
-
-	heap32_malloc_noncache_common:
-		macro32_dsb ip                          @ Ensure Completion of Instructions Before
-		pop {r4-r5}
-		mov pc, lr
+	/**
+	 * Hook to Process of heap32_malloc
+	 */
+	b heap32_malloc_multicore
 
 .unreq size
 .unreq heap_start

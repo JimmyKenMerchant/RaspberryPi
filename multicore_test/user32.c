@@ -76,7 +76,7 @@ print32_debug( answer2, 0, 72 );
 	heap32_mfree( fd_stack );
 
 	/**
-	 * Mutex (Exclusive Access) Test
+	 * Test of heap32_malloc (Dynamic Partition per Core)
 	 */
 
 	ObjArray container_core1 = (ObjArray)heap32_malloc( 0x04 );
@@ -95,18 +95,18 @@ print32_debug( answer2, 0, 72 );
 	uint32 answer_core3;
 
 	while(True) {
-		container_core1[0] = (obj)heap32_malloc;
-		//container_core1[0] = (obj)heap32_malloc_noncache;
+		//container_core1[0] = (obj)heap32_malloc;
+		container_core1[0] = (obj)heap32_malloc_noncache;
 		container_core1[1] = fd_stack_core1;
 		container_core1[2] = 1;
 		container_core1[3] = 256;
-		container_core2[0] = (obj)heap32_malloc;
-		//container_core2[0] = (obj)heap32_malloc_noncache;
+		//container_core2[0] = (obj)heap32_malloc;
+		container_core2[0] = (obj)heap32_malloc_noncache;
 		container_core2[1] = fd_stack_core2;
 		container_core2[2] = 1;
 		container_core2[3] = 1024;
-		container_core3[0] = (obj)heap32_malloc;
-		//container_core3[0] = (obj)heap32_malloc_noncache;
+		//container_core3[0] = (obj)heap32_malloc;
+		container_core3[0] = (obj)heap32_malloc_noncache;
 		container_core3[1] = fd_stack_core3;
 		container_core3[2] = 1;
 		container_core3[3] = 512;

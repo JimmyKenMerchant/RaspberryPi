@@ -80,6 +80,18 @@ os_reset:
 
 	bl bcm32_get_framebuffer
 
+	mov r0, #0x1000000 @ 16M Bytes
+	mov r1, #0x1000000 @ 16M Bytes
+	mov r2, #0x1000000 @ 16M Bytes
+	mov r3, #0x1000000 @ 16M Bytes
+	bl heap32_mpartition
+
+	mov r0, #0x400000 @ 4M Bytes
+	mov r1, #0x400000 @ 4M Bytes
+	mov r2, #0x400000 @ 4M Bytes
+	mov r3, #0x400000 @ 4M Bytes
+	bl heap32_mpartition_noncache
+
 	pop {pc}
 
 os_debug:
