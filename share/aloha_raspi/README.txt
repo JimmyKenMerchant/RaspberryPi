@@ -59,6 +59,12 @@ The option of arm-none-eabi-gcc, -O2 (Optimize even more) seems not to ensure to
 
 **Technical Notes**
 
+* October 21, 2019:
+Test Target (First Priority): Raspberry Pi Zero W V.1.1 (BCM2835)
+Test Target (Second Priority): Raspberry Pi 3 B V.1.2 (BCM2837)
+Test Target (Third Priority): Raspberry Pi Zero V.1.3 (BCM2835)
+Description: In view of easy-obtainable products, openness to details, and readiness for hobbies; I set test targets and these priorities. I'll test RasPis at first and second priorities, and might test one at third priority in HISTORY.md of each project. I think that Zero is almost the same as Zero W. However, the firmware recognizes these as different ones, which causing possible incompatibility between Zero and Zero W. Note that Zero WH is actually Zero W V.1.1. I recognize that 1 B+ and 1 A+ are also popular with developers. In aloha32.mk, I defined CPU, BASE, MEMORY, etc. to check differences among RasPis.
+
 * October 7, 2019:
 LICENCE.broadcom: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/LICENCE.broadcom
 bootcode.bin: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/bootcode.bin
