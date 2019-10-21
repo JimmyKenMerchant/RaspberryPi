@@ -96,10 +96,6 @@ os_reset:
 
 os_debug:
 	push {r0-r8,lr}
-	
-	ldr r0, ADDR32_COLOR32_NAVYBLUE
-	ldr r0, [r0]
-	bl fb32_clear_color
 
 	/* Full Descending Stack */
 	mov r0, #0xFF
@@ -183,15 +179,15 @@ os_debug:
 
 	ldr r1, [r0]
 
-macro32_debug r1 500 500
+macro32_debug r1 0 60
 
 	bl heap32_mfree                           @ Clear Memory Space
 
 	ldr r0, string_hello                      @ Pointer of Array of String
-	macro32_print_string r0, 0, 0, 100
+	macro32_print_string r0, 0, 676, 100
 
 	ldr r0, string_test                       @ Pointer of Array of String
-	macro32_print_string r0, 0, 100, 100
+	macro32_print_string r0, 0, 700, 100
 
 	push {r1-r3}
 	ldrb r0, core0
@@ -203,7 +199,7 @@ macro32_debug r1 500 500
 	add r0, r0, r3
 	pop {r1-r3}
 
-macro32_debug r0 500 512
+macro32_debug r0 0 72
 
 	pop {r0-r8,pc}
 
@@ -246,7 +242,7 @@ os_fiq:
 	mov r0, r2
 	bl cvt32_hexa_to_deci
 
-	macro32_print_number_double r0 r1 80 388 16
+	macro32_print_number_double r0 r1 0 736 16
 
 	ldr r0, timer_sub
 	ldr r1, timer_main
@@ -259,7 +255,7 @@ os_fiq:
 	str r0, timer_sub
 	str r1, timer_main
 
-	macro32_print_number_double r0 r1 80 400 16
+	macro32_print_number_double r0 r1 0 748 16
 
 	pop {r0-r7,pc}
 
