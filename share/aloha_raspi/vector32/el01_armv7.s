@@ -89,12 +89,6 @@ _el01_reset:
 
 .endif
 
-	push {r0-r3}
-	mov r0, #equ32_bcm32_core_os
-	mov r1, #equ32_bcm32_core_os
-	bl bcm32_route_gpuinterrupt
-	pop {r0-r3}
-
 	cmp r0, #equ32_bcm32_core_os              @ If Core Is for OS
 	moveq r1, #0x8000
 	blxeq r1

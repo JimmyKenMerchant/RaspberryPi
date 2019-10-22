@@ -473,19 +473,15 @@ sudo pacman -S arm-none-eabi-gcc
 
 * In my opinion, the chip is good enough to apply with gadgets in this IoT age. However, these command sets are not open-sourced so far. Plus, regulations to RF emittance differ among various countries. E.g., in Japan, because of its narrow land, the regulation are strict. It's not duty of best efforts, but mandatory. This regulation spans to softwares of products. Products which are not permitted to be used in Japan by the regulator can't emit radio frequencies. Other countries may have or become stricter than Japan. I think, to fit with regulations, IoT projects need to have any wireless module which is separately permitted by regulators and opens its command sets.
 
-**Duration of Booting**
-
-* The duration of Booting mainly depends on the execution of `heap32_clear_heap` in share/aloha_raspi/vector32/el3_armv6.s or share/aloha_raspi/vector32/el3_armv7.s, and cache operations. The size of the heap area is defined as SYSTEM32_HEAP and SYSTEM32_HEAP_NONCACHE in share/aloha_raspi/system32/system32.s. I recognize the duration of RasPiZero is faster than RasPi2B and RasPi3B. To dangle the duration, you may need display an image before executing `heap32_clear_heap` which enables to allocate dynamic memory spaces. Cache operations need the time to be completed. In my system, ARMv7 and later have more cache operations than ARMv6 because of operating L1 cache and L2 cache.
-
 **List of Functions Considered of Multi-core Handling**
-
-* `arm32_stopwatch_start` and `arm32_stopwatch_end`: Storing Each Value per Core
 
 * `heap32_malloc`: Dynamic Partition per Core
 
 * `heap32_malloc_noncache`: Dynamic Partition per Core
 
-* Caution: In the commit #21fd8ab (October 19, 2019), I tested exclusive accesses using ldrex and strex at Multicore Test. In the test, I found that strex returned 0 (success of an exclusive access) even if other cores accessed at the same time, i.e., exclusive accesses failed. I think, so far, it seems that the abilities to make an exclusive access of ldrex and strex depend on a vendor-implemented memory management unit (MMU). I also referred to [David Welch's Test for MMU](https://github.com/dwelch67/raspberrypi/tree/master/extest). Therefore, I removed all semaphores and mutexes in `dma32_datacopy`, `heap32_malloc`, and `heap32_malloc_noncache` implemented these exclusive accesses until the commit.
+* In the commit #21fd8ab (October 19, 2019), I tested exclusive accesses using ldrex and strex at Multicore Test. In the test, I found that strex returned 0 (success of an exclusive access) even if other cores accessed at the same time, i.e., exclusive accesses failed. I think, so far, it seems that the abilities to make an exclusive access of ldrex and strex depend on a vendor-implemented memory management unit (MMU). I also referred to [David Welch's Test for MMU](https://github.com/dwelch67/raspberrypi/tree/master/extest). Therefore, I removed all semaphores and mutexes in `dma32_datacopy`, `heap32_malloc`, and `heap32_malloc_noncache` implemented these exclusive accesses until the commit.
+
+* Accessing peripherals by multi-core seems to be restricted. In my experience, only one in cores was able to access peripherals. For example, System Timer gave only a core the correct value. MMU may give a core the privilege to access peripherals.
 
 ## Licenses
 

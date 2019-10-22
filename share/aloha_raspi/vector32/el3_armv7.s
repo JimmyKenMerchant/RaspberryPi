@@ -40,11 +40,6 @@ _el3_monitor:
 	macro32_dsb ip
 .endif
 
-	/* Clear Heap to All Zero */
-	push {r0-r3,lr}
-	bl heap32_clear_heap
-	pop {r0-r3,lr}
-
 	push {r0-r3,lr}
 	mov r0, #equ32_mmu_section|equ32_mmu_section_inner_wb_wa
 	orr r0, r0, #equ32_mmu_section_outer_wb_wa|equ32_mmu_section_access_rw_r

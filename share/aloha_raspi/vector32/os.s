@@ -66,6 +66,20 @@ _os_reset:
 	mov r0, #0x8000
 	mcr p15, 0, r0, c12, c0, 0                @ Change VBAR, IVT Base Vector Address
 
+.ifndef __ARMV6
+	/* Set Core to Route IRQ and FIQ from GPU */
+	push {r0-r3}
+	mov r0, #equ32_bcm32_core_os
+	mov r1, #equ32_bcm32_core_os
+	bl bcm32_route_gpuinterrupt
+	pop {r0-r3}
+.endif
+
+	/* Clear Heap to All Zero */
+	push {r0-r3}
+	bl heap32_clear_heap
+	pop {r0-r3}
+
 	/* Get ARM Memory Informations */
 	push {r0-r3}
 	bl bcm32_get_armmemory

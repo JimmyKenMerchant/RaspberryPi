@@ -355,33 +355,56 @@ heap32_clear_heap:
 	heap_start  .req r0
 	heap_size   .req r1
 	heap_bytes  .req r2
+	cache_start .req r3
+	cache_size  .req r4
+
+	push {r4,lr}
 
 	ldr heap_start, HEAP32_ADDR
-	ldr heap_size, HEAP32_SIZE                @ In Bytes
+	ldr heap_size, HEAP32_SIZE                  @ In Bytes
 
-	macro32_dsb ip                            @ Ensure Completion of Instructions Before
+	macro32_dsb ip                              @ Ensure Completion of Instructions Before
 
+	/* Loop 1 */
 	add heap_size, heap_start, heap_size
-
 	mov heap_bytes, #0
+
+	/* Loop 2 */
+	mov cache_start, heap_start
+	mov cache_size, heap_size
+	bic cache_start, cache_start, #0x1F
+	bic cache_size, cache_size, #0x1F
 
 	heap32_clear_heap_loop1:
 		cmp heap_start, heap_size
-		bhs heap32_clear_heap_common      @ If Heap Space Overflow
+		bhs heap32_clear_heap_loop2         @ If Heap Space Overflow
 
 		str heap_bytes, [heap_start]
 
 		add heap_start, heap_start, #4
-		b heap32_clear_heap_loop1         @ If Bytes are not Zero
+		b heap32_clear_heap_loop1           @ If Bytes are not Zero
+
+	heap32_clear_heap_loop2:
+		cmp cache_start, cache_size
+		bhi heap32_clear_heap_common
+
+		mcr p15, 0, cache_start, c7, c10, 1 @ Clean Data Cache to PoC by MVA
+
+		macro32_dsb ip
+
+		add cache_start, cache_start, #0x20 @ 32 Bytes (4 Words) Align
+		b heap32_clear_heap_loop2           @ If Bytes are not Zero
 
 	heap32_clear_heap_common:
-		macro32_dsb ip                    @ Ensure Completion of Instructions Before
 		mov r0, #0
-		mov pc, lr
+		macro32_dsb ip                      @ Ensure Completion of Instructions Before
+		pop {r4,pc}
 
 .unreq heap_start
 .unreq heap_size
 .unreq heap_bytes
+.unreq cache_start
+.unreq cache_size
 
 
 /**

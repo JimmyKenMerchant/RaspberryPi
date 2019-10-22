@@ -477,15 +477,8 @@ arm32_cache_operation_heap:
 .unreq block_size
 
 
-ARM32_STOPWATCH:       .word ARM32_STOPWATCH_LOW0
-ARM32_STOPWATCH_LOW0:  .word 0x00
-ARM32_STOPWATCH_HIGH0: .word 0x00
-ARM32_STOPWATCH_LOW1:  .word 0x00
-ARM32_STOPWATCH_HIGH1: .word 0x00
-ARM32_STOPWATCH_LOW2:  .word 0x00
-ARM32_STOPWATCH_HIGH2: .word 0x00
-ARM32_STOPWATCH_LOW3:  .word 0x00
-ARM32_STOPWATCH_HIGH3: .word 0x00
+ARM32_STOPWATCH_LOW:  .word 0x00
+ARM32_STOPWATCH_HIGH: .word 0x00
 
 
 /**
@@ -497,8 +490,6 @@ arm32_stopwatch_start:
 	/* Auto (Local) Variables, but just Aliases */
 	count_low      .req r0
 	count_high     .req r1
-	number_core    .req r2
-	addr_base      .req r3
 
 	push {lr}
 
@@ -506,14 +497,8 @@ arm32_stopwatch_start:
 
 	macro32_dsb ip
 
-	macro32_multicore_id number_core
-	lsl number_core, number_core, #3                 @ Multiply by 8
-
-	ldr addr_base, ARM32_STOPWATCH
-	add addr_base, addr_base, number_core
-
-	str count_low, [addr_base]
-	str count_high, [addr_base, #4]
+	str count_low, ARM32_STOPWATCH_LOW
+	str count_high, ARM32_STOPWATCH_HIGH
 
 	arm32_stopwatch_start_common:
 		macro32_dsb ip
@@ -521,8 +506,6 @@ arm32_stopwatch_start:
 
 .unreq count_low
 .unreq count_high
-.unreq number_core
-.unreq addr_base
 
 
 /**
@@ -538,21 +521,13 @@ arm32_stopwatch_end:
 	time_high      .req r1
 	count_low      .req r2
 	count_high     .req r3
-	number_core    .req r4
-	addr_base      .req r5
 
-	push {r4-r5,lr}
+	push {lr}
 
 	bl arm32_timestamp
 
-	macro32_multicore_id number_core
-	lsl number_core, number_core, #3                 @ Multiply by 8
-
-	ldr addr_base, ARM32_STOPWATCH
-	add addr_base, addr_base, number_core
-
-	ldr count_low, [addr_base]                       @ Get Lower 32 Bits
-	ldr count_high, [addr_base, #4]                  @ Get Higher 32 Bits
+	ldr count_low, ARM32_STOPWATCH_LOW               @ Get Lower 32 Bits
+	ldr count_high, ARM32_STOPWATCH_HIGH             @ Get Higher 32 Bits
 
 	macro32_dsb ip
 
@@ -561,14 +536,12 @@ arm32_stopwatch_end:
 	sub time_high, time_high, count_high
 
 	arm32_stopwatch_end_common:
-		pop {r4-r5,pc}
+		pop {pc}
 
 .unreq time_low
 .unreq time_high
 .unreq count_low
 .unreq count_high
-.unreq number_core
-.unreq addr_base
 
 
 /**
