@@ -86,10 +86,10 @@ os_reset:
 	mov r3, #0x1000000 @ 16M Bytes
 	bl heap32_mpartition
 
-	mov r0, #0x400000 @ 4M Bytes
-	mov r1, #0x400000 @ 4M Bytes
-	mov r2, #0x400000 @ 4M Bytes
-	mov r3, #0x400000 @ 4M Bytes
+	mov r0, #0x200000 @ 2M Bytes
+	mov r1, #0x800000 @ 8M Bytes
+	mov r2, #0x600000 @ 6M Bytes
+	mov r3, #0x200000 @ 2M Bytes
 	bl heap32_mpartition_noncache
 
 	pop {pc}

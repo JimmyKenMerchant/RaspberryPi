@@ -11,7 +11,7 @@
 #include "system32.c"
 
 uint32 test1( uint32 var_a, uint32 var_b );
-uint32 test2( uint32 var_a, uint32 var_b, uint32 var_c );
+uint32 test2( uint32 var_a, uint32 var_b, uint32 var_c, uint32 var_d, uint32 var_e, uint32 var_f, uint32 var_g );
 
 float32 array_float1[] = { 1.0f, 2.0f, 3.0f };
 float32 array_float2[] = { 4.0f, 5.0f, 6.0f };
@@ -25,6 +25,7 @@ int32 _user_start() {
 
 	/* Full Descending Stack */
 	obj fd_stack = heap32_malloc( 0xFF );
+print32_debug( fd_stack, 72, 96 );
 	fd_stack = fd_stack + 0xFF * 4;
 
 	/* Make Container 1 */
@@ -35,6 +36,8 @@ int32 _user_start() {
 	container1[3] = 8;
 	container1[4] = 8;
 	arm32_dsb();
+
+print32_debug( (obj)container1, 72, 108 );
 
 	ARM32_CORE_HANDLE_1 = container1;
 	arm32_isb();
@@ -52,13 +55,17 @@ int32 _user_start() {
 print32_debug( answer1, 0, 96 );
 
 	/* Make Container 2 */
-	ObjArray container2 = (ObjArray)heap32_malloc( 0x06 );
+	ObjArray container2 = (ObjArray)heap32_malloc( 0x0A );
 	container2[0] = (obj)test2;
 	container2[1] = fd_stack;
-	container2[2] = 3;
-	container2[3] = 8;
-	container2[4] = 8;
+	container2[2] = 7;
+	container2[3] = 2;
+	container2[4] = 3;
 	container2[5] = 4;
+	container2[6] = 5;
+	container2[7] = 6;
+	container2[8] = 7;
+	container2[9] = 8;
 	arm32_dsb();
 
 	ARM32_CORE_HANDLE_1 = container2;
@@ -97,24 +104,24 @@ print32_debug( answer2, 0, 108 );
 	uint32 answer_core2;
 	uint32 answer_core3;
 
+	uint32 number_turn = 0;
+
 	while(True) {
+
 		/* Allocate Memory */
 
-		//container_core1[0] = (obj)heap32_malloc;
 		container_core1[0] = (obj)heap32_malloc_noncache;
 		container_core1[1] = fd_stack_core1;
 		container_core1[2] = 1;
-		container_core1[3] = 256;
-		//container_core2[0] = (obj)heap32_malloc;
+		container_core1[3] = 4096;
 		container_core2[0] = (obj)heap32_malloc_noncache;
 		container_core2[1] = fd_stack_core2;
 		container_core2[2] = 1;
-		container_core2[3] = 1024;
-		//container_core3[0] = (obj)heap32_malloc;
+		container_core2[3] = 4096;
 		container_core3[0] = (obj)heap32_malloc_noncache;
 		container_core3[1] = fd_stack_core3;
 		container_core3[2] = 1;
-		container_core3[3] = 512;
+		container_core3[3] = 4096;
 		arm32_dsb();
 
 		ARM32_CORE_HANDLE_1 = container_core1;
@@ -290,6 +297,47 @@ print32_debug( answer_core1, 0, 324 );
 print32_debug( answer_core2, 0, 336 );
 print32_debug( answer_core3, 0, 348 );
 
+		/* Timestamp (Access to System Timer) */
+
+		container_core1[0] = (obj)_timestamp;
+		container_core1[1] = fd_stack_core1;
+		container_core1[2] = 0;
+		container_core2[0] = (obj)_timestamp;
+		container_core2[1] = fd_stack_core2;
+		container_core2[2] = 0;
+		container_core3[0] = (obj)_timestamp;
+		container_core3[1] = fd_stack_core3;
+		container_core3[2] = 0;
+		arm32_dsb();
+
+		ARM32_CORE_HANDLE_1 = container_core1;
+		ARM32_CORE_HANDLE_2 = container_core2;
+		ARM32_CORE_HANDLE_3 = container_core3;
+		arm32_isb();
+
+		_set_mail( 1, BCM32_CORES_MAILBOX_CALL, 0xFFFFFFFF );
+		_set_mail( 2, BCM32_CORES_MAILBOX_CALL, 0xFFFFFFFF );
+		_set_mail( 3, BCM32_CORES_MAILBOX_CALL, 0xFFFFFFFF );
+
+		while (ARM32_CORE_HANDLE_1||ARM32_CORE_HANDLE_2||ARM32_CORE_HANDLE_3) {
+			arm32_dsb();
+		}
+
+		answer_core1 = container_core1[0];
+		answer_core2 = container_core2[0];
+		answer_core3 = container_core3[0];
+print32_debug( answer_core1, 0, 372 );
+print32_debug( answer_core2, 0, 384 );
+print32_debug( answer_core3, 0, 396 );
+		answer_core1 = container_core1[1];
+		answer_core2 = container_core2[1];
+		answer_core3 = container_core3[1];
+print32_debug( answer_core1, 0, 408 );
+print32_debug( answer_core2, 0, 420);
+print32_debug( answer_core3, 0, 432 );
+
+		number_turn++;
+print32_debug( number_turn, 0, 456 );
 		_sleep( 500000 );
 
 	}
@@ -309,7 +357,7 @@ uint32 test1( uint32 var_a, uint32 var_b ) {
 	return var_z;
 }
 
-uint32 test2( uint32 var_a, uint32 var_b, uint32 var_c ) {
-	uint32 var_z = var_a * var_b * var_c;
+uint32 test2( uint32 var_a, uint32 var_b, uint32 var_c, uint32 var_d, uint32 var_e, uint32 var_f, uint32 var_g ) {
+	uint32 var_z = var_a * var_b * var_c * var_d * var_e * var_f * var_g;
 	return var_z;
 }
