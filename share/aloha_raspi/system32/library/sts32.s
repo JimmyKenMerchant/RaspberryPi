@@ -2167,6 +2167,7 @@ sts32_synthemidi:
 		sts32_synthemidi_control_gp4:
 			/* Virtual Parallel of Coconuts */
 			lsr data2, data2, #7                               @ Use Only MSB[13:7]
+			orr data2, data2, #0x80000000                      @ Set Outstanding Flag Bit[31]
 			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
 			str data2, [temp]
 

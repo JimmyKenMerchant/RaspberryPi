@@ -1712,6 +1712,7 @@ macro32_debug data1, 0, 112
 		snd32_soundmidi_control_gp4:
 			/* Virtual Parallel of Coconuts */
 			lsr data2, data2, #7                               @ Use Only MSB[13:7]
+			orr data2, data2, #0x80000000                      @ Set Outstanding Flag Bit[31]
 			ldr temp, SND32_VIRTUAL_PARALLEL_ADDR
 			str data2, [temp]
 			b snd32_soundmidi_success

@@ -243,20 +243,22 @@ int32 _user_start()
 		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+			detect_parallel = (detect_parallel>>22)|0x80000000; // Set Outstanding Flag
 		}
 
 		/* If Any Non Zero */
 		if ( detect_parallel ) {
 //print32_debug( detect_parallel, 100, 100 );
+			detect_parallel &= 0b11111;
 
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
-			if ( detect_parallel == 0b00001<<22 ) {
+			if ( detect_parallel == 0b00001 ) {
 				_gpioset( gpio1, gpiolen1, 0, -1 );
 				//_gpioclear( 0x003FFFFC, 1 );
 
 			// 0b00010 (2)
-			} else if ( detect_parallel == 0b00010<<22 ) {
+			} else if ( detect_parallel == 0b00010 ) {
 				_gpioset( gpio2, gpiolen2, 0, -1 );
 				/* Beat Up */
 				//timer_count_multiplier--;
@@ -265,11 +267,11 @@ int32 _user_start()
 
 
 			// 0b00011 (3)
-			} else if ( detect_parallel == 0b00011<<22 ) {
+			} else if ( detect_parallel == 0b00011 ) {
 				_gpioset( gpio3, gpiolen3, 0, -1 );
 
 			// 0b00100 (4)
-			} else if ( detect_parallel == 0b00100<<22 ) {
+			} else if ( detect_parallel == 0b00100 ) {
 				_gpioset( gpio4, gpiolen4, 0, -1 );
 				/* Beat Down */
 				//timer_count_multiplier++;
@@ -277,117 +279,117 @@ int32 _user_start()
 				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
-			} else if ( detect_parallel == 0b00101<<22 ) {
+			} else if ( detect_parallel == 0b00101 ) {
 				_gpioset( gpio5, gpiolen5, 0, -1 );
 
 			// 0b00110 (6)
-			} else if ( detect_parallel == 0b00110<<22 ) {
+			} else if ( detect_parallel == 0b00110 ) {
 				_gpioset( gpio6, gpiolen6, 0, -1 );
 
 			// 0b00111 (7)
-			} else if ( detect_parallel == 0b00111<<22 ) {
+			} else if ( detect_parallel == 0b00111 ) {
 				_gpioset( gpio7, gpiolen7, 0, -1 );
 
 			// 0b01000 (8)
-			} else if ( detect_parallel == 0b01000<<22 ) {
+			} else if ( detect_parallel == 0b01000 ) {
 				_gpioset( gpio8, gpiolen8, 0, -1 );
 
 			// 0b01001 (9)
-			} else if ( detect_parallel == 0b01001<<22 ) {
+			} else if ( detect_parallel == 0b01001 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b01010 (10)
-			} else if ( detect_parallel == 0b01010<<22 ) {
+			} else if ( detect_parallel == 0b01010 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b01011 (11)
-			} else if ( detect_parallel == 0b01011<<22 ) {
+			} else if ( detect_parallel == 0b01011 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b01100 (12)
-			} else if ( detect_parallel == 0b01100<<22 ) {
+			} else if ( detect_parallel == 0b01100 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b01101 (13)
-			} else if ( detect_parallel == 0b01101<<22 ) {
+			} else if ( detect_parallel == 0b01101 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b01110 (14)
-			} else if ( detect_parallel == 0b01110<<22 ) {
+			} else if ( detect_parallel == 0b01110 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b01111 (15)
-			} else if ( detect_parallel == 0b01111<<22 ) {
+			} else if ( detect_parallel == 0b01111 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10000 (16)
-			} else if ( detect_parallel == 0b10000<<22 ) {
+			} else if ( detect_parallel == 0b10000 ) {
 				_gpioset( gpio16, gpiolen16, 0, -1 );
 
 			// 0b10001 (17)
-			} else if ( detect_parallel == 0b10001<<22 ) {
+			} else if ( detect_parallel == 0b10001 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10010 (18)
-			} else if ( detect_parallel == 0b10010<<22 ) {
+			} else if ( detect_parallel == 0b10010 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10011 (19)
-			} else if ( detect_parallel == 0b10011<<22 ) {
+			} else if ( detect_parallel == 0b10011 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10100 (20)
-			} else if ( detect_parallel == 0b10100<<22 ) {
+			} else if ( detect_parallel == 0b10100 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10101 (21)
-			} else if ( detect_parallel == 0b10101<<22 ) {
+			} else if ( detect_parallel == 0b10101 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10110 (22)
-			} else if ( detect_parallel == 0b10110<<22 ) {
+			} else if ( detect_parallel == 0b10110 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b10111 (23)
-			} else if ( detect_parallel == 0b10111<<22 ) {
+			} else if ( detect_parallel == 0b10111 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b11000 (24)
-			} else if ( detect_parallel == 0b11000<<22 ) {
+			} else if ( detect_parallel == 0b11000 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b11001 (25)
-			} else if ( detect_parallel == 0b11001<<22 ) {
+			} else if ( detect_parallel == 0b11001 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b11010 (26)
-			} else if ( detect_parallel == 0b11010<<22 ) {
+			} else if ( detect_parallel == 0b11010 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b11011 (27)
-			} else if ( detect_parallel == 0b11011<<22 ) {
+			} else if ( detect_parallel == 0b11011 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b11100 (28)
-			} else if ( detect_parallel == 0b11100<<22 ) {
+			} else if ( detect_parallel == 0b11100 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			// 0b11101 (29)
-			} else if ( detect_parallel == 0b11101<<22 ) {
+			} else if ( detect_parallel == 0b11101 ) {
 				/* Beat Up */
 				timer_count_multiplier--;
 				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
 				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11110 (30)
-			} else if ( detect_parallel == 0b11110<<22 ) {
+			} else if ( detect_parallel == 0b11110 ) {
 				/* Beat Down */
 				timer_count_multiplier++;
 				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
 				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11111 (31)
-			} else if ( detect_parallel == 0b11111<<22 ) {
+			} else if ( detect_parallel == 0b11111 ) {
 				_gpioclear( 0x003CFFFC, 0 );
 
 			}

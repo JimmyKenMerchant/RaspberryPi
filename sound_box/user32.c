@@ -505,19 +505,21 @@ int32 _user_start() {
 		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
+			detect_parallel = (detect_parallel>>22)|0x80000000; // Set Outstanding Flag
 		}
 
 		/* If Any Non Zero */
 		if ( detect_parallel ) {
+			detect_parallel &= 0b11111;
 
 			/* GPIO22-26 as Bit[26:22] */
 			// 0b00001 (1)
-			if ( detect_parallel == 0b00001<<22 ) {
+			if ( detect_parallel == 0b00001 ) {
 				_soundset( music1, musiclen1, 0, -1 );
 				//makesilence();
 
 			// 0b00010 (2)
-			} else if ( detect_parallel == 0b00010<<22 ) {
+			} else if ( detect_parallel == 0b00010 ) {
 				_soundset( music2, musiclen2, 0, -1 );
 				/* Beat Up */
 				//timer_count_multiplier -= 5;
@@ -526,11 +528,11 @@ int32 _user_start() {
 
 
 			// 0b00011 (3)
-			} else if ( detect_parallel == 0b00011<<22 ) {
+			} else if ( detect_parallel == 0b00011 ) {
 				_soundset( music3, musiclen3, 0, -1 );
 
 			// 0b00100 (4)
-			} else if ( detect_parallel == 0b00100<<22 ) {
+			} else if ( detect_parallel == 0b00100 ) {
 				_soundset( music4, musiclen4, 0, -1 );
 				/* Beat Down */
 				//timer_count_multiplier += 5;
@@ -538,119 +540,119 @@ int32 _user_start() {
 				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b00101 (5)
-			} else if ( detect_parallel == 0b00101<<22 ) {
+			} else if ( detect_parallel == 0b00101 ) {
 				_soundset( music5, musiclen5, 0, -1 );
 
 			// 0b00110 (6)
-			} else if ( detect_parallel == 0b00110<<22 ) {
+			} else if ( detect_parallel == 0b00110 ) {
 				_soundset( music6, musiclen6, 0, -1 );
 
 			// 0b00111 (7)
-			} else if ( detect_parallel == 0b00111<<22 ) {
+			} else if ( detect_parallel == 0b00111 ) {
 				_soundset( music7, musiclen7, 0, -1 );
 
 			// 0b01000 (8)
-			} else if ( detect_parallel == 0b01000<<22 ) {
+			} else if ( detect_parallel == 0b01000 ) {
 				_soundset( music8, musiclen8, 0, -1 );
 
 			// 0b01001 (9)
-			} else if ( detect_parallel == 0b01001<<22 ) {
+			} else if ( detect_parallel == 0b01001 ) {
 				SND32_MODULATION_DELTA = 0x10 * delta_multiplier;
 				SND32_MODULATION_RANGE = 0x1000 * delta_multiplier;
 
 			// 0b01010 (10)
-			} else if ( detect_parallel == 0b01010<<22 ) {
+			} else if ( detect_parallel == 0b01010 ) {
 				SND32_MODULATION_DELTA = 0x0 * delta_multiplier;
 				SND32_MODULATION_RANGE = 0x0 * delta_multiplier;
 
 			// 0b01011 (11)
-			} else if ( detect_parallel == 0b01011<<22 ) {
+			} else if ( detect_parallel == 0b01011 ) {
 				makesilence();
 
 			// 0b01100 (12)
-			} else if ( detect_parallel == 0b01100<<22 ) {
+			} else if ( detect_parallel == 0b01100 ) {
 				makesilence();
 
 			// 0b01101 (13)
-			} else if ( detect_parallel == 0b01101<<22 ) {
+			} else if ( detect_parallel == 0b01101 ) {
 				makesilence();
 
 			// 0b01110 (14)
-			} else if ( detect_parallel == 0b01110<<22 ) {
+			} else if ( detect_parallel == 0b01110 ) {
 				makesilence();
 
 			// 0b01111 (15)
-			} else if ( detect_parallel == 0b01111<<22 ) {
+			} else if ( detect_parallel == 0b01111 ) {
 				makesilence();
 
 			// 0b10000 (16)
-			} else if ( detect_parallel == 0b10000<<22 ) {
+			} else if ( detect_parallel == 0b10000 ) {
 				_soundinterrupt( interrupt16, musiclen16, 0, 1 );
 
 			// 0b10001 (17)
-			} else if ( detect_parallel == 0b10001<<22 ) {
+			} else if ( detect_parallel == 0b10001 ) {
 				makesilence();
 
 			// 0b10010 (18)
-			} else if ( detect_parallel == 0b10010<<22 ) {
+			} else if ( detect_parallel == 0b10010 ) {
 				makesilence();
 
 			// 0b10011 (19)
-			} else if ( detect_parallel == 0b10011<<22 ) {
+			} else if ( detect_parallel == 0b10011 ) {
 				makesilence();
 
 			// 0b10100 (20)
-			} else if ( detect_parallel == 0b10100<<22 ) {
+			} else if ( detect_parallel == 0b10100 ) {
 				makesilence();
 
 			// 0b10101 (21)
-			} else if ( detect_parallel == 0b10101<<22 ) {
+			} else if ( detect_parallel == 0b10101 ) {
 				makesilence();
 
 			// 0b10110 (22)
-			} else if ( detect_parallel == 0b10110<<22 ) {
+			} else if ( detect_parallel == 0b10110 ) {
 				makesilence();
 
 			// 0b10111 (23)
-			} else if ( detect_parallel == 0b10111<<22 ) {
+			} else if ( detect_parallel == 0b10111 ) {
 				makesilence();
 
 			// 0b11000 (24)
-			} else if ( detect_parallel == 0b11000<<22 ) {
+			} else if ( detect_parallel == 0b11000 ) {
 				makesilence();
 
 			// 0b11001 (25)
-			} else if ( detect_parallel == 0b11001<<22 ) {
+			} else if ( detect_parallel == 0b11001 ) {
 				makesilence();
 
 			// 0b11010 (26)
-			} else if ( detect_parallel == 0b11010<<22 ) {
+			} else if ( detect_parallel == 0b11010 ) {
 				makesilence();
 
 			// 0b11011 (27)
-			} else if ( detect_parallel == 0b11011<<22 ) {
+			} else if ( detect_parallel == 0b11011 ) {
 				makesilence();
 
 			// 0b11100 (28)
-			} else if ( detect_parallel == 0b11100<<22 ) {
+			} else if ( detect_parallel == 0b11100 ) {
 				makesilence();
 
 			// 0b11101 (29)
-			} else if ( detect_parallel == 0b11101<<22 ) {
+			} else if ( detect_parallel == 0b11101 ) {
 				/* Beat Up */
 				timer_count_multiplier -= 5;
 				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
 				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11110 (30)
-			} else if ( detect_parallel == 0b11110<<22 ) {
+			} else if ( detect_parallel == 0b11110 ) {
 				/* Beat Down */
 				timer_count_multiplier += 5;
 				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
 				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
 
 			// 0b11111 (31)
-			} else if ( detect_parallel == 0b11111<<22 ) {
+			} else if ( detect_parallel == 0b11111 ) {
 				makesilence();
 			}
 			detect_parallel = 0;
@@ -659,7 +661,7 @@ int32 _user_start() {
 		/* Detect Rising Edge of GPIO */
 		if ( _gpio_detect( 17 ) ) {
 			if ( SND32_VIRTUAL_PARALLEL ) {
-				detect_parallel |= SND32_VIRTUAL_PARALLEL<<22;
+				detect_parallel = SND32_VIRTUAL_PARALLEL;
 				SND32_VIRTUAL_PARALLEL = 0;
 			}
 
