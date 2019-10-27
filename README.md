@@ -376,7 +376,7 @@ make type=zerow sound=i2s
 
 * Paste kernel.img, config.txt, and LICENSE.aloha to the root directory of your boot media. config.txt and LICENSE.aloha are in share/assets/ of this project. If you fail to `make` with any error, check share/aloha_raspi/README.txt which describes versions of Assembler and Compiler.
 
-* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from the boot folder of [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and also need to make dt-blob.bin. Paste these to the root directory of your boot media.
+* You also need to download latest start.elf, fixup.dat, bootcode.bin, and LICENSE.broadcom from the boot folder of [Rasberry Pi Firmware](https://github.com/raspberrypi/firmware), and also need to make dt-blob.bin. Paste these to the root directory of your boot media. Note that, in compatibility testing, I'm using the particular version of the firmware and relatives. Check share/aloha_raspi/README.txt which describes technical notes for the firmware version.
 	* start.elf is the firmware. bootcode.bin is the lower procedure than start.elf.
 	* fixup.dat makes a partition of SDRAM between VideoCore (GPU) and ARM.
 	* The file name, "kernel.img", is for original ARMv6 Raspberry Pi. Besides, "kernel7.img" is for ARMv7 Raspberry Pi and later ("kernel8.img" may be for ARMv8 AArch64, but not yet). But, I experienced that "kernel.img" can run on Raspberry Pi with ARMv7 and later.
