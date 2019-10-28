@@ -61,7 +61,7 @@ The option of arm-none-eabi-gcc, -O2 (Optimize even more) seems not to ensure to
 
 * October 27, 2019:
 Test Target (Back Up): Raspberry Pi 2 B V.1.1 (BCM2836)
-Description: I'll use the back up for Aloha Calc, DMX512 Transmitter Test, and USB Test instead of 3 B. TXD0 (UART) of My 3 B is broken because of accidental 5 volts input. In view of the compatibility, I think 2 B is close to 3 B, but it's unsure that "init_uart_clock=7500000" in config.txt can be accepted by TXD0 of 3 B. RXD0 of My 3 B is not broken, so MIDI IN of Sound Box and Synthesizer will be tested by a 3 B. By the way, I'm planning to buy another 3 B, however I haven't selected the reseller yet -- in fact, I have other BOMs for the next season. 3 B has been produced by several vendors. In the consensus among Media, a plant in Aichi makes 3 B. U.K. and China also make 3 B, i.e., 3 3 Bs. Really?
+Description: I'll use the back up for Aloha Calc, DMX512 Transmitter Test, and USB Test instead of 3 B. GPIO 14 for TXD0 (UART) of My 3 B is broken because of accidental 5 volts input. In view of the compatibility, I think 2 B is close to 3 B, but it's unsure that "init_uart_clock=7500000" in config.txt can be accepted by TXD0 of 3 B. GPIO 15 for RXD0 of My 3 B is not broken, so MIDI IN of Sound Box and Synthesizer will be tested by a 3 B. By the way, I'm planning to buy another 3 B, however I haven't selected the reseller yet -- in fact, I have other BOMs for the next season. 3 B has been produced by several vendors. In the consensus among Media, a plant in Aichi makes 3 B. U.K. and China also make 3 B, i.e., 3 3 Bs. Really?
 
 * October 21, 2019:
 Test Target (First Priority): Raspberry Pi Zero W V.1.1 (BCM2835)
