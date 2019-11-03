@@ -61,13 +61,13 @@ mtx32_multiply:
 	mov row, #0
 	mtx32_multiply_row:
 		cmp row, number_mat
-		bge mtx32_multiply_common
+		bhs mtx32_multiply_common
 
 		/* for ( uint32 column = 0; column < number_mat; column++ ) { */
 		mov column, #0
 		mtx32_multiply_row_column:
 			cmp column, number_mat
-			bge mtx32_multiply_row_column_common
+			bhs mtx32_multiply_row_column_common
 
 			mov temp, #0
 			vmov vfp_sum, temp
@@ -77,7 +77,7 @@ mtx32_multiply:
 			mov i, #0
 			mtx32_multiply_row_column_i:
 				cmp i, number_mat
-				bge mtx32_multiply_row_column_i_common
+				bhs mtx32_multiply_row_column_i_common
 
 				mul temp, row, number_mat
 				add temp, temp, i
@@ -254,7 +254,7 @@ mtx32_multiply_vec:
 
 		mov temp1, #0
 		vmov vfp_result, temp1
-		vcvt.f32.s32 vfp_result, vfp_result
+		/*vcvt.f32.s32 vfp_result, vfp_result*/
 
 		mov temp1, number_vec
 		sub temp1, temp1, #1
@@ -991,8 +991,6 @@ mtx32_perspective3d:
  * Make 4 by 4 Square Matrix (Row Order) with View
  * Caution! This Function Needs to Make VFPv2 Registers and Instructions Enable.
  * This Function Makes Allocated Memory Space from Heap.
- * Note: Camera Position Upside Down, Leftside Right
- *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
  *
  * Parameters
  * r0: Vector of Camera Position, Must Be Three of Vector Size, X, Y, and Z

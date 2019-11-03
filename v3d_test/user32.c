@@ -113,37 +113,23 @@ float32 cube_vertices[] =
 // X, Y, Z, S, T, Index of Images
 float32 background_vertices[] =
 {
-		-1.0f, 1.0f, -1.8f, 0.0f, 1.0f, 0.0f,
-		-1.0f,-1.0f, -1.8f, 0.0f, 0.0f, 0.0f,
-		 1.0f,-1.0f, -1.8f, 1.0f, 0.0f, 0.0f,
+		-1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		-1.0f,-1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		 1.0f,-1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 
-		-1.0f, 1.0f, -1.8f, 0.0f, 1.0f, 0.0f,
-		 1.0f,-1.0f, -1.8f, 1.0f, 0.0f, 0.0f,
-		 1.0f, 1.0f, -1.8f, 1.0f, 1.0f, 0.0f
+		-1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		 1.0f,-1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+		 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f
 };
 
-float32 camera_position[] = { 0.0f, 0.5f, 2.0f };
+float32 camera_position[] = { -0.25f, -1.5f, 3.0f };
 float32 camera_target[] = { 0.0001f, 0.0001f, 0.0001f }; // Don't Initialize by Zeros, It's Invalid!
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
-
-/**
- * Depth scale is depending on the values of the near and the far of the perspective projection.
- * If the near is 0.2f and the far is 4.0f, you need to make the 3D object visible in the distance 3.8f.
- * The software coordinate is between -1.0f to 1.0f in the distance 2.0f.
- * So multiply the calculated Z by 2.0f/3.8f.
- */
-float32 depth_scale;
-/**
- * Depth offset may be needed if you set the camera target other than 0.0f for all axis.
- */
-float32 depth_offset;
 
 int32 _user_start()
 {
 
 	// Define Global Variables
-	depth_offset = 0.0f;
-	depth_scale = 0.5263f;
 	va_count = 0; // Offset for Background Vertices
 	count_update = 0;
 
@@ -164,13 +150,16 @@ int32 _user_start()
 	uint32 height_pixel = FB32_HEIGHT;
 
 	/**
-	 * Note: Camera Position Upside Down, Leftside Right
-	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
+	 * Mat_P*Mat_V*Mat_M*Vector = Mat_P by (Mat_V by (Mat_M by Vector)), Inside to Outside
+	 * P: Projection, V: View, M: Model
+	 * Mat_V by Vector = Mat_Translate by (Mat_Rotate by (Mat_Scale by Vector))
+	 *
+	 * It can be "(Mat_P by Mat_V by Mat_Model) by Vector" which is used in this.
 	 */
 	obj mat_identity4 = mtx32_identity( 4 );
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
 	obj mat_projection = mtx32_perspective3d( 75.0f, 1.3333333f, 0.2f, 4.0f );
-	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
+	obj mat_p_v = mtx32_multiply( mat_projection, mat_view, 4 ); // Projection, View
 
 	vertex_array = (_GPUMemory*)heap32_malloc( _wordsizeof( _GPUMemory ) );
 	_gpumemory_init( vertex_array, 1872, 16, 0xC );
@@ -208,7 +197,7 @@ int32 _user_start()
 	background = (_Legend3D*)heap32_malloc( _wordsizeof( _Legend3D ) );
 	background->position[0] = 0.0f; // X
 	background->position[1] = 0.0f; // Y
-	background->position[2] = 0.0f; // Z
+	background->position[2] = -0.8f; // Z
 	background->speed_position[0] = 0.0f; // X
 	background->speed_position[1] = 0.0f; // Y
 	background->speed_position[2] = 0.0f; // Z
@@ -228,9 +217,9 @@ int32 _user_start()
 	cubes[0]->speed_position[0] = 0.005f; // X
 	cubes[0]->speed_position[1] = 0.0f; // Y
 	cubes[0]->speed_position[2] = 0.02f; // Z
-	cubes[0]->scale[0] = 0.5f; // X
-	cubes[0]->scale[1] = 0.5f; // Y
-	cubes[0]->scale[2] = 0.5f; // Z
+	cubes[0]->scale[0] = 1.0f; // X
+	cubes[0]->scale[1] = 1.0f; // Y
+	cubes[0]->scale[2] = 1.0f; // Z
 	cubes[0]->versor_angle = 0.0f;
 	cubes[0]->versor_vector[0] = 1.0f; // X
 	cubes[0]->versor_vector[1] = 1.0f; // Y
@@ -244,9 +233,9 @@ int32 _user_start()
 	cubes[1]->speed_position[0] = 0.005f; // X
 	cubes[1]->speed_position[1] = 0.0f; // Y
 	cubes[1]->speed_position[2] = 0.02f; // Z
-	cubes[1]->scale[0] = 0.95f; // X
-	cubes[1]->scale[1] = 0.95f; // Y
-	cubes[1]->scale[2] = 0.95f; // Z
+	cubes[1]->scale[0] = 1.0f; // X
+	cubes[1]->scale[1] = 1.0f; // Y
+	cubes[1]->scale[2] = 1.0f; // Z
 	cubes[1]->versor_angle = 0.0f;
 	cubes[1]->versor_vector[0] = 1.0f; // X
 	cubes[1]->versor_vector[1] = 1.0f; // Y
@@ -349,10 +338,10 @@ void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_
 	float32 height_float = vfp32_u32tof32( height_pixel );
 	obj mat_translate = mtx32_translate3d( (obj)legend3d->position );
 	obj mat_scale = mtx32_scale3d( (obj)legend3d->scale );
-	obj mat_t_s = mtx32_multiply( mat_scale, mat_translate, 4 ); // Translate and Scale
 	obj versor = mtx32_versor( legend3d->versor_angle, (obj)legend3d->versor_vector );
 	obj mat_versor = mtx32_versortomatrix( versor );
-	obj mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
+	obj mat_t_r = mtx32_multiply( mat_translate, mat_versor, 4 ); // Translate and Rotate (Versor)
+	obj mat_model = mtx32_multiply( mat_t_r, mat_scale, 4 );
 	obj mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 ); // Projection, View, Model
 
 	for ( uint32 i = 0; i < num_vertex; i++ ) {
@@ -371,6 +360,11 @@ void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_
 
 		result = (float32*)mtx32_multiply_vec( mat_p_v_m, (obj)vector_xyzw, 4 );
 
+		/* Divide X, Y, Z by W to Normalize */
+		result[0] = vfp32_fdiv( result[0], result[3] ); // X
+		result[1] = vfp32_fdiv( result[1], result[3] ); // Y
+		result[2] = vfp32_fdiv( result[2], result[3] ); // Z
+
 		/* Software (-1.0f, 1.0f) Coordinate to Hardware (0.0f, 1.0f) Coordinate, Flip Y and Z Coordinate */
 		result[0] = vfp32_fadd( result[0], 1.0f );
 		result[1] = vfp32_fadd( result[1], 1.0f );
@@ -382,10 +376,6 @@ void va_set_triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_
 		result[1] = vfp32_fmul( result[1], -1.0f );
 		result[2] = vfp32_fsub( result[2], 1.0f );
 		result[2] = vfp32_fmul( result[2], -1.0f );
-
-		/* Depth Offset and Scale */
-		result[2] = vfp32_fadd( result[2], depth_offset );
-		result[2] = vfp32_fmul( result[2], depth_scale );
 
 		/* Multiply 0.0 to 1.0 Coordinates by Actual Width and Height of Framebuffer, Convert Float to Integer */
 		int_x = vfp32_f32tos32( vfp32_fmul( result[0], width_float ) );
@@ -408,7 +398,7 @@ print32_debug( mat_versor, 0, 50 );
 	heap32_mfree( (obj)vector_xyzw );
 	heap32_mfree( mat_translate );
 	heap32_mfree( mat_scale );
-	heap32_mfree( mat_t_s );
+	heap32_mfree( mat_t_r );
 	heap32_mfree( versor );
 	heap32_mfree( mat_versor );
 	heap32_mfree( mat_model );
@@ -425,14 +415,5 @@ void legend3D_change_position( _Legend3D* legend3d ) {
 	if( vfp32_fge( legend3d->position[0], 0.5f ) ) legend3d->position[0] = -0.5f;
 	legend3d->position[2] = vfp32_fadd( legend3d->position[2], legend3d->speed_position[2] ); // Z
 	if( vfp32_fge( legend3d->position[2], 2.0f ) ) legend3d->position[2] = -2.0f;
-
-	// Scale Change
-	// For accuracy, calculate the distance between eye and object, but not this linear incrementation.
-	legend3d->scale[0] = vfp32_fadd( legend3d->scale[0], 0.005f );
-	if( vfp32_fge( legend3d->scale[0], 1.5f ) ) legend3d->scale[0] = 0.5f;
-	legend3d->scale[1] = vfp32_fadd( legend3d->scale[1], 0.005f );
-	if( vfp32_fge( legend3d->scale[1], 1.5f ) ) legend3d->scale[1] = 0.5f;
-	legend3d->scale[2] = vfp32_fadd( legend3d->scale[2], 0.005f );
-	if( vfp32_fge( legend3d->scale[2], 1.5f ) ) legend3d->scale[2] = 0.5f;
 }
 
