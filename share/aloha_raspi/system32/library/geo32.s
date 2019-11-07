@@ -292,6 +292,7 @@ geo32_wire3d:
 	vfp_height .req s3
 	vfp_one    .req s4
 	vfp_two    .req s5
+	vfp_weight .req s6
 	
 	push {r4-r11,lr}
 
@@ -299,7 +300,7 @@ geo32_wire3d:
 	pop {matrix,rotation}
 	sub sp, sp, #44
 
-	vpush {s0-s5}
+	vpush {s0-s6}
 
 	/* Get Width and Height of Framebuffer and Transfer from Integer to Float */
 	ldr temp, geo32_FB32_WIDTH
@@ -376,12 +377,21 @@ geo32_wire3d:
 		cmp result, #0
 		beq geo32_wire3d_error1
 
+		/* Use X, Y, and W */
+		vldr vfp_x, [result]
+		vldr vfp_y, [result, #4]
+		vldr vfp_weight, [result, #12]
+
+		/* Divide X, Y by W (Weight) to Normalize */
+		vdiv.f32 vfp_x, vfp_x, vfp_weight
+		vdiv.f32 vfp_y, vfp_y, vfp_weight
+
 		lsl i, i, #3                         @ Substitute of Multiplication by 8
-		ldr temp, [result]
+		vmov temp, vfp_x
 		str temp, [heap_xy, i]
 
 		add i, i, #4
-		ldr temp, [result, #4]
+		vmov temp, vfp_y
 		str temp, [heap_xy, i]
 
 		sub i, i, #4
@@ -510,7 +520,7 @@ geo32_wire3d:
 		bl heap32_mfree
 		pop {r0}
 
-		vpop {s0-s5}
+		vpop {s0-s6}
 		pop {r4-r11,pc}
 
 .unreq color
@@ -531,6 +541,7 @@ geo32_wire3d:
 .unreq vfp_height
 .unreq vfp_one
 .unreq vfp_two
+.unreq vfp_weight
 
 
 /**

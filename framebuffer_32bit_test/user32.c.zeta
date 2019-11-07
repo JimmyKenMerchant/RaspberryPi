@@ -57,7 +57,7 @@ int32 _user_start()
 	uint32 cube_colors[] = {COLOR32_GREEN,COLOR32_RED,COLOR32_BLUE,COLOR32_WHITE,COLOR32_YELLOW,COLOR32_PINK};
 
 	String string_arr3 = "1.0,1.0,1.0\0";
-	String string_arr4 = "0.1,0.1,2.0\0";
+	String string_arr4 = "1.5,0.5,2.0\0";
 	String string_arr5 = "0.0,0.0,0.0\0";
 	String string_arr6 = "0.0,1.0,0.0\0";
 
@@ -91,13 +91,9 @@ int32 _user_start()
 	//heap32_mfree( mat3 );
 	//heap32_mfree( mat4 );
 
-	/**
-	 * Note: Camera Position Upside Down, Leftside Right
-	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
-	 */
 	obj view3d = mtx32_view3d( arr4, arr5, arr6 );
 	obj perspective3d = mtx32_perspective3d( 90.0, 1.234, 0.2, 4.0 );
-	obj mat_p_v = mtx32_multiply( view3d, perspective3d, 4 );
+	obj mat_p_v = mtx32_multiply( perspective3d, view3d, 4 );
 	obj mat_p_v_v;
 	obj versor;
 	obj mat_versor;
