@@ -92,22 +92,11 @@ float32 cube_vertices[] =
 float32 cube_position[] = { -0.5f, 0.0f, -2.0f };
 float32 cube_scale[] = { 0.5f, 0.5f, 0.5f };
 float32 versor_vector[] = { 1.0f, 1.0f, 1.0f };
-float32 camera_position[] = { 0.0f, 0.5f, 2.0f };
+float32 camera_position[] = { 1.0f, 1.0f, 3.0f };
 float32 camera_target[] = { 0.0001f, 0.0001f, 0.0001f }; // Don't Initialize by Zeros, It's Invalid!
 float32 camera_up[] = { 0.0f, 1.0f, 0.0f };
 float32 angle;
 float32 scale;
-/**
- * Depth scale is depending on the values of the near and the far of the perspective projection.
- * If the near is 0.2f and the far is 4.0f, you need to make the 3D object visible in the distance 3.8f.
- * The software coordinate is between -1.0f to 1.0f in the distance 2.0f.
- * So multiply the calculated Z by 2.0f/3.8f.
- */
-float32 depth_scale;
-/**
- * Depth offset may be needed if you set the camera target other than 0.0f for all axis.
- */
-float32 depth_offset;
 
 int32 _user_start()
 {
@@ -125,8 +114,6 @@ int32 _user_start()
 	//uint32 result;
 	String num_string;
 	uint32 time = 0;
-	depth_offset = 0.0f;
-	depth_scale = 0.5263f;
 
 	objectv3d = (_ObjectV3D*)heap32_malloc( _wordsizeof( _ObjectV3D ) );
 	_bind_objectv3d( objectv3d );
@@ -145,16 +132,12 @@ int32 _user_start()
 	renderbuffer[0] = (_RenderBuffer*)heap32_malloc( _wordsizeof( _RenderBuffer ) );
 	draw32_renderbuffer_init( renderbuffer[0], width_pixel, height_pixel, FB32_DEPTH );
 
-	/**
-	 * Note: Camera Position Upside Down, Leftside Right
-	 *       The coordinate system for the camera position is rotated 180 degrees along with Z axis.
-	 */
 	obj mat_view = mtx32_view3d( (obj)camera_position, (obj)camera_target, (obj)camera_up );
 	obj mat_projection = mtx32_perspective3d( 75.0f, 1.3333333f, 0.2f, 4.0f );
-	obj mat_p_v = mtx32_multiply( mat_view, mat_projection, 4 ); // Projection, View
+	obj mat_p_v = mtx32_multiply( mat_projection, mat_view, 4 ); // Projection, View
 	obj mat_translate;
 	obj mat_scale;
-	obj mat_t_s; // Translate and Scale
+	obj mat_t_r; // Translate and Rotate (Versor)
 	obj versor;
 	obj mat_versor;
 	obj mat_model;
@@ -191,18 +174,18 @@ int32 _user_start()
 		_stopwatch_start();
 
 		mat_translate = mtx32_translate3d( (obj)cube_position );
-		mat_scale = mtx32_scale3d( (obj)cube_scale );
-		mat_t_s = mtx32_multiply( mat_scale, mat_translate, 4 );
 		versor = mtx32_versor( angle, (obj)versor_vector );
 		mat_versor = mtx32_versortomatrix( versor );
-		mat_model = mtx32_multiply( mat_t_s, mat_versor, 4 );
+		mat_scale = mtx32_scale3d( (obj)cube_scale );
+		mat_t_r = mtx32_multiply( mat_translate, mat_versor, 4 );
+		mat_model = mtx32_multiply( mat_t_r, mat_scale, 4 );
 		mat_p_v_m = mtx32_multiply( mat_p_v, mat_model, 4 );
 		triangle3d( vertex_array, cube_vertices, 36, mat_p_v_m, width_pixel, height_pixel );
 		heap32_mfree( mat_translate );
-		heap32_mfree( mat_scale );
-		heap32_mfree( mat_t_s );
 		heap32_mfree( versor );
 		heap32_mfree( mat_versor );
+		heap32_mfree( mat_scale );
+		heap32_mfree( mat_t_r );
 		heap32_mfree( mat_model );
 		heap32_mfree( mat_p_v_m );
 
@@ -283,6 +266,11 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 
 		result = (float32*)mtx32_multiply_vec( matrix, (obj)vector_xyzw, 4 );
 
+		/* Divide X, Y, Z by W to Normalize */
+		result[0] = vfp32_fdiv( result[0], result[3] ); // X
+		result[1] = vfp32_fdiv( result[1], result[3] ); // Y
+		result[2] = vfp32_fdiv( result[2], result[3] ); // Z
+
 		/* Software (-1.0f, 1.0f) Coordinate to Hardware (0.0f, 1.0f) Coordinate, Flip Y and Z Coordinate */
 		result[0] = vfp32_fadd( result[0], 1.0f );
 		result[1] = vfp32_fadd( result[1], 1.0f );
@@ -294,10 +282,6 @@ void triangle3d( _GPUMemory* vertex_array, float32* vertices, uint32 num_vertex,
 		result[1] = vfp32_fmul( result[1], -1.0f );
 		result[2] = vfp32_fsub( result[2], 1.0f );
 		result[2] = vfp32_fmul( result[2], -1.0f );
-
-		/* Depth Offset and Scale */
-		result[2] = vfp32_fadd( result[2], depth_offset );
-		result[2] = vfp32_fmul( result[2], depth_scale );
 
 		/* Multiply 0.0 to 1.0 Coordinates by Actual Width and Height of Framebuffer, Convert Float to Integer */
 		int_x = vfp32_f32tos32( vfp32_fmul( result[0], width_float ) );
