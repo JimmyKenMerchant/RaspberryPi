@@ -2562,6 +2562,21 @@ _V3D32_TML_UNIFORMS:
 	 * Pointer of Additional Uniforms
 	 */
 	.word 0x00000000
+
+	/**
+	 * Pointer of Additional Uniforms (Reserve 1)
+	 */
+	.word 0x00000000
+
+	/**
+	 * Pointer of Additional Uniforms (Reserve 2)
+	 */
+	.word 0x00000000
+
+	/**
+	 * Pointer of Additional Uniforms (Reserve 3)
+	 */
+	.word 0x00000000
 _V3D32_TML_UNIFORMS_END:
 .section	.vendor_system32
 
