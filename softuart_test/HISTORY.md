@@ -13,17 +13,25 @@
 **November 22, 2019 (#db69ed8)**
 
 * Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
-	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
-	* Function, Tx and Rx of Software UART > OK
+	* Two Minute Run at Baud Rate 38400 without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function at Baud Rate 115200, Connected with Raspberry Pi 2 B Running Raspbian Buster
+		* Tx of Software UART with Minicom > OK
+		* Rx of Software UART with Command Line, `sudo echo -ne 'GOOD\r\n' > /dev/serial0` > OK
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
-	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
-	* Function, Tx and Rx of Software UART > OK
+	* Two Minute Run at Baud Rate 38400 without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function at Baud Rate 115200, Connected with Raspberry Pi 2 B Running Raspbian Buster
+		* Tx of Software UART with Minicom > OK
+		* Rx of Software UART with Command Line, `sudo echo -ne 'GOOD\r\n' > /dev/serial0` > OK
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
-	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
-	* Function, Tx and Rx of Software UART > OK
+	* Two Minute Run at Baud Rate 38400 without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function at Baud Rate 115200, Connected with Raspberry Pi Zero Running Raspbian Buster
+		* Tx of Software UART with Minicom > OK
+		* Rx of Software UART with Command Line, `sudo echo -ne 'GOOD\r\n' > /dev/serial0` > OK
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
-	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
-	* Function, Tx and Rx of Software UART > OK
+	* Two Minute Run at Baud Rate 38400 without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function at Baud Rate 115200, Connected with Raspberry Pi Zero Running Raspbian Buster
+		* Tx of Software UART with Minicom > OK
+		* Rx of Software UART with Command Line, `sudo echo -ne 'GOOD\r\n' > /dev/serial0` > OK
