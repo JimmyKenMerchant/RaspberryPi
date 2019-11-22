@@ -10,20 +10,20 @@
 
 * For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc.
 
-**November 21, 2019 (#db69ed8)**
+**November 22, 2019 (#db69ed8)**
 
 * Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
-	* Typing in Test Mode, `debug=yes` > OK
-	* Function as Console Connected with Raspberry Pi Zero or Zero W Running Aloha Calc 1.0.0 through UART > OK
+	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function, Tx and Rx of Software UART > OK
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
-	* Typing in Test Mode, `debug=yes` > OK
-	* Function as Console Connected with Raspberry Pi Zero or Zero W Running Aloha Calc 1.0.0 through UART > OK
+	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function, Tx and Rx of Software UART > OK
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
-	* Typing in Test Mode, `debug=yes` > OK
-	* Function as Console Connected with Raspberry Pi Zero or Zero W Running Aloha Calc 1.0.0 through UART > OK
+	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function, Tx and Rx of Software UART > OK
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
-	* Typing in Test Mode, `debug=yes` > OK
-	* Function as Console Connected with Raspberry Pi Zero or Zero W Running Aloha Calc 1.0.0 through UART > Confirmed Receiving Characters
+	* Two Minute Run without Break Error, Connected with Raspberry Pi Zero or Zero W Running Software UART Test > OK
+	* Function, Tx and Rx of Software UART > OK
