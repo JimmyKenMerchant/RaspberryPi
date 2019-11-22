@@ -10,6 +10,20 @@
 
 * For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc.
 
+**November 22, 2019 (#db69ed8)**
+
+* Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
+	* One Minute Run > OK
+
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+	* One Minute Run > OK
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+	* One Minute Run > OK
+
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+	* One Minute Run > OK
+
 **October 7, 2019 (#f2e3dd1)**
 
 * Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`

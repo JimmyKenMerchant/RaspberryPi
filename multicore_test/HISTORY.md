@@ -10,6 +10,14 @@
 
 * For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc.
 
+**November 22, 2019 (#db69ed8)**
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+	* Result of Calculation > OK
+
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+	* Result of Calculation > OK
+
 **October 7, 2019 (#f2e3dd1)**
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
