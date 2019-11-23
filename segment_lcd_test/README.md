@@ -20,7 +20,7 @@ The driver for segment LCDs should be brief in view of readability to modify cod
 
 * GPIO 5 as Input, Increment
 
-* GPIO 6 as Input, Decrement
+* GPIO 6 as Input, Decrement (Not Implemented Yet)
 
 * GPIO 20 as Input, Toggle Display Mode
 
