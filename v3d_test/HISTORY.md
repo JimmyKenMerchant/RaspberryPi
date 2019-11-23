@@ -10,6 +10,40 @@
 
 * For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc.
 
+**November 23, 2019 (#db69ed8)**
+
+* Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
+	* One Minute Run (user32.c) > OK
+	* Result of Debug Mode `debug=yes` (user32.c) > OK
+	* Result of Calculation (user32.c.alpha) > OK
+	* Result of Drawing (user32.c.beta) > OK
+	* Result of Calculation (user32.c.gamma) > OK
+	* One Minute Run (user32.c.delta: Implemented Experimental Scale Change) > OK
+
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+	* One Minute Run (user32.c) > OK
+	* Result of Debug Mode `debug=yes` (user32.c) > OK
+	* Result of Calculation (user32.c.alpha) > OK
+	* Result of Drawing (user32.c.beta) > OK
+	* Result of Calculation (user32.c.gamma) > OK
+	* One Minute Run (user32.c.delta: Implemented Experimental Scale Change) > OK
+
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+	* One Minute Run (user32.c) > OK
+	* Result of Debug Mode `debug=yes` (user32.c) > OK
+	* Result of Calculation (user32.c.alpha) > OK
+	* Result of Drawing (user32.c.beta) > OK
+	* Result of Calculation (user32.c.gamma) > OK
+	* One Minute Run (user32.c.delta: Implemented Experimental Scale Change) > OK
+
+* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+	* One Minute Run (user32.c) > OK
+	* Result of Debug Mode `debug=yes` (user32.c) > OK
+	* Result of Calculation (user32.c.alpha) > OK
+	* Result of Drawing (user32.c.beta) > OK
+	* Result of Calculation (user32.c.gamma) > OK
+	* One Minute Run (user32.c.delta: Implemented Experimental Scale Change) > OK
+
 **October 7, 2019 (#f2e3dd1)**
 
 * Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
