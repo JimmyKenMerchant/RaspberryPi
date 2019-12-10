@@ -45,3 +45,9 @@
 **Electric Schematics**
 
 * [LED Driver with Power MOSFET](../schematics/led_driver_mosfet.pdf)
+
+**About Application**
+
+* Command 16 (an array named `gpio16[]`) is for 5x7 Dots Matrix Blue LED (MOA20UB019GJ). Note that the dot pattern is almost a greater-than sign, but the 3rd and 5th rows need to be fixed for becoming the sign. Replace `1<<6` with `1<<5` in 3rd and 5th row. Look out `!?` comments at the 3rd and 5th rows for reference.
+
+* To light many LEDs, you need boost RasPi's output from its GPIO. My schematic is one of example. However, in the case of lighting multiple LEDs, a transistor array is preferred, e.g., TBD62083A series (inverted), and TBD62783A series (non-inverted). These accept 3.3V input and can also perform as a level shifter.
