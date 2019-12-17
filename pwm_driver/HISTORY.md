@@ -10,28 +10,28 @@
 
 * For validity, describing the environment for the test is helpful, e.g., ambient temperature, place, more details of tools, etc.
 
-**December 10, 2019 (#db69ed8)**
+**December 17, 2019 (#db69ed8)**
 
 * Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`
 	* Function of Input GPIOs Connected with Raspberry Pi 3B Using [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes), Including Changing Beat (Command 29 and 30) and Clearing Output (Command 31) > OK
-	* Function of Output GPIOs (GPIO 2-6 and 7-13): Connected with 5x7 Dots Matrix Blue LED (MOA20UB019GJ), each cathode is connected with a 10K ohms resister to limit current (GPIO 7-13 cathodes top to bottom, 2-6 anodes left to right). Command 16 utilizes the Dots Matrix. > OK
-	* Playing Signal (GPIO 16): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Function of Output GPIOs (GPIO 12 and 13): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Playing Signal (GPIO 16 for PWM0 and 21 for PWM1): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 	* Synchronization Clock OUT (GPIO 17): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
 	* Function of Input GPIOs Connected with Raspberry Pi 3B Using [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes), Including Changing Beat (Command 29 and 30) and Clearing Output (Command 31) > OK
-	* Function of Output GPIOs (GPIO 2-6 and 7-13): Connected with 5x7 Dots Matrix Blue LED (MOA20UB019GJ), each cathode is connected with a 10K ohms resister to limit current (GPIO 7-13 cathodes top to bottom, 2-6 anodes left to right). Command 16 utilizes the Dots Matrix. > OK
-	* Playing Signal (GPIO 16): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Function of Output GPIOs (GPIO 12 and 13): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Playing Signal (GPIO 16 for PWM0 and 21 for PWM1): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 	* Synchronization Clock OUT (GPIO 17): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
-	* Function of Input GPIOs, Manually Signaling > OK
-	* Function of Output GPIOs (GPIO 2-5): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
-	* Playing Signal (GPIO 16): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Function of Input GPIOs Connected with Raspberry Pi 3B Using [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes), Including Changing Beat (Command 29 and 30) and Clearing Output (Command 31) > OK
+	* Function of Output GPIOs (GPIO 12 and 13): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Playing Signal (GPIO 16 for PWM0 and 21 for PWM1): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 	* Synchronization Clock OUT (GPIO 17): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 
 * Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
 	* Function of Input GPIOs Connected with Raspberry Pi Zero W Using [GPIO Push Button](https://github.com/JimmyKenMerchant/Python_Codes), Including Changing Beat (Command 29 and 30) and Clearing Output (Command 31) > OK
-	* Function of Output GPIOs (GPIO 2-6 and 7-13): Connected with 5x7 Dots Matrix Blue LED (MOA20UB019GJ), each cathode is connected with a 10K ohms resister to limit current (GPIO 7-13 cathodes top to bottom, 2-6 anodes left to right). Command 16 utilizes the Dots Matrix. > OK
-	* Playing Signal (GPIO 16): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Function of Output GPIOs (GPIO 12 and 13): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
+	* Playing Signal (GPIO 16 for PWM0 and 21 for PWM1): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 	* Synchronization Clock OUT (GPIO 17): Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
