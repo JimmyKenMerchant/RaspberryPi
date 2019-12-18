@@ -2503,24 +2503,24 @@ extern obj stat32_order( obj array, uint32 length, bool decreasing );
 
 
 /********************************
- * system32/library/stat32.s
+ * system32/library/fft32.s
  ********************************/
 
-extern uint32 fft32_fft( obj in_real, obj in_imaginary, uint32 log2_length, ObjArray tables_sin, ObjArray tables_cos );
+extern uint32 fft32_fft( obj samples_real, obj samples_imaginary, uint32 log2_length, ObjArray tables_sin, ObjArray tables_cos );
 
-extern uint32 fft32_ifft( obj in_real, obj in_imaginary, uint32 log2_length, ObjArray tables_sin, ObjArray tables_cos );
+extern uint32 fft32_ifft( obj samples_real, obj samples_imaginary, uint32 log2_length, ObjArray tables_sin, ObjArray tables_cos );
 
-extern uint32 fft32_change_order( obj units, uint32 length );
+extern uint32 fft32_change_order( obj samples, uint32 length );
 
-extern uint32 fft32_coefficient( obj units, uint32 length );
+extern uint32 fft32_coefficient( obj samples, uint32 length );
 
-extern uint32 fft32_powerspectrum( obj units, uint32 length );
+extern uint32 fft32_powerspectrum( obj samples_real, obj samples_imaginary, uint32 length );
 
-extern uint32 fft32_index_highest( obj units, uint32 length );
+extern uint32 fft32_index_highest( obj samples, uint32 length );
 
-extern uint32 fft32_window_han( obj units, uint32 length, obj table_cos );
+extern uint32 fft32_window_han( obj samples, uint32 length, obj table_cos );
 
-extern uint32 fft32_window_hamming( obj units, uint32 length, obj table_cos );
+extern uint32 fft32_window_hamming( obj samples, uint32 length, obj table_cos );
 
 extern obj fft32_make_table( uint32 number_divisor, uint32 length, bool flag_cos );
 

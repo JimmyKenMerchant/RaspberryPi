@@ -20,7 +20,7 @@ int32 _user_start()
 			"12.0,13.0,14.0,15.0\0";
 
 	// Triangle Wave, Frequency Is 8 Herts (n * (1 / Sampling Range in Seconds)), So n=8 (n is 0 to Sample Length - 1) Should Be The Highest Amplitude
-	// In Autocorrelation, Frequency Is ((Sample Length / n) * (1 / Sampling Range in Seconds)), So n=64 (n is 0 to Sample Length - 1) Should Be The Highest Amplitude
+	// In Autocorrelation, Frequency Is ((Sample Length / n) * (1 / Sampling Range in Seconds)), So n=64 (n is 0 to Sample Length - 1) Should Be The Highest Amplitude, However, Oscillation on Real Part Decays
 	// Zero Padding Half of Length (256)
 	String string_table_pre1 =
 			"31.0,30.0,29.0,28.0,27.0,26.0,25.0,24.0,"\
@@ -287,13 +287,13 @@ int32 _user_start()
 	fft32_coefficient( in_imag, 512 );
 
 	// Make Power Spectrum
-	fft32_powerspectrum( in_real, 512 );
+	fft32_powerspectrum( in_real, in_imag, 512 );
 
 	// Display FFT Value
-	//String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
+	String string_in_real = cvt32_farray_to_string( in_real, 1, 8, 0 );
 	//String string_in_imag = cvt32_farray_to_string( in_imag, 1, 8, 0 );
-	//print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
-	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
+	print32_set_caret( print32_string( string_in_real, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_real ) ) );
+	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 	//print32_set_caret( print32_string( string_in_imag, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag ) ) );
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
@@ -303,9 +303,9 @@ int32 _user_start()
 	//fft32_change_order( in_imag, 512 );
 
 	// Power Spectrum's IFFT to Make Autocorrelation
-	fft32_ifft( in_real, in_imag_power, 9, tables_sin, tables_cos );
-	fft32_change_order( in_real, 512 );
-	fft32_change_order( in_imag_power, 512 );
+	//fft32_ifft( in_real, in_imag_power, 9, tables_sin, tables_cos );
+	//fft32_change_order( in_real, 512 );
+	//fft32_change_order( in_imag_power, 512 );
 
 	// Display IFFT Value
 	//String string_in_real_i = cvt32_farray_to_string( in_real, 1, 8, 0 );
@@ -315,11 +315,12 @@ int32 _user_start()
 	//print32_set_caret( print32_string( string_in_imag_i, FB32_X_CARET, FB32_Y_CARET, str32_strlen( string_in_imag_i ) ) );
 	//print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
-	// Highest Index for Power Spectrum and Autocorrelation
+	// Highest Index for Power Spectrum
 	// Sample Length Divided By 2 Because of Nyquist Rate
-	// n=0 is Omitted, n=0 Is Aperiodic (Non-periodic) in Fourier Transform
-	uint32 index = fft32_index_highest( in_real + 1 * 4, 256 - 1 ); // Offset 4 Bytes to Omit n=0
-	print32_set_caret( print32_number( index + 1, FB32_X_CARET, FB32_Y_CARET, 8 ) );
+	// n=0 Is Omitted, n=0 Is Aperiodic (Non-periodic) in Fourier Transform
+	// n=1 (1hz) Is Omitted
+	uint32 index = fft32_index_highest( in_real + 2 * 4, 256 - 2 ); // Offset 8 Bytes to Omit n=0 and n=1
+	print32_set_caret( print32_number( index + 2, FB32_X_CARET, FB32_Y_CARET, 8 ) );
 	print32_set_caret( print32_string( "\n\0", FB32_X_CARET, FB32_Y_CARET, 1 ) );
 
 	while(True) {

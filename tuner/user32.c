@@ -72,7 +72,7 @@ int32 _user_start()
 {
 	bool flag_flip = true;
 
-	obj zeros = (obj)heap32_malloc( 32768 );
+	obj imaginary_zeros = (obj)heap32_malloc( 32768 );
 	ObjArray tables_sin = fft32_make_table2d( 32768, false );
 	ObjArray tables_cos = fft32_make_table2d( 32768, true );
 
@@ -100,23 +100,25 @@ int32 _user_start()
 //print32_debug_hexa( TUNER_FIQ_BUFFER, 0, 24, 8 );
 
 			// One Set of FFT
-			fft32_fft( TUNER_FIQ_BUFFER, zeros, 15, tables_sin, tables_cos );
+			fft32_fft( TUNER_FIQ_BUFFER, imaginary_zeros, 15, tables_sin, tables_cos );
 
 //print32_debug_hexa( TUNER_FIQ_BUFFER, 0, 48, 8 );
 
 			fft32_change_order( TUNER_FIQ_BUFFER, 32768 );
 			fft32_coefficient( TUNER_FIQ_BUFFER, 32768 );
+			fft32_change_order( imaginary_zeros, 32768 );
+			fft32_coefficient( imaginary_zeros, 32768 );
 			arm32_dsb();
 
 			// Make Power Spectrum
-			fft32_powerspectrum( TUNER_FIQ_BUFFER, 32768 );
+			fft32_powerspectrum( TUNER_FIQ_BUFFER, imaginary_zeros, 32768 );
 			arm32_dsb();
 
-			uint32 index = fft32_index_highest( TUNER_FIQ_BUFFER + 1 * 4, 16384 - 1 ); // Offset 4 Bytes to Omit n=0
-print32_debug( index + 1, 100, 100 );
+			uint32 index = fft32_index_highest( TUNER_FIQ_BUFFER +  54 * 4, 16384 - 54 ) + 54; // Offset 4 Bytes to Omit n=0 to n=53
+print32_debug( index, 100, 100 );
 
 			// Calculate Frequency
-			float32 frequency = vfp32_u32tof32( index + 1 );
+			float32 frequency = vfp32_u32tof32( index );
 			frequency = vfp32_fdiv( frequency, 2.0 );
 			frequency = vfp32_fmul( frequency, calibration );
 
@@ -148,8 +150,8 @@ print32_string( scale101_cent + ( ( cent_int + 50 ) << 2 ), 100, 148, 3 );
 			_lcdstring( " ", 1 );
 			_lcdstring( scale101_cent + ( ( cent_int + 50 ) << 2 ), 3 );
 
-			heap32_mfill( TUNER_FIQ_BUFFER, 0 );
-			heap32_mfill( zeros, 0 );
+			//heap32_mfill( TUNER_FIQ_BUFFER, 0 );
+			heap32_mfill( imaginary_zeros, 0 );
 
 			uint32 time = _stopwatch_end();
 print32_debug( time, 0, 36 );

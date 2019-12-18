@@ -22,8 +22,8 @@
  * The total number of turns becomes N * log2(N). Normal DFT needs N^2.
  *
  * Parameters
- * r0: Array of Samples to Be Transformed (Real Number)
- * r1: Array of Samples to Be Transformed (Imaginary Number)
+ * r0: Array of Samples to Be Transformed (Real Part)
+ * r1: Array of Samples to Be Transformed (Imaginary Part)
  * r2: Logarithm to Base 2 of Length of Samples, Length of Samples Must Be Power of 2
  * r3: 2D Array of Unit Circle Tables of Sine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
  * r4: 2D Array of Unit Circle Tables of Cosine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
@@ -285,8 +285,8 @@ fft32_fft:
  * This function uses iteration of N=2 discrete Fourier transform (DFT), it's one of Cooley-Turkey algorithm.
  *
  * Parameters
- * r0: Array of Samples to Be Transformed (Real Number)
- * r1: Array of Samples to Be Transformed (Imaginary Number)
+ * r0: Array of Samples to Be Transformed (Real Part)
+ * r1: Array of Samples to Be Transformed (Imaginary Part)
  * r2: Logarithm to Base 2 of Length of Samples, Length of Samples Must Be Power of 2
  * r3: 2D Array of Unit Circle Tables of Sine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
  * r4: 2D Array of Unit Circle Tables of Cosine Values, Maximum Length of Units in Table Needs to Be Same as Length of Samples, Minimum Length Needs to Be 2
@@ -533,10 +533,10 @@ fft32_ifft:
 
 /**
  * function fft32_change_order
- * Change Order of An Array with Reversing Bits
+ * Change Order of Samples with Reversing Bits
  *
  * Parameters
- * r0: Array of Samples to Be Transformed
+ * r0: Array of Samples (Real/Imaginary Part) to Be Transformed
  * r0: Length of Samples, Must Be Power of 2
  *
  * Return: r0 (0 as success)
@@ -614,10 +614,10 @@ fft32_change_order:
 
 /**
  * function fft32_coefficient
- * Multiply Coefficient 1/N to Each Unit in Sample
+ * Multiply Coefficient 1/N to Samples
  *
  * Parameters
- * r0: Array of Samples
+ * r0: Array of Samples (Real/Imaginary Part) to Be Transformed
  * r1: Length of Samples
  *
  * Return: r0 (0 as success)
@@ -666,26 +666,29 @@ fft32_coefficient:
 
 /**
  * function fft32_powerspectrum
- * Make Power Spectrum from Frequency Spectrum (Real Number of FFT Output)
+ * Make Power Spectrum from Frequency Spectrum, Returns Result in Array of Samples (Real Part)
  *
  * Parameters
- * r0: Array of Samples
- * r1: Length of Samples
+ * r0: Array of Samples (Real Part)
+ * r1: Array of Samples (Imaginary Part)
+ * r2: Length of Samples
  *
  * Return: r0 (0 as success)
  */
 .globl fft32_powerspectrum
 fft32_powerspectrum:
 	/* Auto (Local) Variables, but just Aliases */
-	arr_sample .req r0
-	length     .req r1
-	i          .req r2
+	arr_sample_real .req r0
+	arr_sample_imag .req r1
+	length          .req r2
+	i               .req r3
 
 	/* VFP Registers */
-	vfp_value  .req s0
+	vfp_value_real  .req s0
+	vfp_value_imag  .req s1
 
 	push {lr}
-	vpush {s0}
+	vpush {s0-s1}
 
 	mov i, #0
 	fft32_powerspectrum_loop:
@@ -693,34 +696,40 @@ fft32_powerspectrum:
 		bhs fft32_powerspectrum_common
 
 		/**
-		 * Power Spectrum |F(x)|^2 = F(x) * Conjugate of F(x)
+		 * Power Spectrum |F(x)|^2 = F(x) * Conjugate of F(x) = Re^2 + Im^2
 		 */
 
-		vldr vfp_value, [arr_sample]
-		vmul.f32 vfp_value, vfp_value, vfp_value
-		vstr vfp_value, [arr_sample]
+		vldr vfp_value_real, [arr_sample_real]
+		vmul.f32 vfp_value_real, vfp_value_real, vfp_value_real
+		vldr vfp_value_imag, [arr_sample_imag]
+		vmul.f32 vfp_value_imag, vfp_value_imag, vfp_value_imag
+		vadd.f32 vfp_value_real, vfp_value_real, vfp_value_imag
+		vstr vfp_value_real, [arr_sample_real]
 
-		add arr_sample, arr_sample, #4
+		add arr_sample_real, arr_sample_real, #4
+		add arr_sample_imag, arr_sample_imag, #4
 		add i, i, #1
 		b fft32_powerspectrum_loop
 
 	fft32_powerspectrum_common:
 		mov r0, #0
-		vpop {s0}
+		vpop {s0-s1}
 		pop {pc}
 
-.unreq arr_sample
+.unreq arr_sample_real
+.unreq arr_sample_imag
 .unreq length
 .unreq i
-.unreq vfp_value
+.unreq vfp_value_real
+.unreq vfp_value_imag
 
 
 /**
  * function fft32_index_highest
- * Get Index of Highest Value in Array
+ * Get Index of Highest Value in Samples
  *
  * Parameters
- * r0: Array of Samples
+ * r0: Array of Samples (Real/Imaginary Part)
  * r1: Length of Samples
  *
  * Return: r0 (Index of Highest Value, Index is 0 to Length - 1)
@@ -776,7 +785,7 @@ fft32_index_highest:
  * Han (Hanning) Window
  *
  * Parameters
- * r0: Array of Samples
+ * r0: Array of Samples (Real/Imaginary Part)
  * r1: Length of Samples
  * r2: Unit Circle Table of Cosine Values, Length Is Same as Length of Samples
  *
@@ -843,7 +852,7 @@ fft32_window_han:
  * Hamming Window
  *
  * Parameters
- * r0: Array of Samples
+ * r0: Array of Samples (Real/Imaginary Part)
  * r1: Length of Samples
  * r2: Unit Circle Table of Cosine Values, Length Is Same as Length of Samples
  *
