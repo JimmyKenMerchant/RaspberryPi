@@ -696,7 +696,10 @@ fft32_powerspectrum:
 		bhs fft32_powerspectrum_common
 
 		/**
-		 * Power Spectrum |F(x)|^2 = F(x) * Conjugate of F(x) = Re^2 + Im^2
+		 * Power Spectrum |F(x)|^2 = F(x) * Conjugate of F(x) = a^2 + b^2
+		 * F(x) = a + bi (i is the imaginary unit)
+		 * Conjugate of F(x) = a - bi
+		 * (a + bi)(a - bi) = a^2 - abi + bia - bi^2 = a^2 - (b^2)(i^2) = a^2 - (b^2)(-1) = a^2 - -(b^2) = a^2 + b^2
 		 */
 
 		vldr vfp_value_real, [arr_sample_real]

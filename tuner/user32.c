@@ -106,15 +106,15 @@ int32 _user_start()
 
 			fft32_change_order( TUNER_FIQ_BUFFER, 32768 );
 			fft32_coefficient( TUNER_FIQ_BUFFER, 32768 );
-			fft32_change_order( imaginary_zeros, 32768 );
-			fft32_coefficient( imaginary_zeros, 32768 );
+			//fft32_change_order( imaginary_zeros, 32768 );
+			//fft32_coefficient( imaginary_zeros, 32768 );
 			arm32_dsb();
 
 			// Make Power Spectrum
-			fft32_powerspectrum( TUNER_FIQ_BUFFER, imaginary_zeros, 32768 );
-			arm32_dsb();
+			//fft32_powerspectrum( TUNER_FIQ_BUFFER, imaginary_zeros, 32768 );
+			//arm32_dsb();
 
-			uint32 index = fft32_index_highest( TUNER_FIQ_BUFFER +  54 * 4, 16384 - 54 ) + 54; // Offset 4 Bytes to Omit n=0 to n=53
+			uint32 index = fft32_index_highest( TUNER_FIQ_BUFFER + 1 * 4, 16384 - 1 ) + 1; // Offset 4 Bytes to1 Omit n=0
 print32_debug( index, 100, 100 );
 
 			// Calculate Frequency
@@ -150,7 +150,7 @@ print32_string( scale101_cent + ( ( cent_int + 50 ) << 2 ), 100, 148, 3 );
 			_lcdstring( " ", 1 );
 			_lcdstring( scale101_cent + ( ( cent_int + 50 ) << 2 ), 3 );
 
-			//heap32_mfill( TUNER_FIQ_BUFFER, 0 );
+			heap32_mfill( TUNER_FIQ_BUFFER, 0 );
 			heap32_mfill( imaginary_zeros, 0 );
 
 			uint32 time = _stopwatch_end();
