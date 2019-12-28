@@ -22,7 +22,7 @@ run
 
 ```
 * Example of "Aloha Mini Language" to Multiply Integers.
-int .answer .number1 * number2
+int .answer .number1 * .number2
 .answer
 .number1 3
 .number2 4
@@ -118,19 +118,27 @@ run
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S on sound=i2s (If you no need, uncomment __SOUND on the top of vector.s)
 
+* GPIO 40 as Output of PWM0 (R of Phone Connector) on sound=jack
+
+* GPIO 45 (GPIO 41 on RasPi 3B) as Output of PWM1 (L of Phone Connector) on sound=jack
+
 * HDMI as VIDEO Output
+
+## YOU'LL MEET BIG SOUND! PLEASE CARE OF YOUR EARS! I RECOMMEND THAT YOU DON'T USE ANY EARPHONE OR HEADPHONE FOR THIS PROJECT.
 
 ## GPIO PINS ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
 **Compatibility**
 
-* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow`
+* Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero sound=i2s` or `make type=zero sound=pwm`
 
-* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
+* Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
 
-* Raspberry Pi 3 B V.1.2 (BCM2837), `make type=3b`
+* Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm` or `make type=2b sound=jack`
 
-**Settings for Another Raspberry Pi to Check This Test**
+* Caution that Raspberry Pi 3 B V.1.2 (BCM2837) is under testing.
+
+**Settings to Check This Test**
 
 ```bash
 #This Example is for Raspberry Pi 3B and Pi Zero W with Raspbian Stretch 
@@ -158,6 +166,16 @@ sudo minicom -D /dev/serial0
 
 # https://unix.stackexchange.com/questions/117037/how-to-send-data-to-a-serial-port-and-see-any-answer
 ```
+
+**Hardware**
+
+* AT24C1024B: Two-wire Serial EEPROM
+
+* UDA1334A with Adafruit's Breakout: I2S Stereo Decoder
+
+**Electric Schematics**
+
+* [Sound System for PWM Output](../schematics/sound_system_pwm.pdf)
 
 **Version Information**
 
