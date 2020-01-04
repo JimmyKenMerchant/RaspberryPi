@@ -116,6 +116,8 @@
 
 ## Compatibility
 
+* Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero sound=i2s` or `make type=zero sound=pwm`
+
 * Raspberry Pi Zero W V.1.1 (BCM2835), `make type=zerow sound=i2s` or `make type=zerow sound=pwm`
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b sound=i2s` or `make type=2b sound=pwm` or `make type=2b sound=jack`
