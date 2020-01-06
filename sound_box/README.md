@@ -58,7 +58,7 @@
 
 * GPIO17 as Output of Synchronization Clock OUT of Sound Box
 
-* GPIO20 as Output of GATE Signal Synchronized with MIDI IN (On Note Off Event)
+* GPIO20 as Output of GATE Signal Synchronized with MIDI IN (Note On Event)
 
 * GPIO15 as Input of RXD0 (UART) for MIDI IN
 
