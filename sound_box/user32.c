@@ -667,18 +667,19 @@ int32 _user_start() {
 
 //print32_debug( detect_parallel, 100, 100 );
 
+// Subtract Pitch Bend Ratio to Divisor (Upside Down)
 #ifdef __SOUND_I2S
-			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
+			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR - SND32_SOUNDMIDI_PITCHBEND );
 #elif defined(__SOUND_I2S_BALANCED)
-			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR );
+			_clockmanager_divisor( _cm_pcm, SND32_DIVISOR - SND32_SOUNDMIDI_PITCHBEND );
 #elif defined(__SOUND_PWM)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR - SND32_SOUNDMIDI_PITCHBEND );
 #elif defined(__SOUND_PWM_BALANCED)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR - SND32_SOUNDMIDI_PITCHBEND );
 #elif defined(__SOUND_JACK)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR - SND32_SOUNDMIDI_PITCHBEND );
 #elif defined(__SOUND_JACK_BALANCED)
-			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR );
+			_clockmanager_divisor( _cm_pwm, SND32_DIVISOR - SND32_SOUNDMIDI_PITCHBEND );
 #endif
 
 /*

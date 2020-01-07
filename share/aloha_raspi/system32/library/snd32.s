@@ -660,10 +660,6 @@ snd32_soundplay:
 		movne temp2, #equ32_snd32_mul_pcm
 		mul temp, temp, temp2
 
-		/* Current Pitch Bend */
-		ldr temp4, SND32_SOUNDMIDI_PITCHBEND
-		sub temp, temp, temp4                      @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-
 		push {r0-r3}
 		cmp mode, #0
 		moveq r0, #equ32_cm_pwm
@@ -1538,11 +1534,6 @@ macro32_debug data1, 0, 88
 		movne temp2, #equ32_snd32_mul_pcm
 		mul temp, temp, temp2
 
-		/* Current Pitch Bend */
-		ldr data1, SND32_SOUNDMIDI_PITCHBEND
-
-		sub temp, temp, data1                             @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-
 		push {r0-r3}
 		cmp mode, #0
 		moveq r0, #equ32_cm_pwm
@@ -1673,9 +1664,9 @@ macro32_debug data1, 0, 112
 			beq snd32_soundmidi_success                        @ If Silence
 
 			/* Check If Null (End of Sequence) on Current Music Code */
-			mov temp2, #0xFF00
-			orr temp2, temp2, #0x00FF
-			cmp data1, temp2
+			mov temp, #0xFF00
+			orr temp, temp, #0x00FF
+			cmp data1, temp
 			beq snd32_soundmidi_success                        @ If Null
 
 			/* Except Silence or Null (End of Sequence of Music Code), Immediately Change Frequency Range */
@@ -1690,22 +1681,15 @@ macro32_debug data1, 0, 112
 			movne temp2, #equ32_snd32_mul_pcm
 			mul temp, temp, temp2
 
-			/* Current Pitch Bend */
-			ldr data1, SND32_SOUNDMIDI_PITCHBEND
-
-			sub temp, temp, data1                              @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-
-			mov data1, data2
-
 			/* Maximum Frequency on Modulation */
-			add data2, temp, data1
+			add data1, temp, data2
 			ldr temp2, SND32_MODULATION_MAX_ADDR
-			str data2, [temp2]
+			str data1, [temp2]
 
 			/* Minimum Frequency on Modulation */
-			sub data2, temp, data1
+			sub data1, temp, data2
 			ldr temp2, SND32_MODULATION_MIN_ADDR
-			str data2, [temp2]
+			str data1, [temp2]
 
 			b snd32_soundmidi_success
 
@@ -1790,43 +1774,8 @@ macro32_debug data1, 0, 112
 		moveq data2, #equ32_snd32_mul_pwm
 		movne data2, #equ32_snd32_mul_pcm
 		mul data1, data1, data2                       @ Multiply with Multiplier
-		str data1, SND32_SOUNDMIDI_PITCHBEND
-
-		/* Tune Tone */
-
-		ldr temp, SND32_SOUND_ADJUST
-		ldr temp2, SND32_CURRENTCODE
-		lsl temp2, temp2, #1                          @ Multiply by 2
-		ldrh temp, [temp, temp2]                      @ Half Word
-		mul temp, temp, data2                         @ Multiply with Multiplier
-
-		sub temp, temp, data1                         @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-
-		push {r0-r3}
-		cmp mode, #0
-		moveq r0, #equ32_cm_pwm
-		movne r0, #equ32_cm_pcm
-		mov r1, temp
-		bl arm32_clockmanager_divisor
-		pop {r0-r3}
-
-		/* Set Base Divisor on Modulation */
-		ldr temp2, SND32_DIVISOR_ADDR
-		str temp, [temp2]
-
-		/* Make Frequency Range on Modulation */
-		ldr data1, SND32_MODULATION_RANGE_ADDR
-		ldr data1, [data1]
-
-		/* Maximum Frequency on Modulation */
-		add data2, temp, data1
-		ldr temp2, SND32_MODULATION_MAX_ADDR
-		str data2, [temp2]
-
-		/* Minimum Frequency on Modulation */
-		sub data2, temp, data1
-		ldr temp2, SND32_MODULATION_MIN_ADDR
-		str data2, [temp2]
+		ldr temp, SND32_SOUNDMIDI_PITCHBEND_ADDR
+		str data1, [temp]
 
 		mov count, #0
 		b snd32_soundmidi_success
@@ -1908,7 +1857,7 @@ SND32_SOUNDMIDI_BASEOFFSET:     .word equ32_snd32_soundmidi_sound0_baseoffset
 SND32_SOUNDMIDI_LOWNOTE:        .word equ32_snd32_soundmidi_sound0_lownote
 SND32_SOUNDMIDI_HIGHNOTE:       .word equ32_snd32_soundmidi_sound0_highnote
 SND32_SOUNDMIDI_CURRENTNOTE:    .word 0x00
-SND32_SOUNDMIDI_PITCHBEND:      .word 0x00
+SND32_SOUNDMIDI_PITCHBEND_ADDR: .word SND32_SOUNDMIDI_PITCHBEND
 
 SND32_SOUNDMIDI_CTL:            .word 0x00  @ Value List of Control Message, 32 Multiplied by 2 (Two Bytes Half Word), No. 0 to No. 31 of Control Change Message
 SND32_VIRTUAL_PARALLEL_ADDR:    .word SND32_VIRTUAL_PARALLEL
@@ -1920,6 +1869,8 @@ SND32_MODULATION_RANGE_ADDR:    .word SND32_MODULATION_RANGE
 
 .section	.data
 _SND32_SOUNDMIDI_BYTEBUFFER:    .word 0x00  @ First Buffer to Receive A Byte from UART
+.globl SND32_SOUNDMIDI_PITCHBEND
+SND32_SOUNDMIDI_PITCHBEND:      .word 0x00
 .globl SND32_VIRTUAL_PARALLEL
 SND32_VIRTUAL_PARALLEL:         .word 0x00  @ Emulate Parallel Inputs Through MIDI IN
 .globl SND32_DIVISOR

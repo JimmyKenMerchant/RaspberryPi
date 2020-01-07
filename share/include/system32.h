@@ -1465,6 +1465,7 @@ extern uint32 draw32_smallen
 /* Global Variable */
 
 extern uint32 SND32_STATUS;
+extern int32 SND32_SOUNDMIDI_PITCHBEND;
 extern uint32 SND32_VIRTUAL_PARALLEL;
 extern uint32 SND32_DIVISOR;
 extern int32 SND32_MODULATION_DELTA;
