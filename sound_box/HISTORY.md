@@ -38,6 +38,7 @@
 				* Noise (Program 3) > OK
 				* Triangle Wave (Program 4) > OK
 				* Distortion Wave (Program 5) > OK
+			* Output of GATE Signal Synchronized with MIDI IN (Note On Event), GPIO20: Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 		* MIDI Channel Select Bit[3:0], GPIO 8-11, Channel 1 (0b0000), Channel 2 (0b0001), 3 (0b0010), 5 (0b0100), 9 (0b1000), 7 (0b0110), and 10 (0b1001) > OK
 
 **January 6, 2020 (#db69ed8)**
@@ -71,6 +72,7 @@
 				* Noise (Program 3) > OK
 				* Triangle Wave (Program 4) > OK
 				* Distortion Wave (Program 5) > OK
+			* Output of GATE Signal Synchronized with MIDI IN (Note On Event), GPIO20: Connected with 3mm Red LED and 10K ohms resister to limit current. > OK
 		* MIDI Channel Select Bit[3:0], GPIO 8-11, Channel 1 (0b0000), Channel 2 (0b0001), 3 (0b0010), 5 (0b0100), 9 (0b1000), 7 (0b0110), and 10 (0b1001) > OK
 
 * Raspberry Pi 2 B V.1.1 (BCM2836), `make type=2b`
