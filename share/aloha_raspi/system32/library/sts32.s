@@ -1381,9 +1381,6 @@ sts32_syntheinit_pwm:
 	mov temp2, #equ32_sts32_mul_pwm
 	mul temp, temp, temp2
 
-	ldr memorymap_base, STS32_MODULATION_RANGE_ADDR
-	str temp, [memorymap_base]
-
 	add temp2, value, temp
 	ldr memorymap_base, STS32_MODULATION_MAX_ADDR
 	str temp2, [memorymap_base]
@@ -1523,9 +1520,6 @@ sts32_syntheinit_i2s:
 	mov temp, #equ32_sts32_range
 	mov temp2, #equ32_sts32_mul_pcm
 	mul temp, temp, temp2
-
-	ldr memorymap_base, STS32_MODULATION_RANGE_ADDR
-	str temp, [memorymap_base]
 
 	add temp2, value, temp
 	ldr memorymap_base, STS32_MODULATION_MAX_ADDR
@@ -2086,15 +2080,10 @@ sts32_synthemidi:
 			lsr data1, data2, #3                          @ Divide by 8, Resolution 16384 to 2048
 			cmp mode, #0
 			moveq data2, #equ32_sts32_mul_pwm
+			moveq temp, #equ32_sts32_neutraldiv_pwm
 			movne data2, #equ32_sts32_mul_pcm
+			movne temp, #equ32_sts32_neutraldiv_pcm
 			mul data1, data1, data2
-
-			ldr temp, STS32_MODULATION_RANGE_ADDR
-			str data1, [temp]
-
-			/* Get Base Divisor on Modulation */
-			ldr temp2, STS32_DIVISOR_ADDR
-			ldr temp, [temp2]
 
 			/* Maximum Frequency on Modulation */
 			add data2, temp, data1
@@ -2332,36 +2321,11 @@ sts32_synthemidi:
 
 		cmp mode, #0
 		moveq data2, #equ32_sts32_mul_pwm
-		moveq temp, #equ32_sts32_neutraldiv_pwm
 		movne data2, #equ32_sts32_mul_pcm
-		movne temp, #equ32_sts32_neutraldiv_pcm
 		mul data1, data1, data2                       @ Multiply with Multiplier
 
-		sub data1, temp, data1                        @ Subtract Pitch Bend Ratio to Neutral Divisor (Upside Down)
-
-		push {r0-r3}
-		cmp mode, #0
-		moveq r0, #equ32_cm_pwm
-		movne r0, #equ32_cm_pcm
-		mov r1, data1
-		bl arm32_clockmanager_divisor
-		pop {r0-r3}
-
-		ldr temp, STS32_DIVISOR_ADDR
+		ldr temp, STS32_PITCHBEND_ADDR
 		str data1, [temp]
-
-		ldr temp, STS32_MODULATION_RANGE_ADDR
-		ldr data2, [temp]
-
-		/* Maximum Value of Modulation */
-		add temp2, data1, data2
-		ldr temp, STS32_MODULATION_MAX_ADDR
-		str temp2, [temp]
-
-		/* Minimum Value of Modulation */
-		sub temp2, data1, data2
-		ldr temp, STS32_MODULATION_MIN_ADDR
-		str temp2, [temp]
 
 		mov count, #0
 		b sts32_synthemidi_success
@@ -2464,10 +2428,10 @@ STS32_SYNTHEMIDI_VOLUME:         .word equ32_sts32_synthemidi_volume
 STS32_SYNTHEMIDI_ENVELOPE:       .word STS32_SYNTHEMIDI_COUNT1
 
 STS32_DIVISOR_ADDR:              .word STS32_DIVISOR
+STS32_PITCHBEND_ADDR:            .word STS32_PITCHBEND
 STS32_MODULATION_DELTA_ADDR:     .word STS32_MODULATION_DELTA
 STS32_MODULATION_MAX_ADDR:       .word STS32_MODULATION_MAX
 STS32_MODULATION_MIN_ADDR:       .word STS32_MODULATION_MIN
-STS32_MODULATION_RANGE_ADDR:     .word STS32_MODULATION_RANGE
 
 STS32_DIGITALMOD_DELTA_ADDR:     .word STS32_DIGITALMOD_DELTA
 STS32_DIGITALMOD_MAX_ADDR:       .word STS32_DIGITALMOD_MAX
@@ -2502,14 +2466,14 @@ STS32_SYNTHEMIDI_DELTA_RELEASE2: .float 0.0
 STS32_VIRTUAL_PARALLEL:          .word 0x00 @ Emulate Parallel Inputs Through MIDI IN
 .globl STS32_DIVISOR
 STS32_DIVISOR:                   .word 0x00
+.globl STS32_PITCHBEND
+STS32_PITCHBEND:                 .word 0x00
 .globl STS32_MODULATION_DELTA
 STS32_MODULATION_DELTA:          .word 0x00
 .globl STS32_MODULATION_MAX
 STS32_MODULATION_MAX:            .word 0x00
 .globl STS32_MODULATION_MIN
 STS32_MODULATION_MIN:            .word 0x00
-.globl STS32_MODULATION_RANGE
-STS32_MODULATION_RANGE:          .word 0x00
 .globl STS32_DIGITALMOD_DELTA
 STS32_DIGITALMOD_DELTA:          .float 0.0
 .globl STS32_DIGITALMOD_MAX

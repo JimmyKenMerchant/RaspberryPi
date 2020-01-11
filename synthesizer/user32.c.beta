@@ -345,12 +345,13 @@ int32 _user_start()
 
 //print32_debug( detect_parallel, 100, 100 );
 
+// Subtract Pitch Bend Ratio to Divisor (Upside Down)
 #ifdef __SOUND_I2S
-			_clockmanager_divisor( _cm_pcm, STS32_DIVISOR );
+			_clockmanager_divisor( _cm_pcm, STS32_DIVISOR - STS32_PITCHBEND );
 #elif defined(__SOUND_PWM)
-			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR );
+			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR - STS32_PITCHBEND );
 #elif defined(__SOUND_JACK)
-			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR );
+			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR - STS32_PITCHBEND );
 #endif
 
 				/* Triangle LFO for MODULATION (Vibration) */
