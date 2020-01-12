@@ -18,6 +18,38 @@
 
 * Notice: Versions of Linker (GNU ld), Copier (GNU objcopy), and Dumper (GNU objdump) are the same as Assembler because these are included in a package, binutils-arm-none-eabi.
 
+* 1.1.9 on January 12, 2020:
+Git: git version 2.20.1
+Make: GNU Make 4.2.1 Built for arm-unknown-linux-gnueabihf
+Assembler (Binary Utilities): arm-none-eabi-as = GNU assembler (2.31.1-11+rpi1+11) 2.31.1
+Compiler: arm-none-eabi-gcc (15:7-2018-q2-6) 7.3.1 20180622 (release) [ARM/embedded-7-branch revision 261907]
+Linux Distro `lsb_release -a`: Raspbian GNU/Linux 10 (buster)
+Machine to Compile:
+ 1. Raspberry Pi 3 Model B V1.2 (Main)
+ 2. Raspberry Pi Zero W V.1.1
+ 3. Raspberry Pi Zero V.1.3
+ 4. Raspberry Pi 2 B V.1.1
+Firmware:
+ 1. LICENCE.broadcom: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/LICENCE.broadcom
+ 2. bootcode.bin: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/bootcode.bin
+ 3. fixup.dat: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/fixup.dat
+ 4. start.elf: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/boot/start.elf
+ 5. dt-blob.dts: https://raw.githubusercontent.com/raspberrypi/firmware/1.20190925/extra/dt-blob.dts
+Device Tree Compiler: device-tree-compiler = DTC 1.4.7
+Test Target:
+ 1. First Priority: Raspberry Pi Zero W V.1.1 (BCM2835)
+ 2. Second Priority: Raspberry Pi 3 B V.1.2 (BCM2837)
+ 3. Third Priority: Raspberry Pi Zero V.1.3 (BCM2835)
+ 4. Back Up: Raspberry Pi 2 B V.1.1 (BCM2836)
+Outstanding Issues:
+ 1. Synthesizer (Functions in sts32.s): CC#16 and CC#48 to Changing Frequency Range of Modulation in MIDI IN > Noise and Freeze
+ 2. Sound Box (Functions in snd32.s): Pitch Bending in MIDI IN > Noise on Note Off
+ 3. Tuner (Functions in fft32.s): Incorrect Calculation of Power Spectrum
+ 4. Synthesizer and Sound Box: No Test with MIDI Hardware
+ 5. Schematics: No Bypass Capacitor on External Power Supply (dc_motor_driver.pdf, dc_motor_driver2.pdf)
+Description:
+Getting firmware using `wget`. To make dt-blob.bin, `sudo dtc -I dts -O dtb -o dt-blob.bin -q dt-blob.dts`.
+
 * 1.1.1 on June 27, 2019:
 Git: git version 2.11.0
 Make: GNU Make 4.1 Built for arm-unknown-linux-gnueabihf
