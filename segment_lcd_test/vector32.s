@@ -72,6 +72,15 @@ os_reset:
 	/* GPIO0-45 Reset and Pull Down */
 	bl gpio32_gpioreset
 
+	mov r0, #equ32_peripherals_base
+	add r0, r0, #equ32_gpio_base
+
+	/* I/O Settings */
+	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
+	str r1, [r0, #equ32_gpio_gpfsel10]
+
 	/* I/O Settings at user32.c */
 
 	macro32_dsb ip

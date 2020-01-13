@@ -455,21 +455,6 @@ pwm32_pwminit:
 	push {r4,lr}
 
 	/**
-	 * GPIO for PWM
-	 */
-	mov memorymap_base, #equ32_peripherals_base
-	add memorymap_base, memorymap_base, #equ32_gpio_base
-
-	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2  @ Clear GPIO 12
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2   @ Set GPIO 12 PWM0
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3  @ Clear GPIO 13
-	orr value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3   @ Set GPIO 13 PWM1
-	str value, [memorymap_base, #equ32_gpio_gpfsel10]
-
-	macro32_dsb ip
-
-	/**
 	 * PWM Settings
 	 */
 	mov memorymap_base, #equ32_peripherals_base
