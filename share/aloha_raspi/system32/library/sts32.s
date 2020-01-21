@@ -1247,9 +1247,8 @@ STS32_CODE_LANE_NEXT:   .word 0x00 @ Pointer of Next Synthesizer Code
 STS32_LENGTH_LANE_NEXT: .word 0x00 @ Length of Next Synthesizer Code
 STS32_COUNT_LANE_NEXT:  .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
 STS32_REPEAT_LANE_NEXT: .word 0x00 @ Repeat status of Next Synthesizer Code
-.space 32 * equ32_sts32_lane_max, 0x00 @ Total 4 Lanes in Default
+.space 32 * (equ32_sts32_lane_max - 1), 0x00 @ Total 4 Lanes in Default
 .section	.library_system32
-
 STS32_LANE_ADDR:        .word STS32_LANE
 .section	.data
 .globl STS32_LANE

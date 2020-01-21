@@ -7,10 +7,20 @@
  *
  */
 
-GPIO32_SEQUENCE:            .word 0x00 @ Pointer of GPIO Sequence, If End, Automatically Cleared
-GPIO32_LENGTH:              .word 0x00 @ Length of GPIO Sequence, If End, Automatically Cleared
-GPIO32_COUNT:               .word 0x00 @ Incremental Count, Once GPIO Sequence Reaches Last, This Value will Be Reset
-GPIO32_REPEAT:              .word 0x00 @ -1 is Infinite Loop
+GPIO32_SEQUENCES:    .word GPIO32_SEQUENCE_LANE
+.section	.data
+GPIO32_SEQUENCE_LANE: .word 0x00 @ Pointer of GPIO Sequence, If End, Automatically Cleared
+GPIO32_LENGTH_LANE:   .word 0x00 @ Length of GPIO Sequence, If End, Automatically Cleared
+GPIO32_COUNT_LANE:    .word 0x00 @ Incremental Count, Once GPIO Sequence Reaches Last, This Value will Be Reset
+GPIO32_REPEAT_LANE:   .word 0x00 @ -1 is Infinite Loop
+.space 16 * (equ32_gpio32_lane_max - 1), 0x00 @ Total 4 Lanes in Default
+.section	.arm_system32
+GPIO32_LANE_ADDR:    .word GPIO32_LANE
+.section	.data
+.globl GPIO32_LANE
+GPIO32_LANE:         .word 0    @ Current LANE to Handle (Lane No. - 1)
+.section	.arm_system32
+
 
 /**
  * Usage
@@ -57,19 +67,27 @@ gpio32_gpioplay:
 	sequence_flip .req r6
 	gpio_base     .req r7
 	temp          .req r8
+	addr_lane     .req r9
 
-	push {r4-r8}
+	push {r4-r9}
 
-	ldr addr_seq, GPIO32_SEQUENCE
+	ldr temp, GPIO32_LANE_ADDR
+	ldr temp, [temp]
+	cmp temp, #equ32_gpio32_lane_max
+	movhs temp, #equ32_gpio32_lane_max - 1
+	ldr addr_lane, GPIO32_SEQUENCES
+	add addr_lane, addr_lane, temp, lsl #4         @ Addition with Multiply by 16
+
+	ldr addr_seq, [addr_lane]
 	cmp addr_seq, #0
 	beq gpio32_gpioplay_error
 
-	ldr length, GPIO32_LENGTH
+	ldr length, [addr_lane, #4]
 	cmp length, #0
 	beq gpio32_gpioplay_error
 
-	ldr count, GPIO32_COUNT
-	ldr repeat, GPIO32_REPEAT
+	ldr count, [addr_lane, #8]
+	ldr repeat, [addr_lane, #12]
 
 	cmp count, length
 	blo gpio32_gpioplay_main
@@ -131,8 +149,8 @@ gpio32_gpioplay:
 		gpio32_gpioplay_main_common:
 
 			add count, count, #1
-			str count, GPIO32_COUNT
-			str repeat, GPIO32_REPEAT
+			str count, [addr_lane, #8]
+			str repeat, [addr_lane, #12]
 
 			b gpio32_gpioplay_success
 
@@ -141,10 +159,10 @@ gpio32_gpioplay:
 		mov addr_seq, #0
 		mov length, #0
 
-		str addr_seq, GPIO32_SEQUENCE
-		str length, GPIO32_LENGTH
-		str count, GPIO32_COUNT               @ count is Already Zero
-		str repeat, GPIO32_REPEAT             @ repeat is Already Zero
+		str addr_seq,  [addr_lane]
+		str length, [addr_lane, #4]
+		str count,  [addr_lane, #8]           @ count is Already Zero
+		str repeat, [addr_lane, #12]          @ repeat is Already Zero
 
 		b gpio32_gpioplay_success
 
@@ -156,7 +174,7 @@ gpio32_gpioplay:
 		mov r0, #0                            @ Return with Success
 
 	gpio32_gpioplay_common:
-		pop {r4-r8}
+		pop {r4-r9}
 		mov pc, lr
 
 .unreq mask
@@ -168,6 +186,7 @@ gpio32_gpioplay:
 .unreq sequence_flip
 .unreq gpio_base
 .unreq temp
+.unreq addr_lane
 
 
 /**
@@ -191,27 +210,34 @@ gpio32_gpioset:
 	count       .req r2 @ Scratch Register
 	repeat      .req r3 @ Scratch Register
 	temp        .req r4
+	addr_lane   .req r5
 
-	push {r4}
+	push {r4-r5}
 
 	cmp addr_seq, #0
 	beq gpio32_gpioset_error
 	cmp length, #0
 	beq gpio32_gpioset_error
 
+	ldr temp, GPIO32_LANE_ADDR
+	ldr temp, [temp]
+	cmp temp, #equ32_gpio32_lane_max
+	movhs temp, #equ32_gpio32_lane_max - 1
+	ldr addr_lane, GPIO32_SEQUENCES
+	add addr_lane, addr_lane, temp, lsl #4 @ Addition with Multiply by 16
+
 	mov temp, #0
-
-	str temp, GPIO32_SEQUENCE     @ Prevent Odd Functions
-
-	macro32_dsb ip
-
-	str length, GPIO32_LENGTH
-	str count, GPIO32_COUNT
-	str repeat, GPIO32_REPEAT
+	str temp, [addr_lane]                  @ Prevent Odd Functions
 
 	macro32_dsb ip
 
-	str addr_seq, GPIO32_SEQUENCE @ Should Set at End for Polling Function, `gpio32_gpioplay`
+	str length, [addr_lane, #4]
+	str count, [addr_lane, #8]
+	str repeat, [addr_lane, #12]
+
+	macro32_dsb ip
+
+	str addr_seq, [addr_lane]              @ Should Set at End for Polling Function, `gpio32_gpioplay`
 
 	b gpio32_gpioset_success
 
@@ -221,10 +247,10 @@ gpio32_gpioset:
 
 	gpio32_gpioset_success:
 		macro32_dsb ip
-		mov r0, #0                                 @ Return with Success
+		mov r0, #0                             @ Return with Success
 
 	gpio32_gpioset_common:
-		pop {r4}
+		pop {r4-r5}
 		mov pc, lr
 
 .unreq addr_seq
@@ -232,6 +258,7 @@ gpio32_gpioset:
 .unreq count
 .unreq repeat
 .unreq temp
+.unreq addr_lane
 
 
 /**
@@ -250,16 +277,23 @@ gpio32_gpioclear:
 	mask        .req r0
 	stay        .req r1
 	temp        .req r2
+	addr_lane   .req r3
+
+	ldr temp, GPIO32_LANE_ADDR
+	ldr temp, [temp]
+	cmp temp, #equ32_gpio32_lane_max
+	movhs temp, #equ32_gpio32_lane_max - 1
+	ldr addr_lane, GPIO32_SEQUENCES
+	add addr_lane, addr_lane, temp, lsl #4 @ Addition with Multiply by 16
 
 	mov temp, #0
-
-	str temp, GPIO32_SEQUENCE                  @ Prevent Odd Functions
+	str temp, [addr_lane]                  @ Prevent Odd Functions
 
 	macro32_dsb ip
 
-	str temp, GPIO32_LENGTH
-	str temp, GPIO32_COUNT
-	str temp, GPIO32_REPEAT
+	str temp, [addr_lane, #4]
+	str temp, [addr_lane, #8]
+	str temp, [addr_lane, #12]
 
 	cmp stay, #0
 	bhi gpio32_gpioclear_success
@@ -269,10 +303,10 @@ gpio32_gpioclear:
 
 	mov temp, #equ32_peripherals_base
 	add temp, temp, #equ32_gpio_base
-	str mask, [temp, #equ32_gpio_gpclr0]      @ Clear All
+	str mask, [temp, #equ32_gpio_gpclr0]   @ Clear All
 
 	gpio32_gpioclear_success:
-		mov r0, #0                                 @ Return with Success
+		mov r0, #0                            @ Return with Success
 
 	gpio32_gpioclear_common:
 		mov pc, lr
@@ -280,6 +314,7 @@ gpio32_gpioclear:
 .unreq mask
 .unreq stay
 .unreq temp
+.unreq addr_lane
 
 
 /**

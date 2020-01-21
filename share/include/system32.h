@@ -679,6 +679,10 @@ __attribute__((noinline)) int32 _hub_search_device
 #define _GPIOPULL_DOWN      1
 #define _GPIOPULL_UP        2
 
+/* Global Variable */
+
+extern uint32 GPIO32_LANE;
+
 /* Relative System Calls  */
 
 __attribute__((noinline)) uint32 _gpioplay( uint32 gpio_mask ); // Clear All (false) or Stay GPIO Status (true)
