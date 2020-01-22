@@ -42,6 +42,7 @@
 .equ equ32_cvt32_int32_to_string_bin_true,     0x31
 .equ equ32_cvt32_float32_to_string_min_expo,   1
 .equ equ32_cvt32_separator,                    0x2C       @ Ascii Code of Comma: Separator for *array_to_string*
+.equ equ32_sts32_synthemidi_percussion_ch,     9          @ MIDI Channel for Percussion - 1
 .equ equ32_sts32_lane_max,                     4
 .equ equ32_sts32_voice_max,                    8
 .equ equ32_sts32_samplerate,                   32000
@@ -61,6 +62,7 @@
 .equ equ32_snd32_sounddecode_noise_len_lower,  0x000      @ Decimal 640, Sample Rate (31680Hz / 48) - 20, Not to Slide Beat
 .equ equ32_snd32_sounddecode_noise_resolution, 15         @ Affecting Sound Color, 255/127/63/31/15/7
 .equ equ32_snd32_silence,                      0x800      @ Silence in Sound Index
+.equ equ32_snd32_soundmidi_percussion_ch,      9          @ MIDI Channel for Percussion - 1
 .equ equ32_snd32_soundmidi_volumeoffset,       0x200      @ Volume Offset in Sound Index, Descending Order
 .equ equ32_snd32_soundmidi_volumethres,        32         @ Volume Thereshold, Assume 4 Steps, i.e., 128 / 4 Equals 32
 .equ equ32_snd32_soundmidi_volumesteps,        4          @ Volume Steps

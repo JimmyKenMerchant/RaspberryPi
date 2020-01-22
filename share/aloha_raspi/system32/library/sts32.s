@@ -1669,6 +1669,10 @@ sts32_synthemidi:
 
 		ldr status_voices, STS32_VOICES
 
+		/* If Percussion Channel, Jump to Common */
+		cmp channel, #equ32_sts32_synthemidi_percussion_ch
+		beq sts32_synthemidi_noteoff_common
+
 		mov voices, #0
 		sts32_synthemidi_noteoff_voicesearch:
 			cmp voices, num_voices
@@ -1742,6 +1746,10 @@ sts32_synthemidi:
 		beq sts32_synthemidi_noteoff
 
 		ldr status_voices, STS32_VOICES
+
+		/* If Percussion Channel, Jump to Unique Process */
+		cmp channel, #equ32_sts32_synthemidi_percussion_ch
+		beq sts32_synthemidi_noteon_percussion
 
 		mov voices, #0
 		sts32_synthemidi_noteon_voicesearch:
@@ -1842,6 +1850,12 @@ sts32_synthemidi:
 			sts32_synthemidi_noteon_voicesearch_common:
 				add voices, voices, #1
 				b sts32_synthemidi_noteon_voicesearch
+
+		sts32_synthemidi_noteon_percussion:
+			/* Virtual Parallel of Coconuts */
+			orr data1, data1, #0x80000000                      @ Set Outstanding Flag Bit[31]
+			ldr temp, STS32_VIRTUAL_PARALLEL_ADDR
+			str data1, [temp]
 
 		sts32_synthemidi_noteon_common:
 			str status_voices, STS32_VOICES

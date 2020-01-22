@@ -1388,6 +1388,10 @@ snd32_soundmidi:
 		movne count, #0
 		bne snd32_soundmidi_success
 
+		/* If Percussion Channel, Jump to Common */
+		cmp channel, #equ32_snd32_soundmidi_percussion_ch
+		beq snd32_soundmidi_noteoff_common
+
 		/* If Note ADSR Model, Stay Note But Gate Off */
 		mov temp, #0
 		cmp temp, #equ32_snd32_soundmidi_adsr
@@ -1456,6 +1460,10 @@ snd32_soundmidi:
 		cmp data2, #0
 		beq snd32_soundmidi_noteoff
 
+		/* If Percussion Channel, Jump to Unique Process */
+		cmp channel, #equ32_snd32_soundmidi_percussion_ch
+		beq snd32_soundmidi_noteon_percussion
+
 		/* If Note Number Is Higher than Expected, Saturate with Highest Note */
 		ldr temp, SND32_SOUNDMIDI_HIGHNOTE
 		cmp data1, temp
@@ -1510,7 +1518,7 @@ macro32_debug data1, 0, 88
 
 		orr status, status, #0x1
 
-		b snd32_soundmidi_noteon_common
+		b snd32_soundmidi_noteon_tune
 
 	snd32_soundmidi_noteon_continue:
 		push {r0-r3}
@@ -1519,7 +1527,7 @@ macro32_debug data1, 0, 88
 		bl dma32_change_nextcb
 		pop {r0-r3}
 
-	snd32_soundmidi_noteon_common:
+	snd32_soundmidi_noteon_tune:
 
 		/* Store Current Music Code Translated from MIDI Note */
 		str data1, SND32_CURRENTCODE
@@ -1560,6 +1568,15 @@ macro32_debug data1, 0, 88
 		ldr temp2, SND32_MODULATION_MIN_ADDR
 		str data2, [temp2]
 
+		b snd32_soundmidi_noteon_common
+
+	snd32_soundmidi_noteon_percussion:
+		/* Virtual Parallel of Coconuts */
+		orr data1, data1, #0x80000000                      @ Set Outstanding Flag Bit[31]
+		ldr temp, SND32_VIRTUAL_PARALLEL_ADDR
+		str data1, [temp]
+
+	snd32_soundmidi_noteon_common:
 		orr status, status, #0x00000004                   @ Set MIDI Note On
 /*
 macro32_debug data1, 0, 112

@@ -118,7 +118,7 @@
 
 * Synthesizer can accept limited MIDI messages from RXD0 (UART). Caution that the default baud rate in Sound Box is 115200 baud, even though the MIDI standard is 31250. This is because of usage on serial communication with another microcontroller. If you build a MIDI standard interface, uncomment `.equ __MIDIIN, 1` in vector32.s to set baud rate as 31250 baud. To test MIDI IN with another RasPi, use [JACK Audio Connection Kit to Serial Interface Bridge](https://github.com/JimmyKenMerchant/Python_Codes).
 
-* MIDI channel of Synthesizer is selectable through MIDI channel select Bit[3:0] (GPIO8 to GPIO11). The number of MIDI channel is the sum of the value of MIDI channel select Bit[3:0] and one.
+* MIDI channel of Synthesizer is selectable through MIDI channel select Bit[3:0] (GPIO8 to GPIO11). The number of MIDI channel is the sum of the value of MIDI channel select Bit[3:0] and one. Channel 10 is reserved for percussion sounds.
 
 * Virtual parallel input can be accepted by CC#19 (General Purpose Controller 4). This is useful to control commands in user32.c from MIDI IN, e.g., playing a sequence of Synthesizer codes.
 
