@@ -94,8 +94,10 @@ os_reset:
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[2]
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 11 INPUT, MIDI Channel Select Bit[3]
+.ifndef __SOUND_JACK
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
+.endif
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 .ifdef __NOSYNCCLOCK
@@ -114,6 +116,17 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
+
+.ifdef __SOUND_JACK
+	ldr r1, [r0, #equ32_gpio_gpfsel40]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0     @ Set GPIO 40 PWM0 (to Minijack)
+.ifdef __RASPI3B
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1     @ Set GPIO 41 PWM1 (to Minijack)
+.else
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 45 PWM1 (to Minijack)
+.endif
+	str r1, [r0, #equ32_gpio_gpfsel40]
+.endif
 
 	/* Set Status Detect */
 	ldr r1, [r0, #equ32_gpio_gpren0]

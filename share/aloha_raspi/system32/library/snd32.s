@@ -1041,9 +1041,9 @@ snd32_soundinit_pwm:
 	cmpne gpio_set, #2
 
 	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 12
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2  @ Clear GPIO 12
 	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2   @ Set GPIO 12 PWM0
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 13
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3  @ Clear GPIO 13
 	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3   @ Set GPIO 13 PWM1
 	str value, [memorymap_base, #equ32_gpio_gpfsel10]
 
@@ -1051,14 +1051,14 @@ snd32_soundinit_pwm:
 	cmpne gpio_set, #2
 
 	ldr value, [memorymap_base, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0          @ Clear GPIO 40
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0  @ Clear GPIO 40
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0   @ Set GPIO 40 PWM0 (to Minijack)
 .ifdef __RASPI3B
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1          @ Clear GPIO 41
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1         @ Set GPIO 41 PWM1 (to Minijack)
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1  @ Clear GPIO 41
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1   @ Set GPIO 41 PWM1 (to Minijack)
 .else
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5          @ Clear GPIO 45
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5         @ Set GPIO 45 PWM1 (to Minijack)
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5  @ Clear GPIO 45
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5   @ Set GPIO 45 PWM1 (to Minijack)
 .endif
 	str value, [memorymap_base, #equ32_gpio_gpfsel40]
 

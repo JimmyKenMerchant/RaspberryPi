@@ -1237,22 +1237,22 @@ sts32_syntheclear:
 
 
 /* If End or Step Up, Automatically Cleared */
-STS32_CODES:            .word STS32_CODE_LANE
+STS32_CODES:             .word STS32_CODE_LANE0
 .section	.data
-STS32_CODE_LANE:        .word 0x00 @ Pointer of Synthesizer Code
-STS32_LENGTH_LANE:      .word 0x00 @ Length of Synthesizer Code
-STS32_COUNT_LANE:       .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
-STS32_REPEAT_LANE:      .word 0x00 @ Repeat status of Synthesizer Code
-STS32_CODE_LANE_NEXT:   .word 0x00 @ Pointer of Next Synthesizer Code
-STS32_LENGTH_LANE_NEXT: .word 0x00 @ Length of Next Synthesizer Code
-STS32_COUNT_LANE_NEXT:  .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
-STS32_REPEAT_LANE_NEXT: .word 0x00 @ Repeat status of Next Synthesizer Code
+STS32_CODE_LANE0:        .word 0x00 @ Pointer of Synthesizer Code
+STS32_LENGTH_LANE0:      .word 0x00 @ Length of Synthesizer Code
+STS32_COUNT_LANE0:       .word 0x00 @ Incremental Count of Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+STS32_REPEAT_LANE0:      .word 0x00 @ Repeat status of Synthesizer Code
+STS32_CODE_LANE0_NEXT:   .word 0x00 @ Pointer of Next Synthesizer Code
+STS32_LENGTH_LANE0_NEXT: .word 0x00 @ Length of Next Synthesizer Code
+STS32_COUNT_LANE0_NEXT:  .word 0x00 @ Incremental Count of Next Synthesizer Code, Once Music Code Reaches Last, This Value will Be Reset
+STS32_REPEAT_LANE0_NEXT: .word 0x00 @ Repeat status of Next Synthesizer Code
 .space 32 * (equ32_sts32_lane_max - 1), 0x00 @ Total 4 Lanes in Default
 .section	.library_system32
-STS32_LANE_ADDR:        .word STS32_LANE
+STS32_LANE_ADDR:         .word STS32_LANE
 .section	.data
 .globl STS32_LANE
-STS32_LANE:             .word 0    @ Current LANE to Handle (Lane No. - 1)
+STS32_LANE:              .word 0    @ Current LANE to Handle (Lane No. - 1)
 .section	.library_system32
 
 
@@ -1311,9 +1311,9 @@ sts32_syntheinit_pwm:
 	cmpne gpio_set, #2
 
 	ldr value, [memorymap_base, #equ32_gpio_gpfsel10]
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2    @ Clear GPIO 12
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_2  @ Clear GPIO 12
 	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2   @ Set GPIO 12 PWM0
-	bic value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3    @ Clear GPIO 13
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_3  @ Clear GPIO 13
 	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3   @ Set GPIO 13 PWM1
 	str value, [memorymap_base, #equ32_gpio_gpfsel10]
 
@@ -1321,14 +1321,14 @@ sts32_syntheinit_pwm:
 	cmpne gpio_set, #2
 
 	ldr value, [memorymap_base, #equ32_gpio_gpfsel40]
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0          @ Clear GPIO 40
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0         @ Set GPIO 40 PWM0 (to Minijack)
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_0  @ Clear GPIO 40
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0   @ Set GPIO 40 PWM0 (to Minijack)
 .ifdef __RASPI3B
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1          @ Clear GPIO 41
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1         @ Set GPIO 41 PWM1 (to Minijack)
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_1  @ Clear GPIO 41
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_1   @ Set GPIO 41 PWM1 (to Minijack)
 .else
-	bic r1, r1, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5          @ Clear GPIO 45
-	orreq r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5         @ Set GPIO 45 PWM1 (to Minijack)
+	biceq value, value, #equ32_gpio_gpfsel_clear << equ32_gpio_gpfsel_5  @ Clear GPIO 45
+	orreq value, value, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5   @ Set GPIO 45 PWM1 (to Minijack)
 .endif
 	str value, [memorymap_base, #equ32_gpio_gpfsel40]
 

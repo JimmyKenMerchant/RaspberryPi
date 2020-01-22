@@ -7,18 +7,18 @@
  *
  */
 
-GPIO32_SEQUENCES:    .word GPIO32_SEQUENCE_LANE
+GPIO32_SEQUENCES:      .word GPIO32_SEQUENCE_LANE0
 .section	.data
-GPIO32_SEQUENCE_LANE: .word 0x00 @ Pointer of GPIO Sequence, If End, Automatically Cleared
-GPIO32_LENGTH_LANE:   .word 0x00 @ Length of GPIO Sequence, If End, Automatically Cleared
-GPIO32_COUNT_LANE:    .word 0x00 @ Incremental Count, Once GPIO Sequence Reaches Last, This Value will Be Reset
-GPIO32_REPEAT_LANE:   .word 0x00 @ -1 is Infinite Loop
+GPIO32_SEQUENCE_LANE0: .word 0x00 @ Pointer of GPIO Sequence, If End, Automatically Cleared
+GPIO32_LENGTH_LANE0:   .word 0x00 @ Length of GPIO Sequence, If End, Automatically Cleared
+GPIO32_COUNT_LANE0:    .word 0x00 @ Incremental Count, Once GPIO Sequence Reaches Last, This Value will Be Reset
+GPIO32_REPEAT_LANE0:   .word 0x00 @ -1 is Infinite Loop
 .space 16 * (equ32_gpio32_lane_max - 1), 0x00 @ Total 4 Lanes in Default
 .section	.arm_system32
-GPIO32_LANE_ADDR:    .word GPIO32_LANE
+GPIO32_LANE_ADDR:      .word GPIO32_LANE
 .section	.data
 .globl GPIO32_LANE
-GPIO32_LANE:         .word 0    @ Current LANE to Handle (Lane No. - 1)
+GPIO32_LANE:           .word 0    @ Current LANE to Handle (Lane No. - 1)
 .section	.arm_system32
 
 
