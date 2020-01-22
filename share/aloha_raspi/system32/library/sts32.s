@@ -1252,7 +1252,7 @@ STS32_REPEAT_LANE0_NEXT: .word 0x00 @ Repeat status of Next Synthesizer Code
 STS32_LANE_ADDR:         .word STS32_LANE
 .section	.data
 .globl STS32_LANE
-STS32_LANE:              .word 0    @ Current LANE to Handle (Lane No. - 1)
+STS32_LANE:              .word 0    @ Current LANE to Handle
 .section	.library_system32
 
 

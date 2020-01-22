@@ -18,7 +18,7 @@ GPIO32_REPEAT_LANE0:   .word 0x00 @ -1 is Infinite Loop
 GPIO32_LANE_ADDR:      .word GPIO32_LANE
 .section	.data
 .globl GPIO32_LANE
-GPIO32_LANE:           .word 0    @ Current LANE to Handle (Lane No. - 1)
+GPIO32_LANE:           .word 0    @ Current LANE to Handle
 .section	.arm_system32
 
 
