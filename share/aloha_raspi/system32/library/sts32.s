@@ -252,6 +252,7 @@ sts32_synthewave_pwm:
 			vdiv.f32 vfp_sum, vfp_sum, vfp_divisor
 			vcvtr.s32.f32 vfp_sum, vfp_sum
 			vmov temp, vfp_sum
+			ssat temp, #equ32_sts32_synthewave_pwm_saturation, temp
 			add temp, temp, #equ32_sts32_synthewave_pwm_bias
 			usat temp, #equ32_sts32_synthewave_pwm_saturation, temp
 			str temp, [memorymap_base, #equ32_pwm_fif1]
@@ -371,6 +372,7 @@ sts32_synthewave_pwm:
 				vdiv.f32 vfp_sum, vfp_sum, vfp_divisor
 				vcvtr.s32.f32 vfp_sum, vfp_sum
 				vmov temp, vfp_sum
+				ssat temp, #equ32_sts32_synthewave_pwm_saturation, temp
 				add temp, temp, #equ32_sts32_synthewave_pwm_bias
 				usat temp, #equ32_sts32_synthewave_pwm_saturation, temp
 				str temp, [memorymap_base, #equ32_pwm_fif1]
