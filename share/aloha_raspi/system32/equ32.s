@@ -46,7 +46,8 @@
 .equ equ32_sts32_lane_max,                     4
 .equ equ32_sts32_voice_max,                    8
 .equ equ32_sts32_samplerate,                   32000
-.equ equ32_sts32_synthewave_pwm_bias,          2496       @ 12-bit Depth
+.equ equ32_sts32_synthewave_pwm_bias,          2496       @ Unsigned 12-bit Depth
+.equ equ32_sts32_synthewave_pwm_saturation,    12         @ Unsigned 12-bit Depth
 .equ equ32_sts32_synthemidi_attack,            512        @ Default Attack Time (Beats) (64^2)/8
 .equ equ32_sts32_synthemidi_decay,             512        @ Default Decay Time (Beats) (64^2)/8
 .equ equ32_sts32_synthemidi_release,           512        @ Default Release Time (Beats) (64^2)/8

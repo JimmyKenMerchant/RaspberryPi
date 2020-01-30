@@ -159,14 +159,13 @@ sts32_synthewave_pwm:
 		lsl offset_param, voices, #3                @ Multiply by 8
 		add offset_param, offset_param, #4
 		mov temp, #0xF
-		lsl temp, temp, offset_param
-		tst status_voices, temp
+		tst status_voices, temp, lsl offset_param
 		addeq voices, voices, #1
 		beq sts32_synthewave_pwm_loop_r
 
-		lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
+		/* Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R */
+		add offset_param, addr_param, voices, lsl #5
 		add offset_param, offset_param, #16         @ Add 16, 16 Bytes (Four Words) Offset for R
-		add offset_param, addr_param, offset_param
 
 		vldr vfp_freq_a, [offset_param]             @ Main Frequency
 		add offset_param, offset_param, #4
@@ -254,6 +253,7 @@ sts32_synthewave_pwm:
 			vcvtr.s32.f32 vfp_sum, vfp_sum
 			vmov temp, vfp_sum
 			add temp, temp, #equ32_sts32_synthewave_pwm_bias
+			usat temp, #equ32_sts32_synthewave_pwm_saturation, temp
 			str temp, [memorymap_base, #equ32_pwm_fif1]
 
 			macro32_dsb ip
@@ -279,13 +279,12 @@ sts32_synthewave_pwm:
 			/* If Status of The Voice Is Inactive, Pass Through */
 			lsl offset_param, voices, #3                @ Multiply by 8
 			mov temp, #0xF
-			lsl temp, temp, offset_param
-			tst status_voices, temp
+			tst status_voices, temp, lsl offset_param
 			addeq voices, voices, #1
 			beq sts32_synthewave_pwm_loop_l
 
-			lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
-			add offset_param, addr_param, offset_param
+			/* Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R */
+			add offset_param, addr_param, voices, lsl #5
 
 			vldr vfp_freq_a, [offset_param]             @ Main Frequency
 			add offset_param, offset_param, #4
@@ -373,6 +372,7 @@ sts32_synthewave_pwm:
 				vcvtr.s32.f32 vfp_sum, vfp_sum
 				vmov temp, vfp_sum
 				add temp, temp, #equ32_sts32_synthewave_pwm_bias
+				usat temp, #equ32_sts32_synthewave_pwm_saturation, temp
 				str temp, [memorymap_base, #equ32_pwm_fif1]
 
 				macro32_dsb ip
@@ -530,14 +530,13 @@ sts32_synthewave_i2s:
 		lsl offset_param, voices, #3                @ Multiply by 8
 		add offset_param, offset_param, #4
 		mov temp, #0xF
-		lsl temp, temp, offset_param
-		tst status_voices, temp
+		tst status_voices, temp, lsl offset_param
 		addeq voices, voices, #1
 		beq sts32_synthewave_i2s_loop_r
 
-		lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
+		/* Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R */
+		add offset_param, addr_param, voices, lsl #5
 		add offset_param, offset_param, #16         @ Add 16, 16 Bytes (Four Words) Offset for R
-		add offset_param, addr_param, offset_param
 
 		vldr vfp_freq_a, [offset_param]             @ Main Frequency
 		add offset_param, offset_param, #4
@@ -623,6 +622,7 @@ sts32_synthewave_i2s:
 
 			vcvtr.s32.f32 vfp_sum, vfp_sum
 			vmov value, vfp_sum
+			ssat value, #16, value                      @ Saturation at Signed 16-bit
 
 			/**
 			 * For L Wave
@@ -641,13 +641,12 @@ sts32_synthewave_i2s:
 			/* If Status of The Voice Is Inactive, Pass Through */
 			lsl offset_param, voices, #3                @ Multiply by 8
 			mov temp, #0xF
-			lsl temp, temp, offset_param
-			tst status_voices, temp
+			tst status_voices, temp, lsl offset_param
 			addeq voices, voices, #1
 			beq sts32_synthewave_i2s_loop_l
 
-			lsl offset_param, voices, #5                @ Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R
-			add offset_param, addr_param, offset_param
+			/* Multiply by 32, 32 Bytes (Eight Words) Offset for Each Parameter on Both L and R */
+			add offset_param, addr_param, voices, lsl #5
 
 			vldr vfp_freq_a, [offset_param]             @ Main Frequency
 			add offset_param, offset_param, #4
@@ -733,12 +732,11 @@ sts32_synthewave_i2s:
 
 				vcvtr.s32.f32 vfp_sum, vfp_sum
 				vmov temp, vfp_sum
+				ssat temp, #16, temp                        @ Saturation at Signed 16-bit
 
 				bic value, value, #0xFF000000
 				bic value, value, #0x00FF0000               @ Bit[15:0] for R
-
-				lsl temp, temp, #16                         @ Bit[31:16] for L
-				orr value, value, temp
+				orr value, value, temp, lsl #16             @ Bit[31:16] for L
 
 				str value, [memorymap_base, #equ32_pcm_fifo]
 
