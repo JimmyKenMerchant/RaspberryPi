@@ -13,28 +13,30 @@
 #include "snd32/soundadjust.h"
 #include "snd32/musiccode.h"
 
-#define timer_count_multiplicand        5
-#define timer_count_multiplier_default  100
-#define timer_count_multiplier_minlimit 20
-#define timer_count_multiplier_maxlimit 200
-
-extern uint32 OS_RESET_MIDI_CHANNEL;
-
+/* Function Declaration */
 void makesilence();
 
-#define loop_countdown_default          10 // one out of ten
+/* Global Variables and Constants */
+
+extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 
 /**
  * In default, there is a 480Hz synchronization clock (it's a half of 960Hz on Arm Timer beacause of toggling).
  * To set 48 beats as 60 BPM, decoding of sequence of music code (_soundplay) plays at only one clock out of ten clocks.
  * A set of 48 beats (= delta times) is 60BPM on 48HZ (one delta time is 1/48 seconds).
  * Arm Timer sets 480000Hz as clock.
- * 500 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 480000Hz / 250 / 2 equals 480Hz (60BPM).
- * The Maximum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 2400Hz (300BPM).
- * The minimum beat (480000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 240Hz (30BPM).
+ * 500 is divisor (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier_defualt), i.e., 480000Hz / 250 / 2 equals 480Hz (60BPM).
+ * The Maximum beat (480000 / (TIMER_COUNT_MULTIPLICAND * TIMER_COUNT_MULTIPLIER_MINLIMIT) / 2) is 2400Hz (300BPM).
+ * The minimum beat (480000 / (TIMER_COUNT_MULTIPLICAND * TIMER_COUNT_MULTIPLIER_MAXLIMIT) / 2) is 240Hz (30BPM).
  *
  * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _soundset.
  */
+
+#define TIMER_COUNT_MULTIPLICAND        5
+#define TIMER_COUNT_MULTIPLIER_DEFAULT  100
+#define TIMER_COUNT_MULTIPLIER_MINLIMIT 20
+#define TIMER_COUNT_MULTIPLIER_MAXLIMIT 200
+#define LOOP_COUNTDOWN_DEFAULT          10 // one out of ten
 
 music_code music1[] =
 {	
@@ -399,6 +401,38 @@ music_code interrupt16[] =
 	_END
 };
 
+#define MUSIC_CODE_PRE_NUMBER 9
+
+/* Register for Music Codes */
+music_code* music_code_pre_table[MUSIC_CODE_PRE_NUMBER] = {
+	music1,
+	music2,
+	music3,
+	music4,
+	music5,
+	music6,
+	music7,
+	music8,
+	interrupt16
+};
+
+/* Register for Index of Tables */
+uint32 music_code_pre_table_index[MUSIC_CODE_PRE_NUMBER] = {
+	1,
+	2,
+	3,
+	4,
+	5,
+	6,
+	7,
+	8,
+	16
+};
+
+music_code** music_code_table;
+uint32* musiclen_table;
+uint32 tempo_index;
+
 void makesilence() {
 
 #ifdef __SOUND_I2S
@@ -422,18 +456,16 @@ void makesilence() {
 }
 
 int32 _user_start() {
-
-	uint32 timer_count_multiplier = timer_count_multiplier_default;
-	bool flag_midi_noteon = False;
+	/* Local Variables */
+	uint32 timer_count_multiplier = TIMER_COUNT_MULTIPLIER_DEFAULT;
+	uint32 delta_multiplier;
 	uint32 detect_parallel = 0;
+	uint32 table_index;
+	int32 loop_countdown = LOOP_COUNTDOWN_DEFAULT; // Use Signed Integer to Prevent Incorrect Compilation (Using Comparison in IF Statement)
 	uchar8 result;
 	uchar8 playing_signal;
+	bool flag_midi_noteon = False;
 	bool mode_soundplay;
-	uint32 delta_multiplier;
-
-	/* Use Signed Integer to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
-	int32 loop_countdown = loop_countdown_default;
-
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
 	mode_soundplay = True;
@@ -460,17 +492,18 @@ int32 _user_start() {
 	delta_multiplier = 4;
 #endif
 
-	// To Get Proper Latency, Get Lengths in Advance
-	uint32 musiclen1 = snd32_musiclen( music1 );
-	uint32 musiclen2 = snd32_musiclen( music2 );
-	uint32 musiclen3 = snd32_musiclen( music3 );
-	uint32 musiclen4 = snd32_musiclen( music4 );
-	uint32 musiclen5 = snd32_musiclen( music5 );
-	uint32 musiclen6 = snd32_musiclen( music6 );
-	uint32 musiclen7 = snd32_musiclen( music7 );
-	uint32 musiclen8 = snd32_musiclen( music8 );
-	uint32 musiclen16 = snd32_musiclen( interrupt16 );
+	/* Initialization of Global Variables */
+	music_code_table = (music_code**)heap32_malloc( 128 );
+	musiclen_table = (uint32*)heap32_malloc( 128 );
+	for ( uint32 i = 0; i < MUSIC_CODE_PRE_NUMBER; i++ ) {
+		table_index = music_code_pre_table_index[i];
+		// To Get Proper Latency, Get Lengths in Advance
+		music_code_table[table_index] = music_code_pre_table[i];
+		musiclen_table[table_index] = snd32_musiclen( music_code_pre_table[i] );
+	}
+	tempo_index = 0;
 
+	/* Silence in Advance */
 	makesilence();
 
 	while ( true ) {
@@ -510,150 +543,55 @@ int32 _user_start() {
 
 		/* If Any Non Zero */
 		if ( detect_parallel ) {
-			detect_parallel &= 0x7F;
+			detect_parallel &= 0x7F; // 0-127
+			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
+				// Tempo Index Upper 8-bit
+				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 8);
+				timer_count_multiplier = tempo_index;
+				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) {
+					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;
+				} else if ( timer_count_multiplier < TIMER_COUNT_MULTIPLIER_MINLIMIT ) {
+					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MINLIMIT;
+				}
+				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
+			} else if ( detect_parallel > 95 ) { // 96(0x60)-111(0x6F)
+				// Tempo Index Lower 8-bit
+				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
+				timer_count_multiplier = tempo_index;
+				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) {
+					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;
+				} else if ( timer_count_multiplier < TIMER_COUNT_MULTIPLIER_MINLIMIT ) {
+					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MINLIMIT;
+				}
+				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
 
-			/* GPIO22-26 as Bit[26:22] */
-			// 0b00001 (1)
-			if ( detect_parallel == 0b00001 ) {
-				_soundset( music1, musiclen1, 0, -1 );
-				//makesilence();
-
-			// 0b00010 (2)
-			} else if ( detect_parallel == 0b00010 ) {
-				_soundset( music2, musiclen2, 0, -1 );
-				/* Beat Up */
-				//timer_count_multiplier -= 5;
-				//if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-
-			// 0b00011 (3)
-			} else if ( detect_parallel == 0b00011 ) {
-				_soundset( music3, musiclen3, 0, -1 );
-
-			// 0b00100 (4)
-			} else if ( detect_parallel == 0b00100 ) {
-				_soundset( music4, musiclen4, 0, -1 );
-				/* Beat Down */
-				//timer_count_multiplier += 5;
-				//if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				//_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-			// 0b00101 (5)
-			} else if ( detect_parallel == 0b00101 ) {
-				_soundset( music5, musiclen5, 0, -1 );
-
-			// 0b00110 (6)
-			} else if ( detect_parallel == 0b00110 ) {
-				_soundset( music6, musiclen6, 0, -1 );
-
-			// 0b00111 (7)
-			} else if ( detect_parallel == 0b00111 ) {
-				_soundset( music7, musiclen7, 0, -1 );
-
-			// 0b01000 (8)
-			} else if ( detect_parallel == 0b01000 ) {
-				_soundset( music8, musiclen8, 0, -1 );
-
-			// 0b01001 (9)
-			} else if ( detect_parallel == 0b01001 ) {
-				SND32_MODULATION_DELTA = 0x10 * delta_multiplier;
-				SND32_MODULATION_RANGE = 0x1000 * delta_multiplier;
-
-			// 0b01010 (10)
-			} else if ( detect_parallel == 0b01010 ) {
+			} else if ( detect_parallel == 95 ) {
 				SND32_MODULATION_DELTA = 0x0 * delta_multiplier;
 				SND32_MODULATION_RANGE = 0x0 * delta_multiplier;
-
-			// 0b01011 (11)
-			} else if ( detect_parallel == 0b01011 ) {
+			} else if ( detect_parallel == 94 ) {
+				SND32_MODULATION_DELTA = 0x10 * delta_multiplier;
+				SND32_MODULATION_RANGE = 0x1000 * delta_multiplier;
+			} else if ( detect_parallel > 31 ) { // 32-93
+				// One Time
+				_soundset( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, 1 );
+			} else if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				makesilence();
-
-			// 0b01100 (12)
-			} else if ( detect_parallel == 0b01100 ) {
-				makesilence();
-
-			// 0b01101 (13)
-			} else if ( detect_parallel == 0b01101 ) {
-				makesilence();
-
-			// 0b01110 (14)
-			} else if ( detect_parallel == 0b01110 ) {
-				makesilence();
-
-			// 0b01111 (15)
-			} else if ( detect_parallel == 0b01111 ) {
-				makesilence();
-
-			// 0b10000 (16)
-			} else if ( detect_parallel == 0b10000 ) {
-				_soundinterrupt( interrupt16, musiclen16, 0, 1 );
-
-			// 0b10001 (17)
-			} else if ( detect_parallel == 0b10001 ) {
-				makesilence();
-
-			// 0b10010 (18)
-			} else if ( detect_parallel == 0b10010 ) {
-				makesilence();
-
-			// 0b10011 (19)
-			} else if ( detect_parallel == 0b10011 ) {
-				makesilence();
-
-			// 0b10100 (20)
-			} else if ( detect_parallel == 0b10100 ) {
-				makesilence();
-
-			// 0b10101 (21)
-			} else if ( detect_parallel == 0b10101 ) {
-				makesilence();
-
-			// 0b10110 (22)
-			} else if ( detect_parallel == 0b10110 ) {
-				makesilence();
-
-			// 0b10111 (23)
-			} else if ( detect_parallel == 0b10111 ) {
-				makesilence();
-
-			// 0b11000 (24)
-			} else if ( detect_parallel == 0b11000 ) {
-				makesilence();
-
-			// 0b11001 (25)
-			} else if ( detect_parallel == 0b11001 ) {
-				makesilence();
-
-			// 0b11010 (26)
-			} else if ( detect_parallel == 0b11010 ) {
-				makesilence();
-
-			// 0b11011 (27)
-			} else if ( detect_parallel == 0b11011 ) {
-				makesilence();
-
-			// 0b11100 (28)
-			} else if ( detect_parallel == 0b11100 ) {
-				makesilence();
-
-			// 0b11101 (29)
-			} else if ( detect_parallel == 0b11101 ) {
-				/* Beat Up */
-				timer_count_multiplier -= 5;
-				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-			// 0b11110 (30)
-			} else if ( detect_parallel == 0b11110 ) {
+			} else if ( detect_parallel == 0b11110 ) { // 0b11110 (30)
 				/* Beat Down */
 				timer_count_multiplier += 5;
-				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-			// 0b11111 (31)
-			} else if ( detect_parallel == 0b11111 ) {
-				makesilence();
+				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;
+				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
+			} else if ( detect_parallel == 0b11101 ) { // 0b11101 (29)
+				/* Beat Up */
+				timer_count_multiplier -= 5;
+				if ( timer_count_multiplier < TIMER_COUNT_MULTIPLIER_MINLIMIT ) timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MINLIMIT;
+				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
+			} else if ( detect_parallel > 15 ) { // 15-28
+				// One Time
+				_soundinterrupt( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, 1 );
+			} else {
+				// Loop
+				_soundset( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, -1 );
 			}
 			detect_parallel = 0;
 		}
@@ -698,7 +636,6 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 				SND32_DIVISOR = SND32_MODULATION_MIN;
 				SND32_MODULATION_DELTA = -( SND32_MODULATION_DELTA );
 			}
-
 			arm32_dsb();
 
 			loop_countdown--; // Decrement Counter
@@ -710,10 +647,9 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 					playing_signal = _GPIOTOGGLE_LOW;
 				}
 				_gpiotoggle( 16, playing_signal );
-				loop_countdown = loop_countdown_default; // Reset Counter
+				loop_countdown = LOOP_COUNTDOWN_DEFAULT; // Reset Counter
 			}
 		}
 	}
-
 	return EXIT_SUCCESS;
 }

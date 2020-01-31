@@ -13,11 +13,13 @@
 #include "sts32/presets.h"
 #include "user32_tempo.h"
 
+/* Global Variables and Constants */
+
+extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
+
 #define TEMPO_COUNT_DEFAULT  2
 #define TEMPO_DEFAULT 60
 #define TEMPO_MAX 420
-
-extern uint32 OS_RESET_MIDI_CHANNEL;
 
 /**
  * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on GPCLK1).
@@ -85,7 +87,6 @@ synthe_precode pre_synthe1_l[] = {
 	))
 	_END
 };
-
 
 synthe_precode pre_synthe1_r[] = {
 	_3_BIG(_RAP(
@@ -166,7 +167,6 @@ synthe_precode pre_synthe1_r[] = {
 	_END
 };
 */
-
 
 /* Rhythm of Drum 'n' Bass: Cymbal Part */
 synthe_precode pre_synthe2_l[] = {
@@ -307,7 +307,6 @@ synthe_precode pre_synthe2_r[] = {
 	_END
 };
 
-
 /* Test Sin Wave C1 C2 C3 C4 C5 C6 C7 C8*/
 synthe_precode pre_synthe3_l[] = {
 	_1(_RAP(
@@ -371,7 +370,6 @@ synthe_precode pre_synthe3_r[] = {
 	_END
 };
 
-
 /* Major 7th Alpeggio, 1 and 8 */
 synthe_precode pre_synthe4_l[] = {
 	_4(_RAP(
@@ -430,7 +428,6 @@ synthe_precode pre_synthe4_r[] = {
 	_END
 };
 
-
 /* Low */
 synthe_precode pre_synthe5_l[] = {
 	_1(_RAP(
@@ -439,14 +436,12 @@ synthe_precode pre_synthe5_l[] = {
 	_END
 };
 
-
 synthe_precode pre_synthe5_r[] = {
 	_1(_RAP(
 		_B2_INT<<_FREQ|3500<<_MAG,(_B2_INT>>2)<<_FREQ|30000<<_MAG,2400<<_BEAT,50<<_RIS|100<<_STN|50<<_FAL
 	))
 	_END
 };
-
 
 synthe_precode pre_synthe8_l[] = {
 	_4(_RAP(
@@ -480,7 +475,6 @@ synthe_precode pre_synthe8_r[] = {
 	_END
 };
 
-
 // "Himawari"
 synthe_precode pre_synthe16_l[] = {
 	_D5<<_FREQ|2500<<_MAG,_D7<<_FREQ|5000<<_MAG,900<<_BEAT,20<<_RIS|100<<_STN|80<<_FAL,
@@ -513,7 +507,6 @@ synthe_precode pre_synthe16_r[] = {
 	_D2<<_FREQ|2500<<_MAG,_D2<<_FREQ|30000<<_MAG,600<<_BEAT,10<<_RIS|100<<_STN|90<<_FAL,
 	_END
 };
-
 
 /* Two Dimentional Array (Array of Pointers) */
 
@@ -587,40 +580,43 @@ uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
 	16
 };
 
+synthe_code** synthe_code_table;
+uint32* synthelen_table;
+
 /* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
 int32 tempo_count;
 int32 tempo_count_reload;
 int32 tempo;
 
 uint32 tempo_index;
-synthe_code** synthecode_table;
-uint32* synthelen_table;
 
 int32 _user_start() {
-	uint32 number_voices;
+	/* Local Variables */
 	synthe_code* temp_synthe_code;
+	uint32 number_voices;
+	uint32 table_index;
+	uint32 detect_parallel = 0;
+	uchar8 result;
+	uchar8 playing_signal;
 
-	synthecode_table = (synthe_code**)heap32_malloc( 128 );
+	/* Initialization of Global Variables */
+	synthe_code_table = (synthe_code**)heap32_malloc( 128 );
 	synthelen_table = (uint32*)heap32_malloc( 128 );
 
 	for ( uint32 i = 0; i < PRE_SYNTHE_NUMBER; i++ ) {
 		number_voices = pre_synthe_voice_table[i];
 		temp_synthe_code = sts32_synthedecodelr( pre_synthe_table[i], number_voices );
 		if ( (uint32)temp_synthe_code == -1 ) return EXIT_FAILURE;
-		uint32 index = pre_synthe_table_index[i];
-		synthecode_table[index] = temp_synthe_code;
+		table_index = pre_synthe_table_index[i];
+		synthe_code_table[table_index] = temp_synthe_code;
 		// To Get Proper Latency, Get Lengths in Advance
-		synthelen_table[index] = arm32_udiv( sts32_synthelen( temp_synthe_code ), number_voices );
+		synthelen_table[table_index] = arm32_udiv( sts32_synthelen( temp_synthe_code ), number_voices );
 	}
 
 	tempo_count = TEMPO_COUNT_DEFAULT;
 	tempo_count_reload = TEMPO_COUNT_DEFAULT;
 	tempo = TEMPO_DEFAULT;
 	tempo_index = 0;
-
-	uint32 detect_parallel = 0;
-	uchar8 result;
-	uchar8 playing_signal;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
@@ -668,7 +664,7 @@ int32 _user_start() {
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
 			} else if ( detect_parallel > 31 ) { // 32-95
 				// One Time
-				_syntheset( synthecode_table[detect_parallel], synthelen_table[detect_parallel], 0, 1 );
+				_syntheset( synthe_code_table[detect_parallel], synthelen_table[detect_parallel], 0, 1 );
 			} else if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				_syntheclear( 0, 2 );
 			} else if ( detect_parallel == 0b11110 ) { // 0b11110 (30)
@@ -685,7 +681,7 @@ int32 _user_start() {
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
 			} else { // 0-28
 				// Loop
-				_syntheset( synthecode_table[detect_parallel], synthelen_table[detect_parallel], 0, -1 );
+				_syntheset( synthe_code_table[detect_parallel], synthelen_table[detect_parallel], 0, -1 );
 			}
 			detect_parallel = 0;
 		}
@@ -743,6 +739,5 @@ int32 _user_start() {
 			}
 		}
 	}
-
 	return EXIT_SUCCESS;
 }
