@@ -13,9 +13,9 @@
 #include "sts32/presets.h"
 #include "user32_tempo.h"
 
-#define tempo_count_default  2
-#define tempo_default 60
-#define tempo_max 420
+#define TEMPO_COUNT_DEFAULT  2
+#define TEMPO_DEFAULT 60
+#define TEMPO_MAX 420
 
 extern uint32 OS_RESET_MIDI_CHANNEL;
 
@@ -552,54 +552,71 @@ synthe_precode* pre_synthe16[] = {
 	pre_synthe16_r
 };
 
-/* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
-int32 tempo_count = tempo_count_default;
-int32 tempo_count_reload = tempo_count_default;
-int32 tempo = tempo_default;
+#define PRE_SYNTHE_NUMBER 7
 
+/* Register for Precodes */
+synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
+	pre_synthe1,
+	pre_synthe2,
+	pre_synthe3,
+	pre_synthe4,
+	pre_synthe5,
+	pre_synthe8,
+	pre_synthe16
+};
+
+/* Register for Number of Voices */
+uint32 pre_synthe_voice_table[PRE_SYNTHE_NUMBER] = {
+	2,
+	2,
+	2,
+	2,
+	2,
+	2,
+	2
+};
+
+/* Register for Index of Tables */
+uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
+	1,
+	2,
+	3,
+	4,
+	5,
+	8,
+	16
+};
+
+/* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
+int32 tempo_count;
+int32 tempo_count_reload;
+int32 tempo;
+
+uint32 tempo_index;
+synthe_code** synthecode_table;
+uint32* synthelen_table;
 
 int32 _user_start() {
+	uint32 number_voices;
+	synthe_code* temp_synthe_code;
 
-	// To Get Proper Latency, Get Lengths in Advance
-	synthe_code* synthe1 = sts32_synthedecodelr( pre_synthe1, 2 );
-	if ( (uint32)synthe1 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen1 = sts32_synthelen( synthe1 ) / 2;
+	synthecode_table = (synthe_code**)heap32_malloc( 128 );
+	synthelen_table = (uint32*)heap32_malloc( 128 );
 
-	synthe_code* synthe2 = sts32_synthedecodelr( pre_synthe2, 2 );
-	if ( (uint32)synthe2 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen2 = sts32_synthelen( synthe2 ) / 2;
+	for ( uint32 i = 0; i < PRE_SYNTHE_NUMBER; i++ ) {
+		number_voices = pre_synthe_voice_table[i];
+		temp_synthe_code = sts32_synthedecodelr( pre_synthe_table[i], number_voices );
+		if ( (uint32)temp_synthe_code == -1 ) return EXIT_FAILURE;
+		uint32 index = pre_synthe_table_index[i];
+		synthecode_table[index] = temp_synthe_code;
+		// To Get Proper Latency, Get Lengths in Advance
+		synthelen_table[index] = arm32_udiv( sts32_synthelen( temp_synthe_code ), number_voices );
+	}
 
-	synthe_code* synthe3 = sts32_synthedecodelr( pre_synthe3, 2 );
-	if ( (uint32)synthe3 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen3 = sts32_synthelen( synthe3 ) / 2;
-
-	synthe_code* synthe4 = sts32_synthedecodelr( pre_synthe4, 2 );
-	if ( (uint32)synthe4 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen4 = sts32_synthelen( synthe4 ) / 2;
-
-	synthe_code* synthe5 = sts32_synthedecodelr( pre_synthe5, 2 );
-	if ( (uint32)synthe5 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen5 = sts32_synthelen( synthe5 ) / 2;
-
-	synthe_code* synthe6 = (synthe_code*)heap32_malloc( 2 );
-	if ( (uint32)synthe6 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen6 = sts32_synthelen( synthe6 ) / 2;
-
-	synthe_code* synthe7 = (synthe_code*)heap32_malloc( 2 );
-	if ( (uint32)synthe7 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen7 = sts32_synthelen( synthe7 ) / 2;
-
-	synthe_code* synthe8 = sts32_synthedecodelr( pre_synthe8, 2 );
-	if ( (uint32)synthe8 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen8 = sts32_synthelen( synthe8 ) / 2;
-
-	synthe_code* synthe16 = sts32_synthedecodelr( pre_synthe16, 2 );
-	if ( (uint32)synthe16 == -1 ) return EXIT_FAILURE;
-	uint32 synthelen16 = sts32_synthelen( synthe16 ) / 2;
-
-	tempo_count = tempo_count_default;
-	tempo_count_reload = tempo_count_default;
-	tempo = tempo_default;
+	tempo_count = TEMPO_COUNT_DEFAULT;
+	tempo_count_reload = TEMPO_COUNT_DEFAULT;
+	tempo = TEMPO_DEFAULT;
+	tempo_index = 0;
 
 	uint32 detect_parallel = 0;
 	uchar8 result;
@@ -627,146 +644,48 @@ int32 _user_start() {
 		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			detect_parallel = (detect_parallel>>22)|0x80000000; // Set Outstanding Flag
+			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
 		}
 
 		/* If Any Non Zero */
 		if ( detect_parallel ) {
-			detect_parallel &= 0b11111;
-
-			/* GPIO22-26 as Bit[26:22] */
-			// 0b00001 (1)
-			if ( detect_parallel == 0b00001 ) {
-				_syntheset( synthe1, synthelen1, 0, 1 );
-
-			// 0b00010 (2)
-			} else if ( detect_parallel == 0b00010 ) {
-				_syntheset( synthe2, synthelen2, 0, -1 );
-
-			// 0b00011 (3)
-			} else if ( detect_parallel == 0b00011 ) {
-				_syntheset( synthe3, synthelen3, 0, -1 );
-
-			// 0b00100 (4)
-			} else if ( detect_parallel == 0b00100 ) {
-				_syntheset( synthe4, synthelen4, 0, -1 );
-
-			// 0b00101 (5)
-			} else if ( detect_parallel == 0b00101 ) {
-				_syntheset( synthe5, synthelen5, 0, -1 );
-
-			// 0b00110 (6)
-			} else if ( detect_parallel == 0b00110 ) {
-				_syntheset( synthe6, synthelen6, 0, -1 );
-
-			// 0b00111 (7)
-			} else if ( detect_parallel == 0b00111 ) {
-				_syntheset( synthe7, synthelen7, 0, -1 );
-
-			// 0b01000 (8)
-			} else if ( detect_parallel == 0b01000 ) {
-				_syntheset( synthe8, synthelen8, 0, -1 );
-
-			// 0b01001 (9)
-			} else if ( detect_parallel == 0b01001 ) {
+			detect_parallel &= 0x7F; // 0-127
+			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
+				// Tempo Index Upper 8-bit
+				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 8);
+				// Integer 30-240 BPM
+				tempo = tempo_index << 1;
+				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
+				tempo_count_reload = tempo_table[(tempo << 1) + 1];
+			} else if ( detect_parallel > 95 ) { // 96(0x60)-111(0x6F)
+				// Tempo Index Lower 8-bit
+				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
+				// Integer 30-240 BPM
+				tempo = tempo_index << 1;
+				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
+				tempo_count_reload = tempo_table[(tempo << 1) + 1];
+			} else if ( detect_parallel > 31 ) { // 32-95
+				// One Time
+				_syntheset( synthecode_table[detect_parallel], synthelen_table[detect_parallel], 0, 1 );
+			} else if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				_syntheclear( 0, 2 );
-
-			// 0b01010 (10)
-			} else if ( detect_parallel == 0b01010 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b01011 (11)
-			} else if ( detect_parallel == 0b01011 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b01100 (12)
-			} else if ( detect_parallel == 0b01100 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b01101 (13)
-			} else if ( detect_parallel == 0b01101 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b01110 (14)
-			} else if ( detect_parallel == 0b01110 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b01111 (15)
-			} else if ( detect_parallel == 0b01111 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10000 (16)
-			} else if ( detect_parallel == 0b10000 ) {
-				_syntheset( synthe16, synthelen16, 0, -1 );
-
-			// 0b10001 (17)
-			} else if ( detect_parallel == 0b10001 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10010 (18)
-			} else if ( detect_parallel == 0b10010 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10011 (19)
-			} else if ( detect_parallel == 0b10011 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10100 (20)
-			} else if ( detect_parallel == 0b10100 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10101 (21)
-			} else if ( detect_parallel == 0b10101 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10110 (22)
-			} else if ( detect_parallel == 0b10110 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b10111 (23)
-			} else if ( detect_parallel == 0b10111 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b11000 (24)
-			} else if ( detect_parallel == 0b11000 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b11001 (25)
-			} else if ( detect_parallel == 0b11001 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b11010 (26)
-			} else if ( detect_parallel == 0b11010 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b11011 (27)
-			} else if ( detect_parallel == 0b11011 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b11100 (28)
-			} else if ( detect_parallel == 0b11100 ) {
-				_syntheclear( 0, 2 );
-
-			// 0b11101 (29)
-			} else if ( detect_parallel == 0b11101 ) {
-				/* Beat Up */
-				tempo++;
-				if ( tempo > tempo_max ) tempo = tempo_max;
-				_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
-				tempo_count_reload = tempo_table[(tempo<<1) + 1];
-
-			// 0b11110 (30)
-			} else if ( detect_parallel == 0b11110 ) {
+			} else if ( detect_parallel == 0b11110 ) { // 0b11110 (30)
 				/* Beat Down */
 				tempo--;
 				if ( tempo < 0 ) tempo = 0;
-				_clockmanager_divisor( _cm_gp1, tempo_table[tempo<<1] );
-				tempo_count_reload = tempo_table[(tempo<<1) + 1];
-
-			// 0b11111 (31)
-			} else if ( detect_parallel == 0b11111 ) {
-				_syntheclear( 0, 2 );
-
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
+				tempo_count_reload = tempo_table[(tempo << 1) + 1];
+			} else if ( detect_parallel == 0b11101 ) { // 0b11101 (29)
+				/* Beat Up */
+				tempo++;
+				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
+				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
+				tempo_count_reload = tempo_table[(tempo << 1) + 1];
+			} else { // 0-28
+				// Loop
+				_syntheset( synthecode_table[detect_parallel], synthelen_table[detect_parallel], 0, -1 );
 			}
 			detect_parallel = 0;
 		}
