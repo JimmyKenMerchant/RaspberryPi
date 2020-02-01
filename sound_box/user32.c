@@ -416,6 +416,19 @@ music_code* music_code_pre_table[MUSIC_CODE_PRE_NUMBER] = {
 	interrupt16
 };
 
+/* Register for Modulation Parameters, 1st Delta (Signed -256 to 256), 2nd Range (Mid-Peak, Unsigned Up to 4096) */
+uint16 modulation_pre_table[MUSIC_CODE_PRE_NUMBER*2] = {
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	 0x0000, 0x0000,
+	-0x0010, 0x1000
+};
+
 /* Register for Index of Tables */
 uint32 music_code_pre_table_index[MUSIC_CODE_PRE_NUMBER] = {
 	1,
@@ -430,6 +443,7 @@ uint32 music_code_pre_table_index[MUSIC_CODE_PRE_NUMBER] = {
 };
 
 music_code** music_code_table;
+int16* modulation_table;
 uint32* musiclen_table;
 uint32 tempo_index;
 
@@ -493,12 +507,15 @@ int32 _user_start() {
 #endif
 
 	/* Initialization of Global Variables */
-	music_code_table = (music_code**)heap32_malloc( 128 );
-	musiclen_table = (uint32*)heap32_malloc( 128 );
+	music_code_table = (music_code**)heap32_malloc( 128 ); // 128 Words = 512 Bytes
+	modulation_table = (int16*)heap32_malloc( 128 ); // 128 Words (256 Half Words) = 512 Bytes
+	musiclen_table = (uint32*)heap32_malloc( 128 ); // 128 Words = 512 Bytes
 	for ( uint32 i = 0; i < MUSIC_CODE_PRE_NUMBER; i++ ) {
 		table_index = music_code_pre_table_index[i];
 		// To Get Proper Latency, Get Lengths in Advance
 		music_code_table[table_index] = music_code_pre_table[i];
+		modulation_table[table_index * 2] = modulation_pre_table[i * 2];
+		modulation_table[(table_index * 2) + 1] = modulation_pre_table[(i * 2) + 1];
 		musiclen_table[table_index] = snd32_musiclen( music_code_pre_table[i] );
 	}
 	tempo_index = 0;
@@ -564,15 +581,10 @@ int32 _user_start() {
 					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MINLIMIT;
 				}
 				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
-
-			} else if ( detect_parallel == 95 ) {
-				SND32_MODULATION_DELTA = 0x0 * delta_multiplier;
-				SND32_MODULATION_RANGE = 0x0 * delta_multiplier;
-			} else if ( detect_parallel == 94 ) {
-				SND32_MODULATION_DELTA = 0x10 * delta_multiplier;
-				SND32_MODULATION_RANGE = 0x1000 * delta_multiplier;
-			} else if ( detect_parallel > 31 ) { // 32-93
+			} else if ( detect_parallel > 31 ) { // 32-95
 				// One Time
+				SND32_MODULATION_DELTA = modulation_table[detect_parallel * 2] * delta_multiplier;
+				SND32_MODULATION_RANGE = modulation_table[(detect_parallel * 2) + 1] * delta_multiplier;
 				_soundset( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, 1 );
 			} else if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				makesilence();
@@ -586,13 +598,17 @@ int32 _user_start() {
 				timer_count_multiplier -= 5;
 				if ( timer_count_multiplier < TIMER_COUNT_MULTIPLIER_MINLIMIT ) timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MINLIMIT;
 				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
-			} else if ( detect_parallel > 15 ) { // 15-28
+			} else if ( detect_parallel > 15 ) { // 16-28
 				// One Time
+				SND32_MODULATION_DELTA = modulation_table[detect_parallel * 2] * delta_multiplier;
+				SND32_MODULATION_RANGE = modulation_table[(detect_parallel * 2) + 1] * delta_multiplier;
 				_soundinterrupt( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, 1 );
-			} else {
+			} else if ( detect_parallel > 0 ) { // 1-15
 				// Loop
+				SND32_MODULATION_DELTA = modulation_table[detect_parallel * 2] * delta_multiplier;
+				SND32_MODULATION_RANGE = modulation_table[(detect_parallel * 2) + 1] * delta_multiplier;
 				_soundset( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, -1 );
-			}
+			} // Do Nothing at 0 for Preventing Chattering
 			detect_parallel = 0;
 		}
 

@@ -679,10 +679,10 @@ int32 _user_start() {
 				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
 				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
-			} else { // 0-28
+			} else if ( detect_parallel > 0 ) { // 1-28
 				// Loop
 				_syntheset( synthe_code_table[detect_parallel], synthelen_table[detect_parallel], 0, -1 );
-			}
+			} // Do Nothing at 0 for Preventing Chattering
 			detect_parallel = 0;
 		}
 
@@ -699,13 +699,13 @@ int32 _user_start() {
 
 //print32_debug( detect_parallel, 100, 100 );
 
-			// Subtract Pitch Bend Ratio to Divisor (Upside Down)
+				// Subtract Pitch Bend Ratio to Divisor (Upside Down)
 #ifdef __SOUND_I2S
-			_clockmanager_divisor( _cm_pcm, STS32_DIVISOR - STS32_PITCHBEND );
+				_clockmanager_divisor( _cm_pcm, STS32_DIVISOR - STS32_PITCHBEND );
 #elif defined(__SOUND_PWM)
-			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR - STS32_PITCHBEND );
+				_clockmanager_divisor( _cm_pwm, STS32_DIVISOR - STS32_PITCHBEND );
 #elif defined(__SOUND_JACK)
-			_clockmanager_divisor( _cm_pwm, STS32_DIVISOR - STS32_PITCHBEND );
+				_clockmanager_divisor( _cm_pwm, STS32_DIVISOR - STS32_PITCHBEND );
 #endif
 
 				/* Triangle LFO for MODULATION (Vibration) */
