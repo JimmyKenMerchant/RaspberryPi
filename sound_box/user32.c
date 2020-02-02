@@ -448,7 +448,6 @@ uint32* musiclen_table;
 uint32 tempo_index;
 
 void makesilence() {
-
 #ifdef __SOUND_I2S
 	_soundclear(True);
 #elif defined(__SOUND_I2S_BALANCED)
@@ -466,7 +465,6 @@ void makesilence() {
 	/* Prevent Popping Noise on Start to Have DC Bias on PWM Mode */
 	_soundclear(False);
 #endif
-
 }
 
 int32 _user_start() {
@@ -558,8 +556,15 @@ int32 _user_start() {
 			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
 		}
 
-		/* If Any Non Zero */
-		if ( detect_parallel ) {
+		/**
+		 * Detecting falling edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
+		 * So, physical all high is needed to act as doing nothing or its equivalent.
+		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
+		 * 0x7F = 0b1111111 (127) is virtual all high in default.
+		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
+		 * Command 127 is used as setting upper 8 bits of the tempo index.
+		 */
+		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
 				// Tempo Index Upper 8-bit

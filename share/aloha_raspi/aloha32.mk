@@ -70,7 +70,7 @@ ifeq ($(memory256), yes)
 	MEMORY := __256M=1
 endif
 
-#Default Value for Sound
+#Default Value for Sound (Using Functions in snd32.s and sts32.s)
 sound ?= pwm
 
 ifeq ($(sound), i2s)
@@ -95,6 +95,17 @@ endif
 
 ifeq ($(sound), jackb)
 	SND := __SOUND_JACK_BALANCED=1
+endif
+
+#Default Value for Sound LE (Using Functions in pwm32.s to Emit Pulse Wave)
+soundle ?= pwm
+
+ifeq ($(soundle), pwm)
+	SNDLE := __SOUNDLE_PWM=1
+endif
+
+ifeq ($(soundle), jack)
+	SNDLE := __SOUNDLE_JACK=1
 endif
 
 #Default Value for Secure/Non-secure State
@@ -134,11 +145,11 @@ BIT := __AARCH32=1
 CC := $(COMP)-gcc
 CCINC := ../share/include
 CCHEADER := ../share/include/*.h
-CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(BIT) -D $(STATE) -D $(MODE) -D $(MEMORY)
+CCDEF := -D $(PRODUCT) -D $(ARCH) -D $(CPU) -D $(BASE) -D $(GPU) -D $(SND) -D $(SNDLE) -D $(BIT) -D $(STATE) -D $(MODE) -D $(MEMORY)
 
 AS := $(COMP)-as
 ASINC := ../share/aloha_raspi
-ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(BIT) --defsym $(STATE) --defsym $(MODE) --defsym $(MEMORY)
+ASDEF := --defsym $(PRODUCT) --defsym $(ARCH) --defsym $(CPU) --defsym $(BASE) --defsym $(GPU) --defsym $(SND) --defsym $(SNDLE) --defsym $(BIT) --defsym $(STATE) --defsym $(MODE) --defsym $(MEMORY)
 
 LINKER := $(COMP)-ld
 COPY := $(COMP)-objcopy

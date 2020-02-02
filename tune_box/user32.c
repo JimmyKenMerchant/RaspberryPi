@@ -38,7 +38,9 @@ extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 #define TIMER_COUNT_MULTIPLIER_MINLIMIT 20
 #define TIMER_COUNT_MULTIPLIER_MAXLIMIT 200
 #define LOOP_COUNTDOWN_DEFAULT          10 // one out of ten
-#define GPIO_MASK                       0x000000F0 // GPIO 4-7
+#define GPIO_MASK                       0x000000FC // 2-7
+#define GPIO_MASK_LANE0                 0x0000001C // GPIO 2-4
+#define GPIO_MASK_LANE1                 0x000000E0 // GPIO 5-7
 
 music_code music1[] =
 {
@@ -76,8 +78,8 @@ pwm_sequence music1_pulse2[] =
 gpio_sequence music1_gpio[] =
 {
 	_6_BIG(_RAP(
-		 _1(0x80000010)
-		_11(0x80000000)
+		 _4(0x80000000)
+		 _8(0x8000001C)
 	))
 	GPIO32_END
 };
@@ -91,6 +93,17 @@ music_code interrupt16[] =
 		_48_RYU_ARP(_D4_TRIL)
 	))
 	SND32_END
+};
+
+gpio_sequence interrupt16_gpio[] =
+{
+	_4_BIG(_RAP(
+		_16_BIG(_RAP(
+			 _4(0x80000000)
+			 _8(0x800000E0)
+		))
+	))
+	GPIO32_END
 };
 
 #define MUSIC_CODE_PRE_NUMBER 2
@@ -122,7 +135,7 @@ pwm_sequence* pulse2_pre_table[MUSIC_CODE_PRE_NUMBER] = {
 /* Register for GPIO Sequence */
 gpio_sequence* gpio_pre_table[MUSIC_CODE_PRE_NUMBER] = {
 	music1_gpio,
-	0
+	interrupt16_gpio
 };
 
 /* Register for Index of Tables */
@@ -145,7 +158,10 @@ void makesilence() {
 	_pwmclear( False );
 	_pwmselect( 1 );
 	_pwmclear( False );
-	_gpioclear( GPIO_MASK, False );
+	GPIO32_LANE = 0;
+	_gpioclear( GPIO_MASK_LANE0, False );
+	GPIO32_LANE = 1;
+	_gpioclear( GPIO_MASK_LANE1, False );
 }
 
 int32 _user_start() {
@@ -193,6 +209,9 @@ int32 _user_start() {
 	/* Silence in Advance */
 	makesilence();
 
+	/* High State on GPIO 2-7 */
+	_store_32( _gpio_base|_gpio_gpset0, GPIO_MASK );
+
 	while ( true ) {
 		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PCM );
 
@@ -216,8 +235,15 @@ int32 _user_start() {
 			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
 		}
 
-		/* If Any Non Zero */
-		if ( detect_parallel ) {
+		/**
+		 * Detecting falling edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
+		 * So, physical all high is needed to act as doing nothing or its equivalent.
+		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
+		 * 0x7F = 0b1111111 (127) is virtual all high in default.
+		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
+		 * Command 127 is used as setting upper 8 bits of the tempo index.
+		 */
+		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
 				// Tempo Index Upper 8-bit
@@ -249,6 +275,7 @@ int32 _user_start() {
 				_pwmset( pulse1_table[detect_parallel], musiclen, 0, 1 );
 				_pwmselect( 1 );
 				_pwmset( pulse2_table[detect_parallel], musiclen, 0, 1 );
+				GPIO32_LANE = 0;
 				_gpioset( gpio_table[detect_parallel], musiclen, 0, 1 );
 			} else if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				makesilence();
@@ -267,7 +294,10 @@ int32 _user_start() {
 				// One Time
 				SND32_MODULATION_DELTA = modulation_table[detect_parallel * 2] * delta_multiplier;
 				SND32_MODULATION_RANGE = modulation_table[(detect_parallel * 2) + 1] * delta_multiplier;
-				_soundinterrupt( music_code_table[detect_parallel], musiclen_table[detect_parallel], 0, 1 );
+				musiclen = musiclen_table[detect_parallel];
+				_soundinterrupt( music_code_table[detect_parallel], musiclen, 0, 1 );
+				GPIO32_LANE = 1;
+				_gpioset( gpio_table[detect_parallel], musiclen, 0, 1 );
 			} else if ( detect_parallel > 0 ) { // 1-15
 				// Loop
 				SND32_MODULATION_DELTA = modulation_table[detect_parallel * 2] * delta_multiplier;
@@ -278,6 +308,7 @@ int32 _user_start() {
 				_pwmset( pulse1_table[detect_parallel], musiclen, 0, -1 );
 				_pwmselect( 1 );
 				_pwmset( pulse2_table[detect_parallel], musiclen, 0, -1 );
+				GPIO32_LANE = 0;
 				_gpioset( gpio_table[detect_parallel], musiclen, 0, -1 );
 			} // Do Nothing at 0 for Preventing Chattering
 			detect_parallel = 0;
@@ -332,7 +363,10 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 				/**
 				 * GPIO Play
 				 */
-				_gpioplay( GPIO_MASK );
+				GPIO32_LANE = 0;
+				_gpioplay( GPIO_MASK_LANE0 );
+				GPIO32_LANE = 1;
+				_gpioplay( GPIO_MASK_LANE1 );
 				loop_countdown = LOOP_COUNTDOWN_DEFAULT; // Reset Counter
 			}
 		}

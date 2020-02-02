@@ -87,6 +87,8 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_2   @ Set GPIO 2 OUTPUT (Having External Pull-up)
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_3   @ Set GPIO 3 OUTPUT (Having External Pull-up)
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4   @ Set GPIO 4 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5   @ Set GPIO 5 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 6 OUTPUT
@@ -98,7 +100,7 @@ os_reset:
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[2]
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 11 INPUT, MIDI Channel Select Bit[3]
-.ifndef __SOUND_JACK
+.ifdef __SOUNDLE_PWM
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
 .endif
@@ -121,7 +123,7 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
-.ifdef __SOUND_JACK
+.ifdef __SOUNDLE_JACK
 	ldr r1, [r0, #equ32_gpio_gpfsel40]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_0     @ Set GPIO 40 PWM0 (to Minijack)
 .ifdef __RASPI3B
