@@ -13,5 +13,5 @@
 * Differences from Sound Box are as follows.
 	* Selectable Sound of Sound Box Only from I2S.
 	* Two PWM Sequences for Pulses
-	* Two GPIO Sequences for High/low State: GPIO 2-7 are set as outputs.
+	* Two GPIO Sequences for High/low State: GPIO 2-7 are set as outputs. In default, GPIO 2-7 are set as inputs with pull-up. After booting, these are set as outputs with high state. That is, these have a time to be low state during the initialization.
 	* `soundle=jack` at making sets two pulses from the jack port (2B and 3B). In my experience, the first pulse to emit sequentially is approx. +3dB higher than next pulses because of no bias voltage. If you record the pulses, it may be an issue. However, in view of analogue output, it may be enough as normalized.
