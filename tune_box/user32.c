@@ -159,9 +159,9 @@ void makesilence() {
 	_pwmselect( 1 );
 	_pwmclear( False );
 	GPIO32_LANE = 0;
-	_gpioclear( GPIO_MASK_LANE0, False );
+	_gpioclear( GPIO_MASK_LANE0, _GPIOCLEAR_HIGH );
 	GPIO32_LANE = 1;
-	_gpioclear( GPIO_MASK_LANE1, False );
+	_gpioclear( GPIO_MASK_LANE1, _GPIOCLEAR_HIGH );
 }
 
 int32 _user_start() {
@@ -208,9 +208,6 @@ int32 _user_start() {
 
 	/* Silence in Advance */
 	makesilence();
-
-	/* High State on GPIO 2-7 */
-	_store_32( _gpio_base|_gpio_gpset0, GPIO_MASK );
 
 	while ( true ) {
 		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PCM );

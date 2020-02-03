@@ -297,7 +297,7 @@ __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, u
 	return result;
 }
 
-__attribute__((noinline)) uint32 _gpioclear( uint32 gpio_mask, bool stay )
+__attribute__((noinline)) uint32 _gpioclear( uint32 gpio_mask, uchar8 stay )
 {
 	register uint32 result asm("r0");
 	asm volatile ("svc #0x2A");

@@ -27,7 +27,7 @@ GPIO32_LANE:           .word 0    @ Current LANE to Handle
  * 1. Place `gpio32_gpioplay` on FIQ/IRQ Handler which will be triggered with any timer.
  * 2. Place `_gpioset` with needed arguments in `user32.c`.
  * 3. GPIO sequence automatically runs with the assigned values.
- * 4. If you want to stop the GPIO sequence, use `_gpioclear`. Constant 1 of its argument will stay current status of GPIO.
+ * 4. If you want to stop the GPIO sequence, use `_gpioclear`.
  */
 
 /**
@@ -267,7 +267,7 @@ gpio32_gpioset:
  *
  * Parameters
  * r0: GPIO Mask
- * r1: Clear All (0) / Stay GPIO Current Status (1)
+ * r1: Clear All (0) / Set All (1) / Stay GPIO Current Status (2)
  *
  * Return: r0 (0 as success)
  */
@@ -295,7 +295,7 @@ gpio32_gpioclear:
 	str temp, [addr_lane, #8]
 	str temp, [addr_lane, #12]
 
-	cmp stay, #0
+	cmp stay, #1
 	bhi gpio32_gpioclear_success
 
 	/* Clear Bit[31:30] */
@@ -303,7 +303,9 @@ gpio32_gpioclear:
 
 	mov temp, #equ32_peripherals_base
 	add temp, temp, #equ32_gpio_base
-	str mask, [temp, #equ32_gpio_gpclr0]   @ Clear All
+	cmp stay, #0
+	streq mask, [temp, #equ32_gpio_gpclr0]   @ Clear All
+	strne mask, [temp, #equ32_gpio_gpset0]   @ Set All
 
 	gpio32_gpioclear_success:
 		mov r0, #0                            @ Return with Success

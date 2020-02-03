@@ -85,7 +85,7 @@ typedef enum _command_list {
 	 * GPIO 2-27 are only available, plus setting out is needed for each GPIO.
 	 */
 	gpio,
-	clrgpio, // Clear outputting from GPIO. "clrgpio @S1": clear all (0) / stay GPIO current status (1) in S1.
+	clrgpio, // Clear outputting from GPIO. "clrgpio @S1": clear all (0) / set all (1) / stay GPIO current status (2) in S1.
 	ingpio, // Check GPIO Status High(1) / Low(0) "ingpio @D @S1"; Check GPIO Numbered in S1
 	/**
 	 * "snd" does sequential outputting sound. "snd @S1 @S2":

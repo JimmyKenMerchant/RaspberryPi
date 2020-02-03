@@ -12,7 +12,7 @@
  * 1. Place `gpio32_gpioplay` on FIQ/IRQ Handler which will be triggered with any timer.
  * 2. Place `_gpioset` with needed arguments in `user32.c`.
  * 3. GPIO sequence automatically runs with the assigned values.
- * 4. If you want to stop the GPIO sequence, use `_gpioclear`. Constant 1 of its argument will stay current status of GPIO.
+ * 4. If you want to stop the GPIO sequence, use `_gpioclear`.
  */
 
 /**

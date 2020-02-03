@@ -661,6 +661,9 @@ __attribute__((noinline)) int32 _hub_search_device
 #define _GPIOTOGGLE_LOW     0
 #define _GPIOTOGGLE_HIGH    1
 #define _GPIOTOGGLE_SWAP    2
+#define _GPIOCLEAR_LOW      0
+#define _GPIOCLEAR_HIGH     1
+#define _GPIOCLEAR_STAY     2
 #define _GPIOMODE_IN        0b000
 #define _GPIOMODE_OUT       0b001
 #define _GPIOMODE_ALT0      0b100
@@ -685,11 +688,11 @@ extern uint32 GPIO32_LANE;
 
 /* Relative System Calls  */
 
-__attribute__((noinline)) uint32 _gpioplay( uint32 gpio_mask ); // Clear All (false) or Stay GPIO Status (true)
+__attribute__((noinline)) uint32 _gpioplay( uint32 gpio_mask );
 
 __attribute__((noinline)) uint32 _gpioset( gpio_sequence* gpio, uint32 length, uint32 count, int32 repeat );
 
-__attribute__((noinline)) uint32 _gpioclear( uint32 gpio_mask, bool stay ); // Clear All (false) or Stay GPIO Status (true)
+__attribute__((noinline)) uint32 _gpioclear( uint32 gpio_mask, uchar8 stay );
 
 __attribute__((noinline)) uint32 _gpiotoggle( uint32 number_gpio, uchar8 control );
 
