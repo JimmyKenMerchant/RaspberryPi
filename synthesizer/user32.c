@@ -12,6 +12,7 @@
 #include "sts32/notes.h"
 #include "sts32/presets.h"
 #include "user32_tempo.h"
+#include "user32_percussion.h"
 
 /* Global Variables and Constants */
 
@@ -545,7 +546,7 @@ synthe_precode* pre_synthe16[] = {
 	pre_synthe16_r
 };
 
-#define PRE_SYNTHE_NUMBER 7
+#define PRE_SYNTHE_NUMBER 16
 
 /* Register for Precodes */
 synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
@@ -555,7 +556,16 @@ synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
 	pre_synthe4,
 	pre_synthe5,
 	pre_synthe8,
-	pre_synthe16
+	pre_synthe16,
+	pre_percussion_bassdrum2,
+	pre_percussion_bassdrum1,
+	pre_percussion_handcrap,
+	pre_percussion_snare1,
+	pre_percussion_snare2,
+	pre_percussion_hihat1,
+	pre_percussion_hihat2,
+	pre_percussion_symbal1,
+	pre_percussion_symbal2,
 };
 
 /* Register for Number of Voices */
@@ -566,18 +576,36 @@ uint32 pre_synthe_voice_table[PRE_SYNTHE_NUMBER] = {
 	2,
 	2,
 	2,
-	2
+	2,
+	1,
+	1,
+	1,
+	1,
+	1,
+	1,
+	1,
+	1,
+	1
 };
 
 /* Register for Index of Tables */
 uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
-	1,
-	2,
-	3,
-	4,
-	5,
-	8,
-	16
+	 1,
+	 2,
+	 3,
+	 4,
+	 5,
+	 8,
+	16,
+	35, // Acoustic Bass Drum (Bass Drum 2) at GM 1 Percussion Key Map
+	36, // Bass Drum 1
+	39, // Hand Clap
+	38, // Acoustic Snare (Snare Drum 1)
+	40, // Electric Snare (Snare Drum 2)
+	42, // Closed Hi-hat
+	44, // Pedal Hi-hat
+	51, // Ride Cymbal 1
+	59  // Ride Cymbal 2
 };
 
 synthe_code** synthe_code_table;
@@ -671,9 +699,23 @@ int32 _user_start() {
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
 			} else if ( detect_parallel > 31 ) { // 32-95
 				// One Time
+				if ( detect_parallel < 37 ) { // Bass Drums
+					STS32_LANE = 1;
+				} else if ( detect_parallel < 41 ) { // Snare
+					STS32_LANE = 2;
+				} else { // Symbal, etc.
+					STS32_LANE = 3;
+				}
 				_syntheset( synthe_code_table[detect_parallel], synthelen_table[detect_parallel], 0, 1 );
 			} else if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
+				STS32_LANE = 0;
 				_syntheclear( 0, 2 );
+				STS32_LANE = 1;
+				_syntheclear( 2, 1 );
+				STS32_LANE = 2;
+				_syntheclear( 3, 1 );
+				STS32_LANE = 3;
+				_syntheclear( 4, 1 );
 			} else if ( detect_parallel == 0b11110 ) { // 0b11110 (30)
 				/* Beat Down */
 				tempo--;
@@ -688,6 +730,7 @@ int32 _user_start() {
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
 			} else if ( detect_parallel > 0 ) { // 1-28
 				// Loop
+				STS32_LANE = 0;
 				_syntheset( synthe_code_table[detect_parallel], synthelen_table[detect_parallel], 0, -1 );
 			} // Do Nothing at 0 for Preventing Chattering
 			detect_parallel = 0;
@@ -731,9 +774,16 @@ int32 _user_start() {
 					vfp32_flt( STS32_DIGITALMOD_MEDIUM, STS32_DIGITALMOD_MIN ) ) {
 					STS32_DIGITALMOD_DELTA = vfp32_fmul( STS32_DIGITALMOD_DELTA, -1.0 );
 				}
-
-				result = _syntheplay( 0, 2 );
-				if ( result == 0 ) { // Playing
+				result = 0;
+				STS32_LANE = 0;
+				result |= _syntheplay( 0, 2 ) ^ 0b11;
+				STS32_LANE = 1;
+				result |= _syntheplay( 2, 1 ) ^ 0b11;
+				STS32_LANE = 2;
+				result |= _syntheplay( 3, 1 ) ^ 0b11;
+				STS32_LANE = 3;
+				result |= _syntheplay( 4, 1 ) ^ 0b11;
+				if ( result == 0b11 ) { // Playing
 					playing_signal = _GPIOTOGGLE_HIGH;
 				} else { // Not Playing
 					playing_signal = _GPIOTOGGLE_LOW;
