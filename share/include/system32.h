@@ -1560,9 +1560,9 @@ __attribute__((noinline)) uint32 _synthemidi_envelope( uint32 number_voices );
 /* Regular Functions */
 
 /**
- * Count 2-Bytes Beats of Music Code
+ * Count Beats (64-bit) of Synthesizer Code
  *
- * Return: Number of Beats in Music Code, Maximum of 4,294,967,295 Beats
+ * Return: Number of Beats in Synthesizer Code
  */
 extern uint32 sts32_synthelen
 (

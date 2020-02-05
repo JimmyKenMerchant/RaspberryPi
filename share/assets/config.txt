@@ -40,9 +40,9 @@ sdram_freq=250
 # GPU Memory Mbytes, fixup*.dat makes partition.
 # If you want less than 32Mbytes for GPU, start_cd.elf (Cut Down) and fixup_cd.elf are needed.
 # If you want proper settings for the translation table of GPU memory, you also need to set base and size in equ32.s.
-gpu_mem_256=32
-gpu_mem_512=32
-gpu_mem_1024=64
+gpu_mem_256=64
+gpu_mem_512=128
+gpu_mem_1024=256
 
 # Disable Rainbow Screen on Power On
 disable_splash=1
