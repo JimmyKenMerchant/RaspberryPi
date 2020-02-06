@@ -633,7 +633,11 @@ int32 _user_start() {
 
 	for ( uint32 i = 0; i < PRE_SYNTHE_NUMBER; i++ ) {
 		number_voices = pre_synthe_voice_table[i];
-		temp_synthe_code = sts32_synthedecodelr( pre_synthe_table[i], number_voices );
+		if ( number_voices ) {
+			temp_synthe_code = sts32_synthedecodelr( pre_synthe_table[i], number_voices );
+		} else {
+			temp_synthe_code = (synthe_code*)pre_synthe_table[i]; // Decoded Binaries
+		}
 		if ( (uint32)temp_synthe_code == -1 ) return EXIT_FAILURE;
 		table_index = pre_synthe_table_index[i];
 		synthe_code_table[table_index] = temp_synthe_code;
