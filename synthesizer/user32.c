@@ -546,7 +546,7 @@ synthe_precode* pre_synthe16[] = {
 	pre_synthe16_r
 };
 
-#define PRE_SYNTHE_NUMBER 16
+#define PRE_SYNTHE_NUMBER 22
 
 /* Register for Precodes */
 synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
@@ -559,13 +559,19 @@ synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
 	pre_synthe16,
 	pre_percussion_bassdrum2,
 	pre_percussion_bassdrum1,
-	pre_percussion_handcrap,
+	pre_percussion_handclap,
 	pre_percussion_snare1,
 	pre_percussion_snare2,
+	pre_percussion_lowtom1,
+	pre_percussion_lowtom2,
+	pre_percussion_midtom1,
+	pre_percussion_midtom2,
+	pre_percussion_hightom1,
+	pre_percussion_hightom2,
 	pre_percussion_hihat1,
 	pre_percussion_hihat2,
 	pre_percussion_symbal1,
-	pre_percussion_symbal2,
+	pre_percussion_symbal2
 };
 
 /* Register for Number of Voices */
@@ -577,6 +583,12 @@ uint32 pre_synthe_voice_table[PRE_SYNTHE_NUMBER] = {
 	2,
 	2,
 	2,
+	1,
+	1,
+	1,
+	1,
+	1,
+	1,
 	1,
 	1,
 	1,
@@ -602,6 +614,12 @@ uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
 	39, // Hand Clap
 	38, // Acoustic Snare (Snare Drum 1)
 	40, // Electric Snare (Snare Drum 2)
+	41, // Low Floor Tom
+	45, // Low Tom
+	47, // Low-mid Tom
+	48, // Hi-mid Tom
+	43, // High Floor Tom
+	50, // High Tom
 	42, // Closed Hi-hat
 	44, // Pedal Hi-hat
 	51, // Ride Cymbal 1
@@ -658,12 +676,10 @@ int32 _user_start() {
 #ifdef __SOUND_I2S
 		_synthewave_i2s( STS32_DIGITALMOD_MEDIUM, STS32_TONE, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_I2S, 8 );
-#endif
-#ifdef __SOUND_PWM
+#elif defined(__SOUND_PWM)
 		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, STS32_TONE, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
-#endif
-#ifdef __SOUND_JACK
+#elif defined(__SOUND_JACK)
 		_synthewave_pwm( STS32_DIGITALMOD_MEDIUM, STS32_TONE, 8 );
 		_synthemidi( OS_RESET_MIDI_CHANNEL, STS32_PWM, 8 );
 #endif
