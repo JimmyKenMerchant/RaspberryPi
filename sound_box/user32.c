@@ -16,7 +16,11 @@
 /* Function Declaration */
 void makesilence();
 
-/* Global Variables and Constants */
+/**
+ * Global Variables and Constants
+ * to Prevent Incorrect Compilation in optimization,
+ * Variables (except these which have only one value) used over the iteration of the loop are defined as global variables.
+ */
 
 extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 
@@ -445,7 +449,10 @@ uint32 music_code_pre_table_index[MUSIC_CODE_PRE_NUMBER] = {
 music_code** music_code_table;
 int16* modulation_table;
 uint32* musiclen_table;
+uint32 timer_count_multiplier;
+int32 loop_countdown; // Use Signed Integer (Using Comparison in IF Statement)
 uint32 tempo_index;
+bool flag_midi_noteon;
 
 void makesilence() {
 #ifdef __SOUND_I2S
@@ -469,14 +476,11 @@ void makesilence() {
 
 int32 _user_start() {
 	/* Local Variables */
-	uint32 timer_count_multiplier = TIMER_COUNT_MULTIPLIER_DEFAULT;
 	uint32 delta_multiplier;
 	uint32 detect_parallel = 0;
 	uint32 table_index;
-	int32 loop_countdown = LOOP_COUNTDOWN_DEFAULT; // Use Signed Integer to Prevent Incorrect Compilation (Using Comparison in IF Statement)
 	uchar8 result;
 	uchar8 playing_signal;
-	bool flag_midi_noteon = False;
 	bool mode_soundplay;
 #ifdef __SOUND_I2S
 	_sounddecode( _SOUND_INDEX, SND32_I2S, _SOUND_ADJUST );
@@ -516,7 +520,10 @@ int32 _user_start() {
 		modulation_table[(table_index * 2) + 1] = modulation_pre_table[(i * 2) + 1];
 		musiclen_table[table_index] = snd32_musiclen( music_code_pre_table[i] );
 	}
-	tempo_index = 0;
+	timer_count_multiplier = TIMER_COUNT_MULTIPLIER_DEFAULT;
+	loop_countdown = LOOP_COUNTDOWN_DEFAULT;
+	tempo_index = TIMER_COUNT_MULTIPLIER_DEFAULT;
+	flag_midi_noteon = False;
 
 	/* Silence in Advance */
 	makesilence();
@@ -562,13 +569,13 @@ int32 _user_start() {
 		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
 		 * 0x7F = 0b1111111 (127) is virtual all high in default.
 		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
-		 * Command 127 is used as setting upper 8 bits of the tempo index.
+		 * Command 127 is used as setting lower 8 bits of the tempo index.
 		 */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
-				// Tempo Index Upper 8-bit
-				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 8);
+				// Tempo Index Lower 8-bit
+				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
 				timer_count_multiplier = tempo_index;
 				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) {
 					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;
@@ -577,8 +584,8 @@ int32 _user_start() {
 				}
 				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
 			} else if ( detect_parallel > 95 ) { // 96(0x60)-111(0x6F)
-				// Tempo Index Lower 8-bit
-				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
+				// Tempo Index Upper 8-bit
+				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 4);
 				timer_count_multiplier = tempo_index;
 				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) {
 					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;

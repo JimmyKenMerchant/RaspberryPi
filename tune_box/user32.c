@@ -150,7 +150,10 @@ pwm_sequence** pulse2_table;
 gpio_sequence** gpio_table;
 int16* modulation_table;
 uint32* musiclen_table;
+uint32 timer_count_multiplier;
+int32 loop_countdown; // Use Signed Integer (Using Comparison in IF Statement)
 uint32 tempo_index;
+bool flag_midi_noteon;
 
 void makesilence() {
 	_soundclear( True );
@@ -166,15 +169,12 @@ void makesilence() {
 
 int32 _user_start() {
 	/* Local Variables */
-	uint32 timer_count_multiplier = TIMER_COUNT_MULTIPLIER_DEFAULT;
 	uint32 delta_multiplier;
 	uint32 detect_parallel = 0;
 	uint32 table_index;
 	uint32 musiclen;
-	int32 loop_countdown = LOOP_COUNTDOWN_DEFAULT; // Use Signed Integer to Prevent Incorrect Compilation (Using Comparison in IF Statement)
 	uchar8 result;
 	uchar8 playing_signal;
-	bool flag_midi_noteon = False;
 	bool mode_soundplay;
 #if defined(__SOUND_I2S_BALANCED)
 	_sounddecode( _SOUND_INDEX, SND32_I2S_BALANCED, _SOUND_ADJUST );
@@ -204,7 +204,10 @@ int32 _user_start() {
 		pulse2_table[table_index] = pulse2_pre_table[i];
 		gpio_table[table_index] = gpio_pre_table[i];
 	}
-	tempo_index = 0;
+	timer_count_multiplier = TIMER_COUNT_MULTIPLIER_DEFAULT;
+	loop_countdown = LOOP_COUNTDOWN_DEFAULT;
+	tempo_index = TIMER_COUNT_MULTIPLIER_DEFAULT;
+	flag_midi_noteon = False;
 
 	/* Silence in Advance */
 	makesilence();
@@ -238,13 +241,13 @@ int32 _user_start() {
 		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
 		 * 0x7F = 0b1111111 (127) is virtual all high in default.
 		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
-		 * Command 127 is used as setting upper 8 bits of the tempo index.
+		 * Command 127 is used as setting lower 8 bits of the tempo index.
 		 */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
-				// Tempo Index Upper 8-bit
-				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 8);
+				// Tempo Index Lower 8-bit
+				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
 				timer_count_multiplier = tempo_index;
 				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) {
 					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;
@@ -253,8 +256,8 @@ int32 _user_start() {
 				}
 				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
 			} else if ( detect_parallel > 95 ) { // 96(0x60)-111(0x6F)
-				// Tempo Index Lower 8-bit
-				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
+				// Tempo Index Upper 8-bit
+				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 4);
 				timer_count_multiplier = tempo_index;
 				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) {
 					timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;

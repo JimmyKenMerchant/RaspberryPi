@@ -42,6 +42,17 @@ synthe_precode* pre_percussion_handclap[] = {
 	pre_percussion_handclap_mono
 };
 
+/* Stick */
+
+synthe_precode pre_percussion_sidestick_mono[] = {
+	_G6<<_FREQ|4000<<_MAG,_NOISE<<_FREQ|32000<<_MAG,300<<_BEAT,0<<_ATK|3<<_DCY|2<<_STN|97<<_RLS,
+	_END
+};
+
+synthe_precode* pre_percussion_sidestick[] = {
+	pre_percussion_sidestick_mono
+};
+
 /* Snare */
 
 synthe_precode pre_percussion_snare1_mono[] = {
@@ -121,7 +132,7 @@ synthe_precode* pre_percussion_hightom2[] = {
 /* Symbal */
 
 synthe_precode pre_percussion_symbal1_mono[] = {
-	_A4<<_FREQ|2500<<_MAG,_B4<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 	STS32_END
 };
 
@@ -130,7 +141,7 @@ synthe_precode* pre_percussion_symbal1[] = {
 };
 
 synthe_precode pre_percussion_symbal2_mono[] = {
-	_A4<<_FREQ|60<<_MAG,_B4<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	_NOISE<<_FREQ|60<<_MAG,_NOISE<<_FREQ|32000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 	STS32_END
 };
 
@@ -138,10 +149,28 @@ synthe_precode* pre_percussion_symbal2[] = {
 	pre_percussion_symbal2_mono
 };
 
+synthe_precode pre_percussion_elsymbal1_mono[] = {
+	_A4<<_FREQ|2500<<_MAG,_B4<<_FREQ|15000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	STS32_END
+};
+
+synthe_precode* pre_percussion_elsymbal1[] = {
+	pre_percussion_elsymbal1_mono
+};
+
+synthe_precode pre_percussion_elsymbal2_mono[] = {
+	_A4<<_FREQ|60<<_MAG,_B4<<_FREQ|15000<<_MAG,300<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	STS32_END
+};
+
+synthe_precode* pre_percussion_elsymbal2[] = {
+	pre_percussion_elsymbal2_mono
+};
+
 /* Hi-hat */
 
 synthe_precode pre_percussion_hihat1_mono[] = {
-	_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 	STS32_END
 };
 
@@ -150,10 +179,30 @@ synthe_precode* pre_percussion_hihat1[] = {
 };
 
 synthe_precode pre_percussion_hihat2_mono[] = {
-	_D6<<_FREQ|60<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	_NOISE<<_FREQ|60<<_MAG,_NOISE<<_FREQ|32000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
 	STS32_END
 };
 
 synthe_precode* pre_percussion_hihat2[] = {
 	pre_percussion_hihat2_mono
+};
+
+/* Triangle */
+
+synthe_precode pre_percussion_triangle1_mono[] = {
+	_D6<<_FREQ|2500<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	STS32_END
+};
+
+synthe_precode* pre_percussion_triangle1[] = {
+	pre_percussion_triangle1_mono
+};
+
+synthe_precode pre_percussion_triangle2_mono[] = {
+	_D6<<_FREQ|60<<_MAG,_D7<<_FREQ|15000<<_MAG,150<<_BEAT,1<<_RIS|100<<_STN|99<<_FAL,
+	STS32_END
+};
+
+synthe_precode* pre_percussion_triangle2[] = {
+	pre_percussion_triangle2_mono
 };

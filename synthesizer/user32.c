@@ -14,7 +14,11 @@
 #include "user32_tempo.h"
 #include "user32_percussion.h"
 
-/* Global Variables and Constants */
+/**
+ * Global Variables and Constants
+ * to Prevent Incorrect Compilation in optimization,
+ * Variables (except these which have only one value) used over the iteration of the loop are defined as global variables.
+ */
 
 extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 
@@ -546,7 +550,7 @@ synthe_precode* pre_synthe16[] = {
 	pre_synthe16_r
 };
 
-#define PRE_SYNTHE_NUMBER 22
+#define PRE_SYNTHE_NUMBER 27
 
 /* Register for Precodes */
 synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
@@ -559,6 +563,7 @@ synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
 	pre_synthe16,
 	pre_percussion_bassdrum2,
 	pre_percussion_bassdrum1,
+	pre_percussion_sidestick,
 	pre_percussion_handclap,
 	pre_percussion_snare1,
 	pre_percussion_snare2,
@@ -571,7 +576,11 @@ synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
 	pre_percussion_hihat1,
 	pre_percussion_hihat2,
 	pre_percussion_symbal1,
-	pre_percussion_symbal2
+	pre_percussion_symbal2,
+	pre_percussion_elsymbal1,
+	pre_percussion_elsymbal2,
+	pre_percussion_triangle2,
+	pre_percussion_triangle1
 };
 
 /* Register for Number of Voices */
@@ -583,6 +592,11 @@ uint32 pre_synthe_voice_table[PRE_SYNTHE_NUMBER] = {
 	2,
 	2,
 	2,
+	1,
+	1,
+	1,
+	1,
+	1,
 	1,
 	1,
 	1,
@@ -611,6 +625,7 @@ uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
 	16,
 	35, // Acoustic Bass Drum (Bass Drum 2) at GM 1 Percussion Key Map
 	36, // Bass Drum 1
+	37, // Side Stick
 	39, // Hand Clap
 	38, // Acoustic Snare (Snare Drum 1)
 	40, // Electric Snare (Snare Drum 2)
@@ -623,17 +638,18 @@ uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
 	42, // Closed Hi-hat
 	44, // Pedal Hi-hat
 	51, // Ride Cymbal 1
-	59  // Ride Cymbal 2
+	59, // Ride Cymbal 2
+	49, // Crash Cymbal 1
+	57, // Crash Cymbal 2
+	80, // Mute Triangle
+	81  // Open Triangle
 };
 
 synthe_code** synthe_code_table;
 uint32* synthelen_table;
-
-/* Use Signed Integer and Global Scope to Prevent Incorrect Compilation (Using Comparison in IF Statement) */
-int32 tempo_count;
+int32 tempo_count; // Use Signed Integer (Using Comparison in IF Statement)
 int32 tempo_count_reload;
-int32 tempo;
-
+uint32 tempo;
 uint32 tempo_index;
 
 int32 _user_start() {
@@ -666,7 +682,7 @@ int32 _user_start() {
 	tempo_count = TEMPO_COUNT_DEFAULT;
 	tempo_count_reload = TEMPO_COUNT_DEFAULT;
 	tempo = TEMPO_DEFAULT;
-	tempo_index = 0;
+	tempo_index = TEMPO_DEFAULT >> 1;
 
 //print32_debug( (uint32)synthe8, 100, 200 );
 //print32_debug_hexa( (uint32)synthe8, 100, 212, 256 );
@@ -697,21 +713,21 @@ int32 _user_start() {
 		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
 		 * 0x7F = 0b1111111 (127) is virtual all high in default.
 		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
-		 * Command 127 is used as setting upper 8 bits of the tempo index.
+		 * Command 127 is used as setting lower 8 bits of the tempo index.
 		 */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
-				// Tempo Index Upper 8-bit
-				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 8);
+				// Tempo Index Lower 8-bit
+				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
 				// Integer 30-240 BPM
 				tempo = tempo_index << 1;
 				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
 				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
 			} else if ( detect_parallel > 95 ) { // 96(0x60)-111(0x6F)
-				// Tempo Index Lower 8-bit
-				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
+				// Tempo Index Upper 8-bit
+				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 4);
 				// Integer 30-240 BPM
 				tempo = tempo_index << 1;
 				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
