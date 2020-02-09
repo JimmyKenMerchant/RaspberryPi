@@ -713,21 +713,21 @@ int32 _user_start() {
 		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
 		 * 0x7F = 0b1111111 (127) is virtual all high in default.
 		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
-		 * Command 127 is used as setting lower 8 bits of the tempo index.
+		 * Command 127 is used as setting upper 8 bits of the tempo index.
 		 */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
-				// Tempo Index Lower 8-bit
-				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
+				// Tempo Index Upper 8-bit
+				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 4);
 				// Integer 30-240 BPM
 				tempo = tempo_index << 1;
 				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
 				_clockmanager_divisor( _cm_gp1, tempo_table[tempo << 1] );
 				tempo_count_reload = tempo_table[(tempo << 1) + 1];
 			} else if ( detect_parallel > 95 ) { // 96(0x60)-111(0x6F)
-				// Tempo Index Upper 8-bit
-				tempo_index = (tempo_index & 0x0F) | ((detect_parallel & 0x0F) << 4);
+				// Tempo Index Lower 8-bit
+				tempo_index = (tempo_index & 0xF0) | (detect_parallel & 0x0F);
 				// Integer 30-240 BPM
 				tempo = tempo_index << 1;
 				if ( tempo > TEMPO_MAX ) tempo = TEMPO_MAX;
