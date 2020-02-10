@@ -54,6 +54,8 @@
 
 * GPIO5 as Output of Synchronization Clock OUT
 
+* GPIO14 as Output of Busy Toggle for Acknowledgment of Command
+
 * GPIO15 as Input of RXD0 (UART) for MIDI IN
 
 * GPIO27 as Input of Clock IN for Buttons (Detects Status of Buttons on Falling Edge of Clock IN)

@@ -16,7 +16,9 @@
 
 **Output/Input**
 
-* GPIO2-15 and GPIO18-21 as Output of GPIO
+* GPIO2-14 and GPIO18-21 as Output of GPIO
+
+* GPIO15 as Output of Busy Toggle for Acknowledgment of Command
 
 * GPIO16 as Output of Playing Signal
 

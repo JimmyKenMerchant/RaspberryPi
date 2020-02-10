@@ -678,7 +678,6 @@ int32 _user_start() {
 		// To Get Proper Latency, Get Lengths in Advance
 		synthelen_table[table_index] = arm32_udiv( sts32_synthelen( temp_synthe_code ), number_voices );
 	}
-
 	tempo_count = TEMPO_COUNT_DEFAULT;
 	tempo_count_reload = TEMPO_COUNT_DEFAULT;
 	tempo = TEMPO_DEFAULT;
@@ -708,7 +707,7 @@ int32 _user_start() {
 		}
 
 		/**
-		 * Detecting falling edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
+		 * Detecting rising edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
 		 * So, physical all high is needed to act as doing nothing or its equivalent.
 		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
 		 * 0x7F = 0b1111111 (127) is virtual all high in default.
@@ -716,6 +715,7 @@ int32 _user_start() {
 		 * Command 127 is used as setting upper 8 bits of the tempo index.
 		 */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
+			_gpiotoggle( 14, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
 				// Tempo Index Upper 8-bit

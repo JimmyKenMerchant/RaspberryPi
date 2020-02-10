@@ -85,6 +85,7 @@ os_reset:
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 10 INPUT, MIDI Channel Select Bit[2]
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 11 INPUT, MIDI Channel Select Bit[3]
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4   @ Set GPIO 14 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]

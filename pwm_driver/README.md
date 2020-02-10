@@ -18,6 +18,8 @@
 
 * GPIO13 as Output of PWM1
 
+* GPIO14 as Output of Busy Toggle for Acknowledgment of Command
+
 * GPIO16 as Output of Playing Signal of PWM0
 
 * GPIO21 as Output of Playing Signal of PWM1

@@ -26,17 +26,23 @@
 #include "system32.h"
 #include "system32.c"
 
-#define timer_count_multiplicand        100
-#define timer_count_multiplier_default  48
-#define timer_count_multiplier_minlimit 12
-#define timer_count_multiplier_maxlimit 96
+/**
+ * Global Variables and Constants
+ * to Prevent Incorrect Compilation in optimization,
+ * Variables (except these which have only one value) used over the iteration of the loop are defined as global variables.
+ */
+
+#define TIMER_COUNT_MULTIPLICAND        100
+#define TIMER_COUNT_MULTIPLIER_DEFAULT  48
+#define TIMER_COUNT_MULTIPLIER_MINLIMIT 12
+#define TIMER_COUNT_MULTIPLIER_MAXLIMIT 96
 
 /**
  * In default, there is a 25Hz synchronization clock (it's a half of 50Hz on Arm Timer beacause of toggling).
  * Arm Timer sets 240000Hz as clock.
- * 4800 is divisor (timer_count_multiplicand * timer_count_multiplier_defualt), i.e., 240000Hz / 4800 / 2 equals 25Hz.
- * The Maximum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_minlimit) / 2) is 100Hz.
- * The minimum beat (240000 / (timer_count_multiplicand * timer_count_multiplier_maxlimit) / 2) is 12.5Hz.
+ * 4800 is divisor (TIMER_COUNT_MULTIPLICAND * TIMER_COUNT_MULTIPLIER_DEFAULT), i.e., 240000Hz / 4800 / 2 equals 25Hz.
+ * The Maximum beat (240000 / (TIMER_COUNT_MULTIPLICAND * TIMER_COUNT_MULTIPLIER_MINLIMIT) / 2) is 100Hz.
+ * The minimum beat (240000 / (TIMER_COUNT_MULTIPLICAND * TIMER_COUNT_MULTIPLIER_MAXLIMIT) / 2) is 12.5Hz.
  *
  * If you want particular BPM for a track, use _armtimer_reload and/or _armtimer prior to _soundset.
  */
@@ -160,256 +166,92 @@ pwm_sequence pwm16[] =
 	PWM32_END
 };
 
-int32 _user_start()
-{
+#define PWM_SEQUENCE_PRE_NUMBER 7
 
-	uint32 timer_count_multiplier = timer_count_multiplier_default;
+/* Register for PWM Sequences */
+pwm_sequence* pwm_sequence_pre_table[PWM_SEQUENCE_PRE_NUMBER] = {
+	pwm3,
+	pwm5,
+	pwm6,
+	pwm7,
+	pwm8,
+	pwm15,
+	pwm16
+};
+
+/* Register for Index of Tables */
+uint32 pwm_sequence_pre_table_index[PWM_SEQUENCE_PRE_NUMBER] = {
+	3,
+	5,
+	6,
+	7,
+	8,
+	15,
+	16
+};
+
+pwm_sequence** pwm_sequence_table;
+uint32* pwmlen_table;
+uint32 timer_count_multiplier;
+
+int32 _user_start() {
+	/* Local Variables */
 	uint32 detect_parallel = 0;
+	uint32 table_index;
 	uchar8 result;
 	uchar8 playing_signal;
 
-	// To Get Proper Latency, Get Lengths in Advance
-	//uint32 pwmlen1 = pwm32_pwmlen( pwm1 );
-	//uint32 pwmlen2 = pwm32_pwmlen( pwm2 );
-	uint32 pwmlen3 = pwm32_pwmlen( pwm3 );
-	//uint32 pwmlen4 = pwm32_pwmlen( pwm4 );
-	uint32 pwmlen5 = pwm32_pwmlen( pwm5 );
-	uint32 pwmlen6 = pwm32_pwmlen( pwm6 );
-	uint32 pwmlen7 = pwm32_pwmlen( pwm7 );
-	uint32 pwmlen8 = pwm32_pwmlen( pwm8 );
-	//uint32 pwmlen9 = pwm32_pwmlen( pwm9 );
-	//uint32 pwmlen10 = pwm32_pwmlen( pwm10 );
-	//uint32 pwmlen11 = pwm32_pwmlen( pwm11 );
-	//uint32 pwmlen12 = pwm32_pwmlen( pwm12 );
-	//uint32 pwmlen13 = pwm32_pwmlen( pwm13 );
-	//uint32 pwmlen14 = pwm32_pwmlen( pwm14 );
-	uint32 pwmlen15 = pwm32_pwmlen( pwm15 );
-	uint32 pwmlen16 = pwm32_pwmlen( pwm16 );
+	/* Initialization of Global Variables */
+	pwm_sequence_table = (pwm_sequence**)heap32_malloc( 128 ); // 128 Words = 512 Bytes
+	pwmlen_table = (uint32*)heap32_malloc( 128 ); // 128 Words = 512 Bytes
+	for ( uint32 i = 0; i < PWM_SEQUENCE_PRE_NUMBER; i++ ) {
+		table_index = pwm_sequence_pre_table_index[i];
+		// To Get Proper Latency, Get Lengths in Advance
+		pwm_sequence_table[table_index] = pwm_sequence_pre_table[i];
+		pwmlen_table[table_index] = pwm32_pwmlen( pwm_sequence_pre_table[i] );
+	}
+	timer_count_multiplier = TIMER_COUNT_MULTIPLIER_DEFAULT;
 
 	while ( true ) {
-
 		/* Detect Falling Edge of GPIO */
 		if ( _gpio_detect( 27 ) ) {
 			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
 			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			detect_parallel = (detect_parallel>>22)|0x80000000; // Set Outstanding Flag
+			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
 		}
 
-		/* If Any Non Zero */
-		if ( detect_parallel ) {
-			detect_parallel &= 0b11111;
-
-			/* GPIO22-26 as Bit[26:22] */
-			// 0b00001 (1)
-			if ( detect_parallel == 0b00001 ) {
-				//_pwmselect( 0 );
-				//_pwmset( pwm1, pwmlen1, 0, -1 );
+		/**
+		 * Detecting rising edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
+		 * So, physical all high is needed to act as doing nothing or its equivalent.
+		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
+		 */
+		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
+			_gpiotoggle( 14, _GPIOTOGGLE_SWAP ); // Busy Toggle
+			detect_parallel &= 0x7F; // 0-127
+			if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				_pwmselect( 0 );
 				_pwmclear( 0 );
 				_pwmselect( 1 );
 				_pwmclear( 0 );
-
-			// 0b00010 (2)
-			} else if ( detect_parallel == 0b00010 ) {
-				//_pwmselect( 0 );
-				//_pwmset( pwm2, pwmlen2, 0, -1 );
-				/* Beat Up */
-				timer_count_multiplier--;
-				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-
-			// 0b00011 (3)
-			} else if ( detect_parallel == 0b00011 ) {
-				_pwmselect( 0 );
-				_pwmset( pwm3, pwmlen3, 0, -1 );
-
-			// 0b00100 (4)
-			} else if ( detect_parallel == 0b00100 ) {
-				//_pwmselect( 0 );
-				//_pwmset( pwm4, pwmlen4, 0, -1 );
+			} else if ( detect_parallel == 0b11110 ) { // 0b11110 (30)
 				/* Beat Down */
 				timer_count_multiplier++;
-				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-			// 0b00101 (5)
-			} else if ( detect_parallel == 0b00101 ) {
-				_pwmselect( 0 );
-				_pwmset( pwm5, pwmlen5, 0, -1 );
-
-			// 0b00110 (6)
-			} else if ( detect_parallel == 0b00110 ) {
-				_pwmselect( 0 );
-				_pwmset( pwm6, pwmlen6, 0, -1 );
-
-			// 0b00111 (7)
-			} else if ( detect_parallel == 0b00111 ) {
-				_pwmselect( 0 );
-				_pwmset( pwm7, pwmlen7, 0, -1 );
-
-			// 0b01000 (8)
-			} else if ( detect_parallel == 0b01000 ) {
-				_pwmselect( 0 );
-				_pwmset( pwm8, pwmlen8, 0, -1 );
-
-			// 0b01001 (9)
-			} else if ( detect_parallel == 0b01001 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b01010 (10)
-			} else if ( detect_parallel == 0b01010 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b01011 (11)
-			} else if ( detect_parallel == 0b01011 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b01100 (12)
-			} else if ( detect_parallel == 0b01100 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b01101 (13)
-			} else if ( detect_parallel == 0b01101 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b01110 (14)
-			} else if ( detect_parallel == 0b01110 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b01111 (15)
-			} else if ( detect_parallel == 0b01111 ) {
-				_pwmselect( 1 );
-				_pwmset( pwm15, pwmlen15, 0, -1 );
-
-			// 0b10000 (16)
-			} else if ( detect_parallel == 0b10000 ) {
-				_pwmselect( 1 );
-				_pwmset( pwm16, pwmlen16, 0, -1 );
-
-			// 0b10001 (17)
-			} else if ( detect_parallel == 0b10001 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b10010 (18)
-			} else if ( detect_parallel == 0b10010 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b10011 (19)
-			} else if ( detect_parallel == 0b10011 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b10100 (20)
-			} else if ( detect_parallel == 0b10100 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b10101 (21)
-			} else if ( detect_parallel == 0b10101 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b10110 (22)
-			} else if ( detect_parallel == 0b10110 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b10111 (23)
-			} else if ( detect_parallel == 0b10111 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b11000 (24)
-			} else if ( detect_parallel == 0b11000 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b11001 (25)
-			} else if ( detect_parallel == 0b11001 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-			// 0b11010 (26)
-			} else if ( detect_parallel == 0b11010 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b11011 (27)
-			} else if ( detect_parallel == 0b11011 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b11100 (28)
-			} else if ( detect_parallel == 0b11100 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
-				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			// 0b11101 (29)
-			} else if ( detect_parallel == 0b11101 ) {
+				if ( timer_count_multiplier > TIMER_COUNT_MULTIPLIER_MAXLIMIT ) timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MAXLIMIT;
+				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
+			} else if ( detect_parallel == 0b11101 ) { // 0b11101 (29)
 				/* Beat Up */
 				timer_count_multiplier--;
-				if ( timer_count_multiplier < timer_count_multiplier_minlimit ) timer_count_multiplier = timer_count_multiplier_minlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-			// 0b11110 (30)
-			} else if ( detect_parallel == 0b11110 ) {
-				/* Beat Down */
-				timer_count_multiplier++;
-				if ( timer_count_multiplier > timer_count_multiplier_maxlimit ) timer_count_multiplier = timer_count_multiplier_maxlimit;
-				_armtimer_reload( (timer_count_multiplicand * timer_count_multiplier) - 1 );
-
-			// 0b11111 (31)
-			} else if ( detect_parallel == 0b11111 ) {
-				_pwmselect( 0 );
-				_pwmclear( 0 );
+				if ( timer_count_multiplier < TIMER_COUNT_MULTIPLIER_MINLIMIT ) timer_count_multiplier = TIMER_COUNT_MULTIPLIER_MINLIMIT;
+				_armtimer_reload( (TIMER_COUNT_MULTIPLICAND * timer_count_multiplier) - 1 );
+			} else if ( detect_parallel > 15 ) { // 16-28
+				// PWM 1 Loop
 				_pwmselect( 1 );
-				_pwmclear( 0 );
-
-			}
+				_pwmset( pwm_sequence_table[detect_parallel], pwmlen_table[detect_parallel], 0, -1 );
+			} else if ( detect_parallel > 0 ) { // 1-15
+				// PWM 0 Loop
+				_pwmselect( 0 );
+				_pwmset( pwm_sequence_table[detect_parallel], pwmlen_table[detect_parallel], 0, -1 );
+			} // Do Nothing at 0 for Preventing Chattering
 			detect_parallel = 0;
 		}
 
@@ -434,6 +276,5 @@ int32 _user_start()
 			_gpiotoggle( 21, playing_signal );
 		}
 	}
-
 	return EXIT_SUCCESS;
 }

@@ -104,6 +104,7 @@ os_reset:
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
 .endif
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_4   @ Set GPIO 14 OUTPUT
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 .ifdef __NOSYNCCLOCK
