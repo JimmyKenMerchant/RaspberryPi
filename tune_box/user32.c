@@ -17,7 +17,11 @@
 /* Function Declaration */
 void makesilence();
 
-/* Global Variables and Constants */
+/**
+ * Global Variables and Constants
+ * to Prevent Incorrect Compilation in optimization,
+ * Variables (except these which have only one value) used over the iteration of the loop are defined as global variables.
+ */
 
 extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 
@@ -41,6 +45,14 @@ extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 #define GPIO_MASK                       0x000000FC // 2-7
 #define GPIO_MASK_LANE0                 0x0000001C // GPIO 2-4
 #define GPIO_MASK_LANE1                 0x000000E0 // GPIO 5-7
+#define PARALLEL_MASK                   0b11111 // 5-bit
+#define PARALLEL_OUTSTANDING_FLAG       0x80000000 // MSB
+#define GPIO_FLAG_MIDI_NOTEON           20
+#define GPIO_PARALLEL_LSB               22
+#define GPIO_CLOCKIN_PARALLEL           27
+#define GPIO_BUSY_TOGGLE                14
+#define GPIO_CLOCKIN_RYTHMSYNC          17
+#define GPIO_PLAYING_SIGNAL             16
 
 music_code music1[] =
 {
@@ -215,36 +227,28 @@ int32 _user_start() {
 	while ( true ) {
 		_soundmidi( OS_RESET_MIDI_CHANNEL, SND32_MIDI_PCM );
 
-		/* High on GPIO20 If MIDI Note On */
+		/* High on GPIO If MIDI Note On */
 		if ( SND32_STATUS & 0x4 ) { // Bit[2] MIDI Note Off(0)/ Note On(1)
 			if ( ! flag_midi_noteon ) {
 				flag_midi_noteon = True;
-				_gpiotoggle( 20, flag_midi_noteon ); // Gate On
+				_gpiotoggle( GPIO_FLAG_MIDI_NOTEON, flag_midi_noteon ); // Gate On
 			}
 		} else {
 			if ( flag_midi_noteon ) {
 				flag_midi_noteon = False;
-				_gpiotoggle( 20, flag_midi_noteon ); // Gate Off
+				_gpiotoggle( GPIO_FLAG_MIDI_NOTEON, flag_midi_noteon ); // Gate Off
 			}
 		}
 
 		/* Detect Falling Edge of GPIO */
-		if ( _gpio_detect( 27 ) ) {
-			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
-			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
+		if ( _gpio_detect( GPIO_CLOCKIN_PARALLEL ) ) {
+			// Load Pin Level and Set Outstanding Flag
+			detect_parallel = ((_load_32( _gpio_base|_gpio_gplev0 ) >> GPIO_PARALLEL_LSB ) & PARALLEL_MASK) | PARALLEL_OUTSTANDING_FLAG;
 		}
 
-		/**
-		 * Detecting rising edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
-		 * So, physical all high is needed to act as doing nothing or its equivalent.
-		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
-		 * 0x7F = 0b1111111 (127) is virtual all high in default.
-		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
-		 * Command 127 is used as setting upper 8 bits of the tempo index.
-		 */
+		/* Command Execution */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
-			_gpiotoggle( 14, _GPIOTOGGLE_SWAP ); // Busy Toggle
+			_gpiotoggle( GPIO_BUSY_TOGGLE, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
 				// Tempo Index Upper 8-bit
@@ -311,12 +315,12 @@ int32 _user_start() {
 				_pwmset( pulse2_table[detect_parallel], musiclen, 0, -1 );
 				GPIO32_LANE = 0;
 				_gpioset( gpio_table[detect_parallel], musiclen, 0, -1 );
-			} // Do Nothing at 0 for Preventing Chattering
+			} // Do Nothing at 0 for Preventing Chattering If Any Mechanical Switch
 			detect_parallel = 0;
 		}
 
 		/* Detect Rising Edge of GPIO */
-		if ( _gpio_detect( 17 ) ) {
+		if ( _gpio_detect( GPIO_CLOCKIN_RYTHMSYNC ) ) {
 			if ( SND32_VIRTUAL_PARALLEL ) {
 				detect_parallel = SND32_VIRTUAL_PARALLEL;
 				SND32_VIRTUAL_PARALLEL = 0;
@@ -353,7 +357,7 @@ print32_debug( SND32_MODULATION_MIN, 100, 136 );
 				} else { // Not Playing
 					playing_signal = _GPIOTOGGLE_LOW;
 				}
-				_gpiotoggle( 16, playing_signal );
+				_gpiotoggle( GPIO_PLAYING_SIGNAL, playing_signal );
 				/**
 				 * PWM Play
 				 */

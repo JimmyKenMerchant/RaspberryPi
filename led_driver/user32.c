@@ -39,8 +39,15 @@
 #define TIMER_COUNT_MULTIPLIER_DEFAULT  12
 #define TIMER_COUNT_MULTIPLIER_MINLIMIT 6
 #define TIMER_COUNT_MULTIPLIER_MAXLIMIT 12000
-#define GPIO_MASK                       0x003C7FFC // GPIO 2-14, 18-21
-#define GPIO_MASK_LANE0                 0x003C7FFC // GPIO 2-14, 18-21
+#define PARALLEL_MASK                   0b11111 // 5-bit
+#define PARALLEL_OUTSTANDING_FLAG       0x80000000 // MSB
+#define GPIO_PARALLEL_LSB               22
+#define GPIO_CLOCKIN_PARALLEL           27
+#define GPIO_BUSY_TOGGLE                14
+#define GPIO_CLOCKIN_RYTHMSYNC          17
+#define GPIO_PLAYING_SIGNAL_LANE0       16
+#define GPIO_MASK                       0x003C3FFC // GPIO 2-13, 18-21
+#define GPIO_MASK_LANE0                 0x003C3FFC // GPIO 2-13, 18-21
 
 /**
  * In default, there is a 1000Hz synchronization clock (it's a half of 2000Hz on Arm Timer beacause of toggling).
@@ -287,19 +294,14 @@ int32 _user_start()
 
 	while ( true ) {
 		/* Detect Falling Edge of GPIO */
-		if ( _gpio_detect( 27 ) ) {
-			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
-			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
+		if ( _gpio_detect( GPIO_CLOCKIN_PARALLEL ) ) {
+			// Load Pin Level and Set Outstanding Flag
+			detect_parallel = ((_load_32( _gpio_base|_gpio_gplev0 ) >> GPIO_PARALLEL_LSB ) & PARALLEL_MASK) | PARALLEL_OUTSTANDING_FLAG;
 		}
 
-		/**
-		 * Detecting rising edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
-		 * So, physical all high is needed to act as doing nothing or its equivalent.
-		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
-		 */
+		/* Command Execution */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
-			_gpiotoggle( 15, _GPIOTOGGLE_SWAP ); // Busy Toggle
+			_gpiotoggle( GPIO_BUSY_TOGGLE, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel == 0b11111 ) { // 0b11111 (31)
 				GPIO32_LANE = 0;
@@ -318,12 +320,12 @@ int32 _user_start()
 				// PWM 0 Loop
 				GPIO32_LANE = 0;
 				_gpioset( gpio_sequence_table[detect_parallel], gpiolen_table[detect_parallel], 0, -1 );
-			} // Do Nothing at 0 for Preventing Chattering
+			} // Do Nothing at 0 for Preventing Chattering If Any Mechanical Switch
 			detect_parallel = 0;
 		}
 
 		/* Detect Rising Edge of GPIO */
-		if ( _gpio_detect( 17 ) ) {
+		if ( _gpio_detect( GPIO_CLOCKIN_RYTHMSYNC ) ) {
 			GPIO32_LANE = 0;
 			result = _gpioplay( GPIO_MASK_LANE0 );
 			if ( result == 0 ) { // Playing
@@ -331,7 +333,7 @@ int32 _user_start()
 			} else { // Not Playing
 				playing_signal = _GPIOTOGGLE_LOW;
 			}
-			_gpiotoggle( 16, playing_signal );
+			_gpiotoggle( GPIO_PLAYING_SIGNAL_LANE0, playing_signal );
 		}
 	}
 	return EXIT_SUCCESS;

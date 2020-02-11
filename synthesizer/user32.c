@@ -13,6 +13,7 @@
 #include "sts32/presets.h"
 #include "user32_tempo.h"
 #include "user32_percussion.h"
+#include "user32_sample.h"
 
 /**
  * Global Variables and Constants
@@ -25,6 +26,13 @@ extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
 #define TEMPO_COUNT_DEFAULT  2
 #define TEMPO_DEFAULT 60
 #define TEMPO_MAX 420
+#define PARALLEL_MASK                   0b11111 // 5-bit
+#define PARALLEL_OUTSTANDING_FLAG       0x80000000 // MSB
+#define GPIO_PARALLEL_LSB               22
+#define GPIO_CLOCKIN_PARALLEL           27
+#define GPIO_BUSY_TOGGLE                14
+#define GPIO_CLOCKIN_RYTHMSYNC          5
+#define GPIO_PLAYING_SIGNAL             16
 
 /**
  * In default, there is a 2400Hz synchronization clock (it's a half of 4800Hz on GPCLK1).
@@ -700,22 +708,14 @@ int32 _user_start() {
 #endif
 
 		/* Detect Falling Edge of GPIO */
-		if ( _gpio_detect( 27 ) ) {
-			detect_parallel = _load_32( _gpio_base|_gpio_gpeds0 );
-			_store_32( _gpio_base|_gpio_gpeds0, detect_parallel );
-			detect_parallel = ((detect_parallel >> 22) & 0b11111) | 0x80000000; // Set Outstanding Flag
+		if ( _gpio_detect( GPIO_CLOCKIN_PARALLEL ) ) {
+			// Load Pin Level and Set Outstanding Flag
+			detect_parallel = ((_load_32( _gpio_base|_gpio_gplev0 ) >> GPIO_PARALLEL_LSB ) & PARALLEL_MASK) | PARALLEL_OUTSTANDING_FLAG;
 		}
 
-		/**
-		 * Detecting rising edge of gpio is sticky, and is cleared by falling edge of GPIO 27.
-		 * So, physical all high is needed to act as doing nothing or its equivalent.
-		 * 0x1F = 0b11111 (31) is physical all high in default. Command 31 is used as stopping sound.
-		 * 0x7F = 0b1111111 (127) is virtual all high in default.
-		 * If you extend physical parallel up to 0x7F, you need to use Command 127 as doing nothing or so.
-		 * Command 127 is used as setting upper 8 bits of the tempo index.
-		 */
+		/* Command Execution */
 		if ( detect_parallel ) { // If Any Non Zero Including Outstanding Flag
-			_gpiotoggle( 14, _GPIOTOGGLE_SWAP ); // Busy Toggle
+			_gpiotoggle( GPIO_BUSY_TOGGLE, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x7F; // 0-127
 			if ( detect_parallel > 111 ) { // 112(0x70)-127(0x7F)
 				// Tempo Index Upper 8-bit
@@ -768,12 +768,12 @@ int32 _user_start() {
 				// Loop
 				STS32_LANE = 0;
 				_syntheset( synthe_code_table[detect_parallel], synthelen_table[detect_parallel], 0, -1 );
-			} // Do Nothing at 0 for Preventing Chattering
+			} // Do Nothing at 0 for Preventing Chattering If Any Mechanical Switch
 			detect_parallel = 0;
 		}
 
 		/* Detect Rising Edge of GPIO */
-		if ( _gpio_detect( 5 ) ) {
+		if ( _gpio_detect( GPIO_CLOCKIN_RYTHMSYNC ) ) {
 			tempo_count--; // Decrement Counter
 			if ( tempo_count <= 0 ) { // If Reaches Zero
 				// Time of This Procedure Is Up to Appx. 5us with Zero W in My Experience
@@ -824,7 +824,7 @@ int32 _user_start() {
 				} else { // Not Playing
 					playing_signal = _GPIOTOGGLE_LOW;
 				}
-				_gpiotoggle( 16, playing_signal );
+				_gpiotoggle( GPIO_PLAYING_SIGNAL, playing_signal );
 
 				_synthemidi_envelope( 8 );
 

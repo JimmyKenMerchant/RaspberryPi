@@ -60,13 +60,13 @@
 
 * GPIO20 as Output of GATE Signal Synchronized with MIDI IN (Note On Event)
 
-* GPIO14 as Output of Busy Toggle for Acknowledgment of Command
+* GPIO14 as Output of Busy Toggle for Acknowledgment of Command from Parallel Bus
 
 * GPIO15 as Input of RXD0 (UART) for MIDI IN
 
-* GPIO27 as Input of Clock IN for Buttons (Detects Status of Buttons on Falling Edge of Clock IN)
+* GPIO27 as Input of Clock IN for Parallel Bus (Detects Status of Parallel Bus on Falling Edge of Clock IN)
 
-* GPIO22-26 as Input of GPIO for Buttons: CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
+* GPIO22-26 as Input of GPIO for Parallel Bus: CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
 * GPIO 18 (BCLK), 19 (LRCLK), and 21 (DOUT) as Output of I2S (as known as 3-wire I2S) on sound=i2s
 

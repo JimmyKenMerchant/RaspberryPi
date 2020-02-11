@@ -18,7 +18,7 @@
 
 * GPIO13 as Output of PWM1
 
-* GPIO14 as Output of Busy Toggle for Acknowledgment of Command
+* GPIO14 as Output of Busy Toggle for Acknowledgment of Command from Parallel Bus
 
 * GPIO16 as Output of Playing Signal of PWM0
 
@@ -26,9 +26,9 @@
 
 * GPIO17 as Output of Synchronization Clock OUT
 
-* GPIO27 as Input of Clock IN for Buttons (Detects Status of Buttons on Falling Edge of Clock IN)
+* GPIO27 as Input of Clock IN for Parallel Bus (Detects Status of Parallel Bus on Falling Edge of Clock IN)
 
-* GPIO22-26 as Input of GPIO for Buttons: CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
+* GPIO22-26 as Input of GPIO for Parallel Bus: CAUTION! DON'T MAKE A SHORT CIRCUIT BETWEEN POWER SOURCE AND GROUND. OTHERWISE YOUR RASPBERRY PI WILL BE BROKEN. CHECK OUT GPIO MAP SO CAREFULLY.
 
 * Caution that output of GPIO is voltage, but not current. The total current should be up to 50mA and the current of each pin should be up to 16mA. To handle more current to light LEDs, apply Enhancement-mode N-channel MOSFETs and external power supply. For example, connect an output pin to gate, external power supply (VDD) and a load (register and LED) to drain, and GND to source. If you use duty ratio, it's OK because of switching (digital) behavior. If you use variable voltage to get behavior like analogue, you need an idea of a buck converter, one of switched-mode power supply.
 
