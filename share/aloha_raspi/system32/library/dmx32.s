@@ -12,7 +12,7 @@
  * Initialize DMX512 Double Buffer Transmitter
  *
  * Parameters
- * r0: Number of Frames, Start Code and Channel Data
+ * r0: Length of Buffer (Channel Slots Plus 1 Slot for Start Code)
  *
  * Return: r0 (0 as success, 1 as error)
  * Error: Memory Allocation Fails
@@ -78,23 +78,33 @@ DMX32_BUFFER_LENGTH: .word 0x00
  * function dmx32_dmx512doublebuffer_tx
  * DMX512 Double Buffer Transmitter
  *
+ * Parameters
+ * r0: 0 as Send FRONT, 1 as Send FRONT and Swap FRONT/BACK on End of Packet
+ *
  * Return: r0 (current sequence number, -1 as end of packet, -2 as error)
  * Error(-2): Overflow of Pointer of Array, Resets Sequence Number
  */
 .globl dmx32_dmx512doublebuffer_tx
 dmx32_dmx512doublebuffer_tx:
 	/* Auto (Local) Variables, but just Aliases */
-	result .req r0
-	temp   .req r1
-	temp2  .req r2
+	swap   .req r0
+	result .req r1
+	temp   .req r2
+	temp2  .req r3
 
 	push {lr}
 
+	push {r0}
 	ldr r0, DMX32_BUFFER_FRONT
 	ldr r1, DMX32_BUFFER_LENGTH
 	bl dmx32_dmx512transmitter
+	mov result, r0
+	pop {r0}
 	cmp result, #-1
 	bne dmx32_dmx512doublebuffer_tx_common
+
+	cmp swap, #0
+	beq dmx32_dmx512doublebuffer_tx_common
 
 	/* Flip Front/Back If A Packet Reaches End */
 
@@ -107,8 +117,10 @@ dmx32_dmx512doublebuffer_tx:
 	macro32_dsb ip
 
 	dmx32_dmx512doublebuffer_tx_common:
+		mov r0, result
 		pop {pc}
 
+.unreq swap
 .unreq result
 .unreq temp
 .unreq temp2
@@ -124,8 +136,8 @@ dmx32_dmx512doublebuffer_tx:
  * and the minimum Mark Time Between Packets (MTBP) spends 2 micro seconds (46 - 44).
  *
  * Parameters
- * r0: Pointer of Array of Start Code and Channel Data
- * r1: Number of Frames, Start Code and Channel Data
+ * r0: Pointer of Array of Slots for Start Code and Channel Data
+ * r1: Length of Slots
  *
  * Return: r0 (current sequence number, -1 as end of packet, -2 as error)
  * Error(-2): Overflow of Pointer of Array, Resets Sequence Number
@@ -271,8 +283,8 @@ dmx32_dmx512doublebuffer_rx:
  * This function should be used within an interrupt triggered by receiving data of UART.
  *
  * Parameters
- * r0: Pointer of Array of Start Code and Channel Data
- * r1: Number of Frames, Start Code and Channel Data
+ * r0: Pointer of Array of Slots for Start Code and Channel Data
+ * r1: Length of Slots
  *
  * Return: r0 (current sequence number, -1 as break signal, -2, -3, and -4 as error)
  * Error(-2): Not Received, Holds Sequence Number

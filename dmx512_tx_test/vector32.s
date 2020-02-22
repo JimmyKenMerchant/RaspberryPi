@@ -10,9 +10,6 @@
 /* Define Debug Status */
 .equ __DEBUG, 1
 
-/* Baud Rate 115200 */
-/*.equ __HIGHBAUD, 1*/
-
 .include "system32/equ32.s"
 .include "system32/macro32.s"
 
@@ -68,26 +65,13 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Timer
+	 * Get a 12hz Timer Interrupt (120000/10000).
 	 */
-
-.ifdef __HIGHBAUD
-	/* Get a 460652.59hz (Nearest to 4 * 115200) Timer Interrupt (240000000/521) */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
-	mov r1, #0x0200                           @ High 1 Byte of decimal 520 (521 - 1), 16 bits counter on default
-	orr r1, r1, #0x08                         @ Low 1 Byte of decimal 520, 16 bits counter on default
-	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
-	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
+	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
+	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
+	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
-.else
-	/* Get a 153550.86hz (Nearest to 4 * 38400) Timer Interrupt (240000000/1563) */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_23bit_counter
-	mov r1, #0x0600                           @ High 1 Byte of decimal 1562 (1563 - 1), 16 bits counter on default
-	orr r1, r1, #0x1A                         @ Low 1 Byte of decimal 1562, 16 bits counter on default
-	mov r2, #0x000                            @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
-	orr r2, r2, #0x000                        @ Decimal 0 to divide 240Mz by 1 to 240Mhz (Predivider is 10 Bits Wide)
-	bl arm32_armtimer
-.endif
 
 	/**
 	 * GPIO
@@ -102,60 +86,39 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK1
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK0
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 14 ALT 0 as TXD0
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_5   @ Set GPIO 15 OUTPUT
+	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_6   @ Set GPIO 16 OUTPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
-	/* I/O Settings */
-
 	ldr r1, [r0, #equ32_gpio_gpfsel20]
-	orr r1, r1, #equ32_gpio_gpfsel_output << equ32_gpio_gpfsel_0   @ Set GPIO 20 OUTPUT (Software UART Tx)
-	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT (Software UART Rx)
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_3    @ Set GPIO 23 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 25 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	/* Set Status Detect */
+
 	ldr r1, [r0, #equ32_gpio_gpren0]
 	orr r1, r1, #equ32_gpio04                                      @ Set GPIO4 Rising Edge Detect
 	str r1, [r0, #equ32_gpio_gpren0]
 
+	ldr r1, [r0, #equ32_gpio_gpfen0]
+	orr r1, r1, #equ32_gpio27                                      @ Set GPIO27 Falling Edge Detect
+	str r1, [r0, #equ32_gpio_gpfen0]
+
 	macro32_dsb ip
-
-	/* FIFO Continers for Software UART, Allocate and Initialize */
-
-	mov r0, #5
-	bl heap32_malloc
-	mov r1, #0x04
-	strb r1, [r0]
-	str r0, OS_FIQ_RXFIFO
-
-	mov r0, #5
-	bl heap32_malloc
-	mov r1, #0x04
-	strb r1, [r0]
-	str r0, OS_FIQ_TXFIFO
-
-	/* Pull Up for Software UART */
-
-	mov r0, #20
-	mov r1, #2
-	bl gpio32_gpiopull
-
-	mov r0, #21
-	mov r1, #2
-	bl gpio32_gpiopull
-
-	/* Software UART Output High */
-	mov r0, #20
-	mov r1, #1
-	bl gpio32_gpiotoggle
 
 	/* DMX512 Transmission */
 	mov r0, #1                                                     @ Start Code
-	add r0, r0, #512                                               @ Channel Data
+	add r0, r0, #512                                               @ Channel Length
 	bl dmx32_dmx512doublebuffer_init
 
 	/**
@@ -211,6 +174,7 @@ os_irq:
 
 	macro32_dsb ip
 
+	ldr r0, OS_IRQ_SWAP
 	bl dmx32_dmx512doublebuffer_tx
 
 	cmp r0, #-1                                                    @ End of Packet
@@ -220,10 +184,11 @@ os_irq:
 	pop {r0-r12,pc}
 
 .globl OS_IRQ_COUNT
-.globl OS_IRQ_TRANSMIT_ADDR
+.globl OS_IRQ_TRANSMIT
+.globl OS_IRQ_SWAP
 OS_IRQ_COUNT:         .word 0x00
-OS_IRQ_TRANSMIT_ADDR: .word OS_IRQ_TRANSMIT
 OS_IRQ_TRANSMIT:      .word 0x00
+OS_IRQ_SWAP:          .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}
@@ -257,37 +222,10 @@ os_fiq:
 
 	macro32_dsb ip
 
-	mov r0, #21
-	ldr r1, OS_FIQ_RXFIFO
-	mov r2, #8                                @ 8 Bits to Receive
-	mov r3, #1                                @ 1 Stop Bit
-	bl softuart32_softuartreceiver
-
-	ldr r0, OS_FIQ_RXFIFO
-	ldrb r0, [r0]
-
-	ldr r1, OS_FIQ_BREAK
-	tst r0, #0b1
-	addne r1, r1, #1                          @ Increment If Break, Counts Bits from Break
-	str r1, OS_FIQ_BREAK
-
-	mov r0, #20
-	ldr r1, OS_FIQ_TXFIFO
-	mov r2, #8                                @ 8 Bits to Receive
-	mov r3, #1                                @ 1 Stop Bit
-	bl softuart32_softuarttransmitter
-
 	pop {r0-r7,pc}
 
 .globl OS_FIQ_COUNT
 OS_FIQ_COUNT: .word 0x00
-
-.globl OS_FIQ_RXFIFO
-.globl OS_FIQ_TXFIFO
-.globl OS_FIQ_BREAK
-OS_FIQ_RXFIFO: .word 0x00
-OS_FIQ_TXFIFO: .word 0x00
-OS_FIQ_BREAK:  .word 0x00
 
 /**
  * Variables

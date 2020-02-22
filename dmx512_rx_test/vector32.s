@@ -86,7 +86,7 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel00]
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK1
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK0
 	str r1, [r0, #equ32_gpio_gpfsel00]
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
@@ -102,7 +102,7 @@ os_reset:
 
 	/* DMX512 Receive */
 	mov r0, #1                                                     @ Start Code
-	add r0, r0, #512                                               @ Channel Data
+	add r0, r0, #512                                               @ Channel Length
 	bl dmx32_dmx512doublebuffer_init
 
 	/**
@@ -169,9 +169,8 @@ os_irq:
 	pop {r0-r12,pc}
 
 .globl OS_IRQ_COUNT
-.globl OS_IRQ_RECEIVE_ADDR
+.globl OS_IRQ_RECEIVE
 OS_IRQ_COUNT:        .word 0x00
-OS_IRQ_RECEIVE_ADDR: .word OS_IRQ_RECEIVE
 OS_IRQ_RECEIVE:      .word 0x00
 
 os_fiq:
