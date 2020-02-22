@@ -55,7 +55,7 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a Approx. 21695.9Hz (46.09 Micro Seconds) Timer Interrupt
+	 * Get Approx. 21695.9Hz (46.09 Micro Seconds) Timer Interrupt
 	 */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_1|equ32_armtimer_ctl_23bit_counter
 	mov r1, #0x1500                           @ High 1 Byte of decimal 5530 (5531 - 1), 16 bits counter on default
@@ -164,9 +164,9 @@ os_fiq:
 .globl OS_FIQ_COUNT
 .globl OS_FIQ_TRANSMIT
 .globl OS_FIQ_SWAP
-OS_FIQ_COUNT:         .word 0x00
-OS_FIQ_TRANSMIT:      .word 0x00
-OS_FIQ_SWAP:          .word 0x00
+OS_FIQ_COUNT:    .word 0x00
+OS_FIQ_TRANSMIT: .word 0x00
+OS_FIQ_SWAP:     .word 0x00
 
 /**
  * Variables

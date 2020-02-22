@@ -51,26 +51,16 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_disable_irqs2]
 	str r1, [r0, #equ32_interrupt_disable_basic_irqs]
 
-	/**
-	 * Enable GPIO IRQ
-	 * INT[0] is for 0-27 Pins
-	 * INT[1] is for 28-45 Pins
-	 * INT[2] is for 46-53 Pins
-	 * INT[3] is for All Pins
-	 */
-	mov r1, #0b1111<<17                              @ GPIO INT[3:0]
-	str r1, [r0, #equ32_interrupt_enable_irqs2]
-
 	mov r1, #0b11000000                              @ Index 64 (0-6bits) for ARM Timer + Enable FIQ 1 (7bit)
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get a 12hz Timer Interrupt (120000/10000).
+	 * Get Approx. 21695.9Hz (46.09 Micro Seconds) Timer Interrupt
 	 */
-	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_16|equ32_armtimer_ctl_23bit_counter @ Prescaler 1/16 to 100K
-	mov r1, #0x2700                           @ 0x2700 High 1 Byte of decimal 9999 (10000 - 1), 16 bits counter on default
-	add r1, r1, #0x0F                         @ 0x0F Low 1 Byte of decimal 9999, 16 bits counter on default
-	mov r2, #0x7C                             @ Decimal 124 to divide 240Mz by 125 to 1.92Mhz (Predivider is 10 Bits Wide)
+	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_1|equ32_armtimer_ctl_23bit_counter
+	mov r1, #0x1500                           @ High 1 Byte of decimal 5530 (5531 - 1), 16 bits counter on default
+	add r1, r1, #0x9A                         @ Low 1 Byte of decimal 5530, 16 bits counter on default
+	mov r2, #0x01                             @ Decimal 1 to divide 240Mz by 2 to 120Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 
 	/**
@@ -85,18 +75,11 @@ os_reset:
 
 	/* I/O Settings */
 
-	ldr r1, [r0, #equ32_gpio_gpfsel00]
-	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_4     @ Set GPIO 4 ALT 0 as GPCLK0
-	str r1, [r0, #equ32_gpio_gpfsel00]
-
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	str r1, [r0, #equ32_gpio_gpfsel10]
 
 	/* Set Status Detect */
-	ldr r1, [r0, #equ32_gpio_gpren0]
-	orr r1, r1, #equ32_gpio04                                      @ Set GPIO4 Rising Edge Detect
-	str r1, [r0, #equ32_gpio_gpren0]
 
 	macro32_dsb ip
 
@@ -104,16 +87,6 @@ os_reset:
 	mov r0, #1                                                     @ Start Code
 	add r0, r0, #512                                               @ Channel Length
 	bl dmx32_dmx512doublebuffer_init
-
-	/**
-	 * Clock Manager for GPCLK0. Make 23244.55Hz (43.02 Micro Seconds)
-	 */
-	mov r0, #equ32_cm_gp0
-	mov r1, #equ32_cm_ctl_mash_1
-	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
-	mov r2, #0x330<<equ32_cm_div_integer                           @ Decimal 826
-	orr r2, r2, #0x00A<<equ32_cm_div_integer                       @ Decimal 826
-	bl arm32_clockmanager
 
 	/* UART Receive 250000 Baud */
 	mov r0, #1                                                     @ Integer Divisor Bit[15:0], 7500000 / (16 * 250000) is 1.875
@@ -130,48 +103,7 @@ os_debug:
 
 os_irq:
 	push {r0-r12,lr}
-
-.ifdef __ARMV6
-	macro32_invalidate_instruction_all ip
-	macro32_dsb ip
-.endif
-
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_interrupt_base
-	ldr r1, [r0, #equ32_interrupt_pending_irqs2]
-/*macro32_debug r1, 100, 88*/
-
-	macro32_dsb ip
-
-	mov r0, #equ32_peripherals_base
-	add r0, r0, #equ32_gpio_base
-	ldr r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
-	str r1, [r0, #equ32_gpio_gpeds0]                               @ Clear GPIO Event Detect
-/*macro32_debug r1, 100, 100*/
-
-	macro32_dsb ip
-
-	bl dmx32_dmx512doublebuffer_rx
-
-	cmp r0, #-1                                                    @ Break
-
-	ldr r1, OS_IRQ_COUNT
-	addeq r1, r1, #1
-	str r1, OS_IRQ_COUNT
-/*macro32_debug r1, 100, 124*/
-
-	cmp r0, #512                                                   @ Reach End of Packet
-	moveq r1, #1
-	streq r1, OS_IRQ_RECEIVE
-
-	macro32_dsb ip
-
 	pop {r0-r12,pc}
-
-.globl OS_IRQ_COUNT
-.globl OS_IRQ_RECEIVE
-OS_IRQ_COUNT:        .word 0x00
-OS_IRQ_RECEIVE:      .word 0x00
 
 os_fiq:
 	push {r0-r7,lr}
@@ -198,17 +130,26 @@ os_fiq:
 .endif
 .endif
 
-	ldr r0, OS_FIQ_COUNT
-	add r0, r0, #1
-	str r0, OS_FIQ_COUNT
-/*macro32_debug r0, 100, 124*/
+	bl dmx32_dmx512doublebuffer_rx
+
+	cmp r0, #-1                                                    @ Break
+	ldr r1, OS_FIQ_COUNT
+	addeq r1, r1, #1
+	str r1, OS_FIQ_COUNT
+/*macro32_debug r1, 100, 124*/
+
+	cmp r0, #512                                                   @ Reach End of Packet
+	moveq r1, #1
+	streq r1, OS_FIQ_RECEIVE
 
 	macro32_dsb ip
 
 	pop {r0-r7,pc}
 
 .globl OS_FIQ_COUNT
-OS_FIQ_COUNT: .word 0x00
+.globl OS_FIQ_RECEIVE
+OS_FIQ_COUNT:   .word 0x00
+OS_FIQ_RECEIVE: .word 0x00
 
 /**
  * Variables

@@ -12,8 +12,6 @@
 
 ## Output and Input
 
-* GPIO4 as GPCLK0 for Second Timer
-
 * GPIO15 as RXD0
 
 * HDMI as VIDEO Output

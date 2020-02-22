@@ -12,8 +12,6 @@
 
 ## Output and Input
 
-* GPIO4 as GPCLK0 for Second Timer
-
 * GPIO14 as TXD0
 
 * GPIO15 as Output of Busy Toggle for Acknowledgment of Command from Parallel Bus
