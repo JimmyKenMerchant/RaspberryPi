@@ -22,11 +22,13 @@
 #define GPIO_CLOCKIN_PARALLEL           27
 #define GPIO_BUSY_TOGGLE                15
 #define GPIO_EOP_TOGGLE                 16 // End of Packet
-#define DMX512_LENGTH                   512
+#define DMX512_LENGTH                   513
 
 extern uint32 OS_FIQ_COUNT;
 extern uint32 OS_FIQ_TRANSMIT;
 extern uint32 OS_FIQ_SWAP;
+extern uint32 OS_FIQ_START;
+extern uint32 OS_FIQ_ONETIME;
 
 uint32 count_receive;
 uint32 count_error;
@@ -58,8 +60,8 @@ int32 _user_start() {
 
 	//print32_debug( DMX32_BUFFER_FRONT, 100, 100 );
 	//print32_debug( DMX32_BUFFER_BACK, 100, 112 );
-	heap32_mfill( DMX32_BUFFER_FRONT, 0x23242526 );
-	heap32_mfill( DMX32_BUFFER_BACK, 0x89ABCDEF );
+	heap32_mfill( (obj)DMX32_BUFFER_FRONT, 0x23242526 );
+	heap32_mfill( (obj)DMX32_BUFFER_BACK, 0x89ABCDEF );
 	//print32_debug_hexa( DMX32_BUFFER_FRONT, 100, 124, 8 );
 	//print32_debug_hexa( DMX32_BUFFER_BACK, 100, 136, 8 );
 
@@ -68,7 +70,7 @@ int32 _user_start() {
 		/*
 		print32_debug( OS_FIQ_COUNT, 100, 52 );
 		if ( OS_FIQ_TRANSMIT ) {
-			_store_8( DMX32_BUFFER_BACK + increment, turn );
+			_store_8( (obj)DMX32_BUFFER_BACK + increment, turn );
 			increment++;
 			if ( increment > 512 ) {
 				increment = 0;
@@ -94,19 +96,25 @@ int32 _user_start() {
 			_gpiotoggle( GPIO_BUSY_TOGGLE, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x1F; // 0-31
 			if ( detect_parallel & 0b10000 ) { // Command
-				if ( detect_parallel == 20 ) { // Immediate Swap FRONT/BACK
-					front_buffer_swap = DMX32_BUFFER_FRONT;
-					back_buffer_swap = DMX32_BUFFER_BACK;
+				if ( detect_parallel == 26 ) { // Start
+					_store_32( (uint32)&OS_FIQ_START, 0x01 );
+				} else if ( detect_parallel == 27 ) { // Set One-Time Tx (Pause at EOP)
+					_store_32( (uint32)&OS_FIQ_ONETIME, 0x01 );
+				} else if ( detect_parallel == 28 ) { // Clear One-Time Tx (Iteration)
+					_store_32( (uint32)&OS_FIQ_ONETIME, 0x00 );
+				} else if ( detect_parallel == 29 ) { // Immediate Swap FRONT/BACK
+					front_buffer_swap = (obj)DMX32_BUFFER_FRONT;
+					back_buffer_swap = (obj)DMX32_BUFFER_BACK;
 					arm32_dsb();
 					_store_32( (uint32)&DMX32_BUFFER_FRONT, back_buffer_swap );
 					_store_32( (uint32)&DMX32_BUFFER_BACK, front_buffer_swap );
-				} else if ( detect_parallel == 21 ) { // Send FRONT
+				} else if ( detect_parallel == 30 ) { // DMX512 TX Send FRONT
 					_store_32( (uint32)&OS_FIQ_SWAP, 0x00 );
-				} else if ( detect_parallel == 22 ) { // Send FRONT and Swap FRONT/BACK on End of Packet
+				} else if ( detect_parallel == 31 ) { // DMX512 TX Send FRONT and Swap FRONT/BACK on End of Packet
 					_store_32( (uint32)&OS_FIQ_SWAP, 0x01 );
-				} else if ( detect_parallel != 16 ) { // Select Data Mode
+				} else if ( detect_parallel != 16 ) { // 17-19 Select Data Mode (17: Slot Index, 18: Data, 19: Data Sequencially)
 					data_mode = detect_parallel & 0b1111;
-				}
+				} // 16: Reset Data Position to LSB (All Commands Reset Data Position)
 				index_slot_position = 0;
 				buffer_data_upper_flag = false;
 			} else { // Data
@@ -128,10 +136,10 @@ int32 _user_start() {
 					} else {
 						buffer_data = (buffer_data & 0x0F) | ((detect_parallel & 0b1111) << 4 );
 						buffer_data_upper_flag = false;
-						_store_8( DMX32_BUFFER_BACK + index_slot, buffer_data );
+						DMX32_BUFFER_BACK[index_slot] = buffer_data;
 						if ( data_mode == 3 ) { // Sequencial
 							index_slot++;
-							if ( index_slot >= DMX512_LENGTH ) index_slot = 0;
+							if ( index_slot >= DMX512_LENGTH ) index_slot = DMX512_LENGTH - 1;
 						}
 					}
 				}

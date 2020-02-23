@@ -77,11 +77,32 @@ os_reset:
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 19 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
+
+	ldr r1, [r0, #equ32_gpio_gpfsel20]
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_0    @ Set GPIO 20 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_1    @ Set GPIO 21 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_2    @ Set GPIO 22 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_3    @ Set GPIO 23 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_4    @ Set GPIO 24 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_5    @ Set GPIO 25 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_6    @ Set GPIO 26 INPUT
+	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_7    @ Set GPIO 27 INPUT
+	str r1, [r0, #equ32_gpio_gpfsel20]
 
 	/* Set Status Detect */
 
 	macro32_dsb ip
+
+	/* Check MIDI Channel, GPIO19 (Bit[0]) to GPIO27 (Bit[8]) */
+	ldr r1, [r0, #equ32_gpio_gplev0]
+	lsr r1, r1, #19
+	mov r2, #0x0FF
+	orr r2, r2, #0x100
+	and r1, r1, r2
+	add r1, r1, #1                                                 @ 0-511 to 1-512
+	str r1, OS_RESET_DMX512_CHANNEL
 
 	/* DMX512 Receive */
 	mov r0, #1                                                     @ Start Code
@@ -96,6 +117,9 @@ os_reset:
 	bl uart32_uartinit
 
 	pop {pc}
+
+.globl OS_RESET_DMX512_CHANNEL
+OS_RESET_DMX512_CHANNEL: .word 0x00                                    @ DMX512 Channel
 
 os_debug:
 	push {lr}

@@ -1649,8 +1649,8 @@ __attribute__((noinline)) uint32 _softuarttx(
  * system32/library/dmx32.s
  ********************************/
 
-extern obj DMX32_BUFFER_FRONT;
-extern obj DMX32_BUFFER_BACK;
+extern uchar8* DMX32_BUFFER_FRONT;
+extern uchar8* DMX32_BUFFER_BACK;
 extern uint32 DMX32_BUFFER_LENGTH;
 
 

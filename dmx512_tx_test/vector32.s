@@ -152,21 +152,35 @@ os_fiq:
 
 	macro32_dsb ip
 
+	ldr r0, OS_FIQ_START
+	cmp r0, #0                                @ Check If Start Flagged
+	beq os_fiq_common
+
 	ldr r0, OS_FIQ_SWAP
 	bl dmx32_dmx512doublebuffer_tx
+	cmp r0, #-1                               @ Check If End of Packet
+	bne os_fiq_common
 
-	cmp r0, #-1                                                    @ End of Packet
-	moveq r0, #1
-	streq r0, OS_FIQ_TRANSMIT
+	mov r0, #1
+	str r0, OS_FIQ_TRANSMIT
+	ldr r0, OS_FIQ_ONETIME
+	cmp r0, #0                                @ Check If One-Time Flagged
+	movne r0, #0
+	strne r0, OS_FIQ_START                    @ Stop If One-Time Flagged
 
-	pop {r0-r7,pc}
+	os_fiq_common:
+		pop {r0-r7,pc}
 
 .globl OS_FIQ_COUNT
 .globl OS_FIQ_TRANSMIT
 .globl OS_FIQ_SWAP
+.globl OS_FIQ_START
+.globl OS_FIQ_ONETIME
 OS_FIQ_COUNT:    .word 0x00
 OS_FIQ_TRANSMIT: .word 0x00
 OS_FIQ_SWAP:     .word 0x00
+OS_FIQ_START:    .word 0x00
+OS_FIQ_ONETIME:  .word 0x00
 
 /**
  * Variables
