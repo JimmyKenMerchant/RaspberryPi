@@ -68,7 +68,7 @@
 	* Command 0x13 (19) to Select Slot Value Sequentially Mode and Send Data for Initial Values to Back Buffer
 	* Command 0x1D (29) to Swap FRONT/BACK Buffer
 	* Command 0x1A (26) to Start Tx
-		1. Send Data for Values to Back Buffer
+		1. Send Data for Values to Back Buffer: Must Be Finished Before Next EOP (Approx. 1s / 44hz = 22ms).
 		2. Poll EOP Toggle
 		3. If Low/High Change on EOP Toggle, Back to No.1
 
