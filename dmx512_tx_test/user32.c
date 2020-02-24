@@ -28,7 +28,7 @@ extern uint32 OS_FIQ_COUNT;
 extern uint32 OS_FIQ_TRANSMIT;
 extern uint32 OS_FIQ_SWAP;
 extern uint32 OS_FIQ_START;
-extern uint32 OS_FIQ_ONETIME;
+extern uint32 OS_FIQ_REPEAT;
 
 uint32 count_receive;
 uint32 count_error;
@@ -52,7 +52,7 @@ int32 _user_start() {
 	//uint32 error;
 	increment = 0;
 	turn = 0;
-	data_mode = 0;
+	data_mode = 1; // Slot Index Mode
 	index_slot = 0;
 	buffer_data = 0;
 	index_slot_position = 0;
@@ -96,23 +96,23 @@ int32 _user_start() {
 			_gpiotoggle( GPIO_BUSY_TOGGLE, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x1F; // 0-31
 			if ( detect_parallel & 0b10000 ) { // Command
-				if ( detect_parallel == 26 ) { // Start
+				if ( detect_parallel == 26 ) { // Start Tx
 					_store_32( (uint32)&OS_FIQ_START, 0x01 );
-				} else if ( detect_parallel == 27 ) { // Set One-Time Tx (Pause at EOP)
-					_store_32( (uint32)&OS_FIQ_ONETIME, 0x01 );
-				} else if ( detect_parallel == 28 ) { // Clear One-Time Tx (Iteration)
-					_store_32( (uint32)&OS_FIQ_ONETIME, 0x00 );
-				} else if ( detect_parallel == 29 ) { // Immediate Swap FRONT/BACK
+				} else if ( detect_parallel == 27 ) { // Set Repeat Tx
+					_store_32( (uint32)&OS_FIQ_REPEAT, 0x01 );
+				} else if ( detect_parallel == 28 ) { // Clear Repeat Tx, Pause after End of Packet (Default)
+					_store_32( (uint32)&OS_FIQ_REPEAT, 0x00 );
+				} else if ( detect_parallel == 29 ) { // Swap FRONT/BACK Buffer
 					front_buffer_swap = (obj)DMX32_BUFFER_FRONT;
 					back_buffer_swap = (obj)DMX32_BUFFER_BACK;
 					arm32_dsb();
 					_store_32( (uint32)&DMX32_BUFFER_FRONT, back_buffer_swap );
 					_store_32( (uint32)&DMX32_BUFFER_BACK, front_buffer_swap );
-				} else if ( detect_parallel == 30 ) { // DMX512 TX Send FRONT
+				} else if ( detect_parallel == 30 ) { // Tx Send FRONT Buffer (Default)
 					_store_32( (uint32)&OS_FIQ_SWAP, 0x00 );
-				} else if ( detect_parallel == 31 ) { // DMX512 TX Send FRONT and Swap FRONT/BACK on End of Packet
+				} else if ( detect_parallel == 31 ) { // Tx Send FRONT and Swap FRONT/BACK Buffer on End of Packet
 					_store_32( (uint32)&OS_FIQ_SWAP, 0x01 );
-				} else if ( detect_parallel != 16 ) { // 17-19 Select Data Mode (17: Slot Index, 18: Data, 19: Data Sequencially)
+				} else if ( detect_parallel != 16 ) { // 17-19 Select Data Mode (17: Slot Index [Default], 18: Slot Value, 19: Slot Value Sequentially)
 					data_mode = detect_parallel & 0b1111;
 				} // 16: Reset Data Position to LSB (All Commands Reset Data Position)
 				index_slot_position = 0;
@@ -129,7 +129,7 @@ int32 _user_start() {
 						index_slot = (index_slot & 0x0FF) | ((detect_parallel & 0b1) << 8 );
 						index_slot_position = 0;
 					}
-				} else if ( data_mode > 1 ) { // Value
+				} else if ( data_mode > 1 ) { // Slot Value
 					if ( ! buffer_data_upper_flag ) {
 						buffer_data = (buffer_data & 0xF0) | (detect_parallel & 0b1111);
 						buffer_data_upper_flag = true;
@@ -137,9 +137,9 @@ int32 _user_start() {
 						buffer_data = (buffer_data & 0x0F) | ((detect_parallel & 0b1111) << 4 );
 						buffer_data_upper_flag = false;
 						DMX32_BUFFER_BACK[index_slot] = buffer_data;
-						if ( data_mode == 3 ) { // Sequencial
+						if ( data_mode == 3 ) { // Sequentially
 							index_slot++;
-							if ( index_slot >= DMX512_LENGTH ) index_slot = DMX512_LENGTH - 1;
+							if ( index_slot >= DMX512_LENGTH ) index_slot = 0;
 						}
 					}
 				}

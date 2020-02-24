@@ -26,6 +26,52 @@
 
 ### GPIO ARE UP TO VOLTAGE OF 3.3V TO INPUT!!! DON'T INPUT VOLTAGE OVER 3.3V TO GPIO PIN!!! OTHERWISE, YOU WILL BE IN DANGER!!! IF YOU CAN'T UNDERSTAND ABOUT THIS, PLEASE STUDY ELECTRONICS FOR A WHILE BEFORE DOING THIS.
 
+## Parallel Bus: Bit[4:0]
+
+* 0x00 (0) - 0x0F (15) for Sending Data
+	* Bit[3:0] at First Sending
+	* Bit[7:4] at Second Sending
+	* Bit[8] at Third Sending (Only for Slot Index Mode)
+	* Bit positions are changed by sending as follows.
+		* The position is changed to Bit[3:0] - Bit[7:4] alternatively on the slot value mode.
+		* Bit[3:0] - Bit[7:4] - Bit[8] then the position is backed to Bit[3:0] on the slot index mode.
+
+* 0x10 (16) - 0x1F (31) for Sending Command
+	* 0x10 (16): Reset Data Position to LSB (All Commands Reset Data Position)
+	* 0x11 (17): Select Slot Index Mode to Send Data (Default)
+	* 0x12 (18): Select Slot Value Mode to Send Data
+	* 0x13 (19): Select Slot Value Sequentially Mode to Send Data
+	* 0x14 (20) - 0x19 (25): Reserved
+	* 0x1A (26): Start Tx
+	* 0x1B (27): Set Repeat Tx
+	* 0x1C (28): Clear Repeat Tx, Pause after End of Packet (Default)
+	* 0x1D (29): Swap FRONT/BACK Buffer
+	* 0x1E (30): Tx Send FRONT Buffer (Default)
+	* 0x1F (31): Tx Send FRONT and Swap FRONT/BACK Buffer on End of Packet
+
+* Busy Toggle is an acknowledgment of sending command and data. It's useful to know the timing of the next sending.
+
+* Procedure on Flushing Method with Single Sending of Slot Value
+	* Command 0x1E (30) to Tx Send FRONT Buffer
+	* Command 0x1C (28) to Clear Repeat Tx
+		1. Command 0x11 (17) to Select Slot Index Mode and Send Data
+		2. Command 0x12 (18) to Select Slot Value Mode and Send Data to Back Buffer
+		3. Back to No.1 If Any Other Changes Exist
+		4. Command 0x1D (29) to Swap FRONT/BACK Buffer
+		5. Command 0x1A (26) to Start Tx
+		6. Back to No.1
+
+* Procedure on Flushing Method with Sequential Sending of Slot Value
+	* Command 0x1F (31) to Tx Send FRONT and Swap FRONT/BACK Buffer on End of Packet
+	* Command 0x1B (27) to Set Repeat Tx
+	* Command 0x11 (17) to Select Slot Index Mode and Send Data
+	* Command 0x13 (19) to Select Slot Value Sequentially Mode and Send Data for Initial Values to Back Buffer
+	* Command 0x1D (29) to Swap FRONT/BACK Buffer
+	* Command 0x1A (26) to Start Tx
+		1. Send Data for Values to Back Buffer
+		2. Poll EOP Toggle
+		3. If Low/High Change on EOP Toggle, Back to No.1
+
 ## Compatibility
 
 * Raspberry Pi Zero V.1.3 (BCM2835), `make type=zero`

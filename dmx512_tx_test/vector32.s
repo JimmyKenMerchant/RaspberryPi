@@ -163,10 +163,10 @@ os_fiq:
 
 	mov r0, #1
 	str r0, OS_FIQ_TRANSMIT
-	ldr r0, OS_FIQ_ONETIME
-	cmp r0, #0                                @ Check If One-Time Flagged
-	movne r0, #0
-	strne r0, OS_FIQ_START                    @ Stop If One-Time Flagged
+	ldr r0, OS_FIQ_REPEAT
+	cmp r0, #0                                @ Check If REPEAT Flagged
+	moveq r0, #0
+	streq r0, OS_FIQ_START                    @ Stop If No REPEAT Flagged
 
 	os_fiq_common:
 		pop {r0-r7,pc}
@@ -175,12 +175,12 @@ os_fiq:
 .globl OS_FIQ_TRANSMIT
 .globl OS_FIQ_SWAP
 .globl OS_FIQ_START
-.globl OS_FIQ_ONETIME
+.globl OS_FIQ_REPEAT
 OS_FIQ_COUNT:    .word 0x00
 OS_FIQ_TRANSMIT: .word 0x00
 OS_FIQ_SWAP:     .word 0x00
 OS_FIQ_START:    .word 0x00
-OS_FIQ_ONETIME:  .word 0x00
+OS_FIQ_REPEAT:   .word 0x00
 
 /**
  * Variables
