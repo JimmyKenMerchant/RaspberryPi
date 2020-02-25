@@ -16,7 +16,7 @@
 
 * GPIO15 as Output of Busy Toggle for Acknowledgment of Command from Parallel Bus
 
-* GPIO16 as Output of EOP Toggle
+* GPIO16 as Output of EOP (End of Packet) Toggle
 
 * GPIO27 as Input of Clock IN for Parallel Bus (Detects Status of Parallel Bus on Falling Edge of Clock IN)
 

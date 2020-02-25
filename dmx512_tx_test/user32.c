@@ -25,7 +25,7 @@
 #define DMX512_LENGTH                   513
 
 extern uint32 OS_FIQ_COUNT;
-extern uint32 OS_FIQ_TRANSMIT;
+volatile extern uint32 OS_FIQ_TRANSMIT;
 extern uint32 OS_FIQ_SWAP;
 extern uint32 OS_FIQ_START;
 extern uint32 OS_FIQ_REPEAT;
