@@ -55,11 +55,11 @@ os_reset:
 	str r1, [r0, #equ32_interrupt_fiq_control]
 
 	/**
-	 * Get Approx. 21695.9Hz (46.09 Micro Seconds) Timer Interrupt
+	 * Get Approx. 22731.578Hz (43.99 Micro Seconds) Timer Interrupt
 	 */
 	mov r0, #equ32_armtimer_ctl_enable|equ32_armtimer_ctl_interrupt_enable|equ32_armtimer_ctl_prescale_1|equ32_armtimer_ctl_23bit_counter
-	mov r1, #0x1500                           @ High 1 Byte of decimal 5530 (5531 - 1), 16 bits counter on default
-	add r1, r1, #0x9A                         @ Low 1 Byte of decimal 5530, 16 bits counter on default
+	mov r1, #0x1400                           @ High 1 Byte of decimal 5278 (5279 - 1), 16 bits counter on default
+	add r1, r1, #0x9E                         @ Low 1 Byte of decimal 5278, 16 bits counter on default
 	mov r2, #0x01                             @ Decimal 1 to divide 240Mz by 2 to 120Mhz (Predivider is 10 Bits Wide)
 	bl arm32_armtimer
 

@@ -129,8 +129,8 @@ dmx32_dmx512doublebuffer_tx:
 /**
  * function dmx32_dmx512transmitter
  * DMX512 Transmitter
- * This function should be used within a timer of 44 micro seconds and over.
- * If you use this function in a timer of 46 micro seconds;
+ * This function should be used with a timer of 46 micro seconds and over.
+ * If you use this function with a timer of 46 micro seconds;
  * the Break spends 92 micro seconds, the Mark After Break (MAB) spends 46 micro seconds,
  * the Mark Time Between Frames (MTBF) spends 2 micro seconds (46 - 44),
  * and the minimum Mark Time Between Packets (MTBP) spends 2 micro seconds (46 - 44).
@@ -280,7 +280,8 @@ dmx32_dmx512doublebuffer_rx:
 /**
  * function dmx32_dmx512receiver
  * DMX512 Receiver
- * This function should be used within an interrupt triggered by receiving data of UART.
+ * This function should be used with a timer less than 44 micro seconds
+ * to detect the Break with 88 micro seconds from the transmitter.
  *
  * Parameters
  * r0: Pointer of Array of Slots for Start Code and Channel Data
