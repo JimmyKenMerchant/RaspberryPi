@@ -238,9 +238,9 @@ dmx32_dmx512transmitter_sequence: .word 0x00
  * DMX512 Double Buffer Receiver
  *
  * Return: r0 (current sequence number, -1 as break signal, -2, -3, and -4 as error)
- * Error(-2): Not Received
- * Error(-3): Overrun, Parity Error, Framing Error, Not Received
- * Error(-4): Overflow of Pointer of Array
+ * Error(-2): Not Received, Holds Sequence Number
+ * Error(-3): Overrun, Parity Error, Framing Error; Holds Sequence Number
+ * Error(-4): Overflow of Pointer of Array, Resets Sequence Number
  */
 .globl dmx32_dmx512doublebuffer_rx
 dmx32_dmx512doublebuffer_rx:
@@ -289,7 +289,7 @@ dmx32_dmx512doublebuffer_rx:
  *
  * Return: r0 (current sequence number, -1 as break signal, -2, -3, and -4 as error)
  * Error(-2): Not Received, Holds Sequence Number
- * Error(-3): Overrun, Parity Error, Framing Error, or Not Received; Holds Sequence Number
+ * Error(-3): Overrun, Parity Error, Framing Error; Holds Sequence Number
  * Error(-4): Overflow of Pointer of Array, Resets Sequence Number
  */
 .globl dmx32_dmx512receiver
@@ -317,8 +317,8 @@ dmx32_dmx512receiver:
 	tst temp, #0x4                    @ Whether Break or Not
 	bne dmx32_dmx512receiver_break    @ If Break
 
-	tst temp, #0xB                    @ Whether Overrun, Parity Error, Framing Error, Not Received, or Not
-	bne dmx32_dmx512receiver_error2   @ If Overrun, Parity Error, Framing Error, Not Received
+	tst temp, #0xB                    @ Whether Overrun, Parity Error, Framing Error or Not
+	bne dmx32_dmx512receiver_error2   @ If Overrun, Parity Error, Framing Error
 
 	tst temp, #0x10                   @ Whether Not Received or Not
 	bne dmx32_dmx512receiver_error1   @ If Not Received

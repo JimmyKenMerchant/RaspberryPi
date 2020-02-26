@@ -39,6 +39,7 @@ uint16 index_slot;
 uint16 buffer_data;
 uchar8 index_slot_position; // 0 = Bit[3:0], 1 = Bit[7:0], 2 = Bit[8]
 bool buffer_data_upper_flag;
+bool buffer_front_flag;
 
 int32 _user_start() {
 	/* Local Variables */
@@ -56,7 +57,8 @@ int32 _user_start() {
 	index_slot = 0;
 	buffer_data = 0;
 	index_slot_position = 0;
-	buffer_data_upper_flag = false;
+	buffer_data_upper_flag = False;
+	buffer_front_flag = False;
 
 	//print32_debug( DMX32_BUFFER_FRONT, 100, 100 );
 	//print32_debug( DMX32_BUFFER_BACK, 100, 112 );
@@ -96,7 +98,11 @@ int32 _user_start() {
 			_gpiotoggle( GPIO_BUSY_TOGGLE, _GPIOTOGGLE_SWAP ); // Busy Toggle
 			detect_parallel &= 0x1F; // 0-31
 			if ( detect_parallel & 0b10000 ) { // Command
-				if ( detect_parallel == 26 ) { // Start Tx
+				if ( detect_parallel == 20 ) { // Store Value to BACK Buffer in Slot Value Mode (default)
+					buffer_front_flag = False;
+				} else if ( detect_parallel == 21 ) { // Store Value to FRONT Buffer in Slot Value Mode
+					buffer_front_flag = True;
+				} else if ( detect_parallel == 26 ) { // Start Tx
 					_store_32( (uint32)&OS_FIQ_START, 0x01 );
 				} else if ( detect_parallel == 27 ) { // Set Repeat Tx
 					_store_32( (uint32)&OS_FIQ_REPEAT, 0x01 );
@@ -116,7 +122,7 @@ int32 _user_start() {
 					data_mode = detect_parallel & 0b1111;
 				} // 16: Reset Data Position to LSB (All Commands Reset Data Position)
 				index_slot_position = 0;
-				buffer_data_upper_flag = false;
+				buffer_data_upper_flag = False;
 			} else { // Data
 				if ( data_mode == 1 ) { // Slot Index
 					if ( index_slot_position == 0 ) {
@@ -132,11 +138,15 @@ int32 _user_start() {
 				} else if ( data_mode > 1 ) { // Slot Value
 					if ( ! buffer_data_upper_flag ) {
 						buffer_data = (buffer_data & 0xF0) | (detect_parallel & 0b1111);
-						buffer_data_upper_flag = true;
+						buffer_data_upper_flag = True;
 					} else {
 						buffer_data = (buffer_data & 0x0F) | ((detect_parallel & 0b1111) << 4 );
-						buffer_data_upper_flag = false;
-						DMX32_BUFFER_BACK[index_slot] = buffer_data;
+						buffer_data_upper_flag = False;
+						if ( buffer_front_flag ) {
+							DMX32_BUFFER_FRONT[index_slot] = buffer_data;
+						} else {
+							DMX32_BUFFER_BACK[index_slot] = buffer_data;
+						}
 						if ( data_mode == 3 ) { // Sequentially
 							index_slot++;
 							if ( index_slot >= DMX512_LENGTH ) index_slot = 0;

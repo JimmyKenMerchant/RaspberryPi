@@ -41,7 +41,9 @@
 	* 0x11 (17): Select Slot Index Mode to Send Data (Default)
 	* 0x12 (18): Select Slot Value Mode to Send Data
 	* 0x13 (19): Select Slot Value Sequentially Mode to Send Data
-	* 0x14 (20) - 0x19 (25): Reserved
+	* 0x14 (20): Store Value to BACK Buffer in Slot Value Mode (default)
+	* 0x15 (21): Store Value to FRONT Buffer in Slot Value Mode
+	* 0x16 (22) - 0x19 (25): Reserved
 	* 0x1A (26): Start Tx
 	* 0x1B (27): Set Repeat Tx
 	* 0x1C (28): Clear Repeat Tx, Pause after End of Packet (Default)
