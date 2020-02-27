@@ -55,22 +55,23 @@
 
 * Procedure on Flushing Method with Single Sending of Slot Value
 	* Command 0x1E (30) to Tx Send FRONT Buffer
+	* Command 0x15 (21) to Store Value to FRONT Buffer in Slot Value Mode
 	* Command 0x1C (28) to Clear Repeat Tx
 		1. Command 0x11 (17) to Select Slot Index Mode and Send Data
 		2. Command 0x12 (18) to Select Slot Value Mode and Send Data to Back Buffer
 		3. Back to No.1 If Any Other Changes Exist
-		4. Command 0x1D (29) to Swap FRONT/BACK Buffer
-		5. Command 0x1A (26) to Start Tx
-		6. Back to No.1
+		4. Command 0x1A (26) to Start Tx
+		5. Back to No.1
 
 * Procedure on Flushing Method with Sequential Sending of Slot Value
 	* Command 0x1F (31) to Tx Send FRONT and Swap FRONT/BACK Buffer on End of Packet
+	* Command 0x14 (20) to Store Value to BACK Buffer in Slot Value Mode
 	* Command 0x1B (27) to Set Repeat Tx
-	* Command 0x11 (17) to Select Slot Index Mode and Send Data
-	* Command 0x13 (19) to Select Slot Value Sequentially Mode and Send Data for Initial Values to Back Buffer
+	* Command 0x11 (17) to Select Slot Index Mode and Send 0x00
+	* Command 0x13 (19) to Select Slot Value Sequentially Mode and Send Data for Initial Values (513 Slots) to Back Buffer
 	* Command 0x1D (29) to Swap FRONT/BACK Buffer
 	* Command 0x1A (26) to Start Tx
-		1. Send Data for Values to Back Buffer: Must Be Finished Before Next EOP (Approx. 1s / 44hz = 22ms).
+		1. Send Data for Values (513 Slots) to Back Buffer: Must Be Finished Before Next EOP (Approx. 1s / 44hz = 22ms).
 		2. Poll EOP Toggle
 		3. If Low/High Change on EOP Toggle, Back to No.1
 
