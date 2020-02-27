@@ -126,13 +126,14 @@ int32 _user_start() {
 			} else { // Data
 				if ( data_mode == 1 ) { // Slot Index
 					if ( index_slot_position == 0 ) {
-						index_slot = (index_slot & 0x1F0) | (detect_parallel & 0b1111);
+						index_slot = (index_slot & 0x3F0) | (detect_parallel & 0b1111);
 						index_slot_position = 1;
 					} else if ( index_slot_position == 1 ) {
-						index_slot = (index_slot & 0x10F) | ((detect_parallel & 0b1111) << 4 );
+						index_slot = (index_slot & 0x30F) | ((detect_parallel & 0b1111) << 4 );
 						index_slot_position = 2;
 					} else if ( index_slot_position == 2 ) {
-						index_slot = (index_slot & 0x0FF) | ((detect_parallel & 0b1) << 8 );
+						index_slot = (index_slot & 0x0FF) | ((detect_parallel & 0b11) << 8 );
+						if ( index_slot >= DMX512_LENGTH ) index_slot = DMX512_LENGTH - 1;
 						index_slot_position = 0;
 					}
 				} else if ( data_mode > 1 ) { // Slot Value
