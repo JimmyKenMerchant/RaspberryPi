@@ -8,7 +8,7 @@
  */
 
 /* Define Debug Status */
-.equ __DEBUG, 1
+/*.equ __DEBUG, 1*/
 
 .include "system32/equ32.s"
 .include "system32/macro32.s"
@@ -76,6 +76,8 @@ os_reset:
 	/* I/O Settings */
 
 	ldr r1, [r0, #equ32_gpio_gpfsel10]
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_2     @ Set GPIO 12 PWM0
+	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_3     @ Set GPIO 13 PWM1
 	orr r1, r1, #equ32_gpio_gpfsel_alt0 << equ32_gpio_gpfsel_5     @ Set GPIO 15 ALT 0 as RXD0
 	orr r1, r1, #equ32_gpio_gpfsel_input << equ32_gpio_gpfsel_9    @ Set GPIO 19 INPUT
 	str r1, [r0, #equ32_gpio_gpfsel10]
@@ -115,6 +117,25 @@ os_reset:
 	mov r2, #0b11<<equ32_uart0_lcrh_wlen|equ32_uart0_lcrh_fen|equ32_uart0_lcrh_stp2 @ Line Control
 	mov r3, #equ32_uart0_cr_rxe                                    @ Control
 	bl uart32_uartinit
+
+	/**
+	 * Clock Manager for PWM.
+	 */
+	mov r0, #equ32_cm_pwm
+	mov r1, #equ32_cm_ctl_mash_0
+	add r1, r1, #equ32_cm_ctl_enab|equ32_cm_ctl_src_osc            @ 19.2Mhz
+	mov r2, #3 << equ32_cm_div_integer                             @ For 6400Khz
+	bl arm32_clockmanager
+
+	/**
+	 * PWM Initializer, 256 Steps (0 - 255)
+	 */
+	mov r0, #1                                                     @ Fixed Frequency
+	mov r1, #255                                                   @ Range of PWM0 for Approx. 25.1Khz
+	mov r2, #255                                                   @ Range of PWM1 for Approx. 25.1Khz
+	bl pwm32_pwminit
+
+	macro32_dsb ip
 
 	pop {pc}
 
