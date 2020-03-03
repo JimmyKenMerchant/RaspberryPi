@@ -60,28 +60,15 @@ int32 _user_start() {
 	buffer_data_upper_flag = False;
 	buffer_front_flag = False;
 
-	//print32_debug( DMX32_BUFFER_FRONT, 100, 100 );
-	//print32_debug( DMX32_BUFFER_BACK, 100, 112 );
-	//heap32_mfill( (obj)DMX32_BUFFER_FRONT, 0x23242526 );
-	//heap32_mfill( (obj)DMX32_BUFFER_BACK, 0x89ABCDEF );
-	//print32_debug_hexa( DMX32_BUFFER_FRONT, 100, 124, 8 );
-	//print32_debug_hexa( DMX32_BUFFER_BACK, 100, 136, 8 );
+#ifdef __DEBUG
+	print32_debug( (obj)DMX32_BUFFER_FRONT, 100, 100 );
+	print32_debug( (obj)DMX32_BUFFER_BACK, 100, 112 );
+	heap32_mfill( (obj)DMX32_BUFFER_FRONT, 0x01010101 );
+	heap32_mfill( (obj)DMX32_BUFFER_BACK, 0x02020202 );
+#endif
 
 	while( True ) {
-		/* DMX512 */
-		/*
-		print32_debug( OS_FIQ_COUNT, 100, 52 );
-		if ( OS_FIQ_TRANSMIT ) {
-			_store_8( (obj)DMX32_BUFFER_BACK + increment, turn );
-			increment++;
-			if ( increment > 512 ) {
-				increment = 0;
-				turn++;
-			}
-			_store_32( (uint32)&OS_FIQ_TRANSMIT, 0x00 );
-		}
-		*/
-
+		/* End of Packet */
 		if ( OS_FIQ_TRANSMIT ) {
 			_gpiotoggle( GPIO_EOP_TOGGLE, _GPIOTOGGLE_SWAP );
 			_store_32( (uint32)&OS_FIQ_TRANSMIT, 0x00 );

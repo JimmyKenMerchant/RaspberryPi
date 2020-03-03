@@ -22,13 +22,13 @@ uchar8 dmx512_value2;
 
 pwm_sequence pwm0[] =
 {
-	0,
+	1<<31|0,
 	PWM32_END
 };
 
 pwm_sequence pwm1[] =
 {
-	0,
+	1<<31|0,
 	PWM32_END
 };
 
@@ -40,18 +40,16 @@ int32 _user_start() {
 				dmx512_value1 = DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL];
 				pwm0[0] = 1<<31|dmx512_value1;
 				_pwmselect( 0 );
-				_pwmplay( False, False ); // Clear Previous Value
 				_pwmset( pwm0, 1, 0, 1 );
-				_pwmplay( False, False ); // Set Current Value
+				_pwmplay( False, False );
 			}
 			if ( OS_RESET_DMX512_CHANNEL < DMX512_LENGTH - 1 ) { // Up to 511
 				if ( dmx512_value2 != DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL + 1] ) {
 					dmx512_value2 = DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL + 1];
 					pwm1[0] = 1<<31|dmx512_value2;
 					_pwmselect( 1 );
-					_pwmplay( False, False ); // Clear Previous Value
 					_pwmset( pwm1, 1, 0, 1 );
-					_pwmplay( False, False ); // Set Current Value
+					_pwmplay( False, False );
 				}
 			}
 #ifdef __DEBUG
