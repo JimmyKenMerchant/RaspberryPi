@@ -10,6 +10,8 @@
 
 * Test of Protocol of DMX512: Not yet tested with a RS485 transceiver.
 
+* Test with DMX512 Receiver Test (dmx512_rx_test)
+
 ## Output and Input
 
 * GPIO14 as TXD0
@@ -58,10 +60,10 @@
 	* Command 0x15 (21) to Store Value to FRONT Buffer in Slot Value Mode
 	* Command 0x1C (28) to Clear Repeat Tx
 		1. Command 0x11 (17) to Select Slot Index Mode and Send Data
-		2. Command 0x12 (18) to Select Slot Value Mode and Send Data to Back Buffer
+		2. Command 0x12 (18) to Select Slot Value Mode and Send Data to Front Buffer
 		3. Back to No.1 If Any Other Changes Exist
 		4. Command 0x1A (26) to Start Tx
-		5. Back to No.1
+		5. Back to No.1 If Changing Indexes and Values, Back to No.2 If Changing Only Value of One Slot
 
 * Procedure on Flushing Method with Sequential Sending of Slot Value
 	* Command 0x1F (31) to Tx Send FRONT and Swap FRONT/BACK Buffer on End of Packet

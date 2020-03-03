@@ -10,6 +10,8 @@
 
 * Test of Protocol of DMX512: Not yet tested with a RS485 receiver.
 
+* Test with DMX512 Transmitter Test (dmx512_tx_test)
+
 ## Output and Input
 
 * GPIO12 as Output of PWM0
