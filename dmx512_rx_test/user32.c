@@ -10,6 +10,12 @@
 #include "system32.h"
 #include "system32.c"
 
+/**
+ * Global Variables and Constants
+ * to Prevent Incorrect Compilation in optimization,
+ * Variables (except these which have only one value) used over the iteration of the loop are defined as global variables.
+ */
+
 #define DMX512_LENGTH 513
 
 extern uint32 OS_FIQ_COUNT;
@@ -33,6 +39,10 @@ pwm_sequence pwm1[] =
 };
 
 int32 _user_start() {
+	/* Initialization of Global Variables */
+	dmx512_value1 = 0;
+	dmx512_value2 = 0;
+
 	while( True ) {
 		if ( OS_FIQ_RECEIVE ) {
 			_store_32( (uint32)&OS_FIQ_RECEIVE, 0x00 );
@@ -43,14 +53,12 @@ int32 _user_start() {
 				_pwmset( pwm0, 1, 0, 1 );
 				_pwmplay( False, False );
 			}
-			if ( OS_RESET_DMX512_CHANNEL < DMX512_LENGTH - 1 ) { // Up to 511
-				if ( dmx512_value2 != DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL + 1] ) {
-					dmx512_value2 = DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL + 1];
-					pwm1[0] = 1<<31|dmx512_value2;
-					_pwmselect( 1 );
-					_pwmset( pwm1, 1, 0, 1 );
-					_pwmplay( False, False );
-				}
+			if ( dmx512_value2 != DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL + 1] ) {
+				dmx512_value2 = DMX32_BUFFER_BACK[OS_RESET_DMX512_CHANNEL + 1];
+				pwm1[0] = 1<<31|dmx512_value2;
+				_pwmselect( 1 );
+				_pwmset( pwm1, 1, 0, 1 );
+				_pwmplay( False, False );
 			}
 #ifdef __DEBUG
 			dmx512_startcode = DMX32_BUFFER_BACK[0];

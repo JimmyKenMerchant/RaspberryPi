@@ -97,13 +97,12 @@ os_reset:
 
 	macro32_dsb ip
 
-	/* Check MIDI Channel, GPIO19 (Bit[0]) to GPIO27 (Bit[8]) */
+	/* Check DMX512 Channel, GPIO19 (Bit[0]) to GPIO27 (Bit[8]) */
 	ldr r1, [r0, #equ32_gpio_gplev0]
 	lsr r1, r1, #19
 	mov r2, #0x0FF
 	orr r2, r2, #0x100
-	and r1, r1, r2
-	add r1, r1, #1                                                 @ 0-511 to 1-512
+	and r1, r1, r2                                                 @ 0-511
 	str r1, OS_RESET_DMX512_CHANNEL
 
 	/* DMX512 Receive */
