@@ -20,6 +20,8 @@
 
 * [Electric Schematics](#electric-schematics)
 
+* [Sound](#sound)
+
 ## Purpose
 
 * Programmable Synthesizer, MIDI IN Acceptable
@@ -159,3 +161,7 @@
 * [MIDI IN with 3.3V](../schematics/midi_in.pdf)
 
 * [MIDI OUT with Level Shifting 3.3V to 5V](../schematics/midi_out.pdf)
+
+## Sound
+
+* It tends to emphasize high frequencies. For example, the bass drum of the raw sound emits harmonics. The raw sound may be fit with electronics music. However, if you want natural sound, use an equalizer. On an equalizer for the recorded sound, I gradually reduced the gain at -30dB from 4KHz to 12KHz, flatted the gain at -30dB from 12Khz to 20Khz, and gradually increased the gain at 9dB from 4Khz to 20Hz.

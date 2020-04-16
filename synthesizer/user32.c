@@ -71,7 +71,7 @@ extern uint32 OS_RESET_MIDI_CHANNEL; // From vector32.s
  * Beat Length as 100 percents = attack_time + decay_time + sustain_time (not parameterized) + release_time
  */
 
-#define PRE_SYNTHE_NUMBER 29
+#define PRE_SYNTHE_NUMBER 30
 
 /* Register for Precodes */
 synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
@@ -83,6 +83,7 @@ synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
 	pre_sample_drumnbass,
 	pre_sample_lofi,
 	pre_sample_8,
+	pre_sample_house,
 	pre_sample_16,
 	pre_percussion_bassdrum2,
 	pre_percussion_bassdrum1,
@@ -108,6 +109,7 @@ synthe_precode** pre_synthe_table[PRE_SYNTHE_NUMBER] = {
 
 /* Register for Number of Voices */
 uint32 pre_synthe_voice_table[PRE_SYNTHE_NUMBER] = {
+	2,
 	2,
 	2,
 	2,
@@ -149,6 +151,7 @@ uint32 pre_synthe_table_index[PRE_SYNTHE_NUMBER] = {
 	 6,
 	 7,
 	 8,
+	 9,
 	16,
 	35, // Acoustic Bass Drum (Bass Drum 2) at GM 1 Percussion Key Map
 	36, // Bass Drum 1

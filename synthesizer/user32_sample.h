@@ -765,7 +765,7 @@ synthe_code sample_binary[] = {
 
 /* Rhythm of Lo-fi: Snare and Bass Part */
 synthe_precode pre_sample_lofi_l[] = {
-	_4(_RAP(
+	_1(_RAP(
 		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
 		_SILENCE,_SILENCE,2100<<_BEAT,0,
 		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,300<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
@@ -783,7 +783,7 @@ synthe_precode pre_sample_lofi_l[] = {
 
 /* Rhythm of Lo-fi: Symbal Part */
 synthe_precode pre_sample_lofi_r[] = {
-	_4(_RAP(
+	_1(_RAP(
 		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
 		_SILENCE,_SILENCE,600<<_BEAT,0,
 		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
@@ -808,4 +808,60 @@ synthe_precode pre_sample_lofi_r[] = {
 synthe_precode* pre_sample_lofi[] = {
 	pre_sample_lofi_l,
 	pre_sample_lofi_r
+};
+
+/* Rhythm of House: Snare and Bass Part */
+synthe_precode pre_sample_house_l[] = {
+	_1(_RAP(
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,900<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,900<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,900<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,900<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,900<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,900<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,300<<_BEAT,0,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,300<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_SILENCE,_SILENCE,300<<_BEAT,0,
+		_G2<<_FREQ|5000<<_MAG,_G2<<_FREQ|00000<<_MAG,300<<_BEAT,1<<_ATK|30<<_DCY|30<<_STN|69<<_RLS,
+		_SILENCE,_SILENCE,300<<_BEAT,0,
+		_A4<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|8000<<_MAG,300<<_BEAT,1<<_ATK|20<<_DCY|30<<_STN|79<<_RLS,
+		_SILENCE,_SILENCE,300<<_BEAT,0
+	))
+	_END
+
+};
+
+/* Rhythm of House: Symbal Part */
+synthe_precode pre_sample_house_r[] = {
+	_1(_RAP(
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS,
+		_SILENCE,_SILENCE,600<<_BEAT,0,
+		_NOISE<<_FREQ|2500<<_MAG,_NOISE<<_FREQ|32000<<_MAG,600<<_BEAT,0<<_ATK|12<<_DCY|20<<_STN|88<<_RLS
+	))
+	_END
+};
+
+synthe_precode* pre_sample_house[] = {
+	pre_sample_house_l,
+	pre_sample_house_r
 };
